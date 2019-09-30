@@ -92,7 +92,7 @@ let rec ident context old_metas table minus i =
   | Ast0.MetaFunc(name,_,_) -> check_table table minus name
   | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
   | Ast0.AsIdent(id,asid) -> failwith "not generated yet"
-  | Ast0.DisjId(_,id_list,_,_) ->
+  | Ast0.DisjId(_,id_list,_,_) | Ast0.ConjId(_,id_list,_,_) ->
       List.iter (ident context old_metas table minus) id_list
   | Ast0.OptIdent(_) ->
       failwith "unexpected code"
@@ -477,9 +477,7 @@ and statement old_metas table minus s =
 
 and pragmainfo old_metas table minus pi =
   match Ast0.unwrap pi with
-      Ast0.PragmaTuple(lp,args,rp) ->
-	dots (expression ID old_metas table minus) args
-    | Ast0.PragmaIdList(ids) -> dots (ident GLOBAL old_metas table minus) ids
+      Ast0.PragmaString(s) -> ()
     | Ast0.PragmaDots (dots) -> ()
 
 and define_param old_metas table minus p =
@@ -589,6 +587,8 @@ let dup_positions rules =
       (List.map
 	 (function
 	     Ast0.MetaPosTag(Ast0.MetaPos(name,constraints,_)) ->
+	       [Ast0.unwrap_mcode name]
+	   | Ast0.MetaPosTag(Ast0.MetaCom(name,constraints)) ->
 	       [Ast0.unwrap_mcode name]
 	   | _ -> [])
 	 (Ast0.get_pos x)) in

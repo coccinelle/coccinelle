@@ -17,7 +17,8 @@ let rec get_name name =
   | Ast0.MetaId(nm,_,_,_) | Ast0.MetaFunc(nm,_,_)
   | Ast0.MetaLocalFunc(nm,_,_) -> [Meta(Ast0.unwrap_mcode nm)]
   | Ast0.AsIdent(id1,id2) -> failwith "not supported"
-  | Ast0.DisjId(_,id_list,_,_) -> List.concat (List.map get_name id_list)
+  | Ast0.DisjId(_,id_list,_,_) | Ast0.ConjId(_,id_list,_,_) ->
+      List.concat (List.map get_name id_list)
   | Ast0.OptIdent(id) ->
       get_name id
 

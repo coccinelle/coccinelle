@@ -1,0 +1,108 @@
+Overview:
+
+Splitpatch is a tool that attempts to ease the problem of sending out
+treewide patches generated using Coccinelle.  By default, it splits a patch
+or diff by set of maintainers.  It tries to construct an appropriate
+subject line for each file and runs checkpatch and diffstat on each patch.
+
+-----------------------------------------------------------------------
+
+Inputs:
+
+The first argument should be the name of a file containing the changes.
+These changes can be obtained in a variety of ways:
+
+* From the output of Coccinelle.
+* From git show or git diff.
+* From git format-patch -s, applied to a single commit.
+
+-----------------------------------------------------------------------
+
+Additional optional command-line arguments:
+
+--merge: Just make one patch.
+--nomerge: Make one patch per file.
+--dirmerge: Make one patch per directory.
+
+-----------------------------------------------------------------------
+
+Operation:
+
+In the following, we assume that the changes are in the file
+0001-changes.patch, obtained in any of the above ways.
+
+There are two ways in which the subject line, cover letter message, and
+commit log message can be specified.
+
+* If the 0001-changes.patch was generated from git format-patch -s, then
+  splitpatch will reuse the subject line and the log message as is.  These
+  will be put in the cover letter and in all of the patches.  One is free
+  to modify any of these files, to make a more relevant subject line or log
+  message.
+
+* If the 0001-changes.patch was generated in any of the above ways,
+  including git format-patch -s, it is possible to make a file
+  0001-changes.msg indicating a specific subject line, cover letter
+  message, commit log message, and text to be placed under the --- in the
+  patches.
+
+  Specifically, the following possibilities are supported:
+
+  subject line (one line only)
+  ---
+  commit log message (any number of lines, containing Signed-off-by:)
+
+  or
+
+  subject line (one line only)
+  ---
+  cover letter message (any number of lines)
+  ---
+  commit log message (any number of lines, containing Signed-off-by:)
+
+  or
+
+  subject line (one line only)
+  ---
+  cover letter message (any number of lines)
+  ---
+  commit log message (any number of lines, containing Signed-off-by:)
+  ---
+  text to be placed below --- (any number of lines)
+
+  If a .msg file is provided, then the non-change information in the patch
+  is ignored.
+
+-----------------------------------------------------------------------
+
+Generated files:
+
+0001-changes.cover: The cover letter
+
+0001-changes.cmd: A script that can be used to send the patches.  This
+script uses git send-email.  Any arguments passed to this script on the
+command line (e.g., --dry-run) are passed on to git send-email.
+
+0001-changesN.patch: The patches.  N is a number, starting with 1.
+
+-----------------------------------------------------------------------
+
+Configuration:
+
+Splitpatch uses an optional .splitpatch file that is located in the user's
+home directory.  This file can define the following configuration
+parameters, all of which are optional:
+
+from = User Name <email>
+git_tree = /path/to/some/tree/containing/the/linux/kernel
+git_options = --any --desired --options --for --git send-email
+prefix_before = /path/to/remove/from/removed/code/if/found
+prefix_after = /path/to/remove/from/added/code/if/found
+
+git_tree is only used for finding get_maintainers and checkpatch, and for
+finding examples from which to construct the subject line.  It does not
+need to be the git tree from which the patch was generated.
+
+prefix_before and prefix_after are only useful when using changes generated
+directly by Coccinelle, which includes full path names.  In that case, the
+provided path is removed, if it is present.

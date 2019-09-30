@@ -65,6 +65,7 @@ let print_match ctr nm kind =
 
 let string_rep_binding ctr = function
     (Some nm,Ast.MetaPosDecl _) -> print_match ctr nm "Pos"
+  | (Some nm,Ast.MetaComDecl _) -> print_match ctr nm "Com"
   | (Some nm,Ast.MetaListlenDecl _) -> print_match ctr nm "Int"
   | (Some nm,_) (* strings for everything else *) ->
       print_match ctr nm "Str"
@@ -74,6 +75,9 @@ let ast_rep_binding ctr = function
     (Some nm,Ast.MetaPosDecl _) ->
       failwith
 	(Printf.sprintf "%s: No AST representation for position variables" nm)
+  | (Some nm,Ast.MetaComDecl _) ->
+      failwith
+	(Printf.sprintf "%s: No AST representation for comment variables" nm)
   | (Some nm,Ast.MetaAnalysisDecl _) ->
       failwith "Todo"
 
@@ -286,8 +290,10 @@ let prepare coccifile code =
       (posvar, self, (script_name, lang, params, pos, body)) =
     if lang = "ocaml" then
       let kind =
-	if posvar then Ast_cocci.MetaPosDecl (Ast_cocci.NONE, self)
-	else Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
+	match posvar with
+	  Data.POS -> Ast_cocci.MetaPosDecl (Ast_cocci.NONE, self)
+	| Data.COM -> Ast_cocci.MetaComDecl (Ast_cocci.NONE, self)
+	| Data.OTHR -> Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
       let self = (self, kind) in
       (script_name, self::params, body) :: prev
     else

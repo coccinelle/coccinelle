@@ -1,0 +1,264 @@
+@BEGIN_BEFORE_4_02_0@
+include Stdcompat__string
+
+let empty = ""
+
+let of_string = copy
+
+let to_string = copy
+
+let sub_string = sub
+
+let extend s left right =
+  let len = left + length s + right in
+  let result = create len in
+  let trim_left = max (- left) 0 in
+  unsafe_blit s trim_left result (max left 0)
+    (length s - trim_left - max (- right) 0);
+  result
+
+let blit_string = blit
+
+let cat = ( ^ )
+
+let unsafe_of_string s = s
+
+let unsafe_to_string s = s
+@END_BEFORE_4_02_0@
+@BEGIN_FROM_4_02_0@
+include Bytes
+
+@BEGIN_BEFORE_4_05_0@
+let index_opt s c =
+  Stdcompat__tools.option_find (index s) c
+
+let rindex_opt s c =
+  Stdcompat__tools.option_find (rindex s) c
+
+let index_from_opt s i c =
+  Stdcompat__tools.option_find (index_from s i) c
+
+let rindex_from_opt s i c =
+  Stdcompat__tools.option_find (rindex_from s i) c
+@END_BEFORE_4_05_0@
+@END_FROM_4_02_0@
+
+@BEGIN_BEFORE_4_03_0@
+let uppercase_ascii = uppercase
+
+let lowercase_ascii = lowercase
+
+let capitalize_ascii = capitalize
+
+let uncapitalize_ascii = uncapitalize
+
+let equal : t -> t -> bool = ( = )
+@END_BEFORE_4_03_0@
+
+@BEGIN_BEFORE_4_07_0@
+let of_seq g =
+  Stdcompat__buffer.to_bytes (Stdcompat__buffer.of_seq g)
+
+let to_seq s = Stdcompat__tools.vec_to_seq length unsafe_get s
+
+let to_seqi s = Stdcompat__tools.vec_to_seqi length unsafe_get s
+@END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_4_08_0@
+let pad_sign i w =
+  let pad_width = Stdcompat__sys.int_size - w in
+  (i lsl pad_width) asr pad_width
+
+let index_out_of_bounds () =
+  invalid_arg "index out of bounds"
+
+let unsafe_get_uint8 b i =
+  int_of_char (get b i)
+
+let get_uint8 b i =
+  if i < 0 || i >= length b then
+    index_out_of_bounds ();
+  unsafe_get_uint8 b i
+
+let get_int8 b i =
+  pad_sign (get_uint8 b i) 8
+
+let get_uint16_le b i =
+  if i < 0 || succ i >= length b then
+    index_out_of_bounds ();
+  let l = unsafe_get_uint8 b i in
+  let u = unsafe_get_uint8 b (succ i) in
+  l lor u lsl 8
+
+let get_uint16_be b i =
+  if i < 0 || succ i >= length b then
+    index_out_of_bounds ();
+  let u = unsafe_get_uint8 b i in
+  let l = unsafe_get_uint8 b (succ i) in
+  l lor u lsl 8
+
+let get_uint16_ne b i =
+  if Stdcompat__sys.big_endian then get_uint16_be b i
+  else get_uint16_le b i
+
+let get_int16_le b i =
+  pad_sign (get_uint16_le b i) 16
+
+let get_int16_be b i =
+  pad_sign (get_uint16_be b i) 16
+
+let get_int16_ne b i =
+  pad_sign (get_uint16_ne b i) 16
+
+let get_int32_le b i =
+  if i < 0 || i + 3 >= length b then
+    index_out_of_bounds ();
+  let i0 = unsafe_get_uint8 b i in
+  let i1 = unsafe_get_uint8 b (i + 1) in
+  let i2 = unsafe_get_uint8 b (i + 2) in
+  let i3 = unsafe_get_uint8 b (i + 3) in
+  Int32.logor (Int32.of_int i0)
+    (Int32.logor (Int32.shift_left (Int32.of_int i1) 8)
+      (Int32.logor (Int32.shift_left (Int32.of_int i2) 16)
+        (Int32.shift_left (Int32.of_int i3) 24)))
+
+let get_int32_be b i =
+  if i < 0 || i + 3 >= length b then
+    index_out_of_bounds ();
+  let i3 = unsafe_get_uint8 b i in
+  let i2 = unsafe_get_uint8 b (i + 1) in
+  let i1 = unsafe_get_uint8 b (i + 2) in
+  let i0 = unsafe_get_uint8 b (i + 3) in
+  Int32.logor (Int32.of_int i0)
+    (Int32.logor (Int32.shift_left (Int32.of_int i1) 8)
+      (Int32.logor (Int32.shift_left (Int32.of_int i2) 16)
+        (Int32.shift_left (Int32.of_int i3) 24)))
+
+let get_int32_ne b i =
+  if Stdcompat__sys.big_endian then get_int32_be b i
+  else get_int32_le b i
+
+let get_int64_le b i =
+  if i < 0 || i + 7 >= length b then
+    index_out_of_bounds ();
+  let i0 = unsafe_get_uint8 b i in
+  let i1 = unsafe_get_uint8 b (i + 1) in
+  let i2 = unsafe_get_uint8 b (i + 2) in
+  let i3 = unsafe_get_uint8 b (i + 3) in
+  let i4 = unsafe_get_uint8 b (i + 4) in
+  let i5 = unsafe_get_uint8 b (i + 5) in
+  let i6 = unsafe_get_uint8 b (i + 6) in
+  let i7 = unsafe_get_uint8 b (i + 7) in
+  Int64.logor (Int64.of_int i0)
+    (Int64.logor (Int64.shift_left (Int64.of_int i1) 8)
+      (Int64.logor (Int64.shift_left (Int64.of_int i2) 16)
+        (Int64.logor (Int64.shift_left (Int64.of_int i3) 24)
+          (Int64.logor (Int64.shift_left (Int64.of_int i4) 32)
+            (Int64.logor (Int64.shift_left (Int64.of_int i5) 40)
+              (Int64.logor (Int64.shift_left (Int64.of_int i6) 48)
+                (Int64.shift_left (Int64.of_int i7) 56)))))))
+
+let get_int64_be b i =
+  if i < 0 || i + 7 >= length b then
+    index_out_of_bounds ();
+  let i7 = unsafe_get_uint8 b i in
+  let i6 = unsafe_get_uint8 b (i + 1) in
+  let i5 = unsafe_get_uint8 b (i + 2) in
+  let i4 = unsafe_get_uint8 b (i + 3) in
+  let i3 = unsafe_get_uint8 b (i + 4) in
+  let i2 = unsafe_get_uint8 b (i + 5) in
+  let i1 = unsafe_get_uint8 b (i + 6) in
+  let i0 = unsafe_get_uint8 b (i + 7) in
+  Int64.logor (Int64.of_int i0)
+    (Int64.logor (Int64.shift_left (Int64.of_int i1) 8)
+      (Int64.logor (Int64.shift_left (Int64.of_int i2) 16)
+        (Int64.logor (Int64.shift_left (Int64.of_int i3) 24)
+          (Int64.logor (Int64.shift_left (Int64.of_int i4) 32)
+            (Int64.logor (Int64.shift_left (Int64.of_int i5) 40)
+              (Int64.logor (Int64.shift_left (Int64.of_int i6) 48)
+                (Int64.shift_left (Int64.of_int i7) 56)))))))
+
+let get_int64_ne b i =
+  if Stdcompat__sys.big_endian then get_int64_be b i
+  else get_int64_le b i
+
+let unsafe_set_uint8 b i v =
+  unsafe_set b i (char_of_int (v land 0xFF))
+
+let set_uint8 b i v =
+  if i < 0 || i >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i v
+
+let set_int8 = set_uint8
+
+let set_uint16_le b i v =
+  if i < 0 || succ i >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i v;
+  unsafe_set_uint8 b (succ i) (v lsr 8)
+
+let set_uint16_be b i v =
+  if i < 0 || succ i >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i (v lsr 8);
+  unsafe_set_uint8 b (succ i) v
+
+let set_uint16_ne b i v =
+  if Stdcompat__sys.big_endian then set_uint16_be b i v
+  else set_uint16_le b i v
+
+let set_int16_le = set_uint16_le
+
+let set_int16_be = set_uint16_be
+
+let set_int16_ne = set_uint16_ne
+
+let set_int32_le b i v =
+  if i < 0 || i + 3 >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i (Int32.to_int v);
+  unsafe_set_uint8 b (i + 1) (Int32.to_int (Int32.shift_right v 8));
+  unsafe_set_uint8 b (i + 2) (Int32.to_int (Int32.shift_right v 16));
+  unsafe_set_uint8 b (i + 3) (Int32.to_int (Int32.shift_right v 24))
+
+let set_int32_be b i v =
+  if i < 0 || i + 3 >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i (Int32.to_int (Int32.shift_right v 24));
+  unsafe_set_uint8 b (i + 1) (Int32.to_int (Int32.shift_right v 16));
+  unsafe_set_uint8 b (i + 2) (Int32.to_int (Int32.shift_right v 8));
+  unsafe_set_uint8 b (i + 3) (Int32.to_int v)
+
+let set_int32_ne b i v =
+  if Stdcompat__sys.big_endian then set_int32_be b i v
+  else set_int32_le b i v
+
+let set_int64_le b i v =
+  if i < 0 || i + 7 >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i (Int64.to_int v);
+  unsafe_set_uint8 b (i + 1) (Int64.to_int (Int64.shift_right v 8));
+  unsafe_set_uint8 b (i + 2) (Int64.to_int (Int64.shift_right v 16));
+  unsafe_set_uint8 b (i + 3) (Int64.to_int (Int64.shift_right v 24));
+  unsafe_set_uint8 b (i + 4) (Int64.to_int (Int64.shift_right v 32));
+  unsafe_set_uint8 b (i + 5) (Int64.to_int (Int64.shift_right v 40));
+  unsafe_set_uint8 b (i + 6) (Int64.to_int (Int64.shift_right v 48));
+  unsafe_set_uint8 b (i + 7) (Int64.to_int (Int64.shift_right v 56))
+
+let set_int64_be b i v =
+  if i < 0 || i + 7 >= length b then
+    index_out_of_bounds ();
+  unsafe_set_uint8 b i (Int64.to_int (Int64.shift_right v 56));
+  unsafe_set_uint8 b (i + 1) (Int64.to_int (Int64.shift_right v 48));
+  unsafe_set_uint8 b (i + 2) (Int64.to_int (Int64.shift_right v 40));
+  unsafe_set_uint8 b (i + 3) (Int64.to_int (Int64.shift_right v 32));
+  unsafe_set_uint8 b (i + 4) (Int64.to_int (Int64.shift_right v 24));
+  unsafe_set_uint8 b (i + 5) (Int64.to_int (Int64.shift_right v 16));
+  unsafe_set_uint8 b (i + 6) (Int64.to_int (Int64.shift_right v 8));
+  unsafe_set_uint8 b (i + 7) (Int64.to_int v)
+
+let set_int64_ne b i v =
+  if Stdcompat__sys.big_endian then set_int64_be b i v
+  else set_int64_le b i v
+@END_BEFORE_4_08_0@

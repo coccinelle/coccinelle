@@ -141,6 +141,7 @@ let rec ident i =
       | Ast0.MetaFunc(name,_,_) -> mcode print_meta name
       | Ast0.MetaLocalFunc(name,_,_) -> mcode print_meta name
       | Ast0.DisjId(_,id_list,_,_) -> do_disj id_list ident "|"
+      | Ast0.ConjId(_,id_list,_,_) -> do_disj id_list ident "&"
       | Ast0.OptIdent(id) -> print_string "?"; ident id
       | Ast0.AsIdent(id,asid) -> ident id; print_string "@"; ident asid)
 
@@ -678,11 +679,7 @@ and statement arity s =
 
 and pragmainfo pi =
   match Ast0.unwrap pi with
-      Ast0.PragmaTuple(lp,args,rp) ->
-	mcode print_string_box lp;
-	dots (function _ -> ()) expression args;
-	close_box(); mcode print_string rp
-    | Ast0.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+      Ast0.PragmaString(s) -> mcode print_string s
     | Ast0.PragmaDots(dots) -> mcode print_string dots
 
 and print_define_parameters params =

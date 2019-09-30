@@ -17,6 +17,7 @@ type typed_expinfo_bitfield =
     Data.clt * Ast_cocci.list_len option
 type pos_info =
     Ast_cocci.meta_name * Ast0_cocci.constraints * Ast_cocci.meta_collect * Data.clt
+type com_info = Ast_cocci.meta_name * Ast0_cocci.constraints * Data.clt
 val make_info :
   int ->
   int ->
@@ -550,3 +551,5 @@ val parse_string :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
   string -> Ast0_cocci.base_expression Ast0_cocci.wrap
+val unfloatl : string -> string
+val unfloatr : string -> string

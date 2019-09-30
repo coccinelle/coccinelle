@@ -6,3 +6,5 @@ else
 fi
 aclocal -I setup
 autoconf -Wall
+automake -ac
+cd bundles/stdcompat/stdcompat-current && aclocal && autoconf -Wall && automake

@@ -159,7 +159,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
 	false in
   let simple_item item =
     match item with
-      Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->  string_of_int i
+      Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->  i
     | Ast.CstrConstant (Ast.CstrString s) -> s
     | Ast.CstrOperator item -> string_of_operator_constraint item
     | Ast.CstrMeta_name mn -> name_str ~rn mn
@@ -186,7 +186,7 @@ let rec constraints_to_buffer ~rn buffer cstr =
       constraints_to_buffer ~rn buffer item;
       Buffer.add_string buffer ")"
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) ->
-      Printf.bprintf buffer "= %d" i
+      Printf.bprintf buffer "= %s" i
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq i)) ->
       Printf.bprintf buffer "<= %d" i
   | Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i)) ->
@@ -309,6 +309,9 @@ let mcode ~rn ~mc:(_,_,_,_,pos,_) =
         let collect = (match colt with Ast.PER -> "" | Ast.ALL -> " any") in
         let pos = make_mv "position " (name_tup ~rn mn) (constr ^ collect) in
         MVSet.add pos set
+    | Ast0.MetaPosTag(Ast0.MetaCom((mn,_,_,_,_,_),_)) ->
+        let com = make_mv "comments " (name_tup ~rn mn) "" in
+        MVSet.add com set
     | _ -> failwith "should only have metavariables in here."
 
   and add_all_pos lst = List.fold_left add_one_pos MVSet.empty lst in
@@ -514,7 +517,7 @@ let metavar_combiner rn =
     | _ -> fn v in
 
 (*
-  Not used for now, visiter not parameterized by this...
+  Not used for now, visitor not parameterized by this...
   let define_paramfn c fn v =
     match Ast0.unwrap v with
     | Ast0.MetaDParamList(mc, listlen, pure) ->

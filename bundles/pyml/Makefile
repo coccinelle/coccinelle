@@ -3,23 +3,24 @@
 
 PYML_VERSION=current
 
-PACKAGE_DIR=pyml-$(PYML_VERSION)
+PACKAGE_DIR := pyml-$(PYML_VERSION)
 TARBALL=
 MODULES=pyml_arch pyutils pytypes pywrappers py pycaml
-PRODUCTS=pyml_arch
 OBJS=$(MODULES)
 INTERFACES=pywrappers py pycaml
 C_OBJS=pyml
 ARCHIVE=pyml
 LIBRARY=pyml
-SRC_DIR=$(PACKAGE_DIR)
-OCAMLFLAGS+=-I ../stdcompat
+SRC_DIR := $(PACKAGE_DIR)
+OTHERS := $(SRC_DIR)/pyml_arch.ml
+OCAMLFLAGS+=-I $(STDCOMPATDIR)
 CLEANOTHERS=pyml-current/generate pyml-current/generate.cmi \
 	pyml-current/generate.cmx pyml-current/generate.cmo \
 	pyml-current/generate.cmt pyml-current/generate.cmti \
 	pyml-current/generate.o pyml-current/pyml.a \
 	pyml-current/pyml.cma pyml-current/pyml.cmxa \
 	pyml-current/dllpyml_stubs.so
+GENERATED_SOURCE_FILES := $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pywrappers.mli
 
 ARCH:=$(shell uname)
 
@@ -65,9 +66,6 @@ $(SRC_DIR)/pyml_wrappers.inc: \
 	cd $(SRC_DIR) && ./generate
 
 $(SRC_DIR)/pyml_wrappers.inc: $(SRC_DIR)/pywrappers.ml
-
-.prepare: $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pywrappers.mli
-	touch .prepare
 
 $(SRC_DIR)/pyml_stubs.o: $(SRC_DIR)/pyml_stubs.c $(SRC_DIR)/pyml_wrappers.inc
 

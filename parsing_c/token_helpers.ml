@@ -76,7 +76,7 @@ let is_not_comment x =
 
 let is_cpp_instruction = function
   | TInclude _
-  | TDefine _  | TPragma _
+  | TDefine _  | TPrePragma _ | TPragma _
   | TIfdef _ | TIfdefelse _ | TIfdefelif _ | TEndif _
   | TIfdefBool _ | TIfdefMisc _ | TIfdefVersion _
   | TUndef _
@@ -312,6 +312,8 @@ let info_of_tok = function
   | TInclude (includes, filename, inifdef, i1) ->     i1
 
   | TUndef (ii) -> ii
+  | TPrePragma (ii,_,_,_,_,_) -> ii
+  | TPragmaString (s,ii) -> ii
   | TPragma (ii) -> ii
   | TCppDirectiveOther (ii) -> ii
 
@@ -407,6 +409,7 @@ let info_of_tok = function
   | Tint                 (i) -> i
   | Tdouble              (i) -> i
   | Tfloat               (i) -> i
+  | Tcomplex             (i) -> i
   | Tlong                (i) -> i
   | Tunsigned            (i) -> i
   | Tsigned              (i) -> i
@@ -481,6 +484,10 @@ let visitor_info_of_tok f = function
 
   | TUndef (i1) -> TUndef(f i1)
   | TPragma (i1) -> TPragma(f i1)
+  | TPrePragma (i1,wss1,a,b,wss2,c) ->
+      TPrePragma(f i1,f wss1,a,f b,f wss2,
+		 List.map (fun (c,d) -> (c,f d)) c)
+  | TPragmaString (s,ii) -> TPragmaString(s,f ii)
   | TCppDirectiveOther (i1) -> TCppDirectiveOther(f i1)
 
   | TInclude (includes, filename, inifdef, i1) ->
@@ -582,6 +589,7 @@ let visitor_info_of_tok f = function
   | Tint                 (i) -> Tint                 (f i)
   | Tdouble              (i) -> Tdouble              (f i)
   | Tfloat               (i) -> Tfloat               (f i)
+  | Tcomplex             (i) -> Tcomplex             (f i)
   | Tlong                (i) -> Tlong                (f i)
   | Tunsigned            (i) -> Tunsigned            (f i)
   | Tsigned              (i) -> Tsigned              (f i)
@@ -705,6 +713,7 @@ let string_of_token = function
   | Tint _ -> "Tint"
   | Tdouble _ -> "Tdouble"
   | Tfloat _ -> "Tfloat"
+  | Tcomplex _ -> "Tcomplex"
   | Tlong _ -> "Tlong"
   | Tunsigned _ -> "Tunsigned"
   | Tsigned _ -> "Tsigned"
@@ -770,6 +779,8 @@ let string_of_token = function
   | TUelseif _ -> "TUelseif"
   | TUendif _ -> "TUendif"
   | TUndef _ -> "TUndef"
+  | TPrePragma _ -> "TPrePragma"
+  | TPragmaString _ -> "TPragmaString"
   | TPragma _ -> "TPragma"
   | TCppDirectiveOther _ -> "TCppDirectiveOther"
   | TMacroAttr _ -> "TMacroAttr"

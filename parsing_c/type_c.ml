@@ -374,6 +374,12 @@ let lub op t1 t2 =
 	    | _,Ast_c.FloatType(Ast_c.CDouble) -> Some t2
 	    | Ast_c.FloatType(Ast_c.CFloat),_ -> Some t1
 	    | _,Ast_c.FloatType(Ast_c.CFloat) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CLongDoubleComplex),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CLongDoubleComplex) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CDoubleComplex),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CDoubleComplex) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CFloatComplex),_ -> Some t1
+	    | _,Ast_c.FloatType(Ast_c.CFloatComplex) -> Some t2
 
 	    | Ast_c.PtrDiffType,_ -> Some t1
 	    | _,Ast_c.PtrDiffType -> Some t2

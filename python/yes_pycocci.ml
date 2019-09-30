@@ -158,6 +158,9 @@ let wrap_make_position args =
   let mv = Coccilib.make_position fl fn startl startc endl endc in
   !pywrap_ast mv
 
+let wrap_files args =
+  Py.List.of_list_map Py.String.of_string (Coccilib.files ())
+
 let pyoutputinstance = ref Py.none
 
 let get_cocci_file args = Py.String.of_string !cocci_file_name
@@ -214,6 +217,7 @@ let pycocci_init () =
 	("make_type", wrap_make Coccilib.make_type);
 	("make_listlen", wrap_make_listlen);
 	("make_position", wrap_make_position);
+        ("files", wrap_files);
      ] mx in
   pyoutputinstance := cx;
   Py.Dict.set_item_string module_dictionary "coccinelle" mx;
@@ -361,6 +365,27 @@ let construct_variables mv e =
 		   string_of_int col_end])) l in
        let pylocs = Py.Tuple.of_list locs in
        let _ = build_variable py pylocs in
+       ()
+    | Some (_, Ast_c.MetaComValList l) ->
+       let coms =
+	 List.map
+	   (function (bef, mid, aft) ->
+            let com_strings l =
+              List.rev
+                (List.fold_left
+                   (fun prev cur ->
+                     match cur with
+                       (Token_c.TComment,_) -> (Token_c.str_of_token cur) :: prev
+                     | (Token_c.TCommentCpp _,_) -> (Token_c.str_of_token cur) :: prev
+                     | _ -> prev)
+                   [] l) in
+	     pycocci_instantiate_class "coccilib.elems.Comment"
+	       (Py.Tuple.of_list_map Py.String.of_string
+		  [String.concat "\n" (com_strings bef);
+		   String.concat "\n" (com_strings mid);
+		   String.concat "\n" (com_strings aft)])) l in
+       let pycoms = Py.Tuple.of_list coms in
+       let _ = build_variable py pycoms in
        ()
     | Some (_,binding) ->
        let _ =

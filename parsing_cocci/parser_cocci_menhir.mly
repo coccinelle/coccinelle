@@ -197,6 +197,20 @@ let check_constraint_allowed () =
     failwith "constraints not allowed in iso file";
   if !Data.in_generating then
     failwith "constraints not allowed in a generated rule file"
+
+let inline_id aft = function
+    TMetaId((nm,constraints,seed,pure,clt)) ->
+      let clt = P.set_aft aft clt in
+      Ast0.wrap
+	(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
+  | TIdent((nm,clt)) ->
+      let clt = P.set_aft aft clt in
+      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+  | TSymId(nm,clt) ->
+      let clt = P.set_aft aft clt in
+      Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
+  | _ ->
+      raise (Semantic_cocci.Semantic "unexpected name for a #define")
 %}
 
 %token EOF
@@ -206,7 +220,7 @@ let check_constraint_allowed () =
 %token TOperator TBinary TAssignment
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0
 %token TPure TContext TGenerated TFormat TLocal TGlobal
-%token TTypedef TAttribute TDeclarer TIterator TName TPosition TAnalysis
+%token TTypedef TAttribute TDeclarer TIterator TName TPosition TComments TAnalysis
 %token TPosAny
 %token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TFile TIn
@@ -214,7 +228,7 @@ let check_constraint_allowed () =
 %token<string> TRuleName
 %token<string * int> TScript
 
-%token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tlong
+%token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
 %token<Data.clt> Tvoid Tstruct Tunion Tenum
 %token<Data.clt> Tunsigned Tsigned
@@ -244,6 +258,7 @@ let check_constraint_allowed () =
 %token <Parse_aux.typed_expinfo> TMetaIdExp TMetaLocalIdExp
 %token <Parse_aux.typed_expinfo> TMetaGlobalIdExp TMetaConst
 %token <Parse_aux.pos_info>      TMetaPos
+%token <Parse_aux.com_info>      TMetaCom
 
 %token TArob TArobArob
 %token <Data.clt> TPArob
@@ -258,7 +273,8 @@ let check_constraint_allowed () =
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
 %token <Data.clt * token> TDefine TUndef
-%token <Data.clt> TPragma TCppEscapedNewline TInclude
+%token <Data.clt * token * string * Data.clt> TPragma
+%token <Data.clt> TCppEscapedNewline TInclude
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
 
@@ -523,6 +539,17 @@ metadec:
 	let tok = check_meta(Ast.MetaPosDecl(arity,name)) in
 	let any = match a with None -> Ast.PER | Some _ -> Ast.ALL in
 	!Data.add_pos_meta name constraints any; tok in
+    P.create_metadec_with_constraints ar false kindfn ids }
+| ar=arity TComments
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints_com) TMPtVirg
+    (* pb: position variables can't be inherited from normal rules, and then
+       there is no way to inherit from a generated rule, so there is no point
+       to have a position variable *)
+    { (if !Data.in_generating
+      then failwith "comment variables not allowed in a generated rule file");
+      let kindfn arity name pure check_meta constraints =
+	let tok = check_meta(Ast.MetaComDecl(arity,name)) in
+	!Data.add_com_meta name constraints; tok in
     P.create_metadec_with_constraints ar false kindfn ids }
 | ar=arity ispure=pure
     TParameter Tlist TOCro len=list_len TCCro
@@ -943,6 +970,22 @@ non_signable_types_no_ident:
     { Ast0.wrap(Ast0.BaseType(Ast.DoubleType,[P.clt2mcode "double" ty])) }
 | ty=Tfloat
     { Ast0.wrap(Ast0.BaseType(Ast.FloatType,[P.clt2mcode "float" ty])) }
+| ty1=Tlong ty=Tdouble c=Tcomplex
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.LongDoubleComplexType,
+	    [P.clt2mcode "long" ty1;P.clt2mcode "double" ty;
+	      P.clt2mcode "complex" c])) }
+| ty=Tdouble c=Tcomplex
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.DoubleComplexType,
+	    [P.clt2mcode "double" ty;P.clt2mcode "complex" c])) }
+| ty=Tfloat c=Tcomplex
+    { Ast0.wrap
+	(Ast0.BaseType
+	   (Ast.FloatComplexType,
+	    [P.clt2mcode "float" ty;P.clt2mcode "complex" c])) }
 | ty=Tsize_t
     { Ast0.wrap(Ast0.BaseType(Ast.SizeType,[P.clt2mcode "size_t" ty])) }
 | ty=Tssize_t
@@ -1022,7 +1065,7 @@ ctype:
 	  function (star,cv) ->
 	    P.make_cv cv (P.pointerify prev [star]))
 	(P.make_cv cv ty) m }
-| ty=signed_or_unsigned { ty }
+| cv=ioption(const_vol) ty=signed_or_unsigned { P.make_cv cv ty }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0.wrap
@@ -1258,7 +1301,7 @@ includes:
 		 Ast0.wrap
 		   (Ast0.MetaExpr(P.clt2mcode nm clt,constraints,ty,Ast.CONST,
 				  pure,None))
-	     | _ -> failwith "length not allowed for include arugment")) }
+	     | _ -> failwith "length not allowed for include argument")) }
 
 | TUndef TLineEnd
     { let (clt,ident) = $1 in
@@ -1295,15 +1338,15 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0.wrap body) }
-| TPragma ident_or_kwd pragmabody TLineEnd
-    { Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" $1, $2, $3)) }
-
-pragmabody:
-    TOPar eexpr_list_option TCPar
-    { Ast0.wrap(Ast0.PragmaTuple(P.clt2mcode "(" $1,$2,P.clt2mcode ")" $3)) }
-| l=nonempty_list(ident)
-    { Ast0.wrap(Ast0.PragmaIdList(Ast0.wrap l)) }
-| TEllipsis { Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." $1)) }
+| TPragma TLineEnd
+    { let (clt,ident,rest,rest_clt) = $1 in
+      let aft = P.get_aft clt in (* move stuff after the pragma to the ident *)
+      let body =
+      if rest = "..."
+      then Ast0.wrap(Ast0.PragmaDots(P.clt2mcode "..." rest_clt))
+      else Ast0.wrap(Ast0.PragmaString(P.clt2mcode rest rest_clt)) in
+      Ast0.wrap(Ast0.Pragma(P.clt2mcode "#pragma" clt, inline_id aft ident,
+			    body)) }
 
 defineop:
   TDefine
@@ -1312,24 +1355,8 @@ defineop:
       function body ->
 	Ast0.wrap
 	  (Ast0.Define
-	     (P.clt2mcode "#define" (P.drop_aft clt),
-	      (match ident with
-		TMetaId((nm,constraints,seed,pure,clt)) ->
-		  let clt = P.set_aft aft clt in
-		  Ast0.wrap
-		    (Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
-	      | TIdent((nm,clt)) ->
-		  let clt = P.set_aft aft clt in
-		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
-	      | TSymId(nm,clt) ->
-		  let clt = P.set_aft aft clt in
-		  Ast0.wrap(Ast0.Id(P.clt2mcode nm clt))
-	      | _ ->
-		  raise
-		    (Semantic_cocci.Semantic
-		       "unexpected name for a #define")),
-	      Ast0.wrap Ast0.NoParams,
-	      body)) }
+	     (P.clt2mcode "#define" (P.drop_aft clt), inline_id aft ident,
+	      Ast0.wrap Ast0.NoParams,body)) }
 | TDefineParam define_param_list_option TCPar
     { let (clt,ident,parenoff,parencol) = $1 in
       let aft = P.get_aft clt in (* move stuff after the define to the ( *)
@@ -1721,6 +1748,18 @@ decl_var:
 	  (function id ->
 	    Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv)))
 	  id }
+  | s=Ttypedef t=typedef_ctype id=typedef_ident
+      l=TOCro i=eexpr r=TCCro pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        let t = P.arrayify t [(l,Some i,r)] in
+	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
+  | s=Ttypedef t=typedef_ctype id=typedef_ident
+      l=TOCro i=eexpr r=TCCro
+      l2=TOCro i2=eexpr r2=TCCro pv=TPtVirg
+      { let s = P.clt2mcode "typedef" s in
+        let t = P.arrayify t [(l,Some i,r)] in
+        let t = P.arrayify t [(l2,Some i2,r2)] in
+	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
   | s=Ttypedef
     t=typedef_ctype lp1=TOPar st=TMul id=typedef_ident rp1=TCPar
     lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
@@ -2346,6 +2385,7 @@ local_meta:
      | TMetaGlobalIdExp { let (nm,_,_,_,_) = $1 in nm }
      | TMetaConst { let (nm,_,_,_,_) = $1 in nm }
      | TMetaPos { let (nm,_,_,_) = $1 in nm }
+     | TMetaCom { let (nm,_,_) = $1 in nm }
 
 inherited_or_local_meta:
        local_meta                    { $1 }
@@ -2380,10 +2420,13 @@ seed_elem:
       Ast.SeedId nm }
 
 pure_ident_or_meta_ident_with_constraints:
-  i=pure_ident_or_meta_ident c=constraints { (i,c false i) }
+  i=pure_ident_or_meta_ident c=constraints { (i,c Data.OTHR i) }
 
 pure_ident_or_meta_ident_with_constraints_pos:
-  i=pure_ident_or_meta_ident c=constraints { (i,c true i) }
+  i=pure_ident_or_meta_ident c=constraints { (i,c Data.POS i) }
+
+pure_ident_or_meta_ident_with_constraints_com:
+  i=pure_ident_or_meta_ident c=constraints { (i,c Data.COM i) }
 
 pure_ident_or_meta_ident_with_constraints_virt:
   i=pure_ident_or_meta_ident_with_constraints {  Common.Left i }
@@ -2400,6 +2443,8 @@ constraints:
     { check_constraint_allowed ();
       c }
 
+(* Awkward to have all the constraints together like this.  Some don't
+make sense for positions and comments *)
 nonempty_constraints:
   TTildeEq re=TString
     { fun _ _ -> let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
@@ -2480,10 +2525,26 @@ cstr_ident:
 	    (Ast.CstrMeta_name i)
 	| (None,s) -> Ast.CstrConstant (Ast.CstrString s) }
 | i=TInt {
-  let i = int_of_string (fst i) in
+  let i = fst i in
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntEq i)) }
 | i=TInt TDot TDot TDot j=TInt {
   let i = int_of_string (fst i) and j = int_of_string (fst j) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| i=TFloat TDot TDot j=TInt { (* compensate for bad lexing *)
+  let i = int_of_string (P.unfloatl(fst i)) and j = int_of_string (fst j) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| i=TInt TDot TDot j=TFloat {
+  let i = int_of_string (fst i) and j = int_of_string (P.unfloatr(fst j)) in
+  Ast.CstrAnd [
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
+  Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
+| i=TFloat TDot j=TFloat {
+  let i = int_of_string (P.unfloatl(fst i))
+  and j = int_of_string (P.unfloatr(fst j)) in
   Ast.CstrAnd [
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntGeq i));
   Ast.CstrConstant (Ast.CstrInt (Ast.CstrIntLeq j))] }
@@ -2578,15 +2639,6 @@ ident: pure_ident
          { let (nm,constraints,seed,pure,clt) = $1 in
          Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
 
-ident_or_kwd: pure_ident
-         { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
-     | wrapped_sym_ident { $1 }
-     | TMeta { tmeta_to_ident $1 }
-     | TMetaId
-         { let (nm,constraints,seed,pure,clt) = $1 in
-         Ast0.wrap(Ast0.MetaId(P.clt2mcode nm clt,constraints,seed,pure)) }
-     | Tinline { Ast0.wrap(Ast0.Id(P.clt2mcode "inline" $1)) }
-
 mident: pure_ident
          { Ast0.wrap(Ast0.Id(P.id2mcode $1)) }
      | wrapped_sym_ident { $1 }
@@ -2604,6 +2656,10 @@ close_disj_ident(sub_ident):
 	 { let (mids,code) = t in
 	 Ast0.wrap
 	   (Ast0.DisjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
+     | lp=TOPar0 t=andzero_list(sub_ident,sub_ident) rp=TCPar0
+	 { let (mids,code) = t in
+	 Ast0.wrap
+	   (Ast0.ConjId(P.id2mcode lp,code,mids, P.id2mcode rp)) }
 
 top_ident:
   disj_ident { Ast0.wrap(Ast0.OTHER(Ast0.wrap(Ast0.TopId($1)))) }
@@ -3065,6 +3121,7 @@ iso(term):
 never_used: TDirective { () }
   | TAttr_             { () }
   | TPArob TMetaPos    { () }
+  | TPArob TMetaCom    { () }
   | TScriptData        { () }
   | TAnalysis          { () }
   | TWhitespace        { () }
@@ -3206,6 +3263,7 @@ anything: /* used for script code */
  | Tint { "int" }
  | Tdouble { "double" }
  | Tfloat { "float" }
+ | Tcomplex { "complex" }
  | Tlong { "long" }
  | Tsize_t { "size_t" }
  | Tssize_t { "ssize_t" }

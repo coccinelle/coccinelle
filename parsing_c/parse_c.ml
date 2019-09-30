@@ -89,6 +89,8 @@ let error_msg_tok tok =
   then Common.error_message file (token_to_strpos tok)
   else ("error in " ^ file  ^ "; set verbose_parsing for more info")
 
+type line_restriction = Included of int * int | Excluded of int * int
+
 type parse_error_function = int -> Parser_c.token list -> (int * int) ->
     string array -> int -> unit
 
@@ -534,6 +536,26 @@ let rec lexer_function ~pass tr = fun lexbuf ->
       |	Parser_c.TPtVirg _ -> if !in_exec then in_exec := false
       |	_ -> ());
 
+      let check_for_drop v counter msg =
+        if not (LP.current_context () = LP.InTopLevel) &&
+          (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
+        then begin
+          incr counter;
+          pr2_once (msg^": inside function, I treat it as comment");
+          let v' =
+	    Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
+          in
+          tr.passed <- v'::tr.passed;
+          tr.rest       <- Parsing_hacks.comment_until_defeol tr.rest;
+          tr.rest_clean <- Parsing_hacks.drop_until_defeol tr.rest_clean;
+          lexer_function ~pass tr lexbuf
+        end
+        else begin
+          tr.passed <- v::tr.passed;
+          tr.passed_clean <- extend_passed_clean v tr.passed_clean;
+          v
+        end in
+
       (match v with
 
       (* fix_define1.
@@ -543,45 +565,9 @@ let rec lexer_function ~pass tr = fun lexbuf ->
        * generate some tokens sometimes and so I need access to the
        * tr.passed, tr.rest, etc.
        *)
-      | Parser_c.TDefine (tok) ->
-          if not (LP.current_context () = LP.InTopLevel) &&
-            (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
-          then begin
-            incr Stat.nDefinePassing;
-            pr2_once ("CPP-DEFINE: inside function, I treat it as comment");
-            let v' =
-	      Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
-            in
-            tr.passed <- v'::tr.passed;
-            tr.rest       <- Parsing_hacks.comment_until_defeol tr.rest;
-            tr.rest_clean <- Parsing_hacks.drop_until_defeol tr.rest_clean;
-            lexer_function ~pass tr lexbuf
-          end
-          else begin
-            tr.passed <- v::tr.passed;
-            tr.passed_clean <- extend_passed_clean v tr.passed_clean;
-            v
-          end
+      | Parser_c.TDefine (tok) -> check_for_drop v Stat.nDefinePassing "CPP-DEFINE"
 
-      | Parser_c.TUndef (tok) ->
-          if not (LP.current_context () = LP.InTopLevel) &&
-            (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
-          then begin
-            incr Stat.nUndefPassing;
-            pr2_once ("CPP-UNDEF: inside function, I treat it as comment");
-            let v' =
-	      Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
-            in
-            tr.passed <- v'::tr.passed;
-            tr.rest       <- Parsing_hacks.comment_until_defeol tr.rest;
-            tr.rest_clean <- Parsing_hacks.drop_until_defeol tr.rest_clean;
-            lexer_function ~pass tr lexbuf
-          end
-          else begin
-            tr.passed <- v::tr.passed;
-            tr.passed_clean <- extend_passed_clean v tr.passed_clean;
-            v
-          end
+      | Parser_c.TUndef (tok) -> check_for_drop v Stat.nUndefPassing "CPP-UNDEF"
 
       | Parser_c.TInclude (includes, filename, inifdef, info) ->
           if not (LP.current_context () = LP.InTopLevel)  &&
@@ -605,6 +591,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
             tr.rest_clean <- new_tokens_clean @ tr.rest_clean;
             v
           end
+
+      | Parser_c.TPragma(prag) -> check_for_drop v Stat.nPragmaPassing "CPP-PRAGMA"
 
       | _ ->
 
@@ -647,7 +635,7 @@ let max_pass = 4
 let get_one_elem ~pass tr =
 
   if not (LP.is_enabled_typedef()) && !Flag_parsing_c.debug_typedef
-  then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if dont come from exn";
+  then pr2_err "TYPEDEF:_handle_typedef=false. Not normal if don't come from exn";
 
   (* normally have to do that only when come from an exception in which
    * case the dt() may not have been done
@@ -712,7 +700,7 @@ let candidate_macros_in_passed2 ~defs passed  =
 
   passed +> List.iter (function
   | Parser_c.TIdent (s,_)
-   (* bugfix: may have to undo some infered things *)
+   (* bugfix: may have to undo some inferred things *)
   | Parser_c.TMacroIterator (s,_)
   | Parser_c.TypedefIdent (s,_)
     ->
@@ -734,7 +722,7 @@ let candidate_macros_in_passed2 ~defs passed  =
   else !res
 
 let candidate_macros_in_passed ~defs b =
-  Common.profile_code "MACRO managment" (fun () ->
+  Common.profile_code "MACRO management" (fun () ->
     candidate_macros_in_passed2 ~defs b)
 
 
@@ -784,7 +772,7 @@ let find_optional_macro_to_expand2 ~defs pos toks =
     (!tokens2 +> Common.acc_map (fun x -> x.TV.tok))
   *)
 let find_optional_macro_to_expand ~defs pos a =
-    Common.profile_code "MACRO managment" (fun () ->
+    Common.profile_code "MACRO management" (fun () ->
       find_optional_macro_to_expand2 ~defs pos a)
 
 (*****************************************************************************)
@@ -881,6 +869,7 @@ type program2 = toplevel2 list
 
 type 'a generic_parse_info = {
   filename : string;
+  ranges : line_restriction list option;
   parse_trees : 'a; (* program2 or extended_program2 *)
   statistics : Parsing_stat.parsing_stat;
 }
@@ -1270,7 +1259,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     let new_td = ref (Common.clone_scoped_h_env !LP._typedef) in
     Common.clean_scope_h new_td;
     (v, !new_td, macros) in
-  { filename = file; parse_trees = v; statistics = stat }
+  { filename = file; ranges = None; parse_trees = v; statistics = stat }
 
 let parse_print_error_heuristic2 saved_typedefs saved_macros
   parse_strings cache file use_header_cache =

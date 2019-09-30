@@ -13,7 +13,7 @@ val _typedef : (string, identkind) Common.scoped_h_env ref
 val add_ident   : string -> unit
 val add_typedef : string -> unit
 
-val add_typedef_root : string -> unit
+val add_typedef_root : string -> Ast_c.info -> unit
 
 val new_scope : unit -> unit
 val del_scope : unit -> unit

@@ -139,7 +139,7 @@ let cat file =
 
 (* the inputs *)
 
-let show_or_not_cfile2 cfile =
+let show_or_not_cfile2 (cfile,_) =
   if !Flag_cocci.show_c then begin
     Common.pr2_xxxxxxxxxxxxxxxxx ();
     pr2 ("processing C file: " ^ cfile);
@@ -514,7 +514,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
     (true,_,_,_,_) | (_,_,None,_,_) | (_,_,_,None,_) | (_,Flag.CocciGrep,_,_,_)
       | (_,Flag.GitGrep,_,_,_)
     -> true
-  | (_,_,_,Some (q1,q2,_),[cfile]) -> Cocci_grep.interpret (q1,q2) cfile
+  | (_,_,_,Some (q1,q2,_),[(cfile,_)]) -> Cocci_grep.interpret (q1,q2) cfile
   | (_,_,Some tokens,_,_) ->
    (* could also modify the code in get_constants.ml *)
       let tokens = tokens +> List.map (fun s ->
@@ -532,7 +532,8 @@ let worth_trying2 cfiles (tokens,_,query,_) =
       ) in
       let com =
 	Printf.sprintf "egrep -q '(%s)' %s"
-	  (String.concat "|" tokens) (String.concat " " cfiles) in
+	  (String.concat "|" tokens)
+	  (String.concat " " (List.map fst cfiles)) in
       (match Sys.command com with
       | 0 (* success *) -> true
       | _ (* failure *) ->
@@ -542,7 +543,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
   (match (res,tokens) with
     (false,Some tokens) ->
       pr2_once ("Expected tokens " ^ (String.concat " " tokens));
-      pr2 ("Skipping: " ^ (String.concat " " cfiles))
+      pr2 ("Skipping: " ^ (String.concat " " (List.map fst cfiles)))
   | _ -> ());
   res
 
@@ -634,7 +635,7 @@ let rec interpret_dependencies local global d =
 	not (List.mem s global)
     | Ast_cocci.AndDep(s1,s2) -> (loop local s1) && (loop local s2)
     | Ast_cocci.OrDep(s1,s2)  -> (loop local s1) || (loop local s2)
-      | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true in
+    | Ast_cocci.FileIn _ | Ast_cocci.NotFileIn _ -> true in
   match d with
     Ast_cocci.NoDep -> true
   | Ast_cocci.FailDep -> false
@@ -660,7 +661,7 @@ let rec interpret_file file d =
 	not (s = file || Str.string_match (Str.regexp (s^"/")) file 0) in
   match d with
     Ast_cocci.NoDep -> true
-  | Ast_cocci.FailDep -> failwith "not possible"
+  | Ast_cocci.FailDep -> failwith "FailDep not possible"
   | Ast_cocci.ExistsDep d -> loop d
   | Ast_cocci.ForallDep d -> loop d
 
@@ -721,7 +722,7 @@ let print_dependencies str local global dep =
  *   "a/b/c/x"
  *
  * update: if the include is inside a ifdef a put nothing. cf -test incl.
- * this is because we dont want code added inside ifdef.
+ * this is because we don't want code added inside ifdef.
  *)
 
 let compute_new_prefixes xs =
@@ -1065,7 +1066,7 @@ let flatten l =
 	     prev cur)
        [] l)
 
-let build_info_program env (cprogram,typedefs,macros) =
+let build_info_program env ranges (cprogram,typedefs,macros) =
 
   let (cs, parseinfos) =
     Common.unzip cprogram in
@@ -1084,7 +1085,13 @@ let build_info_program env (cprogram,typedefs,macros) =
   zip cs_with_envs parseinfos +> List.map (fun ((c, (enva,envb)), parseinfo)->
     let (fullstr, tokens) = parseinfo in
 
-    let flow =
+    let start_end =
+      lazy
+        (let (_,_,(start_line,start_offset),(end_line,end_offset)) =
+	  Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_toplevel c) in
+	((start_line,start_offset),(end_line,end_offset))) in
+
+    let flow _ =
       ast_to_flow_with_error_messages c +>
       Common.map_option (fun flow ->
         let flow = Ast_to_flow.annotate_loop_nodes flow in
@@ -1098,13 +1105,31 @@ let build_info_program env (cprogram,typedefs,macros) =
         fixed_flow
       )
     in
+    let flow =
+      match ranges with
+	None -> flow()
+      | Some ranges ->
+	  let ((start_line,_),(end_line,_)) = Lazy.force start_end in
+	  let included =
+	    List.exists
+	      (function
+		  Parse_c.Included(starter,ender) ->
+		    starter <= end_line && start_line <= ender
+		| _ -> true)
+	      ranges in
+	  let excluded =
+	    List.exists
+	      (function
+		  Parse_c.Included(starter,ender) -> false
+		| Parse_c.Excluded(starter,ender) ->
+		    starter <= end_line && start_line <= ender)
+	      ranges in
+	  if included && not excluded
+	  then flow()
+	  else None in
     {
       ast_c = c; (* contain refs so can be modified *)
-      start_end =
-        lazy
-          (let (_,_,(start_line,start_offset),(end_line,end_offset)) =
-	    Lib_parsing_c.lin_col_by_pos (Lib_parsing_c.ii_of_toplevel c) in
-	  ((start_line,start_offset),(end_line,end_offset)));
+      start_end = start_end;
       tokens_c = tokens;
       fullstring = fullstr;
 
@@ -1124,11 +1149,11 @@ let build_info_program env (cprogram,typedefs,macros) =
 
 
 (* Optimization. Try not unparse/reparse the whole file when have modifs  *)
-let rebuild_info_program cs file isexp parse_strings =
+let rebuild_info_program cs file short_file isexp parse_strings =
   cs +> List.map (fun c ->
     if !(c.was_modified)
     then
-      let file = Common.new_temp_file "cocci_small_output" ".c" in
+      let file = Common.new_temp_file "cocci_small_output" ("-" ^ short_file) in
       cfile_of_program
         [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal]
         file;
@@ -1136,7 +1161,7 @@ let rebuild_info_program cs file isexp parse_strings =
       (* cat file; *)
       let cprogram =
 	cprogram_of_file c.all_typedefs c.all_macros parse_strings false file in
-      let xs = build_info_program c.env_typing_before cprogram in
+      let xs = build_info_program c.env_typing_before None cprogram in
 
       (* TODO: assert env has not changed,
       * if yes then must also reparse what follows even if not modified.
@@ -1156,7 +1181,8 @@ let rebuild_info_c_and_headers ccs isexp parse_strings =
   ccs +> List.map (fun c_or_h ->
     { c_or_h with
       asts =
-      rebuild_info_program c_or_h.asts c_or_h.full_fname isexp parse_strings }
+      rebuild_info_program c_or_h.asts c_or_h.full_fname c_or_h.fname
+	isexp parse_strings }
   )
 
 (* remove ../ in the middle of an include path *)
@@ -1207,10 +1233,13 @@ let parse_info_of_files choose_includes parse_strings cache kind files
           (result,tdefs) in
   let (res,current_typedefs) =
     List.fold_left
-      (fun (res,current_typedefs) file ->
+      (fun (res,current_typedefs) (file,ranges) ->
 	match parse_info_of_file file current_typedefs with
 	  (None,_) -> (res,current_typedefs)
 	| (Some fileres, current_typedefs) ->
+	    let fileres =
+	      ({(fst fileres) with Parse_c.ranges = ranges},
+	       snd fileres) in
 	    (fileres :: res, current_typedefs))
       ([],current_typedefs) files in
   (List.rev res,current_typedefs)
@@ -1221,7 +1250,9 @@ let prepare_c files choose_includes parse_strings has_changes
   let (extra_includes_parse_infos, current_typedefs) =
     let (res,current_typedefs) =
       parse_info_of_files choose_includes parse_strings true Header
-        !Includes.extra_includes None has_changes in
+	(* keep entire include files *)
+        (List.map (fun x -> (x,None)) !Includes.extra_includes)
+	None has_changes in
     (List.map fst res, current_typedefs) in
   Includes.set_parsing_style choose_includes;
   let (source_parse_infos,_) =
@@ -1235,7 +1266,8 @@ let prepare_c files choose_includes parse_strings has_changes
   let file_info_of_parse_info kind parse_info =
     (* todo?: don't update env ? *)
     let annotated_parse_trees =
-      build_info_program !env parse_info.Parse_c.parse_trees in
+      build_info_program !env parse_info.Parse_c.ranges
+	parse_info.Parse_c.parse_trees in
     (match kind with
       | Source ->
         let f x = x.ast_c in
@@ -2166,8 +2198,8 @@ let full_engine2
   if !Flag_cocci.selected_only
   then
     begin
-      pr2 ("selected " ^ (String.concat " " cfiles));
-      (cfiles +> List.map (fun s -> s, None), ([], []))
+      pr2 ("selected " ^ (String.concat " " (List.map fst cfiles)));
+      (cfiles +> List.map (fun (s,_) -> s, None), ([], []))
     end
   else
     begin
@@ -2203,7 +2235,7 @@ let full_engine2
           else Includes.Parse_no_includes
 	end in
 
-      Flag.currentfiles := cfiles;
+      Flag.currentfiles := List.map fst cfiles;
       let c_infos =
 	prepare_c cfiles choose_includes parse_strings has_changes in
 

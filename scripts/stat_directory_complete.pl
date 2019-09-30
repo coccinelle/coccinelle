@@ -101,7 +101,7 @@ $nbfiles = scalar(@cfiles);
 map {
   my ($linefile) = `wc -l $_`;
   chomp $linefile;
-  die "wierd wc output" unless $linefile =~ /^(\d+) /;
+  die "weird wc output" unless $linefile =~ /^(\d+) /;
   $sumlinefiles += $1;
   mylog "filesize $_ $1";
 } @cfiles;
@@ -227,7 +227,7 @@ if(-e "gitinfo") {
 
 
 foreach my $c (@cfiles) {
-  die "wierd: $c, with $spfile" unless ($c =~ /(.*)\.c$/);
+  die "weird: $c, with $spfile" unless ($c =~ /(.*)\.c$/);
   my $base = $1;
   my $bef = "$base.c";
   my $aft = "$base.res";

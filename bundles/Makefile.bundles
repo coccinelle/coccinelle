@@ -1,6 +1,5 @@
-MARKER=$(PACKAGE_DIR)/.marker
-
-OCAMLFLAGS+=-I $(SRC_DIR)
+OCAML_INCLUDE_FLAGS := -I $(SRC_DIR)
+OCAMLFLAGS += $(OCAML_INCLUDE_FLAGS)
 OCAMLC_CMD= \
 	$(OCAMLC) $(OCAMLCFLAGS) $(OCAMLFLAGS) \
 	$(EXTRACFLAGS)
@@ -8,7 +7,7 @@ OCAMLOPT_CMD= \
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) $(OCAMLFLAGS) \
 	$(EXTRACFLAGS)
 OCAMLMKLIB_CMD=$(OCAMLMKLIB) -linkall $(EXTRALNKFLAGS)
-OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAMLFLAGS)
+OCAMLDEP_CMD=$(OCAMLDEP) $(OCAMLDEPFLAGS) $(OCAML_INCLUDE_FLAGS)
 
 OCAMLC_LDFLAGS = $(patsubst %,-custom -cclib -l%_stubs,$(LIBRARY)) \
 	$(addprefix -cclib -l,$(C_LIBS))
@@ -62,43 +61,47 @@ clean:
 		$(SIDEPRODUCTS) $(SIDEPRODUCTS_NATIVE) \
 		$(SIDEPRODUCTS_BYTECODE) \
 		$(INTERFACES:=.cmx) $(LIBRARY:=.a) $(CLEANOTHERS) \
+		$(patsubst %,$(SRC_DIR)/%.mli,$(PRODUCTS)) \
 		$(patsubst %,$(SRC_DIR)/%.ml,$(PRODUCTS)) $(OTHERS) \
 		$(patsubst %,dll%_stubs.so,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/dll%_stubs.so,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/%.a,$(LIBRARY)) \
+		$(patsubst %,$(SRC_DIR)/lib%_stubs.a,$(LIBRARY)) \
 		$(patsubst %,$(SRC_DIR)/%.o,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmi,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmx,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmo,$(MODULES)) \
 		$(patsubst %,$(SRC_DIR)/%.cmt,$(MODULES)) \
-		$(patsubst %,$(SRC_DIR)/%.cmti,$(MODULES))
+		$(patsubst %,$(SRC_DIR)/%.cmti,$(MODULES)) \
+		$(patsubst %,$(SRC_DIR)/%.cma,$(ARCHIVE)) \
+		$(patsubst %,$(SRC_DIR)/%.cmxa,$(ARCHIVE)) \
+		$(patsubst %,$(SRC_DIR)/%.cmi,$(MERE_INTERFACES)) \
+		$(patsubst %,$(SRC_DIR)/%.cmti,$(MERE_INTERFACES))
 
 depend: .depend
 
-source_files = \
-	$(wildcard \
-		$(patsubst %,$(SRC_DIR)/%.mli,$(MODULES) $(MERE_INTERFACES)) \
-	        $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
-	$(patsubst %.mly,%.ml, \
-	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
-	$(patsubst %.mly,%.mli, \
-	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))) \
-	$(patsubst %.mll,%.ml, \
-	        $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES))))
+yacc_files := $(wildcard $(patsubst %,$(SRC_DIR)/%.mly,$(MODULES)))
+lex_files := $(wildcard $(patsubst %,$(SRC_DIR)/%.mll,$(MODULES)))
 
-.depend: .prepare $(source_files)
+source_files := \
+	$(wildcard $(patsubst %,$(SRC_DIR)/%.mli,$(MODULES))) \
+	$(patsubst %,$(SRC_DIR)/%.mli,$(MERE_INTERFACES)) \
+	$(wildcard $(patsubst %,$(SRC_DIR)/%.ml,$(MODULES))) \
+	$(patsubst %.mly,%.ml,$(yacc_files)) \
+	$(patsubst %.mly,%.mli,$(yacc_files)) \
+	$(patsubst %.mll,%.ml,$(lex_files)) \
+        $(GENERATED_SOURCE_FILES)
+
+.PHONY: depend-rec
+depend-rec: $(source_files)
 	$(OCAMLDEP_CMD) $(source_files) >.depend
+
+.depend:
+	$(MAKE) depend-rec
 
 .PHONY: \
 	all all-build all-build-targets all.opt all-opt-build \
 	all-opt-build-targets clean distclean depend
-
-$(MARKER): $(TARBALL)
-	$(TAR) xfz $<
-	touch $@
-
-$(TARBALL):
-	@echo \
-"$@ not found. Please download it and drop it in this directory ($(pwd))."
-	@false
 
 $(SRC_DIR)/$(ARCHIVE).cma: \
 		$(add_suffix ($add_prefix $(LIBRARY),$(SRC_DIR)/dll),_stubs.so)\

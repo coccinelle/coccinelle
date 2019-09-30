@@ -23,7 +23,7 @@ open Ast_c
  *
  *  - We need later to go back from flow to original ast, because we are
  *    doing a refactoring tool, so different context. So we have to add
- *    some nodes for '{' or '}' or goto that normally disapear in a CFG.
+ *    some nodes for '{' or '}' or goto that normally disappear in a CFG.
  *    We must keep those entities, in the same way that we must keep the parens
  *    (ParenExpr, ParenType) in the Ast_c during parsing.
  *
@@ -47,7 +47,7 @@ open Ast_c
  *
  *
  *  - The CTL engine needs more information than just the CFG, and we use
- *    tricks to encode those informations in the nodes:
+ *    tricks to encode those information in the nodes:
  *
  *       - We have some TrueNode, FalseNode to know in what branch we are.
  *         Normally we could achieve this by putting this information in the
@@ -217,11 +217,12 @@ type node = node1 * string
   | DefineExpr of expression
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
+  | DefineInit of initialiser
   | DefineTodo
 
   | Include of includ
 
-  | PragmaHeader of string wrap * pragmainfo
+  | PragmaHeader of (name * string wrap list) wrap
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il
@@ -381,7 +382,7 @@ let extract_fullstatement node =
 
   | Include _
   | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
-  | DefineTodo | PragmaHeader _ | MacroTop _
+  | DefineInit _ | DefineTodo | PragmaHeader _ | MacroTop _
       -> None
 
   | IfdefHeader _ | IfdefElse _ | IfdefEndif _

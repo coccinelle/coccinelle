@@ -9,6 +9,7 @@ type visitor_c = {
 
   kdecl      : (declaration -> unit)  * visitor_c -> declaration -> unit;
   konedecl   : (onedecl -> unit)      * visitor_c -> onedecl     -> unit;
+  konedecl_opt : bool -> (onedecl -> unit) * visitor_c -> onedecl     -> unit;
   kparam : (parameterType -> unit)      * visitor_c -> parameterType -> unit;
   kdef       : (definition  -> unit)  * visitor_c -> definition  -> unit;
   kname      : (name  -> unit)        * visitor_c -> name        -> unit;
@@ -43,6 +44,7 @@ val vk_statement_sequencable_list :
 val vk_type      : visitor_c -> fullType    -> unit
 val vk_decl      : visitor_c -> declaration -> unit
 val vk_decl_list : visitor_c -> declaration list -> unit
+val vk_onedecl_opt : bool -> visitor_c -> onedecl -> unit
 val vk_onedecl   : visitor_c -> onedecl -> unit
 val vk_ini       : visitor_c -> initialiser -> unit
 val vk_ini_list  : visitor_c -> initialiser wrap2 list -> unit
@@ -80,7 +82,6 @@ val vk_cst : visitor_c -> ((constant, string) Common.either wrap) -> unit
 val vk_define_params : visitor_c -> (string wrap) wrap2 list -> unit
 val vk_define_params_splitted :
   visitor_c -> (string Ast_c.wrap, il) Common.either list -> unit
-val vk_pragmainfo : visitor_c -> pragmainfo -> unit
 val vk_ident_list_splitted : visitor_c -> (name, il) Common.either list -> unit
 
 val vk_exec_code_list_splitted :
@@ -133,6 +134,8 @@ val vk_statement_sequencable_list_s :
     visitor_c_s -> statement_sequencable list -> statement_sequencable list
 val vk_type_s : visitor_c_s -> fullType -> fullType
 val vk_decl_s : visitor_c_s -> declaration -> declaration
+val vk_onedecl_opt_s : bool -> visitor_c_s -> onedecl -> onedecl
+val vk_onedecl_s : visitor_c_s -> onedecl -> onedecl
 val vk_decl_list_s : visitor_c_s -> declaration list -> declaration list
 val vk_ini_s : visitor_c_s -> initialiser -> initialiser
 
@@ -186,7 +189,6 @@ val vk_define_params_splitted_s :
   (string Ast_c.wrap, il) Common.either list ->
   (string Ast_c.wrap, il) Common.either list
 
-val vk_pragmainfo_s : visitor_c_s -> pragmainfo -> pragmainfo
 val vk_ident_list_splitted_s :
   visitor_c_s ->
   (name, il) Common.either list ->

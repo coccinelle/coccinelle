@@ -150,6 +150,7 @@ let interpret_grep strict x virt =
   | _ -> Some (loop [] x)
 
 let max_cnf = 5
+exception TooMany
 
 let interpret_cocci_git_grep strict x virt =
   (* convert to cnf *)
@@ -178,7 +179,7 @@ let interpret_cocci_git_grep strict x virt =
 	  List.length
 	    (List.filter (function [] | [_] -> false | _ -> true) l) in
 	if icount > max_cnf
-	then [] (* true *)
+	then raise TooMany (* true *)
 	else
 	  (match l with
 	    fst::rest ->
@@ -215,20 +216,18 @@ let interpret_cocci_git_grep strict x virt =
   | False when strict ->
       failwith (false_on_top_err virt)
   | _ ->
-      let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
-      let res1 = orify (atoms [] x) in (* all atoms *)
-      let res = cnf x in
-      let res = optimize res in
-      let res = Cocci_grep.split res in
-      let res2 = List.map orify res in (* atoms in conjunction *)
-      (*List.iter
-	(function clause ->
-	  Printf.printf "%s\n" (String.concat " " clause))
-	res;*)
-      let res3 =
-	List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
-	  res in
-      Some (res1,res2,res3)
+      try
+	let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
+	let res1 = orify (atoms [] x) in (* all atoms *)
+	let res = cnf x in
+	let res = optimize res in
+	let res = Cocci_grep.split res in
+	let res2 = List.map orify res in (* atoms in conjunction *)
+	let res3 =
+	  List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
+	    res in
+	Some (res1,res2,res3)
+      with TooMany -> None
 
 let interpret_idutils = function
     True -> None
@@ -332,7 +331,9 @@ let do_get_constants constants keywords env (neg_pos,_) =
   let mcode _ x =
     List.fold_left bind option_default
       (List.map
-	 (function Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name)
+	 (function
+	     Ast.MetaPos(name,constraints,_,keep,inh) -> minherited name
+	   | Ast.MetaCom(name,constraints,keep,inh) -> minherited name)
 	 (Ast.get_pos_var x)) in
 
   (* if one branch gives no information, then we have to take anything *)
@@ -709,7 +710,7 @@ matched in a later one, we want to include files that originally contain
 the thing, so no point to keep track of what is added by earlier rules.
 The situation is something like a -> b v (b & c).  We don't actually need
 both b and c, but if we don't have b, then the only way that we can get it is
-fro the first rule matching, in which case the formula is already true. *)
+for the first rule matching, in which case the formula is already true. *)
 let rule_fn nm tls env neg_pos =
   (* tls seems like it is supposed to relate to multiple minirules.  If we
      were to actually allow that, then the following could be inefficient,

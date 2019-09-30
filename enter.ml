@@ -50,7 +50,7 @@ let allow_update_score_file = ref true
 let action = ref ""
 
 (* works with -test but also in "normal" spatch mode *)
-let compare_with_expected = ref false
+let compare_with_expected = ref (None : string option)
 
 let distrib_index = ref (None : int option)
 let distrib_max   = ref (None : int option)
@@ -275,7 +275,7 @@ let print_version () =
   Printf.printf "Flags passed to the configure script: %s\n" flags;
   Printf.printf "OCaml scripting support: %s\n" withocaml;
   Printf.printf "Python scripting support: %s\n" withpython;
-  Printf.printf "Syntax of regular expresssions: %s\n" whichregexp;
+  Printf.printf "Syntax of regular expressions: %s\n" whichregexp;
   exit 0
 
 let short_options = [
@@ -613,7 +613,7 @@ let other_options = [
 
 
     "--disallow-nested-exps", Arg.Set Flag_matcher.disallow_nested_exps,
-       " disallow an expresion pattern from matching a term and its subterm";
+       " disallow an expression pattern from matching a term and its subterm";
     "--disable-worth-trying-opt", Arg.Clear Flag.worth_trying_opt,
     "   run the semantic patch even if the C file contains no relevant tokens";
     "--selected-only", Arg.Set FC.selected_only, "  only show selected files";
@@ -723,8 +723,12 @@ let other_options = [
     "--test-regression-okfailed", Arg.Set test_regression_okfailed,
     "    process the .{ok,failed,spatch_ok} files in current dir";
 
-    "--compare-with-expected", Arg.Set compare_with_expected,
+    "--compare-with-expected",
+    Arg.Unit (fun _ -> compare_with_expected := Some ".res"),
     "   use also file.res";
+    "--expected-extension",
+    Arg.String (fun x -> compare_with_expected := Some x),
+    "   extension for --compare-with-expected; implicitly sets --compare-with-expected";
     "--expected-score-file", Arg.Set_string expected_score_file,
     "   which score file to compare with in --testall";
     "--expected-spacing-score-file",
@@ -840,11 +844,11 @@ let _ = long_usage_func := long_usage
 (* for fresh identifier information *)
 let adjust_stdin cfiles k =
   match cfiles with
-    [] -> failwith "not possible"
+    [] -> failwith "no files: not possible"
   | cfile::_ ->
       let newin =
 	try
-          let (dir, base, ext) = Common.dbe_of_filename cfile in
+          let (dir, base, ext) = Common.dbe_of_filename (fst cfile) in
           let varfile = Common.filename_of_dbe (dir, base, "var") in
           if ext = "c" && Common.lfile_exists varfile
           then Some varfile
@@ -944,20 +948,46 @@ let read_file_groups x =
     res := [] in
   let empty_line = Str.regexp " *$" in
   let com = Str.regexp " *//" in
+  let parse_line s =
+    match Str.bounded_split (Str.regexp ":") s 2 with
+      [fl;lns] ->
+	let pieces = Str.split (Str.regexp ",") lns in
+	let lines =
+	  List.map
+	    (function piece ->
+	      match Str.split_delim (Str.regexp_string "-") piece with
+		["";from;upto] ->
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  let upto = int_of_string(Stdcompat.String.trim upto) in
+		  Parse_c.Excluded(from,upto)
+	      | ["";from] ->
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  Parse_c.Excluded(from,from)
+	      | [from;upto] ->
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  let upto = int_of_string(Stdcompat.String.trim upto) in
+		  Parse_c.Included(from,upto)
+	      | [from] ->
+		  let from = int_of_string(Stdcompat.String.trim from) in
+		  Parse_c.Included(from,from)
+	      | _ -> failwith (Printf.sprintf "bad spec in %s" x))
+	    pieces in
+	(fl,Some lines)
+    | _ -> (s,None) in
   let rec in_files _ =
     let l = input_line i in
     if Str.string_match empty_line l 0
     then begin dump(); in_space() end
     else if Str.string_match com l 0
     then in_files()
-    else begin res := l :: !res; in_files() end
+    else begin res := parse_line l :: !res; in_files() end
   and in_space _ =
     let l = input_line i in
     if Str.string_match empty_line l 0
     then in_space()
     else if Str.string_match com l 0
     then in_space()
-    else begin res := l :: !res; in_files() end in
+    else begin res := parse_line l :: !res; in_files() end in
   try in_files() with End_of_file -> begin dump(); List.rev !file_groups end
 
 (*****************************************************************************)
@@ -1019,7 +1049,7 @@ let rec main_action xs =
 		      List.filter
 			(function files ->
 			  List.exists
-			    (function fl ->
+			    (function (fl,_) ->
 			      match interpreter constants fl with
 				Some [] -> false (* no file matches *)
 			      | _ -> true)
@@ -1029,7 +1059,7 @@ let rec main_action xs =
 		  failwith
 		    ("file groups not compatible with --dir, --kbuild-info,"^
 		     " or multiple files")
-              | _, false, _, _, _ -> [x::xs]
+              | _, false, _, _, _ -> [List.map (fun x -> (x,None)) (x::xs)]
 	      |	_, true, "",
 		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep),
 		  [] ->
@@ -1038,15 +1068,15 @@ let rec main_action xs =
 		      match interpreter constants x with
 			None -> Test_parsing_c.get_files x
 		      | Some files -> files in
-                    files +> List.map (fun x -> [x])
+                    files +> List.map (fun x -> [(x,None)])
               | _, true, s,
 		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep), _
 		when s <> "" ->
                   failwith "--use-xxx filters do not work with --kbuild"
                   (* normal *)
 	      | _, true, "", _, _ ->
-		  Test_parsing_c.get_files
-		    (String.concat " " (x::xs)) +> List.map (fun x -> [x])
+		  Test_parsing_c.get_files (String.concat " " (x::xs)) +>
+		  List.map (fun x -> [(x,None)])
 
             (* kbuild *)
 	      | _, true, kbuild_info_file,_,_ ->
@@ -1056,7 +1086,10 @@ let rec main_action xs =
 		  let info = Kbuild.parse_kbuild_info kbuild_info_file in
 		  let groups = Kbuild.files_in_dirs dirs info in
 
-		  groups +> List.map (function Kbuild.Group xs -> xs)
+		  groups +>
+		  List.map
+		    (function Kbuild.Group xs ->
+		      List.map (fun x -> (x,None)) xs)
 		    )
           in
 
@@ -1083,7 +1116,7 @@ let rec main_action xs =
 	    let regexps = List.map Str.regexp !ignore in
 	    let inacceptable x =
 	      List.for_all (* all files in a group must fail *)
-		(fun x ->
+		(fun (x,_) ->
 		  List.exists (fun re -> Str.string_match re x 0) regexps)
 		x in
 	    if ncores = 0
@@ -1213,10 +1246,11 @@ singleton lists are then just appended to each other during the merge. *)
 		      Cocci.worth_trying cfiles constants
 		      then
 			begin
-			  pr2 ("HANDLING: " ^ (String.concat " " cfiles));
+			  let all_cfiles =
+			    String.concat " " (List.map fst cfiles) in
+			  pr2 ("HANDLING: " ^ all_cfiles);
 			  flush stderr;
 
-			  let all_cfiles = String.concat " " cfiles in
 			  Common.timeout_function_opt all_cfiles !FC.timeout
 			    (fun () ->
 			      let res =
@@ -1243,7 +1277,7 @@ singleton lists are then just appended to each other during the merge. *)
 				    | Pycocci.Pycocciexception ->
 					raise Pycocci.Pycocciexception
 				    | e ->
-					if !dir
+					if !dir || !file_groups
 					then begin
 					  (* not hidden by --very-quiet *)
 					  Printf.eprintf "EXN: %s\n"
@@ -1300,8 +1334,9 @@ singleton lists are then just appended to each other during the merge. *)
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
 	generate_outfiles outfiles x xs;
-        if !compare_with_expected
-        then Testing.compare_with_expected outfiles)
+        match !compare_with_expected with
+	  None -> ()
+        | Some extension -> Testing.compare_with_expected outfiles extension)
 
 and debug_restart virt_rules virt_ids =
   if !Flag_parsing_cocci.debug_parse_cocci
@@ -1568,7 +1603,7 @@ let main arglist =
     | ((x::xs) as cfiles) when !test_okfailed ->
         (* do its own timeout on FC.timeout internally *)
         Inc.for_tests := true;
-        adjust_stdin cfiles (fun () ->
+        adjust_stdin (List.map (fun x -> (x,None)) cfiles) (fun () ->
           Testing.test_okfailed !cocci_file cfiles
           )
 
@@ -1630,7 +1665,8 @@ let main_with_better_error_report arglist =
     | Parse_cocci.SMPLParseError error_message
     | Failure error_message ->
 	Printf.fprintf stderr "%s\n" error_message;
-        raise (UnixExit (-1))
+	Printexc.print_backtrace stderr;
+	raise (UnixExit (-1))
 
 (*****************************************************************************)
 

@@ -1,0 +1,69 @@
+module type S = sig
+type t = char
+(** Alias for {!Char.t} *)
+
+val lowercase_ascii : char -> char
+(** @since 4.03.0: val lowercase_ascii : char -> char *)
+
+val uppercase_ascii : char -> char
+(** @since 4.03.0: val uppercase_ascii : char -> char *)
+
+val equal : t -> t -> bool
+(** @since 4.03.0: val equal : t -> t -> bool *)
+
+external code : char -> int = "%identity"
+(** Alias for {!Char.code} *)
+
+val chr : int -> char
+(** Alias for {!Char.chr} *)
+
+val escaped : char -> string
+(** Alias for {!Char.escaped} *)
+
+@BEGIN_FROM_4_08_0@
+val lowercase : char -> char
+@END_FROM_4_08_0@
+@BEGIN_BEFORE_4_08_0@
+@BEGIN_FROM_4_03_0@
+val lowercase : char -> char[@@ocaml.deprecated
+                              "Use Char.lowercase_ascii instead."]
+@END_FROM_4_03_0@
+@BEGIN_BEFORE_4_03_0@
+val lowercase : char -> char
+@END_BEFORE_4_03_0@
+
+@END_BEFORE_4_08_0@
+(** @since 4.08.0: val lowercase : char -> char
+@since 4.03.0:
+val lowercase : char -> char[@@ocaml.deprecated
+                              "Use Char.lowercase_ascii instead."]
+@since 3.07.0: val lowercase : char -> char
+ *)
+
+@BEGIN_FROM_4_08_0@
+val uppercase : char -> char
+@END_FROM_4_08_0@
+@BEGIN_BEFORE_4_08_0@
+@BEGIN_FROM_4_03_0@
+val uppercase : char -> char[@@ocaml.deprecated
+                              "Use Char.uppercase_ascii instead."]
+@END_FROM_4_03_0@
+@BEGIN_BEFORE_4_03_0@
+val uppercase : char -> char
+@END_BEFORE_4_03_0@
+
+@END_BEFORE_4_08_0@
+(** @since 4.08.0: val uppercase : char -> char
+@since 4.03.0:
+val uppercase : char -> char[@@ocaml.deprecated
+                              "Use Char.uppercase_ascii instead."]
+@since 3.07.0: val uppercase : char -> char
+ *)
+
+val compare : t -> t -> int
+(** Alias for {!Char.compare} *)
+
+external unsafe_chr : int -> char = "%identity"
+(** Alias for {!Char.unsafe_chr} *)
+
+end

@@ -98,12 +98,10 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-STDCOMPATDIR := bundles/stdcompat
-
 CORE_LIBS := unix bigarray str \
+	$(STDCOMPATDIR)/stdcompat \
 	$(patsubst %,bytes,$(BYTESDIR)) \
-	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS))) \
-	$(STDCOMPATDIR)/stdcompat
+	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
 
 ifeq ($(FEATURE_OCAML),1)
 CORE_LIBS += dynlink
@@ -381,7 +379,7 @@ endef
 %.ml : %.mll
 	$(RUN_OCAMLLEX) $<
 
-ml_files := $(ml_files_but_parsers) parsing_c/parser_c.ml
+ml_files := $(ml_files_but_parsers) parsing_c/parser_c.ml parsing_cocci/parser_cocci_menhir.ml
 ml_and_mli_files := $(ml_files) $(ml_files:.ml=.mli)
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -404,25 +402,29 @@ endif
 endif
 endif
 
+define foreach_ml_files
 ifeq ($(DEPEND_METHOD),onefile)
-%.cmi : %.mli .depend
-	$(RUN_OCAMLC) -c $<
+$(sourcefile:.ml=.cmi) : $(sourcefile:.ml=.mli) .depend
+	$$(RUN_OCAMLC) -c $$<
 
-%.cmo : %.ml .depend
-	$(RUN_OCAMLC) -for-pack Coccinelle_modules -c $<
+$(sourcefile:.ml=.cmo) : $(sourcefile) .depend
+	$$(RUN_OCAMLC) -for-pack Coccinelle_modules -c $$<
 
-%.cmx : %.ml .depend
-	$(RUN_OCAMLOPT) -for-pack Coccinelle_modules -c $<
+$(sourcefile:.ml=.cmx) : $(sourcefile) .depend
+	$$(RUN_OCAMLOPT) -for-pack Coccinelle_modules -c $$<
 else
-%.cmi : %.mli %.mli.d
-	$(RUN_OCAMLC) -c $<
+$(sourcefile:.ml=.cmi) : $(sourcefile:.ml=.mli) $(sourcefile:.ml=.mli.d)
+	$$(RUN_OCAMLC) -c $$<
 
-%.cmo : %.ml %.ml.d
-	$(RUN_OCAMLC) -for-pack Coccinelle_modules -c $<
+$(sourcefile:.ml=.cmo) : $(sourcefile) $(sourcefile:.ml=.ml.d)
+	$$(RUN_OCAMLC) -for-pack Coccinelle_modules -c $$<
 
-%.cmx : %.ml %.ml.d
-	$(RUN_OCAMLOPT) -for-pack Coccinelle_modules -c $<
+$(sourcefile:.ml=.cmx) : $(sourcefile) $(sourcefile:.ml=.ml.d)
+	$$(RUN_OCAMLOPT) -for-pack Coccinelle_modules -c $$<
 endif
+endef
+$(foreach sourcefile,$(ml_files),\
+	$(eval $(foreach_ml_files)))
 
 ## Parser_c
 
@@ -489,11 +491,11 @@ endif
 
 ifneq ($(PCRE_LIB),)
 ifeq ($(NATIVE),yes)
-$(PCRE_LIB):
+$(PCRE_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pcre all
 	$(MAKE) -C bundles/pcre all.opt
 else
-$(PCRE_LIB):
+$(PCRE_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/pcre all
 endif
 endif

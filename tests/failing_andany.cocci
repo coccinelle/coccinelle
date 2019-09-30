@@ -1,5 +1,5 @@
 /* This test case shows that the andany optimization doesn't work.  This
-optmization requires that the left argument of the conjunction have at most
+optimization requires that the left argument of the conjunction have at most
 one match.  This will always be true because every function has only one
 starting open brace.  But the pattern inside can be matched according to
 two environments, as illustrated in smc_probe1. That is, the rule should

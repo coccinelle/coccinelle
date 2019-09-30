@@ -48,13 +48,13 @@ val filter_cpp_stuff :
 val insert_virtual_positions:
   Parser_c.token list -> Parser_c.token list
 
-(* mark suppported undisciplined uses of #ifdef *)
+(* mark supported undisciplined uses of #ifdef *)
 val fix_tokens_ifdef : Parser_c.token list -> Parser_c.token list
 
 (* expand format strings *)
 val fix_tokens_strings : Parser_c.token list -> Parser_c.token list
 
-(* will among other things interally call cpp_token_c to macro
+(* will among other things internally call cpp_token_c to macro
  * expand some macros *)
 val fix_tokens_cpp :
   macro_defs:(string, Cpp_token_c.define_def) Hashtbl.t ->

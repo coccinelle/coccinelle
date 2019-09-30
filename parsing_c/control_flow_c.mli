@@ -53,12 +53,13 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DefineExpr of expression
   | DefineType of fullType
   | DefineDoWhileZeroHeader of unit wrap
+  | DefineInit of initialiser
 
   | DefineTodo
 
   | Include of includ
 
-  | PragmaHeader of string wrap * pragmainfo
+  | PragmaHeader of (name * string wrap list) wrap
 
   | MacroTop of string * argument wrap2 list * il
 

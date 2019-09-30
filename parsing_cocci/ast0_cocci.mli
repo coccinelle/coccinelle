@@ -76,12 +76,14 @@ and 'a dots = 'a list wrap
 and base_ident =
     Id            of string mcode
   | MetaId        of Ast_cocci.meta_name mcode * constraints *
-	Ast_cocci.seed * pure
+		     Ast_cocci.seed * pure
   | MetaFunc      of Ast_cocci.meta_name mcode * constraints * pure
   | MetaLocalFunc of Ast_cocci.meta_name mcode * constraints * pure
   | AsIdent       of ident * ident (* as ident, always metavar *)
   | DisjId        of string mcode * ident list *
                      string mcode list (* the |s *) * string mcode
+  | ConjId        of string mcode * ident list *
+                     string mcode list (* the &s *) * string mcode
   | OptIdent      of ident
 
 and ident = base_ident wrap
@@ -416,8 +418,7 @@ and base_statement =
   | OptStm   of statement
 
 and base_pragmainfo =
-    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
-  | PragmaIdList of ident dots
+    PragmaString of string mcode
   | PragmaDots of string mcode
 
 and pragmainfo = base_pragmainfo wrap
@@ -469,6 +470,7 @@ and exec_code = base_exec_code wrap
 and meta_pos =
     MetaPos of Ast_cocci.meta_name mcode * constraints *
 	Ast_cocci.meta_collect
+  | MetaCom of Ast_cocci.meta_name mcode * constraints
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)

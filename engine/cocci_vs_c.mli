@@ -141,8 +141,6 @@ module type PARAM =
       (string Ast_c.wrap, Ast_c.il) Common.either list)
       matcher
 
-    val distrf_pragmainfo :
-      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.pragmainfo) matcher
     val distrf_enum_fields :
       (Ast_cocci.meta_name Ast_cocci.mcode,
        (Ast_c.oneEnumType, Ast_c.il) Common.either list) matcher
@@ -201,8 +199,7 @@ module type PARAM =
       Ast_cocci.inherited ->
       Ast_cocci.meta_name Ast_cocci.mcode * Ast_c.metavar_binding_kind *
 	  (* pos info, if needed *)
-	  (unit ->
-	    (Common.filename * string * Ast_c.posl * Ast_c.posl) option) ->
+	  (unit -> Ast_c.info list) ->
       (unit -> tin -> 'x tout) -> (tin -> 'x tout)
 
     val check_constraints :

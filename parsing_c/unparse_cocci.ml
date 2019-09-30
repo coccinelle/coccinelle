@@ -144,6 +144,9 @@ let print_pos l =
     (function
 	Ast.MetaPos(name,_,_,_,_) ->
 	  let name = Ast.unwrap_mcode name in
+	  print_text "@"; print_meta name
+      | Ast.MetaCom(name,_,_,_) ->
+	  let name = Ast.unwrap_mcode name in
 	  print_text "@"; print_meta name)
     l in
 
@@ -292,6 +295,10 @@ let rec ident i =
     | Ast.DisjId(id_list) ->
 	if generating
 	then print_disj_list ident id_list "|"
+	else raise CantBeInPlus
+    | Ast.ConjId(id_list) ->
+	if generating
+	then print_disj_list ident id_list "&"
 	else raise CantBeInPlus
     | Ast.OptIdent(_) -> raise CantBeInPlus in
 
@@ -750,23 +757,6 @@ and typeC ty =
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
-(* function
-    Ast.VoidType -> print_string "void"
-  | Ast.CharType -> print_string "char"
-  | Ast.ShortType -> print_string "short"
-  | Ast.ShortIntType -> print_string "short int"
-  | Ast.IntType -> print_string "int"
-  | Ast.DoubleType -> print_string "double"
-  | Ast.LongDoubleType -> print_string "long double"
-  | Ast.FloatType -> print_string "float"
-  | Ast.LongType -> print_string "long"
-  | Ast.LongIntType -> print_string "long int"
-  | Ast.LongLongType -> print_string "long long"
-  | Ast.LongLongIntType -> print_string "long long int"
-  | Ast.SizeType -> print_string "size_t "
-  | Ast.SSizeType -> print_string "ssize_t "
-  | Ast.PtrDiffType -> print_string "ptrdiff_t "
-*)
 and structUnion = function
     Ast.Struct -> print_string "struct"
   | Ast.Union -> print_string "union"
@@ -1087,7 +1077,7 @@ and rule_elem arity re =
           mcode print_string ellipsis
       end;
       close_box(); mcode print_string rp;
-      pr_space()
+      force_newline()
   | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 
   | Ast.SeqStart(brace) ->
@@ -1166,7 +1156,7 @@ and rule_elem arity re =
       mcode print_string def; pr_space(); ident id;
       print_define_parameters params
   | Ast.Pragma(prg,id,body) ->
-      mcode print_string prg; pr_space(); ident id; pr_space();
+      mcode print_string prg; print_text " "; ident id; print_text " ";
       pragmainfo body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; pr_space()
@@ -1200,11 +1190,7 @@ and rule_elem arity re =
 
 and pragmainfo pi =
   match Ast.unwrap pi with
-      Ast.PragmaTuple(lp,args,rp) ->
-	mcode print_string lp;
-	dots (function _ -> ()) arg_expression args;
-	mcode print_string rp
-    | Ast.PragmaIdList(ids) -> dots (function _ -> ()) ident ids
+      Ast.PragmaString(s) -> mcode print_string s
     | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and forinfo = function
@@ -1508,13 +1494,13 @@ in
 	    (Ast.Directive l::_)
 	      when List.for_all (function Ast.Space x -> true | _ -> false) l ->
 		()
-          | (Ast.StatementTag s::_) when isfn s ->
+	  | (Ast.StatementTag s::_) when isfn s ->
 	      force_newline(); force_newline()
 	  | (Ast.Directive _::_)
-          | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
-	  | (Ast.InitTag _::_)
+	  | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
+	  | (Ast.FieldTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
-          | _ -> () in
+	  | _ -> () in
       let newline_after _ =
 	if before = Before
 	then
@@ -1523,10 +1509,10 @@ in
 	      (if isfn s then force_newline());
 	      force_newline()
 	  | (Ast.Directive _::_) | (Ast.StmtDotsTag _::_)
-          | (Ast.Rule_elemTag _::_) | (Ast.InitTag _::_)
+	  | (Ast.Rule_elemTag _::_) | (Ast.FieldTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
-	       force_newline()
-          | _ -> () in
+	      force_newline()
+	  | _ -> () in
       (* print a newline at the beginning, if needed *)
       newline_before();
       (* print a newline before each of the rest *)
@@ -1556,6 +1542,7 @@ in
 	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] ->
 		  (* space always needed *)
 		  pr_space(); false
+	      |	Ast.UnaryOpTag(x) -> false
 	      |	Ast.ParamTag(x) ->
 		  (match Ast.unwrap x with
 		    Ast.PComma _ -> false (* due to hint *)
@@ -1595,9 +1582,20 @@ in
 let pp_list_list_any (envs, pr, pr_celem, pr_cspace, pr_space, pr_arity,
 			  pr_barrier, indent, unindent, eatspace)
     generating xxs before =
-  List.iter
-    (function env ->
-      do_all (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
+  match envs with
+    [] -> ()
+  | first::rest ->
+      do_all (first, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
 	      indent, unindent, eatspace)
-	generating xxs before)
-    envs
+	generating xxs before;
+      let before =
+	match before with
+	  InPlace -> After
+	| _ -> before in
+      List.iter
+	(function env ->
+	  do_all (env, pr, pr_celem, pr_cspace, pr_space, pr_arity, pr_barrier,
+		  indent, unindent, eatspace)
+	    generating xxs before)
+	rest
+      

@@ -35,7 +35,7 @@ type 'a wrap =
       pos_info : meta_name mcode option; (* pos info, try not to duplicate *)
       true_if_test_exp : bool;(* true if "test_exp from iso", only for exprs *)
       (* the following is only for declarations *)
-      safe_for_multi_decls : bool;
+      safe_for_multi_decls : safety;
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
@@ -85,6 +85,8 @@ and end_info =
     meta_name list (*free vars*) * (meta_name * seed) list (*fresh*) *
       meta_name list (*inherited vars*) * mcodekind
 
+and safety = Safe | Unsafe | NoStorage (* the result of safe_for_multi_decls *)
+
 (* --------------------------------------------------------------------- *)
 (* Metavariables *)
 
@@ -124,6 +126,7 @@ and metavar =
   | MetaFuncDecl of arity * meta_name (* name *)
   | MetaLocalFuncDecl of arity * meta_name (* name *)
   | MetaPosDecl of arity * meta_name (* name *)
+  | MetaComDecl of arity * meta_name (* name *)
   | MetaFmtDecl of arity * meta_name (* name *)
   | MetaFragListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaAnalysisDecl of string * meta_name (* name *)
@@ -156,6 +159,7 @@ and base_ident =
   | AsIdent       of ident * ident (* as ident, always metavar *)
 
   | DisjId        of ident list
+  | ConjId        of ident list
   | OptIdent      of ident
 
 and ident = base_ident wrap
@@ -247,7 +251,7 @@ and constant_constraint =
   | CstrString of string
 
 and int_constraint =
-    CstrIntEq of int
+    CstrIntEq of string
   | CstrIntLeq of int
   | CstrIntGeq of int
 
@@ -358,6 +362,7 @@ and typeC = base_typeC wrap
 
 and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | DoubleType | LongDoubleType | FloatType
+| LongDoubleComplexType | DoubleComplexType | FloatComplexType
 | LongType | LongIntType | LongLongType | LongLongIntType
 | SizeType | SSizeType | PtrDiffType
 | BoolType | Unknown
@@ -514,6 +519,7 @@ and meta_collect = PER | ALL
 and meta_pos =
     MetaPos of meta_name mcode * constraints *
       meta_collect * keep_binding * inherited
+  | MetaCom of meta_name mcode * constraints * keep_binding * inherited
 
 (* --------------------------------------------------------------------- *)
 (* Function declaration *)
@@ -587,8 +593,7 @@ and base_rule_elem =
   | DisjRuleElem  of rule_elem list
 
 and base_pragmainfo =
-    PragmaTuple of string mcode(* ( *) * expression dots * string mcode(* ) *)
-  | PragmaIdList of ident dots
+    PragmaString of string mcode
   | PragmaDots of string mcode
 
 and pragmainfo = base_pragmainfo wrap
@@ -885,6 +890,7 @@ let get_meta_name = function
   | MetaFuncDecl(_ar,nm) -> nm
   | MetaLocalFuncDecl(_ar,nm) -> nm
   | MetaPosDecl(_ar,nm) -> nm
+  | MetaComDecl(_ar,nm) -> nm
   | MetaFmtDecl(_ar,nm) -> nm
   | MetaFragListDecl(_ar,nm,_nm1) -> nm
   | MetaAnalysisDecl(_code,nm) -> nm
@@ -954,7 +960,7 @@ let make_term x =
     bef_aft = NoDots;
     pos_info = None;
     true_if_test_exp = false;
-    safe_for_multi_decls = false;
+    safe_for_multi_decls = Unsafe;
     iso_info = [] }
 
 let make_inherited_term x inherited inh_pos =
@@ -971,7 +977,7 @@ let make_inherited_term x inherited inh_pos =
     bef_aft = NoDots;
     pos_info = None;
     true_if_test_exp = false;
-    safe_for_multi_decls = false;
+    safe_for_multi_decls = Unsafe;
     iso_info = [] }
 
 let make_meta_rule_elem s d c (fvs,fresh,inh) =
@@ -1045,6 +1051,9 @@ let string_of_baseType = function
   | DoubleType -> "double"
   | LongDoubleType -> "long double"
   | FloatType -> "float"
+  | LongDoubleComplexType -> "long double complex"
+  | DoubleComplexType -> "double complex"
+  | FloatComplexType -> "float complex"
   | LongType -> "long"
   | LongIntType -> "long int"
   | LongLongType -> "long long"
@@ -1070,6 +1079,7 @@ let rec string_of_ident id =
   | AsIdent (id, _) -> string_of_ident id
   | OptIdent id -> string_of_ident id ^ "?"
   | DisjId l -> String.concat "|" (List.map string_of_ident l)
+  | ConjId l -> String.concat "&" (List.map string_of_ident l)
 
 let string_of_expression e =
   match unwrap e with
@@ -1264,7 +1274,7 @@ let rec ident_fold_meta_names f ident v =
   | AsIdent (ident0, ident1) ->
       let v' = ident_fold_meta_names f ident0 v in
       ident_fold_meta_names f ident1 v'
-  | DisjId l ->
+  | DisjId l | ConjId l ->
       List.fold_left (fun v' ident' -> ident_fold_meta_names f ident' v') v l
   | OptIdent ident' -> ident_fold_meta_names f ident' v
 

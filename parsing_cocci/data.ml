@@ -111,6 +111,10 @@ let add_pos_meta:
     (Ast.meta_name -> Ast0.constraints -> Ast.meta_collect -> unit) ref =
   ref uninitialized_add_meta
 
+let add_com_meta:
+    (Ast.meta_name -> Ast0.constraints -> unit) ref =
+  ref uninitialized_add_meta
+
 let add_fmt_meta: (Ast.meta_name -> Ast0.constraints -> unit) ref =
   ref uninitialized_add_meta
 
@@ -145,8 +149,9 @@ let format_metavariables      =
 let format_list_metavariables =
   ref ([] : (string * (Ast.meta_name * Ast.list_len * Ast0.constraints)) list)
 
+type cs = POS | COM | OTHR
 let constraint_scripts:
-    (bool * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref = ref []
+    (cs * Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref = ref []
 
 let non_local_script_constraints =
   ((Hashtbl.create 101) :

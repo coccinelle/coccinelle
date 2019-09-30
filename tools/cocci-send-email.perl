@@ -886,7 +886,7 @@ sub sanitize_address {
 # domain name that corresponds the IP address in the HELO/EHLO
 # handshake. This is used to verify the connection and prevent
 # spammers from trying to hide their identity. If the DNS and IP don't
-# match, the receiveing MTA may deny the connection.
+# match, the receiving MTA may deny the connection.
 #
 # Here is a deny example of Net::SMTP with the default "localhost.localdomain"
 #

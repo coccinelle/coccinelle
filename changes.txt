@@ -24,6 +24,33 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.0.8
+** Language:
+- Support for long double complex, double complex and float complex at the
+  C and SmPL level.
+- Add conjunction for identifiers.
+- Simplify pragma matching.
+- Support llu in C code and SmPL code.  Suggested by Timur Tabi.
+- Add support for macros with an initialiser as the body.  Requested by
+  Thomas Pedersen.
+- Allow scripts on comment metavariables.  Requested by Christoph Böhmwalder.
+** Features:
+- Some changes to the kinds of transformation allowed on declarations or
+  fields with multiple variables.  See the last paragrph of the
+  declarations section in the manual.
+- Minimal support for multi-line pragmas.  C parsing is supported, but
+  matching is not.
+- Allow changing the extension of the name of the file checked by
+  --compare-with-expected, using the --expected-extension flag.
+- Optimize case of { ... } when the braces are removed to avoid going
+  through the body.
+- Allow const on signed/unsigned in SmPL.
+** Bugfix:
+- check identifier constraints when an identifier metavariable appears in a
+  struct-typed metavariable.
+- type for eg &a->b should be const when a is const
+- Allow modifications within a function pointer typedef - reported by
+  Jerome Glisse
 * 1.0.7
 ** Language:
 - Allow constraints on any metavariables. Constraints can be specified
@@ -32,7 +59,7 @@
   curly-brackets can be omitted for a single item), regular expression
   (=~ "..." or !~ "..."), integer comparison (<=, <, >=, >) or scripts
   (:script:...). Constraints can be used in conjunctions (&&),
-  disjunctions (||) and can be negated (!)  and parenthesed.
+  disjunctions (||) and can be negated (!)  and parenthesized.
   Sub-expression constraints (<=) are still dealt separately and can
   only be used individually or in conjunction with other constraints
   (not under a disjunction or a negation). See tests/constraints.cocci
@@ -84,7 +111,7 @@
   considered.
 - Generalization of script constraints to allow reference to metavariables
   defined in the same rule, only when the constrained metavariable always
-  occurs in rule_elems that also mention any othe local metavariables
+  occurs in rule_elems that also mention any other local metavariables
   mentioned in the script constraint.  Referenced local variables must be
   declared before the constrained one.
 - Allow more variety in #pragmas
@@ -258,7 +285,7 @@ Rodriguez.
 - Safer handing of loops in ...
 * 1.0.0
 ** Language:
-- Add metavariables for matcing assignment and binary operators.
+- Add metavariables for matching assignment and binary operators.
 - Add ...... to match ... in C function declarations and definitions.
 - Addition of initializer list metavariables.  Thanks to Michael Stefaniuc
   for noticing the need for them.
@@ -573,7 +600,7 @@ Rodriguez.
 - Save virtual identifiers from the command line for use in finalize code.
 - Make ocaml file prefix name be just a constant string rather than being
   determined by the semantic patch file name, to avoid
-  incompatabilities between the semantic patch file name and what is
+  incompatibilities between the semantic patch file name and what is
   allowed for the names of ocaml modules.  Thanks to Markus Elfring for
   noticing the problem.
 - Improved use of parsing_hacks when an item of interest is preceded by
@@ -1265,7 +1292,7 @@ Rodriguez.
 ** first public release of the source code:
 
 ** Language:
- - embeded python scripting
+ - embedded python scripting
  - position
 
 ** Features

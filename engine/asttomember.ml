@@ -14,7 +14,7 @@ module CTL = Ast_ctl
 let mcode r (_,_,kind,_) =
   match kind with
     Ast.MINUS(_,_,_,_) -> true
-  | Ast.PLUS _ -> failwith "not possible"
+  | Ast.PLUS _ -> failwith "mcode: PLUS not possible"
   | Ast.CONTEXT(_,info) -> not (info = Ast.NOTHING)
 
 let no_mcode _ _ = false
@@ -109,9 +109,7 @@ let strip x =
   let mcode m = Ast.make_mcode(Ast.unwrap_mcode m) in
   let decl_or_field r k d =
     let res = do_nothing r k d in
-    if Ast.get_safe_decl d
-    then {res with Ast.safe_for_multi_decls = true}
-    else res in
+    {res with Ast.safe_for_multi_decls = Ast.get_safe_decl d} in
   let annotated_decl no_mcode decl =
     match Ast.unwrap decl with
       Ast.DElem(bef,allminus,d) ->

@@ -21,7 +21,7 @@ class ExecutionError(ReqError):
         self.error_code = errcode
 
 class Req:
-    "To be used for verifying binay package dependencies on Python code"
+    "To be used for verifying binary package dependencies on Python code"
     def __init__(self, chatty=True):
         self.all_reqs_ok = True
         self.debug = False

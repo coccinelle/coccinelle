@@ -58,7 +58,10 @@ module Ast_c :
     and signed = sign * base
     and base = Ast_c.base = CChar2 | CShort | CInt | CLong | CLongLong
     and sign = Ast_c.sign = Signed | UnSigned
-    and floatType = Ast_c.floatType = CFloat | CDouble | CLongDouble
+    and floatType =
+	Ast_c.floatType =
+	CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex
+      | CLongDoubleComplex
     and structUnion = Ast_c.structUnion = Struct | Union
     and structType = field list
     and field =
@@ -206,6 +209,7 @@ module Ast_c :
       | NestedFunc of definition
       | MacroStmt
       | Exec of exec_code list
+      | IfdefStmt1 of ifdef_directive list * statement list
     and labeled =
       Ast_c.labeled =
         Label of name * statement
@@ -314,7 +318,7 @@ module Ast_c :
       Ast_c.cpp_directive =
         Define of define
       | Include of includ
-      | Pragma of string wrap * pragmainfo
+      | Pragma of (name * string wrap list) wrap
       | OtherDirective of il
     and define = string wrap * (define_kind * define_val)
     and define_kind =
@@ -353,10 +357,6 @@ module Ast_c :
       first_of : string list list;
       last_of : string list list;
     }
-    and pragmainfo =
-      Ast_c.pragmainfo =
-        PragmaTuple of argument wrap2 list wrap
-      | PragmaIdList of name wrap2 list
     and ifdef_directive =
       Ast_c.ifdef_directive =
         IfdefDirective of (ifdefkind * matching_tag) wrap
@@ -415,6 +415,9 @@ module Ast_c :
       | MetaPosValList of
           (Common.filename * string * (posl * posl) option * posl * posl)
           list
+      | MetaComValList of (Token_c.comment_like_token list *
+			   Token_c.comment_like_token list *
+			   Token_c.comment_like_token list) list
       | MetaListlenVal of int
       | MetaNoVal
     and stripped = Ast_c.stripped = WITH_TYPES | WITHOUT_TYPES
@@ -478,6 +481,8 @@ module Ast_c :
     val get_onlylocal_expr :
       ('a * (('b * 'c) option * 'd) ref) * 'e -> 'c option
     val rewrap_str : string -> info -> info
+    val rewrap_charpos : int -> info -> info
+    val rewrap_col : int -> info -> info
     val rewrap_pinfo : parse_info -> info -> info
     val get_pi : parse_info -> Common.parse_info
     val get_opi : parse_info -> Common.parse_info
@@ -552,8 +557,9 @@ module Parse_c :
     and toplevel2 = Ast_c.toplevel * info_item
     and info_item = string * Parser_c.token list
     type 'a generic_parse_info =
-      'a Parse_c.generic_parse_info = {
+	'a Parse_c.generic_parse_info = {
       filename : string;
+      ranges : Parse_c.line_restriction list option;
       parse_trees : 'a;
       statistics : Parsing_stat.parsing_stat;
     }
@@ -665,6 +671,7 @@ module Parser_c :
       | Tint of Ast_c.info
       | Tdouble of Ast_c.info
       | Tfloat of Ast_c.info
+      | Tcomplex of Ast_c.info
       | Tlong of Ast_c.info
       | Tunsigned of Ast_c.info
       | Tsigned of Ast_c.info
@@ -731,7 +738,10 @@ module Parser_c :
       | TUelseif of Ast_c.info
       | TUendif of Ast_c.info
       | TUndef of Ast_c.info
-      | TPragma of Ast_c.info
+      | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*
+			 Ast_c.info*(string*Ast_c.info)list)
+      | TPragma of (Ast_c.info)
+      | TPragmaString of (string*Ast_c.info)
       | TCppDirectiveOther of Ast_c.info
       | TMacroAttr of (string * Ast_c.info)
       | TMacroEndAttr of (string * Ast_c.info)
@@ -1029,7 +1039,6 @@ module Lib_parsing_c :
     val ii_of_format : Ast_c.string_format -> Ast_c.info list
     val ii_of_define_params :
       (string Ast_c.wrap, Ast_c.il) Common.either list -> Ast_c.info list
-    val ii_of_pragmainfo : Ast_c.pragmainfo -> Ast_c.info list
     val ii_of_ident_list :
       (Ast_c.name, Ast_c.il) Common.either list -> Ast_c.info list
     val ii_of_exec_code_list :
@@ -1067,6 +1076,8 @@ module Visitor_c :
       kdecl :
         (Ast_c.declaration -> unit) * visitor_c -> Ast_c.declaration -> unit;
       konedecl : (Ast_c.onedecl -> unit) * visitor_c -> Ast_c.onedecl -> unit;
+      konedecl_opt : bool -> (Ast_c.onedecl -> unit) * visitor_c ->
+	Ast_c.onedecl -> unit;
       kparam :
         (Ast_c.parameterType -> unit) * visitor_c ->
         Ast_c.parameterType -> unit;
@@ -1112,6 +1123,7 @@ module Visitor_c :
     val vk_type : visitor_c -> Ast_c.fullType -> unit
     val vk_decl : visitor_c -> Ast_c.declaration -> unit
     val vk_decl_list : visitor_c -> Ast_c.declaration list -> unit
+    val vk_onedecl_opt : bool -> visitor_c -> Ast_c.onedecl -> unit
     val vk_onedecl : visitor_c -> Ast_c.onedecl -> unit
     val vk_ini : visitor_c -> Ast_c.initialiser -> unit
     val vk_ini_list : visitor_c -> Ast_c.initialiser Ast_c.wrap2 list -> unit
@@ -1152,7 +1164,6 @@ module Visitor_c :
       visitor_c -> string Ast_c.wrap Ast_c.wrap2 list -> unit
     val vk_define_params_splitted :
       visitor_c -> (string Ast_c.wrap, Ast_c.il) Common.either list -> unit
-    val vk_pragmainfo : visitor_c -> Ast_c.pragmainfo -> unit
     val vk_ident_list_splitted :
       visitor_c -> (Ast_c.name, Ast_c.il) Common.either list -> unit
     val vk_exec_code_list_splitted :
@@ -1215,6 +1226,8 @@ module Visitor_c :
       Ast_c.statement_sequencable list -> Ast_c.statement_sequencable list
     val vk_type_s : visitor_c_s -> Ast_c.fullType -> Ast_c.fullType
     val vk_decl_s : visitor_c_s -> Ast_c.declaration -> Ast_c.declaration
+    val vk_onedecl_opt_s : bool -> visitor_c_s -> Ast_c.onedecl -> Ast_c.onedecl
+    val vk_onedecl_s : visitor_c_s -> Ast_c.onedecl -> Ast_c.onedecl
     val vk_decl_list_s :
       visitor_c_s -> Ast_c.declaration list -> Ast_c.declaration list
     val vk_ini_s : visitor_c_s -> Ast_c.initialiser -> Ast_c.initialiser
@@ -1268,7 +1281,6 @@ module Visitor_c :
       visitor_c_s ->
       (string Ast_c.wrap, Ast_c.il) Common.either list ->
       (string Ast_c.wrap, Ast_c.il) Common.either list
-    val vk_pragmainfo_s : visitor_c_s -> Ast_c.pragmainfo -> Ast_c.pragmainfo
     val vk_ident_list_splitted_s :
       visitor_c_s ->
       (Ast_c.name, Ast_c.il) Common.either list ->
@@ -2406,7 +2418,7 @@ module Ast_cocci :
       bef_aft : dots_bef_aft;
       pos_info : meta_name mcode option;
       true_if_test_exp : bool;
-      safe_for_multi_decls : bool;
+      safe_for_multi_decls : Ast_cocci.safety;
       iso_info : (string * anything) list;
     }
     and 'a befaft =
@@ -2443,6 +2455,7 @@ module Ast_cocci :
     and multi = bool
     and end_info =
         meta_name list * (meta_name * seed) list * meta_name list * mcodekind
+    and safety = Safe | Unsafe | NoStorage
     and arity = Ast_cocci.arity = UNIQUE | OPT | MULTI | NONE
     and metavar =
       Ast_cocci.metavar =
@@ -2474,6 +2487,7 @@ module Ast_cocci :
       | MetaFuncDecl of arity * meta_name
       | MetaLocalFuncDecl of arity * meta_name
       | MetaPosDecl of arity * meta_name
+      | MetaComDecl of arity * meta_name
       | MetaFmtDecl of arity * meta_name
       | MetaFragListDecl of arity * meta_name * list_len
       | MetaAnalysisDecl of string * meta_name
@@ -2504,6 +2518,7 @@ module Ast_cocci :
           inherited
       | AsIdent of ident * ident
       | DisjId of ident list
+      | ConjId of ident list
       | OptIdent of ident
     and ident = base_ident wrap
     and base_expression =
@@ -2565,7 +2580,7 @@ module Ast_cocci :
       | CstrString of string
     and int_constraint =
       Ast_cocci.int_constraint =
-        CstrIntEq of int
+        CstrIntEq of string
       | CstrIntLeq of int
       | CstrIntGeq of int
     and operator_constraint =
@@ -2692,6 +2707,9 @@ module Ast_cocci :
       | DoubleType
       | LongDoubleType
       | FloatType
+      | LongDoubleComplexType
+      | DoubleComplexType
+      | FloatComplexType
       | LongType
       | LongIntType
       | LongLongType
@@ -2799,6 +2817,7 @@ module Ast_cocci :
       Ast_cocci.meta_pos =
         MetaPos of meta_name mcode * constraints * meta_collect *
           keep_binding * inherited
+      | MetaCom of meta_name mcode * constraints * keep_binding * inherited
     and storage = Ast_cocci.storage = Static | Auto | Register | Extern
     and base_rule_elem =
       Ast_cocci.base_rule_elem =
@@ -2851,8 +2870,7 @@ module Ast_cocci :
       | DisjRuleElem of rule_elem list
     and base_pragmainfo =
       Ast_cocci.base_pragmainfo =
-        PragmaTuple of string mcode * expression dots * string mcode
-      | PragmaIdList of ident dots
+        PragmaString of string mcode
       | PragmaDots of string mcode
     and pragmainfo = base_pragmainfo wrap
     and forinfo =
@@ -3057,7 +3075,7 @@ module Ast_cocci :
     val set_pos : 'a wrap -> meta_name mcode option -> 'a wrap
     val get_test_exp : 'a wrap -> bool
     val set_test_exp : expression -> expression
-    val get_safe_decl : 'a wrap -> bool
+    val get_safe_decl : 'a wrap -> Ast_cocci.safety
     val get_isos : 'a wrap -> (string * anything) list
     val set_isos : 'a wrap -> (string * anything) list -> 'a wrap
     val get_pos_var : 'a mcode -> meta_pos list
@@ -3221,6 +3239,8 @@ module Ast0_cocci :
       | MetaLocalFunc of Ast_cocci.meta_name mcode * constraints * pure
       | AsIdent of ident * ident
       | DisjId of string mcode * ident list * string mcode list *
+          string mcode
+      | ConjId of string mcode * ident list * string mcode list *
           string mcode
       | OptIdent of ident
     and ident = base_ident wrap
@@ -3465,8 +3485,7 @@ module Ast0_cocci :
       | OptStm of statement
     and base_pragmainfo =
       Ast0_cocci.base_pragmainfo =
-        PragmaTuple of string mcode * expression dots * string mcode
-      | PragmaIdList of ident dots
+        PragmaString of string mcode
       | PragmaDots of string mcode
     and pragmainfo = base_pragmainfo wrap
     and base_forinfo =
@@ -3507,6 +3526,7 @@ module Ast0_cocci :
       Ast0_cocci.meta_pos =
         MetaPos of Ast_cocci.meta_name mcode * constraints *
           Ast_cocci.meta_collect
+      | MetaCom of Ast_cocci.meta_name mcode * constraints
     and base_top_level =
       Ast0_cocci.base_top_level =
         NONDECL of statement
@@ -3675,6 +3695,7 @@ type pos = {
 }
 type param_type =
     Pos of pos list
+  | Com of (string list * string list * string list) list
   | AssignOp of Ast_c.assignOp
   | BinaryOp of Ast_c.binaryOp
   | Str of string
