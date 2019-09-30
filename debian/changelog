@@ -1,3 +1,9 @@
+coccinelle (1.0.8~18.04npalix1) bionic; urgency=medium
+
+  * New release 1.0.8
+
+ -- Nicolas Palix <nicolas.palix@imag.fr>  Mon, 30 Sep 2019 18:10:15 +0200
+
 coccinelle (1.0.7.1~18.04npalix1) bionic; urgency=medium
 
   * New release 1.0.7.1
