@@ -38,7 +38,7 @@ website:
 # Targets to update PPA
 ##############################################################################
 PRJNAME=coccinelle
-VERSION?=$(shell MAKE_COCCI_RELEASE="y" ./version.sh)
+VERSION=$(shell MAKE_COCCI_RELEASE="y" ./version.sh)
 
 # precise - 12.04
 # saucy - 13.10
