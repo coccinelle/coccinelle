@@ -105,7 +105,7 @@ stdcompat__stubs.o : stdcompat__stubs.c
 	$(OCAMLC) -c -o $@ $<
 
 libstdcompat__stubs.a : stdcompat__stubs.o
-	$(OCAMLMKLIB) -o $(basename $<) $<
+	$(OCAMLMKLIB) -o stdcompat__stubs $<
 
 stdcompat.cma : $(MODULES_native:.ml=.cmo) libstdcompat__stubs.a
 	$(OCAMLC) $(OCAMLLDFLAGS) -a $(MODULES_native:.ml=.cmo) $(OCAMLLIBFLAGS) -o $@
