@@ -965,6 +965,31 @@ rule token = parse
         let s = string lexbuf in
         TString   ((s,   IsWchar),  (info +> tok_add_s (s ^ "\"")))
       }
+  | 'U' "'"
+      { let info = tokinfo lexbuf in
+        let s = char lexbuf   in
+        TChar     ((s,   IsUchar),  (info +> tok_add_s (s ^ "'")))
+      }
+  | 'U' '\"'
+      { let info = tokinfo lexbuf in
+        let s = string lexbuf in
+        TString   ((s,   IsUchar),  (info +> tok_add_s (s ^ "\"")))
+      }
+  | 'u' "'"
+      { let info = tokinfo lexbuf in
+        let s = char lexbuf   in
+        TChar     ((s,   Isuchar),  (info +> tok_add_s (s ^ "'")))
+      }
+  | 'u' '\"'
+      { let info = tokinfo lexbuf in
+        let s = string lexbuf in
+        TString   ((s,   Isuchar),  (info +> tok_add_s (s ^ "\"")))
+      }
+  | "u8" '\"'
+      { let info = tokinfo lexbuf in
+        let s = string lexbuf in
+        TString   ((s,   Isu8char),  (info +> tok_add_s (s ^ "\"")))
+      }
 
 
   (* Take care of the order ? No because lex tries the longest match. The

@@ -280,7 +280,8 @@ let inline_id aft = function
 
 %token <Data.clt> TInc TDec
 
-%token <string * Data.clt> TString TChar TFloat TInt
+%token <string * Ast_cocci.isWchar * Data.clt> TString TChar
+%token <string * Data.clt> TFloat TInt
 %token <string * string (*n*) * string (*p*) * Data.clt> TDecimalCst
 
 %token <Data.clt> TOrLog
@@ -458,12 +459,13 @@ dep:
 | dep TOrLog  dep  { Ast0.OrDep ($1, $3) }
 | TOPar dep TCPar  { $2 }
 | TFile TIn TString
-    { if !Flag.dir = ""
-      then Ast0.FileIn(fst $3)
-      else Ast0.FileIn(Filename.concat !Flag.dir (fst $3)) }
+    { let nm = P.id3name $3 in
+      if !Flag.dir = ""
+      then Ast0.FileIn nm
+      else Ast0.FileIn(Filename.concat !Flag.dir nm) }
 
 choose_iso:
-  TUsing separated_nonempty_list(TComma,TString) { List.map P.id2name $2 }
+  TUsing separated_nonempty_list(TComma,TString) { List.map P.id3name $2 }
 
 disable:
   TDisable separated_nonempty_list(TComma,pure_ident) { List.map P.id2name $2 }
@@ -485,7 +487,7 @@ include_main:
 
 incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
-| TUsing TString      { Data.Iso(Common.Left(P.id2name $2)) }
+| TUsing TString      { Data.Iso(Common.Left(P.id3name $2)) }
 | TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
 | TVirtual ids=comma_list(pure_ident)
     { let names = List.map P.id2name ids in
@@ -2240,10 +2242,10 @@ primary_expr(recurser,primary_extra):
      { let (x,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Float x) clt)) }
  | TString
-     { let (x,clt) = $1 in P.parse_string x clt }
+     { let (x,sz,clt) = $1 in P.parse_string x clt sz }
  | TChar
-     { let (x,clt) = $1 in
-     Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char x) clt)) }
+     { let (x,sz,clt) = $1 in
+     Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.Char(x,sz)) clt)) }
  | TDecimalCst
      { let (x,l,p,clt) = $1 in
      Ast0.wrap(Ast0.Constant (P.clt2mcode (Ast.DecimalConst(x,l,p)) clt)) }
@@ -2404,7 +2406,7 @@ pure_ident_or_meta_ident_with_seed:
 	 | _ -> ($1,Ast.ListSeed $3) }
 
 seed_elem:
-  TString { let (x,_) = $1 in Ast.SeedString x }
+  TString { let (x,_,_) = $1 in Ast.SeedString x }
 | TMetaId { let (x,_,_,_,_) = $1 in Ast.SeedId x }
 | TMeta {failwith "tmeta"}
 | TVirtual TDot pure_ident
@@ -2447,10 +2449,10 @@ constraints:
 make sense for positions and comments *)
 nonempty_constraints:
   TTildeEq re=TString
-    { fun _ _ -> let (s,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
+    { fun _ _ -> let (s,_,_) = re in Ast.CstrRegexp (s,Regexp.regexp s) }
 | TTildeExclEq re=TString
     { fun _ _ ->
-      let (s,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
+      let (s,_,_) = re in Ast.CstrNot (Ast.CstrRegexp (s,Regexp.regexp s)) }
 | TEq l=item_or_brace_list(cstr_ident) { fun _ _ -> Ast.CstrOr l }
 | TNotEq l=item_or_brace_list(cstr_ident)
     { fun _ _ -> Ast.CstrNot (Ast.CstrOr l) }
@@ -3171,7 +3173,7 @@ script_name_decl_ext:
 	    (Semantic_cocci.Semantic
 	       "default value of position variable should be a list")
       | _ ->
-	  let (s,clt) = $3 in
+	  let (s,_,clt) = $3 in
 	  ($1,Ast.MVInitString s) }
   | script_name_decl TEq TOCro TCCro
     { let (nm,mv) = $1 in
@@ -3325,8 +3327,8 @@ anything: /* used for script code */
  | TInc { "++" }
  | TDec { "--" }
 
- | TString { Printf.sprintf "\"%s\"" (fst $1) }
- | TChar { fst $1 }
+ | TString { let (s,_,_) = $1 in Printf.sprintf "\"%s\"" s }
+ | TChar { let (c,_,_) = $1 in c }
  | TFloat { fst $1 }
  | TInt { fst $1 }
  | TDecimalCst { let (x,_,_,_) = $1 in x }

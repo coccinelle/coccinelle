@@ -172,13 +172,13 @@ let rec top_expression opt_allowed tgt expr =
       let arity = exp_same (mcode2line const) [mcode2arity const] in
       let const = mcode const in
       make_exp expr tgt arity (Ast0.Constant(const))
-  | Ast0.StringConstant(lq,str,rq) ->
+  | Ast0.StringConstant(lq,str,rq,isWchar) ->
       (* all components on the same line, so this is probably pointless... *)
       let arity = exp_same (mcode2line lq) [mcode2arity lq;mcode2arity rq] in
       let lq = mcode lq in
       let str = dots (string_fragment arity) str in
       let rq = mcode rq in
-      make_exp expr tgt arity (Ast0.StringConstant(lq,str,rq))
+      make_exp expr tgt arity (Ast0.StringConstant(lq,str,rq,isWchar))
   | Ast0.FunCall(fn,lp,args,rp) ->
       let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
       let fn = expression arity fn in

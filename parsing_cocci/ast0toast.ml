@@ -400,8 +400,8 @@ and expression e =
       Ast0.Ident(id) -> Ast.Ident(ident id)
     | Ast0.Constant(const) ->
 	Ast.Constant(mcode const)
-    | Ast0.StringConstant(lq,str,rq) ->
-	Ast.StringConstant(mcode lq, dots string_fragment str, mcode rq)
+    | Ast0.StringConstant(lq,str,rq,isWchar) ->
+	Ast.StringConstant(mcode lq, dots string_fragment str, mcode rq,isWchar)
     | Ast0.FunCall(fn,lp,args,rp) ->
 	let fn = expression fn in
 	let lp = mcode lp in

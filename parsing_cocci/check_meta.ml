@@ -127,7 +127,7 @@ let rec expression context old_metas table minus e =
   match Ast0.unwrap e with
     Ast0.Ident(id) ->
       ident context old_metas table minus id
-  | Ast0.StringConstant(lq,str,rq) ->
+  | Ast0.StringConstant(lq,str,rq,isWchar) ->
       dots (string_fragment old_metas table minus) str
   | Ast0.FunCall(fn,lp,args,rp) ->
       expression FN old_metas table minus fn;

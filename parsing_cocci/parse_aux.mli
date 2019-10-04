@@ -59,6 +59,7 @@ val clt2mcode :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * 'b * string ->
   'a * Ast0_cocci.arity * Ast0_cocci.info * Ast0_cocci.mcodekind * 'b ref * int
+val id3name : 'a * 'b * 'c -> 'a
 val id2name : 'a * 'b -> 'a
 val id2clt : 'a * 'b -> 'b
 val id2mcode :
@@ -543,13 +544,13 @@ val not_format_string :
   Data.line_type * int * int * int * int * int *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_expression Ast0_cocci.wrap
+  string -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
 val nometas : string -> bool
 val parse_string :
   string ->
   Data.line_type * int * int * int * int * int *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_expression Ast0_cocci.wrap
+  string -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
 val unfloatl : string -> string
 val unfloatr : string -> string

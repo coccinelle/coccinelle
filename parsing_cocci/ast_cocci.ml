@@ -171,7 +171,7 @@ and base_expression =
     Ident          of ident
   | Constant       of constant mcode
   | StringConstant of string mcode (* quote *) * string_fragment dots *
-		      string mcode (* quote *)
+		      string mcode (* quote *) * isWchar
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * assignOp * expression *
@@ -312,11 +312,12 @@ and arithOp =
 and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
 
 and constant =
-    String of string
-  | Char   of string
+    String of string * isWchar
+  | Char   of string * isWchar
   | Int    of string
   | Float  of string
   | DecimalConst of (string * string * string)
+and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

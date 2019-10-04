@@ -95,7 +95,7 @@ and base_expression =
     Ident          of ident
   | Constant       of Ast_cocci.constant mcode
   | StringConstant of string mcode (* quote *) * string_fragment dots *
-		      string mcode (* quote *)
+		      string mcode (* quote *) * Ast_cocci.isWchar
   | FunCall        of expression * string mcode (* ( *) *
                       expression dots * string mcode (* ) *)
   | Assignment     of expression * assignOp * expression *

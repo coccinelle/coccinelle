@@ -46,7 +46,7 @@ let expression e =
   match Ast0.unwrap e with
     Ast0.Ident(id) -> [17]
   | Ast0.Constant(const) -> [18]
-  | Ast0.StringConstant(lq,str,rq) -> [165]
+  | Ast0.StringConstant(lq,str,rq,sz) -> [165]
   | Ast0.FunCall(fn,lp,args,rp) -> [19]
   | Ast0.Assignment(left,op,right,simple) -> [20]
   | Ast0.Sequence(left,op,right) -> [156]

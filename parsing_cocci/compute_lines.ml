@@ -351,12 +351,12 @@ let rec expression e =
       let const = normal_mcode const in
       let ln = promote_mcode const in
       mkres e (Ast0.Constant(const)) ln ln
-  | Ast0.StringConstant(lq,str,rq) ->
+  | Ast0.StringConstant(lq,str,rq,isWchar) ->
       let lq = normal_mcode lq in
       let str =
 	dots is_str_dots (Some(promote_mcode lq)) string_fragment str in
       let rq = normal_mcode rq in
-      mkres e (Ast0.StringConstant(lq,str,rq))
+      mkres e (Ast0.StringConstant(lq,str,rq,isWchar))
 	(promote_mcode lq) (promote_mcode rq)
   | Ast0.FunCall(fn,lp,args,rp) ->
       let fn = expression fn in

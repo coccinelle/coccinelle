@@ -143,7 +143,7 @@ module Ast_c :
       | Int of (string * intType)
       | Float of (string * floatType)
       | DecimalConst of (string * string * string)
-    and isWchar = Ast_c.isWchar = IsWchar | IsChar
+    and isWchar = Ast_c.isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
     and unaryOp =
       Ast_c.unaryOp =
         GetRef
@@ -2525,7 +2525,8 @@ module Ast_cocci :
       Ast_cocci.base_expression =
         Ident of ident
       | Constant of constant mcode
-      | StringConstant of string mcode * string_fragment dots * string mcode
+      | StringConstant of
+	  string mcode * string_fragment dots * string mcode * Ast_cocci.isWchar
       | FunCall of expression * string mcode * expression dots * string mcode
       | Assignment of expression * assignOp * expression * bool
       | Sequence of expression * string mcode * expression
@@ -2664,11 +2665,12 @@ module Ast_cocci :
       | OrLog
     and constant =
       Ast_cocci.constant =
-        String of string
-      | Char of string
+        String of string * Ast_cocci.isWchar
+      | Char of string * Ast_cocci.isWchar
       | Int of string
       | Float of string
       | DecimalConst of (string * string * string)
+    and isWchar = Ast_cocci.isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
     and base_fullType =
       Ast_cocci.base_fullType =
         Type of bool * const_vol mcode option * typeC
@@ -3248,7 +3250,8 @@ module Ast0_cocci :
       Ast0_cocci.base_expression =
         Ident of ident
       | Constant of Ast_cocci.constant mcode
-      | StringConstant of string mcode * string_fragment dots * string mcode
+      | StringConstant of
+	  string mcode * string_fragment dots * string mcode * Ast_cocci.isWchar
       | FunCall of expression * string mcode * expression dots * string mcode
       | Assignment of expression * assignOp * expression * bool
       | Sequence of expression * string mcode * expression

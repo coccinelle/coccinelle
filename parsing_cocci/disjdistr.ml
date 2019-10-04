@@ -136,7 +136,7 @@ and disjident e =
 
 and disjexp e =
   match Ast.unwrap e with
-    Ast.Ident(_) | Ast.Constant(_) | Ast.StringConstant(_) ->
+    Ast.Ident(_) | Ast.Constant _ | Ast.StringConstant _ ->
       [e] (* even Ident can't contain disj, nor StringConstant *)
   | Ast.FunCall(fn,lp,args,rp) ->
       disjmult2 (disjexp fn) (disjdots disjexp args)

@@ -107,11 +107,11 @@ let visitor mode bind option_default
 	    let (n,id) = ident id in (n,Ast0.Ident(id))
 	| Ast0.Constant(const) ->
 	    let (n,const) = const_mcode const in (n,Ast0.Constant(const))
-	| Ast0.StringConstant(lq,str,rq) ->
+	| Ast0.StringConstant(lq,str,rq,sz) ->
 	    let (lq_n,lq) = string_mcode lq in
 	    let (str_n,str) = string_fragment_dots str in
 	    let (rq_n,rq) = string_mcode rq in
-	    (multibind [lq_n;str_n;rq_n],Ast0.StringConstant(lq,str,rq))
+	    (multibind [lq_n;str_n;rq_n],Ast0.StringConstant(lq,str,rq,sz))
 	| Ast0.FunCall(fn,lp,args,rp) ->
 	    let (fn_n,fn) = expression fn in
 	    let (lp_n,lp) = string_mcode lp in

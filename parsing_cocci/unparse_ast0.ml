@@ -171,7 +171,7 @@ let rec expression e =
       match Ast0.unwrap e with
 	Ast0.Ident(id) -> ident id
       | Ast0.Constant(const) -> mcode U.constant const
-      | Ast0.StringConstant(lq,str,rq) ->
+      | Ast0.StringConstant(lq,str,rq,_sz) ->
 	  mcode print_string lq;
 	  let _ = dots (function _ -> ()) string_fragment str in
 	  mcode print_string rq

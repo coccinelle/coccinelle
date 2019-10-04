@@ -21,9 +21,16 @@ let between_tostring between tostring_fn =
 
 let meta_tostring (r, x) = x
 
+and sz2c = function
+    Ast.IsChar -> ""
+  | Ast.IsUchar -> "U"
+  | Ast.Isuchar -> "u"
+  | Ast.Isu8char -> "u8"
+  | Ast.IsWchar -> "L"
+
 let constant_tostring = function
-  | Ast.String(s) -> "\"" ^ s ^ "\""
-  | Ast.Char(s) -> "'" ^ s ^ "'"
+  | Ast.String(s,w) -> (sz2c w) ^ "\"" ^ s ^ "\""
+  | Ast.Char(s,w) -> (sz2c w) ^ "'" ^ s ^ "'"
   | Ast.Int(s) -> s
   | Ast.Float(s) -> s
   | Ast.DecimalConst(s,_,_) -> s

@@ -969,9 +969,23 @@ rule token = parse
 
 
   | "'" { start_line true;
-	  TChar(char lexbuf,get_current_line_type lexbuf) }
+	  TChar(char lexbuf,Ast.IsChar,get_current_line_type lexbuf) }
   | '\"' { start_line true;
-	  TString(string lexbuf,(get_current_line_type lexbuf)) }
+	  TString(string lexbuf,Ast.IsChar,(get_current_line_type lexbuf)) }
+  | 'L' "'" { start_line true;
+	  TChar(char lexbuf,Ast.IsWchar,get_current_line_type lexbuf) }
+  | 'L' '\"' { start_line true;
+	  TString(string lexbuf,Ast.IsWchar,(get_current_line_type lexbuf)) }
+  | 'U' "'" { start_line true;
+	  TChar(char lexbuf,Ast.IsUchar,get_current_line_type lexbuf) }
+  | 'U' '\"' { start_line true;
+	  TString(string lexbuf,Ast.IsUchar,(get_current_line_type lexbuf)) }
+  | 'u' "'" { start_line true;
+	  TChar(char lexbuf,Ast.Isuchar,get_current_line_type lexbuf) }
+  | 'u' '\"' { start_line true;
+	  TString(string lexbuf,Ast.Isuchar,(get_current_line_type lexbuf)) }
+  | "u8" '\"' { start_line true;
+	  TString(string lexbuf,Ast.Isu8char,(get_current_line_type lexbuf)) }
   | (real as x)    { start_line true;
 		     TFloat(x,(get_current_line_type lexbuf)) }
   | ((( decimal | hexa | octal)
@@ -1144,9 +1158,23 @@ and metavariable_decl_token = parse
 
 
   | "'" { start_line true;
-	  TChar(char lexbuf,get_current_line_type lexbuf) }
+	  TChar(char lexbuf,Ast.IsChar,get_current_line_type lexbuf) }
   | '\"' { start_line true;
-	  TString(string lexbuf,(get_current_line_type lexbuf)) }
+	  TString(string lexbuf,Ast.IsChar,(get_current_line_type lexbuf)) }
+  | 'L' "'" { start_line true;
+	  TChar(char lexbuf,Ast.IsWchar,get_current_line_type lexbuf) }
+  | 'L' '\"' { start_line true;
+	  TString(string lexbuf,Ast.IsWchar,(get_current_line_type lexbuf)) }
+  | 'U' "'" { start_line true;
+	  TChar(char lexbuf,Ast.IsUchar,get_current_line_type lexbuf) }
+  | 'U' '\"' { start_line true;
+	  TString(string lexbuf,Ast.IsUchar,(get_current_line_type lexbuf)) }
+  | 'u' "'" { start_line true;
+	  TChar(char lexbuf,Ast.Isuchar,get_current_line_type lexbuf) }
+  | 'u' '\"' { start_line true;
+	  TString(string lexbuf,Ast.Isuchar,(get_current_line_type lexbuf)) }
+  | "u8" '\"' { start_line true;
+	  TString(string lexbuf,Ast.Isu8char,(get_current_line_type lexbuf)) }
   | (real as x)    { TFloat(x,(get_current_line_type lexbuf)) }
   | ((( decimal | hexa | octal)
       ( ['u' 'U']

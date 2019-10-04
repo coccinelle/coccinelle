@@ -121,7 +121,7 @@ let combiner bind option_default
       match Ast.unwrap e with
 	Ast.Ident(id) -> ident id
       | Ast.Constant(const) -> const_mcode const
-      | Ast.StringConstant(lq,str,rq) ->
+      | Ast.StringConstant(lq,str,rq,_sz) ->
 	  let llq = string_mcode lq in
 	  let lstr = string_fragment_dots str in
 	  let lrq = string_mcode rq in
@@ -1037,11 +1037,11 @@ let rebuilder
 	(match Ast.unwrap e with
 	  Ast.Ident(id) -> Ast.Ident(ident id)
 	| Ast.Constant(const) -> Ast.Constant(const_mcode const)
-	| Ast.StringConstant(lq,str,rq) ->
+	| Ast.StringConstant(lq,str,rq,sz) ->
 	    let llq = string_mcode lq in
 	    let lstr = string_fragment_dots str in
 	    let lrq = string_mcode rq in
-	    Ast.StringConstant(llq, lstr, lrq)
+	    Ast.StringConstant(llq, lstr, lrq, sz)
 	| Ast.FunCall(fn,lp,args,rp) ->
 	    let lfn = expression fn in
 	    let llp = string_mcode lp in

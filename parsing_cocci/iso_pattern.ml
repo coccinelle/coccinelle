@@ -684,12 +684,15 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal consta constb
 	      then check_mcode consta constb
 	      else return false
-	  | (Ast0.StringConstant(la,stra,ra),
-	     Ast0.StringConstant(lb,strb,rb)) ->
-	       conjunct_many_bindings
-		 [check_mcode la lb; check_mcode rb rb;
-		   match_dots match_frag is_strlist_matcher do_nolist_match
-		     stra strb]
+	  | (Ast0.StringConstant(la,stra,ra,sza),
+	     Ast0.StringConstant(lb,strb,rb,szb)) ->
+	       if sza = szb
+	       then
+		 conjunct_many_bindings
+		   [check_mcode la lb; check_mcode rb rb;
+		     match_dots match_frag is_strlist_matcher do_nolist_match
+		       stra strb]
+	       else return false
 	  | (Ast0.FunCall(fna,lp1,argsa,rp1),Ast0.FunCall(fnb,lp,argsb,rp)) ->
 	      conjunct_many_bindings
 		[check_mcode lp1 lp; check_mcode rp1 rp; match_expr fna fnb;

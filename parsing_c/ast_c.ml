@@ -385,7 +385,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
     | Float  of (string * floatType)
     | DecimalConst of (string * string * string)
 
-    and isWchar = IsWchar | IsChar
+    and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 
   and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not

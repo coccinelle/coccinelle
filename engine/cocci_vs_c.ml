@@ -1271,15 +1271,16 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
               then do1()
             else fail
           )
-      | A.Char x, B.Char (y,_) when x = y  (* todo: use kind ? *)
-          -> do1()
+      | A.Char(x,sz), B.Char (y,kind) when x = y
+          -> compatible_size sz kind >>= (fun () () -> do1())
       | A.Float x, B.Float (y,_) when x = y (* todo: use floatType ? *)
           -> do1()
       | A.DecimalConst (x,lx,px),B.DecimalConst (y,ly,py)
 	when x = y && lx = ly && px = py(*lx etc perhaps implied by x=y*)
           -> do1()
 
-      |	 A.String sa, B.String (sb,_kind) when sa = sb ->
+      |	 A.String(sa,sz), B.String (sb,kind) when sa = sb ->
+          compatible_size sz kind >>= (fun () () ->
           (match ii with
           | [ib1] ->
             tokenf ia1 ib1 >>= (fun ia1 ib1 ->
@@ -1288,16 +1289,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
                 ((B.Constant (ib), typ),[ib1])
               ))
           |  _ -> fail (* multi string, not handled *)
-          )
+          ))
 
       | _, B.MultiString _ -> (* todo cocci? *) fail
       | _, (B.String _ | B.Float _ | B.Char _ | B.Int _ | B.DecimalConst _) ->
 	  fail
       )
 
-  | A.StringConstant (lq,frags1,rq),
+  | A.StringConstant (lq,frags1,rq,sz),
       ((B.StringConstant (frags2,os,w), typ), ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in
+      compatible_size sz w >>= (fun () () ->
       tokenf lq ib1 >>= (fun lq ib1 ->
       tokenf rq ib2 >>= (fun rq ib2 ->
       string_fragments (A.unwrap frags1) (B.split_nocomma frags2) >>=
@@ -1305,8 +1307,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         let frags1 = A.rewrap frags1 frags1unwrap in
 	let frags2 = Ast_c.unsplit_nocomma frags2splitted in
 	return (
-	  ((A.StringConstant (lq,frags1,rq)) +> wa,
-	   ((B.StringConstant (frags2,os,w), typ), [ib1; ib2]))))))
+	  ((A.StringConstant (lq,frags1,rq,sz)) +> wa,
+	   ((B.StringConstant (frags2,os,w), typ), [ib1; ib2])))))))
 
   | A.FunCall (ea, ia1, eas, ia2),  ((B.FunCall (eb, ebs), typ),ii) ->
       (* todo: do special case to allow IdMetaFunc, cos doing the
@@ -1629,6 +1631,15 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      B.FunCall (_, _)|B.Constant _|B.StringConstant _|B.Ident _),
      _),_)
        -> fail
+
+and compatible_size asz bsz =
+  match (asz,bsz) with
+    (A.IsChar,B.IsChar)
+  | (A.IsWchar,B.IsWchar)
+  | (A.IsUchar,B.IsUchar)
+  | (A.Isuchar,B.Isuchar)
+  | (A.Isu8char,B.Isu8char) -> return ((),())
+  | _ -> fail
 
 (* Allow ... to match nothing.  Useful in for loop headers and in array
 declarations.  Put a metavariable to require it to match something. *)

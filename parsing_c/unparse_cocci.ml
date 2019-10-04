@@ -468,8 +468,8 @@ let rec expression e =
   match Ast.unwrap e with
     Ast.Ident(id) -> ident id
   | Ast.Constant(const) -> mcode constant const
-  | Ast.StringConstant(lq,str,rq) ->
-      mcode print_string lq;
+  | Ast.StringConstant(lq,str,rq,sz) ->
+      print_text (sz2c sz); mcode print_string lq;
       dots (function _ -> ()) string_fragment str;
       mcode print_string rq
   | Ast.FunCall(fn,lp,args,rp) ->
@@ -671,11 +671,18 @@ and logicalOp = function
   | Ast.OrLog -> print_string "||"
 
 and constant = function
-    Ast.String(s) -> print_string ("\""^s^"\"")
-  | Ast.Char(s) -> print_string ("\'"^s^"\'")
+    Ast.String(s,sz) -> print_text (sz2c sz); print_string ("\""^s^"\"")
+  | Ast.Char(s,sz) -> print_text (sz2c sz); print_string ("\'"^s^"\'")
   | Ast.Int(s) -> print_string s
   | Ast.Float(s) -> print_string s
   | Ast.DecimalConst(s,_l,_p) -> print_string s
+
+and sz2c = function
+    Ast.IsChar -> ""
+  | Ast.IsUchar -> "U"
+  | Ast.Isuchar -> "u"
+  | Ast.Isu8char -> "u8"
+  | Ast.IsWchar -> "L"
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

@@ -124,7 +124,7 @@ let rec left_expression e =
   match Ast0.unwrap e with
     Ast0.Ident(id) -> left_ident id
   | Ast0.Constant(const) -> modif_before_mcode const
-  | Ast0.StringConstant(lq,str,rq) -> modif_before_mcode lq
+  | Ast0.StringConstant(lq,str,rq,_sz) -> modif_before_mcode lq
   | Ast0.FunCall(fn,lp,args,rp) -> left_expression fn
   | Ast0.Assignment(left,op,right,_) -> left_expression left
   | Ast0.Sequence(left,op,right) -> left_expression left

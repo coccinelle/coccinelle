@@ -119,7 +119,7 @@ and constant =
   | Int of (string * intType)
   | Float of (string * floatType)
   | DecimalConst of (string * string * string)
-and isWchar = IsWchar | IsChar
+and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 and unaryOp = GetRef | DeRef | UnPlus | UnMinus | Tilde | Not | GetRefLabel
 and assignOpbis = SimpleAssign | OpAssign of arithOp
 and assignOp = assignOpbis wrap

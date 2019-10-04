@@ -589,8 +589,8 @@ let rec equal_expression e1 e2 =
   match (Ast0.unwrap e1,Ast0.unwrap e2) with
     (Ast0.Ident(_),Ast0.Ident(_)) -> true
   | (Ast0.Constant(const1),Ast0.Constant(const2)) -> equal_mcode const1 const2
-  | (Ast0.StringConstant(lq1,const1,rq1),Ast0.StringConstant(lq2,const2,rq2))->
-      equal_mcode lq1 lq2 && equal_mcode rq1 rq2
+  | (Ast0.StringConstant(lq1,const1,rq1,isWchar1),Ast0.StringConstant(lq2,const2,rq2,isWchar2))->
+      equal_mcode lq1 lq2 && equal_mcode rq1 rq2 && isWchar1 = isWchar2
   | (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Assignment(_,op1,_,_),Ast0.Assignment(_,op2,_,_)) ->

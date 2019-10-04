@@ -94,6 +94,7 @@ let clt2mcode_ext str isSymbol = function
        ref pos,-1)
 
 let clt2mcode name clt = clt2mcode_ext name false clt
+let id3name   (name, _, clt) = name
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
 let id2mcode  (name, clt) = clt2mcode name clt
@@ -815,20 +816,20 @@ let drop_minus_plus l clt =
     check_no_duplicates res;
     (line,res)
 
-let not_format_string str clt =
-  Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String str) clt))
+let not_format_string str clt isChar =
+  Ast0.wrap(Ast0.Constant (clt2mcode (Ast.String(str, isChar)) clt))
 
 let nometas str =
   match Str.split_delim (Str.regexp "@") str with
     before::within::after::_ -> false (* need at least %@d@ *)
   | _ -> true
 
-let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
+let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) isChar =
   match mc with
     Data.PLUS when nometas str ->
       (* not matched against, no internal changes possible, so no need to
 	 parse *)
-      not_format_string str clt
+      not_format_string str clt isChar
    | _ ->
        if List.length(Str.split_delim (Str.regexp "%") str) > 1
        then
@@ -842,10 +843,10 @@ let parse_string str ((mc,b,c,d,e,f,g,h,i,_) as clt) =
 	     let middle = Ast0.wrap middle in
 	     let last = clt2mcode "\"" (update_line clt (line-1)) in
 	     contains_string_constant := true;
-	     Ast0.wrap(Ast0.StringConstant(first,middle,last))
+	     Ast0.wrap(Ast0.StringConstant(first,middle,last,isChar))
 	   end
-	 with Parse_printf.Not_format_string -> not_format_string str clt
-       else not_format_string str clt
+	 with Parse_printf.Not_format_string -> not_format_string str clt isChar
+       else not_format_string str clt isChar
 
 let unfloatl s =
   match Str.split_delim (Str.regexp_string ".") s with

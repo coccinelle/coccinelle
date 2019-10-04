@@ -292,8 +292,8 @@ let rec expression_pos exp snp
   | Ast0.Constant(mc) ->
       let constructor ~mc = Ast0.Constant mc in
       mcode_wrap ~mc ~constructor snp
-  | Ast0.StringConstant(q1, sd, q2) ->
-      let constructor ~mc = Ast0.StringConstant (q1, sd, mc) in
+  | Ast0.StringConstant(q1, sd, q2, sz) ->
+      let constructor ~mc = Ast0.StringConstant (q1, sd, mc, sz) in
       mcode_wrap ~mc:q2 ~constructor snp
   | Ast0.FunCall(exp, lp, expdots, rp) ->
       let c ~exp ~mc = Ast0.FunCall(exp, mc, expdots, rp) in
