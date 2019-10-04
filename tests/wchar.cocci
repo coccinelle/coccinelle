@@ -19,7 +19,7 @@ identifier empty;
 (
 - char empty[] = "";
 |
-- char empty[] = u8""
+- char empty[] = u8"";
 |
 - char16_t empty[] = u"";
 |
