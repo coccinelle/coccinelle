@@ -1300,21 +1300,28 @@ let rec drop_space_at_endline = function
     drop_space_at_endline rest
   | ((T2(Parser_c.TCommentSpace _,Ctx,_i,_h)) as a)::rest ->
     let (outer_spaces,rest) = span is_space rest in
-    let minus_or_comment_or_space_nocpp = function
-      | (T2(Parser_c.TCommentNewline _,_,_i,_)) -> false
-      | T2(_,Min adj,_,_) -> true
-      | (T2(Parser_c.TCommentSpace _,Ctx,_i,_)) -> true
+    let match_till_context_nl = function
+      | (T2(Parser_c.TCommentNewline _,_,_i,_) :: _) -> false
+      | (T2(_,Min adj,_,_) :: _) -> true
       | x -> false in
-    let (minus,rest) = span minus_or_comment_or_space_nocpp rest in
-    let fail _ = a :: outer_spaces @ minus @ (drop_space_at_endline rest) in
-    if List.exists is_minus minus
+    if match_till_context_nl rest
     then
-      match rest with
-      | ((T2(Parser_c.TCommentNewline _,Ctx,_i,_h)) as a)::rest ->
-        (* drop trailing spaces *)
-        minus @ a :: (drop_space_at_endline rest)
-      | _ -> fail ()
-    else fail ()
+      let minus_or_comment_or_space_nocpp = function
+        | (T2(Parser_c.TCommentNewline _,Ctx,_i,_)) -> false
+        | T2(_,Min adj,_,_) -> true
+        | (T2(Parser_c.TCommentSpace _,Ctx,_i,_)) -> true
+        | x -> false in
+      let (minus,rest) = span minus_or_comment_or_space_nocpp rest in
+      let fail _ = a :: outer_spaces @ minus @ (drop_space_at_endline rest) in
+      if List.exists is_minus minus
+      then
+        match rest with
+        | ((T2(Parser_c.TCommentNewline _,Ctx,_i,_h)) as a)::rest ->
+          (* drop trailing spaces *)
+          minus @ a :: (drop_space_at_endline rest)
+        | _ -> fail ()
+      else fail ()
+    else a :: outer_spaces @ (drop_space_at_endline rest)
   | a :: rest ->
     a :: drop_space_at_endline rest
 
