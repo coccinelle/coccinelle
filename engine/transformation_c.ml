@@ -380,7 +380,7 @@ module XTRANS = struct
 	  (Ast_cocci.MINUS
 	     (old_pos,Common.union_set old_inst new_inst,old_adj,
 	      Ast_cocci.NOREPLACEMENT),
-	   [tin.binding]);
+	   [clean_env tin.binding]);
         (if !Flag_matcher.show_misc
         then pr2_once "already tagged but only removed, so safe")
 
