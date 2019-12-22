@@ -88,7 +88,7 @@ let print_info = function
 	  Printf.printf "one set of required things %d:\n"
 	    (List.length disj);
 	  List.iter
-	    (function (_,thing) ->
+	    (function (_,_,thing) ->
 	      Printf.printf "%s\n"
 		(Dumper.dump thing.Ast.positive_inherited_positions);
 	      Printf.printf "%s\n"
@@ -127,7 +127,7 @@ let strip x =
 	  (Ast.ForHeader(fr,lp,Ast.ForDecl(annotated_decl no_mcode decl),
 			 e2,sem2,e3,rp))
     | _ -> res in
-  let recursor =
+  let r =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
@@ -137,7 +137,7 @@ let strip x =
       decl_or_field do_absolutely_nothing decl_or_field do_absolutely_nothing
       rule_elem
       do_nothing do_nothing do_nothing do_absolutely_nothing in
-  recursor.V.rebuilder_rule_elem x
+  r.V.rebuilder_rule_elem x
 
 (* --------------------------------------------------------------------- *)
 
@@ -162,10 +162,67 @@ let conj xs ys =
 	      prev ys)
 	[] xs
 
-let conj_wrapped x l = conj [List.map (function x -> (1,strip x)) x] l
+let conj_wrapped x l = conj [List.map (function x -> (1,None,strip x)) x] l
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)
+
+(* big disjunctions arising from isomorphisms may have some symbols or
+   constants in common *)
+(* to reduce cost, want at most one thing; take the longest *)
+let find_commonalities res : Ast_cocci.rule_elem option =
+  let get_symbols_and_constants x =
+    let bind x y = Common.union_set x y in
+    let one sz x = [(sz,strip(Ast.rewrap x (Ast.Exp x)))] in
+    let option_default = [] in
+    let do_nothing r k e = k e in
+    let mcode _ _ = [] in
+    let expression r k e =
+      match Ast.unwrap e with
+	Ast.Ident(id) ->
+	  (match Ast.unwrap id with
+	    Ast.Id(name) ->
+	      let sz = String.length (Ast.unwrap_mcode name) in
+	      bind (one sz e) (k e)
+	  | _ -> k e)
+      | Ast.Constant(const) ->
+	  let sz =
+	    match Ast.unwrap_mcode const with
+	      Ast.String(s,sz) -> String.length s + 2
+	    | Ast.Char(s,sz) -> String.length s + 2
+	    | Ast.Int(s) -> String.length s
+	    | Ast.Float(s) -> String.length s
+	    | Ast.DecimalConst(s,_,_) -> String.length s in
+	  bind (one sz e) (k e)
+      | _ -> k e in
+    let recursor =
+      V.combiner bind option_default
+	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+	mcode mcode mcode
+	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing expression do_nothing do_nothing do_nothing do_nothing
+	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing do_nothing
+	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
+    recursor.V.combiner_rule_elem x in
+  match res with
+    [] -> failwith "bad disjunction"
+  | x::xs ->
+      let choices =
+	let rec loop prev l =
+	  if prev = []
+	  then []
+	  else
+	    match l with
+	      [] -> prev
+	    | re::rest ->
+		loop (Common.inter_set (get_symbols_and_constants re) prev)
+		  rest in
+	loop (get_symbols_and_constants x) xs in
+      let choices = List.rev(List.sort compare choices) in
+      match choices with
+	[] -> None
+      | x::xs -> Some(snd x) (* drop size *)
 
 let rule_elem re =
   match Ast.unwrap re with
@@ -183,8 +240,8 @@ let rule_elem re =
 	    (List.hd all_inhs) (List.tl all_inhs) in
 	let inhs_poss = Ast.get_inherited_pos re in (* already intersection *)
 	Ast.make_inherited_term (Ast.unwrap re) inhs inhs_poss in
-      [[(List.length res,strip re)]]
-  | _ -> [[(1,strip re)]]
+      [[(List.length res,find_commonalities res,strip re)]]
+  | _ -> [[(1,None,strip re)]]
 
 let conj_one testfn x l =
   if testfn x
@@ -321,23 +378,30 @@ worthwhile. *)
 are cheaper to test *)
 
 let asttomemberz (_,_,l) used_after =
-  let process_one (l : (int * Ast_cocci.rule_elem) list list) =
+  let process_one
+      (l : (int * Ast_cocci.rule_elem option * Ast_cocci.rule_elem) list list)
+      =
     if debug
     then print_info l;
     List.map
       (function info ->
         let info =
-          List.sort (function (n1,_) -> function (n2,_) -> compare n1 n2)
+          List.sort (function (n1,_,_) -> function (n2,_,_) -> compare n1 n2)
             info in
 	let info =
 	  let (with_pos,without_pos) =
 	    (* put cases with inherited positions first *)
 	    List.partition
-	      (function (_,thing) ->
+	      (function (_,_,thing) ->
 		not (thing.Ast.positive_inherited_positions = []))
 	      info in
 	  with_pos @ without_pos in
-        List.map (function (_,x) -> (Lib_engine.Match(x),CTL.Control)) info)
+        List.map
+	  (function (_,extra,x) ->
+	    match extra with
+	      None -> (Lib_engine.Match(x),CTL.Control)
+	    | Some re -> (Lib_engine.Match(re),CTL.Control))
+	  info)
       l in
   List.map2
     (function min -> function (max,big_max) ->
