@@ -541,7 +541,11 @@ let collect_fresh_seed metavars l =
 
 let collect_in_plus_term =
 
-  let bind x y = List.rev_append x y in
+  (* use union because explosion may arise from isos, which duplicate vars *)
+  let bind x y =
+    List.fold_left
+      (fun prev cur -> if List.mem cur prev then prev else cur::prev)
+      y x in
   let option_default = [] in
   let donothing r k e = k e in
 
