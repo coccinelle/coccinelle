@@ -62,16 +62,25 @@ let ok_for_all_rule_elems cstr minirules =
     let available = Ast.get_minus_nc_fvs re in
     if List.mem self available
     then
-      let res =
-	(List.for_all (fun x -> List.mem x available) (List.map fst params)) &&
-	(disj_free re) in
-      if res
-      then res
+      let params_available =
+	List.for_all (fun x -> List.mem x available) (List.map fst params) in
+      if params_available
+      then
+	let disj_free = disj_free re in
+	if disj_free
+	then true
+	else
+	  failwith
+	    (Printf.sprintf
+	       "%s: constraint on variable %s cannot be evaluated in line %d due to disjunction\n%s"
+	       (fst self) (snd self) (Ast.get_line re)
+	       (Pretty_print_cocci.rule_elem_to_string re))
       else
 	failwith
 	  (Printf.sprintf
-	     "%s: constraint on variable %s cannot be evaluated in line %d. available: %s"
-	     (fst self) (snd self) (Ast.get_line re) (Dumper.dump available))
+	     "%s: constraint on variable %s cannot be evaluated in line %d. available: %s\nwanted: %s"
+	     (fst self) (snd self) (Ast.get_line re) (Dumper.dump available)
+	     (Dumper.dump (List.map fst params)))
     else true (* not relevant to this rule_elem *) in
 
   let v =
