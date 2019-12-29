@@ -77,8 +77,9 @@ let ast_binding vl = function
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
       | Ast_c.MetaNoVal -> failwith "no value for script metavariable"
+      | Ast_c.MetaComValList l -> Coccilib.AstCom l
 
-      | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaComValList _
+      | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _
       | Ast_c.MetaListlenVal _ ->
 	  failwith "not associated with a declared metavariable"]
 

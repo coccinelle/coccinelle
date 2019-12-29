@@ -1,3 +1,25 @@
+(*module Token_c :
+  sig
+    type cppcommentkind =
+	CppDirective
+      | CppIfDirective of ifdef
+      | CppAttr
+      | CppMacro
+      | CppPassingNormal
+      | CppPassingCosWouldGetError
+      | CppPassingExplicit
+    and ifdef = IfDef | IfDef0 | Else | Endif | Other
+    type info = Common.parse_info
+    type token = token_tag * info
+    and token_tag =
+	TCommentSpace
+      | TCommentNewline
+      | TComment
+      | TCommentCpp of cppcommentkind
+    type comment_like_token = token
+    val info_of_token : 'a * 'b -> 'b
+    val str_of_token : 'a * Common.parse_info -> string
+  end*)
 module Ast_c :
   sig
     type posl = int * int
@@ -3699,6 +3721,9 @@ type pos = {
 type param_type =
     Pos of pos list
   | Com of (string list * string list * string list) list
+  | AstCom of (Token_c.comment_like_token list *
+		 Token_c.comment_like_token list *
+		 Token_c.comment_like_token list) list
   | AssignOp of Ast_c.assignOp
   | BinaryOp of Ast_c.binaryOp
   | Str of string

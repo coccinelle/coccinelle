@@ -75,9 +75,7 @@ let ast_rep_binding ctr = function
     (Some nm,Ast.MetaPosDecl _) ->
       failwith
 	(Printf.sprintf "%s: No AST representation for position variables" nm)
-  | (Some nm,Ast.MetaComDecl _) ->
-      failwith
-	(Printf.sprintf "%s: No AST representation for comment variables" nm)
+  | (Some nm,Ast.MetaComDecl _) -> print_match ctr nm "AstCom"
   | (Some nm,Ast.MetaAnalysisDecl _) ->
       failwith "Todo"
 
