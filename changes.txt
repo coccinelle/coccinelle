@@ -28,6 +28,7 @@
 ** Language:
 - More kinds of string and char constants, mostly from C11. Not typed
   correctly. Requested by Michael Stefaniuc.
+- Field conj, disj, and opt can now successfully match field metavariables
 ** Features:
 ** Bugfix:
 * 1.0.8
