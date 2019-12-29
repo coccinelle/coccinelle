@@ -98,30 +98,29 @@ let collect_refs include_constraints =
     | Some l -> listlen l in
 
   let astfvexpr recursor k e =
-    bind (k e)
-      (match Ast.unwrap e with
-	Ast.MetaExpr(name,constraints,_,Some type_list,_,_,bitfield) ->
-	  let types =
+    match Ast.unwrap e with
+      Ast.MetaExpr(name,constraints,_,Some type_list,_,_,bitfield) ->
+	let types =
 	    (* problem: if there are multiple types, then none in particular
 	       is needed *)
-	    if include_constraints || List.length type_list = 1
-	    then List.fold_left type_collect option_default type_list
-	    else [] in
-	  let extra =
-	    if include_constraints
-	    then Ast.cstr_pos_meta_names constraints
-	    else [] in
-	  let bitfield' = listlen_option bitfield in
-	  bind bitfield' (bind extra (bind [metaid name] types))
-      | Ast.MetaErr(name,cstr,_,_) ->
-	  bind (constraints cstr) [metaid name]
-      | Ast.MetaExpr(name,cstr,_,_,_,_,bitfield) ->
-	  let bitfield' = listlen_option bitfield in
-	  bind bitfield' (bind (constraints cstr) [metaid name])
-      | Ast.MetaExprList(name,len,cstr,_,_) ->
-	  bind (constraints cstr) (bind (listlen len) [metaid name])
-      | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
-      | _ -> option_default) in
+	  if include_constraints || List.length type_list = 1
+	  then List.fold_left type_collect option_default type_list
+	  else [] in
+	let extra =
+	  if include_constraints
+	  then Ast.cstr_pos_meta_names constraints
+	  else [] in
+	let bitfield' = listlen_option bitfield in
+	bind (k e) (bind bitfield' (bind extra (bind [metaid name] types)))
+    | Ast.MetaErr(name,cstr,_,_) ->
+	bind (k e) (bind (constraints cstr) [metaid name])
+    | Ast.MetaExpr(name,cstr,_,_,_,_,bitfield) ->
+	let bitfield' = listlen_option bitfield in
+	bind (k e) (bind bitfield' (bind (constraints cstr) [metaid name]))
+    | Ast.MetaExprList(name,len,cstr,_,_) ->
+	bind (k e) (bind (constraints cstr) (bind (listlen len) [metaid name]))
+    | Ast.DisjExpr(exps) -> bind_disj (List.map k exps)
+    | _ -> k e in
 
   let astfvfrag recursor k ft =
     bind (k ft)
@@ -157,12 +156,12 @@ let collect_refs include_constraints =
     bind (k bop) (collect_binary_names bop) in
 
   let astfvdecls recursor k d =
-    bind (k d)
-      (match Ast.unwrap d with
-	Ast.MetaDecl(name,cstr,_,_) ->
-	  bind (constraints cstr) [metaid name]
-      | Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
-      | _ -> option_default) in
+    match Ast.unwrap d with
+      Ast.MetaDecl(name,cstr,_,_) ->
+	bind (k d)
+	  (bind (constraints cstr) [metaid name])
+    | Ast.DisjDecl(decls) -> bind_disj (List.map k decls)
+    | _ -> k d in
 
   let astfvfields recursor k d =
     bind (k d)
@@ -171,14 +170,17 @@ let collect_refs include_constraints =
 	  bind (constraints cstr) [metaid name]
       | Ast.MetaFieldList(name,len,cstr,_,_) ->
 	  bind (constraints cstr) (bind (listlen len) [metaid name])
-      | Ast.DisjField(decls) -> bind_disj (List.map k decls)
       | _ -> option_default) in
 
+  let astafvfields recursor k d =
+    match Ast.unwrap d with
+    | Ast.DisjField(decls) -> bind_disj (List.map k decls)
+    | _ -> k d in
+
   let astfvfullType recursor k ty =
-    bind (k ty)
-      (match Ast.unwrap ty with
-	Ast.DisjType(types) -> bind_disj (List.map k types)
-      | _ -> option_default) in
+    match Ast.unwrap ty with
+      Ast.DisjType(types) -> bind_disj (List.map k types)
+    | _ -> k ty in
 
   let astfvtypeC recursor k ty =
     bind (k ty)
@@ -223,11 +225,10 @@ let collect_refs include_constraints =
 	 | _ -> option_default)) in
 
   let astfvstatement recursor k s =
-    bind (k s)
-      (match Ast.unwrap s with
-	Ast.Disj(stms) ->
-	  bind_disj (List.map recursor.V.combiner_statement_dots stms)
-      | _ -> option_default) in
+    match Ast.unwrap s with
+      Ast.Disj(stms) ->
+	bind_disj (List.map recursor.V.combiner_statement_dots stms)
+    | _ -> k s in
 
   let mcode r mc = (*
     if include_constraints
@@ -251,7 +252,7 @@ let collect_refs include_constraints =
     donothing donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
     astfvfullType astfvtypeC astfvinit astfvparam astfvdefine_param
-    astfvdecls donothing astfvfields donothing
+    astfvdecls donothing astfvfields astafvfields
     astfvrule_elem astfvstatement donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true

@@ -31,7 +31,7 @@ let disj_free re =
     match Ast.unwrap e with Ast.DisjType _ -> false | _ -> k e in
   let decl r k e =
     match Ast.unwrap e with Ast.DisjDecl _ -> false | _ -> k e in
-  let field r k e =
+  let ann_field r k e =
     match Ast.unwrap e with Ast.DisjField _ -> false | _ -> k e in
   let rule_elem r k e =
     match Ast.unwrap e with Ast.DisjRuleElem _ -> false | _ -> k e in
@@ -43,7 +43,7 @@ let disj_free re =
     mcode mcode
     donothing donothing donothing donothing donothing donothing ident
     expr donothing donothing donothing donothing ty donothing
-    donothing donothing donothing decl donothing field donothing
+    donothing donothing donothing decl donothing donothing ann_field
     rule_elem statement donothing donothing donothing in
   try Hashtbl.find disj_free_table re
   with Not_found ->

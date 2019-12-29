@@ -26,6 +26,7 @@ type 'a combiner =
      combiner_typeC : Ast.typeC -> 'a;
      combiner_declaration : Ast.declaration -> 'a;
      combiner_field : Ast.field -> 'a;
+     combiner_ann_field : Ast.annotated_field -> 'a;
      combiner_initialiser : Ast.initialiser -> 'a;
      combiner_parameter : Ast.parameterTypeDef -> 'a;
      combiner_parameter_list : Ast.parameter_list -> 'a;
@@ -480,10 +481,7 @@ let combiner bind option_default
 	    [lc; le] in
 	  let lbf = Common.default [] bitfield bf in
 	  let lsem = string_mcode sem in
-	  multibind ([lid] @ lbf @ [lsem])
-      | Ast.DisjField(decls)
-      | Ast.ConjField(decls) -> multibind (List.map field decls)
-      | Ast.OptField(decl) -> field decl in
+	  multibind ([lid] @ lbf @ [lsem]) in
     fieldfn all_functions k d
 
   and annotated_field d =
@@ -493,7 +491,11 @@ let combiner bind option_default
       | Ast.Fdots(dots,whncode) ->
 	  let ldots = string_mcode dots in
 	  let lwhncode = get_option field whncode in
-	  bind ldots lwhncode in
+	  bind ldots lwhncode
+      | Ast.DisjField(decls)
+      | Ast.ConjField(decls) ->
+	  multibind (List.map annotated_field decls)
+      | Ast.OptField(decl) -> annotated_field decl in
     annotated_fieldfn all_functions k d
 
   and initialiser i =
@@ -932,6 +934,7 @@ let combiner bind option_default
       combiner_typeC = typeC;
       combiner_declaration = declaration;
       combiner_field = field;
+      combiner_ann_field = annotated_field;
       combiner_initialiser = initialiser;
       combiner_parameter = parameterTypeDef;
       combiner_parameter_list = parameter_dots;
@@ -962,6 +965,7 @@ type rebuilder =
       rebuilder_typeC : Ast.typeC inout;
       rebuilder_declaration : Ast.declaration inout;
       rebuilder_field : Ast.field inout;
+      rebuilder_ann_field : Ast.annotated_field inout;
       rebuilder_initialiser : Ast.initialiser inout;
       rebuilder_parameter : Ast.parameterTypeDef inout;
       rebuilder_parameter_list : Ast.parameter_list inout;
@@ -1397,10 +1401,7 @@ let rebuilder
 	      (lc, le) in
 	    let lbf = Common.map_option bitfield bf in
 	    let lsem = string_mcode sem in
-	    Ast.Field(lty, lid, lbf, lsem)
-	| Ast.DisjField(decls) -> Ast.DisjField(List.map field decls)
-	| Ast.ConjField(decls) -> Ast.ConjField(List.map field decls)
-	| Ast.OptField(decl) -> Ast.OptField(field decl)) in
+	    Ast.Field(lty, lid, lbf, lsem)) in
     fieldfn all_functions k d
 
   and annotated_field d =
@@ -1412,7 +1413,12 @@ let rebuilder
 	| Ast.Fdots(dots,whncode) ->
 	    let ldots = string_mcode dots in
 	    let lwhncode = get_option field whncode in
-	    Ast.Fdots(ldots, lwhncode)) in
+	    Ast.Fdots(ldots, lwhncode)
+	| Ast.DisjField(decls) ->
+	    Ast.DisjField(List.map annotated_field decls)
+	| Ast.ConjField(decls) ->
+	    Ast.ConjField(List.map annotated_field decls)
+	| Ast.OptField(decl) -> Ast.OptField(annotated_field decl)) in
     annotated_fieldfn all_functions k d
 
   and initialiser i =
@@ -1880,6 +1886,7 @@ let rebuilder
       rebuilder_typeC = typeC;
       rebuilder_declaration = declaration;
       rebuilder_field = field;
+      rebuilder_ann_field = annotated_field;
       rebuilder_initialiser = initialiser;
       rebuilder_parameter = parameterTypeDef;
       rebuilder_parameter_list = parameter_dots;

@@ -571,9 +571,6 @@ and field d =
 	expression e in
       print_option bitfield bf;
       mcode print_string sem
-  | Ast.DisjField(decls) -> print_disj_list field decls "|"
-  | Ast.ConjField(decls) -> print_disj_list field decls "&"
-  | Ast.OptField(decl) -> print_string "?"; field decl
 
 and annotated_field arity d =
   match Ast.unwrap d with
@@ -584,6 +581,9 @@ and annotated_field arity d =
   | Ast.Fdots(dots,Some whencode) ->
       mcode print_string dots; print_string "   when != "; field whencode
   | Ast.Fdots(dots,None) -> mcode print_string dots
+  | Ast.DisjField(decls) -> print_disj_list (annotated_field arity) decls "|"
+  | Ast.ConjField(decls) -> print_disj_list (annotated_field arity) decls "&"
+  | Ast.OptField(decl) -> print_string "?"; annotated_field arity decl
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)

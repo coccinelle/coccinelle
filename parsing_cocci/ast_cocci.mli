@@ -400,9 +400,6 @@ and annotated_decl = base_annotated_decl wrap
 
 and base_field =
     Field of fullType * ident option * bitfield option * string mcode (* ; *)
-  | DisjField of field list
-  | ConjField of field list
-  | OptField of field
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited
@@ -414,7 +411,10 @@ and field = base_field wrap
 and base_annotated_field =
     FElem of mcodekind (* before the decl *) * bool (* true if all minus *) *
       field
-  | Fdots    of string mcode (* ... *) * field option (* whencode *)
+  | Fdots     of string mcode (* ... *) * field option (* whencode *)
+  | DisjField of annotated_field list
+  | ConjField of annotated_field list
+  | OptField  of annotated_field
 
 and annotated_field = base_annotated_field wrap
 

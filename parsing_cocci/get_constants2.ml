@@ -544,8 +544,12 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	bind (k d) (minherited name)
     | Ast.MetaFieldList(name,Ast.MetaListLen(lenname,_,_,_),_,_,_) ->
 	bind (minherited name) (bind (minherited lenname) (k d))
-    | Ast.DisjField(decls) ->
-	disj_union_all (List.map r.V.combiner_field decls)
+    | _ -> k d in
+
+  let ann_field r k d =
+    match Ast.unwrap d with
+      Ast.DisjField(decls) ->
+	disj_union_all (List.map r.V.combiner_ann_field decls)
     | Ast.OptField(decl) -> option_default
     | _ -> k d in
 
@@ -633,7 +637,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     donothing donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
     fullType typeC initialiser parameter define_parameter declaration donothing
-    field donothing rule_elem statement donothing donothing donothing
+    field ann_field rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

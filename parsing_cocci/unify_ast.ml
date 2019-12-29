@@ -455,26 +455,26 @@ and unify_field d1 d2 =
 	unify_mcode c1 c2 && unify_expression e1 e2 in
       unify_fullType ft1 ft2 && unify_option unify_ident id1 id2 &&
       unify_option unify_bitfield bf1 bf2
-  | (Ast.DisjField(d1),_) ->
-      disjunct_all_bindings
-	(List.map (function x -> unify_field x d2) d1)
-  | (_,Ast.DisjField(d2)) ->
-      disjunct_all_bindings
-	(List.map (function x -> unify_field d1 x) d2)
-  | (Ast.ConjField(d1),_) ->
-      conjunct_all_bindings
-	(List.map (function x -> unify_field x d2) d1)
-  | (_,Ast.ConjField(d2)) ->
-      conjunct_all_bindings
-	(List.map (function x -> unify_field d1 x) d2)
-  | (Ast.OptField(_),_)
-  | (_,Ast.OptField(_)) -> failwith "unsupported decl"
 
 and unify_annotated_field d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
     (Ast.FElem(_,_,d1),Ast.FElem(_,_,d2)) -> unify_field d1 d2
   (* dots can match against anything.  true to be safe. *)
   | (Ast.Fdots(_,_),_) | (_,Ast.Fdots(_,_)) -> true
+  | (Ast.DisjField(d1),_) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_annotated_field x d2) d1)
+  | (_,Ast.DisjField(d2)) ->
+      disjunct_all_bindings
+	(List.map (function x -> unify_annotated_field d1 x) d2)
+  | (Ast.ConjField(d1),_) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_annotated_field x d2) d1)
+  | (_,Ast.ConjField(d2)) ->
+      conjunct_all_bindings
+	(List.map (function x -> unify_annotated_field d1 x) d2)
+  | (Ast.OptField(_),_)
+  | (_,Ast.OptField(_)) -> failwith "unsupported decl"
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)

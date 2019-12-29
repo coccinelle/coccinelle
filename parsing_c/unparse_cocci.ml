@@ -944,12 +944,12 @@ and field d =
 	expression e in
       Common.do_option bitfield bf;
       mcode print_string sem
-  | Ast.DisjField(_) | Ast.ConjField(_) -> raise CantBeInPlus
-  | Ast.OptField(decl) -> raise CantBeInPlus
 
 and annotated_field d =
   match Ast.unwrap d with
     Ast.FElem(_,_,decl) -> field decl
+  | Ast.DisjField(_) | Ast.ConjField(_) -> raise CantBeInPlus
+  | Ast.OptField(decl) -> raise CantBeInPlus
   | Ast.Fdots(_,_) -> raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)

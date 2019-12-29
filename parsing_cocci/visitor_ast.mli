@@ -15,6 +15,7 @@ type 'a combiner =
      combiner_typeC : Ast_cocci.typeC -> 'a;
      combiner_declaration : Ast_cocci.declaration -> 'a;
      combiner_field : Ast_cocci.field -> 'a;
+     combiner_ann_field : Ast_cocci.annotated_field -> 'a;
      combiner_initialiser : Ast_cocci.initialiser -> 'a;
      combiner_parameter : Ast_cocci.parameterTypeDef -> 'a;
      combiner_parameter_list : Ast_cocci.parameter_list -> 'a;
@@ -89,6 +90,7 @@ type rebuilder =
       rebuilder_typeC : Ast_cocci.typeC inout;
       rebuilder_declaration : Ast_cocci.declaration inout;
       rebuilder_field : Ast_cocci.field inout;
+      rebuilder_ann_field : Ast_cocci.annotated_field inout;
       rebuilder_initialiser : Ast_cocci.initialiser inout;
       rebuilder_parameter : Ast_cocci.parameterTypeDef inout;
       rebuilder_parameter_list : Ast_cocci.parameter_list inout;

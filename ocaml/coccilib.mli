@@ -2752,9 +2752,6 @@ module Ast_cocci :
     and base_field =
       Ast_cocci.base_field =
         Field of fullType * ident option * bitfield option * string mcode
-      | DisjField of field list
-      | ConjField of field list
-      | OptField of field
       | MetaField of meta_name mcode * constraints * keep_binding * inherited
       | MetaFieldList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
@@ -2764,6 +2761,9 @@ module Ast_cocci :
       Ast_cocci.base_annotated_field =
         FElem of mcodekind * bool * field
       | Fdots of string mcode * field option
+      | DisjField of annotated_field list
+      | ConjField of annotated_field list
+      | OptField  of annotated_field
     and annotated_field = base_annotated_field wrap
     and base_initialiser =
       Ast_cocci.base_initialiser =

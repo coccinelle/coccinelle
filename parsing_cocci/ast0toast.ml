@@ -719,10 +719,10 @@ and field d =
 	let bitfield (c, e) = (mcode c, expression e) in
 	let bf = Common.map_option bitfield bf in
 	Ast.Field(typeC allminus ty,Common.map_option ident id, bf, mcode sem)
-    | Ast0.Fdots(dots,whencode) -> failwith "should not be possible"
-    | Ast0.DisjField(_,decls,_,_) -> Ast.DisjField(List.map field decls)
-    | Ast0.ConjField(_,decls,_,_) -> Ast.ConjField(List.map field decls)
-    | Ast0.OptField(decl) -> Ast.OptField(field decl))
+    | Ast0.ConjField(_,_,_,_)
+    | Ast0.DisjField(_,_,_,_)
+    | Ast0.OptField(_)
+    | Ast0.Fdots(_,_) -> failwith "should not be possible")
 
 and annotated_field bef d =
   rewrap d (do_isos (Ast0.get_iso d))
@@ -732,6 +732,9 @@ and annotated_field bef d =
 	let dots = mcode dots in
 	let whencode = get_option (fun (_,_,b) -> field b) whencode in
 	Ast.Fdots(dots,whencode)
+    | Ast0.ConjField(_,decls,_,_) -> Ast.ConjField(List.map (annotated_field bef) decls)
+    | Ast0.DisjField(_,decls,_,_) -> Ast.DisjField(List.map (annotated_field bef) decls)
+    | Ast0.OptField(decl) -> Ast.OptField(annotated_field bef decl)
     | _ -> (* for decls where there is no bef information needed *)
 	let bef =
 	  match bef with

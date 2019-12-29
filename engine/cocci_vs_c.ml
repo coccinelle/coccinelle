@@ -2822,26 +2822,6 @@ and onefield = fun allminus decla (declb, iiptvirgb) ->
        (A.Field (typa, ida, Some (ca, ea), ptvirga) +>  A.rewrap decla),
        ((B.BitField (nameidb, typb, info, eb),iivirg), iiptvirgb)))))))
 
-   | A.DisjField declas, declb -> failwith "DisjField should not arise"
-(*
-      declas +> List.fold_left (fun acc decla ->
-        acc >|+|>
-            (* (declaration (mckstart, allminus, decla) declb) *)
-            (onedecl allminus decla (declb,iiptvirgb, iistob))
-      ) fail
-*)
-
-  | A.ConjField declas, declb ->
-      let rec loop acc_decl db = function
-	  [] -> return (A.ConjField (List.rev acc_decl) +> A.rewrap decla, db)
-	| d::ds ->
-	    onefield allminus d db >>= (fun decl db ->
-	      loop (decl::acc_decl) db ds) in
-      loop [] (declb, iiptvirgb) declas
-
-   | A.OptField _,    _ ->
-       failwith "not handling Opt Field"
-
    | _, _ ->
        fail
 
@@ -3213,6 +3193,26 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
   fun fa fb ->
     match A.unwrap fa with
       A.Fdots _ -> failwith "dots should be treated otherwise"
+    | A.ConjField declas ->
+	let rec loop acc_decl fb = function
+	    [] -> return (A.ConjField (List.rev acc_decl) +> A.rewrap fa, fb)
+	  | d::ds ->
+	      struct_field d fb >>= (fun decl fb ->
+		loop (decl::acc_decl) fb ds) in
+	loop [] fb declas
+
+   | A.DisjField declas -> failwith "DisjField should not arise"
+(*
+      declas +> List.fold_left (fun acc decla ->
+        acc >|+|>
+            (* (declaration (mckstart, allminus, decla) declb) *)
+            (onedecl allminus decla (declb,iiptvirgb, iistob))
+      ) fail
+*)
+
+   | A.OptField _ ->
+       failwith "not handling Opt Field"
+
     | A.FElem(mckstart,allminus,ifa) ->
 
 	(match A.unwrap ifa,fb with

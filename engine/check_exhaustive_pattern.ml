@@ -87,12 +87,16 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
   | A.OptDecl(decl) -> ()
 
 let dumb_astcocci_field = function
-   A.Field (typa, sa, _bf, _)     -> ()
- | A.MetaField _ -> ()
- | A.MetaFieldList _ -> ()
- | A.DisjField xs -> ()
- | A.ConjField xs -> ()
- | A.OptField _ -> ()
+    A.Field (typa, sa, _bf, _)     -> ()
+  | A.MetaField _ -> ()
+  | A.MetaFieldList _ -> ()
+
+let dumb_astcocci_ann_field = function
+  | A.FElem(bef,allminus,fld) -> ()
+  | A.Fdots(dots,whencode) -> ()
+  | A.DisjField xs -> ()
+  | A.ConjField xs -> ()
+  | A.OptField _ -> ()
 
 let dumb_astcocci_expr = function
  | A.MetaExpr (ida,_,_, opttypa, _, _, _bitfield) -> ()

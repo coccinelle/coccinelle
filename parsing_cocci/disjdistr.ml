@@ -121,6 +121,14 @@ and anndisjfield d =
 	(function decl -> Ast.rewrap d (Ast.FElem(bef,allminus,decl)))
 	(disjfield decls)
   | Ast.Fdots(_,_) -> [d]
+  | Ast.DisjField(decls) -> List.concat (List.map anndisjfield decls)
+  | Ast.ConjField(decl_list) ->
+      let decl_list = disjmult anndisjfield decl_list in
+      List.map (function decl_list -> Ast.rewrap d (Ast.ConjField(decl_list)))
+	decl_list
+  | Ast.OptField(decl) ->
+      let decl = anndisjfield decl in
+      List.map (function decl -> Ast.rewrap d (Ast.OptField(decl))) decl
 
 and disjident e =
   match Ast.unwrap e with
@@ -347,14 +355,6 @@ and disjfield d =
       disjmult3 (disjty ty) (disjoption disjident id) (disjoption disjbf bf)
 	(fun ty id bf ->
 	  Ast.rewrap d (Ast.Field(ty,id,bf,sem)))
-  | Ast.DisjField(decls) -> List.concat (List.map disjfield decls)
-  | Ast.ConjField(decl_list) ->
-      let decl_list = disjmult disjfield decl_list in
-      List.map (function decl_list -> Ast.rewrap d (Ast.ConjField(decl_list)))
-	decl_list
-  | Ast.OptField(decl) ->
-      let decl = disjfield decl in
-      List.map (function decl -> Ast.rewrap d (Ast.OptField(decl))) decl
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with

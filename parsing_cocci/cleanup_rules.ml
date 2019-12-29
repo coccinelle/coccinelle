@@ -198,6 +198,10 @@ let field r k d =
       then set_failed !drop_stack);
       listlen len;
       k d
+  | _ -> k d
+
+let ann_field r k d =
+  match Ast.unwrap d with
   | Ast.DisjField(decls) ->
       run_loop k decls (fun x -> x) (fun x -> Ast.rewrap d (Ast.DisjField x))
   | Ast.OptField(decl) -> d
@@ -248,7 +252,7 @@ let do_cleanup =
     donothing donothing donothing donothing donothing donothing (* dots *)
     ident expression string_fragment string_format assignOp
     binaryOp fullType typeC initialiser parameterTypeDef define_param
-    declaration donothing field donothing
+    declaration donothing field ann_field
     rule_elem statement donothing donothing donothing
 
 let cleanup_rules rules d =
