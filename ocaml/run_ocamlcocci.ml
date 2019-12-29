@@ -36,8 +36,10 @@ let string_value = function
 		 (List.fold_left
 		    (fun prev cur ->
 		      match cur with
-			(Token_c.TComment,_) -> (Token_c.str_of_token cur) :: prev
-		      | (Token_c.TCommentCpp _,_) -> (Token_c.str_of_token cur) :: prev
+			(Token_c.TComment,_) ->
+			  (Token_c.str_of_token cur) :: prev
+		      | (Token_c.TCommentCpp _,_) ->
+			  (Token_c.str_of_token cur) :: prev
 		      | _ -> prev)
 		    [] l) in
 	     (com_strings bef,com_strings mid,com_strings aft))
