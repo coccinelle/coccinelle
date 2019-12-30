@@ -1,6 +1,6 @@
-(*module Token_c :
+module Token_c :
   sig
-    type cppcommentkind =
+    type cppcommentkind = Token_c.cppcommentkind =
 	CppDirective
       | CppIfDirective of ifdef
       | CppAttr
@@ -8,10 +8,10 @@
       | CppPassingNormal
       | CppPassingCosWouldGetError
       | CppPassingExplicit
-    and ifdef = IfDef | IfDef0 | Else | Endif | Other
+    and ifdef = Token_c.ifdef = IfDef | IfDef0 | Else | Endif | Other
     type info = Common.parse_info
     type token = token_tag * info
-    and token_tag =
+    and token_tag = Token_c.token_tag =
 	TCommentSpace
       | TCommentNewline
       | TComment
@@ -19,7 +19,7 @@
     type comment_like_token = token
     val info_of_token : 'a * 'b -> 'b
     val str_of_token : 'a * Common.parse_info -> string
-  end*)
+  end
 module Ast_c :
   sig
     type posl = int * int
