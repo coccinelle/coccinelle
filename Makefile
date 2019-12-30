@@ -379,21 +379,22 @@ endef
 %.ml : %.mll
 	$(RUN_OCAMLLEX) $<
 
-ml_files := $(ml_files_but_parsers) parsing_c/parser_c.ml parsing_cocci/parser_cocci_menhir.ml
-ml_and_mli_files := $(ml_files) $(ml_files:.ml=.mli)
+ml_files_but_menhir := $(ml_files_but_parsers) parsing_c/parser_c.ml
+ml_files := $(ml_files_but_menhir) parsing_cocci/parser_cocci_menhir.ml
+ml_and_mli_files_but_menhir := $(ml_files_but_menhir) $(ml_files_but_menhir:.ml=.mli)
 
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(MAKECMDGOALS),distclean)
 ifeq ($(DEPEND_METHOD),onefile)
-.depend : $(ml_and_mli_files) parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
+.depend : $(ml_and_mli_files_but_menhir) parsing_cocci/parser_cocci_menhir.mly $(MENHIR)
 	@echo OCAMLDEP .depend
-	@$(OCAMLDEP_CMD) $(ml_and_mli_files) >$@ || (rm $@; false)
+	@$(OCAMLDEP_CMD) $(ml_and_mli_files_but_menhir) >$@ || (rm $@; false)
 	@$(MENHIR_DEP_CMD) parsing_cocci/parser_cocci_menhir.mly >>$@ \
 		|| (rm $@; false)
 
 -include .depend
 else ifeq ($(DEPEND_METHOD),multifile)
--include $(addsuffix .d,$(ml_and_mli_files))
+-include $(addsuffix .d,$(ml_and_mli_files_but_menhir))
 -include parsing_cocci/parser_cocci_menhir.mly.d
 else
 $(error DEPEND_METHOD is expected to be 'onefile' or 'multifile',\
