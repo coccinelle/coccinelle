@@ -356,7 +356,7 @@ let apply_macro_defs
    *)
 
   (* recognized macro of standard.h (or other) *)
-  | PToken ({tok = TIdent (s,i1)} as id)::Parenthised (xxs,info_parens)::xs
+  | PToken ({tok = TIdent (s,i1)} as id)::(Parenthised (xxs,info_parens) as args)::xs
       when Hashtbl.mem defs s ->
 
       msg_apply_known_macro s;
@@ -438,26 +438,44 @@ let apply_macro_defs
                  * parameters.
                  *)
 
+	        let contains_semicolon data =
+		  let res = ref false in
+		  iter_token_paren
+		    (function t ->
+		      match t.tok with
+			TPtVirg _ -> res := true
+		      | _ -> ())
+		    data;
+		  !res in
+
                 (match xs with
                 | PToken ({tok = TPtVirg _} as id2)::_ ->
-                    pr2_once
-                      ("macro stmt with trailing ';', passing also ';' for: "^
-                       s);
-                    (* sometimes still want pass its params ... as in
-                     *  DEBUGPOLL(static unsigned int prev_mask = 0);
-                     *)
+		    if contains_semicolon [args]
+		    then
+		      begin
+			pr2_once
+			  ("macro stmt with trailing ';', passing also ';' for: "^
+			   s);
+			(* sometimes still want pass its params ... as in
+			 * DEBUGPOLL(static unsigned int prev_mask = 0);
+			 *)
 
-                    msg_apply_known_macro_hint s;
-                    id.tok <- token_from_parsinghack_hint (s,i1) hint;
-                    [Parenthised (xxs, info_parens)] +>
-                      iter_token_paren (set_as_comment Token_c.CppMacro);
-                    set_as_comment Token_c.CppMacro id2;
+			msg_apply_known_macro_hint s;
+			id.tok <- Parser_c.TMacroIdStmt (s, i1);
+			[args] +> iter_token_paren (set_as_comment Token_c.CppMacro);
+			set_as_comment Token_c.CppMacro id2
+		      end
+		    else ()
 
                 | _ ->
                     msg_apply_known_macro_hint s;
-                    id.tok <- token_from_parsinghack_hint (s,i1) hint;
-                    [Parenthised (xxs, info_parens)] +>
-                      iter_token_paren (set_as_comment Token_c.CppMacro);
+		    if contains_semicolon [args]
+		    then
+		      begin
+			id.tok <- Parser_c.TMacroIdStmt (s, i1);
+			[args] +> iter_token_paren (set_as_comment Token_c.CppMacro)
+		      end
+		    else id.tok <- Parser_c.TMacroStmt (s, i1)
                 )
 
 

@@ -30,6 +30,7 @@
   correctly. Requested by Michael Stefaniuc.
 - Field conj, disj, and opt can now successfully match field metavariables
 ** Features:
+- Try to avoid passing arguments of macros calls with no trailing semicolon
 ** Bugfix:
 * 1.0.8
 ** Language:

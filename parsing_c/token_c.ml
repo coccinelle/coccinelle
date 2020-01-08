@@ -242,6 +242,7 @@ could define a type  token_class = Comment | Ident | Operator | ...
 
   | TMacroAttr of ((string * Ast_c.info))
   | TMacroStmt of ((string * Ast_c.info))
+  | TMacroIdStmt of ((string * Ast_c.info))
   | TMacroString of ((string * Ast_c.info))
   | TMacroDecl of ((string * Ast_c.info))
   | TMacroDeclConst of (Ast_c.info)

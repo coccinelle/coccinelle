@@ -1450,7 +1450,7 @@ let rec find_macro_lineparen prev_line_end xs =
    *)
   | (Line
         ([PToken ({tok = TIdent (s,ii); col = col1; where = ctx} as macro);
-          Parenthised (xxs,info_parens);
+          (Parenthised (xxs,info_parens) as args);
         ] as _line1
         ))
     ::(Line
@@ -1505,12 +1505,29 @@ let rec find_macro_lineparen prev_line_end xs =
           msg_macro_noptvirg s;
 	  (match ctx with
 	    InStruct ->
-              macro.tok <- TMacroDecl (s, TH.info_of_tok macro.tok)
+              macro.tok <- TMacroDecl (s, TH.info_of_tok macro.tok);
+              [args] +>
+              iter_token_paren (TV.set_as_comment Token_c.CppMacro)
 	  | InFunction | NoContext ->
-              macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok)
+	      let contains_semicolon data =
+		let res = ref false in
+		iter_token_paren
+		  (function t ->
+		    match t.tok with
+		      TPtVirg _ -> res := true
+		    | _ -> ())
+		  data;
+		!res in
+	      if contains_semicolon [args]
+	      then
+		begin
+		  macro.tok <- TMacroIdStmt (s, TH.info_of_tok macro.tok);
+		  [args] +>
+		  iter_token_paren (TV.set_as_comment Token_c.CppMacro)
+		end
+              else macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok)
 	  | _ -> failwith "macro: not possible");
-          [Parenthised (xxs, info_parens)] +>
-            iter_token_paren (TV.set_as_comment Token_c.CppMacro);
+
         end;
 
       find_macro_lineparen true (line2::xs)
@@ -1557,7 +1574,7 @@ let rec find_macro_lineparen prev_line_end xs =
       if condition
       then begin
         msg_macro_noptvirg_single s;
-        macro.tok <- TMacroStmt (s, TH.info_of_tok macro.tok);
+        macro.tok <- TMacroIdStmt (s, TH.info_of_tok macro.tok);
       end;
       find_macro_lineparen true (line2::xs)
 
@@ -1915,6 +1932,8 @@ let pointer ?(followed_by=fun _ -> true)
 
 let ident = function
     TIdent _ -> true
+  | TMacroStmt _ -> true
+  | TMacroIdStmt _ -> true
   | _ -> false
 
 let is_type = function

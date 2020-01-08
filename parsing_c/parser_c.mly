@@ -600,7 +600,7 @@ let postfakeInfo pii  =
 
 %token <(string * Ast_c.info)>            TMacroAttr
 %token <(string * Ast_c.info)>            TMacroEndAttr
-%token <(string * Ast_c.info)>            TMacroStmt
+%token <(string * Ast_c.info)>            TMacroStmt TMacroIdStmt
 %token <(string * Ast_c.info)> TMacroIdentBuilder
 /*(* no need value for the moment *)*/
 %token <(string * Ast_c.info)>            TMacroString
@@ -1003,7 +1003,10 @@ statement2:
  | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm $4, [$1;$2;$3;$5;$6] }
 
  /*(* cppext: *)*/
- | TMacroStmt { MacroStmt, [snd $1] }
+ | TMacroStmt TOPar argument_list_ne TCPar {
+   let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+   ExprStatement (Some(mk_e (FunCall (fn, $3)) [$2;$4])), [Ast_c.fakeInfo ()] }
+ | TMacroIdStmt { MacroStmt, [snd $1] }
 
  | Texec identifier exec_list TPtVirg { Exec($3), [$1;snd $2;$4] }
 

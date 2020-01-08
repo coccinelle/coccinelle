@@ -217,6 +217,7 @@ let is_ident_like = function
   | TMacroAttr _
   | TMacroEndAttr _
   | TMacroStmt _
+  | TMacroIdStmt _
   | TMacroString _
   | TMacroDecl _
   | TMacroDeclConst _
@@ -332,15 +333,16 @@ let info_of_tok = function
 
   | TUnknown             (i) -> i
 
-  | TMacroIdentBuilder             (s, i) -> i
+  | TMacroIdentBuilder     (s, i) -> i
   | TMacroAttr             (s, i) -> i
-  | TMacroEndAttr             (s, i) -> i
+  | TMacroEndAttr          (s, i) -> i
   | TMacroStmt             (s, i) -> i
-  | TMacroString             (s, i) -> i
+  | TMacroIdStmt           (s, i) -> i
+  | TMacroString           (s, i) -> i
   | TMacroDecl             (s, i) -> i
-  | TMacroDeclConst             (i) -> i
-  | TMacroIterator             (s,i) -> i
-(*  | TMacroTop             (s,i) -> i *)
+  | TMacroDeclConst        (i) -> i
+  | TMacroIterator         (s,i) -> i
+(*  | TMacroTop            (s,i) -> i *)
   | TCParEOL (i1) ->     i1
 
   | TAction             (i) -> i
@@ -515,6 +517,7 @@ let visitor_info_of_tok f = function
   | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
   | TMacroEndAttr        (s, i)   -> TMacroEndAttr         (s, f i)
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
+  | TMacroIdStmt         (s, i)   -> TMacroIdStmt          (s, f i)
   | TMacroString         (s, i)   -> TMacroString          (s, f i)
   | TMacroDecl           (s, i) -> TMacroDecl            (s, f i)
   | TMacroDeclConst      (i)   -> TMacroDeclConst       (f i)
@@ -786,6 +789,7 @@ let string_of_token = function
   | TMacroAttr _ -> "TMacroAttr"
   | TMacroEndAttr _ -> "TMacroEndAttr"
   | TMacroStmt _ -> "TMacroStmt"
+  | TMacroIdStmt _ -> "TMacroIdStmt"
   | TMacroIdentBuilder _ -> "TMacroIdentBuilder"
   | TMacroString _ -> "TMacroString"
   | TMacroDecl _ -> "TMacroDecl"
