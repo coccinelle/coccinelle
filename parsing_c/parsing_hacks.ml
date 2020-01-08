@@ -2085,6 +2085,20 @@ let lookahead2 ~pass next before =
 	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
+        (* tt xx yy ( : xx is an annot *)
+  | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, seen::_)
+    when LP.current_context () = LP.InTopLevel
+	&& (is_struct_enum before || is_type seen)
+	&& s ==~ regexp_annot ->
+	  TCommentCpp (Token_c.CppMacro, i1)
+
+        (* tt * xx yy ( : xx is an annot *)
+  | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, ptr)
+    when LP.current_context () = LP.InTopLevel
+	&& pointer ptr
+	&& s ==~ regexp_annot ->
+	  TCommentCpp (Token_c.CppMacro, i1)
+
 	(* tt xx yy; : yy is an annot *)
   | (TIdent (s, i1)::(TPtVirg _|TEq _)::_, TIdent (s2, i2)::type_::rest)
     when (is_struct_enum (type_::rest)
