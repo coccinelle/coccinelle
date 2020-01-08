@@ -1887,6 +1887,11 @@ let not_struct_enum = function
     (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> false
   | _ -> true
 
+let is_struct_enum = function
+  | (Parser_c.TIdent _)::
+    (Parser_c.Tstruct _ | Parser_c.Tunion _ | Parser_c.Tenum _)::_ -> true
+  | _ -> false
+
 let not_opar = function
     TOPar _ -> false
   | _ -> true
@@ -2060,6 +2065,32 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
 	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
+
+	(* tt xx yy; : yy is an annot *)
+  | (TIdent (s, i1)::(TPtVirg _|TEq _)::_, TIdent (s2, i2)::type_::rest)
+    when (is_struct_enum (type_::rest)
+	|| is_type type_)
+	&& s ==~ regexp_annot ->
+	  TCommentCpp (Token_c.CppMacro, i1)
+
+	(* tt * xx yy; : yy is an annot *)
+  | (TIdent (s, i1)::(TPtVirg _|TEq _)::_, TIdent (s2, i2)::ptr)
+    when pointer ptr
+	&& s ==~ regexp_annot ->
+	  TCommentCpp (Token_c.CppMacro, i1)
+
+	(* tt xx yy; : yy is an annot, so xx is an ident *)
+  | (TIdent (s, i1)::TIdent (s2, i2)::(TPtVirg _|TEq _)::_, seen::_)
+    when (is_struct_enum before
+	|| is_type seen)
+	&& s2 ==~ regexp_annot ->
+	  TIdent (s, i1)
+
+	(* tt * xx yy; : yy is an annot, so xx is an ident *)
+  | (TIdent (s, i1)::TIdent (s2, i2)::(TPtVirg _|TEq _)::_, ptr)
+    when pointer ptr
+	&& s2 ==~ regexp_annot ->
+	  TIdent (s, i1)
 
 	(* tt xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_)
