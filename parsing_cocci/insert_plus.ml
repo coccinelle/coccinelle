@@ -186,14 +186,42 @@ bind to that; not good for isomorphisms *)
     let l = Ast0.unwrap d in
     multibind (List.map f l) in
 
-  (* just unfavor all commas *)
   let edots r k d =
+    let l =
+      match Ast0.unwrap d with
+      | [] -> []
+      | el ->
+          (* transform an expression into a tuple (bool, expression)
+           * with the boolean indicating if the previous expression is
+           * optional (dots or expression list)*)
+          let map l =
+            (* loop processes the reversed list, leading acc to be in the right
+             * order while having a simpler pattern matching than if the list
+             * was in its orginal order *)
+            let rec loop acc = function
+              | [] -> acc
+              | e::[] -> (false, e)::acc
+              | curr::(prev::_ as l) ->
+                  let prev_is_optional =
+                    match Ast0.unwrap prev with
+                      | Ast0.Edots _
+                      | Ast0.MetaExprList _ -> true
+                      | _ -> false
+                  in
+                  let acc = (prev_is_optional, curr)::acc in
+                  loop acc l in
+            loop [] (List.rev l) in
+          map el in
     dots
-      (function e ->
-	match Ast0.unwrap e with
-	  Ast0.EComma(comma) -> unfavored_mcode comma
-	| _ -> r.VT0.combiner_rec_expression e)
-      k d in
+      (fun (prev_is_optional, e) ->
+        match (prev_is_optional, Ast0.unwrap e) with
+        | (true, Ast0.EComma(comma)) ->
+            (* Only unfavor the comma if the previous expression can be absent
+             * from the match *)
+            unfavored_mcode comma
+        | _ ->
+            r.VT0.combiner_rec_expression e)
+      k (Ast0.rewrap d l) in
   let idots r k d =
     dots
       (function i ->
