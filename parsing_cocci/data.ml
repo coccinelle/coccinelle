@@ -157,3 +157,6 @@ let non_local_script_constraints =
   ((Hashtbl.create 101) :
      (((string (* rule name *) * Ast_cocci.meta_name),
       (Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref) Hashtbl.t))
+
+let fresh_id_scripts:
+    (Ast_cocci.meta_name * Ast_cocci.seed_script) list ref = ref []

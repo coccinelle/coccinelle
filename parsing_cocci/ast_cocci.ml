@@ -136,8 +136,14 @@ and metavar =
 
 and list_len = AnyLen | MetaLen of meta_name * constraints | CstLen of int
 
-and seed = NoVal | StringSeed of string | ListSeed of seed_elem list
+and seed = NoVal | StringSeed of string | ListSeed of seed_elem list | ScriptSeed of seed_script
 and seed_elem = SeedString of string | SeedId of meta_name
+and seed_script = (* similar to script_constraint but kept separated to allow more flexibility *)
+      string (* name of generated function *) *
+	string (* language *) *
+	(meta_name * metavar) list (* params *) *
+	script_position *
+	string (* code *)
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -1137,6 +1143,9 @@ let ident_of_expression_opt expression =
   match unwrap expression with
     Ident ident -> Some ident
   | _ -> None
+
+let string_of_meta_name (rule, name) =
+  rule ^ "." ^ name
 
 type 'a transformer = {
     baseType: (baseType -> string mcode list -> 'a) option;

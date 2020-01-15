@@ -371,6 +371,8 @@ let pp_meta_decl pr env decl =
       pr "fresh identifier "; pp_name name; pr " = \""; pr x; pr "\";\n"
   | Ast.MetaFreshIdDecl(name, Ast.ListSeed x) ->
       failwith "unparse_hrule: not supported"
+  | Ast.MetaFreshIdDecl(name, Ast.ScriptSeed x) ->
+      failwith "unparse_hrule: not supported"
   | Ast.MetaTypeDecl(ar, name) ->
       no_arity ar; pr "type "; pp_name name; pr ";\n"
   | Ast.MetaInitDecl(ar, name) ->

@@ -121,3 +121,8 @@ let run_constraint ocamlname args =
   let args = List.map string_value args in
   let fn = Hashtbl.find Coccilib.bool_fcts ocamlname in
   fn args
+
+let run_fresh_id ocamlname args =
+  let args = List.map string_value args in
+  let fn = Hashtbl.find Coccilib.string_fcts ocamlname in
+  fn args

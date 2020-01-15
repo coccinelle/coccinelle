@@ -106,6 +106,10 @@ and seed table minus = function
 	    Ast.SeedString _ -> ()
 	  | Ast.SeedId name -> check_table table minus (promote name))
 	elems
+  | Ast.ScriptSeed (_, _, params, _, _) ->
+      List.iter
+        (fun (meta_name, _) -> check_table table minus (promote meta_name))
+        params
 
 (* --------------------------------------------------------------------- *)
 (* Operators *)

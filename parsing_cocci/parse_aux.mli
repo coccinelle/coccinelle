@@ -554,3 +554,12 @@ val parse_string :
   string -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
 val unfloatl : string -> string
 val unfloatr : string -> string
+val mk_script :
+  'a * string ->
+  Ast_cocci.script_position ->
+  string * 'b ->
+  Ast_cocci.meta_name list ->
+  string list ->
+  string ->
+  (string * string * (Ast_cocci.meta_name * Ast_cocci.metavar) list *
+  Ast_cocci.script_position * string)

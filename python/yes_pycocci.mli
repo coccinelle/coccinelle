@@ -62,4 +62,7 @@ val py_finalize : unit -> unit
 val run_constraint :
   (('a * string) * Ast_c.metavar_binding_kind) list ->
   string * int -> string -> bool
+val run_fresh_id :
+  (('a * string) * Ast_c.metavar_binding_kind) list ->
+  string * int -> string -> string
 val flush_stdout_and_stderr : unit -> unit

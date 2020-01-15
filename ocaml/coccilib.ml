@@ -88,6 +88,10 @@ let bool_fcts :
  (string, param_type list -> bool) Hashtbl.t =
   Hashtbl.create 11 (* Use prime number *)
 
+let string_fcts :
+ (string, param_type list -> string) Hashtbl.t =
+  Hashtbl.create 11 (* Use prime number *)
+
 let variables_to_merge: (unit -> string array) ref = ref (fun () -> [| |])
 
 let merged_variables: string list array option ref = ref None
