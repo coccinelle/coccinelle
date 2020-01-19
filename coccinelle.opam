@@ -14,15 +14,6 @@ build: [
 install: [
   [make "install"]
 ]
-remove: [
-  ["rm" "-f"  "%{prefix}%/bin/spatch"]
-  ["rm" "-f"  "%{prefix}%/bin/spatch.opt"]
-  ["rm" "-f"  "%{prefix}%/bin/pycocci"]
-  ["rm" "-rf" "%{prefix}%/lib/coccinelle"]
-  ["rm" "-f"  "%{prefix}%/share/man/man1/spatch.1"]
-  ["rm" "-f"  "%{prefix}%/share/man/man1/pycocci.1"]
-  ["rm" "-f"  "%{prefix}%/share/man/man3/Coccilib.3cocci"]
-]
 depends: [
   "ocaml"
   "menhir"
@@ -31,7 +22,9 @@ depends: [
   "stdcompat"
   "pyml"
   "conf-pkg-config"
+  "conf-python-3"
   "conf-python-3-dev"
+  "conf-aclocal"
   "conf-autoconf"
   "parmap"
   "num"
