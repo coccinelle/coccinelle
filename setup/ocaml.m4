@@ -114,41 +114,6 @@ AC_DEFUN([AC_PROG_OCAMLYACC],
 ])
 
 
-AC_DEFUN([AC_PROG_CAMLP4],
-[dnl
-  AC_REQUIRE([AC_PROG_OCAML])dnl
-
-  # checking for camlp4
-  AC_PATH_TOOL([CAMLP4],[camlp4],[no])
-  if test "$CAMLP4" != "no"; then
-     TMPVERSION=`$CAMLP4 -v 2>&1| sed -n -e 's|.*version *\(.*\)$|\1|p'`
-     if test "$TMPVERSION" != "$OCAMLVERSION" ; then
-	AC_MSG_RESULT([versions differs from ocamlc])
-        CAMLP4=no
-     fi
-  fi
-  AC_SUBST([CAMLP4])
-
-  # checking for companion tools
-  AC_PATH_TOOL([CAMLP4BOOT],[camlp4boot],[no])
-  AC_PATH_TOOL([CAMLP4O],[camlp4o],[no])
-  AC_PATH_TOOL([CAMLP4OF],[camlp4of],[no])
-  AC_PATH_TOOL([CAMLP4OOF],[camlp4oof],[no])
-  AC_PATH_TOOL([CAMLP4ORF],[camlp4orf],[no])
-  AC_PATH_TOOL([CAMLP4PROF],[camlp4prof],[no])
-  AC_PATH_TOOL([CAMLP4R],[camlp4r],[no])
-  AC_PATH_TOOL([CAMLP4RF],[camlp4rf],[no])
-  AC_SUBST([CAMLP4BOOT])
-  AC_SUBST([CAMLP4O])
-  AC_SUBST([CAMLP4OF])
-  AC_SUBST([CAMLP4OOF])
-  AC_SUBST([CAMLP4ORF])
-  AC_SUBST([CAMLP4PROF])
-  AC_SUBST([CAMLP4R])
-  AC_SUBST([CAMLP4RF])
-])
-
-
 AC_DEFUN([AC_PROG_FINDLIB],
 [dnl
   dnl  AC_REQUIRE([AC_PROG_OCAML])dnl

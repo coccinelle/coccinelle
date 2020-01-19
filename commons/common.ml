@@ -4409,18 +4409,6 @@ open B_Array
 open Bigarray
 *)
 
-
-(* for the string_of auto generation of camlp4
-val b_array_string_of_t : 'a -> 'b -> string
-val bigarray_string_of_int16_unsigned_elt : 'a -> string
-val bigarray_string_of_c_layout : 'a -> string
-let b_array_string_of_t f a = "<>"
-let bigarray_string_of_int16_unsigned_elt a = "<>"
-let bigarray_string_of_c_layout a = "<>"
-
-*)
-
-
 (*****************************************************************************)
 (* Set. Have a look too at set*.mli  *)
 (*****************************************************************************)
