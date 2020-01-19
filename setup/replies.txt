@@ -4,12 +4,6 @@ $(ocamllibdir)
 
 
 
-ocamlfind query camlp4
-
-$(ocamllibdir)/camlp4
-
-
-
 pkg-config --atleast-pkgconfig-version
 
 
