@@ -1442,6 +1442,7 @@ let rec fix_idutils = function
 let main arglist =
   begin
     let arglist = Command_line.command_line arglist in
+    let arglist = Cocci_args.prepend arglist in
     let arglist = List.map fix_chars arglist in
     let arglist = Read_options.read_options all_string_option_names arglist in
     let arglist = fix_idutils arglist in

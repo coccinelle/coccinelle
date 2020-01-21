@@ -632,6 +632,10 @@ rule token = parse
      check_context_linetype after;
      start_line false; token lexbuf }
 
+  | [' ' '\t'  ]* ("#" [' ' '\t']* "spatch" [' ' '\t']* ([' ' '\t'] [^ '\n']+)? as spatch) {
+     check_context_linetype spatch;
+     start_line false; token lexbuf }
+
   | "__attribute__"
    { match !current_line_type with
       (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
