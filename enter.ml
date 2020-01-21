@@ -19,6 +19,8 @@ module Inc = Includes
 
 let cocci_file = ref ""
 
+let opt_c_files = ref []
+
 let output_file = ref "" (* resulting code *)
 let tmp_dir = ref "" (* temporary files for parallelism *)
 let aux_file_suffix =
@@ -281,6 +283,17 @@ let print_version () =
 let short_options = [
   "--sp-file",  Arg.Set_string cocci_file,
   " <file> the semantic patch file";
+
+  "--opt-c",
+  Arg.String (fun filename ->
+    if Sys.file_exists filename
+    then
+      if Sys.is_directory filename
+      then
+        failwith (filename ^ " is a directory but a c source file was expected")
+      else
+        opt_c_files := filename::!opt_c_files),
+  " <file> a c file to process if it exists";
 
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
@@ -1483,6 +1496,7 @@ let main arglist =
                 end
               else true)
               !args;
+    args := !args @ !opt_c_files;
     (match (!Flag_parsing_c.cache_prefix,!distrib_index) with
       (Some cp,Some n) ->
         Flag_parsing_c.cache_prefix := Some (Printf.sprintf "%s_%d" cp n)
