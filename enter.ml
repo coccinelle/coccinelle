@@ -802,20 +802,20 @@ let check_include_path () =
 	Inc.include_path:= path::!Inc.include_path
   else ()
 
-let rec arg_parse_no_fail l f msg =
+let rec arg_parse_no_fail ~current l f msg argv =
   try
     check_include_path ();
-    Arg.parse_argv Sys.argv l f msg;
+    Arg.parse_argv ~current argv l f msg;
   with
     | Arg.Bad emsg ->
-	arg_parse_no_fail l f msg
+	arg_parse_no_fail ~current l f msg argv
     | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
 	raise (Impossible 165)  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
-let arg_parse2 l f msg argv =
+let arg_parse2 ~current l f msg argv =
   (try
-    Arg.parse_argv argv l f msg;
+    Arg.parse_argv ~current argv l f msg;
   with
   | Arg.Bad emsg -> (* eprintf "%s" msg; exit 2; *)
       if not !ignore_unknown_opt then
@@ -828,7 +828,7 @@ let arg_parse2 l f msg argv =
 	    raise (Common.UnixExit (2))
 	end
       else
-	arg_parse_no_fail l f msg;
+	arg_parse_no_fail ~current l f msg argv;
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
       raise (Impossible 166)  (* -help is specified in speclist *)
   )
@@ -1454,16 +1454,27 @@ let rec fix_idutils = function
 (*****************************************************************************)
 let main arglist =
   begin
-    let arglist = Command_line.command_line arglist in
-    let arglist = Cocci_args.prepend arglist in
-    let arglist = List.map fix_chars arglist in
-    let arglist = Read_options.read_options all_string_option_names arglist in
-    let arglist = fix_idutils arglist in
+    let (spatch_bin_name, cl_args) =
+      match arglist with
+      | [] -> failwith "The binary name ($0) is missing"
+      | hd::tl -> (hd, tl) in
+    let normalize_args args =
+      Command_line.command_line args
+      +> List.map fix_chars
+      +> fix_idutils in
+    let cl_args = normalize_args cl_args in
+    let cocci_args =
+      Cocci_args.read_args cl_args
+      +> normalize_args in
+    let config_args =
+      Read_options.read_options all_string_option_names (cocci_args @ cl_args)
+      +> normalize_args in
+    let arglist = spatch_bin_name :: config_args @ cocci_args @ cl_args in
 
     (if List.mem "--print-options-only" arglist
     then
       begin
-	Printf.eprintf "options: %s\n" (String.concat " " arglist);
+	Printf.eprintf "options: '%s'\n" (String.concat "' '" arglist);
 	raise (UnixExit 0)
       end);
 
@@ -1482,9 +1493,15 @@ let main arglist =
 
     (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
 
-    (* this call can set up many global flag variables via the cmd line *)
-    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg
-               (Array.of_list arglist);
+    let arg_parse =
+      let speclist = Arg.align all_options in
+      let anon_fun = (fun x -> args := x::!args) in
+      fun some_args ->
+        arg_parse2 ~current:(ref 0) speclist anon_fun usage_msg
+                   (Array.of_list (spatch_bin_name::some_args)) in
+    arg_parse config_args;
+    arg_parse cocci_args;
+    arg_parse cl_args;
     args := List.filter (function arg ->
               if Filename.check_suffix arg ".cocci"
               then

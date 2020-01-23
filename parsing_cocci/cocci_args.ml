@@ -129,8 +129,6 @@ let read_cocci_args filename =
   let args = loop [] in
   List.flatten args
 
-let prepend arglist =
+let read_args arglist =
   let cocci_files = get_cocci_files arglist in
-  let args = List.flatten (List.map read_cocci_args cocci_files) in
-  (* arglist's first element is the binary name *)
-  List.hd arglist :: args @ List.tl arglist
+  List.flatten (List.map read_cocci_args cocci_files)

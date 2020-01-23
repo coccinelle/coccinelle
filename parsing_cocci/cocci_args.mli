@@ -3,4 +3,4 @@
  * in the [arglist] and place them after the first elemt of [arglist] which
  * is assumed to be the binary name
  *)
-val prepend : string list -> string list
+val read_args : string list -> string list
