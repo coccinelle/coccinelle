@@ -813,7 +813,7 @@ let rec arg_parse_no_fail ~current l f msg argv =
 	raise (Impossible 165)  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
-let arg_parse2 ~current l f msg argv =
+let arg_parse2 ~current l f msg argv argv_location =
   (try
     Arg.parse_argv ~current argv l f msg;
   with
@@ -823,7 +823,7 @@ let arg_parse2 ~current l f msg argv =
 	  let xs = Common.lines emsg in
 	    (* take only head, it's where the error msg is *)
 	    (* was pr2, but that doesn't always get generated *)
-	    Printf.eprintf "%s\n%!" (List.hd xs);
+	    Printf.eprintf "%s (found %s)\n%!" (List.hd xs) argv_location;
 	    !short_usage_func();
 	    raise (Common.UnixExit (2))
 	end
@@ -1496,12 +1496,13 @@ let main arglist =
     let arg_parse =
       let speclist = Arg.align all_options in
       let anon_fun = (fun x -> args := x::!args) in
-      fun some_args ->
+      fun some_args args_location ->
         arg_parse2 ~current:(ref 0) speclist anon_fun usage_msg
-                   (Array.of_list (spatch_bin_name::some_args)) in
-    arg_parse config_args;
-    arg_parse cocci_args;
-    arg_parse cl_args;
+                   (Array.of_list (spatch_bin_name::some_args))
+                   args_location in
+    arg_parse config_args "in a cocciconfig file";
+    arg_parse cocci_args "in the cocci file";
+    arg_parse cl_args "on the command line";
     args := List.filter (function arg ->
               if Filename.check_suffix arg ".cocci"
               then
