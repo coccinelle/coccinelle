@@ -561,6 +561,8 @@ declaration.
 Metavariables for scripts can only be inherited from transformation rules.
 In the spirit of scripting languages such as Python that use dynamic
 typing, metavariables for scripts do not include type declarations.
+A script is only run if all metavariables are bound, either by inheritance
+or by a default value given with {\tt =}.
 
 \begin{grammar}
   \RULE{\rt{script\_metavariables}}

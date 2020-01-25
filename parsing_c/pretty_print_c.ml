@@ -806,6 +806,8 @@ and pp_string_format (e,ii) =
           (* bug: pp_type_with_ident_rest None t;      print_ident ident *)
           pr_elem i;
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
+          if iiqu <> [] || get_comments_after i <> []
+          then pr_space();
           pp_type_with_ident_rest ident t attrs Ast_c.noattr;
 
       (* ugly special case ... todo? maybe sufficient in practice *)
@@ -885,6 +887,8 @@ and pp_string_format (e,ii) =
       | (Pointer t, [i]) ->
           pr_elem i;
           iiqu +> List.iter pr_elem; (* le const est forcement apres le '*' *)
+          if iiqu <> [] || get_comments_after i <> []
+          then pr_space();
           pp_type_left t
 
       | (Array (eopt, t), [i1;i2]) -> pp_type_left t
