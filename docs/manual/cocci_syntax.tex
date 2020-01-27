@@ -139,7 +139,7 @@ behavior.  Using \NT{disable-iso} with the given name disables this behavior.
   except that here it is the qualifier (i.e., const or volatile) that does
   not have to be specified in the SmPL code, but may be present in the C code.
 \item \KW{optional\_attributes}: This is also similar to
-  \KW{optional\_storage}, except that here is it an attribute (e.g.,
+  \KW{optional\_storage}, except that here it is an attribute (e.g.,
   \_\_init) that does not have to be specified in the SmPL code, but may be
   present in the C code.
 \item \KW{value\_format}: Integers in various formats, e.g., 1 and 0x1, are
@@ -592,7 +592,7 @@ set of available scripting languages may be extended at some point.
 Script rules declared with \KW{initialize} are run before the treatment of
 any file.  Script rules declared with \KW{finalize} are run when the
 treatment of all of the files has completed.  There can be at most one of
-each per scripting language (thus currently at most one of each).
+each per scripting language.
 Initialize and finalize script rules do not have access to SmPL
 metavariables.  Nevertheless, a finalize script rule can access any
 variables initialized by the other script rules, allowing information to be
@@ -601,7 +601,7 @@ transmitted from the matching process to the finalize rule.
 Initialize and finalize rules do have access to virtual metavariables,
 using the usual syntax.  As for other scripting language rules, the rule
 is not run (and essentially does not exist) if some of the required virtual
-metavariables are not bound.  In ocaml, a warning is printed in this case.
+metavariables are not bound.  In OCaml, a warning is printed in this case.
 An example is found in {\tt demos/initvirt.cocci}.
 
 A script metavariable that does not specify an origin, using \texttt{<<},
