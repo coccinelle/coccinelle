@@ -16,6 +16,8 @@ scripts/spatch.byte
 *.d.opt
 
 *~
+*.swo
+*.swp
 .depend
 version.ml
 
