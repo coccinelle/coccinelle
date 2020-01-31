@@ -212,127 +212,167 @@ as the complete body of a sequence statement.  In the plus code, a
 statement list metavariable can occur anywhere a statement list is allowed,
 i.e., including as an element of another statement list.
 
+
 \begin{grammar}
   \RULE{\rt{metadecl}}
-  \CASE{metavariable \NT{ids} ;}
-  \CASE{fresh identifier \NT{ids} ;}
-  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
-  \CASE{identifier \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_virt\_or\_not\_eq}\mth{)} ;}
-  \CASE{parameter \opt{list} \NT{ids} ;}
-  \CASE{parameter list [ \NT{id} ] \NT{ids} ;}
-  \CASE{parameter list [ \NT{const} ] \NT{ids} ;}
-  \CASE{identifier \opt{list} \NT{ids} ;}
-  \CASE{identifier list [ \NT{id} ] \NT{ids} ;}
-  \CASE{identifier list [ \NT{const} ] \NT{ids} ;}
-  \CASE{type \NT{ids} ;}
-  \CASE{statement \opt{list} \NT{ids} ;}
-  \CASE{declaration \NT{ids} ;}
-  \CASE{field \opt{list} \NT{ids} ;}
-  \CASE{initialiser \opt{list} \NT{ids} ;}
-  \CASE{initializer \opt{list} \NT{ids} ;}
-  \CASE{typedef \NT{ids} ;}
+  \CASE{fresh identifier \NT{pmids\_with\_seed} ;}
+  \CASE{metavariable \NT{pmids\_with\_constraints} ;}
+  \CASE{identifier \NT{pmvids\_with\_constraints} ;}
+  \CASE{identifier \NT{list} \NT{pmvids\_with\_constraints} ;}
+  \CASE{field \opt{\NT{list}} \NT{pmids\_with\_constraints} ;}
+  \CASE{parameter \opt{\NT{list}} \NT{pmids\_with\_constraints} ;}
+  \CASE{type \NT{pmids\_with\_constraints} ;}
+  \CASE{statement \opt{list} \NT{pmids\_with\_constraints} ;}
+  \CASE{declaration \NT{pmids\_with\_constraints} ;}
+  \CASE{initialiser \opt{\NT{list}} \NT{pmids\_with\_constraints} ;}
+  \CASE{initializer \opt{\NT{list}} \NT{pmids\_with\_constraints} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \opt{\NT{ctype}} \NT{pmids\_with\_constraints} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \OPT{\ttlb~\NT{ctypes}~\ttrb~\any{*}} \NT{pmids\_with\_constraints} ;}
+  \CASE{\opt{local \mth{\mid} global} idexpression \some{*} \NT{pmids\_with\_constraints} ;}
+  \CASE{expression \NT{list} \NT{pmids\_with\_constraints} ;}
+  \CASE{expression \opt{enum \mth{\mid} struct \mth{\mid} union} \any{*} \NT{pmids\_with\_constraints} ;}
+  \CASE{\NT{ctype} \opt{[ ]} \NT{pmids\_with\_constraints} ;}
+  \CASE{\ttlb~\NT{ctypes}~\ttrb~\any{*} \opt{[ ]} \NT{pmids\_with\_constraints} ;}
+  \CASE{constant \opt{\NT{ctype}} \NT{pmids\_with\_constraints} ;}
+  \CASE{constant \OPT{\ttlb~\NT{ctypes}~\ttrb~\any{*}} \NT{pmids\_with\_constraints} ;}
+  \CASE{format \opt{\NT{list}} \NT{pmids\_with\_constraints};}
+  \CASE{assignment operator \NT{COMMA\_LIST}\mth{(}\NT{assignopdecl}\mth{)} ;}
+  \CASE{binary operator \NT{COMMA\_LIST}\mth{(}\NT{binopdecl}\mth{)} ;}
+  \CASE{unary operator \NT{COMMA\_LIST}\mth{(}\NT{unopdecl}\mth{)} ;}
+  \CASE{position \opt{any} \NT{pmids\_with\_constraints} ;}
+  \CASE{symbol \NT{pmids};}
+  \CASE{typedef \NT{pmids} ;}
   \CASE{attribute name \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
-%  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
-  \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
-  \CASE{declarer \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
+  \CASE{declarer \NT{pmids\_with\_constraints} ;}
   \CASE{iterator name \NT{ids} ;}
-  \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_regexp}\mth{)} ;}
-  \CASE{iterator \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-%  \CASE{error \NT{pmid\_with\_not\_eq\_list} ; }
-  \CASE{\opt{local \mth{\mid} global} idexpression \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local \mth{\mid} global} idexpression \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\opt{local \mth{\mid} global} idexpression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{expression list \NT{ids} ;}
-  \CASE{expression \some{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{expression enum \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{expression struct \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{expression union \any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{expression \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
-  \CASE{expression list [ \NT{id} ] \NT{ids} ;}
-  \CASE{expression list [ \NT{const} ] \NT{ids} ;}
-  \CASE{\NT{ctype} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{\NT{ctype} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
-  \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_ceq}\mth{)} ;}
-  \CASE{\ttlb \NT{ctypes}\ttrb~\any{*} [ ] \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{constant \opt{\NT{ctype}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{constant \OPT{\ttlb \NT{ctypes}\ttrb~\any{*}} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq}\mth{)} ;}
-  \CASE{position \opt{any} \NT{COMMA\_LIST}\mth{(}\NT{pmid\_with\_not\_eq\_mid}\mth{)} ;}
-  \CASE{symbol \NT{ids};}
-  \CASE{format \NT{ids};}
-  \CASE{format list [ \NT{id} ] \NT{ids} ;}
-  \CASE{format list [ \NT{const} ] \NT{ids} ;}
-  \CASE{assignment operator \NT{COMMA\_LIST}\mth{(}\T{assignopdecl}\mth{)} ;}
-  \CASE{binary operator \NT{COMMA\_LIST}\mth{(}\T{binopdecl}\mth{)} ;}
+  \CASE{iterator \NT{pmids\_with\_constraints} ;}
+%  \CASE{\opt{local} function \NT{pmid\_with\_not\_eq\_list} ;}
+
+  \RULE{\rt{list}}
+  \CASE{list}
+  \CASE{list [ \T{id} ]}
+  \CASE{list [ \T{integer} ]}
 
   \RULE{\rt{assignopdecl}}
-  \CASE{\NT{id} \OPT{ = \NT{assignop\_constraint}}}
+  \CASE{\NT{pmid} \OPT{ = \NT{assignop\_constraint}}}
 
   \RULE{\rt{assignop\_constraint}}
   \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{assign\_op}\mth{)}\mth{\}}}
   \CASE{\NT{assign\_op}}
 
   \RULE{\rt{binopdecl}}
-  \CASE{\NT{id} \OPT{ = \NT{binop\_constraint}}}
+  \CASE{\NT{pmid} \OPT{ = \NT{binop\_constraint}}}
 
   \RULE{\rt{binop\_constraint}}
   \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{bin\_op}\mth{)}\mth{\}}}
   \CASE{\NT{bin\_op}}
+
+  \RULE{\rt{unopdecl}}
+  \CASE{\NT{pmid} \OPT{ = \NT{unop\_constraint}}}
+
+  \RULE{\rt{unop\_constraint}}
+  \CASE{\mth{\{}\NT{COMMA\_LIST}\mth{(}\NT{unary\_op}\mth{)}\mth{\}}}
+  \CASE{\NT{unary\_op}}
 \end{grammar}
 
-A metavariable declaration {\bf local idexpression} v means that v is an
-expression that is restricted to be a local variable.  If it should just be
-a variable, but not necessarily a local one, then drop local.  A more
-complex description of a location, such as a->b is considered to be an
-expression, not an idexpression.
+{\bf fresh identifier} metavariables can only be used in {\tt +} code and will
+generate new identifiers according to the optionally given seed:
+\begin{itemize}
+  \item if none is given, then one will be requested on the command line
+    during execution of the semantic patch
+  \item if a single string is given then, that string will be suffixed by an
+    increasing number, ensuring that spatch does not use the same identifier
+    in multiple instances of a rule or in between rules
+  \item if a concatenation of strings and/or ids is provided using the
+    {\tt \#\#} operator, or a single id is given, then the strings will be kept
+    as is and each id will be replaced by its corresponding content (as string)
+    for each evaluation of the rule
+  \item if a script is given, then it must return a string and the result will be
+    used as is
+\end{itemize}
+Examples are found in {\tt demos/plusplus1.cocci} and
+{\tt demos/plusplus2.cocci} %See the wiki.
 
-{\bf Constant} is for constants, such as 27.  But it also considers an
-identifier that is all capital letters (possibly containing numbers) as a
-constant as well, because the names given to macros in Linux usually have
-this form.
+{\tt metavariable} declares a metavariable for which the parser tries to figure
+out the metavariable type based on the usage context. Such a metavariable must
+be used consistently. These metavariables cannot be used in all contexts;
+specifically, they cannot be used in context that would make the parsing
+ambiguous. Some examples are the leftmost term of an expression, such as the
+left-hand side of an assignment, or the type in a variable declaration. These
+restrictions may seem somewhat arbitrary from the user's point of view. Thus,
+it is better to use metavariables with metavariable types. If Coccinelle is
+given the argument {\tt -{}-parse-cocci}, it will print information about the
+type that is inferred for each metavariable.
 
 An {\bf identifier} is the name of a structure field, a macro, a function,
 or a variable.  It is the name of something rather than an expression that
 has a value.  But an identifier can be used in the position of an
 expression as well, where it represents a variable.
 
-It is possible to specify that an {\bf expression list} or a {\bf parameter
-  list} metavariable should match a specific number of expressions or
-parameters.
+The {\bf list} modifier allows to match over multiple elements of a given kind
+in a row and store them as one metavariable. It is possible to specify its
+length. If no length element is provided then the list will be the longest
+possible. If an integer length is provided, then only lists of the given length
+are matched. If an id is provided, then it will store the length of the matched
+list. This id can be used to ensure other lists have the same length, or can be
+manipulated in script code.
 
-An {\bf identifier list} is only used for the parameter list of a macro.
-It is possible to specify its length.
+An {\bf identifier list} is only used for the parameter list of a macro. It
+matches multiple identifiers in a row and stores them as one metavariable.
 
-It is possible to specify some information about the definition of a {\bf
-  fresh identifier}.  Examples are found in {\tt demos/plusplus1.cocci} and
-{\tt demos/plusplus2.cocci} %See the wiki.
+A {\bf field} only matches an identifier that is a structure field.
 
-A {\bf symbol} declaration specifies that the provided identifiers should
-be considered C identifiers when encountered in the body of the rule.
-Identifiers in the body of the rule that are not declared explicitly are by
-default considered symbols, thus symbol declarations are optional.  It is
-not required, but it will not cause a parse error, to redeclare a name as a
-symbol.  A name declared as a symbol can, however, be redeclared as another
-metavariable.  It will be considered to be a metavariable in such rules,
-and will revert to being a symbol in subsequent rules.  These conditions
-also apply to iterator names and declarer names.
+A {\bf parameter} matches a parameter declaration. Arguments (values given at
+function call) are not matched through this but using other kinds of
+metavariables (e.g. {\bf expression}).
 
-An {\bf attribute name} declaration indicates a name that should be
-considered to be an attribute.
+A {\bf type} matches a type appearing in code whether it is in the declaration
+of a function, a variable, in a cast or anywhere else where it is explicitly a
+type. It also matches a type name defined by a {\bf typedef}
 
-A {\bf position} metavariable is used by attaching it using \texttt{@} to
-any token, including another metavariable.  Its value is the position
-(file, line number, etc.) of the code matched by the token.  It is also
-possible to attach expression, declaration, type, initialiser, and
-statement metavariables in this manner.  In that case, the metavariable is
-bound to the closest enclosing expression, declaration, etc.  If such a
-metavariable is itself followed by a position metavariable, the position
-metavariable applies to the metavariable that it follows, and not to the
-attached token.  This makes it possible to get eg the starting and ending
-position of {\tt f(...)}, by writing {\tt f(...)@E@p}, for expression
-metavariable {\tt E} and position metavariable {\tt p}. This attachment
-notation for metavariables of type other than position can also be
-expressed with a conjunction, but the @ notation may be more concise.
+A {\bf statement} matches anything that falls into the statement definition of
+the C99 standard.
+
+A {\bf statement list} can only match a complete sequence of statements between
+braces. Therefore, no size can be specified for it and no statement can
+contiguously surround it for context (it has to be absorbed).
+
+A {\bf declaration} matches the declaration of one or more variables sharing
+the same type specification.
+
+An {\bf initialiser} or {\bf initializer} matches the right hand side of a
+declaration.
+
+An {\bf idexpression} is a variable used as an expression. It is useful to
+restrict a match to be both an identifier and to have a particular type.
+A more complex description of a location, such as a->b is considered to be an
+{\bf expression} not an {\bf idexpression}. The optional {\bf local} modifier
+restricts the matched variable to be a local variable. The optional {\bf global}
+indicates that the matched variable is not a local one. If neither {\bf local} or
+{\bf global} is specified, then any variable reference can be matched.
+It is possible to specify a \NT{ctype} or a set of them and/or a pointer level
+using {\tt *} to restrict the types of variables that can be matched.
+
+An {\bf expression} is any piece of code that falls into the expression
+definition of the C99 standard. Therefore, any combination of sequences of
+operators and operands that computes a value, designates an object or a
+function, or generates side effects is matched as en expression.
+It is possible to specify some type information using {\bf enum}, {\bf struct},
+or {\bf union}, and/or a pointer level using {\tt *} to restrict the types of
+expressions that can be matched.
+It is possible to only match expressions of a specific \NT{ctype} or a set of
+them with a pointer level using {\tt *} by writing these instead of the
+{\bf expression} designator pattern. One can also specify the matched
+expression must be of array type by adding brackets after the initial type
+specification.
+The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
+metavariable declarations and the grammar of transformations, and are
+defined on page~\pageref{types}.
+
+A {\bf constant} metavariabe matches a constant in the code, such as 27. It also
+considers an uppercase identifier as a constant as well, because the names given
+to macros in Linux usually have this form.
 
 When used, a {\bf format} or {\bf format list} metavariable must be
 enclosed by a pair of \texttt{@}s.  A format metavariable matches the
@@ -356,10 +396,24 @@ supported, but the length and precision arguments are not interpreted.
 Thus it is not possible to match metavariables in these fields.  Instead,
 the entire format is matched as a single string.
 
-{\bf Assignment} (resp.~binary) {|bf operator} metavariables match any
-assignment (resp. binary) operator. The list of operators that can be
+An {\bf assignment operator} (resp. {\bf binary operator}) metavariable matches
+any assignment (resp. binary) operator. The list of operators that can be
 matched can be restricted by adding an operator constraint, i.e. a list of
 accepted operators.
+
+A {\bf position} metavariable is used by attaching it using \texttt{@} to
+any token, including another metavariable. Its value is the position
+(file, line number, etc.) of the code matched by the token. It is also
+possible to attach expression, declaration, type, initialiser, and
+statement metavariables in this manner. In that case, the metavariable is
+bound to the closest enclosing expression, declaration, etc. If such a
+metavariable is itself followed by a position metavariable, the position
+metavariable applies to the metavariable that it follows, and not to the
+attached token. This makes it possible to get eg the starting and ending
+position of {\tt f(...)}, by writing {\tt f(...)@E@p}, for expression
+metavariable {\tt E} and position metavariable {\tt p}. This attachment
+notation for metavariables of type other than position can also be
+expressed with a conjunction, but the @ notation may be more concise.
 
 Other kinds of metavariables can also be attached using \texttt{@} to any
 token.  In this case, the metavariable floats up to the enclosing
@@ -373,63 +427,41 @@ represented by the names of the parameters.  Another particular case is
 metavariable.  {\tt S} matches the closest enclosing statement, which may
 be more than what is matches by the semantic match pattern itself.
 
-{\bf Initialiser} can also be spelled {\bf initializer}.
+A {\bf symbol} declaration specifies that the provided identifiers should
+be considered to be C identifiers when encountered in the body of the rule.
+Identifiers in the body of the rule that are not declared explicitly are by
+default considered symbols, thus symbol declarations are optional. It is
+not required, but it will not cause a parse error, to redeclare a name as a
+symbol. A name declared as a symbol can, furthermore, be redeclared as another
+metavariable. It will be considered to be a metavariable in such rules,
+and will revert to being a symbol in subsequent rules. These conditions
+also apply to iterator names and declarer names.
 
-\begin{grammar}
-  \RULE{\rt{ids}}
-  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}
+A {\bf typedef} declaration specifies that the provided identifiers should be
+considered as types when encountered in the code for match. Such a declaration
+is useful to ensure spatch will match some identifiers as types properly when
+the declaration is not available in the processed code. It is not always
+necessary to specify a type that has no declaration in the given code is a type,
+because spatch can sometimes extrapolate that information from context.
+A declaration of a name as a {\bf typedef} extends through the rest of the
+semantic patch. It is not required, but it will not cause a parse error, to
+redeclare a name as a typedef. A name declared as a typedef can, furthermore, be
+redeclared as another metavariable. It will be considered to be a metavariable
+in such rules, and will revert to being a typedef in subsequent rules.
 
-  \RULE{\rt{pmid}}
-  \CASE{\T{id}}
-  \CASE{\NT{mid}}
-%   \CASE{list}
-%   \CASE{error}
-%   \CASE{type}
+An {\bf attribute name} declaration indicates the given identifiers should be
+considered to be attributes.
 
-  \RULE{\rt{mid}}  \CASE{\T{rulename\_id}.\T{id}}
+A {\bf declarer} is a macro call used at top level which generates a
+declaration. Such macros are used in the Linux kernel.
 
-  \RULE{\rt{pmid\_with\_regexp}}
-  \CASE{\NT{pmid} =\~{} \NT{regexp}}
-  \CASE{\NT{pmid} !\~{} \NT{regexp}}
+The {\bf name} modifier specifies that instead of declaring a metavariable to
+match over some kind, the identifiers are to be considered as elements of that
+kind when they appear in the code.
 
-  \RULE{\rt{pmid\_with\_not\_eq}}
-  \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_meta}}}
-  \CASE{\NT{pmid}
-     \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_meta}\mth{)} \ttrb}}
-
-  \RULE{\rt{pmid\_with\_virt\_or\_not\_eq}}
-  \CASE{virtual.\T{id}}
-  \CASE{\NT{pmid\_with\_not\_eq}}
-
-  \RULE{\rt{pmid\_with\_not\_ceq}}
-  \CASE{\NT{pmid} \OPT{!= \NT{id\_or\_cst}}}
-  \CASE{\NT{pmid} \OPT{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{id\_or\_cst}\mth{)} \ttrb}}
-
-  \RULE{\rt{id\_or\_cst}}
-  \CASE{\T{id}}
-  \CASE{\T{integer}}
-
-  \RULE{\rt{id\_or\_meta}}
-  \CASE{\T{id}}
-  \CASE{\T{rulename\_id}.\T{id}}
-
-  \RULE{\rt{pmid\_with\_not\_eq\_mid}}
-  \CASE{\NT{pmid} \OPT{\NT{ANDAND\_LIST}\mth{(}\NT{script\_constraint}\mth{)}}}
-
-  \RULE{\rt{script\_constraint}}
-  \CASE{!= \NT{mid}}
-  \CASE{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} \ttrb}
-  \CASE{: script:ocaml
-        (\NT{COMMA\_LIST}\mth{(} \NT{mid} \mth{)})
-        \ttlb \NT{expr} \ttrb}
-  \CASE{: script:python
-        (\NT{COMMA\_LIST}\mth{(} \NT{mid} \mth{)})
-        \ttlb \NT{expr} \ttrb}
-
-  \RULE{\rt{ANDAND\_LIST}\mth{(X)}}
-  \CASE{\mth{X}}
-  \CASE{\mth{X} \&\& \NT{ANDAND\_LIST}\mth{(X)}}
-\end{grammar}
+An {\bf iterator} is a macro call used in place of an iteration statement header
+(e.g. {\tt for (size\_t i = 0; i < 10; ++i)}) which generates it. Such macros
+are used in the Linux kernel.
 
 Subsequently, we refer to arbitrary metavariables as
 \mth{\msf{metaid}^{\mbox{\scriptsize{\it{ty}}}}}, where {\it{ty}}
@@ -437,76 +469,131 @@ indicates the {\it metakind} used in the declaration of the variable.
 For example, \mth{\msf{metaid}^{\ssf{Type}}} refers to a metavariable
 that was declared using \texttt{type} and stands for any type.
 
-{\tt metavariable} declares a metavariable for which the parser tried to
-figure out the metavariable type based on the usage context.  Such a
-metavariable must be used consistently.  These metavariables cannot be used
-in all contexts; specifically, they cannot be used in context that would
-make the parsing ambiguous.  Some examples are the leftmost term of an
-expression, such as the left-hand side of an assignment, or the type in a
-variable declaration.  These restrictions may seem somewhat arbitrary from
-the user's point of view.  Thus, it is better to use metavariables with
-metavariable types.  If Coccinelle is given the argument {\tt
-  -{}-parse-cocci}, it will print information about the type that is inferred
-for each metavariable.
 
-The \NT{ctype} and \NT{ctypes} nonterminals are used by both the grammar of
-metavariable declarations and the grammar of transformations, and are
-defined on page~\pageref{types}.
+\begin{grammar}
 
-An identifier metavariable with {\tt virtual} as its ``rule name'' is given
-a value on the command line.  For example, if a semantic patch contains a
-rule that declares an identifier metavariable with the name {\tt
-  virtual.alloc}, then the command line could contain {\tt -D
-  alloc=kmalloc}.  There should not be space around the {\tt =}.  An
-example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
+  \RULE{\rt{ids}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\T{id}\mth{)}}
 
-It is possible to give an identifier metavariable a list of constraints
-that it should or should not be equal to.  If the constraint is a list of
-(unquoted) strings, then the value of the metavariable should be the same
-as one of the strings, in the case of an equality constraint, or different
-from all of the strings, in the case of an inequality constraint.  It is
-also possible to include inherited identifier metavariables among the
-constraints.  In the case of a positive constraint, things work in the same
-way, but not with respect to the inherited value of the metavariable.  On
-the other hand, an inequality constraint does not work so well, because the
-only value available is the one available in the current environment.  If
-the proposed value is different from the one in the current environment,
-but perhaps the same as the one in some other environment, the match will
-still succeed.
+  \RULE{\rt{pmids}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)}}
 
-Metavariables can be associated with constraints implemented as OCaml or
-python script code.  The form of the code is somewhat restricted, due to
-the fact that it passes through the Coccinelle semantic patch lexer, before
-being converted back to a string to be passed to the scripting language
-interpreter.  It is thus best to avoid complicated code in the constraint
-itself, and instead to define relevant functions in and {\tt initialize}
-rule.  The code must represent an expression that has type bool in the
-scripting language.  The script code can be parameterized by any inherited
-metavariables.  It is implicitly parameterized by the metavariable being
-declared.  In the script, the inherited metavariable parameters are
-referred to by their variable names, without the associated rule name.  The
-script code can also be parameterized by metavariables defined previously
-in the same rule.  Such metavariables must always all be mentioned in the
-same ``rule elem'' as the metavariable to which the constraint applies.
-Such a rule elem must also not contain disjunctions, after disjunction
-lifting.  The result of disjunction lifting can be observed using {\tt
-  -{}-parse-cocci}.  A rule elem is eg an atomic statement, such as a
-return or an assignment, or a loop header, if header, etc.  The variable
-being declared can also be referenced in the script code by its name.  All
-parameters, except position variables, have their string representation.
-An example is in {\tt demos/poscon.cocci}.
+  \RULE{\rt{pmids\_with\_constraints}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}{\NT{pmid} \OPT{\mth{constraints}}}\mth{)}}
+
+  \RULE{\rt{pmvids\_with\_constraints}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}{\NT{pmvid} \OPT{\mth{constraints}}}\mth{)}}
+
+  \RULE{\rt{pmids\_with\_seed}}
+  \CASE{\NT{COMMA\_LIST}\mth{(}{\NT{pmid} \OPT{\mth{seed}}}\mth{)}}
+
+  \RULE{\rt{pmvid}}
+  \CASE{\NT{pmid}}
+  \CASE{virtual.\T{id}}
+
+  \RULE{\rt{pmid}}
+  \CASE{\T{id}}
+  \CASE{\NT{mid}}
+
+  \RULE{\rt{mid}}
+  \CASE{\T{rulename\_id}.\T{id}}
+
+  \RULE{\rt{constraints}}
+  \CASE{\NT{ANDAND\_LIST}\mth{(}\NT{constraint}\mth{)}}
+
+  \RULE{\rt{constraint}}
+  \CASE{\NT{compare\_constraint}}
+  \CASE{\NT{regexp\_constraint}}
+  \CASE{: \NT{script}}
+
+  \RULE{\rt{compare\_constraint}}
+  \CASE{\NT{id\_compare\_constraint}}
+  \CASE{\NT{int\_compare\_constraint}}
+
+  \RULE{\rt{id\_compare\_constraint}}
+  \CASE{= \NT{pmid}}
+  \CASE{= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)} \ttrb}
+  \CASE{!= \NT{pmid}}
+  \CASE{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\NT{pmid}\mth{)} \ttrb}
+
+  \RULE{\rt{int\_compare\_constraint}}
+  \CASE{= \T{integer}}
+  \CASE{= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{integer}\mth{)} \ttrb}
+  \CASE{!= \T{integer}}
+  \CASE{!= \ttlb~\NT{COMMA\_LIST}\mth{(}\T{integer}\mth{)} \ttrb}
+
+  \RULE{\rt{regexp\_constraint}}
+  \CASE{=\~{} \NT{regexp}}
+  \CASE{!\~{} \NT{regexp}}
+
+  \RULE{\rt{seed}}
+  \CASE{= \NT{string}}
+  \CASE{= \NT{CONCAT\_LIST}\mth{(}\NT{string} \mth{\mid} \NT{pmid}\mth{)}}
+  \CASE{= \NT{script}}
+
+
+  \RULE{\rt{script}}
+  \CASE{script:ocaml
+        ( \NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} )
+        \ttlb~\NT{expr} \ttrb}
+  \CASE{script:python
+        ( \NT{COMMA\_LIST}\mth{(}\NT{mid}\mth{)} )
+        \ttlb~\NT{expr} \ttrb}
+
+  \RULE{\rt{ANDAND\_LIST}\mth{(X)}}
+  \CASE{\mth{X} \OPT{\&\& \NT{ANDAND\_LIST}\mth{(X)}}}
+
+  \RULE{\rt{CONCAT\_LIST}\mth{(X)}}
+  \CASE{\mth{X} \OPT{\#\# \NT{CONCAT\_LIST}\mth{(X)}}}
+\end{grammar}
+
+A meta identifier with {\tt virtual} as its ``rule name'' is given a value on
+the command line. For example, if a semantic patch contains a rule that
+declares an identifier metavariable with the name {\tt virtual.alloc}, then the
+command line could contain {\tt -D alloc=kmalloc}. There should not be space
+around the {\tt =}. An example is in {\tt demos/vm.cocci} and {\tt demos/vm.c}.
+
+Most metavariables can be given constraints to indicate authorized/forbidden
+values. These constraints fall in different categories:
+\begin{itemize}
+  \item comparison constraints to indicate that a metavariable must be equal to
+    or different from some integer values or some other metavariables
+  \item regexp constraints to indicate that a metavariable's matched code must
+    satisfy or must not statisfy the given regexp
+  \item script constraints to indicate that the metavariable must validate some
+    arbitrary constraint written in a script language. A script constraint must
+    return a boolean value
+\end{itemize}
+Multiple constraints can be attached to a single metavariable by separating
+them using {\tt \&\&}, and all the constraints must be met at the same time for
+their composition to be true.
+It is also possible to include inherited identifier metavariables among the
+constraints.
+
+Metavariables can be associated with constraints implemented as OCaml or python
+script code. The form of the code is somewhat restricted, due to the fact that
+it passes through the Coccinelle semantic patch lexer, before being converted
+back to a string to be passed to the scripting language interpreter. It is thus
+best to avoid complicated code in the constraint itself, and instead to define
+relevant functions in an {\tt initialize} rule. The code must represent an
+expression that has type bool in the scripting language. The script code can be
+parameterized by any inherited metavariables. It is implicitly parameterized by
+the metavariable being declared. In the script, the inherited metavariable
+parameters are referred to by their variable names, without the associated rule
+name. The script code can also be parameterized by metavariables defined
+previously in the same rule. Such metavariables must always all be mentioned in
+the same ``rule elem'' as the metavariable to which the constraint applies. Such
+a rule elem must also not contain disjunctions, after disjunction lifting. The
+result of disjunction lifting can be observed using {\tt -{}-parse-cocci}. A
+rule elem is eg an atomic statement, such as a return or an assignment, or a
+loop header, if header, etc. The variable being declared can also be referenced
+in the script code by its name. All parameters, except position variables, have
+their string representation. An example is in {\tt demos/poscon.cocci}.
 
 Script constraints may be executed more than once for a given metavariable
 binding.  Executing the script constraint does not guarantee that the
 complete match will work out; the constraints are executed within the
 matching process.
-
-A declaration of a name as a typedef extends through the rest of the
-semantic patch.  It is not required, but it will not cause a parse error,
-to redeclare a name as a typedef.  A name declared as a typedef can,
-however, be redeclared as another metavariable.  It will be considered to
-be a metavariable in such rules, and will revert to being a typedef in
-subsequent rules.
 
 \paragraph*{Warning:} Each metavariable declaration causes the declared
 metavariables to be immediately usable, without any inheritance
