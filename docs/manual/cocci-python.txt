@@ -18,7 +18,7 @@ y = cocci.combine(y_mv, y_pos)
 print x.location
 print y.location
 
-Here cocci is the interface class for interfacting with Coccinelle's OCaml core. It is part python and part OCaml code. The combine function ensures that the filename, line number and column number of the matches are registered with a meta-variable.
+Here cocci is the interface class for interfacing with Coccinelle's OCaml core. It is part python and part OCaml code. The combine function ensures that the filename, line number and column number of the matches are registered with a meta-variable.
 
 Controlling environments
 ------------------------
