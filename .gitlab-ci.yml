@@ -58,6 +58,8 @@ prepare debian docker image with 3.12.1:
     distribution: debian
     ocaml_version: 3.12.1
 
+# Note: "yes" should be quoted in variable values (yes is parsed as a keyword)
+
 prepare debian docker image with 4.09.0 and menhir:
   <<: *prepare_docker_image_def
   stage: prepare environment images
@@ -103,7 +105,8 @@ copy Dockerfile.build in the root of build tree:
 .build coccinelle: &build_coccinelle_def
   stage: build
   script:
-    - docker build -t coccinelle-with-$from . --build-arg from=$from
+    - docker build -t coccinelle-with-$from . -f Dockerfile.build
+        --build-arg from=$from
 
 build with debian 3.12:
   <<: *build_coccinelle_def
