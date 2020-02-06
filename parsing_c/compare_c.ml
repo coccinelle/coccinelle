@@ -285,7 +285,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
       let ps = Includes.get_parsing_style() in
       (match ps with
 	Includes.Parse_local_includes ->
-	  Includes.set_parsing_style Parse_all_includes;
+	  Includes.set_parsing_style Includes.Parse_all_includes;
 	  Includes.include_path := [dir]
       | _ -> Includes.include_path := dir :: pth);
       let (c2, _stat) = Parse_c.parse_c_and_cpp false false filename in
