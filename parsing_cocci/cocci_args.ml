@@ -109,12 +109,12 @@ let read_cocci_args filename =
   let rec loop acc =
     try
       let line = input_line file in
-      let line = String.trim line in
+      let line = Stdcompat.String.trim line in
       let len = String.length line in
       if len > 7 (* more than '#spatch' *) && line.[0] = '#'
       then
         let sub_line = String.sub line 1 (len - 1) in
-        let sub_line = String.trim sub_line in
+        let sub_line = Stdcompat.String.trim sub_line in
         let sub_len = String.length sub_line in
         if sub_len > 6 (* more than 'spatch' *)
            && String.sub sub_line 0 6 = "spatch"
