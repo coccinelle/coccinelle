@@ -98,14 +98,10 @@ prepare debian docker image with 4.09.0 and all dependencies:
     parmap: "yes"
     menhir: "yes"
 
-copy Dockerfile.build in the root of build tree:
-  stage: .pre
-  script: cp ci/Dockerfile.build .
-
 .build coccinelle: &build_coccinelle_def
   stage: build
   script:
-    - docker build -t coccinelle-with-$from . -f Dockerfile.build
+    - docker build -t coccinelle-with-$from . -f ci/Dockerfile.build
         --build-arg from=$from
 
 build with debian 3.12:
