@@ -145,6 +145,7 @@ build with opensuse/leap:
 .test coccinelle: &test_coccinelle_def
   stage: test
   script:
+    - docker rm coccinelle-with-$from || true
     - docker create --name coccinelle-with-$from coccinelle-with-$from
         /home/ci/coccinelle/ci/test-script.sh
     - test ! -f /home/ci/score_with_$from || docker cp
