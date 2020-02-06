@@ -147,11 +147,11 @@ build with opensuse/leap:
   script:
     - docker rm coccinelle-with-$from || true
     - docker create --name coccinelle-with-$from coccinelle-with-$from
-        /home/ci/coccinelle/ci/test-script.sh
     - test ! -f /home/ci/score_with_$from || docker cp
         /home/ci/score_with_$from
         coccinelle-with-$from:/home/ci/coccinelle/test/SCORE_excepted.sexp
     - docker start coccinelle-with-$from
+    - docker exec coccinelle-with-$from /home/ci/coccinelle/ci/test-script.sh
     - docker cp
         coccinelle-with-$from:/home/ci/coccinelle/test/SCORE_excepted.sexp
         /home/ci/score_with_$from
