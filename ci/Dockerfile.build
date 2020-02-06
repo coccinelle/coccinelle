@@ -1,4 +1,4 @@
 ARG from
 FROM $from
-COPY --chown=ci . /home/ci/coccinelle/
+COPY --chown=ci:users . /home/ci/coccinelle/
 RUN cd /home/ci/coccinelle && ./autogen && ./configure && make
