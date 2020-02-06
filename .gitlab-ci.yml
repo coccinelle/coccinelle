@@ -139,11 +139,14 @@ build with opensuse/leap:
   variables:
     from: opensuse-leap-4.09.0
 
+# Note: use the shell command "test" instead of "[" since yaml wants to parse
+# lines starting with square brackets as lists
+
 .test coccinelle: &test_coccinelle_def
   stage: test
   script:
     - docker create --name coccinelle-with-$from coccinelle-with-$from
-    - [ ! -f /home/ci/score_with_$from ] || docker cp
+    - test ! -f /home/ci/score_with_$from || docker cp
         /home/ci/score_with_$from
         coccinelle-with-$from:/home/ci/coccinelle/test/SCORE_excepted.sexp
     - docker start coccinelle-with-$from /home/ci/coccinelle/ci/test-script.sh
