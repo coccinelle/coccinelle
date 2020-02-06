@@ -27,8 +27,8 @@ stages:
 
 .prepare docker image: &prepare_docker_image_def
   script:
-    - docker build -t $image_name-prepare ci/distributions/$distribution
-    - docker build -t $image_name ci/distributions/common
+    - docker build --tag $image_name-prepare ci/distributions/$distribution
+    - docker build --tag $image_name ci/distributions/common
         --build-arg from=$image_name-prepare
         --build-arg ocaml_version=$ocaml_version
         --build-arg stdcompat=$stdcompat --build-arg pyml=$pyml
@@ -101,7 +101,7 @@ prepare debian docker image with 4.09.0 and all dependencies:
 .build coccinelle: &build_coccinelle_def
   stage: build
   script:
-    - docker build -t coccinelle-with-$from . -f ci/Dockerfile.build
+    - docker build --tag coccinelle-with-$from . -f ci/Dockerfile.build
         --build-arg from=$from
 
 build with debian 3.12:
@@ -142,7 +142,15 @@ build with opensuse/leap:
 .test coccinelle: &test_coccinelle_def
   stage: test
   script:
-    - docker run --rm coccinelle-with-$from /home/ci/coccinelle/ci/test-script.sh
+    - docker create --name coccinelle-with-$from coccinelle-with-$from
+    - [ ! -f /home/ci/score_with_$from ] || docker cp
+        /home/ci/score_with_$from
+        coccinelle-with-$from:/home/ci/coccinelle/test/SCORE_excepted.sexp
+    - docker start coccinelle-with-$from /home/ci/coccinelle/ci/test-script.sh
+    - docker cp
+        coccinelle-with-$from:/home/ci/coccinelle/test/SCORE_excepted.sexp
+        /home/ci/score_with_$from
+    - docker rm coccinelle-with-$from
 
 test with debian 3.12:
   <<: *test_coccinelle_def
