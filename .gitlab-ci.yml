@@ -65,7 +65,7 @@ prepare debian docker image with 4.09.0 and menhir:
     image_name: debian-4.09.0-menhir
     distribution: debian
     ocaml_version: 4.09.0
-    menhir: yes
+    menhir: "yes"
 
 prepare debian docker image with 4.09.0 and parmap:
   <<: *prepare_docker_image_def
@@ -74,7 +74,7 @@ prepare debian docker image with 4.09.0 and parmap:
     image_name: debian-4.09.0-parmap
     distribution: debian
     ocaml_version: 4.09.0
-    parmap: yes
+    parmap: "yes"
 
 prepare debian docker image with 4.09.0 and pyml:
   <<: *prepare_docker_image_def
@@ -83,18 +83,18 @@ prepare debian docker image with 4.09.0 and pyml:
     image_name: debian-4.09.0-pyml
     distribution: debian
     ocaml_version: 4.09.0
-    pyml: yes
+    pyml: "yes"
 
 prepare debian docker image with 4.09.0 and all dependencies:
   <<: *prepare_docker_image_def
-  stage: prepare images with all dependencies
+  stage: prepare image with all dependencies
   variables:
     image_name: debian-4.09.0-all-dependencies
     distribution: debian
     ocaml_version: 4.09.0
-    pyml: yes
-    parmap: yes
-    menhir: yes
+    pyml: "yes"
+    parmap: "yes"
+    menhir: "yes"
 
 copy Dockerfile.build in the root of build tree:
   stage: .pre
