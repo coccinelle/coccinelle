@@ -11,6 +11,9 @@ SHELL ["/bin/bash", "-c"]
 ENV BASH_ENV /home/ci/.bash_env
 ARG ocaml_version
 RUN opam switch create $ocaml_version
+# TODO Sadly, findlib looks to be a dependency for Coccinelle
+# (needed for parmap bundle)
+RUN opam install findlib
 ARG stdcompat
 RUN [ x$stdcompat != xyes ] || opam install --yes stdcompat
 ARG pyml
