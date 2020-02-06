@@ -24,7 +24,7 @@ type lexbuf = Lexing.lexbuf =
   mutable lex_curr_p: position }
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
-type lexbuf =
+type lexbuf = Lexing.lexbuf =
   {
   refill_buff: lexbuf -> unit ;
   mutable lex_buffer: Stdcompat__init.bytes ;
