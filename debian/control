@@ -36,7 +36,6 @@ Depends:
  ${python:Depends},
 Recommends:
  python-gobject,
- python-gtk2,
  python-glade2,
  ocaml-best-compilers,
  ocaml-findlib,

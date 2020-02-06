@@ -327,15 +327,8 @@ install-spgen : tools/spgen/source/spgen$(TOOLS_SUFFIX)
 
 .PHONY : install-python
 install-python:
-	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(LIBDIR)/python/coccilib
-	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
-		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
-	$(INSTALL_DATA) python/coccilib/coccigui/pygui.glade \
-		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
-	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
-		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 
 .PHONY : uninstall
 uninstall : uninstall-bash

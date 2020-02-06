@@ -366,7 +366,7 @@ let short_options = [
   "--python", Arg.Set_string Config.python_interpreter,
   "    Sets the path to the python interpreter";
   "--pyoutput", Arg.Set_string Flag.pyoutput,
-  "    Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>";
+  "    Sets output routine: Default value: coccilib.output.Console";
   "--parse-handler",
   Arg.String (fun f ->
     let f' = Prepare_ocamlcocci.prepare_simple f in
