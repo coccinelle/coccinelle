@@ -15,6 +15,7 @@ stages:
   - prepare environment images
   - prepare image with all dependencies
   - build
+  - clone reference scores
   - test
 
 # Dockerfiles are split in two:
@@ -139,6 +140,14 @@ build with opensuse/leap:
   variables:
     from: opensuse-leap-4.09.0
 
+clone reference scores:
+  stage: clone reference scores
+  script:
+    - git clone git@gitlab.inria.fr:coccinelle/reference_scores.git
+  artifacts:
+    paths:
+      - reference_scores/
+
 # Note: use the shell command "test" instead of "[" since yaml wants to parse
 # lines starting with square brackets as lists
 
@@ -148,13 +157,13 @@ build with opensuse/leap:
     - docker rm coccinelle-with-$from || true
     - docker create --name coccinelle-with-$from coccinelle-with-$from
         /home/ci/coccinelle/ci/test-script.sh
-    - test ! -f /builds/scores/$from || docker cp
-        /builds/scores/$from
+    - test ! -f reference_scores/$from || docker cp
+        reference_scores/$from
         coccinelle-with-$from:/home/ci/coccinelle/tests/SCORE_expected.sexp
     - docker start --interactive coccinelle-with-$from
     - docker cp
         coccinelle-with-$from:/home/ci/coccinelle/tests/SCORE_expected.sexp
-        /builds/scores/$from
+        reference_scores/$from
     - docker rm coccinelle-with-$from
 
 test with debian 3.12:
@@ -191,3 +200,14 @@ test with opensuse/leap:
   <<: *test_coccinelle_def
   variables:
     from: opensuse-leap-4.09.0
+
+push reference scores:
+  stage: .post
+  only:
+    - master@coccinelle/coccinelle
+  script:
+    - cd reference_scores &&
+        git add * &&
+        git commit -m "reference scores for commit $CI_COMMIT_SHORT_SHA" &&
+        git push
+      || true
