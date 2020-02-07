@@ -165,6 +165,9 @@ clone reference scores:
         coccinelle-with-$from:/home/ci/coccinelle/tests/SCORE_expected.sexp
         reference_scores/$from
     - docker rm coccinelle-with-$from
+  artifacts:
+    paths:
+      - reference_scores/$from
 
 test with debian 3.12:
   <<: *test_coccinelle_def
