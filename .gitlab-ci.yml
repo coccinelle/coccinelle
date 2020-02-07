@@ -1,0 +1,193 @@
+# In order to make "docker build" use cache as most as possible, there
+# are three "prepare" stages.
+# - prepare distribution images: build one container by distribution (for now,
+#   debian and opensuse/leap, both with OCaml 4.09)
+# - prepare environment images: build debian containers for 3.12,
+#   4.09 with parmap, 4.09 with menhir, 4.09 with pyml. It is worth noticing
+#   that all these buildings implicitly use the cached container built on the
+#   previous stage.
+# - prepare image with all dependencies: build debian container with parmap,
+#   menhir and pyml. It is worth noticing that this building use implicitly
+#   the cached container with pyml built on the previous stage.
+
+stages:
+  - prepare distribution images
+  - prepare environment images
+  - prepare image with all dependencies
+  - build
+  - test
+
+# Dockerfiles are split in two:
+# - a part specific to the distribution that installs package and adds
+#   a user called "ci"
+# - a part common to both distributions that makes "ci" sudoer and installs
+#   opam
+# "docker build" is run twice, once to make the specific part and once to
+# make the common part starting from the container prepared by the first part.
+
+.prepare docker image: &prepare_docker_image_def
+  script:
+    - docker build --tag $image_name-prepare ci/distributions/$distribution
+    - docker build --tag $image_name ci/distributions/common
+        --build-arg from=$image_name-prepare
+        --build-arg ocaml_version=$ocaml_version
+        --build-arg stdcompat=$stdcompat --build-arg pyml=$pyml
+        --build-arg menhir=$menhir --build-arg parmap=$parmap
+
+prepare debian docker image with 4.09.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: debian-4.09.0
+    distribution: debian
+    ocaml_version: 4.09.0
+
+prepare opensuse/leap docker image with 4.09.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: opensuse-leap-4.09.0
+    distribution: opensuse-leap
+    ocaml_version: 4.09.0
+
+prepare debian docker image with 3.12.1:
+  <<: *prepare_docker_image_def
+  stage: prepare environment images
+  variables:
+    image_name: debian-3.12.1
+    distribution: debian
+    ocaml_version: 3.12.1
+
+# Note: "yes" should be quoted in variable values (yes is parsed as a keyword)
+
+prepare debian docker image with 4.09.0 and menhir:
+  <<: *prepare_docker_image_def
+  stage: prepare environment images
+  variables:
+    image_name: debian-4.09.0-menhir
+    distribution: debian
+    ocaml_version: 4.09.0
+    menhir: "yes"
+
+prepare debian docker image with 4.09.0 and parmap:
+  <<: *prepare_docker_image_def
+  stage: prepare environment images
+  variables:
+    image_name: debian-4.09.0-parmap
+    distribution: debian
+    ocaml_version: 4.09.0
+    parmap: "yes"
+
+prepare debian docker image with 4.09.0 and pyml:
+  <<: *prepare_docker_image_def
+  stage: prepare environment images
+  variables:
+    image_name: debian-4.09.0-pyml
+    distribution: debian
+    ocaml_version: 4.09.0
+    pyml: "yes"
+
+prepare debian docker image with 4.09.0 and all dependencies:
+  <<: *prepare_docker_image_def
+  stage: prepare image with all dependencies
+  variables:
+    image_name: debian-4.09.0-all-dependencies
+    distribution: debian
+    ocaml_version: 4.09.0
+    pyml: "yes"
+    parmap: "yes"
+    menhir: "yes"
+
+.build coccinelle: &build_coccinelle_def
+  stage: build
+  script:
+    - docker build --tag coccinelle-with-$from . -f ci/Dockerfile.build
+        --build-arg from=$from
+
+build with debian 3.12:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-3.12.1
+
+build with debian 4.09:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.09.0
+
+build with debian 4.09 with menhir:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.09.0-menhir
+
+build with debian 4.09 with parmap:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.09.0-parmap
+
+build with debian 4.09 with pyml:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.09.0-pyml
+
+build with debian 4.09 with all dependencies:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.09.0-all-dependencies
+
+build with opensuse/leap:
+  <<: *build_coccinelle_def
+  variables:
+    from: opensuse-leap-4.09.0
+
+# Note: use the shell command "test" instead of "[" since yaml wants to parse
+# lines starting with square brackets as lists
+
+.test coccinelle: &test_coccinelle_def
+  stage: test
+  script:
+    - docker rm coccinelle-with-$from || true
+    - docker create --name coccinelle-with-$from coccinelle-with-$from
+        /home/ci/coccinelle/ci/test-script.sh
+    - test ! -f /builds/scores/$from || docker cp
+        /builds/scores/$from
+        coccinelle-with-$from:/home/ci/coccinelle/tests/SCORE_expected.sexp
+    - docker start --interactive coccinelle-with-$from
+    - docker cp
+        coccinelle-with-$from:/home/ci/coccinelle/tests/SCORE_expected.sexp
+        /builds/scores/$from
+    - docker rm coccinelle-with-$from
+
+test with debian 3.12:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-3.12.1
+
+test with debian 4.09:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.09.0
+
+test with debian 4.09 with menhir:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.09.0-menhir
+
+test with debian 4.09 with parmap:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.09.0-parmap
+
+test with debian 4.09 with pyml:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.09.0-pyml
+
+test with debian 4.09 with all dependencies:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.09.0-all-dependencies
+
+test with opensuse/leap:
+  <<: *test_coccinelle_def
+  variables:
+    from: opensuse-leap-4.09.0
