@@ -2398,12 +2398,23 @@ wrapped_sym_ident:
   TSymId { Ast0.wrap(Ast0.Id(P.sym2mcode $1)) }
 
 pure_ident_or_meta_ident_with_seed:
-       pure_ident_or_meta_ident { ($1,Ast.NoVal) }
-     | pure_ident_or_meta_ident TEq
-	 separated_nonempty_list(TCppConcatOp,seed_elem)
-	 { match $3 with
-	   [Ast.SeedString s] -> ($1,Ast.StringSeed s)
-	 | _ -> ($1,Ast.ListSeed $3) }
+      | pure_ident_or_meta_ident { ($1,Ast.NoVal) }
+      | pure_ident_or_meta_ident TEq separated_nonempty_list(TCppConcatOp,seed_elem)
+        { match $3 with
+          | [Ast.SeedString s] -> ($1,Ast.StringSeed s)
+          | _ -> ($1,Ast.ListSeed $3) }
+      | nm=pure_ident_or_meta_ident TEq pos=TScript TDotDot lang=pure_ident
+          TOPar params=loption(comma_list(inherited_or_local_meta)) TCPar
+          TOBrace c=list(anything) TCBrace
+        {
+          let script = P.mk_script nm pos lang params c "seed" in
+          let nm' =
+            match nm with
+              None, n -> "", n
+            | Some r, n -> r, n in
+          Data.fresh_id_scripts :=
+            (nm', script) :: !Data.fresh_id_scripts;
+          (nm, Ast.ScriptSeed script) }
 
 seed_elem:
   TString { let (x,_,_) = $1 in Ast.SeedString x }
@@ -2471,31 +2482,15 @@ nonempty_constraints:
     TOPar params=loption(comma_list(inherited_or_local_meta)) TCPar
     TOBrace c=list(anything) TCBrace
     { fun posvar nm ->
-      let rule =
-	String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
-      let key = Printf.sprintf "constraint_code_%s_0_%s" rule (snd nm) in
-      let code = String.concat " " c in
-      let lang' = P.id2name lang in
-      let code' =
-	if lang' = "ocaml" then
-	  let (file, line) = pos in
-	  Printf.sprintf "\n# %d \"%s\"\n%s" line file code
-	else code in
+      let script = P.mk_script nm pos lang params c "constraint" in
       let nm' =
-	match nm with
-	  None, n -> "", n
-	| Some r, n -> r, n in
+        match nm with
+          None, n -> "", n
+        | Some r, n -> r, n in
       let local =
 	List.for_all (fun (rl,_) -> not (rl = !Ast0.rule_name)) params in
-      let params =
-	List.map
-	  (fun (rl,nm) ->
-            let mv = Parse_aux.lookup rl nm in
-	    ((rl,nm),mv))
-	  (List.rev params) in
-      let script = (key, lang', params, pos, code') in
       Data.constraint_scripts :=
-	(posvar, nm', script) :: !Data.constraint_scripts;
+        (posvar, nm', script) :: !Data.constraint_scripts;
       (if not local
       then
 	(let mv =

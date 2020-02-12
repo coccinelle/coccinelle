@@ -953,6 +953,7 @@ let print_seed rule = function
   | Ast.ListSeed(ss) ->
       print_string " = ";
       print_between (fun _ -> print_string " ## ") (print_seed_elem rule) ss
+  | Ast.ScriptSeed _ -> print_string " = [script]"
 
 let contains_unknown ty =
   try

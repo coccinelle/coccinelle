@@ -131,6 +131,11 @@ let seed ~rn =
     | Ast.NoVal -> ""
     | Ast.StringSeed s -> " = \"" ^ s ^ "\""
     | Ast.ListSeed s -> " = " ^ (String.concat " ## " (List.map se s))
+    | Ast.ScriptSeed (_, lang, params, _pos, code) ->
+        Printf.sprintf " = script:%s (%s) {%s}"
+          lang
+          (String.concat "," (List.map (fun (nm,_) -> name_str ~rn nm) params))
+          code
 
 let string_of_operator_constraint cstr =
   match cstr with

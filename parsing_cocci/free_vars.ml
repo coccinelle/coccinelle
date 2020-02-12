@@ -523,7 +523,7 @@ let collect_fresh_seed_env metavars l =
 	  try
 	    (let v = List.assoc x fresh in
 	    match v with
-	      Ast.ListSeed l ->
+	    | Ast.ListSeed l ->
 		let ids =
 		  List.fold_left
 		    (function prev ->
@@ -531,6 +531,12 @@ let collect_fresh_seed_env metavars l =
 			  Ast.SeedId(id) -> id::prev
 			| _ -> prev)
 		    [] l in
+		((x,ids)::seed_env,Common.union_set ids seeds)
+            | Ast.ScriptSeed (_, _, params, _, _) ->
+                let ids =
+                  List.fold_left
+                    (fun prev (meta_name, _) -> meta_name::prev)
+                    [] params in
 		((x,ids)::seed_env,Common.union_set ids seeds)
 	    | _ -> ((x,[])::seed_env,seeds))
 	  with Not_found -> prev)

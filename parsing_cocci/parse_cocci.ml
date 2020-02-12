@@ -2182,6 +2182,7 @@ let print_dep_image name deps virt depimage =
 
 let parse file =
   D.constraint_scripts := [];
+  D.fresh_id_scripts := [];
   Lexer_cocci.init ();
   let rec parse_loop file =
   Lexer_cocci.include_init ();

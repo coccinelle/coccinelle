@@ -19,6 +19,8 @@ module Inc = Includes
 
 let cocci_file = ref ""
 
+let opt_c_files = ref []
+
 let output_file = ref "" (* resulting code *)
 let tmp_dir = ref "" (* temporary files for parallelism *)
 let aux_file_suffix =
@@ -282,6 +284,17 @@ let short_options = [
   "--sp-file",  Arg.Set_string cocci_file,
   " <file> the semantic patch file";
 
+  "--opt-c",
+  Arg.String (fun filename ->
+    if Sys.file_exists filename
+    then
+      if Sys.is_directory filename
+      then
+        failwith (filename ^ " is a directory but a c source file was expected")
+      else
+        opt_c_files := filename::!opt_c_files),
+  " <file> a c file to process if it exists";
+
   "-o", Arg.Set_string output_file,
   "   <file> the output file";
   "--in-place", Arg.Set Flag_cocci.inplace_modif,
@@ -366,7 +379,7 @@ let short_options = [
   "--python", Arg.Set_string Config.python_interpreter,
   "    Sets the path to the python interpreter";
   "--pyoutput", Arg.Set_string Flag.pyoutput,
-  "    Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>";
+  "    Sets output routine: Default value: coccilib.output.Console";
   "--parse-handler",
   Arg.String (fun f ->
     let f' = Prepare_ocamlcocci.prepare_simple f in
@@ -789,20 +802,20 @@ let check_include_path () =
 	Inc.include_path:= path::!Inc.include_path
   else ()
 
-let rec arg_parse_no_fail l f msg =
+let rec arg_parse_no_fail ~current l f msg argv =
   try
     check_include_path ();
-    Arg.parse_argv Sys.argv l f msg;
+    Arg.parse_argv ~current argv l f msg;
   with
     | Arg.Bad emsg ->
-	arg_parse_no_fail l f msg
+	arg_parse_no_fail ~current l f msg argv
     | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
 	raise (Impossible 165)  (* -help is specified in speclist *)
 
 (* copy paste of Arg.parse. Don't want the default -help msg *)
-let arg_parse2 l f msg argv =
+let arg_parse2 ~current l f msg argv argv_location =
   (try
-    Arg.parse_argv argv l f msg;
+    Arg.parse_argv ~current argv l f msg;
   with
   | Arg.Bad emsg -> (* eprintf "%s" msg; exit 2; *)
       if not !ignore_unknown_opt then
@@ -810,12 +823,12 @@ let arg_parse2 l f msg argv =
 	  let xs = Common.lines emsg in
 	    (* take only head, it's where the error msg is *)
 	    (* was pr2, but that doesn't always get generated *)
-	    Printf.eprintf "%s\n%!" (List.hd xs);
+	    Printf.eprintf "%s (found %s)\n%!" (List.hd xs) argv_location;
 	    !short_usage_func();
 	    raise (Common.UnixExit (2))
 	end
       else
-	arg_parse_no_fail l f msg;
+	arg_parse_no_fail ~current l f msg argv;
   | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
       raise (Impossible 166)  (* -help is specified in speclist *)
   )
@@ -1441,15 +1454,27 @@ let rec fix_idutils = function
 (*****************************************************************************)
 let main arglist =
   begin
-    let arglist = Command_line.command_line arglist in
-    let arglist = List.map fix_chars arglist in
-    let arglist = Read_options.read_options all_string_option_names arglist in
-    let arglist = fix_idutils arglist in
+    let (spatch_bin_name, cl_args) =
+      match arglist with
+      | [] -> failwith "The binary name ($0) is missing"
+      | hd::tl -> (hd, tl) in
+    let normalize_args args =
+      Command_line.command_line args
+      +> List.map fix_chars
+      +> fix_idutils in
+    let cl_args = normalize_args cl_args in
+    let cocci_args =
+      Cocci_args.read_args cl_args
+      +> normalize_args in
+    let config_args =
+      Read_options.read_options all_string_option_names (cocci_args @ cl_args)
+      +> normalize_args in
+    let arglist = spatch_bin_name :: config_args @ cocci_args @ cl_args in
 
     (if List.mem "--print-options-only" arglist
     then
       begin
-	Printf.eprintf "options: %s\n" (String.concat " " arglist);
+	Printf.eprintf "options: '%s'\n" (String.concat "' '" arglist);
 	raise (UnixExit 0)
       end);
 
@@ -1468,9 +1493,16 @@ let main arglist =
 
     (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
 
-    (* this call can set up many global flag variables via the cmd line *)
-    arg_parse2 (Arg.align all_options) (fun x -> args := x::!args) usage_msg
-               (Array.of_list arglist);
+    let arg_parse =
+      let speclist = Arg.align all_options in
+      let anon_fun = (fun x -> args := x::!args) in
+      fun some_args args_location ->
+        arg_parse2 ~current:(ref 0) speclist anon_fun usage_msg
+                   (Array.of_list (spatch_bin_name::some_args))
+                   args_location in
+    arg_parse config_args "in a cocciconfig file";
+    arg_parse cocci_args "in the cocci file";
+    arg_parse cl_args "on the command line";
     args := List.filter (function arg ->
               if Filename.check_suffix arg ".cocci"
               then
@@ -1482,6 +1514,7 @@ let main arglist =
                 end
               else true)
               !args;
+    args := !args @ !opt_c_files;
     (match (!Flag_parsing_c.cache_prefix,!distrib_index) with
       (Some cp,Some n) ->
         Flag_parsing_c.cache_prefix := Some (Printf.sprintf "%s_%d" cp n)

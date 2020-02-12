@@ -34,8 +34,7 @@ in derived classes. This method can be called like:
 cocci.register_match(True, [(x, 'Array size'), (y, 'Array index
 size')]). Here the True is automatically passed on to include_match (so one
 could use False in order to drop the environment, but still print
-information). In the GTK frontend, this will result in the "Array index
-size" information being shown as a child node to the "Array size".
+information).
 
 cocci.exit() simply aborts the treatment of the current file.  Previously
 made changes do take effect.
@@ -43,19 +42,17 @@ made changes do take effect.
 Output methods for the python scripts
 -------------------------------------
 
-By default Coccinelle contains two output modes: a console-based output, and a GTK-based output. Which one is used is specified using the -pyoutput switch to spatch.
+By default Coccinelle contains one output mode: a console-based output. It is possible to define custom output methods as detailed in the next section.
+Which one is used is specified using the --pyoutput switch to spatch.
 
 -pyoutput coccilib.output.Console   (this is the default)
--pyoutput coccilib.output.Gtk
-
-The latter depends on pygtk2, and the dependency will not be evaluated until runtime.
 
 Creating new python output classes
 ----------------------------------
 
 If you have a need to tailor special output based on your python script, e.g. using register_match of existing scripts, you can do this by deriving from coccilib.output.Output and override the implementation of register_match(self, include, messages). The method expects that the first thing you call is "self.include_match(include)", but otherwise the details of the method is left up to you.
 
-To use your custom output class, just specify it as an argument to -pyoutput. It needs to exist in the default python execution environment or in PYTHON_PATH.
+To use your custom output class, just specify it as an argument to --pyoutput. It needs to exist in the default python execution environment or in PYTHON_PATH.
 
 Running spatch from a different directory than it is stored in
 --------------------------------------------------------------

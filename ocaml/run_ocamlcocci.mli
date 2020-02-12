@@ -11,3 +11,8 @@ val run_constraint :
     string (*rule name*) ->
     Ast_c.metavar_binding_kind list ->
     bool
+
+val run_fresh_id :
+    string (*rule name*) ->
+    Ast_c.metavar_binding_kind list ->
+    string

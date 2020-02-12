@@ -857,3 +857,22 @@ let unfloatr s =
   match Str.split_delim (Str.regexp_string ".") s with
     ["";thing] -> thing
   | _ -> failwith (Printf.sprintf "unexpected float in length range: %s\n" s)
+
+let mk_script nm pos lang params code prefix =
+  let rule =
+    String.concat "_" (Str.split (Str.regexp " ") !Ast0.rule_name) in
+  let key = Printf.sprintf "%s_code_%s_0_%s" prefix rule (snd nm) in
+  let code = String.concat " " code in
+  let lang' = id2name lang in
+  let code' =
+    if lang' = "ocaml" then
+      let (file, line) = pos in
+      Printf.sprintf "\n# %d \"%s\"\n%s" line file code
+    else code in
+  let params =
+    List.map
+      (fun (rl, nm) ->
+        let mv = lookup rl nm in
+        ((rl, nm), mv))
+      (List.rev params) in
+  (key, lang', params, pos, code')

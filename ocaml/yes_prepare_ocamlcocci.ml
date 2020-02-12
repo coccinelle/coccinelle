@@ -243,6 +243,13 @@ let prepare_constraint (name, params, body) =
       params in
   prepare_generic_rule (name, params, [], body) "" "bool_fcts"
 
+let prepare_fresh_id (name, params, body) =
+  let params = (* like params of a normal script rule *)
+    List.map
+      (function (((r,n) as nm),mv) -> ((Some n,None), nm, mv, Ast.NoMVInit))
+      params in
+  prepare_generic_rule (name, params, [], body) "" "string_fcts"
+
 let prepare coccifile code =
   let (init_mvs,sub_final_mvs,all_final_mvs) =
     let (init,final) =
@@ -298,7 +305,17 @@ let prepare coccifile code =
       prev in
   let constraint_rules =
     List.fold_left add_constraint_rules [] !Data.constraint_scripts in
-  if init_rules = [] && other_rules = [] && constraint_rules = []
+  let add_fresh_id_rules prev
+      (self, (script_name, lang, params, pos, body)) =
+    if lang = "ocaml"
+    then
+      let kind = Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
+      let self = (self, kind) in
+      (script_name, self::params, body) :: prev
+    else prev in
+  let fresh_id_rules =
+    List.fold_left add_fresh_id_rules [] !Data.fresh_id_scripts in
+  if init_rules = [] && other_rules = [] && constraint_rules = [] && fresh_id_rules = []
       && final_rules = []
   then None
   else
@@ -335,6 +352,8 @@ let prepare coccifile code =
       List.iter (function rc -> Printf.fprintf o "%s\n\n" rc) rule_code;
       let constraint_code = List.map prepare_constraint constraint_rules in
       List.iter (function rc -> Printf.fprintf o "%s\n\n" rc) constraint_code;
+      let fresh_id_code = List.map prepare_fresh_id fresh_id_rules in
+      List.iter (function rc -> Printf.fprintf o "%s\n\n" rc) fresh_id_code;
       (* finalizer *)
       (if generate_final
       then

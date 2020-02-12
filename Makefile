@@ -46,7 +46,7 @@ SOURCES_parsing_cocci := \
 	lexer_cli.mll lexer_script.mll \
 	cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml git_grep.ml \
 	adjacency.ml commas_on_lists.ml re_constraints.ml parse_cocci.ml \
-	command_line.ml
+	command_line.ml cocci_args.ml
 SOURCES_parsing_c := \
 	token_annot.ml flag_parsing_c.ml parsing_stat.ml \
 	token_c.ml ast_c.ml includes.ml control_flow_c.ml \
@@ -327,15 +327,8 @@ install-spgen : tools/spgen/source/spgen$(TOOLS_SUFFIX)
 
 .PHONY : install-python
 install-python:
-	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(LIBDIR)/python/coccilib
-	$(INSTALL_DATA) python/coccilib/coccigui/*.py \
-		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
-	$(INSTALL_DATA) python/coccilib/coccigui/pygui.glade \
-		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
-	$(INSTALL_DATA) python/coccilib/coccigui/pygui.gladep \
-		$(DESTDIR)$(LIBDIR)/python/coccilib/coccigui
 
 .PHONY : uninstall
 uninstall : uninstall-bash

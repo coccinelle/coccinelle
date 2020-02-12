@@ -134,3 +134,7 @@ val constraint_scripts:
 val non_local_script_constraints:
     ((string (* rule name *) * Ast_cocci.meta_name),
      (Ast_cocci.meta_name * Ast_cocci.script_constraint) list ref) Hashtbl.t
+
+val fresh_id_scripts:
+    (Ast_cocci.meta_name * Ast_cocci.seed_script) list ref
+(** The list of all fresh id scripts. *)

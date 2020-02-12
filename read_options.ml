@@ -79,26 +79,22 @@ let parse_file file =
 
 (* ------------------------------------------------------------------------ *)
 
-let process_arglist strings = function
-    spatch::rest ->
-      let before = [spatch] in
-      let after = rest in
-      let rec loop = function
-	  x::opt::xs when List.mem opt strings -> loop xs
-	| ""::xs -> loop xs (* not sure why it would arise *)
-	| x::xs ->
-	    if String.get x 0 = '-'
-	    then loop xs
-	    else
-	      if Filename.check_suffix x ".cocci"
-	      then loop xs
-	      else
-		if Sys.file_exists x && Common.is_directory x
-		then Some x
-		else loop xs
-	| [] -> None in
-      (before,after,loop (List.rev rest))
-  | [] -> failwith "arglist should always contain the command"
+let process_arglist strings arglist =
+  let rec loop = function
+      x::opt::xs when List.mem opt strings -> loop xs
+    | ""::xs -> loop xs (* not sure why it would arise *)
+    | x::xs ->
+        if String.get x 0 = '-'
+        then loop xs
+        else
+          if Filename.check_suffix x ".cocci"
+          then loop xs
+          else
+            if Sys.file_exists x && Common.is_directory x
+            then Some x
+            else loop xs
+    | [] -> None in
+  loop (List.rev arglist)
 
 (* ------------------------------------------------------------------------ *)
 
@@ -114,7 +110,7 @@ let read_options strings arglist =
   let cwd = Sys.getcwd() in
   let home_dir_options = check_one (Printf.sprintf "%s/.cocciconfig" hd) in
   let cwd_options = check_one ".cocciconfig" in
-  let (before,after,dir) = process_arglist strings arglist in
+  let dir = process_arglist strings arglist in
   let dir_options =
     let rec loop dir =
       if dir = "/" || dir = "." || dir = hd || dir = cwd
@@ -126,6 +122,4 @@ let read_options strings arglist =
     match dir with
       None -> None
     | Some dir -> loop dir in
-  before @
   (unoption home_dir_options) @ (unoption cwd_options) @ (unoption dir_options)
-  @ after

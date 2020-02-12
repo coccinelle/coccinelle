@@ -2527,6 +2527,7 @@ module Ast_cocci :
         NoVal
       | StringSeed of string
       | ListSeed of seed_elem list
+      | ScriptSeed of script_constraint
     and seed_elem =
       Ast_cocci.seed_elem =
         SeedString of string
@@ -3748,6 +3749,7 @@ val fcts :
   (string, param_type list -> Ast_c.metavar_binding_kind ref list -> unit)
   Hashtbl.t
 val bool_fcts : (string, param_type list -> bool) Hashtbl.t
+val string_fcts : (string, param_type list -> string) Hashtbl.t
 val variables_to_merge : (unit -> string array) ref
 val merged_variables : string list array option ref
 val no_format : string -> bool

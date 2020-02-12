@@ -87,7 +87,41 @@ let process_tree inherited_env l =
 			     failwith
 			       ("fresh: no binding for meta "^(Dumper.dump id)))
 		   seed in
-	    string2val(String.concat "" strings)))
+	    string2val(String.concat "" strings))
+        | ((r, n) as fresh, Ast.ScriptSeed(name, lang, params, pos, body)) ->
+            let make_fresh_id env =
+              let args =
+                List.map
+                  (fun (((rule, name) as meta_name), _) ->
+                    try match List.assoc meta_name env with
+                      | Lib_engine.NormalMetaVal v -> (meta_name, v)
+                      | _ ->
+                          failwith
+                            (Printf.sprintf
+                              "Undesired metavar_binding in line %d" (snd pos))
+                    with
+                    | Not_found ->
+                        let get_meta_names l =
+                          List.map (fun (mn, _) -> Ast.string_of_meta_name mn)
+                          l in
+                        let string_of_list l =
+                          "[" ^ String.concat "; " l ^ "]" in
+                        failwith
+                          (Printf.sprintf
+                            "%s: script on variable %s cannot be evaluated in line %d. available: %s\nwanted: %s"
+                            r n (snd pos) (string_of_list (get_meta_names env))
+                            (string_of_list (get_meta_names params)))
+                  )
+                  params in
+              let args = (fresh, Ast_c.MetaIdVal n)::args in
+              let fresh_id =
+                match lang with
+                | "ocaml" -> Run_ocamlcocci.run_fresh_id name (List.map snd args)
+                | "python" -> Pycocci.run_fresh_id args pos body
+                | _ -> failwith "languages other than ocaml or python not supported" in
+              string2val fresh_id in
+            (fresh, make_fresh_id)
+      )
       all_fresh in
   let (_,res) =
     List.split

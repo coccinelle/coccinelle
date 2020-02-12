@@ -219,7 +219,7 @@ find relevant files using id\-utils
 <file> improve \fB\-\-dir\fR by grouping related c files
 .TP
 \fB\-\-pyoutput\fR
-Sets output routine: Standard values: <coccilib.output.Gtk|coccilib.output.Console>
+Sets output routine: Default value: coccilib.output.Console
 .TP
 \fB\-\-version\fR
 guess what

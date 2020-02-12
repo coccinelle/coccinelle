@@ -466,6 +466,21 @@ coccinelle.result = (%s)" body);
     Py.Bool.to_bool (get_variable "result")
   end
 
+let run_fresh_id args pos body =
+  catch_python_error begin fun () ->
+    build_classes [];
+    let make_arg (name, value) =
+      (snd name, name, value, Ast_cocci.NoMVInit) in
+    let mv = List.map make_arg args in
+    construct_variables mv args;
+    run pos (Printf.sprintf "
+from coccinelle import *
+from coccilib.iteration import Iteration
+
+coccinelle.result = (%s)" body);
+    Py.String.to_string (get_variable "result")
+  end
+
 let flush_stdout_and_stderr () =
   if py_isinitialized () then
     let _ = pyrun_simplestring "\

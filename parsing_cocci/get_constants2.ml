@@ -360,7 +360,11 @@ let do_get_constants constants keywords env (neg_pos,_) =
 			  Ast.SeedString _ -> prev
 			| Ast.SeedId name ->
 			    bind (inherited name) prev)
-		    prev l)
+		    prev l
+	      | (_,Ast.ScriptSeed (_, _, params, _, _)) ->
+                  List.fold_left
+                    (fun prev (meta_name, _) -> bind (inherited meta_name) prev)
+                    prev params)
 	  option_default fresh in
 
   let rec cstr r k c =

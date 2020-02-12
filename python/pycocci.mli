@@ -36,5 +36,15 @@ val run_constraint :
     @param body the constraint code,
     @return whether the constraint is satisfied or not. *)
 
+val run_fresh_id :
+    Ast_c.metavars_binding ->
+    Ast_cocci.script_position ->
+    string ->
+    string
+(** [run_fresh_id args body] runs the id generator with
+    @param args the arguments
+    @param body the constraint code,
+    @return a fresh id *)
+
 val flush_stdout_and_stderr : unit -> unit
 (** [flush_stdout_and_stderr ()] flushes Python stdout and stderr. *)
