@@ -196,6 +196,8 @@ and typeC tya tyb =
     | a, TypeOfType b ->
 *)
 
+  | AutoType, AutoType -> return (AutoType, iix)
+
 
   | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) ->
       (sua = sub && saopt = sbopt && List.length sta = List.length stb)

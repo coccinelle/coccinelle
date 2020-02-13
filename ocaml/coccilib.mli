@@ -68,6 +68,7 @@ module Ast_c :
       | ParenType of fullType
       | TypeOfExpr of expression
       | TypeOfType of fullType
+      | AutoType (* c++ >= 11 *)
     and baseType =
       Ast_c.baseType =
         Void

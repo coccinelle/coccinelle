@@ -1264,6 +1264,13 @@ type_spec2:
      { Right3 (Decimal($3,Some $5)), [$1;$2;$4;$6] }
  | Tdecimal TOPar const_expr TCPar
      { Right3 (Decimal($3,None)), [$1;$2;$4] }
+ | Tauto {
+     if !Flag.c_plus_plus
+     then (Right3 AutoType, [$1])
+     else
+       let i = Ast_c.parse_info_of_info $1 in
+       raise (Semantic("auto is not a valid C type, try using the --c++ option",
+                       i)) }
 
  /*
  (* parse_typedef_fix1: can't put: TIdent {} cos it make the grammar

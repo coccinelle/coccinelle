@@ -4048,7 +4048,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _, (B.Enum _, _) -> fail (* todo cocci ?*)
 
     | _,
-     ((B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
+     ((B.AutoType | B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
       B.StructUnion (_, _, _) |
       B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
       B.Pointer _ | B.BaseType _),
@@ -4413,14 +4413,9 @@ and compatible_typeC a (b,local) =
     | (_,
       (_,
       ((
+       B.AutoType|
        B.TypeOfType _|B.TypeOfExpr _|B.ParenType _|
-       B.EnumName _|B.StructUnion (_, _, _)|B.Enum (_, _)
-      ),
-      _))) -> fail
-
-    | (_,
-      (_,
-      ((
+       B.EnumName _|B.StructUnion (_, _, _)|B.Enum (_, _)|
        B.StructUnionName (_, _)|
        B.FunctionType _|
        B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _|

@@ -203,6 +203,19 @@ let testall_bis extra_test expected_score_file update_score_file =
 	else raise (Impossible 164) in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
       let cfile      = "tests/" ^ x ^ ".c" in
+      let cfile      =
+        let cppfile = "tests/" ^ x ^ ".cpp" in
+        if not (Sys.file_exists cfile) && Sys.file_exists cppfile
+        then
+          begin
+            Flag.c_plus_plus := true;
+            cppfile
+          end
+        else
+          begin
+            Flag.c_plus_plus := false;
+            cfile
+          end in
       let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
       let out = base ^ out_suffix in

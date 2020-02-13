@@ -215,6 +215,7 @@ and fullType = typeQualifier * typeC
    *)
   | TypeOfExpr of expression
   | TypeOfType of fullType
+  | AutoType (* c++ >= 11 *)
 
   (* cppext: IfdefType TODO *)
 

@@ -662,6 +662,7 @@ and pp_string_format (e,ii) =
               pr_elem icpar;
           | _ -> raise (Impossible 106)
 	  )
+      | (AutoType, iis) -> print_sto_qu_ty (sto, qu, iis)
 
       | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ | Decimal _
             (* | StructUnion _ | Enum _ | BaseType _ *)
@@ -796,6 +797,7 @@ and pp_string_format (e,ii) =
       | (FieldType (_typ,_,_), iis)             -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
+      | (AutoType, _)                           -> print_ident ident
 
 
 
@@ -912,6 +914,7 @@ and pp_string_format (e,ii) =
       | FieldType (_, _, _), _ -> ()
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
+      | AutoType, _ -> ()
 
       | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 110)
 
@@ -970,6 +973,7 @@ and pp_string_format (e,ii) =
 
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()
+    | AutoType, _ -> ()
 
     | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 111)
 

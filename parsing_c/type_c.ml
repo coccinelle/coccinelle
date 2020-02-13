@@ -149,6 +149,8 @@ let rec is_completed_and_simplified ty =
 
   | TypeOfExpr e ->
       true (* well we don't handle it, so can't really say it's completed *)
+  | AutoType -> true (* this version is the most complete until we have
+                        inference over auto *)
 
 
 let is_completed_typedef_fullType x = raise Todo

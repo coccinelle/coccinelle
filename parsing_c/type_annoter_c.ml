@@ -403,7 +403,8 @@ let rec type_unfold_one_step ty env =
   | TypeOfExpr e ->
       pr2_once ("Type_annoter: not handling typeof");
       ty
-  | TypeOfType t -> type_unfold_one_step t env in
+  | TypeOfType t -> type_unfold_one_step t env
+  | AutoType -> ty in
   loop [] ty env
 
 
@@ -486,7 +487,10 @@ let rec typedef_fix ty env =
 	ty
 
     | TypeOfType t ->
-	typedef_fix t env in
+	typedef_fix t env
+    | AutoType ->
+	pr2_once ("Type_annoter: not handling unresolved auto");
+	ty in
   loop [] ty env
 
 

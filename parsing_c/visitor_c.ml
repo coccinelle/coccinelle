@@ -516,6 +516,7 @@ and vk_type = fun bigf t ->
     | ParenType t -> typef t
     | TypeOfExpr e -> vk_expr bigf e
     | TypeOfType t -> typef t
+    | AutoType -> ()
 
   in typef t
 
@@ -1433,6 +1434,7 @@ and vk_type_s = fun bigf t ->
       | ParenType t -> ParenType (typef t)
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)
       | TypeOfType t -> TypeOfType (typef t)
+      | AutoType -> AutoType
     in
     (q', iif_iiq),
     (t', iif iit)
