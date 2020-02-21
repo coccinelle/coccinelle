@@ -342,6 +342,7 @@ and base_typeC =
   | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *
                        fullType * string mcode (* ) *)
   | TypeName        of string mcode
+  | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited

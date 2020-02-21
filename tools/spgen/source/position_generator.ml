@@ -231,6 +231,9 @@ let rec type_pos t snp
   | Ast0.TypeName(nm) ->
       let constructor ~mc = Ast0.TypeName(mc) in
       mcode_wrap ~mc:nm ~constructor snp
+  | Ast0.AutoType(auto) ->
+      let constructor ~mc = Ast0.AutoType(mc) in
+      mcode_wrap ~mc:auto ~constructor snp
   | Ast0.MetaType(mnmc,cstr,pure) ->
       let constructor ~mc = Ast0.MetaType(mc,cstr,pure) in
       mcode_wrap ~mc:mnmc ~constructor snp

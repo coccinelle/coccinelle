@@ -339,6 +339,7 @@ and typeC t =
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp
       | Ast0.TypeName(name)-> mcode print_string name; print_string " "
+      | Ast0.AutoType(auto) -> mcode print_string auto; print_string " "
       | Ast0.MetaType(name,_,_)-> mcode print_meta name; print_string " "
       | Ast0.DisjType(_,types,_,_) -> do_disj types typeC "|"
       | Ast0.ConjType(_,types,_,_) -> do_disj types typeC "&"

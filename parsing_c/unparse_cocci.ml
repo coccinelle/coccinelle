@@ -756,6 +756,7 @@ and typeC ty =
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
   | Ast.TypeName(name)-> mcode print_string name
+  | Ast.AutoType(auto) -> mcode print_string auto
   | Ast.MetaType(name,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaTypeVal exp ->

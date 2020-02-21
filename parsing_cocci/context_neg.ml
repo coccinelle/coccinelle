@@ -683,6 +683,7 @@ let equal_typeC t1 t2 =
   | (Ast0.TypeOfType(tf1,lp1,_,rp1),Ast0.TypeOfType(tf2,lp2,_,rp2)) ->
       equal_mcode tf1 tf2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.TypeName(name1),Ast0.TypeName(name2)) -> equal_mcode name1 name2
+  | (Ast0.AutoType(auto1),Ast0.AutoType(auto2)) -> equal_mcode auto1 auto2
   | (Ast0.MetaType(name1,_,_),Ast0.MetaType(name2,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.DisjType(starter1,_,mids1,ender1),

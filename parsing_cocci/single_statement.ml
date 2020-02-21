@@ -176,6 +176,7 @@ and left_typeC t =
   | Ast0.TypeOfExpr(tf,_,_,_) -> modif_before_mcode tf
   | Ast0.TypeOfType(tf,_,_,_) -> modif_before_mcode tf
   | Ast0.TypeName(name) -> modif_before_mcode name
+  | Ast0.AutoType(auto) -> modif_before_mcode auto
   | Ast0.MetaType(name,_,_) -> modif_before_mcode name
   | Ast0.DisjType(lp,types,mids,rp) -> List.exists left_typeC types
   | Ast0.ConjType(lp,types,mids,rp) -> List.exists left_typeC types

@@ -4047,6 +4047,14 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
     | _, (B.Enum _, _) -> fail (* todo cocci ?*)
 
+    | A.AutoType autoa, (B.AutoType, ii) ->
+        let autob = tuple_of_list1 ii in
+        tokenf autoa autob >>= (fun autoa autob ->
+          return (
+            (A.AutoType autoa) +> A.rewrap ta,
+            (B.AutoType, [autob])
+          ))
+
     | _,
      ((B.AutoType | B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
       B.StructUnion (_, _, _) |
@@ -4409,6 +4417,8 @@ and compatible_typeC a (b,local) =
     | a, (qub, (B.TypeName (_namesb, Some b), noii)) ->
       (* kind of typedef iso *)
 	loop tya b
+
+    | A.AutoType _, (_, (B.AutoType, _)) -> ok
 
     | (_,
       (_,

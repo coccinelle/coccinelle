@@ -457,6 +457,7 @@ and typeC ty =
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
+  | Ast.AutoType(auto) -> mcode print_string auto; print_string " "
   | Ast.MetaType(name,_,_,_) ->
       mcode print_meta name; print_string " "
 

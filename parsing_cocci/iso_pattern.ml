@@ -920,6 +920,8 @@ let match_maker checks_needed context_required whencode_allowed =
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
 	      else return false
+	  | (Ast0.AutoType(autoa), Ast0.AutoType(autob)) ->
+	      check_mcode autoa autob
 	  | (Ast0.DisjType(_,typesa,_,_),_)
 	  | (Ast0.ConjType(_,typesa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"
@@ -1846,7 +1848,9 @@ let instantiate bindings mv_bindings model =
                       | Ast0.EnumName(_, _)
                       | Ast0.StructUnionName (_, _)
                       | Ast0.TypeOfExpr(_, _, _, _)
-                      | Ast0.TypeName _ -> ty in
+                      | Ast0.TypeName _
+                      | Ast0.AutoType _ -> ty
+                          in
 		    Some(List.map renamer types) in
 	      Ast0.clear_test_exp
 		(Ast0.rewrap e

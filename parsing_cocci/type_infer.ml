@@ -59,6 +59,8 @@ let lub_type t1 t2 =
             Ast0.rewrap ty1 (Ast0.Array(loop ty1 ty2, s0, e0, s1))
 	| (Ast0.TypeName(_),_) -> ty2
 	| (_,Ast0.TypeName(_)) -> ty1
+        | (Ast0.AutoType(_), _) -> ty2
+        | (_, Ast0.AutoType(_)) -> ty1
 	| _ -> ty1 in (* arbitrarily pick the first, assume type correct *)
       Some (loop t1 t2)
 

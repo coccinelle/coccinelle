@@ -362,6 +362,7 @@ and unify_typeC t1 t2 =
   | (Ast.TypeOfType(szf1,lp1,ty1,rp1),Ast.TypeOfType(szf2,lp2,ty2,rp2)) ->
       unify_fullType ty1 ty2
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> unify_mcode t1 t2
+  | (Ast.AutoType(auto1), Ast.AutoType(auto2)) -> unify_mcode auto1 auto2
 
   | (Ast.MetaType(_,_,_,_),_)
   | (_,Ast.MetaType(_,_,_,_)) -> true

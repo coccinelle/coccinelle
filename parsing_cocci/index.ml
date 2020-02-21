@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 188, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 85-86,
+(* current max is 192, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 85-86,
  113-115, 138-140, 162 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -102,6 +102,7 @@ let typeC t =
   | Ast0.TypeOfExpr(tf,lp,exp,rp) -> [135]
   | Ast0.TypeOfType(tf,lp,ty,rp) -> [136]
   | Ast0.TypeName(name) -> [52]
+  | Ast0.AutoType _ -> [192]
   | Ast0.MetaType(name,_,_) -> [53]
   | Ast0.DisjType(_,type_list,_,_) -> [130]
   | Ast0.ConjType(_,type_list,_,_) -> [134]

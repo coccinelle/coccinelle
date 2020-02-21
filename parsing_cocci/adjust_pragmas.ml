@@ -193,6 +193,8 @@ let rec left_ty t =
       call_right left_mcode tf t (function tf -> Ast0.TypeOfType(tf,lb,ty,rb))
   | Ast0.TypeName(name) ->
       call_right left_mcode name t (function name -> Ast0.TypeName(name))
+  | Ast0.AutoType(auto) ->
+      call_right left_mcode auto t (function auto -> Ast0.AutoType(auto))
   | Ast0.MetaType(name,cstr,x) ->
       call_right left_mcode name t (function name -> Ast0.MetaType(name,cstr,x))
   | Ast0.AsType(ty,asty) -> failwith "not possible"

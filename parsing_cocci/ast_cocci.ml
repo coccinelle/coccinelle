@@ -360,6 +360,7 @@ and base_typeC =
   | TypeOfType      of string mcode (* sizeof *) * string mcode (* ( *) *
                        fullType * string mcode (* ) *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
+  | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited
@@ -1123,6 +1124,7 @@ let rec string_of_typeC ty =
   | TypeOfExpr(_,_,e,_) -> "typeof("^string_of_expression e^")"
   | TypeOfType(_,_,t,_) -> "typeof("^string_of_fullType t^")"
   | TypeName (name) -> unwrap_mcode name ^ " "
+  | AutoType _ -> "auto"
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
@@ -1211,6 +1213,7 @@ and typeC_map tr ty =
           None -> ty
         | Some f -> rewrap ty (f name)
       end
+  | AutoType _ -> ty
   | MetaType (name, cstr, keep, inherited) ->
       begin
         match tr.metaType with
@@ -1258,6 +1261,7 @@ and typeC_fold tr ty v =
   | TypeOfExpr(_,_,e,_) -> v
   | TypeOfType(_,_,t,_) -> fullType_fold tr t v
   | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
+  | AutoType _ -> v
   | MetaType (name, cstr, keep, inherited) ->
       Common.default v (fun f -> f name cstr keep inherited v) tr.metaType
 

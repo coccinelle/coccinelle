@@ -1,14 +1,15 @@
 # spatch --c++
 
 @@
-identifier x;
-identifier y;
+type t;
+identifier x, y;
 @@
-- y = x
-+ x = y
+- type y = x;
++ type x = y;
 
 @@
+type t
 identifier x;
 @@
-- x = 2
-+ y = 2
+- t x = 2
++ auto y = 2

@@ -494,6 +494,11 @@ and top_typeC tgt opt_allowed typ =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.TypeName(name))
+  | Ast0.AutoType(auto) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line auto) [mcode2arity auto] in
+      let auto = mcode auto in
+      make_typeC typ tgt arity (Ast0.AutoType(auto))
   | Ast0.MetaType(name,cstr,pure) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in

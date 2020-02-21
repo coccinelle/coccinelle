@@ -21,6 +21,7 @@ type typeC =
   | EnumName        of name
   | StructUnionName of structUnion * name
   | TypeName        of string
+  | AutoType
   | MetaType        of meta_name * keep_binding * inherited
   | Unknown (* for metavariables of type expression *^* *)
 

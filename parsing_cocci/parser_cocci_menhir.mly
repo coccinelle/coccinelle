@@ -1031,6 +1031,14 @@ non_signable_types_no_ident:
     { Ast0.wrap(Ast0.TypeOfType(P.clt2mcode "typeof" $1,
                                    P.clt2mcode "(" $2,$3,
                                    P.clt2mcode ")" $4)) }
+| Tauto
+    {
+     if !Flag.c_plus_plus
+     then Ast0.wrap(Ast0.AutoType(P.clt2mcode "auto" $1))
+     else
+       raise
+         (Semantic_cocci.Semantic
+           "auto is not a valid C type, try using the --c++ option") }
 
 non_signable_types:
   ty=non_signable_types_no_ident { ty }

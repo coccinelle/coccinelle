@@ -374,6 +374,7 @@ let combiner bind option_default
 	  let lrp = string_mcode rp in
 	  multibind [ltf; llp; lty; lrp]
       | Ast.TypeName(name) -> string_mcode name
+      | Ast.AutoType(auto) -> string_mcode auto
       | Ast.MetaType(name,_,_,_) -> meta_mcode name in
     tyfn all_functions k ty
 
@@ -1300,6 +1301,7 @@ let rebuilder
 	    let lrp = string_mcode rp in
 	    Ast.TypeOfType(ltf, llp, lty, lrp)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
+	| Ast.AutoType(auto) -> Ast.AutoType(string_mcode auto)
 	| Ast.MetaType(name,cstr,keep,inherited) ->
 	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
     tyfn all_functions k ty

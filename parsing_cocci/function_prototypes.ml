@@ -250,6 +250,7 @@ let rec attach_right strings ty =
     | Ast0.TypeOfType(tf,lp,ty,rp) ->
 	Ast0.TypeOfType(tf,lp,ty,right_attach_mcode strings rp)
     | Ast0.TypeName(nm) -> Ast0.TypeName(right_attach_mcode strings nm)
+    | Ast0.AutoType(auto) -> Ast0.AutoType(right_attach_mcode strings auto)
     | Ast0.MetaType(nm,cstr,pure) ->
 	Ast0.MetaType(right_attach_mcode strings nm,cstr,pure)
     | Ast0.AsType(ty,asty) -> Ast0.AsType(attach_right strings ty,asty)

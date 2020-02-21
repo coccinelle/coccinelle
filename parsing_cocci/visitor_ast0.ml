@@ -387,6 +387,9 @@ let visitor mode bind option_default
 	| Ast0.TypeName(name) ->
 	    let (name_n,name) = string_mcode name in
 	    (name_n,Ast0.TypeName(name))
+	| Ast0.AutoType(auto) ->
+	    let (lauto, auto) = string_mcode auto in
+	    (lauto, Ast0.AutoType(auto))
 	| Ast0.MetaType(name,cstr,pure) ->
 	    let (name_n,name) = meta_mcode name in
 	    (name_n,Ast0.MetaType(name,cstr,pure))

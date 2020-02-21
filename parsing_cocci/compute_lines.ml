@@ -635,6 +635,10 @@ and typeC t =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres t (Ast0.TypeName(name)) ln ln
+  | Ast0.AutoType(auto) ->
+      let auto = normal_mcode auto in
+      let la = promote_mcode auto in
+      mkres t (Ast0.AutoType(auto)) la la
   | Ast0.MetaType(name,cstr,a) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
