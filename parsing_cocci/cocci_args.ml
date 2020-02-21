@@ -21,7 +21,14 @@ let get_cocci_files arglist =
         find_cocci_files args
     | "--test"::testname::args ->
         let filename = "tests/" ^ testname ^ ".cocci" in
-        cocci_files := filename :: !cocci_files;
+        if Sys.file_exists filename then
+          cocci_files := filename :: !cocci_files
+        else
+          let filename = testname ^ ".cocci" in
+          if Sys.file_exists filename then
+            cocci_files := filename :: !cocci_files
+          else
+            Printf.fprintf stderr "ERROR: File %s does not exist\n" filename;
         find_cocci_files args
     | "--testall"::args
     | "--test-spacing"::args ->
