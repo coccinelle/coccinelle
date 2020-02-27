@@ -1379,7 +1379,8 @@ module Flag :
     val defined_virtual_rules : string list ref
     val defined_virtual_env : (string * string) list ref
     val set_defined_virtual_rules : string -> unit
-    val c_plus_plus : bool ref
+    type c_plus_plus = Flag.c_plus_plus = Off | On of int option
+    val c_plus_plus : c_plus_plus ref
     val ibm : bool ref
     val include_headers : bool ref
     val no_include_cache : bool ref

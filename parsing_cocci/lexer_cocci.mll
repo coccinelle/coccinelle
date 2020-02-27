@@ -923,7 +923,7 @@ rule token = parse
 
       {
 	start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
@@ -934,7 +934,7 @@ rule token = parse
 
       {
 	start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
@@ -950,7 +950,7 @@ rule token = parse
 
       {
 	start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
@@ -963,7 +963,7 @@ rule token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
       {
 	start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
@@ -1115,7 +1115,7 @@ and metavariable_decl_token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) +
 
       { start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
@@ -1125,7 +1125,7 @@ and metavariable_decl_token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>')
 
       { start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "< and > not allowed in C identifiers, try -c++ option";
@@ -1140,7 +1140,7 @@ and metavariable_decl_token = parse
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
 
       { start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";
@@ -1152,7 +1152,7 @@ and metavariable_decl_token = parse
     ("::" ((letter | '$') (letter | digit | '$') * )
       ('<' (letter | '$' | '~') (letter | digit | '$' | '~') * '>') ?) *
       { start_line true;
-	if not !Flag.c_plus_plus
+	if !Flag.c_plus_plus = Flag.Off
 	then
 	  Common.pr2_once
 	    "~ and :: not allowed in C identifiers, try -c++ option";

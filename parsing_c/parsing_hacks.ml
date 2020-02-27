@@ -1201,7 +1201,7 @@ let rec find_macro_paren xs =
 
   (* string macro variable, before case *)
   | PToken ({tok = (TString _ | TMacroString _)})::PToken ({tok = TIdent (s,_)} as id)
-      ::xs when not !Flag.c_plus_plus ->
+      ::xs when !Flag.c_plus_plus = Flag.Off ->
 
       msg_stringification s;
       id.tok <- TMacroString (s, TH.info_of_tok id.tok);
@@ -1922,12 +1922,12 @@ let pointer ?(followed_by=fun _ -> true)
   let rec loop ts =
     match ts with
     | TMul _ :: rest -> loop rest
-    | TAnd _ :: rest when !Flag.c_plus_plus -> loop rest
+    | TAnd _ :: rest when !Flag.c_plus_plus <> Flag.Off -> loop rest
     | t :: ts' -> followed_by t && followed_by_more ts'
     | [] -> failwith "unexpected end of token stream" in
   match ts with
   | TMul _ :: rest -> loop rest
-  | TAnd _ :: rest when !Flag.c_plus_plus -> loop rest
+  | TAnd _ :: rest when !Flag.c_plus_plus <> Flag.Off -> loop rest
   | _ -> false
 
 let ident = function
@@ -2003,17 +2003,17 @@ let lookahead2 ~pass next before =
   (* c++ hacks *)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
-      when !Flag.c_plus_plus && (LP.current_context () = (LP.InFunction)) ->
+      when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   | TOPar i1::_,              TIdent(s,i2)::ptr
-      when !Flag.c_plus_plus
+      when !Flag.c_plus_plus <> Flag.Off
 	  && pointer ~followed_by:(function TypedefIdent _ -> true | _ -> false) ptr
 	  && (LP.current_context () = (LP.InFunction)) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   | TypedefIdent(s,i)::TOPar i1::_,_
-      when !Flag.c_plus_plus && (LP.current_context () = (LP.InFunction)) ->
+      when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->
 	TIdent(s,i)
 
   (*-------------------------------------------------------------*)
@@ -2043,21 +2043,21 @@ let lookahead2 ~pass next before =
 
 	(* delete[] *)
   | (TOCro i1 :: _, Tdelete _ :: _)
-    when !Flag.c_plus_plus ->
+    when !Flag.c_plus_plus <> Flag.Off ->
       TCommentCpp (Token_c.CppDirective, i1)
 	(* delete[] *)
   | (TCCro i1 :: _, Tdelete _ :: _)
-    when !Flag.c_plus_plus ->
+    when !Flag.c_plus_plus <> Flag.Off ->
       TCommentCpp (Token_c.CppDirective, i1)
 
 	(* extern "_" tt *)
   | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _)
-    when !Flag.c_plus_plus ->
+    when !Flag.c_plus_plus <> Flag.Off ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* ) const { *)
   | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _)
-    when !Flag.c_plus_plus ->
+    when !Flag.c_plus_plus <> Flag.Off ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
   (* const ident const: ident must be a type *)

@@ -810,7 +810,7 @@ rule token = parse
         let s = tok lexbuf in
         Common.profile_code "C parsing.lex_ident" (fun () ->
 	  let tok =
-	    if !Flag.c_plus_plus
+	    if !Flag.c_plus_plus <> Flag.Off
 	    then Common.optionise (fun () -> Hashtbl.find cpp_keyword_table s)
 	    else None in
 	  match tok with
@@ -872,7 +872,7 @@ rule token = parse
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
-        if !Flag.c_plus_plus
+        if !Flag.c_plus_plus <> Flag.Off
 	then Tconstructorname (s, info)
 	else
 	  begin
@@ -887,7 +887,7 @@ rule token = parse
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
-        if !Flag.c_plus_plus
+        if !Flag.c_plus_plus <> Flag.Off
 	then TypedefIdent (s, info)
 	else
 	  begin
@@ -910,7 +910,7 @@ rule token = parse
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
-        if !Flag.c_plus_plus
+        if !Flag.c_plus_plus <> Flag.Off
 	then
 	  begin
 	    if first = second
@@ -934,7 +934,7 @@ rule token = parse
       {
         let info = tokinfo lexbuf in
         let s = tok lexbuf in
-        (if not !Flag.c_plus_plus
+        (if !Flag.c_plus_plus = Flag.Off
 	then
 	  pr2_once "~ and :: not allowed in C identifiers, try -c++ option");
 	TIdent (s, info)

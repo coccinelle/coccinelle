@@ -656,8 +656,13 @@ let other_options = [
     "  column limit for generated code";
     "-D", Arg.String Flag.set_defined_virtual_rules,
     "  indicate that a virtual rule should be considered to be matched";
-    "--c++", Arg.Set Flag.c_plus_plus,
+    "--c++", Arg.Unit (fun () -> Flag.set_c_plus_plus None),
     "  make a small attempt to parse C++ files";
+    (* Special case, for when a user gives a specific C++ version *)
+    "--c++=",
+    Arg.Symbol (["98"; "03"; "0x"; "11"; "1y"; "14"; "1z"; "17"; "2a"; "20"],
+                (fun i -> Flag.set_c_plus_plus (Some i))),
+    "  <int> same as --c++ but allows to specify a version (e.g. --c++=11)";
     "--ibm", Arg.Set Flag.ibm,
     "  make a small attempt to parse IBM C files";
     "--force-kr", Arg.Set Flag_parsing_c.force_kr,
@@ -1497,6 +1502,20 @@ let main arglist =
       let speclist = Arg.align all_options in
       let anon_fun = (fun x -> args := x::!args) in
       fun some_args args_location ->
+        let rec split_c_plus_plus_equal = function
+          (* hack to separate '--c++=<version>' as '--c++=' '<version>',
+           * otherwise, '<version>' would be considered to be an argument for
+           * '--c++' (which does not expect an argument) instead of '--c++='
+           *)
+          | [] -> []
+          | s::l ->
+              let len = String.length s in
+              if len > 6 && String.sub s 0 6 = "--c++=" then
+                let version_arg = String.sub s 6 (len - 6) in
+                "--c++="::version_arg::(split_c_plus_plus_equal l)
+              else
+                s::split_c_plus_plus_equal l in
+        let some_args = split_c_plus_plus_equal some_args in
         arg_parse2 ~current:(ref 0) speclist anon_fun usage_msg
                    (Array.of_list (spatch_bin_name::some_args))
                    args_location in

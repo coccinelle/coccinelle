@@ -98,7 +98,9 @@ let testone prefix x compare_with_expected =
   let base = if x =~ "\\(.*\\)_ver[0-9]+$" then matched1 x else x in
 
   let cfile =
-    if !Flag.c_plus_plus then prefix ^ x ^ ".cpp" else prefix ^ x ^ ".c" in
+    if !Flag.c_plus_plus <> Flag.Off
+    then prefix ^ x ^ ".cpp"
+    else prefix ^ x ^ ".c" in
   let cocci_file = prefix ^ base ^ ".cocci" in
 
   let expected_out = prefix ^ base ^ out_suffix in
@@ -208,12 +210,12 @@ let testall_bis extra_test expected_score_file update_score_file =
         if not (Sys.file_exists cfile) && Sys.file_exists cppfile
         then
           begin
-            Flag.c_plus_plus := true;
+            Flag.c_plus_plus := Flag.On None;
             cppfile
           end
         else
           begin
-            Flag.c_plus_plus := false;
+            Flag.c_plus_plus := Flag.Off;
             cfile
           end in
       let cocci_file = "tests/" ^ base ^ ".cocci" in

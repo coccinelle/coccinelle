@@ -1265,7 +1265,14 @@ type_spec2:
  | Tdecimal TOPar const_expr TCPar
      { Right3 (Decimal($3,None)), [$1;$2;$4] }
  | Tauto {
-     if !Flag.c_plus_plus
+     let can_auto_type =
+      let open Flag in
+       match !c_plus_plus with
+         Off -> false
+       | On None -> true
+       | On (Some i) -> i >= 2011
+     in
+     if can_auto_type
      then (Right3 AutoType, [$1])
      else
        let i = Ast_c.parse_info_of_info $1 in
@@ -1352,7 +1359,7 @@ pointer:
 tmul:
    TMul { $1 }
  | TAnd
-     { if !Flag.c_plus_plus
+     { if !Flag.c_plus_plus <> Flag.Off
      then $1
      else
        let i = Ast_c.parse_info_of_info $1 in
@@ -1611,7 +1618,25 @@ decl_spec2:
 storage_class_spec_nt:
  | Tstatic      { Sto Static,  $1 }
  | Textern      { Sto Extern,  $1 }
- | Tauto        { Sto Auto,    $1 }
+ | Tauto
+     {
+      let can_auto_storage =
+        let open Flag in
+        match !c_plus_plus with
+          Off | On None -> true
+        | On (Some i) -> i < 2011
+      in
+      if can_auto_storage
+      then (Sto Auto, $1)
+      else
+        let i = Ast_c.parse_info_of_info $1 in
+        raise
+          (Semantic
+            ("auto is not a valid storage since C++11, \
+              try removing the version specification on the --c++ option \
+              or removing the whole option",
+             i))
+     }
  | Tregister    { Sto Register,$1 }
 
 storage_class_spec:

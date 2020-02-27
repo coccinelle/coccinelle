@@ -1033,7 +1033,14 @@ non_signable_types_no_ident:
                                    P.clt2mcode ")" $4)) }
 | Tauto
     {
-     if !Flag.c_plus_plus
+     let can_auto_type =
+       let open Flag in
+       match !c_plus_plus with
+         Off -> false
+       | On None -> true
+       | On (Some i) -> i >= 2011
+     in
+     if can_auto_type
      then Ast0.wrap(Ast0.AutoType(P.clt2mcode "auto" $1))
      else
        raise
@@ -1530,7 +1537,22 @@ fninfo_nt:
 
 storage:
          s=Tstatic      { P.clt2mcode Ast.Static s }
-       | s=Tauto        { P.clt2mcode Ast.Auto s }
+       | s=Tauto
+           {
+            let can_auto_storage =
+              let open Flag in
+              match !c_plus_plus with
+                Off | Flag.On None -> true
+              | On (Some i) -> i < 2011
+            in
+            if can_auto_storage
+            then P.clt2mcode Ast.Auto s
+            else
+              raise
+                (Semantic_cocci.Semantic
+                  "auto is not a valid storage since C++11, \
+                   try removing the version specification on the --c++ option \
+                   or removing the whole option") }
        | s=Tregister    { P.clt2mcode Ast.Register s }
        | s=Textern      { P.clt2mcode Ast.Extern s }
 

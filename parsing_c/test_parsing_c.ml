@@ -28,7 +28,7 @@ let test_tokens_c file =
 
 (* Was in main, but using it in test_parsing_c *)
 let get_files path =
-  if !Flag.c_plus_plus
+  if !Flag.c_plus_plus <> Flag.Off
   then
     (* only C++ files, but contains .h files as that extension is ambiguous *)
     cmd_to_list

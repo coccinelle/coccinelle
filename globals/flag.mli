@@ -22,7 +22,9 @@ val dir : string ref
 val defined_virtual_rules : string list ref
 val defined_virtual_env : (string * string) list ref
 val set_defined_virtual_rules : string -> unit
-val c_plus_plus : bool ref
+type c_plus_plus = Off | On of int option (* release year of the version *)
+val c_plus_plus : c_plus_plus ref
+val set_c_plus_plus : string option -> unit
 val ibm : bool ref
 val include_headers : bool ref
 val no_include_cache : bool ref

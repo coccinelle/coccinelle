@@ -50,7 +50,22 @@ let set_defined_virtual_rules s =
       defined_virtual_env := (name,vl) :: !defined_virtual_env
   | _ -> failwith "nothing defined"
 
-let c_plus_plus = ref false
+type c_plus_plus = Off | On of int option (* release year *)
+let c_plus_plus = ref Off
+
+let set_c_plus_plus version =
+  let version =
+    match version with
+      None -> None
+    | Some "98" -> Some 1998
+    | Some "03" -> Some 2003
+    | Some "0x" | Some "11" -> Some 2011
+    | Some "1y" | Some "14" -> Some 2014
+    | Some "1z" | Some "17" -> Some 2017
+    | Some "2a" | Some "20" -> Some 2020
+    | Some version -> failwith ("Invalid C++ version: " ^ version) in
+  c_plus_plus := On version
+
 let ibm = ref false
 
 (* was in main *)

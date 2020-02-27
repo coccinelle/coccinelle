@@ -1,4 +1,4 @@
-# spatch --c++
+# spatch --c++=11
 
 @@
 type t;
