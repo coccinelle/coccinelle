@@ -17,7 +17,7 @@ RUN opam install --yes ocamlfind
 ARG stdcompat
 RUN [ x$stdcompat != xyes ] || opam install --yes stdcompat
 ARG pyml
-RUN [ x$pyml != xyes ] || opam install --yes pyml.20190626
+RUN [ x$pyml != xyes ] || opam install --yes pyml
 ARG menhir
 RUN [ x$menhir != xyes ] || opam install --yes menhir
 ARG parmap
