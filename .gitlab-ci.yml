@@ -216,4 +216,4 @@ push reference scores:
       || true
 
 after_script:
-  - docker system prune
+  - docker system prune --force
