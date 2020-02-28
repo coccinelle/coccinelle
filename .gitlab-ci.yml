@@ -214,6 +214,3 @@ push reference scores:
         git commit -m "reference scores for commit $CI_COMMIT_SHORT_SHA" &&
         git push
       || true
-
-after_script:
-  - docker system prune --force
