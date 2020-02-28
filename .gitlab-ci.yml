@@ -215,7 +215,5 @@ push reference scores:
         git push
       || true
 
-docker system prune:
-  stage: .post
-  script:
-    - docker system prune
+after-script:
+  - docker system prune
