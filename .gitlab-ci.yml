@@ -215,5 +215,5 @@ push reference scores:
         git push
       || true
 
-after-script:
+after_script:
   - docker system prune
