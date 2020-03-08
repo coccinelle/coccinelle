@@ -241,7 +241,7 @@ and typeC old_metas table minus t =
   | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.EnumDef(ty,lb,ids,rb) ->
       typeC old_metas table minus ty;
-      dots (expression GLOBAL old_metas table minus) ids
+      dots (enum_decl GLOBAL old_metas table minus) ids
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
@@ -320,6 +320,15 @@ and field context old_metas table minus d =
       failwith "unexpected code"
   | Ast0.Fdots(_,Some (_,_,x)) -> field ID old_metas table minus x
   | Ast0.Fdots(_,None) -> ()
+
+and enum_decl context old_metas table minus d =
+  match Ast0.unwrap d with
+    Ast0.Enum(name,enum_val) ->
+      ident context old_metas table minus name;
+      (match enum_val with
+        None -> ()
+      | Some(eq,eval) -> expression context old_metas table minus eval)
+  | Ast0.EnumComma(_) | Ast0.EnumDots(_) -> ()
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -583,7 +592,7 @@ let positions rname table rules =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing in
+      donothing donothing donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -651,8 +660,8 @@ let dup_positions rules =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing expression donothing donothing typeC donothing
-      donothing declaration field statement
+      donothing donothing donothing expression donothing donothing typeC
+      donothing donothing declaration field donothing statement
       donothing donothing donothing donothing in
 
   let res =

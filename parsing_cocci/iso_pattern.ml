@@ -45,7 +45,7 @@ let strip_info =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -476,9 +476,9 @@ let match_maker checks_needed context_required whencode_allowed =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing
-      ident expression assignOp binaryOp typeC init param decl field stmt
-      donothing donothing donothing donothing in
+      donothing donothing
+      ident expression assignOp binaryOp typeC init param decl field donothing
+      stmt donothing donothing donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -892,7 +892,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_typeC tya tyb;
-		   match_dots match_expr no_list do_nolist_match idsa idsb]
+		   match_dots match_enum_decl no_list do_nolist_match idsa idsb]
 	  | (Ast0.StructUnionName(kinda,Some namea),
 	     Ast0.StructUnionName(kindb,Some nameb)) ->
 	       if mcode_equal kinda kindb
@@ -1063,6 +1063,35 @@ let match_maker checks_needed context_required whencode_allowed =
 	      match_field pattern declb
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.FieldTag d))
+
+  and match_enum_decl pattern d =
+    match (Ast0.unwrap pattern,Ast0.unwrap d) with
+      (Ast0.Enum(namea,enum_vala),Ast0.Enum(nameb,enum_valb)) ->
+        let match_option_enum_val evala evalb =
+          match evala, evalb with
+            Some (eqa,ea), Some (eqb,eb) ->
+              [check_mcode eqa eqb] @ [match_expr ea eb]
+          | Some _, None | None, Some _ -> [return false]
+          | None, None -> [] in
+        conjunct_many_bindings
+          ([match_ident namea nameb]
+           @ match_option_enum_val enum_vala enum_valb)
+    | (Ast0.EnumComma(comma1),Ast0.EnumComma(comma2)) ->
+        check_mcode comma1 comma2
+    | (Ast0.EnumDots(d1,None),Ast0.EnumDots(d,None)) -> check_mcode d1 d
+    | (Ast0.EnumDots(dd,None),Ast0.EnumDots(d,Some (wh,ee,wc))) ->
+      conjunct_bindings (check_mcode dd d)
+	(* hope that mcode of ddots is unique somehow *)
+	(let (ddots_whencode_allowed,_,_) = whencode_allowed in
+	if ddots_whencode_allowed
+	then add_dot_binding dd
+	  (Ast0.WhenTag (wh,Some ee,Ast0.EnumDeclTag wc))
+	else
+	  (Printf.eprintf "warning: not applying iso because of whencode";
+	   return false))
+    | (Ast0.EnumDots(_,Some _),_) ->
+	failwith "whencode not allowed in a pattern1"
+    | _ -> return false
 
   and match_init pattern i =
     match Ast0.unwrap pattern with
@@ -1499,6 +1528,14 @@ let make_minus =
 	update_mc mcodekind e; Ast0.rewrap e (Ast0.Fdots(mcode d,whencode))
     | _ -> donothing r k e in
 
+  let enum_decl r k e =
+    let mcodekind = Ast0.get_mcodekind_ref e in
+    match Ast0.unwrap e with
+      Ast0.EnumDots(d,whencode) ->
+       (*don't recurse because whencode hasn't been processed by context_neg*)
+	update_mc mcodekind e; Ast0.rewrap e (Ast0.EnumDots(mcode d,whencode))
+    | _ -> donothing r k e in
+
   let statement r k e =
     let mcodekind = Ast0.get_mcodekind_ref e in
     match Ast0.unwrap e with
@@ -1551,9 +1588,10 @@ let make_minus =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    dots dots dots dots dots dots dots dots
+    dots dots dots dots dots dots dots dots dots
     donothing expression donothing donothing donothing initialiser donothing
-    declaration field statement donothing donothing donothing donothing
+    declaration field enum_decl statement donothing donothing donothing
+    donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1644,8 +1682,8 @@ let rebuild_mcode start_line =
     mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing statement donothing donothing donothing
-    donothing
+    donothing donothing donothing donothing donothing statement donothing
+    donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -2063,6 +2101,18 @@ let instantiate bindings mv_bindings model =
 	with Not_found -> e)
     | _ -> e in
 
+  let enumdeclfn r k e =
+    let e = k e in
+    match Ast0.unwrap e with
+      Ast0.EnumDots(d,_) ->
+	(try
+	  (match List.assoc (dot_term d) bindings with
+	    Ast0.WhenTag(wh,Some ee,Ast0.EnumDeclTag(exp)) ->
+              Ast0.rewrap e (Ast0.EnumDots(d,Some (wh,ee,exp)))
+	  | _ -> failwith "unexpected binding")
+	with Not_found -> e)
+    | _ -> e in
+
   let paramfn r k e =
     let e = k e in
     match Ast0.unwrap e with
@@ -2115,9 +2165,9 @@ let instantiate bindings mv_bindings model =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
-    donothing donothing
-    identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn stmtfn
-    donothing donothing donothing donothing
+    donothing donothing donothing
+    identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn
+    enumdeclfn stmtfn donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2847,7 +2897,7 @@ let rewrap =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2862,6 +2912,8 @@ let rec rewrap_anything = function
       Ast0.DotsDeclTag(rewrap.VT0.rebuilder_rec_declaration_dots d)
   | Ast0.DotsFieldTag(d) ->
       Ast0.DotsFieldTag(rewrap.VT0.rebuilder_rec_field_dots d)
+  | Ast0.DotsEnumDeclTag(d) ->
+      Ast0.DotsEnumDeclTag(rewrap.VT0.rebuilder_rec_enum_decl_dots d)
   | Ast0.DotsCaseTag(d) ->
       Ast0.DotsCaseTag(rewrap.VT0.rebuilder_rec_case_line_dots d)
   | Ast0.DotsDefParamTag(d) ->
@@ -2881,6 +2933,8 @@ let rec rewrap_anything = function
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.VT0.rebuilder_rec_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.VT0.rebuilder_rec_declaration d)
   | Ast0.FieldTag(d) -> Ast0.FieldTag(rewrap.VT0.rebuilder_rec_field d)
+  | Ast0.EnumDeclTag(d) ->
+      Ast0.EnumDeclTag(rewrap.VT0.rebuilder_rec_enumdecl d)
   | Ast0.StmtTag(d) -> Ast0.StmtTag(rewrap.VT0.rebuilder_rec_statement d)
   | Ast0.ForInfoTag(d) -> Ast0.ForInfoTag(rewrap.VT0.rebuilder_rec_forinfo d)
   | Ast0.CaseLineTag(d) ->

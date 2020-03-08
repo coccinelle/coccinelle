@@ -90,7 +90,7 @@ and disjtypeC bty =
 	(function name -> Ast.rewrap bty (Ast.StructUnionName(su,name)))
 	name
   | Ast.EnumDef(ty,lb,ids,rb) ->
-      disjmult2 (disjty ty) (disjdots disjexp ids)
+      disjmult2 (disjty ty) (disjdots disjenumdecl ids)
 	(function ty -> function ids ->
 	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
@@ -129,6 +129,21 @@ and anndisjfield d =
   | Ast.OptField(decl) ->
       let decl = anndisjfield decl in
       List.map (function decl -> Ast.rewrap d (Ast.OptField(decl))) decl
+
+and disjenumdecl d =
+  match Ast.unwrap d with
+    Ast.Enum(name,enum_val) ->
+      let name = disjident name in
+      (match enum_val with
+        None ->
+          List.map (function name -> Ast.rewrap d (Ast.Enum(name,None)))
+            name
+      | Some (eq,eval) ->
+          disjmult2 name (disjexp eval)
+          (function name -> function eval ->
+	    Ast.rewrap d (Ast.Enum(name,Some(eq,eval)))))
+  | Ast.EnumComma(cm) -> [d]
+  | Ast.EnumDots(dots,whencode) -> [d]
 
 and disjident e =
   match Ast.unwrap e with
@@ -461,8 +476,8 @@ let disj_all =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing disj_rule_elem donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing disj_rule_elem donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
 (* collect iso information at the rule_elem level *)
@@ -478,9 +493,9 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
     doanything donothing doanything donothing donothing donothing donothing
-    doanything
+    donothing doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -495,9 +510,9 @@ let collect_iso_info =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing rule_elem donothing donothing
+    donothing donothing donothing donothing donothing rule_elem donothing donothing
     donothing donothing
 
 (* ----------------------------------------------------------------------- *)

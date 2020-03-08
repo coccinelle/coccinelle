@@ -1176,15 +1176,12 @@ struct_decl_list_start:
 /* very restricted what kinds of expressions can appear in an enum decl */
 
 enum_decl_one:
-    | disj_ident    { Ast0.wrap(Ast0.Ident($1)) }
+    | disj_ident    { Ast0.wrap(Ast0.Enum($1, None)) }
     | disj_ident TEq enum_val
-	{ let id = Ast0.wrap(Ast0.Ident($1)) in
-        let (op,clt) = ("=",$2) in
-        let op' = P.clt2mcode op clt in
-        let op'' = Ast0.wrap (Ast0.SimpleAssign op') in
+	{
 	Ast0.wrap
-	  (Ast0.Assignment
-	     (id, op'', Ast0.set_arg_exp $3, false)) }
+	  (Ast0.Enum
+	     ($1, Some(P.clt2mcode "=" $2, $3))) }
 
 enum_val:
    ident    { Ast0.wrap(Ast0.Ident($1)) }
@@ -1209,7 +1206,7 @@ enum_val:
 
 enum_decl_list:
    nonempty_list_start(enum_decl_one,edots_when(TEllipsis,enum_decl_one))
-     { Ast0.wrap($1 P.mkedots (fun c -> Ast0.EComma c)) }
+     { Ast0.wrap($1 P.mkenumdots (fun c -> Ast0.EnumComma c)) }
 
 /*****************************************************************************/
 

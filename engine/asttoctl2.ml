@@ -341,9 +341,10 @@ let elim_opt =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing stmtdotsfn donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
 
 (* --------------------------------------------------------------------- *)
 (* after management *)
@@ -464,11 +465,12 @@ let contains_modif =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
       do_nothing do_nothing do_nothing
-      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
+      do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
+      do_nothing in
   recursor.V.combiner_rule_elem
 
 let contains_pos =
@@ -495,8 +497,9 @@ let contains_pos =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing
-      do_nothing rule_elem do_nothing do_nothing do_nothing do_nothing in
+      do_nothing do_nothing do_nothing
+      do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
+      do_nothing in
   recursor.V.combiner_rule_elem
 
 (* code is not a DisjRuleElem *)
@@ -592,10 +595,10 @@ let count_nested_braces s =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing stmt_count donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing stmt_count donothing donothing donothing in
   let res = string_of_int (recursor.V.combiner_statement s) in
   string2var ("p"^res)
 
@@ -2682,10 +2685,10 @@ and drop_minuses stmt_dots =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing in
   v.V.rebuilder_statement_dots stmt_dots
 
 and find_xx = function

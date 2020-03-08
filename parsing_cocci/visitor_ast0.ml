@@ -22,8 +22,9 @@ let visitor mode bind option_default
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
-    dotscasefn dotsdefparfn
+    dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    enumdeclfn
     stmtfn forinfofn casefn string_fragmentfn topfn =
   let multibind l =
     let rec loop = function
@@ -63,6 +64,7 @@ let visitor mode bind option_default
   and statement_dots d = dotsfn dotsstmtfn statement all_functions d
   and declaration_dots d = dotsfn dotsdeclfn declaration all_functions d
   and field_dots d = dotsfn dotsfieldfn field all_functions d
+  and enum_decl_dots d = dotsfn dotsenumdeclfn enum_decl all_functions d
   and case_line_dots d = dotsfn dotscasefn case_line all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
@@ -358,7 +360,7 @@ let visitor mode bind option_default
 	| Ast0.EnumDef(ty,lb,ids,rb) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (lb_n,lb) = string_mcode lb in
-	    let (ids_n,ids) = expression_dots ids in
+	    let (ids_n,ids) = enum_decl_dots ids in
 	    let (rb_n,rb) = string_mcode rb in
 	    (multibind [ty_n;lb_n;ids_n;rb_n], Ast0.EnumDef(ty,lb,ids,rb))
 	| Ast0.StructUnionName(kind,name) ->
@@ -624,6 +626,34 @@ let visitor mode bind option_default
 	| Ast0.OptField(decl) ->
 	    let (n,decl) = field decl in (n,Ast0.OptField(decl))) in
     fieldfn all_functions k d
+
+  and enum_decl d =
+    let k d =
+      rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.Enum(name,enum_val) ->
+	    let (name_n,name) = ident name in
+            (match enum_val with
+              None -> (name_n,Ast0.Enum(name,None))
+            | Some(eq,eval) ->
+                let (eq_n,eq) = string_mcode eq in
+                let (eval_n,eval) = expression eval in
+                (multibind [name_n; eq_n; eval_n],
+                 Ast0.Enum(name,Some(eq,eval))))
+	| Ast0.EnumComma(cm) ->
+	    let (cm_n,cm) = string_mcode cm in
+	    (cm_n,Ast0.EnumComma(cm))
+	| Ast0.EnumDots(dots,whencode) ->
+	    let (dots_n,dots) = string_mcode dots in
+	    let (whencode_n, whencode) = match whencode with
+              | Some (a,b,c) ->
+                  let (_,a2) = string_mcode a in
+                  let (_,b2) = string_mcode b in
+                  let (c1,c2) = enum_decl c in (c1, Some (a2,b2,c2))
+              | None -> (option_default, None) in
+	    (bind dots_n whencode_n, Ast0.EnumDots(dots,whencode))) in
+    enumdeclfn all_functions k d
+
 
   and initialiser i =
     let k i =
@@ -1124,6 +1154,9 @@ let visitor mode bind option_default
       | Ast0.DotsFieldTag(decls) ->
 	  let (decls_n,decls) = field_dots decls in
 	  (decls_n,Ast0.DotsFieldTag(decls))
+      | Ast0.DotsEnumDeclTag(decls) ->
+	  let (decls_n,decls) = enum_decl_dots decls in
+	  (decls_n,Ast0.DotsEnumDeclTag(decls))
       | Ast0.DotsCaseTag(cases) ->
 	  let (cases_n,cases) = case_line_dots cases in
 	  (cases_n,Ast0.DotsCaseTag(cases))
@@ -1163,6 +1196,9 @@ let visitor mode bind option_default
       | Ast0.FieldTag(decl) ->
 	  let (decl_n,decl) = field decl in
 	  (decl_n,Ast0.FieldTag(decl))
+      | Ast0.EnumDeclTag(decl) ->
+	  let (decl_n,decl) = enum_decl decl in
+	  (decl_n,Ast0.EnumDeclTag(decl))
       | Ast0.StmtTag(stmt) ->
 	  let (stmt_n,stmt) = statement stmt in
 	  (stmt_n,Ast0.StmtTag(stmt))
@@ -1207,6 +1243,7 @@ let visitor mode bind option_default
       VT0.typeC = typeC;
       VT0.declaration = declaration;
       VT0.field = field;
+      VT0.enum_decl = enum_decl;
       VT0.initialiser = initialiser;
       VT0.initialiser_list = initialiser_dots;
       VT0.parameter = parameterTypeDef;
@@ -1221,6 +1258,7 @@ let visitor mode bind option_default
       VT0.statement_dots = statement_dots;
       VT0.declaration_dots = declaration_dots;
       VT0.field_dots = field_dots;
+      VT0.enum_decl_dots = enum_decl_dots;
       VT0.case_line_dots = case_line_dots;
       VT0.define_param_dots = define_param_dots;
       VT0.anything = anything} in
@@ -1247,6 +1285,7 @@ let combiner_functions =
    VT0.combiner_dotsstmtfn = (fun r k e -> k e);
    VT0.combiner_dotsdeclfn = (fun r k e -> k e);
    VT0.combiner_dotsfieldfn = (fun r k e -> k e);
+   VT0.combiner_dotsenumdeclfn = (fun r k e -> k e);
    VT0.combiner_dotscasefn = (fun r k e -> k e);
    VT0.combiner_dotsdefparfn = (fun r k e -> k e);
    VT0.combiner_identfn = (fun r k e -> k e);
@@ -1258,6 +1297,7 @@ let combiner_functions =
    VT0.combiner_paramfn = (fun r k e -> k e);
    VT0.combiner_declfn = (fun r k e -> k e);
    VT0.combiner_fieldfn = (fun r k e -> k e);
+   VT0.combiner_enumdeclfn = (fun r k e -> k e);
    VT0.combiner_stmtfn = (fun r k e -> k e);
    VT0.combiner_forinfofn = (fun r k e -> k e);
    VT0.combiner_casefn = (fun r k e -> k e);
@@ -1281,6 +1321,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.declaration e in n);
       VT0.combiner_rec_field =
       (function e -> let (n,_) = r.VT0.field e in n);
+      VT0.combiner_rec_enumdecl =
+      (function e -> let (n,_) = r.VT0.enum_decl e in n);
       VT0.combiner_rec_initialiser =
       (function e -> let (n,_) = r.VT0.initialiser e in n);
       VT0.combiner_rec_initialiser_list =
@@ -1309,6 +1351,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.declaration_dots e in n);
       VT0.combiner_rec_field_dots =
       (function e -> let (n,_) = r.VT0.field_dots e in n);
+      VT0.combiner_rec_enum_decl_dots =
+      (function e -> let (n,_) = r.VT0.enum_decl_dots e in n);
       VT0.combiner_rec_case_line_dots =
       (function e -> let (n,_) = r.VT0.case_line_dots e in n);
       VT0.combiner_rec_define_param_dots =
@@ -1346,6 +1390,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_dotsstmtfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsfieldfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_dotsenumdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotscasefn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsdefparfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_identfn (dz r) (xk k) e, e))
@@ -1357,6 +1402,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_paramfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_declfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_fieldfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_enumdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_stmtfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_forinfofn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_casefn (dz r) (xk k) e, e))
@@ -1368,8 +1414,9 @@ let flat_combiner bind option_default
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
-    dotscasefn dotsdefparfn
+    dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    enumdeclfn
     stmtfn forinfofn casefn string_fragmentfn topfn =
   let dz = combiner_dz in
   let xk k e = let (n,_) = k e in n in
@@ -1394,6 +1441,7 @@ let flat_combiner bind option_default
     (fun r k e -> (dotsstmtfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsfieldfn (dz r) (xk k) e, e))
+    (fun r k e -> (dotsenumdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (dotscasefn (dz r) (xk k) e, e))
     (fun r k e -> (dotsdefparfn (dz r) (xk k) e, e))
     (fun r k e -> (identfn (dz r) (xk k) e, e))
@@ -1405,6 +1453,7 @@ let flat_combiner bind option_default
     (fun r k e -> (paramfn (dz r) (xk k) e, e))
     (fun r k e -> (declfn (dz r) (xk k) e, e))
     (fun r k e -> (fieldfn (dz r) (xk k) e, e))
+    (fun r k e -> (enumdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (stmtfn (dz r) (xk k) e, e))
     (fun r k e -> (forinfofn (dz r) (xk k) e, e))
     (fun r k e -> (casefn (dz r) (xk k) e, e))
@@ -1432,6 +1481,7 @@ let rebuilder_functions =
    VT0.rebuilder_dotsstmtfn = (fun r k e -> k e);
    VT0.rebuilder_dotsdeclfn = (fun r k e -> k e);
    VT0.rebuilder_dotsfieldfn = (fun r k e -> k e);
+   VT0.rebuilder_dotsenumdeclfn = (fun r k e -> k e);
    VT0.rebuilder_dotscasefn = (fun r k e -> k e);
    VT0.rebuilder_dotsdefparfn = (fun r k e -> k e);
    VT0.rebuilder_identfn = (fun r k e -> k e);
@@ -1443,6 +1493,7 @@ let rebuilder_functions =
    VT0.rebuilder_paramfn = (fun r k e -> k e);
    VT0.rebuilder_declfn = (fun r k e -> k e);
    VT0.rebuilder_fieldfn = (fun r k e -> k e);
+   VT0.rebuilder_enumdeclfn = (fun r k e -> k e);
    VT0.rebuilder_stmtfn = (fun r k e -> k e);
    VT0.rebuilder_forinfofn = (fun r k e -> k e);
    VT0.rebuilder_casefn = (fun r k e -> k e);
@@ -1466,6 +1517,8 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.declaration e in e);
       VT0.rebuilder_rec_field =
       (function e -> let (_,e) = r.VT0.field e in e);
+      VT0.rebuilder_rec_enumdecl =
+      (function e -> let (_,e) = r.VT0.enum_decl e in e);
       VT0.rebuilder_rec_initialiser =
       (function e -> let (_,e) = r.VT0.initialiser e in e);
       VT0.rebuilder_rec_initialiser_list =
@@ -1492,6 +1545,8 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.declaration_dots e in e);
       VT0.rebuilder_rec_field_dots =
       (function e -> let (_,e) = r.VT0.field_dots e in e);
+      VT0.rebuilder_rec_enum_decl_dots =
+      (function e -> let (_,e) = r.VT0.enum_decl_dots e in e);
       VT0.rebuilder_rec_case_line_dots =
       (function e -> let (_,e) = r.VT0.case_line_dots e in e);
       VT0.rebuilder_rec_define_param_dots =
@@ -1524,6 +1579,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_dotsstmtfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsfieldfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_dotsenumdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotscasefn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsdefparfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_identfn (dz r) (xk k) e))
@@ -1535,6 +1591,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_paramfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_declfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_fieldfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_enumdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_stmtfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_forinfofn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_casefn (dz r) (xk k) e))
@@ -1548,8 +1605,9 @@ let flat_rebuilder
     arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode
     storage_mcode inc_mcode
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
-    dotscasefn dotsdefparfn
+    dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn fieldfn
+    enumdeclfn
     stmtfn forinfofn casefn string_fragmentfn topfn =
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
@@ -1575,6 +1633,7 @@ let flat_rebuilder
     (fun r k e -> ((),dotsstmtfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsfieldfn (dz r) (xk k) e))
+    (fun r k e -> ((),dotsenumdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),dotscasefn (dz r) (xk k) e))
     (fun r k e -> ((),dotsdefparfn (dz r) (xk k) e))
     (fun r k e -> ((),identfn (dz r) (xk k) e))
@@ -1586,6 +1645,7 @@ let flat_rebuilder
     (fun r k e -> ((),paramfn (dz r) (xk k) e))
     (fun r k e -> ((),declfn (dz r) (xk k) e))
     (fun r k e -> ((),fieldfn (dz r) (xk k) e))
+    (fun r k e -> ((),enumdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),stmtfn (dz r) (xk k) e))
     (fun r k e -> ((),forinfofn (dz r) (xk k) e))
     (fun r k e -> ((),casefn (dz r) (xk k) e))
@@ -1627,6 +1687,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_dotsstmtfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsdeclfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsfieldfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_dotsenumdeclfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotscasefn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsdefparfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_identfn = (fun r k e -> k e);
@@ -1638,6 +1699,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_paramfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_declfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_fieldfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_enumdeclfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_stmtfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_forinfofn = (fun r k e -> k e);
    VT0.combiner_rebuilder_casefn = (fun r k e -> k e);
@@ -1666,6 +1728,7 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_dotsstmtfn
     functions.VT0.combiner_rebuilder_dotsdeclfn
     functions.VT0.combiner_rebuilder_dotsfieldfn
+    functions.VT0.combiner_rebuilder_dotsenumdeclfn
     functions.VT0.combiner_rebuilder_dotscasefn
     functions.VT0.combiner_rebuilder_dotsdefparfn
     functions.VT0.combiner_rebuilder_identfn
@@ -1677,6 +1740,7 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_paramfn
     functions.VT0.combiner_rebuilder_declfn
     functions.VT0.combiner_rebuilder_fieldfn
+    functions.VT0.combiner_rebuilder_enumdeclfn
     functions.VT0.combiner_rebuilder_stmtfn
     functions.VT0.combiner_rebuilder_forinfofn
     functions.VT0.combiner_rebuilder_casefn

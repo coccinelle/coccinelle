@@ -211,7 +211,7 @@ and base_typeC =
 	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * expression dots * string mcode (* } *)
+	string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
@@ -288,6 +288,15 @@ and base_field =
 and bitfield = string mcode (* : *) * expression
 
 and field = base_field wrap
+
+and base_enum_decl =
+    Enum of ident * (string mcode (* = *) * expression) option
+  | EnumComma of string mcode (* , *)
+  | EnumDots of string mcode (* ... *) * (string mcode * string mcode *
+                enum_decl) option (* whencode *)
+
+and enum_decl = base_enum_decl wrap
+
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -545,6 +554,7 @@ and anything =
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
   | DotsFieldTag of field dots
+  | DotsEnumDeclTag of enum_decl dots
   | DotsCaseTag of case_line dots
   | DotsDefParamTag of define_param dots
   | IdentTag of ident
@@ -558,6 +568,7 @@ and anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | FieldTag of field
+  | EnumDeclTag of enum_decl
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
@@ -577,6 +588,7 @@ let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let dotsDecl x = DotsDeclTag x
 let dotsField x = DotsFieldTag x
+let dotsEnumDecl x = DotsEnumDeclTag x
 let dotsCase x = DotsCaseTag x
 let dotsDefParam x = DotsDefParamTag x
 let ident x = IdentTag x
@@ -593,6 +605,7 @@ let forinfo x = ForInfoTag x
 let case_line x = CaseLineTag x
 let string_fragment x = StringFragmentTag x
 let top x = TopTag x
+let enum_decl x = EnumDeclTag x
 
 (* --------------------------------------------------------------------- *)
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)

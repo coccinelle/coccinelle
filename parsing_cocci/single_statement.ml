@@ -459,9 +459,10 @@ and contains_only_minus =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode
-    dots dots dots dots dots dots dots dots
+    dots dots dots dots dots dots dots dots dots
     identifier expression donothing donothing typeC donothing donothing
-    declaration field statement donothing case_line donothing donothing
+    declaration field donothing statement donothing case_line donothing
+    donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)

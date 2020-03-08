@@ -117,6 +117,11 @@ let dpdots e =
     Ast.DPdots(_) -> true
   | _ -> false
 
+let enumdots e =
+  match Ast.unwrap e with
+    Ast.EnumDots(_) -> true
+  | _ -> false
+
 let sdots s =
   match Ast.unwrap s with
     Ast.Dots(_,_,_,_) -> true
@@ -348,7 +353,7 @@ and unify_typeC t1 t2 =
       true
   | (Ast.EnumDef(ty1,lb1,ids1,rb1),Ast.EnumDef(ty2,lb2,ids2,rb2)) ->
       unify_fullType ty1 ty2 &&
-      unify_dots unify_expression edots ids1 ids2
+      unify_dots unify_enum_decl enumdots ids1 ids2
   | (Ast.StructUnionName(s1,Some ts1),Ast.StructUnionName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else false
   | (Ast.StructUnionName(s1,None),Ast.StructUnionName(s2,None)) ->
@@ -476,6 +481,19 @@ and unify_annotated_field d1 d2 =
 	(List.map (function x -> unify_annotated_field d1 x) d2)
   | (Ast.OptField(_),_)
   | (_,Ast.OptField(_)) -> failwith "unsupported decl"
+
+and unify_enum_decl d1 d2 =
+  match (Ast.unwrap d1,Ast.unwrap d2) with
+    (Ast.Enum(name1,enum_val1),Ast.Enum(name2,enum_val2)) ->
+       unify_ident name1 name2 &&
+       unify_option
+         (function a -> function b ->
+            let (_,eval1) = a in
+            let (_,eval2) = b in
+            unify_expression eval1 eval2) enum_val1 enum_val2
+  | (Ast.EnumComma(_),(Ast.EnumComma(_))) -> true
+  | (Ast.EnumDots(_),(Ast.EnumDots(_))) -> true
+  | _ -> false
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
@@ -701,10 +719,11 @@ and subexp f =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing expr
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing expr
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -717,10 +736,10 @@ and subtype f =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing fullType
+      donothing donothing donothing donothing donothing donothing fullType
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing in
+      donothing donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

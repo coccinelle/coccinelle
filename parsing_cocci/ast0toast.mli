@@ -28,6 +28,9 @@ val declaration_dots :
 val field_dots :
     Ast0_cocci.field Ast0_cocci.dots ->
       Ast_cocci.annotated_field Ast_cocci.dots
+val enum_decl_dots :
+    Ast0_cocci.enum_decl Ast0_cocci.dots ->
+      Ast_cocci.enum_decl Ast_cocci.dots
 val define_param_dots :
     Ast0_cocci.define_param Ast0_cocci.dots ->
       Ast_cocci.define_param Ast_cocci.dots
@@ -36,6 +39,7 @@ val string_fragment : Ast0_cocci.string_fragment -> Ast_cocci.string_fragment
 val typeC : bool (*allminus*) -> Ast0_cocci.typeC -> Ast_cocci.fullType
 val declaration : Ast0_cocci.declaration -> Ast_cocci.declaration
 val field : Ast0_cocci.field -> Ast_cocci.field
+val enum_decl : Ast0_cocci.enum_decl -> Ast_cocci.enum_decl
 val parameterTypeDef :
     Ast0_cocci.parameterTypeDef -> Ast_cocci.parameterTypeDef
 val parameter_list : Ast0_cocci.parameter_list -> Ast_cocci.parameter_list

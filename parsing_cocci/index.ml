@@ -28,6 +28,7 @@ let parameter_dots x =   3 :: dots x
 let statement_dots x =   4 :: dots x
 let declaration_dots x = 5 :: dots x
 let field_dots x = 8 :: dots x
+let enum_decl_dots x = 9 :: dots x
 let case_line_dots x =   6 :: dots x
 let define_param_dots x =7 :: dots x
 
@@ -133,6 +134,12 @@ let field d =
   | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
   | Ast0.Fdots(dots,whencode) -> [133]
   | Ast0.OptField(decl) -> [191]
+
+let enum_decl d =
+  match Ast0.unwrap d with
+  | Ast0.Enum(name,enum_val) -> [113]
+  | Ast0.EnumComma(cm) -> [114]
+  | Ast0.EnumDots(dots,whencode) -> [115]
 
 let initialiser i =
   match Ast0.unwrap i with

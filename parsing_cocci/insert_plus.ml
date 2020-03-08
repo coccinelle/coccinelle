@@ -75,13 +75,13 @@ it *)
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
       (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsField)
-      (donothing Ast0.dotsCase)
+      (donothing Ast0.dotsEnumDecl) (donothing Ast0.dotsCase)
       (donothing Ast0.dotsDefParam)
       (donothing Ast0.ident) expression  (donothing Ast0.assignOp)
       (donothing Ast0.binaryOp)
       (donothing Ast0.typeC) initialiser
       (donothing Ast0.param) (donothing Ast0.decl)
-      (donothing Ast0.field) statement
+      (donothing Ast0.field) (donothing Ast0.enum_decl) statement
       (donothing Ast0.forinfo) (donothing Ast0.case_line)
       (donothing Ast0.string_fragment) topfn in
   res.VT0.combiner_rec_top_level e
@@ -114,6 +114,7 @@ let create_root_token_table minus =
 	  | Ast0.DotsStmtTag(d) -> Ast0.get_index d
 	  | Ast0.DotsDeclTag(d) -> Ast0.get_index d
 	  | Ast0.DotsFieldTag(d) -> Ast0.get_index d
+	  | Ast0.DotsEnumDeclTag(d) -> Ast0.get_index d
 	  | Ast0.DotsCaseTag(d) -> Ast0.get_index d
 	  | Ast0.DotsDefParamTag(d) -> Ast0.get_index d
 	  | Ast0.IdentTag(d) -> Ast0.get_index d
@@ -127,6 +128,7 @@ let create_root_token_table minus =
 	  | Ast0.InitTag(d) -> Ast0.get_index d
 	  | Ast0.DeclTag(d) -> Ast0.get_index d
 	  | Ast0.FieldTag(d) -> Ast0.get_index d
+	  | Ast0.EnumDeclTag(d) -> Ast0.get_index d
 	  | Ast0.StmtTag(d) -> Ast0.get_index d
 	  | Ast0.ForInfoTag(d) -> Ast0.get_index d
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
@@ -242,6 +244,13 @@ bind to that; not good for isomorphisms *)
 	match Ast0.unwrap p with
 	  Ast0.DPComma(comma) -> unfavored_mcode comma
 	| _ -> r.VT0.combiner_rec_define_param p)
+  k d in
+  let enumdots r k d =
+    dots
+      (function p ->
+	match Ast0.unwrap p with
+	  Ast0.EnumComma(comma) -> unfavored_mcode comma
+	| _ -> r.VT0.combiner_rec_enumdecl p)
   k d in
 
   let sdots r k d = dots r.VT0.combiner_rec_statement k d in
@@ -373,9 +382,9 @@ bind to that; not good for isomorphisms *)
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    edots idots pdots sdots ddots fdots cdots dpdots
+    edots idots pdots sdots ddots fdots enumdots cdots dpdots
     ident expression do_nothing do_nothing
-    typeC initialiser param decl field statement forinfo
+    typeC initialiser param decl field do_nothing statement forinfo
     case_line do_nothing do_top
 
 
@@ -402,6 +411,9 @@ let call_collect_minus context_nodes :
       | Ast0.DotsFieldTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_field_dots e)
+      | Ast0.DotsEnumDeclTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).VT0.combiner_rec_enum_decl_dots e)
       | Ast0.DotsCaseTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_case_line_dots e)
@@ -437,6 +449,9 @@ let call_collect_minus context_nodes :
       | Ast0.FieldTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_field e)
+      | Ast0.EnumDeclTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).VT0.combiner_rec_enumdecl e)
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_statement e)
@@ -525,6 +540,7 @@ let mk_arithOp x          = Ast.ArithOpTag x
 let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_declaration x      = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_field x            = Ast.FieldTag (Ast0toast.field x)
+let mk_enum_decl x        = Ast.EnumDeclTag (Ast0toast.enum_decl x)
 let mk_topdeclaration x   = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_storage x          = Ast.StorageTag x
 let mk_inc_file x         = Ast.IncFileTag x
@@ -542,6 +558,7 @@ let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_decldots x  = Ast.AnnDeclDotsTag (Ast0toast.declaration_dots x)
 let mk_fielddots x  = Ast.AnnFieldDotsTag (Ast0toast.field_dots x)
+let mk_enumdecldots x  = Ast.EnumDeclDotsTag (Ast0toast.enum_decl_dots x)
 let mk_casedots x  = failwith "+ case lines not supported"
 let mk_defpardots x= Ast.DefParDotsTag (Ast0toast.define_param_dots x)
 let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC false x)
@@ -648,12 +665,13 @@ let collect_plus_nodes root =
     (mcode mk_storage) (mcode mk_inc_file)
     (do_nothing mk_exprdots) initdots
     (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
-    (do_nothing mk_fielddots)
+    (do_nothing mk_fielddots) (do_nothing mk_enumdecldots)
     (do_nothing mk_casedots) (do_nothing mk_defpardots)
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_assignOp) (do_nothing mk_binaryOp)
     (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
     (do_nothing mk_declaration) (do_nothing mk_field)
+    (do_nothing mk_enum_decl)
     stmt (do_nothing mk_forinfo) (do_nothing mk_case_line)
     (do_nothing mk_string_fragment) toplevel
 
@@ -680,6 +698,9 @@ let call_collect_plus context_nodes :
       | Ast0.DotsFieldTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_field_dots e)
+      | Ast0.DotsEnumDeclTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).VT0.combiner_rec_enum_decl_dots e)
       | Ast0.DotsCaseTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_case_line_dots e)
@@ -715,6 +736,9 @@ let call_collect_plus context_nodes :
       | Ast0.FieldTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_field e)
+      | Ast0.EnumDeclTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).VT0.combiner_rec_enumdecl e)
       | Ast0.StmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_statement e)
@@ -1203,8 +1227,9 @@ let reevaluate_contextness =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing stmt donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing stmt
+      donothing
       donothing donothing
       donothing in
   res.VT0.combiner_rec_top_level

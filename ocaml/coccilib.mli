@@ -2716,7 +2716,7 @@ module Ast_cocci :
       | Decimal of string mcode * string mcode * expression *
           string mcode option * expression option * string mcode
       | EnumName of string mcode * ident option
-      | EnumDef of fullType * string mcode * expression dots * string mcode
+      | EnumDef of fullType * string mcode * enum_decl dots * string mcode
       | StructUnionName of structUnion mcode * ident option
       | StructUnionDef of fullType * string mcode * annotated_field dots *
           string mcode
@@ -2793,6 +2793,12 @@ module Ast_cocci :
       | ConjField of annotated_field list
       | OptField  of annotated_field
     and annotated_field = base_annotated_field wrap
+    and base_enum_decl =
+      Ast_cocci.base_enum_decl =
+        Enum of ident * (string mcode * expression) option
+      | EnumComma of string mcode
+      | EnumDots of string mcode * enum_decl option
+    and enum_decl = base_enum_decl wrap
     and base_initialiser =
       Ast_cocci.base_initialiser =
         MetaInit of meta_name mcode * constraints * keep_binding * inherited
@@ -3054,6 +3060,7 @@ module Ast_cocci :
       | LogicalOpTag of logicalOp
       | DeclarationTag of declaration
       | FieldTag of field
+      | EnumDeclTag of enum_decl
       | InitTag of initialiser
       | StorageTag of storage
       | IncFileTag of inc_file
@@ -3071,6 +3078,7 @@ module Ast_cocci :
       | StmtDotsTag of statement dots
       | AnnDeclDotsTag of annotated_decl dots
       | AnnFieldDotsTag of annotated_field dots
+      | EnumDeclDotsTag of enum_decl dots
       | DefParDotsTag of define_param dots
       | TypeCTag of typeC
       | ParamTag of parameterTypeDef
@@ -3361,7 +3369,7 @@ module Ast0_cocci :
       | Decimal of string mcode * string mcode * expression *
           string mcode option * expression option * string mcode
       | EnumName of string mcode * ident option
-      | EnumDef of typeC * string mcode * expression dots * string mcode
+      | EnumDef of typeC * string mcode * enum_decl dots * string mcode
       | StructUnionName of Ast_cocci.structUnion mcode * ident option
       | StructUnionDef of typeC * string mcode * field dots * string mcode
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
@@ -3413,6 +3421,13 @@ module Ast0_cocci :
       | OptField of field
     and bitfield = string mcode * expression
     and field = base_field wrap
+    and base_enum_decl =
+      Ast0_cocci.base_enum_decl =
+        Enum of ident * (string mcode * expression) option
+      | EnumComma of string mcode
+      | EnumDots of string mcode *
+                    (string mcode * string mcode * enum_decl) option
+    and enum_decl = base_enum_decl wrap
     and base_initialiser =
       Ast0_cocci.base_initialiser =
         MetaInit of Ast_cocci.meta_name mcode * constraints * pure
@@ -3613,6 +3628,7 @@ module Ast0_cocci :
       | DotsStmtTag of statement dots
       | DotsDeclTag of declaration dots
       | DotsFieldTag of field dots
+      | DotsEnumDeclTag of enum_decl dots
       | DotsCaseTag of case_line dots
       | DotsDefParamTag of define_param dots
       | IdentTag of ident
@@ -3626,6 +3642,7 @@ module Ast0_cocci :
       | InitTag of initialiser
       | DeclTag of declaration
       | FieldTag of field
+      | EnumDeclTag of enum_decl
       | StmtTag of statement
       | ForInfoTag of forinfo
       | CaseLineTag of case_line
@@ -3643,6 +3660,7 @@ module Ast0_cocci :
     val dotsStmt : statement dots -> anything
     val dotsDecl : declaration dots -> anything
     val dotsField : field dots -> anything
+    val dotsEnumDecl : enum_decl dots -> anything
     val dotsCase : case_line dots -> anything
     val dotsDefParam : define_param dots -> anything
     val ident : ident -> anything

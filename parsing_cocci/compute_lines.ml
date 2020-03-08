@@ -600,7 +600,8 @@ and typeC t =
   | Ast0.EnumDef(ty,lb,ids,rb) ->
       let ty = typeC ty in
       let lb = normal_mcode lb in
-      let ids = dots is_exp_dots (Some(promote_mcode lb)) expression ids in
+      let ids =
+        dots is_enum_decl_dots (Some(promote_mcode lb)) enum_decl ids in
       let rb = normal_mcode rb in
       mkres t (Ast0.EnumDef(ty,lb,ids,rb)) ty (promote_mcode rb)
   | Ast0.StructUnionName(kind,Some name) ->
@@ -807,6 +808,28 @@ and field d =
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres d (Ast0.Fdots(dots,whencode)) ln ln
+
+and is_enum_decl_dots d =
+  match Ast0.unwrap d with
+    Ast0.EnumDots(_) -> true
+  | _ -> false
+
+and enum_decl d =
+  match Ast0.unwrap d with
+     Ast0.Enum(name,enum_val) ->
+      let name = ident name in
+      let eval (a, b) = (normal_mcode a, expression b) in
+      let enum_val = get_option eval enum_val in
+      mkres d (Ast0.Enum(name,enum_val)) name name
+  | Ast0.EnumComma(cm) ->
+      let cm = normal_mcode cm in
+      let ln = promote_mcode cm in
+      mkres d (Ast0.EnumComma(cm)) ln ln
+  | Ast0.EnumDots(dots,whencode) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres d (Ast0.EnumDots(dots,whencode)) ln ln
+
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)

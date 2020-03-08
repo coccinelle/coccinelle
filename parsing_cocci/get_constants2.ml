@@ -638,10 +638,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
     fullType typeC initialiser parameter define_parameter declaration donothing
-    field ann_field rule_elem statement donothing donothing donothing
+    field ann_field donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -708,8 +708,9 @@ let all_context =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
     initialiser donothing donothing donothing donothing donothing donothing
-    rule_elem statement donothing donothing donothing
+    donothing rule_elem statement donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

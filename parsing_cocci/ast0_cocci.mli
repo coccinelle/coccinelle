@@ -202,7 +202,7 @@ and base_typeC =
 	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * expression dots * string mcode (* } *)
+	string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
@@ -276,6 +276,14 @@ and base_field =
 and bitfield = string mcode (* : *) * expression
 
 and field = base_field wrap
+
+and base_enum_decl =
+    Enum of ident * (string mcode (* = *) * expression) option
+  | EnumComma of string mcode (* , *)
+  | EnumDots of string mcode (* ... *) * (string mcode * string mcode *
+                enum_decl) option (* whencode *)
+
+and enum_decl = base_enum_decl wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -535,6 +543,7 @@ and anything =
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
   | DotsFieldTag of field dots
+  | DotsEnumDeclTag of enum_decl dots
   | DotsCaseTag of case_line dots
   | DotsDefParamTag of define_param dots
   | IdentTag of ident
@@ -548,6 +557,7 @@ and anything =
   | InitTag of initialiser
   | DeclTag of declaration
   | FieldTag of field
+  | EnumDeclTag of enum_decl
   | StmtTag of statement
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
@@ -567,6 +577,7 @@ val dotsParam : parameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val dotsDecl : declaration dots -> anything
 val dotsField : field dots -> anything
+val dotsEnumDecl : enum_decl dots -> anything
 val dotsCase : case_line dots -> anything
 val dotsDefParam : define_param dots -> anything
 val ident : ident -> anything
@@ -578,6 +589,7 @@ val param : parameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
 val field : field -> anything
+val enum_decl : enum_decl -> anything
 val stmt : statement -> anything
 val forinfo : forinfo -> anything
 val case_line : case_line -> anything

@@ -321,7 +321,7 @@ and typeC t =
 	  print_option (function x -> ident x; print_string " ") name
       | Ast0.EnumDef(ty,lb,ids,rb) ->
 	  typeC ty; mcode print_string lb;
-	  dots force_newline expression ids;
+	  dots force_newline enum_decl ids;
 	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->
 	  mcode U.structUnion kind;
@@ -454,6 +454,24 @@ and field d =
       | Ast0.Fdots(dots,None) -> mcode print_string dots)
 
 and field_dots l = dots (function _ -> ()) field l
+
+and enum_decl d =
+  print_context d
+    (function _ ->
+      match Ast0.unwrap d with
+	Ast0.Enum(name,enum_val) ->
+          (match enum_val with
+            None -> ident name
+          | Some(eq,eval) ->
+              ident name; mcode print_string eq; expression eval)
+      | Ast0.EnumComma(cm) ->
+          mcode print_string cm; force_newline()
+      | Ast0.EnumDots(dots,Some (_,_,whencode)) ->
+	  mcode print_string dots; print_string "   when != ";
+	  enum_decl whencode
+      | Ast0.EnumDots(dots,None) -> mcode print_string dots)
+
+and enum_decl_dots l = dots (function _ -> ()) enum_decl l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -782,6 +800,7 @@ let rec unparse_anything x =
       statement_dots d
   | Ast0.DotsDeclTag(d) -> declaration_dots d
   | Ast0.DotsFieldTag(d) -> field_dots d
+  | Ast0.DotsEnumDeclTag(d) -> enum_decl_dots d
   | Ast0.DotsCaseTag(d) -> case_dots d
   | Ast0.DotsDefParamTag(d) -> define_param_dots d
   | Ast0.IdentTag(d)    -> ident d
@@ -797,6 +816,7 @@ let rec unparse_anything x =
   | Ast0.InitTag(d)  -> initialiser d
   | Ast0.DeclTag(d)  -> declaration d
   | Ast0.FieldTag(d)  -> field d
+  | Ast0.EnumDeclTag(d)  -> enum_decl d
   | Ast0.StmtTag(d)  ->
       print_string "Stm:"; force_newline();
       statement "" d

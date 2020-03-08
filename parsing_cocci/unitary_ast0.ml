@@ -204,9 +204,10 @@ let get_free checker t =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing
+      donothing donothing
       ident expression donothing donothing typeC donothing parameter
-      declaration field statement donothing case_line donothing donothing in
+      declaration field donothing statement donothing case_line donothing
+      donothing in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

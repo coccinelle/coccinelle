@@ -27,6 +27,7 @@ let set_mcodekind x mcodekind =
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsFieldTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsEnumDeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsCaseTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDefParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IdentTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -39,6 +40,7 @@ let set_mcodekind x mcodekind =
   | Ast0.ParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.FieldTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.EnumDeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.InitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ForInfoTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -60,6 +62,7 @@ let set_index x index =
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
   | Ast0.DotsDeclTag(d) -> Ast0.set_index d index
   | Ast0.DotsFieldTag(d) -> Ast0.set_index d index
+  | Ast0.DotsEnumDeclTag(d) -> Ast0.set_index d index
   | Ast0.DotsCaseTag(d) -> Ast0.set_index d index
   | Ast0.DotsDefParamTag(d) -> Ast0.set_index d index
   | Ast0.IdentTag(d) -> Ast0.set_index d index
@@ -73,6 +76,7 @@ let set_index x index =
   | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
   | Ast0.FieldTag(d) -> Ast0.set_index d index
+  | Ast0.EnumDeclTag(d) -> Ast0.set_index d index
   | Ast0.StmtTag(d) -> Ast0.set_index d index
   | Ast0.ForInfoTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
@@ -92,6 +96,7 @@ let get_index = function
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
   | Ast0.DotsDeclTag(d) -> Index.declaration_dots d
   | Ast0.DotsFieldTag(d) -> Index.field_dots d
+  | Ast0.DotsEnumDeclTag(d) -> Index.enum_decl_dots d
   | Ast0.DotsCaseTag(d) -> Index.case_line_dots d
   | Ast0.DotsDefParamTag(d) -> Index.define_param_dots d
   | Ast0.IdentTag(d) -> Index.ident d
@@ -105,6 +110,7 @@ let get_index = function
   | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
   | Ast0.FieldTag(d) -> Index.field d
+  | Ast0.EnumDeclTag(d) -> Index.enum_decl d
   | Ast0.StmtTag(d) -> Index.statement d
   | Ast0.ForInfoTag(d) -> Index.forinfo d
   | Ast0.CaseLineTag(d) -> Index.case_line d
@@ -174,9 +180,10 @@ let collect_plus_lines top =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing
+      donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing statement donothing donothing donothing donothing in
+      donothing donothing donothing statement donothing donothing donothing
+      donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -446,6 +453,16 @@ let classify is_minus all_marked table code =
 	       (bind (Common.default option_default bitfield bf) (mcode sem)))
       |	_ -> k e) in
 
+  let enum_decl r k e =
+    compute_result Ast0.enum_decl e
+      (match Ast0.unwrap e with
+	Ast0.Enum(name,Some(eq,eval)) ->
+          bind (r.VT0.combiner_rec_ident name)
+            (bind (mcode eq) (r.VT0.combiner_rec_expression eval))
+      | Ast0.EnumDots(dots,whencode) ->
+	  k (Ast0.rewrap e (Ast0.EnumDots(dots,None)))
+      | _ -> k e) in
+
   let param r k e =
     compute_result Ast0.param e
       (match Ast0.unwrap e with
@@ -526,10 +543,10 @@ let classify is_minus all_marked table code =
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
       (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsField)
-      (do_nothing Ast0.dotsCase)
+      (do_nothing Ast0.dotsEnumDecl) (do_nothing Ast0.dotsCase)
       (do_nothing Ast0.dotsDefParam)
       ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
-      typeC initialiser param declaration field
+      typeC initialiser param declaration field enum_decl
       statement (do_nothing Ast0.forinfo) case_line string_fragment
       (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
@@ -672,7 +689,9 @@ let equal_typeC t1 t2 =
   | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.EnumDef(_,lb1,_,rb1),Ast0.EnumDef(_,lb2,_,rb2)) ->
-       equal_mcode lb1 lb2 && equal_mcode rb1 rb2
+       let tru1 = equal_mcode lb1 lb2 in
+       let tru2 = equal_mcode rb1 rb2 in
+       tru1 && tru2
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.StructUnionDef(_,lb1,_,rb1),
@@ -765,6 +784,19 @@ let equal_field d1 d2 =
        equal_mcode starter1 starter2 &&
        List.for_all2 equal_mcode mids1 mids2 &&
        equal_mcode ender1 ender2
+  | _ -> false
+
+let equal_enum_decl d1 d2 =
+  match (Ast0.unwrap d1,Ast0.unwrap d2) with
+    (Ast0.Enum(name1,enum_val1),Ast0.Enum(name2,enum_val2)) ->
+      equal_ident name1 name2 &&
+      (match enum_val1,enum_val2 with
+        None,None -> true
+      | Some (eq1,val1),Some(eq2,val2) ->
+         equal_mcode eq1 eq2 && equal_expression val1 val2
+      | _ -> false)
+  | (Ast0.EnumComma(cm1),Ast0.EnumComma(cm2)) -> equal_mcode cm1 cm2
+  | (Ast0.EnumDots(dots1,_),Ast0.EnumDots(dots2,_)) -> equal_mcode dots1 dots2
   | _ -> false
 
 let equal_designator d1 d2 =
@@ -940,6 +972,8 @@ let root_equal e1 e2 =
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) -> dots equal_declaration d1 d2
   | (Ast0.DotsFieldTag(d1),Ast0.DotsFieldTag(d2)) -> dots equal_field d1 d2
+  | (Ast0.DotsEnumDeclTag(d1),Ast0.DotsEnumDeclTag(d2)) ->
+      dots equal_field d1 d2
   | (Ast0.DotsCaseTag(d1),Ast0.DotsCaseTag(d2)) -> dots equal_case_line d1 d2
   | (Ast0.DotsDefParamTag(d1),Ast0.DotsDefParamTag(d2)) ->
       dots equal_define_param d1 d2
@@ -953,6 +987,7 @@ let root_equal e1 e2 =
   | (Ast0.InitTag(d1),Ast0.InitTag(d2)) -> equal_initialiser d1 d2
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
   | (Ast0.FieldTag(d1),Ast0.FieldTag(d2)) -> equal_field d1 d2
+  | (Ast0.EnumDeclTag(d1),Ast0.EnumDeclTag(d2)) -> equal_enum_decl d1 d2
   | (Ast0.StmtTag(s1),Ast0.StmtTag(s2)) -> equal_statement s1 s2
   | (Ast0.TopTag(t1),Ast0.TopTag(t2)) -> equal_top_level t1 t2
   | (Ast0.IsoWhenTag(_),_) | (_,Ast0.IsoWhenTag(_))
@@ -997,7 +1032,7 @@ let contextify_all =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing donothing
 
 let contextify_whencode =
   let bind x y = () in

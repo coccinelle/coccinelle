@@ -136,6 +136,11 @@ let mkpdots str dot =
     "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
+let mkenumdots str (dot,whencode) =
+  match str with
+    "..." -> Ast0.wrap(Ast0.EnumDots(clt2mcode str dot, whencode))
+  | _ -> failwith "cannot happen"
+
 let arith_op ast_op left op right =
   let op' = Ast0.wrap (Ast0.Arith (clt2mcode ast_op op)) in  
   Ast0.wrap (Ast0.Binary(left, op', right))

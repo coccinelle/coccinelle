@@ -31,11 +31,11 @@ now. See list_matcher in cocci_vs_c.ml in first try_matches case. *)
 	Ast0.rewrap itemlist
           (List.rev (Ast0.rewrap e (make_comma comma) :: (e::es)))
 
-let add_exp_comma =
+let add_enum_decl_comma =
   add_comma
-    (function x -> match Ast0.unwrap x with Ast0.EComma _ -> true | _ -> false)
-    (function x -> match Ast0.unwrap x with Ast0.Edots _  -> true | _ -> false)
-    (function x -> Ast0.EComma x)
+    (function x -> match Ast0.unwrap x with Ast0.EnumComma _ -> true | _ -> false)
+    (function x -> match Ast0.unwrap x with Ast0.EnumDots _  -> true | _ -> false)
+    (function x -> Ast0.EnumComma x)
 
 and add_init_comma =
   add_comma
@@ -51,7 +51,7 @@ let base_typeC r k t =
   let t = k t in
   match Ast0.unwrap t with
     Ast0.EnumDef(ty,lb,ids,rb) ->
-      let ids = add_exp_comma ids in
+      let ids = add_enum_decl_comma ids in
       Ast0.rewrap t (Ast0.EnumDef(ty,lb,ids,rb))
   | _ -> t
 

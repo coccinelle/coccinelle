@@ -452,7 +452,7 @@ and top_typeC tgt opt_allowed typ =
 	  (List.map mcode2arity [lb;rb]) in
       let ty = typeC arity ty in
       let lb = mcode lb in
-      let ids = dots (expression tgt) decls in
+      let ids = dots (enum_decl tgt) decls in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.EnumDef(ty,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
@@ -693,6 +693,29 @@ and field tgt decl =
       make_field decl tgt arity (Ast0.Fdots(dots,whencode))
   | Ast0.OptField(_) ->
       failwith "unexpected code"
+
+and enum_decl tgt decl =
+  match Ast0.unwrap decl with
+    Ast0.Enum(name,enum_val) ->
+      let name = ident true tgt name in
+      let enum_val =
+        get_option
+          (fun (eq,eval) ->
+             let arity = all_same true tgt (mcode2line eq) [mcode2arity eq] in
+             (mcode eq, expression arity eval)) enum_val in
+      let res = Ast0.Enum(name,enum_val) in
+      Ast0.rewrap decl res
+  | Ast0.EnumComma(cm) ->
+      (*let arity = all_same true tgt (mcode2line cm) [mcode2arity cm] in*)
+      let cm = mcode cm in
+      let res = Ast0.EnumComma(cm) in
+      Ast0.rewrap decl res
+  | Ast0.EnumDots(dots,whencode) ->
+      let dots = mcode dots in
+      let whencode =
+        get_option (fun (a,e,b) -> (a,e,enum_decl Ast0.NONE b)) whencode in
+      let res = Ast0.EnumDots(dots,whencode) in
+      Ast0.rewrap decl res
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)

@@ -738,7 +738,7 @@ and typeC ty =
   | Ast.EnumDef(ty,lb,ids,rb) ->
       fullType ty; ft_space ty;
       mcode print_string lb;
-      dots force_newline expression ids;
+      dots force_newline enum_decl ids;
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; print_option_prespace ident name
@@ -952,6 +952,24 @@ and annotated_field d =
   | Ast.DisjField(_) | Ast.ConjField(_) -> raise CantBeInPlus
   | Ast.OptField(decl) -> raise CantBeInPlus
   | Ast.Fdots(_,_) -> raise CantBeInPlus
+
+and enum_decl d =
+  match Ast.unwrap d with
+    Ast.Enum(name,enum_val) ->
+      ident name;
+      pr_space();
+      print_option
+        (function (eq,eval) ->
+          mcode print_string eq; pr_space(); expression eval) enum_val
+  | Ast.EnumComma(cm) ->
+      mcode (print_string_with_hint (SpaceOrNewline (ref " "))) cm
+  | Ast.EnumDots(dots,whencode) when generating ->
+      mcode print_string dots;
+      print_option
+      (function w ->
+        print_text "   when != ";
+        enum_decl w) whencode
+  | Ast.EnumDots(dots,whencode) -> raise CantBeInPlus
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -1421,6 +1439,7 @@ let pp_any = function
   | Ast.InitTag(x) -> initialiser false x; false
   | Ast.DeclarationTag(x) -> declaration x; false
   | Ast.FieldTag(x) -> field x; false
+  | Ast.EnumDeclTag(x) -> enum_decl x; false
 
   | Ast.StorageTag(x) -> storage x unknown unknown; false
   | Ast.IncFileTag(x) -> inc_file x unknown unknown; false
@@ -1474,6 +1493,7 @@ let pp_any = function
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
   | Ast.AnnDeclDotsTag(x) -> dots force_newline annotated_decl x; false
   | Ast.AnnFieldDotsTag(x) -> dots force_newline annotated_field x; false
+  | Ast.EnumDeclDotsTag(x) -> dots force_newline enum_decl x; false
   | Ast.DefParDotsTag(x) -> dots (fun _ -> ()) print_define_param x; false
 
   | Ast.TypeCTag(x) -> typeC x; false
@@ -1506,7 +1526,7 @@ in
 	      force_newline(); force_newline()
 	  | (Ast.Directive _::_)
 	  | (Ast.Rule_elemTag _::_) | (Ast.StatementTag _::_)
-	  | (Ast.FieldTag _::_) | (Ast.InitTag _::_)
+	  | (Ast.FieldTag _::_) | (Ast.EnumDeclTag _::_) | (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("}",_)::_) -> prnl hd
 	  | _ -> () in
       let newline_after _ =
@@ -1517,7 +1537,8 @@ in
 	      (if isfn s then force_newline());
 	      force_newline()
 	  | (Ast.Directive _::_) | (Ast.StmtDotsTag _::_)
-	  | (Ast.Rule_elemTag _::_) | (Ast.FieldTag _::_) | (Ast.InitTag _::_)
+	  | (Ast.Rule_elemTag _::_) | (Ast.FieldTag _::_)
+	  | (Ast.EnumDeclTag _::_)| (Ast.InitTag _::_)
 	  | (Ast.DeclarationTag _::_) | (Ast.Token ("{",_)::_) ->
 	      force_newline()
 	  | _ -> () in

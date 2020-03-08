@@ -439,7 +439,7 @@ and typeC ty =
       print_option (function x -> ident x; print_string " ") name
   | Ast.EnumDef(ty,lb,ids,rb) ->
       fullType ty; mcode print_string lb;
-      dots force_newline expression ids;
+      dots force_newline enum_decl ids;
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind;
@@ -585,6 +585,20 @@ and annotated_field arity d =
   | Ast.DisjField(decls) -> print_disj_list (annotated_field arity) decls "|"
   | Ast.ConjField(decls) -> print_disj_list (annotated_field arity) decls "&"
   | Ast.OptField(decl) -> print_string "?"; annotated_field arity decl
+
+and enum_decl d =
+  match Ast.unwrap d with
+    Ast.Enum(name,enum_val) ->
+      ident name;
+      (match enum_val with
+        None -> ()
+      | Some(eq,eval) ->
+          mcode print_string eq;
+          expression eval)
+  | Ast.EnumComma(cm) -> mcode print_string cm
+  | Ast.EnumDots(dots,Some whencode) ->
+      mcode print_string dots; print_string "   when != "; enum_decl whencode
+  | Ast.EnumDots(dots,None) -> mcode print_string dots
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -1091,6 +1105,7 @@ let _ =
     | Ast.InitTag(x) -> initialiser x
     | Ast.DeclarationTag(x) -> declaration x
     | Ast.FieldTag(x) -> field x
+    | Ast.EnumDeclTag(x) -> enum_decl x
     | Ast.StorageTag(x) -> storage x
     | Ast.IncFileTag(x) -> inc_file x
     | Ast.Rule_elemTag(x) -> rule_elem "" x
@@ -1111,6 +1126,7 @@ let _ =
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.AnnDeclDotsTag(x) -> dots (function _ -> ()) (annotated_decl "") x
     | Ast.AnnFieldDotsTag(x) -> dots (function _ -> ()) (annotated_field "") x
+    | Ast.EnumDeclDotsTag(x) -> dots (function _ -> ()) enum_decl x
     | Ast.DefParDotsTag(x) -> dots (function _ -> ()) print_define_param x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x

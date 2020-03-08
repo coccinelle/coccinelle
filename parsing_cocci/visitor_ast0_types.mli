@@ -8,6 +8,7 @@ type 'n all_functions = {
   typeC : (Ast0_cocci.typeC, 'n) inout;
   declaration : (Ast0_cocci.declaration, 'n) inout;
   field : (Ast0_cocci.field, 'n) inout;
+  enum_decl : (Ast0_cocci.enum_decl,'n) inout;
   initialiser : (Ast0_cocci.initialiser, 'n) inout;
   initialiser_list : (Ast0_cocci.initialiser_list, 'n) inout;
   parameter : (Ast0_cocci.parameterTypeDef, 'n) inout;
@@ -22,6 +23,7 @@ type 'n all_functions = {
   statement_dots : (Ast0_cocci.statement Ast0_cocci.dots, 'n) inout;
   declaration_dots : (Ast0_cocci.declaration Ast0_cocci.dots, 'n) inout;
   field_dots : (Ast0_cocci.field Ast0_cocci.dots, 'n) inout;
+  enum_decl_dots : (Ast0_cocci.enum_decl Ast0_cocci.dots, 'n) inout;
   case_line_dots : (Ast0_cocci.case_line Ast0_cocci.dots, 'n) inout;
   define_param_dots : (Ast0_cocci.define_param Ast0_cocci.dots, 'n) inout;
   anything : (Ast0_cocci.anything, 'n) inout;
@@ -36,6 +38,7 @@ type 'n combiner_rec_functions = {
   combiner_rec_typeC : (Ast0_cocci.typeC, 'n) combiner_inout;
   combiner_rec_declaration : (Ast0_cocci.declaration, 'n) combiner_inout;
   combiner_rec_field : (Ast0_cocci.field, 'n) combiner_inout;
+  combiner_rec_enumdecl : (Ast0_cocci.enum_decl,'n) combiner_inout;
   combiner_rec_initialiser : (Ast0_cocci.initialiser, 'n) combiner_inout;
   combiner_rec_initialiser_list : (Ast0_cocci.initialiser_list, 'n) combiner_inout;
   combiner_rec_parameter : (Ast0_cocci.parameterTypeDef, 'n) combiner_inout;
@@ -52,6 +55,7 @@ type 'n combiner_rec_functions = {
   combiner_rec_declaration_dots :
     (Ast0_cocci.declaration Ast0_cocci.dots, 'n) combiner_inout;
   combiner_rec_field_dots : (Ast0_cocci.field Ast0_cocci.dots, 'n) combiner_inout;
+  combiner_rec_enum_decl_dots : (Ast0_cocci.enum_decl Ast0_cocci.dots, 'n) combiner_inout;
   combiner_rec_case_line_dots : (Ast0_cocci.case_line Ast0_cocci.dots, 'n) combiner_inout;
   combiner_rec_define_param_dots :
     (Ast0_cocci.define_param Ast0_cocci.dots, 'n) combiner_inout;
@@ -81,6 +85,7 @@ type 'n combiner_functions = {
   combiner_dotsstmtfn : (Ast0_cocci.statement Ast0_cocci.dots, 'n) ccode;
   combiner_dotsdeclfn : (Ast0_cocci.declaration Ast0_cocci.dots, 'n) ccode;
   combiner_dotsfieldfn : (Ast0_cocci.field Ast0_cocci.dots, 'n) ccode;
+  combiner_dotsenumdeclfn : (Ast0_cocci.enum_decl Ast0_cocci.dots, 'n) ccode;
   combiner_dotscasefn : (Ast0_cocci.case_line Ast0_cocci.dots, 'n) ccode;
   combiner_dotsdefparfn : (Ast0_cocci.define_param Ast0_cocci.dots, 'n) ccode;
   combiner_identfn : (Ast0_cocci.ident, 'n) ccode;
@@ -92,6 +97,7 @@ type 'n combiner_functions = {
   combiner_paramfn : (Ast0_cocci.parameterTypeDef, 'n) ccode;
   combiner_declfn : (Ast0_cocci.declaration, 'n) ccode;
   combiner_fieldfn : (Ast0_cocci.field, 'n) ccode;
+  combiner_enumdeclfn : (Ast0_cocci.enum_decl,'n) ccode;
   combiner_stmtfn : (Ast0_cocci.statement, 'n) ccode;
   combiner_forinfofn : (Ast0_cocci.forinfo, 'n) ccode;
   combiner_casefn : (Ast0_cocci.case_line, 'n) ccode;
@@ -108,6 +114,7 @@ type rebuilder_rec_functions = {
   rebuilder_rec_typeC : Ast0_cocci.typeC rebuilder_inout;
   rebuilder_rec_declaration : Ast0_cocci.declaration rebuilder_inout;
   rebuilder_rec_field : Ast0_cocci.field rebuilder_inout;
+  rebuilder_rec_enumdecl : Ast0_cocci.enum_decl rebuilder_inout;
   rebuilder_rec_initialiser : Ast0_cocci.initialiser rebuilder_inout;
   rebuilder_rec_initialiser_list : Ast0_cocci.initialiser_list rebuilder_inout;
   rebuilder_rec_parameter : Ast0_cocci.parameterTypeDef rebuilder_inout;
@@ -121,6 +128,7 @@ type rebuilder_rec_functions = {
   rebuilder_rec_statement_dots : Ast0_cocci.statement Ast0_cocci.dots rebuilder_inout;
   rebuilder_rec_declaration_dots : Ast0_cocci.declaration Ast0_cocci.dots rebuilder_inout;
   rebuilder_rec_field_dots : Ast0_cocci.field Ast0_cocci.dots rebuilder_inout;
+  rebuilder_rec_enum_decl_dots : Ast0_cocci.enum_decl Ast0_cocci.dots rebuilder_inout;
   rebuilder_rec_case_line_dots : Ast0_cocci.case_line Ast0_cocci.dots rebuilder_inout;
   rebuilder_rec_define_param_dots :
     Ast0_cocci.define_param Ast0_cocci.dots rebuilder_inout;
@@ -150,6 +158,7 @@ type rebuilder_functions = {
   rebuilder_dotsstmtfn : Ast0_cocci.statement Ast0_cocci.dots rcode;
   rebuilder_dotsdeclfn : Ast0_cocci.declaration Ast0_cocci.dots rcode;
   rebuilder_dotsfieldfn : Ast0_cocci.field Ast0_cocci.dots rcode;
+  rebuilder_dotsenumdeclfn : Ast0_cocci.enum_decl Ast0_cocci.dots rcode;
   rebuilder_dotscasefn : Ast0_cocci.case_line Ast0_cocci.dots rcode;
   rebuilder_dotsdefparfn : Ast0_cocci.define_param Ast0_cocci.dots rcode;
   rebuilder_identfn : Ast0_cocci.ident rcode;
@@ -161,6 +170,7 @@ type rebuilder_functions = {
   rebuilder_paramfn : Ast0_cocci.parameterTypeDef rcode;
   rebuilder_declfn : Ast0_cocci.declaration rcode;
   rebuilder_fieldfn : Ast0_cocci.field rcode;
+  rebuilder_enumdeclfn : Ast0_cocci.enum_decl rcode;
   rebuilder_stmtfn : Ast0_cocci.statement rcode;
   rebuilder_forinfofn : Ast0_cocci.forinfo rcode;
   rebuilder_casefn : Ast0_cocci.case_line rcode;
@@ -192,6 +202,7 @@ type 'n combiner_rebuilder_functions = {
   combiner_rebuilder_dotsstmtfn : (Ast0_cocci.statement Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsdeclfn : (Ast0_cocci.declaration Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsfieldfn : (Ast0_cocci.field Ast0_cocci.dots, 'n) rccode;
+  combiner_rebuilder_dotsenumdeclfn : (Ast0_cocci.enum_decl Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotscasefn : (Ast0_cocci.case_line Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsdefparfn : (Ast0_cocci.define_param Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_identfn : (Ast0_cocci.ident, 'n) rccode;
@@ -203,6 +214,7 @@ type 'n combiner_rebuilder_functions = {
   combiner_rebuilder_paramfn : (Ast0_cocci.parameterTypeDef, 'n) rccode;
   combiner_rebuilder_declfn : (Ast0_cocci.declaration, 'n) rccode;
   combiner_rebuilder_fieldfn : (Ast0_cocci.field, 'n) rccode;
+  combiner_rebuilder_enumdeclfn : (Ast0_cocci.enum_decl,'n) rccode;
   combiner_rebuilder_stmtfn : (Ast0_cocci.statement, 'n) rccode;
   combiner_rebuilder_forinfofn : (Ast0_cocci.forinfo, 'n) rccode;
   combiner_rebuilder_casefn : (Ast0_cocci.case_line, 'n) rccode;

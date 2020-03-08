@@ -53,9 +53,9 @@ let sequence_tokens =
     (mcode (function x -> Store (Ast0.unwrap_mcode x)))
     (mcode (function x -> Inc (Ast0.unwrap_mcode x)))
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing
 
 (* In general, we will get a list of lists:
 

@@ -2289,7 +2289,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
-	        donothing donothing in
+	        donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->
@@ -3304,14 +3304,14 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 and enum_fields = fun eas ebs ->
   let match_dots ea =
     match A.unwrap ea with
-      A.Edots(mcode, optexpr) -> Some (mcode, optexpr)
+      A.EnumDots(mcode, optexpr) -> Some (mcode, optexpr)
     | _ -> None in
-  let build_dots (mcode, optexpr) = A.Edots(mcode, optexpr) in
+  let build_dots (mcode, optexpr) = A.EnumDots(mcode, optexpr) in
   let match_comma ea =
     match A.unwrap ea with
-      A.EComma ia1 -> Some ia1
+      A.EnumComma ia1 -> Some ia1
     | _ -> None in
-  let build_comma ia1 = A.EComma ia1 in
+  let build_comma ia1 = A.EnumComma ia1 in
   let match_metalist ea = None in
   let build_metalist _ (ida,leninfo,cstr,keep,inherited) =
     failwith "enum: build meta list: not possible" in
@@ -3326,29 +3326,21 @@ and enum_fields = fun eas ebs ->
 and enum_field ida idb =
   X.all_bound (A.get_inherited ida) >&&>
   match A.unwrap ida, idb with
-    A.Ident(id),(nameidb,None) ->
-      ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
-        return ((A.Ident id) +> A.rewrap ida, (nameidb,None)))
-  | A.Ident(id),(nameidb,Some _) -> fail (* should we have an iso? *)
-  | A.Assignment(ea1,opa,ea2,init),(nameidb,Some(opbi,eb2)) ->
-      (match A.unwrap ea1 with
-	A.Ident(id) ->
-	  let assignOp opa0 opbi =
-	    match A.unwrap opa0 with
-              A.SimpleAssign oa ->
-		tokenf oa opbi >>= fun oa opbi ->
-		  return
-                    (A.rewrap opa (A.SimpleAssign oa), opbi)
-            | _ -> failwith "only simple assignment possible here" in
-	  ident_cpp DontKnow id nameidb >>= (fun id nameidb ->
-	  expression ea2 eb2 >>= (fun ea2 eb2 ->
-          assignOp opa opbi >>= (fun opa opbi ->(* only one kind of assignop *)
+    A.Enum(nameida,enum_vala),(nameidb,enum_valb) ->
+      (match enum_vala,enum_valb with
+        (None, Some _)
+      | (Some _, None) -> fail
+      | (None, None) ->
+         ident_cpp DontKnow nameida nameidb >>=
+         (fun nameida nameidb ->
+           return (A.Enum(nameida,None) +> A.rewrap ida, (nameidb,None)))
+      | (Some (eqa,evala), Some(eqb,evalb)) ->
+	  ident_cpp DontKnow nameida nameidb >>= (fun nameida nameidb ->
+          tokenf eqa eqb >>= (fun eqa eqb ->
+	  expression evala evalb >>= (fun ea eb ->
 	    return (
-	    (A.Assignment((A.Ident(id)) +> A.rewrap ea1,opa,ea2,init)) +>
-	    A.rewrap ida,
-	    (nameidb,Some(opbi,eb2))))))
-      |	_ -> failwith "enum: assignment: not possible")
-  | A.Assignment(ea1,opa,ea2,init),(nameidb,None) -> fail
+	    (A.Enum(nameida,Some(eqa,ea)) +> A.rewrap ida),
+	    (nameidb,Some(eqb,eb)))))))
   | _ -> failwith ("not possible: "^(Dumper.dump (A.unwrap ida)))
 
 (* ------------------------------------------------------------------------- *)

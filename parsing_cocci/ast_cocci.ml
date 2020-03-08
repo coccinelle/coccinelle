@@ -351,7 +351,7 @@ and base_typeC =
 	               string mcode (* ) *) (* IBM C only *)
   | EnumName        of string mcode (*enum*) * ident option (* name *)
   | EnumDef  of fullType (* either EnumName or metavar *) *
-	string mcode (* { *) * expression dots * string mcode (* } *)
+	string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
 	string mcode (* { *) * annotated_field dots * string mcode (* } *)
@@ -443,6 +443,13 @@ and base_annotated_field =
   | OptField  of annotated_field
 
 and annotated_field = base_annotated_field wrap
+
+and base_enum_decl =
+    Enum of ident * (string mcode (* = *) * expression) option
+  | EnumComma of string mcode (* , *)
+  | EnumDots of string mcode (* ... *) * enum_decl option (* whencode *)
+
+and enum_decl = base_enum_decl wrap
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -784,6 +791,7 @@ and anything =
   | LogicalOpTag        of logicalOp
   | DeclarationTag      of declaration
   | FieldTag            of field
+  | EnumDeclTag         of enum_decl
   | InitTag             of initialiser
   | StorageTag          of storage
   | IncFileTag          of inc_file
@@ -801,6 +809,7 @@ and anything =
   | StmtDotsTag         of statement dots
   | AnnDeclDotsTag      of annotated_decl dots
   | AnnFieldDotsTag     of annotated_field dots
+  | EnumDeclDotsTag     of enum_decl dots
   | DefParDotsTag       of define_param dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
@@ -926,6 +935,7 @@ and tag2c = function
   | LogicalOpTag _ -> "LogicalOpTag"
   | DeclarationTag _ -> "DeclarationTag"
   | FieldTag _ -> "FieldTag"
+  | EnumDeclTag _ -> "EnumDeclTag"
   | InitTag _      -> "InitTag"
   | StorageTag _   -> "StorageTag"
   | IncFileTag _   -> "IncFileTag"
@@ -943,6 +953,7 @@ and tag2c = function
   | StmtDotsTag _ -> "StmtDotsTag"
   | AnnDeclDotsTag _ -> "AnnDeclDotsTag"
   | AnnFieldDotsTag _ -> "AnnFieldDotsTag"
+  | EnumDeclDotsTag _ -> "EnumDeclDotsTag"
   | DefParDotsTag _ -> "DefParDotsTag"
   | TypeCTag _ -> "TypeCTag"
   | ParamTag _ -> "ParamTag"

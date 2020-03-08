@@ -187,9 +187,9 @@ let inline_mcodes =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing
+    do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing_end do_nothing_end do_nothing
+    do_nothing do_nothing do_nothing_end do_nothing_end do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
@@ -271,8 +271,10 @@ let check_allminus =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
+    donothing
     donothing ident expression donothing donothing typeC initialiser donothing
-    declaration field statement donothing case_line donothing donothing
+    declaration field donothing statement donothing case_line donothing
+    donothing
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
@@ -598,7 +600,7 @@ and base_typeC allminus t =
   | Ast0.EnumName(kind,name) ->
       Ast.EnumName(mcode kind,get_option ident name)
   | Ast0.EnumDef(ty,lb,ids,rb) ->
-      Ast.EnumDef(typeC allminus ty,mcode lb,dots expression ids,mcode rb)
+      Ast.EnumDef(typeC allminus ty,mcode lb,enum_decl_dots ids,mcode rb)
   | Ast0.StructUnionName(kind,name) ->
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
@@ -748,6 +750,24 @@ and annotated_field bef d =
 		  field d))
 
 and field_dots l = dots (annotated_field None) l
+
+and enum_decl d =
+  rewrap d (do_isos (Ast0.get_iso d))
+    (match Ast0.unwrap d with
+      Ast0.Enum(name,enum_val) ->
+        (match enum_val with
+          None -> Ast.Enum(ident name,None)
+        | Some(eq,eval) ->
+            Ast.Enum(ident name,Some(mcode eq,expression eval)))
+    | Ast0.EnumComma(cm) ->
+	Ast.EnumComma(mcode cm)
+    | Ast0.EnumDots(dots,whencode) ->
+	(* structure definitions only *)
+	let dots = mcode dots in
+	let whencode = get_option (fun (_,_,b) -> enum_decl b) whencode in
+	Ast.EnumDots(dots,whencode))
+
+and enum_decl_dots l = dots enum_decl l
 
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
@@ -1215,6 +1235,7 @@ and anything = function
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
   | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
   | Ast0.DotsFieldTag(d) -> Ast.AnnFieldDotsTag(field_dots d)
+  | Ast0.DotsEnumDeclTag(d) -> Ast.EnumDeclDotsTag(enum_decl_dots d)
   | Ast0.DotsCaseTag(d) -> failwith "not possible"
   | Ast0.DotsDefParamTag(d) -> Ast.DefParDotsTag(define_param_dots d)
   | Ast0.IdentTag(d) -> Ast.IdentTag(ident d)
@@ -1228,6 +1249,7 @@ and anything = function
   | Ast0.InitTag(d) -> Ast.InitTag(initialiser d)
   | Ast0.DeclTag(d) -> Ast.DeclarationTag(declaration d)
   | Ast0.FieldTag(d) -> Ast.FieldTag(field d)
+  | Ast0.EnumDeclTag(d) -> Ast.EnumDeclTag(enum_decl d)
   | Ast0.StmtTag(d) -> Ast.StatementTag(statement d)
   | Ast0.ForInfoTag(d) -> Ast.ForInfoTag(forinfo d)
   | Ast0.CaseLineTag(d) -> Ast.CaseLineTag(case_line d)
