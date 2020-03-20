@@ -191,9 +191,9 @@ and base_typeC =
   | BaseType        of Ast_cocci.baseType * string mcode list
   | Signed          of Ast_cocci.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
-  | FunctionPointer of typeC *
-	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
-                  string mcode (* ( *)*parameter_list*string mcode(* ) *)
+  | ParenType       of string mcode (* ( *) * typeC * string mcode (* ) *)
+  | FunctionType    of typeC *
+                  string mcode (* ( *) * parameter_list * string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *

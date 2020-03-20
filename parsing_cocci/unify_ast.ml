@@ -333,14 +333,14 @@ and unify_typeC t1 t2 =
       then unify_option unify_typeC ty1 ty2
       else false
   | (Ast.Pointer(ty1,s1),Ast.Pointer(ty2,s2)) -> unify_fullType ty1 ty2
-  | (Ast.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
-     Ast.FunctionPointer(tyb,lp1b,starb,rp1b,lp2b,paramsb,rp2b)) ->
-       if List.for_all2 unify_mcode
-	   [lp1a;stara;rp1a;lp2a;rp2a] [lp1b;starb;rp1b;lp2b;rp2b]
-       then
-	 unify_fullType tya tyb &&
-	 unify_dots unify_parameterTypeDef pdots paramsa paramsb
-       else false
+  | (Ast.ParenType(lpa,tya,rpa),Ast.ParenType(lpb,tyb,rpb)) ->
+      unify_fullType tya tyb && unify_mcode lpa lpb && unify_mcode rpa rpb
+  | (Ast.FunctionType(tya,lpa,paramsa,rpa),
+     Ast.FunctionType(tyb,lpb,paramsb,rpb)) ->
+      unify_fullType tya tyb &&
+      unify_mcode lpa lpb &&
+      unify_dots unify_parameterTypeDef pdots paramsa paramsb &&
+      unify_mcode rpa rpb
   | (Ast.Array(ty1,lb1,e1,rb1),Ast.Array(ty2,lb2,e2,rb2)) ->
       unify_fullType ty1 ty2 && unify_option unify_expression e1 e2
   | (Ast.Decimal(dec1,lp1,len1,comma1,prec_opt1,rp1),

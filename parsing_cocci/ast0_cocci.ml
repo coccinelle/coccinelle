@@ -200,9 +200,9 @@ and base_typeC =
   | BaseType        of Ast.baseType * string mcode list
   | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
-  | FunctionPointer of typeC *
-	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
-                  string mcode (* ( *)*parameter_list*string mcode(* ) *)
+  | ParenType       of string mcode (* ( *) * typeC * string mcode (* ) *)
+  | FunctionType    of typeC *
+                  string mcode (* ( *) * parameter_list * string mcode (* ) *)
   | Array           of typeC * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -748,7 +748,6 @@ let rec meta_names_of_typeC ty =
     ConstVol (_, ty)
   | Signed (_, Some ty)
   | Pointer (ty, _)
-  | FunctionPointer (ty, _, _, _, _, _, _)
   | Array (ty, _, _, _) -> meta_names_of_typeC ty
   | EnumName (_, Some ident)
   | StructUnionName(_, Some ident) -> meta_names_of_ident ident

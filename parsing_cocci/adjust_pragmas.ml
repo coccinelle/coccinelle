@@ -168,9 +168,10 @@ let rec left_ty t =
       call_right left_mcode sign t (function sign -> Ast0.Signed(sign,ty))
   | Ast0.Pointer(ty,star) ->
       call_right left_ty ty t (function ty -> Ast0.Pointer(ty,star))
-  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-      call_right left_ty ty t
-	(function ty -> Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
+  | Ast0.ParenType(lp,ty,rp) ->
+      call_right left_mcode lp t (function lp -> Ast0.ParenType(lp,ty,rp))
+  | Ast0.FunctionType(ty,lp,params,rp) ->
+      call_right left_ty ty t (function ty -> Ast0.FunctionType(ty,lp,params,rp))
   | Ast0.Array(ty,lb,size,rb) ->
       call_right left_ty ty t (function ty -> Ast0.Array(ty,lb,size,rb))
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->

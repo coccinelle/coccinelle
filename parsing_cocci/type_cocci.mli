@@ -15,7 +15,8 @@ type typeC =
   | BaseType        of baseType
   | SignedT         of sign * typeC option
   | Pointer         of typeC
-  | FunctionPointer of typeC (* only return type *)
+  | ParenType       of typeC (* only return type *)
+  | FunctionType    of typeC (* only return type *)
   | Array           of typeC (* drop size info *)
   | Decimal         of name * name
   | EnumName        of name

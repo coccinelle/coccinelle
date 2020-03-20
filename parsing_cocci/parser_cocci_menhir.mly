@@ -240,7 +240,8 @@ let inline_id aft = function
 
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl Tdecimal Texec
+%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl TFunProto
+%token <Data.clt> Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
 %token <Data.clt> TAttr_
@@ -1131,32 +1132,16 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0.wrap
 	  (Ast0.ConjField(P.id2mcode lp,code,mids, P.id2mcode rp)) }
-    | t=ctype d=d_ident_option bf=struct_bitfield? pv=TPtVirg
+    | t=ctype d=direct_decl_option(disj_ident) bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0.wrap(Ast0.Field(fn t,id,bf,P.clt2mcode ";" pv)) }
-    | t=ctype lp1=TOPar st=TMul d=d_ident_option rp1=TCPar
-	lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
-	bf=struct_bitfield? pv=TPtVirg
-        { let (id,fn) = d in
-        let t =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        Ast0.wrap(Ast0.Field(fn t,id,bf,P.clt2mcode ";" pv)) }
-     | cv=ioption(const_vol) i=pure_ident_or_symbol d=d_ident_option
+    | cv=ioption(const_vol) i=pure_ident_or_symbol
+      d=direct_decl_option(disj_ident)
 	 bf=struct_bitfield?
 	 pv=TPtVirg
 	 { let (id,fn) = d in
 	 let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
 	 Ast0.wrap(Ast0.Field(fn idtype,id,bf,P.clt2mcode ";" pv)) }
-
-d_ident_option:
-	 { None, (fun x -> x) }
-     | d=d_ident {
-       let (id, fn) = d in
-       (Some id, fn)
-    }
 
 struct_bitfield:
    c=TDotDot e=expr { (P.clt2mcode ":" c, e) }
@@ -1452,7 +1437,8 @@ reverse_separated_nonempty_llist(separator, X):
 
 funproto:
   s=ioption(storage) i=ioption(Tinline) t=ctype
-  id=fn_ident lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
+  TFunProto id=fn_ident
+  lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = match s with None -> [] | Some s -> [Ast0.FStorage s] in
         let i =
 	  match i with
@@ -1466,7 +1452,8 @@ funproto:
 	      P.clt2mcode "(" lp, args, vararg, P.clt2mcode ")" rp,
 	      P.clt2mcode ";" pt)) }
 | i=Tinline s=storage t=ctype
-  id=fn_ident lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
+  TFunProto id=fn_ident
+  lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = [Ast0.FStorage s] in
         let i = [Ast0.FInline (P.clt2mcode "inline" i)] in
 	let t = [Ast0.FType t] in
@@ -1554,17 +1541,9 @@ storage:
        | s=Tregister    { P.clt2mcode Ast.Register s }
        | s=Textern      { P.clt2mcode Ast.Extern s }
 
-decl: t=ctype i=disj_ident a=list(array_dec)
-	{ let t = P.arrayify t a in Ast0.wrap(Ast0.Param(t, Some i)) }
+decl: t=ctype d=direct_declarator(disj_ident)
+	{ let (i,fn) = d in Ast0.wrap(Ast0.Param(fn t, Some i)) }
     | t=ctype { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None)) }
-    | t=ctype lp=TOPar s=TMul i=disj_ident rp=TCPar
-	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
-        { let fnptr =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp,P.clt2mcode "*" s,P.clt2mcode ")" rp,
-		P.clt2mcode "(" lp1,d,P.clt2mcode ")" rp1)) in
-	Ast0.wrap(Ast0.Param(fnptr, Some i)) }
     | TMetaParam
 	{ let (nm,cstr,pure,clt) = $1 in
 	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,cstr,pure)) }
@@ -1572,14 +1551,6 @@ decl: t=ctype i=disj_ident a=list(array_dec)
 
 name_opt_decl:
       decl  { $1 }
-    | t=ctype lp=TOPar s=TMul rp=TCPar
-	lp1=TOPar d=decl_list(name_opt_decl) rp1=TCPar
-        { let fnptr =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp,P.clt2mcode "*" s,P.clt2mcode ")" rp,
-		P.clt2mcode "(" lp1,d,P.clt2mcode ")" rp1)) in
-	Ast0.wrap(Ast0.Param(fnptr, None)) }
 
 const_vol:
       Tconst       { P.clt2mcode Ast.Const $1 }
@@ -1709,13 +1680,15 @@ decl_var:
     t=ctype pv=TPtVirg
       { [Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv))] }
   | TMetaDecl { [P.meta_decl $1] }
-  | s=ioption(storage) t=ctype d=comma_list(d_ident) pv=TPtVirg
+  | s=ioption(storage) t=ctype
+      d=comma_list(direct_declarator(disj_ident)) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
 	    Ast0.wrap(Ast0.UnInit(s,fn t,id,[],P.clt2mcode ";" pv)))
 	  d }
   | f=funproto { [f] }
-  | s=ioption(storage) t=ctype d=d_ident a=attr_list q=TEq e=initialize
+  | s=ioption(storage) t=ctype d=direct_declarator(disj_ident)
+    a=attr_list q=TEq e=initialize
       pv=TPtVirg
       {let (id,fn) = d in
       [Ast0.wrap
@@ -1736,18 +1709,6 @@ decl_var:
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
       [Ast0.wrap(Ast0.Init(s,fn idtype,id,a,P.clt2mcode "=" q,e,
 			   P.clt2mcode ";" pv))] }
-  /* function pointer type */
-  | s=ioption(storage)
-    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
-    pv=TPtVirg
-      { let (id,fn) = d in
-        let t =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        [Ast0.wrap(Ast0.UnInit(s,fn t,id,[],P.clt2mcode ";" pv))] }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       p=TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl(s,d,P.clt2mcode "(" o,e,
@@ -1760,56 +1721,25 @@ decl_var:
 	       (s,d,P.clt2mcode "(" o,e,
 		P.clt2mcode ")" c,P.clt2mcode "=" q,i,
 		P.clt2mcode ";" p))] }
-  | s=ioption(storage)
-    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
-    q=TEq e=initialize pv=TPtVirg
-      { let (id,fn) = d in
-        let t =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-      [Ast0.wrap
-	  (Ast0.Init(s,fn t,id,[],P.clt2mcode "=" q,e,P.clt2mcode ";" pv))]}
-  | s=Ttypedef t=typedef_ctype id=comma_list(typedef_ident) pv=TPtVirg
+  | s=Ttypedef t=typedef_ctype
+      d=comma_list(direct_declarator(typedef_ident)) pv=TPtVirg
       { let s = P.clt2mcode "typedef" s in
         List.map
-	  (function id ->
-	    Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv)))
-	  id }
-  | s=Ttypedef t=typedef_ctype id=typedef_ident
-      l=TOCro i=eexpr r=TCCro pv=TPtVirg
-      { let s = P.clt2mcode "typedef" s in
-        let t = P.arrayify t [(l,Some i,r)] in
-	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
-  | s=Ttypedef t=typedef_ctype id=typedef_ident
-      l=TOCro i=eexpr r=TCCro
-      l2=TOCro i2=eexpr r2=TCCro pv=TPtVirg
-      { let s = P.clt2mcode "typedef" s in
-        let t = P.arrayify t [(l,Some i,r)] in
-        let t = P.arrayify t [(l2,Some i2,r2)] in
-	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))] }
-  | s=Ttypedef
-    t=typedef_ctype lp1=TOPar st=TMul id=typedef_ident rp1=TCPar
-    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar pv=TPtVirg
-      { let s = P.clt2mcode "typedef" s in
-        let t =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-	[Ast0.wrap(Ast0.Typedef(s,t,id,P.clt2mcode ";" pv))]}
+	  (function (id,fn) ->
+	    Ast0.wrap(Ast0.Typedef(s,fn t,id,P.clt2mcode ";" pv)))
+	  d }
 
 one_decl_var:
     t=ctype pv=TPtVirg
       { Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv)) }
   | TMetaDecl { P.meta_decl $1 }
-  | s=ioption(storage) t=ctype d=d_ident a=attr_list pv=TPtVirg
+  | s=ioption(storage) t=ctype d=direct_declarator(disj_ident)
+      a=attr_list pv=TPtVirg
       { let (id,fn) = d in
         Ast0.wrap(Ast0.UnInit(s,fn t,id,a,P.clt2mcode ";" pv)) }
   | f=funproto { f }
-  | s=ioption(storage) t=ctype d=d_ident a=attr_list q=TEq e=initialize
+  | s=ioption(storage) t=ctype d=direct_declarator(disj_ident)
+      a=attr_list q=TEq e=initialize
       pv=TPtVirg
       { let (id,fn) = d in
       Ast0.wrap
@@ -1827,18 +1757,6 @@ one_decl_var:
       let idtype = P.make_cv cv (Ast0.wrap (Ast0.TypeName(P.id2mcode i))) in
       Ast0.wrap(Ast0.Init(s,fn idtype,id,a,P.clt2mcode "=" q,e,
 			   P.clt2mcode ";" pv)) }
-  /* function pointer type */
-  | s=ioption(storage)
-    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar
-    pv=TPtVirg
-      { let (id,fn) = d in
-        let t =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-        Ast0.wrap(Ast0.UnInit(s,fn t,id,[],P.clt2mcode ";" pv)) }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       p=TPtVirg
       { Ast0.wrap(Ast0.MacroDecl(s,d,P.clt2mcode "(" o,e,
@@ -1851,18 +1769,102 @@ one_decl_var:
                (s,d,P.clt2mcode "(" o,e,
                 P.clt2mcode ")" c,P.clt2mcode "=" q,i,
                 P.clt2mcode ";" p)) }
-  | s=ioption(storage)
-    t=ctype lp1=TOPar st=TMul d=d_ident rp1=TCPar
-    lp2=TOPar p=decl_list(name_opt_decl) rp2=TCPar a=attr_list
-    q=TEq e=initialize pv=TPtVirg
-      { let (id,fn) = d in
-        let t =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" st,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,p,P.clt2mcode ")" rp2)) in
-      Ast0.wrap(Ast0.Init(s,fn t,id,a,P.clt2mcode "=" q,e,P.clt2mcode ";" pv))}
 
+
+direct_declarator(ident_type):
+    ident_type
+      { ($1, function x -> x) }
+  | o=TOPar m=list(TMul) d=direct_declarator(ident_type) c=TCPar
+      { let (id,fn) = d in
+        (id,
+         function t ->
+          let ty =  fn (P.pointerify t m) in
+          let _ =
+           match Ast0.unwrap ty with
+            Ast0.Pointer(ty1,_) ->
+             (match Ast0.unwrap ty1 with
+               Ast0.FunctionType(ty2,_,_,_) -> ()
+             | _ ->
+              raise (Semantic_cocci.Semantic "expected function pointer"))
+           | Ast0.Array(ty1,_,_,_) ->
+              (match Ast0.unwrap ty1 with
+                Ast0.Pointer(ty2,_) ->(
+                 match Ast0.unwrap ty2 with
+                  Ast0.FunctionType(ty3,_,_,_) -> ()
+                 | _ ->
+                  raise (Semantic_cocci.Semantic "expected function pointer"))
+             | _ ->
+              raise (Semantic_cocci.Semantic "expected function pointer"))
+           | _ ->
+            raise (Semantic_cocci.Semantic "expected function pointer") in
+          Ast0.wrap
+            (Ast0.ParenType
+               (P.clt2mcode "(" o,
+                ty,
+                P.clt2mcode ")" c))) }
+  | d=direct_declarator(ident_type) a=array_dec
+      { let (id,fn) = d in
+        (id, function t -> let r = P.arrayify t [a] in fn r) }
+  | d=direct_declarator(ident_type)
+      o=TOPar arglist=decl_list(name_opt_decl) c=TCPar
+      { let (id,fn) = d in
+        (id, function t ->
+              let r =
+               Ast0.wrap
+                (Ast0.FunctionType
+                  (t,P.clt2mcode "(" o,arglist,P.clt2mcode ")" c)) in fn r) }
+
+
+direct_abstract_d:
+    o=TOPar m=list(TMul) d=direct_abstract_d c=TCPar
+      { function t ->
+          let ty = d (P.pointerify t m) in
+          let _ =
+           match Ast0.unwrap ty with
+            Ast0.Pointer(ty1,_) ->
+             (match Ast0.unwrap ty1 with
+               Ast0.FunctionType(ty2,_,_,_) ->()
+             | _ ->
+              raise (Semantic_cocci.Semantic "expected function pointer"))
+           | Ast0.Array(ty1,_,_,_) ->
+              (match Ast0.unwrap ty1 with
+                Ast0.Pointer(ty2,_) ->(
+                 match Ast0.unwrap ty2 with
+                  Ast0.FunctionType(ty3,_,_,_) -> ()
+                 | _ ->
+                  raise (Semantic_cocci.Semantic "expected function pointer"))
+             | _ ->
+              raise (Semantic_cocci.Semantic "expected function pointer"))
+           | _ ->
+            raise (Semantic_cocci.Semantic "expected function pointer") in
+          Ast0.wrap
+            (Ast0.ParenType
+               (P.clt2mcode "(" o,
+                ty,
+                P.clt2mcode ")" c))
+      }
+  | a=array_dec
+      { function t -> P.arrayify t [a] }
+  | d=direct_abstract_d a=array_dec
+      { function t -> let r = P.arrayify t [a] in d r }
+  | o=TOPar arglist=decl_list(name_opt_decl) c=TCPar
+      { function t ->
+               Ast0.wrap
+                (Ast0.FunctionType
+                  (t,P.clt2mcode "(" o,arglist,P.clt2mcode ")" c)) }
+  | d=direct_abstract_d o=TOPar arglist=decl_list(name_opt_decl) c=TCPar
+      { function t ->
+              let r =
+               Ast0.wrap
+                (Ast0.FunctionType
+                  (t,P.clt2mcode "(" o,arglist,P.clt2mcode ")" c)) in d r }
+
+
+direct_decl_option(ident_type):
+      { (None, function x -> x) }
+  | d=direct_declarator(ident_type)
+      { let (id,fn) = d in
+        (Some id, fn) }
 
 d_ident:
     disj_ident list(array_dec)
@@ -2176,16 +2178,10 @@ cast_expr(r,pe):
     unary_expr(r,pe)                      { $1 }
   | lp=TOPar t=ctype rp=TCPar e=cast_expr(r,pe)
       { Ast0.wrap(Ast0.Cast (P.clt2mcode "(" lp, t,
+                             P.clt2mcode ")" rp, e)) }
+  | lp=TOPar t=ctype d=direct_abstract_d rp=TCPar e=cast_expr(r,pe)
+      { Ast0.wrap(Ast0.Cast (P.clt2mcode "(" lp, d t,
 			     P.clt2mcode ")" rp, e)) }
-  | lp=TOPar t=ctype lp1=TOPar s=TMul rp1=TCPar
-      lp2=TOPar d=decl_list(name_opt_decl) rp2=TCPar rp=TCPar
-      e=cast_expr(r,pe)
-      { let fnptr =
-	  Ast0.wrap
-	    (Ast0.FunctionPointer
-	       (t,P.clt2mcode "(" lp1,P.clt2mcode "*" s,P.clt2mcode ")" rp1,
-		P.clt2mcode "(" lp2,d,P.clt2mcode ")" rp2)) in
-      Ast0.wrap(Ast0.Cast (P.clt2mcode "(" lp, fnptr, P.clt2mcode ")" rp, e)) }
 
 unary_expr(r,pe):
     postfix_expr(r,pe)                   { $1 }

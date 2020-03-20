@@ -67,12 +67,16 @@ and disjtypeC bty =
   | Ast.Pointer(ty,star) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap bty (Ast.Pointer(ty,star))) ty
-  | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+  | Ast.ParenType(lp,ty,rp) ->
       let ty = disjty ty in
       List.map
-	(function ty ->
-	  Ast.rewrap bty (Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2)))
-	ty
+        (function ty ->
+          Ast.rewrap bty (Ast.ParenType(lp,ty,rp))) ty
+  | Ast.FunctionType(ty,lp,params,rp) ->
+      let ty = disjty ty in
+      List.map
+        (function ty ->
+          Ast.rewrap bty (Ast.FunctionType(ty,lp,params,rp))) ty
   | Ast.Array(ty,lb,size,rb) ->
       disjmult2 (disjty ty) (disjoption disjexp size)
 	(function ty -> function size ->

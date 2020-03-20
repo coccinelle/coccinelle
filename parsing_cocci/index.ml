@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 192, also unused: 8-9, 15, 39, 40, 42, 46, 57, 65, 85-86,
- 113-115, 138-140, 162 *)
+ 113-115, 140, 162 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -93,7 +93,8 @@ let typeC t =
   | Ast0.BaseType(ty,strings) -> [48]
   | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
-  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> [131]
+  | Ast0.ParenType(lp,ty,rp) -> [138]
+  | Ast0.FunctionType(ty,lp,params,rp) -> [139]
   | Ast0.Array(ty,lb,size,rb) -> [50]
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) -> [160]
   | Ast0.EnumName(kind,name) -> [146]

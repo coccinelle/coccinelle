@@ -564,16 +564,17 @@ and typeC t =
       let ty = typeC ty in
       let star = normal_mcode star in
       mkres t (Ast0.Pointer(ty,star)) ty (promote_mcode star)
-  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
+  | Ast0.ParenType(lp,ty,rp) ->
+      let lp = normal_mcode lp in
+      let rp = normal_mcode rp in
       let ty = typeC ty in
-      let lp1 = normal_mcode lp1 in
-      let star = normal_mcode star in
-      let rp1 = normal_mcode rp1 in
-      let lp2 = normal_mcode lp2 in
-      let params = parameter_list (Some(promote_mcode lp2)) params in
-      let rp2 = normal_mcode rp2 in
-      mkres t (Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2))
-	ty (promote_mcode rp2)
+      mkres t (Ast0.ParenType(lp,ty,rp)) ty (promote_mcode rp)
+  | Ast0.FunctionType(ty,lp,params,rp) ->
+      let ty = typeC ty in
+      let lp = normal_mcode lp in
+      let params = parameter_list (Some(promote_mcode lp)) params in
+      let rp = normal_mcode rp in
+      mkres t (Ast0.FunctionType(ty,lp,params,rp)) ty (promote_mcode rp)
   | Ast0.Array(ty,lb,size,rb) ->
       let ty = typeC ty in
       let lb = normal_mcode lb in

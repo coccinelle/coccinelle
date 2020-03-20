@@ -3725,58 +3725,29 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
             (B.Pointer typb, [ibmult])
           )))
 
-    | A.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
-        (B.ParenType t1, ii) ->
-        let (lp1b, rp1b) = tuple_of_list2 ii in
-        let (qu1b, t1b) = t1 in
-        (match t1b with
-        | B.Pointer t2, ii ->
-            let (starb) = tuple_of_list1 ii in
-            let (qu2b, t2b) = t2 in
-            (match t2b with
-            | B.FunctionType (tyb, (paramsb, (isvaargs, iidotsb))), ii ->
-                let (lp2b, rp2b) = tuple_of_list2 ii in
+    | A.ParenType (lpa, typa, rpa), (B.ParenType typb, ii) ->
+        let (lpb, rpb) = tuple_of_list2 ii in
+        fullType typa typb >>= (fun typa typb ->
+        tokenf lpa lpb >>= (fun lpa lpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+          return (
+            (A.ParenType (lpa, typa, rpa)) +> A.rewrap ta,
+            (B.ParenType (typb), [lpb;rpb])
+          ))))
 
-                if isvaargs
-                then
-		  pr2_once
-		    ("Not handling well variable length arguments func. "^
-		     "You have been warned");
-
-                fullType tya tyb >>= (fun tya tyb ->
-                tokenf lp1a lp1b >>= (fun lp1a lp1b ->
-                tokenf rp1a rp1b >>= (fun rp1a rp1b ->
-                tokenf lp2a lp2b >>= (fun lp2a lp2b ->
-                tokenf rp2a rp2b >>= (fun rp2a rp2b ->
-                tokenf stara starb >>= (fun stara starb ->
-                parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
-                (fun paramsaunwrap paramsb ->
-                  let paramsa = A.rewrap paramsa paramsaunwrap in
-
-                  let t2 =
-                    (qu2b,
-                    (B.FunctionType (tyb, (paramsb, (isvaargs, iidotsb))),
-                    [lp2b;rp2b]))
-                  in
-                  let t1 =
-                    (qu1b,
-                    (B.Pointer t2, [starb]))
-                  in
-
-                  return (
-                    (A.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a))
-                    +> A.rewrap ta,
-                    (B.ParenType t1, [lp1b;rp1b])
-                  )
-                )))))))
-
-
-
-            | _ -> fail
-            )
-        | _ -> fail
-        )
-
+    | A.FunctionType (typa, lpa, paramsa, rpa),
+        (B.FunctionType (typb, (paramsb, (isvaargs, iidotsb))), ii) ->
+        let (lpb, rpb) = tuple_of_list2 ii in
+        fullType typa typb >>= (fun typa typb ->
+        tokenf lpa lpb >>= (fun lpa lpb ->
+        tokenf rpa rpb >>= (fun rpa rpb ->
+        parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
+        (fun paramsaunwrap paramsb ->
+          let paramsa = A.rewrap paramsa paramsaunwrap in
+          return (
+            (A.FunctionType (typa, lpa, paramsa, rpa)) +> A.rewrap ta,
+            (B.FunctionType (typb, (paramsb, (isvaargs, iidotsb))), [lpb;rpb])
+          )))))
 
 
     (* todo: handle the iso on optional size specification ? *)
@@ -4358,9 +4329,10 @@ and compatible_typeC a (b,local) =
 
     | A.Pointer (a, _), (qub, (B.Pointer b, ii)) ->
 	compatible_type a (b, local)
-    | A.FunctionPointer (a, _, _, _, _, _, _), _ ->
-	failwith
-	  "TODO: function pointer type doesn't store enough information to determine compatibility"
+    | A.ParenType (_, a, _), (qub, (B.ParenType b, ii)) ->
+	compatible_type a (b, local)
+    | A.FunctionType (a, _, _, _), (qub, (B.FunctionType (b,_), ii)) ->
+	compatible_type a (b, local)
     | A.Array (a, _, _, _), (qub, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	compatible_type a (b, local)

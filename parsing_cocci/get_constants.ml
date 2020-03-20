@@ -181,7 +181,7 @@ let check_inherited nm =
     | _ -> k i in
 
   let rec type_collect res = function
-      TC.ConstVol(_,ty) | TC.Pointer(ty) | TC.FunctionPointer(ty)
+      TC.ConstVol(_,ty) | TC.Pointer(ty)
     | TC.Array(ty) -> type_collect res ty
     | TC.MetaType(tyname,_,_) ->
 	inherited tyname

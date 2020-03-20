@@ -700,12 +700,6 @@ and fullType ft =
   | Ast.DisjType _ | Ast.ConjType _ -> raise CantBeInPlus
   | Ast.OptType(_) -> raise CantBeInPlus
 
-and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
-  fullType ty; pr_space();
-  mcode print_string lp1; mcode print_string star; fn();
-  mcode print_string rp1; mcode print_string lp1;
-  parameter_list params; mcode print_string rp2
-
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
   | Ast.FType(ty) -> fullType ty
@@ -719,9 +713,13 @@ and typeC ty =
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option_prespace typeC ty
   | Ast.Pointer(ty,star) ->
       fullType ty; ft_space ty; mcode print_string star; eatspace()
-  | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	(function _ -> ())
+  | Ast.ParenType(lp,ty,rp) ->
+      print_parentype (lp,ty,rp) (function _ -> ())
+  | Ast.FunctionType(ty,lp,params,rp) ->
+      fullType ty;
+      mcode print_string lp;
+      parameter_list params;
+      mcode print_string rp
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -788,16 +786,56 @@ and storage = function
   | Ast.Extern -> print_string "extern"
 
 (* --------------------------------------------------------------------- *)
+(* ParenType *)
+
+and print_parentype (lp,ty,rp) fn =
+  let function_pointer ty1 array_dec =
+    match Ast.unwrap ty1 with
+     Ast.Type(_,_,fty1) ->
+      (match Ast.unwrap fty1 with
+        Ast.Pointer(ty2,star) ->
+         (match Ast.unwrap ty2 with
+           Ast.Type(_,_,fty3) ->
+            (match Ast.unwrap fty3 with
+              Ast.FunctionType(ty3,lp3,params,rp3) ->
+               fullType ty3;
+               pr_space();
+               mcode print_string lp;
+               mcode print_string star;
+               fn();
+               let _ =
+                 match array_dec with
+                   Some(lb1,size,rb1) ->
+                    mcode print_string lb1;
+                    print_option expression size;
+                    mcode print_string rb1
+                 | None -> () in
+               mcode print_string rp;
+               mcode print_string lp3;
+               parameter_list params;
+               mcode print_string rp3
+           | _ -> failwith "ParenType Unparse_cocci")
+         | _ -> failwith "ParenType Unparse_cocci")
+       | _ -> failwith "ParenType Unparse_cocci")
+     | _ -> failwith "ParenType Unparse_cocci" in
+  match Ast.unwrap ty with
+    Ast.Type(_,_,fty1) ->
+      (match Ast.unwrap fty1 with
+        Ast.Array(ty1,lb1,size,rb1) ->
+          function_pointer ty1 (Some(lb1,size,rb1))
+      | Ast.Pointer(ty1,star) ->
+          function_pointer ty None
+      | _ -> failwith "ParenType Unparse_cocci")
+   | _ -> failwith "ParenType Unparse_cocci"
+
+(* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 
 and print_named_type ty id =
   match Ast.unwrap ty with
     Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
-	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	    (function _ -> id())
-      | Ast.Array(_,_,_,_) ->
+        Ast.Array(_,_,_,_) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
@@ -819,6 +857,14 @@ and print_named_type ty id =
 		pretty_print_c.Pretty_print_c.type_with_ident ty
 		  (function _ -> id())
             | _ -> error name ty "type value expected")
+      | Ast.ParenType(lp,ty,rp) ->
+          print_parentype (lp,ty,rp) (function _ -> id())
+      | Ast.FunctionType(ty,lp,params,rp) ->
+          fullType ty;
+          id();
+          mcode print_string lp;
+          parameter_list params;
+          mcode print_string rp
     (*| should have a case here for pointer to array or function type
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)

@@ -863,14 +863,6 @@ let match_maker checks_needed context_required whencode_allowed =
 	      else return false
 	  | (Ast0.Pointer(tya,star1),Ast0.Pointer(tyb,star)) ->
 	      conjunct_bindings (check_mcode star1 star) (match_typeC tya tyb)
-	  | (Ast0.FunctionPointer(tya,lp1a,stara,rp1a,lp2a,paramsa,rp2a),
-	     Ast0.FunctionPointer(tyb,lp1b,starb,rp1b,lp2b,paramsb,rp2b)) ->
-	       conjunct_many_bindings
-		 [check_mcode stara starb; check_mcode lp1a lp1b;
-		   check_mcode rp1a rp1b; check_mcode lp2a lp2b;
-		   check_mcode rp2a rp2b; match_typeC tya tyb;
-		   match_dots match_param is_plist_matcher
-		     do_plist_match paramsa paramsb]
 	  | (Ast0.Array(tya,lb1,sizea,rb1),Ast0.Array(tyb,lb,sizeb,rb)) ->
 	      conjunct_many_bindings
 		[check_mcode lb1 lb; check_mcode rb1 rb;
@@ -1854,10 +1846,11 @@ let instantiate bindings mv_bindings model =
                           Ast0.rewrap ty (Ast0.ConstVol(cv,renamer ty'))
                       | Ast0.Pointer(ty', s) ->
                           Ast0.rewrap ty (Ast0.Pointer(renamer ty', s))
-                      | Ast0.FunctionPointer(ty', s0, s1, s2, s3, p, s4) ->
+                      | Ast0.ParenType(s0, ty', s1) ->
+                          Ast0.rewrap ty (Ast0.ParenType(s0, renamer ty', s1))
+                      | Ast0.FunctionType(ty', s0, s1, s2) ->
                           Ast0.rewrap ty (
-                            Ast0.FunctionPointer(
-                              renamer ty', s0, s1, s2, s3, p, s4))
+                            Ast0.FunctionType(renamer ty', s0, s1, s2))
                       | Ast0.Array(ty', s0, e, s1) ->
                           Ast0.rewrap ty (Ast0.Array(renamer ty', s0, e, s1))
                       | Ast0.Signed(s, ty') ->

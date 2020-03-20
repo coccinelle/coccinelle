@@ -302,19 +302,6 @@ let combiner bind option_default
       | Ast.OptType(ty) -> fullType ty in
     ftfn all_functions k ft
 
-  and function_pointer
-	(ty, lp1, star, (id : Ast.ident option), rp1, lp2, params, rp2) =
-    (* have to put the treatment of the identifier into the right position *)
-    let lty = fullType ty in
-    let llp1 = string_mcode lp1 in
-    let lstar = string_mcode star in
-    let lid = match id with Some idd -> [ident idd] | None -> [] in
-    let lrp1 = string_mcode rp1 in
-    let llp2 = string_mcode lp2 in
-    let lparams = parameter_dots params in
-    let lrp2 = string_mcode rp2 in
-    multibind ([lty; llp1; lstar] @ lid @ [lrp1; llp2; lparams; lrp2])
-
   and array_type (ty,(id : Ast.ident option),lb,size,rb) =
     let lty = fullType ty in
     let lid = match id with Some idd -> [ident idd] | None -> [] in
@@ -322,6 +309,52 @@ let combiner bind option_default
     let lsize = get_option expression size in
     let lrb = string_mcode rb in
     multibind ([lty] @ lid @ [lb; lsize; lrb])
+
+  and parentype_type (lp,ty,(id : Ast.ident option),rp) =
+    let function_pointer ty1 array_dec =
+      match Ast.unwrap ty1 with
+       Ast.Type(_,_,fty1) ->
+        (match Ast.unwrap fty1 with
+          Ast.Pointer(ty2,star) ->
+           (match Ast.unwrap ty2 with
+             Ast.Type(_,_,fty3) ->
+              (match Ast.unwrap fty3 with
+                Ast.FunctionType(ty3,lp3,params,rp3) ->
+                 let ltyp = fullType ty3 in
+                 let llp = string_mcode lp in
+                 let lstar = string_mcode star in
+                 let lid =
+                   match id with
+                     Some idd -> [ident idd]
+                   | None -> [] in
+                 let larray =
+                   match array_dec with
+                     Some(lb1,size1,rb1) ->
+                       let llb1 = string_mcode lb1 in
+                       let lsize1 = get_option expression size1 in
+                       let lrb1 = string_mcode rb1 in
+                       [llb1;lsize1;lrb1]
+                   | None -> [] in
+                 let lrp = string_mcode rp in
+                 let llp3 = string_mcode lp3 in
+                 let lparams = parameter_dots params in
+                 let lrp3 = string_mcode rp3 in
+                 multibind
+                   ([ltyp;llp;lstar] @ lid @ larray @
+                    [lrp;llp3;lparams;lrp3])
+             | _ -> failwith "ParenType Visitor_ast")
+           | _ -> failwith "ParenType Visitor_ast")
+         | _ -> failwith "ParenType Visitor_ast")
+       | _ -> failwith "ParenType Visitor_ast" in
+    match Ast.unwrap ty with
+      Ast.Type(_,_,fty1) ->
+        (match Ast.unwrap fty1 with
+          Ast.Array(ty1,lb1,size,rb1) ->
+            function_pointer ty1 (Some(lb1,size,rb1))
+        | Ast.Pointer(ty1,star) ->
+            function_pointer ty None
+        | _ -> failwith "ParenType Visitor_ast")
+     | _ -> failwith "ParenType Visitor_ast"
 
   and typeC ty =
     let k ty =
@@ -335,8 +368,14 @@ let combiner bind option_default
 	  let lty = fullType ty in
 	  let lstar = string_mcode star in
 	  bind lty lstar
-      | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	  function_pointer (ty,lp1,star,None,rp1,lp2,params,rp2)
+      | Ast.ParenType(lp,ty,rp) ->
+          parentype_type (lp,ty,None,rp)
+      | Ast.FunctionType(ty,lp,params,rp) ->
+          let lty = fullType ty in
+          let llp = string_mcode lp in
+          let lparams = parameter_dots params in
+          let lrp = string_mcode rp in
+          multibind [lty; llp; lparams; lrp]
       | Ast.Array(ty,lb,size,rb) -> array_type (ty,None,lb,size,rb)
       | Ast.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	  let ldec = string_mcode dec in
@@ -387,9 +426,8 @@ let combiner bind option_default
     match Ast.unwrap ty with
       Ast.Type(_,None,ty1) ->
 	(match Ast.unwrap ty1 with
-	  Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	    function_pointer (ty, lp1, star, Some id, rp1, lp2, params, rp2)
 	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
+        | Ast.ParenType(lp,ty,rp) -> parentype_type (lp, ty, Some id, rp)
 	| _ -> let lty = fullType ty in
 	       let lid = ident id in
 	       bind lty lid)
@@ -1278,15 +1316,17 @@ let rebuilder
 	    let lty = fullType ty in
 	    let lstar = string_mcode star in
 	    Ast.Pointer (lty, lstar)
-	| Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	    let lty = fullType ty in
-	    let llp1 = string_mcode lp1 in
-	    let lstar = string_mcode star in
-	    let lrp1 = string_mcode rp1 in
-	    let llp2 = string_mcode lp2 in
-	    let lparams = parameter_dots params in
-	    let lrp2 = string_mcode rp2 in
-	    Ast.FunctionPointer(lty, llp1, lstar, lrp1, llp2, lparams, lrp2)
+        | Ast.ParenType(lp,ty,rp) ->
+            let llp = string_mcode lp in
+            let lty = fullType ty in
+            let lrp = string_mcode rp in
+            Ast.ParenType(llp,lty,lrp)
+        | Ast.FunctionType(ty,lp,params,rp) ->
+            let lty = fullType ty in
+            let llp = string_mcode lp in
+            let lparams = parameter_dots params in
+            let lrp = string_mcode rp in
+            Ast.FunctionType(lty,llp,lparams,lrp)
 	| Ast.Array(ty,lb,size,rb) ->
 	    let lty = fullType ty in
 	    let llb = string_mcode lb in

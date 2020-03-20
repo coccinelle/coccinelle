@@ -273,7 +273,6 @@ let types ~rn = function
         | Ast.StructUnionName(_, Some n) -> get_meta_id acc n
         | Ast.SignedT (_, Some t) -> get_meta_type acc t
         | Ast.Pointer (t, _)
-        | Ast.FunctionPointer (t, _, _, _, _, _, _)
         | Ast.Array (t, _, _, _) -> get_meta_type_full acc t
 	| Ast.TypeOfExpr(_,_,exp,_) -> acc (* not sure *)
 	| Ast.TypeOfType(_,_,ty,_) -> get_meta_type_full acc ty

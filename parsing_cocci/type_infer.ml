@@ -163,18 +163,19 @@ let rec propagate_types env =
               Ast0.rewrap e (
                 Ast0.Array(Ast0.rewrap e char_type, dummy, None, dummy)))
 	| Ast0.FunCall(fn,lp,args,rp) ->
-	    (match Common.map_option Ast0.unwrap (Ast0.get_type fn) with
-		 Some (Ast0.FunctionPointer(ty, _, _, _, _, _, _)) -> Some ty
-	       |  _ ->
-		    (match Ast0.unwrap fn with
-			 Ast0.Ident(id) ->
-			   (match Ast0.unwrap id with
-				Ast0.Id(id) ->
-				  if List.mem (Ast0.unwrap_mcode id) bool_functions
-				  then Some(Ast0.rewrap e bool_type)
-				  else None
-			      | _ -> None)
-		       |	_ -> None))
+            let fna = Common.map_option Ast0.unwrap (Ast0.get_type fn) in
+            (match fna with
+                 Some _ ->
+                 (match Ast0.unwrap fn with
+                    Ast0.Ident(id) ->
+                      (match Ast0.unwrap id with
+                         Ast0.Id(id) ->
+                           if List.mem (Ast0.unwrap_mcode id) bool_functions
+                           then Some(Ast0.rewrap e bool_type)
+                           else None
+                       | _ -> None)
+                  | _ -> None)
+            | _ -> None)
 	| Ast0.Assignment(exp1,op,exp2,_) ->
 	    let ty = lub_type (Ast0.get_type exp1) (Ast0.get_type exp2) in
 	      Ast0.set_type exp1 ty; Ast0.set_type exp2 ty; ty

@@ -340,9 +340,9 @@ and base_typeC =
     BaseType        of baseType * string mcode list (* Yoann style *)
   | SignedT         of sign mcode * typeC option
   | Pointer         of fullType * string mcode (* * *)
-  | FunctionPointer of fullType *
-	          string mcode(* ( *)*string mcode(* * *)*string mcode(* ) *)*
-                  string mcode (* ( *)*parameter_list*string mcode(* ) *)
+  | ParenType       of string mcode (* ( *) * fullType * string mcode (* ) *)
+  | FunctionType    of fullType *
+                  string mcode (* ( *) * parameter_list * string mcode (* ) *)
   | Array           of fullType * string mcode (* [ *) *
 	               expression option * string mcode (* ] *)
   | Decimal         of string mcode (* decimal *) * string mcode (* ( *) *
@@ -1117,8 +1117,10 @@ let rec string_of_typeC ty =
       ssign ^ " " ^ Common.default "" string_of_typeC ty'
   | Pointer (ty', _) ->
       string_of_fullType ty' ^ "*"
-  | FunctionPointer (ty', _, _, _, _, _, _) ->
-      string_of_fullType ty' ^ "(*)()"
+  | ParenType (_ , ty', _) ->
+      "(" ^ string_of_fullType ty' ^ ")"
+  | FunctionType (ty' , _, _, _) ->
+      string_of_fullType ty' ^ "()"
   | Array (ty', _, _, _) ->
       string_of_fullType ty' ^ "[]"
   | Decimal(_, _, e0, _, e1, _) ->
@@ -1199,8 +1201,10 @@ and typeC_map tr ty =
         | Some f -> rewrap ty (f ty' s)
       end
   | Pointer (ty', s) -> rewrap ty (Pointer (fullType_map tr ty', s))
-  | FunctionPointer (ty, s0, s1, s2, s3, s4, s5) ->
-      rewrap ty (FunctionPointer (fullType_map tr ty, s0, s1, s2, s3, s4, s5))
+  | ParenType (s0, ty', s1) ->
+      rewrap ty (ParenType (s0, fullType_map tr ty', s1))
+  | FunctionType (ty', s0, s1, s2) ->
+      rewrap ty (FunctionType (fullType_map tr ty', s0, s1, s2))
   | Array (ty', s0, s1, s2) ->
       rewrap ty (Array (fullType_map tr ty', s0, s1, s2))
   | EnumName (s0, ident) ->
@@ -1260,7 +1264,8 @@ and typeC_fold tr ty v =
   | SignedT (_, None) -> v
   | SignedT (_, Some ty') -> typeC_fold tr ty' v
   | Pointer (ty', _)
-  | FunctionPointer (ty', _, _, _, _, _, _)
+  | ParenType (_, ty', _)
+  | FunctionType (ty', _, _, _)
   | Array (ty', _, _, _)
   | EnumDef (ty', _, _, _)
   | StructUnionDef (ty', _, _, _) -> fullType_fold tr ty' v

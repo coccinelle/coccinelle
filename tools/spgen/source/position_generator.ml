@@ -192,9 +192,12 @@ let rec type_pos t snp
   | Ast0.Pointer(t,star) ->
       let constructor ~mc = Ast0.Pointer(t,mc) in
       mcode_wrap ~mc:star ~constructor snp
-  | Ast0.FunctionPointer(t,lp,star,rp,lp2,params,rp2) ->
-      let constructor ~mc = Ast0.FunctionPointer(t,lp,star,rp,lp2,params,mc) in
-      mcode_wrap ~mc:rp2 ~constructor snp
+  | Ast0.ParenType(lp,t,rp) ->
+      let constructor ~mc = Ast0.ParenType(lp,t,rp) in
+      mcode_wrap ~mc:rp ~constructor snp
+  | Ast0.FunctionType(t,lp,params,rp) ->
+      let constructor ~mc = Ast0.FunctionType(t,lp,params,rp) in
+      mcode_wrap ~mc:rp ~constructor snp
   | Ast0.Array(t,lb,expr,rb) ->
       let constructor ~mc = Ast0.Array(t,lb,expr,mc) in
       mcode_wrap ~mc:rb ~constructor snp

@@ -397,11 +397,46 @@ and fullType ft =
   | Ast.ConjType(decls) -> print_disj_list fullType decls "&"
   | Ast.OptType(ty) -> print_string "?"; fullType ty
 
-and print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2) fn =
-  fullType ty; print_string " ";
-  mcode print_string lp1; mcode print_string star; fn();
-  mcode print_string rp1; mcode print_string lp1;
-  parameter_list params; mcode print_string rp2
+and print_parentype (lp,ty,rp) fn =
+  let function_pointer ty1 array_dec =
+    match Ast.unwrap ty1 with
+     Ast.Type(_,_,fty1) ->
+      (match Ast.unwrap fty1 with
+        Ast.Pointer(ty2,star) ->
+         (match Ast.unwrap ty2 with
+           Ast.Type(_,_,fty3) ->
+            (match Ast.unwrap fty3 with
+              Ast.FunctionType(ty3,lp3,params,rp3) ->
+               fullType ty3;
+               print_space();
+               mcode print_string lp;
+               mcode print_string star;
+               fn();
+               let _ =
+                 match array_dec with
+                   Some(lb1,size,rb1) ->
+                      mcode print_string lb1;
+                      print_option expression size;
+                      mcode print_string rb1
+                 | None -> () in
+               mcode print_string rp;
+               mcode print_string lp3;
+               parameter_list params;
+               mcode print_string rp3
+           | _ -> failwith "ParenType Pretty_print_cocci")
+         | _ -> failwith "ParenType Pretty_print_cocci")
+       | _ -> failwith "ParenType Pretty_print_cocci")
+     | _ -> failwith "ParenType Pretty_print_cocci" in
+  match Ast.unwrap ty with
+    Ast.Type(_,_,fty1) ->
+      (match Ast.unwrap fty1 with
+        Ast.Array(ty1,lb1,size,rb1) ->
+          function_pointer ty1 (Some(lb1,size,rb1))
+      | Ast.Pointer(ty1,star) ->
+          function_pointer ty None
+      | _ -> failwith "ParenType Pretty_print_cocci")
+   | _ -> failwith "ParenType Pretty_print_cocci"
+
 
 and varargs = function
   | None -> ()
@@ -421,9 +456,13 @@ and typeC ty =
       List.iter (function s -> mcode print_string s; print_string " ") strings
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option typeC ty
   | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
-  | Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-      print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	(function _ -> ())
+  | Ast.ParenType(lp,ty,rp) ->
+      print_parentype (lp,ty,rp) (function _ -> ())
+  | Ast.FunctionType(ty,lp,params,rp) ->
+      fullType ty;
+      mcode print_string lp;
+      parameter_list params;
+      mcode print_string rp
   | Ast.Array(ty,lb,size,rb) ->
       fullType ty; mcode print_string lb; print_option expression size;
       mcode print_string rb
@@ -478,10 +517,7 @@ and print_named_type ty id =
   match Ast.unwrap ty with
     Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
-	Ast.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) ->
-	  print_function_pointer (ty,lp1,star,rp1,lp2,params,rp2)
-	    (function _ -> id())
-      | Ast.Array(ty,lb,size,rb) ->
+        Ast.Array(ty,lb,size,rb) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
@@ -499,6 +535,8 @@ and print_named_type ty id =
 		| _ -> failwith "complex array types not supported")
 	    | _ -> typeC ty; id(); k () in
 	  loop ty1 (function _ -> ())
+      | Ast.ParenType(lp,ty,rp) ->
+          print_parentype (lp,ty,rp) (function _ -> id())
       | _ -> fullType ty; id())
   | _ -> fullType ty; id()
 

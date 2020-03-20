@@ -165,7 +165,8 @@ and left_typeC t =
   | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
-  | Ast0.FunctionPointer(ty,lp1,star,rp1,lp2,params,rp2) -> left_typeC ty
+  | Ast0.ParenType(lp,ty,rp) -> modif_before_mcode lp
+  | Ast0.FunctionType(ty,lp,params,rp) -> left_typeC ty
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
       modif_before_mcode dec
