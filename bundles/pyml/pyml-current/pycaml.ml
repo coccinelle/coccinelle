@@ -43,7 +43,7 @@ let pytype_name t =
   | CamlpillSubtype sym -> "Python-Camlpill-" ^ sym
   | AnyType -> "Python-Any"
 
-let py_type_of_pyobject_type t =
+let _py_type_of_pyobject_type t =
   match t with
   | BoolType -> Py.Type.Bool
   | BytesType -> Py.Type.Bytes
@@ -118,7 +118,7 @@ include Pywrappers.Pycaml
 
 exception Pycaml_exn of (pyerror_type * string)
 
-let make_pill_wrapping name instance = Py.Capsule.make name
+let make_pill_wrapping name _instance = Py.Capsule.make name
 
 let py_false () = Py.Bool.f
 
@@ -150,7 +150,7 @@ let py_getpath = Py.get_path
 
 let py_true () = Py.Bool.t
 
-let pycaml_seterror error msg =
+let _pycaml_seterror error msg =
   let error' =
     match error with
       Pyerr_Exception -> Py.Err.Exception
@@ -185,7 +185,7 @@ let int_of_bool b =
   if b then -1
   else 0
 
-let pybytes_check v = int_of_bool (Py.Type.get v = Py.Type.Bytes)
+let _pybytes_check v = int_of_bool (Py.Type.get v = Py.Type.Bytes)
 
 let pybytes_asstring = Py.String.to_string
 
@@ -197,7 +197,7 @@ let pymodule_getfilename = Py.Module.get_filename
 
 let pymodule_getname = Py.Module.get_name
 
-let pyunicode_check v = int_of_bool (Py.Type.get v = Py.Type.Unicode)
+let _pyunicode_check v = int_of_bool (Py.Type.get v = Py.Type.Unicode)
 
 let pyerr_fetch _ =
   match Py.Err.fetch () with
@@ -228,7 +228,7 @@ let pytuple_toarray = Py.Tuple.to_array
 
 let pytype v = pyobject_type_of_py_type (Py.Type.get v)
 
-let register_ocamlpill_types array = ()
+let register_ocamlpill_types _array = ()
 
 let pyeval_callobject (func, arg) =
   Pywrappers.pyeval_callobjectwithkeywords func arg Py.null
@@ -376,7 +376,7 @@ let pill_type_mismatch_exception ?position ?exn_name wanted gotten =
   let arg_no =
     match position with
       None -> ""
-    | Some p -> "Argument %d: " in
+    | Some _p -> "Argument %d: " in
   let en =
     match exn_name with
       None -> ""
@@ -396,6 +396,7 @@ let check_pill_type ?position ?exn_name wanted pill =
 
 let unpythonizing_function ?name ?(catch_weird_exceptions = true) ?extra_guards
     ?(expect_tuple = false) wanted_types function_body =
+  ignore catch_weird_exceptions;
   let exn_name =
     match name with
       None -> ""
@@ -733,7 +734,7 @@ type funcptr
 type funcent = funcptr * int * int * bool
 
 type pymodule_func = {
-  pyml_name : string ; 
+  pyml_name : string ;
   pyml_func : (pyobject -> pyobject) ;
   pyml_flags : int ;
   pyml_doc : string;

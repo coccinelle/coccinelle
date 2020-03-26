@@ -1,3 +1,6 @@
+module Stdlib_printexc = Printexc
+(* Workaround for opaque Printexc bug in Stdcompat 9 *)
+
 open Stdcompat
 
 type pyobject = Pytypes.pyobject
@@ -18,7 +21,7 @@ external load_library: string option -> bool option -> unit = "py_load_library"
 external is_debug_build: unit -> bool = "py_is_debug_build"
 external unsetenv: string -> unit = "py_unsetenv"
 external finalize_library: unit -> unit = "py_finalize_library"
-external pywrap_closure: string -> closure -> pyobject
+external pywrap_closure: string option -> string -> closure -> pyobject
     = "pyml_wrap_closure"
 external pynull: unit -> pyobject = "PyNull_wrapper"
 external pynone: unit -> pyobject = "PyNone_wrapper"
@@ -43,8 +46,12 @@ external pylong_fromstring: string -> int -> pyobject * int
     = "PyLong_FromString_wrapper"
 external pycapsule_isvalid: Pytypes.pyobject -> string -> int
       = "Python27_PyCapsule_IsValid_wrapper"
+external pycapsule_check: Pytypes.pyobject -> int
+      = "pyml_capsule_check"
 
 external ucs: unit -> ucs = "py_get_UCS"
+(* Avoid warning 32. *)
+let () = ignore (UCSNone, UCS2, UCS4)
 
 let initialized = ref false
 
@@ -106,7 +113,8 @@ let extract_version_major_minor version =
   with Exit | Failure _ ->
     let msg =
       Printf.sprintf
-        "Py.extract_version_major_minor: unable to parse the version number '%s'"
+        "Py.extract_version_major_minor:\
+          unable to parse the version number '%s'"
         version in
     failwith msg
 
@@ -214,7 +222,8 @@ let libpython_from_ldconfig major minor =
     match major, minor with
       None, _ -> "libpython"
     | Some major', None -> Printf.sprintf "libpython%d" major'
-    | Some major', Some minor' -> Printf.sprintf "libpython%d.%d" major' minor' in
+    | Some major', Some minor' ->
+        Printf.sprintf "libpython%d.%d" major' minor' in
   let is_libpython line =
     let basename = Filename.basename line in
     Pyutils.has_prefix prefix basename in
@@ -357,10 +366,12 @@ let libpython_from_pkg_config version_major version_minor =
         if String.length word > 2 then
           match String.sub word 0 2 with
             "-L" ->
-              let word' = Pyutils.substring_between word 2 (String.length word) in
+              let word' =
+                Pyutils.substring_between word 2 (String.length word) in
               (word' :: library_paths, library_filename)
           | "-l" ->
-              let word' = Pyutils.substring_between word 2 (String.length word) in
+              let word' =
+                Pyutils.substring_between word 2 (String.length word) in
               if library_filename <> None then
                 unable_to_parse ();
               let library_filename =
@@ -527,7 +538,13 @@ let find_interpreter interpreter version minor =
              | None -> which (Printf.sprintf "python%d" version'))
       with
       | Some result -> Some result
-      | None -> which "python"
+      | None ->
+          match which "python" with
+          | Some result -> Some result
+          | None ->
+              match which "python3" with
+              | Some result -> Some result
+              | None -> None
 
 let version_mismatch interpreter found expected =
   Printf.sprintf
@@ -645,8 +662,14 @@ let version_minor () =
 let null =
   pynull ()
 
+let is_null v =
+  v == null
+
 let none =
   pynone ()
+
+let is_none v =
+  v == none
 
 exception E of pyobject * pyobject
 
@@ -750,41 +773,6 @@ let option result =
   else
     Some result
 
-module Capsule = struct
-  let is_valid v name  = pycapsule_isvalid v name <> 0
-
-  let check v = is_valid v "ocaml-capsule"
-
-  let table = Hashtbl.create 17
-
-  let () = on_finalize (fun () -> Hashtbl.clear table)
-
-  external unsafe_wrap_value: 'a -> pyobject = "pyml_wrap_value"
-
-  external unsafe_unwrap_value: pyobject -> 'a = "pyml_unwrap_value"
-
-  let make name =
-    try
-      Hashtbl.find table name;
-      failwith
-        (Printf.sprintf "Py.Capsule.make: capsule of type %s already defined"
-           name)
-    with Not_found ->
-      Hashtbl.add table name ();
-      let wrap v = unsafe_wrap_value (name, v) in
-      let unwrap x =
-        let name', v = unsafe_unwrap_value x in
-        if name <> name' then
-          failwith
-            (Printf.sprintf
-               "Py.Capsule: capsule of type %s, but type %s expected"
-               name' name);
-        v in
-      (wrap, unwrap)
-
-  let type_of x = fst (unsafe_unwrap_value x)
-end
-
 module Eval = struct
   let call_object_with_keywords func arg keyword =
     check_not_null (Pywrappers.pyeval_callobjectwithkeywords func arg keyword)
@@ -873,6 +861,11 @@ module Object_ = struct
 end
 
 module Type = struct
+  (* We rely on physical equality to check if an object is none as
+     [pyml_wrap] ensures that the same ocaml value is always used
+     to represent [None]. *)
+  let is_none v = v == none
+
   let none = None
 
   type t =
@@ -945,6 +938,43 @@ module Type = struct
     Object_.call_function_obj_args ty [| classname; parents; dict |]
 end
 
+module Capsule = struct
+  let is_valid v name  = pycapsule_isvalid v name <> 0
+
+  let check v = is_valid v "ocaml-capsule"
+
+  let table = Hashtbl.create 17
+
+  let () = on_finalize (fun () -> Hashtbl.clear table)
+
+  external unsafe_wrap_value: 'a -> pyobject = "pyml_wrap_value"
+
+  external unsafe_unwrap_value: pyobject -> 'a = "pyml_unwrap_value"
+
+  let make name =
+    try
+      Hashtbl.find table name;
+      failwith
+        (Printf.sprintf "Py.Capsule.make: capsule of type %s already defined"
+           name)
+    with Not_found ->
+      Hashtbl.add table name ();
+      let wrap v = unsafe_wrap_value (name, v) in
+      let unwrap x =
+        if pycapsule_check x = 0 then
+          Type.mismatch "capsule" x;
+        let name', v = unsafe_unwrap_value x in
+        if name <> name' then
+          failwith
+            (Printf.sprintf
+               "Py.Capsule: capsule of type %s, but type %s expected"
+               name' name);
+        v in
+      (wrap, unwrap)
+
+  let type_of x = fst (unsafe_unwrap_value x)
+end
+
 module Mapping = struct
   let check v = Pywrappers.pymapping_check v <> 0
 
@@ -981,7 +1011,13 @@ end
 module Bool = struct
   let t = pytrue ()
 
+  let is_true v =
+    v == t
+
   let f = pyfalse ()
+
+  let is_false v =
+    v == f
 
   let check v = v = t || v = f
 
@@ -1348,6 +1384,11 @@ module Object = struct
 
   let not obj = bool_of_int (Pywrappers.pyobject_istrue obj)
 
+  let is_instance obj cls = bool_of_int (Pywrappers.pyobject_isinstance obj cls)
+
+  let is_subclass cls1 cls2 =
+    bool_of_int (Pywrappers.pyobject_issubclass cls1 cls2)
+
   let print obj out_channel =
     assert_int_success
       (Pywrappers.pyobject_print obj
@@ -1399,8 +1440,8 @@ module Object = struct
       try
         try
           repr_or_string repr v
-        with E (ty, value) ->
-          repr_or_string (Pervasives.not repr) v
+        with E (_ty, _value) ->
+          repr_or_string (Stdlib.not repr) v
       with E (ty, value) ->
         Printf.sprintf "[ERROR] %s: %s" (to_string ty) (to_string value)
     else
@@ -1420,6 +1461,9 @@ module Object = struct
 
   let call callable args kw =
     check_not_null (Pywrappers.pyobject_call callable args kw)
+
+  let size obj =
+    check_int (Pywrappers.pyobject_size obj)
 end
 
 let exception_printer exn =
@@ -1430,7 +1474,7 @@ let exception_printer exn =
         (Object.to_string value))
   | _ -> None
 
-let () = Printexc.register_printer exception_printer
+let () = Stdlib_printexc.register_printer exception_printer
 
 module Long = struct
   let check o = Type.get o = Type.Long
@@ -1494,7 +1538,7 @@ module Number = struct
 
   let number_and v0 v1 = check_not_null (Pywrappers.pynumber_and v0 v1)
 
-  let check v = Pywrappers.pynumber_check v <> 0
+  let _check v = Pywrappers.pynumber_check v <> 0
 
   let divmod v0 v1 = check_not_null (Pywrappers.pynumber_divmod v0 v1)
 
@@ -1606,8 +1650,6 @@ module Number = struct
   let ( lor ) = number_or
 
   let ( lxor ) = number_xor
-
-  let ( lnot ) = invert
 
   let ( lsl ) = lshift
 
@@ -1765,6 +1807,9 @@ module Tuple = struct
 
   let empty = pytuple_empty ()
 
+  let is_empty v =
+    v == empty
+
   let get_slice tuple i0 i1 =
     check_not_null (Pywrappers.pytuple_getslice tuple i0 i1)
 
@@ -1906,19 +1951,19 @@ module Callable = struct
         Err.set_error errtype msg;
         null
 
-  let of_function_as_tuple ?(docstring = "Anonymous closure") f =
-    check_not_null (pywrap_closure docstring
+  let of_function_as_tuple ?name ?(docstring = "Anonymous closure") f =
+    check_not_null (pywrap_closure name docstring
       (WithoutKeywords (handle_errors f)))
 
-  let of_function_as_tuple_and_dict ?(docstring = "Anonymous closure") f =
-    check_not_null (pywrap_closure docstring
+  let of_function_as_tuple_and_dict ?name ?(docstring = "Anonymous closure") f =
+    check_not_null (pywrap_closure name docstring
       (WithKeywords (fun args -> handle_errors (f args))))
 
-  let of_function ?docstring f =
-    of_function_as_tuple ?docstring (fun args -> f (Tuple.to_array args))
+  let of_function ?name ?docstring f =
+    of_function_as_tuple ?name ?docstring (fun args -> f (Tuple.to_array args))
 
-  let of_function_with_keywords ?docstring f =
-    of_function_as_tuple_and_dict ?docstring
+  let of_function_with_keywords ?name ?docstring f =
+    of_function_as_tuple_and_dict ?name ?docstring
       (fun args dict -> f (Tuple.to_array args) dict)
 
   let to_function_as_tuple c =
@@ -1944,7 +1989,10 @@ module Callable = struct
 end
 
 module Import = struct
+(* This function has been removed from Python 3.9, and was marked
+  "for internal use only" before.
   let cleanup = Pywrappers.pyimport_cleanup
+*)
 
   let add_module name = check_not_null (Pywrappers.pyimport_addmodule name)
 
@@ -1968,7 +2016,7 @@ module Import = struct
   let import_module_opt name =
     try
       Some (check_not_null (Pywrappers.pyimport_importmodule name))
-    with E (e, msg)
+    with E (e, _msg)
         when
           let ty = Object.to_string e in
           ty = "<class 'ModuleNotFoundError'>" ||
@@ -2052,8 +2100,8 @@ module Class = struct
       let classname = String.of_string classname in
       let dict = Dict.of_bindings_string fields in
       let c =
-        check_not_null
-          (Pywrappers.Python2.pyclass_new (Tuple.of_list parents) dict classname) in
+        check_not_null (Pywrappers.Python2.pyclass_new (Tuple.of_list parents)
+          dict classname) in
       let add_method (name, closure) =
         let m = check_not_null (Pywrappers.pymethod_new closure null c) in
         Dict.set_item_string dict name m in
@@ -2072,7 +2120,10 @@ module Iter = struct
       match next () with
         None -> raise (Err (Err.StopIteration, ""))
       | Some item -> item in
-    let methods = [next_name, Callable.of_function next'] in
+    let iter_fn = Callable.of_function (function
+      | [||] -> failwith "__iter__ expects at least one argument"
+      | array -> array.(0)) in
+    let methods = [next_name, Callable.of_function next'; "__iter__", iter_fn] in
     Object.call_function_obj_args
       (Class.init ~methods "iterator") [| |]
 
@@ -2086,12 +2137,30 @@ module Iter = struct
           Some head in
     create next
 
+  let of_seq_map f s =
+    let s = ref s in
+    let next () =
+      match !s () with
+      | Seq.Nil -> None
+      | Seq.Cons (head, tail) ->
+          s := tail;
+          Some (f head) in
+    create next
+
   let to_seq i =
     let rec seq lazy_next () =
       match Lazy.force lazy_next with
       | None -> Seq.Nil
       | Some item ->
           Seq.Cons (item, seq (lazy (next i))) in
+    seq (lazy (next i))
+
+  let to_seq_map f i =
+    let rec seq lazy_next () =
+      match Lazy.force lazy_next with
+      | None -> Seq.Nil
+      | Some item ->
+          Seq.Cons (f item, seq (lazy (next i))) in
     seq (lazy (next i))
 
   let unsafe_to_seq i =
@@ -2101,6 +2170,34 @@ module Iter = struct
       | Some item ->
           Seq.Cons (item, seq) in
     seq
+
+  let unsafe_to_seq_map f i =
+    let rec seq () =
+      match next i with
+      | None -> Seq.Nil
+      | Some item ->
+          Seq.Cons (f item, seq) in
+    seq
+
+  let of_list l =
+    let l = ref l in
+    let next () =
+      match !l with
+      | [] -> None
+      | head :: tail ->
+          l := tail;
+          Some head in
+    create next
+
+  let of_list_map f l =
+    let l = ref l in
+    let next () =
+      match !l with
+      | [] -> None
+      | head :: tail ->
+          l := tail;
+          Some (f head) in
+    create next
 end
 
 module List = struct
@@ -2182,13 +2279,13 @@ module Array = struct
       ["__len__",
        Callable.of_function_as_tuple (fun _tuple -> Int.of_int length);
        "__getitem__", Callable.of_function_as_tuple (fun tuple ->
-         let (self, key) = Tuple.to_tuple2 tuple in
+         let (_self, key) = Tuple.to_tuple2 tuple in
          getter (Long.to_int key));
        "__setitem__", Callable.of_function_as_tuple (fun tuple ->
-         let (self, key, value) = Tuple.to_tuple3 tuple in
+         let (_self, key, value) = Tuple.to_tuple3 tuple in
          setter (Long.to_int key) value;
          none);
-       "__iter__", Callable.of_function_as_tuple (fun tuple ->
+       "__iter__", Callable.of_function_as_tuple (fun _tuple ->
          let cursor = ref 0 in
          let next () =
            let index = !cursor in
@@ -2226,6 +2323,9 @@ module Array = struct
     -> floatarray
     -> Object.t = "pyarray_of_floatarray_wrapper"
 
+  external pyarray_move_floatarray: Object.t -> floatarray
+    -> unit = "pyarray_move_floatarray_wrapper"
+
   let get_numpy_info () =
     match !numpy_info with
       Some info -> info
@@ -2249,16 +2349,34 @@ module Array = struct
   let pyarray_type () =
     get_pyarray_type (numpy_api ())
 
+  let numpy_get_array a =
+    let info = get_numpy_info () in
+    info.array_unpickle (Object.find_attr_string a "ocamlarray")
+
+  let clean_weak_ref weak_ref alarm_ref () =
+    match Weak.get weak_ref 0 with
+    | None ->
+        begin
+          match !alarm_ref with
+          | None -> ()
+          | Some alarm ->
+              Gc.delete_alarm alarm;
+              alarm_ref := None
+        end
+    | Some numpy_array ->
+        let array = numpy_get_array numpy_array in
+        pyarray_move_floatarray numpy_array array
+
   let numpy a =
     let info = get_numpy_info () in
     let result = pyarray_of_floatarray info.numpy_api info.pyarray_subtype a in
     let result = check_not_null result in
     Object.set_attr_string result "ocamlarray" (info.array_pickle a);
+    let weak_ref = Weak.create 1 in
+    Weak.set weak_ref 0 (Some result);
+    let alarm_ref = ref None in
+    alarm_ref := Some (Gc.create_alarm (clean_weak_ref weak_ref alarm_ref));
     result
-
-  let numpy_get_array a =
-    let info = get_numpy_info () in
-    info.array_unpickle (Object.find_attr_string a "ocamlarray")
 end
 
 module Run = struct
@@ -2348,7 +2466,39 @@ except ImportError:
     else f ()
 end
 
+module Gil = struct
+  type t = int
+  let ensure = Pywrappers.pygilstate_ensure
+  let release = Pywrappers.pygilstate_release
+  let check () = Pywrappers.pygilstate_check () <> 0
+
+  let with_lock f =
+    let t = ensure () in
+    Fun.protect f ~finally:(fun () -> release t)
+end
+
 let set_argv argv =
   Module.set (Module.sys ()) "argv" (List.of_array_map String.of_string argv)
 
 let last_value () = Module.get (Module.builtins ()) "_"
+
+let compile ~source ~filename ?(dont_inherit = false)
+    ?(optimize = `Default) mode =
+  let compile =
+    Module.get_function_with_keywords (Module.builtins ()) "compile" in
+  let source = String.of_string source in
+  let filename = String.of_string filename in
+  let mode =
+    String.of_string @@ match mode with
+    | `Exec -> "exec"
+    | `Eval -> "eval"
+    | `Single -> "single" in
+  let optimize =
+    Int.of_int @@ match optimize with
+    | `Default -> -1
+    | `Debug -> 0
+    | `Normal -> 1
+    | `RemoveDocstrings -> 2 in
+  let dont_inherit = Bool.of_bool dont_inherit in
+  compile [| source; filename; mode |]
+    ["dont_inherit", dont_inherit; "optimize", optimize]

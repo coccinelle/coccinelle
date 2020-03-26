@@ -1,3 +1,5 @@
+open Stdcompat
+
 type ty =
     PyObject of bool
   | PyCompilerFlags | String | WideString | Int | Int64 | Long | Size | IntPtr
@@ -58,6 +60,10 @@ let wrappers =
      result = Unit;
      optional = false; };
    { symbol = "PyBool_Type";
+     arguments = Value;
+     result = PyObject false;
+     optional = false; };
+   { symbol = "PyCapsule_Type";
      arguments = Value;
      result = PyObject false;
      optional = false; };
@@ -377,6 +383,18 @@ let wrappers =
      arguments = Value;
      result = PyObject false;
      optional = false; };
+   { symbol = "PyGILState_Check";
+     arguments = Fun [];
+     result = Int;
+     optional = true; };
+   { symbol = "PyGILState_Ensure";
+     arguments = Fun [];
+     result = Int;
+     optional = true; };
+   { symbol = "PyGILState_Release";
+     arguments = Fun [Int];
+     result = Unit;
+     optional = true; };
    { symbol = "PyImport_AddModule";
      arguments = Fun [String];
      result = PyObject false;
@@ -706,6 +724,14 @@ let wrappers =
      arguments = Fun [PyObject false];
      result = Int;
      optional = false; };
+   { symbol = "PyObject_IsInstance";
+     arguments = Fun [PyObject false; PyObject false];
+     result = Int;
+     optional = false; };
+   { symbol = "PyObject_IsSubclass";
+     arguments = Fun [PyObject false; PyObject false];
+     result = Int;
+     optional = false; };
    { symbol = "PyObject_Not";
      arguments = Fun [PyObject false];
      result = Int;
@@ -813,7 +839,7 @@ let wrappers =
      optional = false; };
    { symbol = "PySequence_GetItem";
      arguments = Fun [PyObject false; Size];
-     result = PyObject false;
+     result = PyObject true;
      optional = false; };
    { symbol = "PySequence_GetSlice";
      arguments = Fun [PyObject false; Size; Size];
@@ -1274,7 +1300,7 @@ let native_name prefix symbol =
 
 let print_external indent prefix channel wrapper =
   let symbol = wrapper.symbol in
-  let symbol_lowercase = Stdcompat.String.lowercase_ascii symbol in
+  let symbol_lowercase = String.lowercase_ascii symbol in
   let arguments = wrapper.arguments in
   let ty_arguments =
     match arguments with
@@ -1306,19 +1332,19 @@ let print_externals indent prefix channel wrappers =
 
 let print_pycaml indent prefix channel wrapper =
   let symbol = wrapper.symbol in
-  let symbol_lowercase = Stdcompat.String.lowercase_ascii symbol in
+  let symbol_lowercase = String.lowercase_ascii symbol in
   let arguments = wrapper.arguments in
   let arguments_list =
     match arguments with
       Value | Deref -> []
     | Fun list ->
-        Stdcompat.List.mapi (fun i _ -> Printf.sprintf "arg%d" i) list in
+        List.mapi (fun i _ -> Printf.sprintf "arg%d" i) list in
   let arguments_tuple =
     match arguments with
       Value | Deref -> ""
     | Fun [] -> " ()"
     | Fun [_] -> " arg"
-    | Fun list ->
+    | Fun _list ->
         Printf.sprintf " (%s)" (String.concat ", " arguments_list) in
   let convert i ty =
     let arg = Printf.sprintf "arg%d" i in
@@ -1331,13 +1357,13 @@ let print_pycaml indent prefix channel wrapper =
   let converted_arguments_list =
     match arguments with
       Value | Deref -> []
-    | Fun list -> Stdcompat.List.mapi convert list in
+    | Fun list -> List.mapi convert list in
   let arguments_curryfied =
     match arguments with
       Value | Deref -> ""
     | Fun [] -> " ()"
     | Fun [_] -> " arg"
-    | Fun list ->
+    | Fun _list ->
         Printf.sprintf " %s" (String.concat " " converted_arguments_list) in
   Printf.fprintf channel "%slet %s%s = %s%s%s\n"
     indent symbol_lowercase arguments_tuple prefix symbol_lowercase
@@ -1345,6 +1371,8 @@ let print_pycaml indent prefix channel wrapper =
 
 let print_pycamls indent prefix channel wrappers =
   List.iter (print_pycaml indent prefix channel) wrappers
+
+module Set_string = Set.Make(String)
 
 let print_all_externals channel =
   Printf.fprintf channel "(** Low-level bindings. *)
@@ -1356,15 +1384,15 @@ let print_all_externals channel =
 (** Python 2 specific bindings. *)
 module Python2 = struct\n";
   print_externals "  " "Python2_" channel wrappers_python2;
-  Printf.fprintf channel "end
+  Printf.fprintf channel "end\n
 (** UCS2 specific bindings. *)
 module UCS2 = struct\n";
   print_externals "  " "UCS2_" channel wrappers_ucs2;
-  Printf.fprintf channel "end
+  Printf.fprintf channel "end\n
 (** UCS4 specific bindings. *)
 module UCS4 = struct\n";
   print_externals "  " "UCS4_" channel wrappers_ucs4;
-  Printf.fprintf channel "end
+  Printf.fprintf channel "end\n
 (** Python 3 specific bindings. *)
 module Python3 = struct\n";
   print_externals "  " "Python3_" channel wrappers_python3;
@@ -1372,7 +1400,13 @@ module Python3 = struct\n";
 (** Automatic wrappers for Pycaml_compat. *)
 module Pycaml = struct\n";
   print_pycamls "  " "" channel wrappers;
-  print_pycamls "  " "Python2." channel wrappers_python2;
+  let wrappers_python2_not_in_python3 =
+    let python3_symbols =
+      List.map (fun w -> w.symbol) wrappers_python3 |> Set_string.of_list
+    in
+    List.filter (fun w -> not (Set_string.mem w.symbol python3_symbols)) wrappers_python2
+  in
+  print_pycamls "  " "Python2." channel wrappers_python2_not_in_python3;
   print_pycamls "  " "Python3." channel wrappers_python3;
   Printf.fprintf channel "end\n"
 
@@ -1419,7 +1453,7 @@ let string_of_type_c ty =
   match ty with
     PyObject _ -> "PyObject *"
   | PyCompilerFlags -> "PyCompilerFlags *"
-  | String | StringOption -> "char *"
+  | String | StringOption -> "const char *"
   | WideString -> "wchar_t *"
   | Int -> "int"
   | Long | Int64 -> "long"
@@ -1546,7 +1580,7 @@ let print_stub prefix pyml_assert_initialized channel wrapper =
       Value | Deref | Fun [] -> "value unit"
     | Fun arguments' ->
         let value_arg i _ = Printf.sprintf "value arg%d_ocaml" i in
-        let stub_argument_list = Stdcompat.List.mapi value_arg arguments' in
+        let stub_argument_list = List.mapi value_arg arguments' in
         String.concat ", " stub_argument_list in
   let arg_ocaml i = Printf.sprintf "arg%d_ocaml" i in
   let camlparam =
@@ -1583,7 +1617,7 @@ let print_stub prefix pyml_assert_initialized channel wrapper =
     let destruct_argument_list =
       match arguments with
         Value | Deref -> []
-      | Fun arguments' -> Stdcompat.List.mapi destruct_argument arguments' in
+      | Fun arguments' -> List.mapi destruct_argument arguments' in
     String.concat "\n" destruct_argument_list in
   let result_type_c = string_of_type_c result in
   let make_arg i ty =
@@ -1594,7 +1628,7 @@ let print_stub prefix pyml_assert_initialized channel wrapper =
     match arguments with
       Value | Deref -> symbol_decapitalized
     | Fun arguments' ->
-        let arg_c_list = Stdcompat.List.mapi make_arg arguments' in
+        let arg_c_list = List.mapi make_arg arguments' in
         let arg_c = String.concat ", " arg_c_list in
         Printf.sprintf "%s(%s)" symbol_decapitalized arg_c in
   let call =
@@ -1613,7 +1647,7 @@ let print_stub prefix pyml_assert_initialized channel wrapper =
     match arguments with
       Value | Deref -> ""
     | Fun arguments' ->
-        String.concat "" (Stdcompat.List.mapi free_argument arguments') in
+        String.concat "" (List.mapi free_argument arguments') in
   let return = coercion_of_c result in
   Printf.fprintf channel "
 CAMLprim value
@@ -1640,7 +1674,7 @@ CAMLprim value
 }
 " (bytecode_name prefix symbol) (native_name prefix symbol)
       (String.concat ", "
-         (Stdcompat.List.mapi (fun i _ -> Printf.sprintf "argv[%d]" i) arguments'))
+         (List.mapi (fun i _ -> Printf.sprintf "argv[%d]" i) arguments'))
 
 let print_stubs prefix pyml_assert_initialized channel wrappers =
   List.iter (print_stub prefix pyml_assert_initialized channel) wrappers

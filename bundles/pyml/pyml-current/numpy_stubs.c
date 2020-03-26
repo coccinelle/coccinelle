@@ -6,6 +6,14 @@
 #include <caml/custom.h>
 #include "pyml_stubs.h"
 
+static void numpy_finalize(value v)
+{
+    struct numpy_custom_operations *ops =
+        (struct numpy_custom_operations *) Custom_ops_val(v);
+    Py_DECREF(ops->obj);
+    free(ops);
+}
+
 CAMLprim value
 pyarray_of_bigarray_wrapper(
   value numpy_api_ocaml, value bigarray_type_ocaml, value bigarray_ocaml)
@@ -89,58 +97,6 @@ pyarray_of_bigarray_wrapper(
         np_flags, NULL);
     free(dims);
     CAMLreturn(pyml_wrap(result, true));
-}
-
-/* from ndarraytypes.h */
-
-
-typedef struct _PyArray_Descr {
-        PyObject_HEAD
-        PyTypeObject *typeobj;
-        char kind;
-        char type;
-        char byteorder;
-        char flags;
-        int type_num;
-        int elsize;
-        int alignment;
-        struct _arr_descr *subarray;
-        PyObject *fields;
-        PyObject *names;
-        void *f;
-        PyObject *metadata;
-        void *c_metadata;
-        int hash;
-} PyArray_Descr;
-
-typedef struct _arr_descr {
-        PyArray_Descr *base;
-        PyObject *shape;
-} PyArray_ArrayDescr;
-
-typedef struct tagPyArrayObject_fields {
-    PyObject_HEAD
-    char *data;
-    int nd;
-    npy_intp *dimensions;
-    npy_intp *strides;
-    PyObject *base;
-    PyArray_Descr *descr;
-    int flags;
-    PyObject *weakreflist;
-} PyArrayObject_fields;
-
-struct numpy_custom_operations {
-    struct custom_operations ops;
-    PyObject *obj;
-};
-
-static void numpy_finalize(value v)
-{
-    struct numpy_custom_operations *ops =
-        (struct numpy_custom_operations *) Custom_ops_val(v);
-    Py_DECREF(ops->obj);
-    free(ops);
 }
 
 CAMLprim value
