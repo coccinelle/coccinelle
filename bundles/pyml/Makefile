@@ -11,6 +11,7 @@ INTERFACES=pywrappers py pycaml
 C_OBJS=pyml
 ARCHIVE=pyml
 LIBRARY=pyml
+SIDEPRODUCTS=stdcompat.h
 SRC_DIR := $(PACKAGE_DIR)
 OTHERS := $(SRC_DIR)/pyml_arch.ml
 OCAMLFLAGS+=-I $(STDCOMPATDIR)
