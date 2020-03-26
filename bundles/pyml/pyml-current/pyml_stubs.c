@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <stdcompat.h>
 #include "pyml_stubs.h"
 
 static FILE *(*Python__Py_fopen)(const char *pathname, const char *mode);
@@ -174,7 +175,7 @@ static PyObject *(*Python_PyCFunction_NewEx)
 static void *(*Python27_PyCapsule_New)
     (void *, const char *, PyCapsule_Destructor);
 static void *(*Python27_PyCapsule_GetPointer)(PyObject *, const char *);
-static int (*Python27_PyCapsule_IsValid)(PyObject *, char *);
+static int (*Python27_PyCapsule_IsValid)(PyObject *, const char *);
 static void *(*Python2_PyCObject_FromVoidPtr)(void *, void (*)(void *));
 static void *(*Python2_PyCObject_AsVoidPtr)(PyObject *);
 
@@ -202,7 +203,7 @@ static int (*Python_PyObject_AsWriteBuffer)
 (PyObject *, void **, Py_ssize_t *);
 
 /* Length argument */
-static PyObject *(*Python_PyLong_FromString)(char *, char **, int);
+static PyObject *(*Python_PyLong_FromString)(const char *, const char **, int);
 
 /* Internal use only */
 static void (*Python_PyMem_Free)(void *);
@@ -460,7 +461,7 @@ pycall_callback(PyObject *obj, PyObject *args)
     void *p = unwrap_capsule(obj, "ocaml-closure");
     if (!p) {
         Py_INCREF(Python__Py_NoneStruct);
-        return Python__Py_NoneStruct;
+        CAMLreturnT(PyObject *, Python__Py_NoneStruct);
     }
     ml_func = *(value *) p;
     ml_args = pyml_wrap(args, false);
@@ -479,7 +480,7 @@ pycall_callback_with_keywords(PyObject *obj, PyObject *args, PyObject *keywords)
     void *p = unwrap_capsule(obj, "ocaml-closure");
     if (!p) {
         Py_INCREF(Python__Py_NoneStruct);
-        return Python__Py_NoneStruct;
+        CAMLreturnT(PyObject *, Python__Py_NoneStruct);
     }
     ml_func = *(value *) p;
     ml_args = pyml_wrap(args, false);
@@ -496,22 +497,6 @@ caml_destructor(PyObject *v, const char *capsule_name)
     value *valptr = (value *) unwrap_capsule(v, capsule_name);
     caml_remove_global_root(valptr);
     free(valptr);
-}
-
-static void
-camldestr_closure(PyObject *v)
-{
-    caml_destructor(v, "ocaml-closure");
-}
-
-static PyObject *
-camlwrap_closure(value val, void *aux_str, int size)
-{
-    value *v = (value *) malloc(sizeof(value) + size);
-    *v = val;
-    memcpy((void *)v + sizeof(value), aux_str, size);
-    caml_register_global_root(v);
-    return wrap_capsule(v, "ocaml-closure", camldestr_closure);
 }
 
 static void
@@ -612,15 +597,37 @@ deref_not_null(void *pointer)
     }
 }
 
-CAMLprim value
-pyml_wrap_closure(value docstring, value closure)
+struct pyml_closure {
+  value value;
+  PyMethodDef method;
+};
+
+static char *anon_closure = "anonymous_closure";
+
+static void
+camldestr_closure(PyObject *v)
 {
-    CAMLparam2(docstring, closure);
+    struct pyml_closure *valptr = unwrap_capsule(v, "ocaml-closure");
+    const char *ml_doc = valptr->method.ml_doc;
+    const char *ml_name = valptr->method.ml_name;
+    caml_remove_global_root((value *)valptr);
+    free(valptr);
+    free((void *) ml_doc);
+    if (ml_name != anon_closure) free((void *) ml_name);
+}
+
+CAMLprim value
+pyml_wrap_closure(value name, value docstring, value closure)
+{
+    CAMLparam3(name, docstring, closure);
     pyml_assert_initialized();
     PyMethodDef ml;
     PyObject *obj;
     PyMethodDef *ml_def;
-    ml.ml_name = "anonymous_closure";
+    ml.ml_name = anon_closure;
+    if (name != Val_int(0)) {
+      ml.ml_name = strdup(String_val(Field(name, 0)));
+    }
     if (Tag_val(closure) == 0) {
         ml.ml_flags = 1;
         ml.ml_meth = pycall_callback;
@@ -629,8 +636,12 @@ pyml_wrap_closure(value docstring, value closure)
         ml.ml_flags = 3;
         ml.ml_meth = (PyCFunction) pycall_callback_with_keywords;
     }
-    ml.ml_doc = String_val(docstring);
-    obj = camlwrap_closure(Field(closure, 0), &ml, sizeof(ml));
+    ml.ml_doc = strdup(String_val(docstring));
+    struct pyml_closure *v = malloc(sizeof(struct pyml_closure));
+    v->value = Field(closure, 0);
+    v->method = ml;
+    caml_register_global_root(&v->value);
+    obj = wrap_capsule(v, "ocaml-closure", camldestr_closure);
     ml_def = (PyMethodDef *) caml_aux(obj);
     PyObject *f = Python_PyCFunction_NewEx(ml_def, obj, NULL);
     CAMLreturn(pyml_wrap(f, true));
@@ -643,7 +654,7 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
 {
     CAMLparam2(filename_ocaml, debug_build_ocaml);
     if (Is_block(filename_ocaml)) {
-        char *filename = String_val(Field(filename_ocaml, 0));
+        const char *filename = String_val(Field(filename_ocaml, 0));
         library = open_library(filename);
         if (!library) {
             failwith("Library not found");
@@ -790,7 +801,7 @@ CAMLprim value
 py_unsetenv(value name_ocaml)
 {
     CAMLparam1(name_ocaml);
-    char *name = String_val(name_ocaml);
+    const char *name = String_val(name_ocaml);
     if (unsetenv(name) == -1) {
         failwith(strerror(errno));
     }
@@ -1008,7 +1019,7 @@ PyObject_CallMethodObjArgs_wrapper(
     mlsize_t argument_count = Wosize_val(arguments_ocaml);
     switch (argument_count) {
     case 0:
-        result = Python_PyObject_CallMethodObjArgs(object, name);
+        result = Python_PyObject_CallMethodObjArgs(object, name, NULL);
         break;
     case 1:
         result = Python_PyObject_CallMethodObjArgs
@@ -1061,6 +1072,17 @@ PyObject_CallMethodObjArgs_wrapper(
 }
 
 CAMLprim value
+pyml_capsule_check(value v)
+{
+    CAMLparam1(v);
+    pyml_assert_initialized();
+    PyObject *o = getcustom(v);
+    PyObject *ob_type = pyobjectdescr(o)->ob_type;
+    int check_result = ob_type == Python_PyCapsule_Type;
+    CAMLreturn(Val_int(check_result));
+}
+
+CAMLprim value
 pyml_wrap_value(value v)
 {
     CAMLparam1(v);
@@ -1102,7 +1124,7 @@ PyErr_Fetch_wrapper(value unit)
 }
 
 CAMLprim value
-pyml_wrap_string_option(char *s)
+pyml_wrap_string_option(const char *s)
 {
     CAMLparam0();
     CAMLlocal1(result);
@@ -1143,7 +1165,7 @@ static wchar_t *
 pyml_unwrap_wide_string(value string_ocaml)
 {
     CAMLparam1(string_ocaml);
-    char *s = String_val(string_ocaml);
+    const char *s = String_val(string_ocaml);
     size_t n = mbstowcs(NULL, s, 0);
     if (n == (size_t) -1) {
         fprintf(stderr, "pyml_unwrap_wide_string failure.\n");
@@ -1229,25 +1251,24 @@ pyml_wrap_ucs4_option_and_free(int32_t *buffer, bool free)
     CAMLreturn(result);
 }
 
-#define StringAndSize_wrapper(func, byte_type)                                 \
-    CAMLprim value                                                             \
-    func##_wrapper(value arg_ocaml)                                            \
-    {                                                                          \
-        CAMLparam1(arg_ocaml);                                                 \
-        CAMLlocal2(result, string);                                            \
-        PyObject *arg = pyml_unwrap(arg_ocaml);                                \
-        byte_type *buffer;                                                     \
-        Py_ssize_t length;                                                     \
-        int return_value;                                                      \
-        return_value = Python_##func(arg, &buffer, &length);                   \
-        if (return_value == -1) {                                              \
-            CAMLreturn(Val_int(0));                                            \
-        }                                                                      \
-        string = caml_alloc_string(length);                                    \
-        memcpy(String_val(string), buffer, length);                            \
-        result = caml_alloc_tuple(1);                                          \
-        Store_field(result, 0, string);                                        \
-        CAMLreturn(result);                                                    \
+#define StringAndSize_wrapper(func, byte_type)                          \
+    CAMLprim value                                                      \
+    func##_wrapper(value arg_ocaml)                                     \
+    {                                                                   \
+        CAMLparam1(arg_ocaml);                                          \
+        CAMLlocal2(result, string);                                     \
+        PyObject *arg = pyml_unwrap(arg_ocaml);                         \
+        byte_type *buffer;                                              \
+        Py_ssize_t length;                                              \
+        int return_value;                                               \
+        return_value = Python_##func(arg, &buffer, &length);            \
+        if (return_value == -1) {                                       \
+            CAMLreturn(Val_int(0));                                     \
+        }                                                               \
+        string = caml_alloc_initialized_string(length, buffer);         \
+        result = caml_alloc_tuple(1);                                   \
+        Store_field(result, 0, string);                                 \
+        CAMLreturn(result);                                             \
     }
 
 StringAndSize_wrapper(PyString_AsStringAndSize, char);
@@ -1261,7 +1282,7 @@ open_file(value file, const char *mode)
     CAMLparam1(file);
     FILE *result;
     if (Tag_val(file) == 0) {
-        char *filename = String_val(Field(file, 0));
+        const char *filename = String_val(Field(file, 0));
         if (version_major >= 3) {
             result = Python__Py_fopen(filename, mode);
         }
@@ -1338,13 +1359,25 @@ pyarray_of_floatarray_wrapper(
 }
 
 CAMLprim value
+pyarray_move_floatarray_wrapper(value numpy_array_ocaml, value array_ocaml)
+{
+    CAMLparam2(numpy_array_ocaml, array_ocaml);
+    pyml_assert_initialized();
+    PyObject *numpy_array = pyml_unwrap(numpy_array_ocaml);
+    PyArrayObject_fields *fields =
+      (PyArrayObject_fields *) pyobjectdescr(numpy_array);
+    fields->data = (void *) array_ocaml;
+    CAMLreturn(Val_unit);
+}
+
+CAMLprim value
 PyLong_FromString_wrapper(value str_ocaml, value base_ocaml)
 {
     CAMLparam2(str_ocaml, base_ocaml);
     CAMLlocal1(result);
     pyml_assert_initialized();
-    char *str = String_val(str_ocaml);
-    char *pend;
+    const char *str = String_val(str_ocaml);
+    const char *pend;
     int base = Int_val(base_ocaml);
     PyObject *l = Python_PyLong_FromString(str, &pend, base);
     ssize_t len = pend - str;
@@ -1364,7 +1397,7 @@ Python27_PyCapsule_IsValid_wrapper(value arg0_ocaml, value arg1_ocaml)
         failwith("PyCapsule_IsValid is only available in Python >2.7");
     }
     PyObject *arg0 = pyml_unwrap(arg0_ocaml);
-    char *arg1 = String_val(arg1_ocaml);
+    const char *arg1 = String_val(arg1_ocaml);
     int result = Python27_PyCapsule_IsValid(arg0, arg1);
     CAMLreturn(Val_int(result));
 }

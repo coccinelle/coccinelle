@@ -1,5 +1,3 @@
-external get_pyarray_type: Py.Object.t -> Py.Object.t = "get_pyarray_type"
-
 external pyarray_of_bigarray: Py.Object.t -> Py.Object.t
   -> ('a, 'b, 'c) Bigarray.Genarray.t
   -> Py.Object.t = "pyarray_of_bigarray_wrapper"

@@ -101,6 +101,37 @@ assert unwrap(x) == 'OK'
 
 let () =
   Pyml_tests_common.add_test
+    ~title:"capsule-conversion-error"
+    (fun () ->
+      let ref_str = "foobar" in
+      let ref_pair1 = (3.141592, 42) in
+      let ref_pair2 = (2.71828182846, 42) in
+      let (wrap_str, unwrap_str) = Py.Capsule.make "string-1" in
+      let (wrap_pair, unwrap_pair) = Py.Capsule.make "pair-1" in
+      let s = wrap_str ref_str in
+      let p1 = wrap_pair ref_pair1 in
+      let p2 = wrap_pair ref_pair2 in
+      assert (unwrap_str s = ref_str);
+      assert (unwrap_pair p1 = ref_pair1);
+      assert (unwrap_pair p2 = ref_pair2);
+      let unwrap_failed =
+        try
+          ignore (unwrap_pair s : float * int);
+          false
+        with _ -> true
+      in
+      assert unwrap_failed;
+      let unwrap_failed =
+        try
+          ignore (unwrap_pair (Py.Long.of_int 42) : float * int);
+          false
+        with _ -> true
+      in
+      assert unwrap_failed;
+      Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
     ~title:"exception"
     (fun () ->
       try
@@ -156,7 +187,7 @@ let () =
     ~title:"run file with filename"
     (fun () ->
       let result = Pyutils.with_temp_file "print(\"Hello, world!\")"
-        begin fun file channel ->
+        begin fun file _channel ->
          Py.Run.load (Py.Filename file) "test.py"
         end in
       if result = Py.none then
@@ -173,7 +204,7 @@ let () =
     (Pyml_tests_common.enable_only_on_unix
        (fun () ->
          let result = Pyutils.with_temp_file "print(\"Hello, world!\")"
-           begin fun file channel ->
+           begin fun _file channel ->
            Py.Run.load (Py.Channel channel) "test.py"
            end in
          if result = Py.none then
@@ -198,11 +229,12 @@ let () =
           Pyml_tests_common.Passed;
       with Py.E (_, value) ->
         Pyml_tests_common.Failed (Py.Object.to_string value))
-
+(*
 let () =
   Pyml_tests_common.add_test
     ~title:"reinitialize"
     (fun () ->
+      Gc.full_major ();
       Py.finalize ();
       begin
         try
@@ -216,7 +248,7 @@ let () =
       Py.initialize ~verbose:true ?version ?minor ();
       Pyml_tests_common.Passed
     )
-
+*)
 let () =
   Pyml_tests_common.add_test
     ~title:"string conversion error"
@@ -259,6 +291,25 @@ let () =
     ~title:"iterators"
     (fun () ->
       let iter = Py.Object.get_iter (Py.Run.eval "['a','b','c']") in
+      let list = Py.Iter.to_list_map Py.String.to_string iter in
+      assert (list = ["a"; "b"; "c"]);
+      Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Iterator.create"
+    (fun () ->
+      let m = Py.Import.add_module "test" in
+      let iter = Py.Iter.of_list_map Py.Int.of_int [3; 1; 4; 1; 5] in
+      Py.Module.set m "ocaml_iterator" iter;
+      assert (Py.Run.simple_string "
+from test import ocaml_iterator
+res = 0
+for v in ocaml_iterator: res += v
+assert res == 14
+");
+
+      let iter = Py.Iter.of_list_map Py.String.of_string ["a"; "b"; "c"] in
       let list = Py.Iter.to_list_map Py.String.to_string iter in
       assert (list = ["a"; "b"; "c"]);
       Pyml_tests_common.Passed)
@@ -339,6 +390,32 @@ let () =
       Pyml_tests_common.Passed)
 
 let () =
+  Pyml_tests_common.add_test
+    ~title:"Py.List.sort"
+    (fun () ->
+      let pi_digits = [ 3; 1; 4; 1; 5; 9; 2; 6; 5; 3; 5; 8 ] in
+      let v = Py.List.of_list [] in
+      assert (Py.List.length v = 0);
+      let count = Py.Object.call_method v "count" [|Py.Long.of_int 1|] in
+      assert (Py.Long.to_int count = 0);
+      List.iter (fun i ->
+          ignore (Py.Object.call_method v "append" [|Py.Long.of_int i|]))
+        pi_digits;
+      let count = Py.Object.call_method v "count" [|Py.Long.of_int 1|] in
+      assert (Py.Long.to_int count = 2);
+      assert (Py.List.length v = List.length pi_digits);
+      let _ = Py.Object.call_method v "sort" [||] in
+      let sorted_digits = List.map Py.Int.to_int (Py.List.to_list v) in
+      assert (sorted_digits = List.sort compare pi_digits);
+      (* No `clear' method in lists in Python 2 *)
+      if Py.version_major () >= 3 then
+        begin
+          let _ = Py.Object.call_method v "clear" [||] in
+          assert (Py.List.length v = 0)
+        end;
+      Pyml_tests_common.Passed)
+
+let () =
   Pyml_tests_common.add_test ~title:"array"
     (fun () ->
       let array = [| 1; 2 |] in
@@ -386,6 +463,129 @@ array[1] = 43.
           assert (Stdcompat.Array.Floatarray.get array 1 = 43.);
           Pyml_tests_common.Passed
         end)
+
+let () =
+  Pyml_tests_common.add_test ~title:"numpy crunch"
+    (fun () ->
+      if Py.Import.try_import_module "numpy" = None then
+        Pyml_tests_common.Disabled "numpy is not available"
+      else
+        begin
+          let array = Stdcompat.Float.Array.init 0x10000 float_of_int in
+          let numpy_array = Py.Array.numpy array in
+          let add =
+            Py.Module.get_function (Py.Import.import_module "numpy") "add" in
+          let rec crunch numpy_array n =
+            if n <= 0 then
+              numpy_array
+            else
+              let array =
+                Stdcompat.Float.Array.map_from_array Stdcompat.Fun.id
+                  (Py.Sequence.to_array_map Py.Float.to_float
+                     (add [| numpy_array; numpy_array |])) in
+              crunch (Py.Array.numpy array) (pred n) in
+          ignore (crunch (Py.Array.numpy array) 0x100);
+          assert (Stdcompat.Float.Array.length array = 0x10000);
+          for i = 0 to 0x10000 - 1 do
+            assert (Stdcompat.Float.Array.get array i = float_of_int i)
+          done;
+          Stdcompat.Float.Array.set array 1 42.;
+          assert (Py.Float.to_float (Py.Sequence.get numpy_array 1) = 42.);
+          Pyml_tests_common.Passed
+        end)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"none"
+    (fun () ->
+      let none = Py.none in
+      assert (none = Py.none);
+      assert (Py.is_none none);
+      assert (Py.Type.get none = None);
+      let none = Py.Run.eval "None" in
+      assert (none = Py.none);
+      assert (Py.is_none none);
+      assert (Py.Type.get none = None);
+      let not_none = Py.Long.of_int 42 in
+      assert (not_none <> Py.none);
+      assert (not (Py.is_none not_none));
+      assert (Py.Type.get not_none <> None);
+      Pyml_tests_common.Passed
+    )
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"docstring"
+    (fun () ->
+      Gc.full_major ();
+      let fn =
+        let docstring = Printf.sprintf "test%d" 42 in
+        Py.Callable.of_function ~docstring (fun _ -> Py.none)
+      in
+      Gc.full_major ();
+      let other_string = Printf.sprintf "test%d" 43 in
+      let doc = Py.Object.get_attr_string fn "__doc__" in
+      begin
+        match doc with
+          None -> failwith "None!"
+        | Some doc -> assert (Py.String.to_string doc = "test42")
+      end;
+      ignore other_string;
+      Pyml_tests_common.Passed
+    )
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"function-name"
+    (fun () ->
+      let run make_name expect_name =
+        Gc.full_major ();
+        let fn =
+          let name = make_name () in
+          Py.Callable.of_function ?name (fun _ -> Py.none)
+        in
+        Gc.full_major ();
+        let other_string = Printf.sprintf "test%d" 43 in
+        let name = Py.Object.get_attr_string fn "__name__" in
+        begin
+          match name with
+            None -> failwith "None!"
+          | Some doc -> assert (Py.String.to_string doc = expect_name)
+        end;
+        ignore other_string
+      in
+      run (fun () -> Some (Printf.sprintf "test%d" 42)) "test42";
+      run (fun () -> None) "anonymous_closure";
+      Pyml_tests_common.Passed
+    )
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"is-instance"
+    (fun () ->
+      let forty_two = Py.Int.of_int 42 in
+      let forty_two_str = Py.String.of_string "42" in
+      let int = Py.Dict.find_string (Py.Eval.get_builtins ()) "int" in
+      assert (Py.Object.is_instance forty_two int);
+      assert (not (Py.Object.is_instance forty_two_str int));
+      Pyml_tests_common.Passed
+    )
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"is-subclass"
+    (fun () ->
+      let int = Py.Dict.find_string (Py.Eval.get_builtins ()) "int" in
+      let cls1 = Py.Class.init ~parents:[int] "cls1" in
+      let cls2 = Py.Class.init ~parents:[cls1] "cls2" in
+      assert (Py.Object.is_subclass cls1 int);
+      assert (not (Py.Object.is_subclass int cls1));
+      assert (Py.Object.is_subclass cls2 cls1);
+      assert (not (Py.Object.is_subclass cls1 cls2));
+      assert (Py.Object.is_subclass cls2 int);
+      assert (not (Py.Object.is_subclass int cls2));
+      Pyml_tests_common.Passed
+    )
 
 let () =
   if not !Sys.interactive then

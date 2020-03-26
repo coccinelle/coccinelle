@@ -76,7 +76,26 @@ val check_error: unit -> unit
 (** General functions to handle Python values *)
 module Object: sig
   type t = Pytypes.pyobject
-  (** The type of a Python value. *)
+  (** The type of a Python value.
+
+   Structural comparison of values of type [Py.Object.t] rely on
+   Python comparison of underlying values. That is to say, if [u] and [v]
+   are two values of type [Py.Object.t], and by abuse of notations, if we
+   denote also [u] and [v] their respective value in Python, we have [u = v]
+   in OCaml if and only if [u == v] in Python, and [u < v] in OCaml if and
+   only if [u < v] in Python, etc.
+
+   Moreover, there are five values which are handled specially:
+   - {!val:Py.null}: the value [NULL] used in the Python API for error case
+   - {!val:Py.none}: the value [None];
+   - {!val:Py.Bool.t}: the value [True];
+   - {!val:Py.Bool.f}: the value [False];
+   - {!val:Py.Tuple.empty}: the value [()].
+
+   These values are guaranteed to be unique, so that the physical equality
+   can be used to compare against their definitions: for instance, a value
+   [v] of type [Py.Object.t] is [None] if and only if [v == Py.none].
+   *)
 
   val del_attr: t -> t -> unit
   (** Wrapper for
@@ -165,6 +184,14 @@ module Object: sig
   val not: t -> bool
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Not} PyObject_Not} *)
+
+  val is_instance: t -> t -> bool
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_IsInstance} PyObject_IsInstance} *)
+
+  val is_subclass: t -> t -> bool
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_IsSubclass} PyObject_IsSubclass} *)
 
   val print: t -> out_channel file -> unit
   (** Wrapper for
@@ -255,6 +282,10 @@ module Object: sig
   val call: t -> t -> t -> t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Call} PyObject_Call} *)
+
+  val size: t -> int
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Size} PyObject_Size} *)
 end
 
 exception E of Object.t * Object.t
@@ -265,14 +296,26 @@ exception E of Object.t * Object.t
 val null: Object.t
 (** The value [NULL] of the C Python API. [null] is useful for calling
     directly the functions of {!Pywrappers} module.
-    The value should not appear when using the functions of the [Py] module. *)
+    The value should not appear when using the functions of the [Py] module.
+    This value is guaranteed to be the unique value associated to [NULL]. *)
 
-val none: Object.t
-(** The value [None] of Python. *)
+val is_null: Object.t -> bool
+(** [Py.is_null v] is true if and only if [v] is [NULL].
+    Since [Py.none] is guaranteed to be the unique value associated to [NULL],
+    [Py.is_null v] is equivalent to [v == Py.null]. *)
 
 val check_not_null: Object.t -> Object.t
 (** [check_not_null v] checks that [v] is not [null] and returns [v].
     Raises the current Python error as exception otherwise. *)
+
+val none: Object.t
+(** The value [None] of Python.
+    This value is guaranteed to be the unique value associated to [None]. *)
+
+val is_none: Object.t -> bool
+(** [Py.is_none v] is true if and only if [v] is [None].
+    Since [Py.none] is guaranteed to be the unique value associated to [None],
+    [Py.is_none v] is equivalent to [v == Py.none]. *)
 
 val set_program_name: string -> unit
 (** Sets the program name (by default, [Sys.argv.(0)]).
@@ -336,10 +379,22 @@ val get_build_info: unit -> string
 (** Interface for Python values of type [Bool]. *)
 module Bool: sig
   val t: Object.t
-  (** The Python value [True]. *)
+  (** The Python value [True].
+      This value is guaranteed to be the unique value associated to [True]. *)
+
+  val is_true: Object.t -> bool
+  (** [Py.is_true v] is true if and only if [v] is [True].
+      Since [Py.Bool.t] is guaranteed to be the unique value associated to [True],
+      [Py.is_true v] is equivalent to [v == Py.t]. *)
 
   val f: Object.t
-  (** The Python value [False]. *)
+  (** The Python value [False].
+      This value is guaranteed to be the unique value associated to [False]. *)
+
+  val is_false: Object.t -> bool
+  (** [Py.is_false v] is true if and only if [v] is [False].
+      Since [Py.Bool.f] is guaranteed to be the unique value associated to [False],
+      [Py.is_false f] is equivalent to [v == Py.f]. *)
 
   val check: Object.t -> bool
   (** [check v] returns [true] if [v = t] or [v = f]. *)
@@ -359,7 +414,7 @@ module Callable: sig
       Wrapper for
       {{: https://docs.python.org/3/c-api/object.html#c.PyCallable_Check} PyCallable_Check}. *)
 
-  val of_function_as_tuple: ?docstring:string -> (Object.t -> Object.t) ->
+  val of_function_as_tuple: ?name:string -> ?docstring:string -> (Object.t -> Object.t) ->
     Object.t
   (** [of_function_as_tuple f] returns a Python callable object that calls the
       function [f].
@@ -371,17 +426,17 @@ module Callable: sig
       If [f] raises any other exception, this exception bypasses the Python
       interpreter. *)
 
-  val of_function_as_tuple_and_dict: ?docstring:string ->
+  val of_function_as_tuple_and_dict: ?name:string -> ?docstring:string ->
     (Object.t -> Object.t -> Object.t) -> Object.t
   (** [of_function_as_tuple_and_dict f] returns a Python callable object that
       calls the function [f].
       Arguments are passed as a tuple and a dictionary of keywords. *)
 
-  val of_function: ?docstring:string -> (Object.t array -> Object.t) -> Object.t
+  val of_function: ?name:string -> ?docstring:string -> (Object.t array -> Object.t) -> Object.t
   (** Equivalent to {!of_function_as_tuple} but with an array of Python objects
       instead of a tuple for passing arguments. *)
 
-  val of_function_with_keywords: ?docstring:string ->
+  val of_function_with_keywords: ?name:string -> ?docstring:string ->
     (Object.t array -> Object.t -> Object.t) -> Object.t
   (** Equivalent to {!of_function_as_tuple_and_dict} but with an array of
       Python objects instead of a tuple for passing arguments.
@@ -801,16 +856,21 @@ end
 
 (** Importing Modules *)
 module Import: sig
+  (* This function has been removed from Python 3.9, and was marked
+  "for internal use only" before.
   val cleanup: unit -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_Cleanup} PyImport_Cleanup} *)
+   *)
 
   val add_module: string -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_AddModule} PyImport_AddModule} *)
 
   val exec_code_module: string -> Object.t -> Object.t
-  (** Wrapper for
+  (** [exec_code_module name bytecode] imports the module [name] compiled in [bytecode].
+      [bytecode] can be obtained with {!val:Py.compile}.
+      Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ExecCodeModule} PyImport_ExecCodeModule} *)
 
   val exec_code_module_ex: string -> Object.t -> string -> Object.t
@@ -900,10 +960,22 @@ module Iter: sig
 
   val of_seq: Object.t Stdcompat.Seq.t -> Object.t
   (** [of_seq s] returns an interator that iterates over the values of the
-      sequence s. *)
+      sequence [s]. *)
+
+  val of_seq_map: ('a -> Object.t) -> 'a Stdcompat.Seq.t -> Object.t
+  (** [of_seq_map f s] returns an interator that iterates over the results of
+      [f] applied to the values of the sequence [s].
+      [Py.Iter.of_seq_map f s] is equivalent to
+      [Py.Iter.of_seq (Seq.map f s)]. *)
 
   val to_seq: Object.t -> Object.t Stdcompat.Seq.t
   (** [to_seq i] returns the sequence of the values from the iteration [i].
+      The Python iteration is consumed while the sequence is browsed.
+      Values are memoized, so that the sequence can be browsed many times. *)
+
+  val to_seq_map: (Object.t -> 'a) -> Object.t -> 'a Stdcompat.Seq.t
+  (** [to_seq_map f i] returns the sequence of the results of [f] applied to the
+      values from the iteration [i].
       The Python iteration is consumed while the sequence is browsed.
       Values are memoized, so that the sequence can be browsed many times. *)
 
@@ -913,6 +985,23 @@ module Iter: sig
       The Python iteration is consumed while the sequence is browsed.
       Warning: values are not memoized, so that the sequence can be browsed
       only once. *)
+
+  val unsafe_to_seq_map: (Object.t -> 'a) -> Object.t -> 'a Stdcompat.Seq.t
+  (** [unsafe_to_seq_map f i] returns the sequence of the results of [f] applied
+      to the values from the iteration [i].
+      The Python iteration is consumed while the sequence is browsed.
+      Warning: values are not memoized, so that the sequence can be browsed
+      only once. *)
+
+  val of_list: Object.t list -> Object.t
+  (** [of_list l] returns an interator that iterates over the values of the
+      list [l]. *)
+
+  val of_list_map: ('a -> Object.t) -> 'a list -> Object.t
+  (** [of_list_map f l] returns an interator that iterates over the results of
+      [f] applied to the values of the list [l].
+      [Py.Iter.of_list_map f s] is equivalent to
+      [Py.Iter.of_list (List.map f s)] but is tail-recursive. *)
 
   val fold_left: ('a -> Object.t -> 'a) -> 'a -> Object.t -> 'a
   (** [fold_left f v i] returns [(f (...(f v i1)...) in)] where [i1], ..., [in]
@@ -1166,10 +1255,6 @@ module Number: sig
   val number_and: Object.t -> Object.t -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/number.html#c.PyNumber_And} PyNumber_And} *)
-
-  val check: Object.t -> bool
-  (** Wrapper for
-      {{:https://docs.python.org/3/c-api/number.html#c.PyNumber_Check} PyNumber_Check} *)
 
   val divmod: Object.t -> Object.t -> Object.t
   (** Wrapper for
@@ -1544,6 +1629,12 @@ module String: sig
   (** [check o] returns [o] if [o] is a Python string
       (either [Bytes] or [Unicode] with Python 3). *)
 
+  val check_bytes: Object.t -> bool
+  (** [check_bytes o] returns [o] if [o] is a Python bytes string. *)
+
+  val check_unicode: Object.t -> bool
+  (** [check_unicode o] returns [o] if [o] is a Python unicode string. *)
+
   val format: Object.t -> Object.t -> Object.t
   (** [format fmt args] returns the formatted Python string from the string
       format [fmt] and the arguments [args].
@@ -1643,7 +1734,13 @@ module Tuple: sig
       {{:https://docs.python.org/3/c-api/tuple.html#c.PyTuple_New} PyTuple_New} *)
 
   val empty: Object.t
-  (** The empty tuple [()]. *)
+  (** The empty tuple [()].
+      This value is guaranteed to be the unique value associated to [()]. *)
+
+    val is_empty: Object.t -> bool
+  (** [Py.is_empty v] is true if and only if [v] is [()].
+      Since [Py.Tuple.empty] is guaranteed to be the unique value associated to
+      [()], [Py.is_empty v] is equivalent to [v == Py.empty]. *)
 
   val get_item: Object.t -> int -> Object.t
   (** Equivalent to {!Sequence.get_item}. *)
@@ -1809,6 +1906,9 @@ module Type: sig
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/type.html#c.PyType_IsSubtype} PyType_IsSubtype} *)
 
+  val is_none: Object.t -> bool
+  (** [is_none o] returns [true] if the Python object [o] is [None]. *)
+
   val name: t -> string
   (** [name t] returns a string that represents the type [t]. *)
 
@@ -1888,7 +1988,7 @@ module Array: sig
       raise an exception in [setter]. *)
 
   val of_array: ('a -> Object.t) -> (Object.t -> 'a) -> 'a array -> Object.t
-  (** [Py.Array.of_indexed_structure getter setter array] returns a Python
+  (** [Py.Array.of_array getter setter array] returns a Python
       array-like structure accessing the elements of [array] via [getter]
       and [setter].
       To make the array-like structure read-only,
@@ -1920,6 +2020,34 @@ module Array: sig
       you should use bigarrays and the {!Numpy} module. *)
 end
 
+module Gil : sig
+  type t
+
+  val ensure : unit -> t
+  (** [ensure ()] ensures that the current thread holds the global
+      interpreter lock and hence can call the Python C API in a safe
+      way.
+      Wrapper for
+      {{::https//docs.python.org/3/c-api/init.html#c.PyGILState_Ensure} PyGILState_Ensure} *)
+
+  val release : t -> unit
+  (** [release t] releases any resource acquired by [ensure].
+      Wrapper for
+      {{::https//docs.python.org/3/c-api/init.html#c.PyGILState_Release} PyGILState_Release} *)
+
+  val check : unit -> bool
+  (** [check ()] returns true if the current thread holds the global
+      interpreter lock.
+      Wrapper for
+      {{::https//docs.python.org/3/c-api/init.html#c.PyGILState_Check} PyGILState_Check} *)
+
+  val with_lock : (unit -> 'a) -> 'a
+  (** [with_lock f] runs [f] ensuring that we hold the global interpreter
+      lock to do so. If the lock needs to be acquired it is released once
+      [f] completes or if [f] raises an exception.
+  *)
+end
+
 val set_argv: string array -> unit
 (** [set_argv argv] set Python's [sys.argv]. *)
 
@@ -1931,3 +2059,12 @@ val last_value: unit -> Object.t
 val exception_printer: exn -> string option
 (** This printer pretty-prints [E (ty, value)] exceptions.
     It is automatically registered to [Printexc.register_printer]. *)
+
+val compile: source:string -> filename:string -> ?dont_inherit:bool ->
+  ?optimize:[`Default | `Debug | `Normal | `RemoveDocstrings ] ->
+  [`Exec | `Eval | `Single] -> Object.t
+(** [compile ~source ~filename ?dont_inherit ?optimize mode] returns
+    the bytecode obtained by compiling ~source. It is a wrapper for
+    the built-in function
+    {{:https://docs.python.org/3/library/functions.html#compile} compile()}.
+ {{:https://github.com/thierry-martinez/pyml/issues/25} GitHub issue #25}*)

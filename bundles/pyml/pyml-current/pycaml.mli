@@ -810,11 +810,13 @@ val pysequence_length : pyobject -> int
 val pysequence_concat : pyobject * pyobject -> pyobject
 val pysequence_repeat : pyobject * int -> pyobject
 val pysequence_getitem : pyobject * int -> pyobject
-val pysequence_getslice : pyobject * int * int -> pyobject
 (** py.ml: the result type has been changed from [int] to [pyobject]. *)
+
+val pysequence_getslice : pyobject * int * int -> pyobject
 val pysequence_setitem : pyobject * int * pyobject -> int
 val pysequence_delitem : pyobject * int -> int
 (** py.ml: one of the two [pyobject] arguments has been removed. *)
+
 val pysequence_setslice : pyobject * int * int * pyobject -> int
 val pysequence_delslice : pyobject * int * int -> int
 val pysequence_tuple : pyobject -> pyobject
