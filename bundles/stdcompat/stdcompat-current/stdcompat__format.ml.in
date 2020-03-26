@@ -1,6 +1,15 @@
+@BEGIN_FROM_4_06_0@
 include Format
-
+@END_FROM_4_06_0@
+@BEGIN_BEFORE_4_06_0@
+@BEGIN_FROM_4_01_0@
+include (Format : module type of struct include Format end
+  with type formatter_out_functions := Format.formatter_out_functions)
+@END_FROM_4_01_0@
 @BEGIN_BEFORE_4_01_0@
+include Format
+@END_BEFORE_4_01_0@
+
 type formatter_out_functions =
   {
   out_string: string -> int -> int -> unit ;
@@ -8,8 +17,56 @@ type formatter_out_functions =
   out_newline: unit -> unit ;
   out_spaces: int -> unit ;
   out_indent: int -> unit }
-@END_BEFORE_4_01_0@
 
+let formatter_of_out_functions functions =
+  failwith "Not implemented."
+
+@BEGIN_FROM_4_01_0@
+let downgrade_formatter_out_functions functions =
+  let { out_string; out_flush; out_newline; out_spaces; out_indent = _ } =
+    functions in
+  { Format.out_string; out_flush; out_newline; out_spaces }
+
+let upgrade_formatter_out_functions functions =
+  let { Format.out_string; out_flush; out_newline; out_spaces } =
+    functions in
+  let out_indent _ =
+    failwith "Not implemented." in
+  { out_string; out_flush; out_newline; out_spaces; out_indent }
+
+let pp_set_formatter_out_functions fmt functions =
+  Format.pp_set_formatter_out_functions fmt
+    (downgrade_formatter_out_functions functions)
+
+let set_formatter_out_functions functions =
+  Format.set_formatter_out_functions
+    (downgrade_formatter_out_functions functions)
+
+let pp_get_formatter_out_functions fmt () =
+  upgrade_formatter_out_functions (Format.pp_get_formatter_out_functions fmt ())
+
+let get_formatter_out_functions () =
+  upgrade_formatter_out_functions (Format.get_formatter_out_functions ())
+@END_FROM_4_01_0@
+@BEGIN_BEFORE_4_01_0@
+let pp_set_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let set_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let pp_get_formatter_out_functions _ =
+  failwith "Not implemented."
+
+let get_formatter_out_functions _ =
+  failwith "Not implemented."
+@END_BEFORE_4_01_0@
+@END_BEFORE_4_06_0@
+
+@BEGIN_BEFORE_4_01_0@
+let asprintf _ =
+  failwith "Not implemented."
+@END_BEFORE_4_01_0@
 
 @BEGIN_BEFORE_4_06_0@
 type symbolic_output_item =
@@ -169,23 +226,6 @@ let pp_print_text formatter s =
     | '\n' -> pp_force_newline formatter ()
     | _ -> pp_print_char formatter c) s
 @END_BEFORE_4_02_0@
-
-@BEGIN_BEFORE_4_01_0@
-let pp_set_formatter_out_functions _ =
-  failwith "Not implemented."
-
-let set_formatter_out_functions _ =
-  failwith "Not implemented."
-
-let pp_get_formatter_out_functions _ =
-  failwith "Not implemented."
-
-let get_formatter_out_functions _ =
-  failwith "Not implemented."
-
-let asprintf _ =
-  failwith "Not implemented."
-@END_BEFORE_4_01_0@
 
 @BEGIN_BEFORE_3_12_0@
 let ikfprintf _ =

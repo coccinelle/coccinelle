@@ -1,5 +1,35 @@
 include Sys
 
+@BEGIN_BEFORE_4_10_0@
+module Immediate64 = struct
+  module type Non_immediate = sig
+    type t
+  end
+  module type Immediate = sig
+    type t
+@BEGIN_FROM_4_02_0@
+[@@immediate]
+@END_FROM_4_02_0@
+  end
+
+  module Make (Immediate : Immediate) (Non_immediate : Non_immediate) = struct
+    type t = Non_immediate.t
+
+    type 'a repr =
+@BEGIN_FROM_4_00_0@
+          | Immediate: Immediate.t repr
+          | Non_immediate: Non_immediate.t repr
+@END_FROM_4_00_0@
+@BEGIN_BEFORE_4_00_0@
+          | Immediate
+          | Non_immediate
+@END_BEFORE_4_00_0@
+
+    let repr = Non_immediate
+  end
+end
+@END_BEFORE_4_10_0@
+
 @BEGIN_BEFORE_4_08_0@
 let max_floatarray_length = max_array_length / (64 / word_size)
 @END_BEFORE_4_08_0@

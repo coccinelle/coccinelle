@@ -262,3 +262,20 @@ let set_int64_ne b i v =
   if Stdcompat__sys.big_endian then set_int64_be b i v
   else set_int64_le b i v
 @END_BEFORE_4_08_0@
+
+@BEGIN_FROM_4_09_0@
+external unsafe_blit_string :
+  string -> int -> bytes -> int -> int -> unit = "caml_blit_string"[@@noalloc]
+@END_FROM_4_09_0@
+@BEGIN_BEFORE_4_09_0@
+@BEGIN_FROM_3_08_0@
+external unsafe_blit_string :
+  string -> int -> Stdcompat__init.bytes -> int -> int -> unit =
+    "caml_blit_string" "noalloc"
+@END_FROM_3_08_0@
+@BEGIN_BEFORE_3_08_0@
+external unsafe_blit_string :
+  string -> int -> Stdcompat__init.bytes -> int -> int -> unit =
+    "blit_string" "noalloc"
+@END_BEFORE_3_08_0@
+@END_BEFORE_4_09_0@

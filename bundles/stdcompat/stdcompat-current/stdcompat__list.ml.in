@@ -114,3 +114,22 @@ let rec to_seq l () =
   | [] -> Stdcompat__seq.Nil
   | hd :: tl -> Stdcompat__seq.Cons (hd, to_seq tl)
 @END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_4_10_0@
+let rec find_map f l =
+  match l with
+  | [] -> None
+  | hd :: tl ->
+      match f hd with
+      | None -> find_map f tl
+      | some -> some
+
+let rec concat_rev_map_aux f l accu =
+  match l with
+  | [] -> accu
+  | hd :: tl ->
+      concat_rev_map_aux f tl (rev_append (f hd) accu)
+
+let concat_map f l =
+  rev (concat_rev_map_aux f l [])
+@END_BEFORE_4_10_0@

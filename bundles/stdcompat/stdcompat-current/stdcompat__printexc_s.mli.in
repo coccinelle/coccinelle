@@ -82,6 +82,12 @@ type raw_backtrace_slot
 (** @since 4.02.0: type raw_backtrace_slot
  *)
 
+val to_string_default : exn -> string
+(** @since 4.09.0: val to_string_default : exn -> string *)
+
+val use_printers : exn -> string option
+(** @since 4.09.0: val use_printers : exn -> string option *)
+
 @BEGIN_FROM_4_05_0@
 external raise_with_backtrace :
   exn -> raw_backtrace -> 'a = "%raise_with_backtrace"
@@ -136,8 +142,17 @@ val print_raw_backtrace : out_channel -> raw_backtrace -> unit
 val raw_backtrace_to_string : raw_backtrace -> string
 (** @since 4.01.0: val raw_backtrace_to_string : raw_backtrace -> string *)
 
+@BEGIN_FROM_4_10_0@
+external get_callstack : int -> raw_backtrace = "caml_get_current_callstack"
+@END_FROM_4_10_0@
+@BEGIN_BEFORE_4_10_0@
 val get_callstack : int -> raw_backtrace
-(** @since 4.01.0: val get_callstack : int -> raw_backtrace *)
+@END_BEFORE_4_10_0@
+(** @since 4.10.0:
+    external get_callstack :
+      int -> raw_backtrace = "caml_get_current_callstack"
+@since 4.01.0: val get_callstack : int -> raw_backtrace
+ *)
 
 val print_backtrace : out_channel -> unit
 (** @since 3.11.0: val print_backtrace : out_channel -> unit *)

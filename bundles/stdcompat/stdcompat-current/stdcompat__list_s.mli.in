@@ -19,6 +19,12 @@ type 'a t = 'a list
                      | (::) of 'a * 'a list 
  *)
 
+val concat_map : ('a -> 'b list) -> 'a list -> 'b list
+(** @since 4.10.0: val concat_map : ('a -> 'b list) -> 'a list -> 'b list *)
+
+val find_map : ('a -> 'b option) -> 'a list -> 'b option
+(** @since 4.10.0: val find_map : ('a -> 'b option) -> 'a list -> 'b option *)
+
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
 (** @since 4.08.0: val filter_map : ('a -> 'b option) -> 'a list -> 'b list *)
 

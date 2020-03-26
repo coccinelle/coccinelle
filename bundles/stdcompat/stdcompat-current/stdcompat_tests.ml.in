@@ -149,11 +149,25 @@ let () =
   assert (Stdcompat.List.assoc_opt 2 [1, 0; 2, 1; 3, 2] = Some 1);
   assert (Stdcompat.List.assoc_opt 4 [1, 0; 2, 1; 3, 2] = None);
   assert (Stdcompat.List.assq_opt 2 [1, 0; 2, 1; 3, 2] = Some 1);
-  assert (Stdcompat.List.assq_opt "a" ["a", 1; "b", 2; "c", 3] = None);
+  assert ("a" == "a" || (* "a" == "a" since OCaml 4.10.0 *)
+    Stdcompat.List.assq_opt "a" ["a", 1; "b", 2; "c", 3] = None);
+  assert (
+    let r1 = ref 1 in
+    let r1' = ref 1 in
+    let r2 = ref 2 in
+    let r3 = ref 3 in
+    Stdcompat.List.assoc_opt r1' [r1, 1; r2, 2; r3, 3] = Some 1 &&
+    Stdcompat.List.assq_opt r1' [r1, 1; r2, 2; r3, 3] = None);
   assert (Stdcompat.Filename.extension "a.b/c.de" = ".de");
   assert (Stdcompat.Filename.extension "a.b/cd" = "");
   assert (Stdcompat.Filename.remove_extension "a.b/c.de" = "a.b/c");
   assert (Stdcompat.Filename.remove_extension "a.b/cd" = "a.b/cd");
+  @BEGIN_WITH_UNIX@
+  assert (Stdcompat.Filename.remove_extension "a.b\\cd" = "a");
+  @END_WITH_UNIX@
+  @BEGIN_WITHOUT_UNIX@
+  assert (Stdcompat.Filename.remove_extension "a.b\\cd" = "a.b\\cd");
+  @END_WITHOUT_UNIX@
   assert (
     let array = Stdcompat.Array.Floatarray.create 2 in
     Stdcompat.Array.Floatarray.set array 0 1.;
@@ -177,7 +191,15 @@ let () =
   assert (Stdcompat.Array.mem "a" [| "a"; "b"; "c" |]);
   assert (not (Stdcompat.Array.mem "d" [| "a"; "b"; "c" |]));
   assert (Stdcompat.Array.memq 2 [| 1; 2; 3 |]);
-  assert (not (Stdcompat.Array.memq "a" [| "a"; "b"; "c" |]));
+  assert ("a" == "a" || (* "a" == "a" since OCaml 4.10.0 *)
+    not (Stdcompat.Array.memq "a" [| "a"; "b"; "c" |]));
+  assert (
+    let r1 = ref 1 in
+    let r1' = ref 1 in
+    let r2 = ref 2 in
+    let r3 = ref 3 in
+    Stdcompat.List.mem r1' [r1; r2; r3] &&
+    not (Stdcompat.List.memq r1' [r1; r2; r3]));
   assert (
     let q = Stdcompat.Queue.create () in
     Stdcompat.Array.of_seq (Stdcompat.Queue.to_seq q) = [| |]);
@@ -201,6 +223,22 @@ let () =
   assert (
     Stdcompat.Filename.chop_suffix_opt ~suffix:".txt" "readme.md"
       = None);
+  @BEGIN_WITH_WIN32@
+  assert (
+    Stdcompat.Filename.chop_suffix_opt ~suffix:".txt" "readme.TXT"
+      = Some "readme");
+  @END_WITH_WIN32@
+  @BEGIN_WITHOUT_WIN32@
+  assert (
+    Stdcompat.Filename.chop_suffix_opt ~suffix:".txt" "readme.TXT"
+      = None);
+  @END_WITHOUT_WIN32@
+  @BEGIN_WITH_WIN32@
+  assert (Stdcompat.Filename.dir_sep = "\\");
+  @END_WITH_WIN32@
+  @BEGIN_WITHOUT_WIN32@
+  assert (Stdcompat.Filename.dir_sep = "/");
+  @END_WITHOUT_WIN32@
   assert (not (Stdcompat.Float.sign_bit 1.));
   assert (not (Stdcompat.Float.sign_bit 0.));
   assert (not (Stdcompat.Float.is_nan 42.));
@@ -396,5 +434,34 @@ let () =
   assert (Stdcompat.Fun.const true false);
   assert (Stdcompat.Fun.flip ( - ) 1 2 = 1);
   assert (Stdcompat.Fun.negate not true);
+  assert (
+    let bytes = Stdcompat.Bytes.of_string "abcde" in
+    Stdcompat.Bytes.unsafe_blit_string "ABCDEF" 2 bytes 1 3;
+    Stdcompat.Bytes.compare bytes (Stdcompat.Bytes.of_string "aCDEe") == 0);
+  assert (
+    Stdcompat.List.concat_map
+      (fun x -> [x * 2; x - 1]) [1; 2; 3] = [2; 0; 4; 1; 6; 2]);
+  assert (
+    Stdcompat.List.find_map (Stdcompat.List.assoc_opt 1)
+      [[2, 3; 4, 1]; [5, 2;1, 7]] = Some 7);
+  assert (
+    Stdcompat.List.find_map (Stdcompat.List.assoc_opt 1)
+      [[2, 3; 4, 1]; [5, 2;2, 7]] = None);
+  let check_quote_string s =
+    let (file, channel) = Filename.open_temp_file "test_quote_command" ".ml" in
+    Stdcompat.Fun.protect (fun () ->
+      Stdcompat.Fun.protect (fun () ->
+        Printf.fprintf channel "
+          assert (Sys.argv.(1) = \"%s\")
+        " (String.escaped s))
+      ~finally:(fun () -> close_out channel);
+      let file_exe = Filename.chop_suffix file ".ml" ^ ".exe" in
+      assert (
+        Sys.command (Stdcompat.Filename.quote_command "ocamlopt.opt"
+          [file; "-o"; file_exe]) == 0);
+      assert (
+        Sys.command (Stdcompat.Filename.quote_command file_exe [s]) == 0))
+    ~finally:(fun () -> Sys.remove file) in
+  check_quote_string "a\\\\";
+  check_quote_string "a\\\\b\"\\\"\\\\\"\"\\";
   ()
-  
