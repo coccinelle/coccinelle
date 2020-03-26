@@ -10,7 +10,7 @@
    stdcompat__stack stdcompat__hashtbl_ext stdcompat__hashtbl stdcompat__set
    stdcompat__map stdcompat__weak stdcompat__sys
    stdcompat__stream stdcompat__digest stdcompat__nativeint
-   stdcompat__int64 stdcompat__int32 stdcompat__filename
+   stdcompat__int stdcompat__int64 stdcompat__int32 stdcompat__filename
    stdcompat__array stdcompat__arrayLabels
    stdcompat__float stdcompat__queue stdcompat__ephemeron
    stdcompat__spacetime stdcompat__moreLabels stdcompat))
@@ -26,9 +26,162 @@
  (action (run cp %{source} %{targets})))
 
 (rule
+ (target configure)
+ (deps
+  META.in
+  Makefile.am
+  stdcompat.ml.in
+  stdcompat.mli.in
+  stdcompat__arg.ml.in
+  stdcompat__arg.mli.in
+  stdcompat__arg_s.mli.in
+  stdcompat__array.ml.in
+  stdcompat__array.mli.in
+  stdcompat__arrayLabels.ml.in
+  stdcompat__arrayLabels.mli.in
+  stdcompat__arrayLabels_s.mli.in
+  stdcompat__array_s.mli.in
+  stdcompat__bool.ml.in
+  stdcompat__bool.mli.in
+  stdcompat__bool_s.mli.in
+  stdcompat__buffer.ml.in
+  stdcompat__buffer.mli.in
+  stdcompat__buffer_s.mli.in
+  stdcompat__bytes.ml.in
+  stdcompat__bytes.mli.in
+  stdcompat__bytesLabels.ml.in
+  stdcompat__bytesLabels.mli.in
+  stdcompat__bytesLabels_s.mli.in
+  stdcompat__bytes_s.mli.in
+  stdcompat__char.ml.in
+  stdcompat__char.mli.in
+  stdcompat__char_s.mli.in
+  stdcompat__digest.ml.in
+  stdcompat__digest.mli.in
+  stdcompat__digest_s.mli.in
+  stdcompat__ephemeron.ml.in
+  stdcompat__ephemeron.mli.in
+  stdcompat__ephemeron_s.mli.in
+  stdcompat__filename.ml.in
+  stdcompat__filename.mli.in
+  stdcompat__filename_s.mli.in
+  stdcompat__float.ml.in
+  stdcompat__float.mli.in
+  stdcompat__float_s.mli.in
+  stdcompat__format.ml.in
+  stdcompat__format.mli.in
+  stdcompat__format_s.mli.in
+  stdcompat__fun.ml.in
+  stdcompat__fun.mli.in
+  stdcompat__fun_s.mli.in
+  stdcompat__hashtbl.ml.in
+  stdcompat__hashtbl.mli.in
+  stdcompat__hashtbl_ext.ml.in
+  stdcompat__hashtbl_ext.mli.in
+  stdcompat__hashtbl_s.mli.in
+  stdcompat__init.ml.in
+  stdcompat__init.mli.in
+  stdcompat__int.ml.in
+  stdcompat__int.mli.in
+  stdcompat__int32.ml.in
+  stdcompat__int32.mli.in
+  stdcompat__int32_s.mli.in
+  stdcompat__int64.ml.in
+  stdcompat__int64.mli.in
+  stdcompat__int64_s.mli.in
+  stdcompat__int_s.mli.in
+  stdcompat__lazy.ml.in
+  stdcompat__lazy.mli.in
+  stdcompat__lazy_s.mli.in
+  stdcompat__lexing.ml.in
+  stdcompat__lexing.mli.in
+  stdcompat__lexing_s.mli.in
+  stdcompat__list.ml.in
+  stdcompat__list.mli.in
+  stdcompat__listLabels.ml.in
+  stdcompat__listLabels.mli.in
+  stdcompat__listLabels_s.mli.in
+  stdcompat__list_s.mli.in
+  stdcompat__map.ml.in
+  stdcompat__map.mli.in
+  stdcompat__map_s.mli.in
+  stdcompat__moreLabels.ml.in
+  stdcompat__moreLabels.mli.in
+  stdcompat__moreLabels_s.mli.in
+  stdcompat__native.ml_byte.in
+  stdcompat__native.ml_native.in
+  stdcompat__nativeint.ml.in
+  stdcompat__nativeint.mli.in
+  stdcompat__nativeint_s.mli.in
+  stdcompat__option.ml.in
+  stdcompat__option.mli.in
+  stdcompat__option_s.mli.in
+  stdcompat__pervasives.ml.in
+  stdcompat__pervasives.mli.in
+  stdcompat__pervasives_s.mli.in
+  stdcompat__printexc.ml.in
+  stdcompat__printexc.mli.in
+  stdcompat__printexc_s.mli.in
+  stdcompat__printf.ml.in
+  stdcompat__printf.mli.in
+  stdcompat__printf_s.mli.in
+  stdcompat__queue.ml.in
+  stdcompat__queue.mli.in
+  stdcompat__queue_s.mli.in
+  stdcompat__result.ml.in
+  stdcompat__result.mli.in
+  stdcompat__result_s.mli.in
+  stdcompat__root.ml.in
+  stdcompat__root.mli.in
+  stdcompat__seq.ml.in
+  stdcompat__seq.mli.in
+  stdcompat__seq_s.mli.in
+  stdcompat__set.ml.in
+  stdcompat__set.mli.in
+  stdcompat__set_s.mli.in
+  stdcompat__spacetime.ml.in
+  stdcompat__spacetime.mli.in
+  stdcompat__spacetime_s.mli.in
+  stdcompat__stack.ml.in
+  stdcompat__stack.mli.in
+  stdcompat__stack_s.mli.in
+  stdcompat__stdlib.ml.in
+  stdcompat__stdlib.mli.in
+  stdcompat__stdlib_s.mli.in
+  stdcompat__stream.ml.in
+  stdcompat__stream.mli.in
+  stdcompat__stream_s.mli.in
+  stdcompat__string.ml.in
+  stdcompat__string.mli.in
+  stdcompat__stringLabels.ml.in
+  stdcompat__stringLabels.mli.in
+  stdcompat__stringLabels_s.mli.in
+  stdcompat__string_s.mli.in
+  stdcompat__stubs.c.in
+  stdcompat__sys.ml.in
+  stdcompat__sys.mli.in
+  stdcompat__sys_s.mli.in
+  stdcompat__tools.ml.in
+  stdcompat__tools.mli.in
+  stdcompat__uchar.ml.in
+  stdcompat__uchar.mli.in
+  stdcompat__uchar_s.mli.in
+  stdcompat__weak.ml.in
+  stdcompat__weak.mli.in
+  stdcompat__weak_s.mli.in
+  stdcompat_tests.ml.in
+  configure.ac)
+ (action (run %{bin:autoreconf} --force --install --verbose)))
+
+(rule
  (targets
   META
   Makefile
+  stdcompat__native.ml_byte
+  stdcompat__native.ml_native
+  stdcompat.ml
+  stdcompat.mli
+  stdcompat_tests.ml
   stdcompat__init.mli
   stdcompat__hashtbl_ext.mli
   stdcompat__root.mli
@@ -46,6 +199,7 @@
   stdcompat__filename.mli
   stdcompat__float.mli
   stdcompat__hashtbl.mli
+  stdcompat__int.mli
   stdcompat__int32.mli
   stdcompat__int64.mli
   stdcompat__lazy.mli
@@ -83,6 +237,7 @@
   stdcompat__filename.ml
   stdcompat__float.ml
   stdcompat__hashtbl.ml
+  stdcompat__int.ml
   stdcompat__int32.ml
   stdcompat__int64.ml
   stdcompat__lazy.ml
@@ -99,83 +254,9 @@
   stdcompat__stream.ml
   stdcompat__string.ml
   stdcompat__stringLabels.ml
+  stdcompat__stubs.c
   stdcompat__sys.ml
   stdcompat__uchar.ml
   stdcompat__weak.ml)
-  (deps (:configure configure)
-  META.in
-  Makefile.in
-  stdcompat__init.mli.in
-  stdcompat__hashtbl_ext.mli.in
-  stdcompat__root.mli.in
-  stdcompat__tools.mli.in
-  stdcompat__pervasives.mli.in
-  stdcompat__arg.mli.in
-  stdcompat__array.mli.in
-  stdcompat__arrayLabels.mli.in
-  stdcompat__buffer.mli.in
-  stdcompat__bytes.mli.in
-  stdcompat__bytesLabels.mli.in
-  stdcompat__char.mli.in
-  stdcompat__digest.mli.in
-  stdcompat__ephemeron.mli.in
-  stdcompat__filename.mli.in
-  stdcompat__float.mli.in
-  stdcompat__hashtbl.mli.in
-  stdcompat__int32.mli.in
-  stdcompat__int64.mli.in
-  stdcompat__lazy.mli.in
-  stdcompat__lexing.mli.in
-  stdcompat__list.mli.in
-  stdcompat__listLabels.mli.in
-  stdcompat__map.mli.in
-  stdcompat__moreLabels.mli.in
-  stdcompat__nativeint.mli.in
-  stdcompat__queue.mli.in
-  stdcompat__seq.mli.in
-  stdcompat__set.mli.in
-  stdcompat__spacetime.mli.in
-  stdcompat__stack.mli.in
-  stdcompat__stream.mli.in
-  stdcompat__string.mli.in
-  stdcompat__stringLabels.mli.in
-  stdcompat__sys.mli.in
-  stdcompat__uchar.mli.in
-  stdcompat__weak.mli.in
-  stdcompat__init.ml.in
-  stdcompat__hashtbl_ext.ml.in
-  stdcompat__root.ml.in
-  stdcompat__tools.ml.in
-  stdcompat__pervasives.ml.in
-  stdcompat__arg.ml.in
-  stdcompat__array.ml.in
-  stdcompat__arrayLabels.ml.in
-  stdcompat__buffer.ml.in
-  stdcompat__bytes.ml.in
-  stdcompat__bytesLabels.ml.in
-  stdcompat__char.ml.in
-  stdcompat__digest.ml.in
-  stdcompat__ephemeron.ml.in
-  stdcompat__filename.ml.in
-  stdcompat__float.ml.in
-  stdcompat__hashtbl.ml.in
-  stdcompat__int32.ml.in
-  stdcompat__int64.ml.in
-  stdcompat__lazy.ml.in
-  stdcompat__list.ml.in
-  stdcompat__listLabels.ml.in
-  stdcompat__map.ml.in
-  stdcompat__moreLabels.ml.in
-  stdcompat__nativeint.ml.in
-  stdcompat__queue.ml.in
-  stdcompat__seq.ml.in
-  stdcompat__set.ml.in
-  stdcompat__spacetime.ml.in
-  stdcompat__stack.ml.in
-  stdcompat__stream.ml.in
-  stdcompat__string.ml.in
-  stdcompat__stringLabels.ml.in
-  stdcompat__sys.ml.in
-  stdcompat__uchar.ml.in
-  stdcompat__weak.ml.in)
+  (deps (:configure configure))
   (action (run %{configure})))

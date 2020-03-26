@@ -21,6 +21,7 @@ CLEANOTHERS=pyml-current/generate pyml-current/generate.cmi \
 	pyml-current/pyml.cma pyml-current/pyml.cmxa \
 	pyml-current/dllpyml_stubs.so
 GENERATED_SOURCE_FILES := $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pywrappers.mli
+OCAMLCCFLAGS+=-ccopt -I$(STDCOMPATDIR)
 
 ARCH:=$(shell uname)
 

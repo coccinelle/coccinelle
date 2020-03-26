@@ -41,6 +41,16 @@ type location =
   end_char: int }
 @END_BEFORE_4_02_0@
 
+let to_string = Printexc.to_string
+
+@BEGIN_BEFORE_4_09_0@
+let use_printers e =
+  Some (to_string e)
+
+let to_string_default e =
+  to_string e
+@END_BEFORE_4_09_0@
+
 @BEGIN_FROM_4_04_0@
 module Slot = Printexc.Slot
 @END_FROM_4_04_0@
@@ -130,14 +140,25 @@ let exn_slot_name _ =
   failwith "Unimplemented."
 @END_BEFORE_4_02_0@
 
+@BEGIN_FROM_4_10_0@
+external get_callstack : int -> raw_backtrace = "caml_get_current_callstack"
+@END_FROM_4_10_0@
+@BEGIN_BEFORE_4_10_0@
+@BEGIN_FROM_4_01_0@
+let get_callstack = Printexc.get_callstack
+@END_FROM_4_01_0@
+@BEGIN_BEFORE_4_01_0@
+let get_callstack _ =
+  failwith "Unimplemented."
+@END_BEFORE_4_01_0@
+@END_BEFORE_4_10_0@
+
 @BEGIN_FROM_4_01_0@
 let get_raw_backtrace = Printexc.get_raw_backtrace
 
 let print_raw_backtrace = Printexc.print_raw_backtrace
 
 let raw_backtrace_to_string = Printexc.raw_backtrace_to_string
-
-let get_callstack = Printexc.get_callstack
 @END_FROM_4_01_0@
 @BEGIN_BEFORE_4_01_0@
 let get_raw_backtrace _ = ()
@@ -146,9 +167,6 @@ let print_raw_backtrace _ =
   failwith "Unimplemented."
 
 let raw_backtrace_to_string _ =
-  failwith "Unimplemented."
-
-let get_callstack _ =
   failwith "Unimplemented."
 @END_BEFORE_4_01_0@
 
@@ -180,6 +198,5 @@ let register_printer _ =
   failwith "Unimplemented."
 @END_BEFORE_3_11_0@
 
-let to_string = Printexc.to_string
 let print = Printexc.print
 let catch = Printexc.catch

@@ -69,3 +69,30 @@ seeds and randomization are ignored with ``Hashtbl`` prior to 4.00.0.
 
 See the generated documentation (in ``doc/``) for available
 definitions.
+
+Configure and install
+---------------------
+
+Execute `make -f Makefile.bootstrap` first, to generate the files
+`configure`, `Makefile.in` and others.
+
+Then execute `configure`.
+
+Then execute `make` and `make install`.
+
+Windows support
+---------------
+
+`stdcompat` can be used on Windows, both with Cygwin and with
+Microsoft Visual Studio port.
+
+The build system relies on `autoconf`, `automake` and `make`,
+therefore the easiest way to compile `stdcompat` is to use Cygwin
+for compiling, with the same environment as for compiling OCaml:
+- `cl.exe` should be in `PATH`: for instance, with Microsoft
+  Visual Studio 2017 Community, the `PATH` can be initialized with
+  "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat";
+- `eval $(<ocaml-source-tree>/tools/msvs-promote-path)"`
+  should have been executed, so that the command `link.exe` points
+  to the right tool;
+- moreover, `ocaml.exe`, `ocamlc.exe`, etc., should be in `PATH`.

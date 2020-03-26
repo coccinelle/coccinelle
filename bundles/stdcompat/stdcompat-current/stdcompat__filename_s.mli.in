@@ -1,4 +1,17 @@
 module type S = sig
+val null : string
+(** @since 4.10.0: val null : string *)
+
+val quote_command :
+  string ->
+    ?stdin:string ->
+      ?stdout:string -> ?stderr:string -> string list -> string
+(** @since 4.10.0:
+    val quote_command :
+      string ->
+        ?stdin:string ->
+          ?stdout:string -> ?stderr:string -> string list -> string *)
+
 val chop_suffix_opt : suffix:string -> string -> string option
 (** @since 4.08.0:
     val chop_suffix_opt : suffix:string -> string -> string option *)

@@ -6,6 +6,7 @@ bug-reports: "https://github.com/thierry-martinez/stdcompat/issues"
 license: "BSD"
 dev-repo: "git+https://github.com/thierry-martinez/stdcompat.git"
 build: [
+  [make "-f" "Makefile.bootstrap" "-j" jobs]
   ["./configure" "--prefix=%{prefix}%"]
   [make]
 ]
@@ -14,5 +15,6 @@ depopts: [ "result" "seq" "uchar" "ocamlfind" ]
 synopsis: "Compatibility module for OCaml standard library"
 description: "Compatibility module for OCaml standard library allowing programs to use some recent additions to the OCaml standard library while preserving the ability to be compiled on former versions of OCaml."
 depends: [
-  "ocaml" {>= "3.07" & < "4.09.0"}
+  "ocaml" {>= "3.07" & < "4.11.0"}
 ]
+version: "13"

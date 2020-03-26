@@ -1,7 +1,7 @@
-@BEGIN_FROM_4_08_0@
+@BEGIN_FROM_4_10_0@
 include Stdlib
-@END_FROM_4_08_0@
-@BEGIN_BEFORE_4_08_0@
+@END_FROM_4_10_0@
+@BEGIN_BEFORE_4_10_0@
 module Pervasives = Stdcompat__pervasives
 
 include Pervasives
@@ -100,8 +100,6 @@ module Seq = Stdcompat__seq
 
 module Set = Stdcompat__set
 
-module Sort = Sort
-
 module Spacetime = Stdcompat__spacetime
 
 module Stack = Stdcompat__stack
@@ -127,4 +125,4 @@ module Sys = Stdcompat__sys
 module Uchar = Stdcompat__uchar
 
 module Weak = Stdcompat__weak
-@END_BEFORE_4_08_0@
+@END_BEFORE_4_10_0@
