@@ -739,7 +739,6 @@ val pyimport_importmodule : string -> pyobject
 val pyimport_importmoduleex : string * pyobject * pyobject * pyobject -> pyobject
 val pyimport_import : pyobject -> pyobject
 val pyimport_reloadmodule : pyobject -> pyobject
-val pyimport_cleanup : unit -> unit
 val pyimport_importfrozenmodule : string -> int
 
 val pyeval_callobjectwithkeywords : pyobject * pyobject * pyobject -> pyobject

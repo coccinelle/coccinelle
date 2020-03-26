@@ -1944,8 +1944,6 @@ module Callable = struct
 end
 
 module Import = struct
-  let cleanup = Pywrappers.pyimport_cleanup
-
   let add_module name = check_not_null (Pywrappers.pyimport_addmodule name)
 
   let exec_code_module name obj =

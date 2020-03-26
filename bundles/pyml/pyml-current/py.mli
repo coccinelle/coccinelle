@@ -801,8 +801,6 @@ end
 
 (** Importing Modules *)
 module Import: sig
-  val cleanup: unit -> unit
-
   val add_module: string -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_AddModule} PyImport_AddModule} *)
