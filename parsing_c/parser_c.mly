@@ -495,7 +495,7 @@ let postfakeInfo pii  =
 
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong Tunsigned Tsigned
-       Tvoid Tsize_t Tssize_t Tptrdiff_t
+       Tvoid Tsize_t Tssize_t Tptrdiff_t TautoType
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
@@ -1264,7 +1264,7 @@ type_spec2:
      { Right3 (Decimal($3,Some $5)), [$1;$2;$4;$6] }
  | Tdecimal TOPar const_expr TCPar
      { Right3 (Decimal($3,None)), [$1;$2;$4] }
- | Tauto {
+ | TautoType {
      let can_auto_type =
       let open Flag in
        match !c_plus_plus with

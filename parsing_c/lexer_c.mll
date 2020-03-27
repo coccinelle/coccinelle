@@ -145,7 +145,21 @@ let keyword_table = Common.hash_of_list [
   "unsigned", (fun ii -> Tunsigned ii);
   "signed",   (fun ii -> Tsigned ii);
 
-  "auto",     (fun ii -> Tauto ii);
+  "auto",     (fun ii ->
+                let open Flag in
+                match !c_plus_plus with
+                  On None ->
+                    let i = Ast_c.parse_info_of_info ii in
+                    raise
+                      (Semantic_c.Semantic
+                        ("auto has different meaning in different versions of \
+                          C++. Please specify a version using --c++=<version>",
+                        i))
+                | On (Some i) ->
+                    if i >= 2011
+                    then TautoType ii
+                    else Tauto ii
+                | Off -> Tauto ii);
   "register", (fun ii -> Tregister ii);
   "extern",   (fun ii -> Textern ii);
   "static",   (fun ii -> Tstatic ii);

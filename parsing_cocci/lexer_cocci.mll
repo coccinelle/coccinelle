@@ -292,7 +292,19 @@ let id_tokens lexbuf =
   | "decimal" when !Flag.ibm -> Tdecimal linetype
   | "EXEC" when !Flag.ibm -> Texec linetype
 
-  | "auto"  ->      Tauto     linetype
+  | "auto"  ->
+      let open Flag in
+      begin match !c_plus_plus with
+        On None ->
+          raise (
+            Semantic_cocci.Semantic (
+              "auto has different meaning in different versions of
+              C++. Please specify a version using --c++=<version>"))
+      | On (Some i) ->
+          if i >= 2011
+          then TautoType linetype
+          else Tauto linetype
+      | Off -> Tauto linetype end
   | "register" ->   Tregister linetype
   | "extern" ->     Textern   linetype
   | "static" ->     Tstatic   linetype

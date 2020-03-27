@@ -232,6 +232,7 @@ let inline_id aft = function
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
 %token<Data.clt> Tvoid Tstruct Tunion Tenum
 %token<Data.clt> Tunsigned Tsigned
+%token<Data.clt> TautoType
 
 %token<Data.clt> Tstatic Tauto Tregister Textern Tinline Ttypedef
 %token<Data.clt> Tconst Tvolatile
@@ -1031,7 +1032,7 @@ non_signable_types_no_ident:
     { Ast0.wrap(Ast0.TypeOfType(P.clt2mcode "typeof" $1,
                                    P.clt2mcode "(" $2,$3,
                                    P.clt2mcode ")" $4)) }
-| Tauto
+| TautoType
     {
      let can_auto_type =
        let open Flag in
@@ -3301,6 +3302,7 @@ anything: /* used for script code */
  | Tenum { "enum" }
  | Tunsigned { "unsigned" }
  | Tsigned { "signed" }
+ | TautoType { "auto" }
 
  | Tstatic { "static" }
  | Tauto { "auto" }

@@ -702,6 +702,7 @@ module Parser_c :
       | Tsize_t of Ast_c.info
       | Tssize_t of Ast_c.info
       | Tptrdiff_t of Ast_c.info
+      | TautoType of Ast_c.info
       | Tauto of Ast_c.info
       | Tregister of Ast_c.info
       | Textern of Ast_c.info
