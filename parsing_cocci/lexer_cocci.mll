@@ -367,6 +367,7 @@ let init _ = (* per file, first .cocci then iso *)
   Hashtbl.clear Data.all_metadecls;
   Hashtbl.clear metavariables;
   Hashtbl.clear type_names;
+  Hashtbl.clear attr_names;
   Hashtbl.clear rule_names;
   Hashtbl.clear iterator_names;
   Hashtbl.clear declarer_names;
@@ -555,6 +556,7 @@ let post_init _ =
   Stdcompat.Hashtbl.reset Data.all_metadecls;
   Stdcompat.Hashtbl.reset metavariables;
   Stdcompat.Hashtbl.reset type_names;
+  Stdcompat.Hashtbl.reset attr_names;
   Stdcompat.Hashtbl.reset rule_names;
   Stdcompat.Hashtbl.reset iterator_names;
   Stdcompat.Hashtbl.reset declarer_names;
