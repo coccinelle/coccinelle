@@ -211,6 +211,13 @@ let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) ->
         (Semantic ("storage class specified for parameter of function",
                   fake_pi))
 
+let fixDeclSpecForArg = function ({storageD = (st,iist)} as r) ->
+  let ((qu,ty) as v,_st) = fixDeclSpecForDecl r in
+  match st with
+  | (Sto Register) -> (v, true), iist
+  | (Sto _) -> (v, false), iist
+  | NoSto | StoTypedef -> (v, false), iist
+
 let fixDeclSpecForMacro = function ({storageD = (st,iist)} as r) ->
   let ((qu,ty) as v,_st) = fixDeclSpecForDecl r in
   match st with
@@ -950,13 +957,13 @@ string_format:
 /*(* to avoid conflicts have to introduce a _not_empty (ne) version *)*/
 argument_ne:
  | assign_expr { Left $1 }
- | parameter_decl { Right (ArgType $1)  }
+ | parameter_decl_arg { Right (ArgType $1) }
  | action_higherordermacro_ne { Right (ArgAction $1) }
 
 
 argument:
  | assign_expr { Left $1 }
- | parameter_decl { Right (ArgType $1)  }
+ | parameter_decl_arg { Right (ArgType $1) }
  /*(* had conflicts before, but julia fixed them *)*/
  | action_higherordermacro { Right (ArgAction $1) }
 
@@ -1481,8 +1488,47 @@ parameter_decl2:
        }
      }
  | decl_spec
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
+       { p_namei = None;
+         p_type = returnType;
+         p_register = hasreg, iihasreg;
+         p_attr = fst $1;
+       }
+     }
+
+parameter_decl_arg: /* more tolerant */
+   TKRParam {
+     let name = RegularName (mk_string_wrap $1) in
+     LP.add_ident (str_of_name name);
+     { p_namei = Some name;
+       p_type = mk_ty NoType [];
+       p_register = (false, []);
+       p_attr = [];
+     }
+   }
+ | decl_spec declaratorp
      { LP.kr_impossible();
-       let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
+       let ((returnType,hasreg),iihasreg) = fixDeclSpecForArg (snd $1) in
+       let attrs = (fst $1) @ (fst $2) in
+       let (name, ftyp) = snd $2 in
+       { p_namei = Some (name);
+         p_type = ftyp returnType;
+         p_register = (hasreg, iihasreg);
+         p_attr = attrs;
+       }
+     }
+ | decl_spec abstract_declaratorp
+     { LP.kr_impossible();
+       let ((returnType,hasreg), iihasreg) = fixDeclSpecForArg (snd $1) in
+       let attrs = (fst $1) @ (fst $2) in
+       { p_namei = None;
+         p_type = snd $2 returnType;
+         p_register = hasreg, iihasreg;
+         p_attr = attrs;
+       }
+     }
+ | decl_spec
+     { let ((returnType,hasreg), iihasreg) = fixDeclSpecForArg (snd $1) in
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;

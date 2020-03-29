@@ -161,3 +161,11 @@ let non_local_script_constraints =
 
 let fresh_id_scripts:
     (Ast_cocci.meta_name * Ast_cocci.seed_script) list ref = ref []
+
+(* ---------------------------------------------------------------------- *)
+(* Names of some special tokens.  Make these acessible to the C parser *)
+
+let type_names = ref ([]:string list)
+let attr_names = ref ([]:string list)
+let declarer_names = ref ([]:string list)
+let iterator_names = ref ([]:string list)

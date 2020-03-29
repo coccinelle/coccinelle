@@ -139,3 +139,11 @@ val non_local_script_constraints:
 val fresh_id_scripts:
     (Ast_cocci.meta_name * Ast_cocci.seed_script) list ref
 (** The list of all fresh id scripts. *)
+
+(* ---------------------------------------------------------------------- *)
+(* Names of some special tokens.  Make these acessible to the C parser *)
+
+val type_names : string list ref
+val attr_names : string list ref
+val declarer_names : string list ref
+val iterator_names : string list ref

@@ -347,7 +347,11 @@ let mkassign op lexbuf =
   TOpAssign (op, (get_current_line_type lexbuf))
 
 let spinit _ = (* per semantic patch *)
-  Hashtbl.clear Data.non_local_script_constraints
+  Hashtbl.clear Data.non_local_script_constraints;
+  D.type_names := [];
+  D.attr_names := [];
+  D.iterator_names := [];
+  D.declarer_names := []
 
 let init _ = (* per file, first .cocci then iso *)
   line := 1;
@@ -524,6 +528,8 @@ let init _ = (* per file, first .cocci then iso *)
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
+      (if not (List.mem name !D.type_names)
+      then D.type_names := name :: !D.type_names);
       Hashtbl.replace type_names name fn);
   Data.add_attribute :=
     (function name ->
@@ -532,6 +538,8 @@ let init _ = (* per file, first .cocci then iso *)
 	  ((Data.PLUS | Data.PLUSPLUS),_,_,_,_,_,_,_,_,_) ->
 	    TDirective (Ast.Space name, clt)
 	| _ -> Tattr (name, clt) in
+      (if not (List.mem name !D.attr_names)
+      then D.attr_names := name :: !D.attr_names);
       Hashtbl.replace attr_names name fn);
   Data.add_attribute_meta :=
     (fun name cstr pure ->
@@ -548,10 +556,14 @@ let init _ = (* per file, first .cocci then iso *)
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
+      (if not (List.mem name !D.declarer_names)
+      then D.declarer_names := name :: !D.declarer_names);
       Hashtbl.replace declarer_names name fn);
   Data.add_iterator_name :=
     (function name ->
       let fn clt = TIteratorId(name,clt) in
+      (if not (List.mem name !D.iterator_names)
+      then D.iterator_names := name :: !D.iterator_names);
       Hashtbl.replace iterator_names name fn);
   Data.add_symbol_meta :=
     (function name ->

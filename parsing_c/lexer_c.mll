@@ -860,7 +860,20 @@ rule token = parse
             * now done in parse_c.ml.
             *)
 
-		  | None -> TIdent (s, info)
+		  | None ->
+		      (* get information from the semantic patch *)
+		      (* typedef is not done due to tyex.cocci *)
+		      (* attributes not done due to roa; don't know
+			 whether to use MacroAttr or MacroEndAttr *)
+		      (*if List.mem s !Data.type_names
+		      then TypedefIdent (s, info)
+		      else if List.mem s !Data.attr_names
+		      then TMacroAttr (s, info)
+		      else*) if List.mem s !Data.declarer_names
+		      then TMacroDecl (s, info)
+		      else if List.mem s !Data.iterator_names
+		      then TMacroIterator (s, info)
+		      else TIdent (s, info)
         )
       }
   (* gccext: apparently gcc allows dollar in variable names. found such
