@@ -4630,7 +4630,7 @@ let assoc_with_err_msg k l =
 module IntMap = Map.Make
     (struct
       type t = int
-      let compare (x : int) (y : int) = Pervasives.compare x y
+      let compare (x : int) (y : int) = Stdcompat.Stdlib.compare x y
     end)
 let intmap_to_list m = IntMap.fold (fun id v acc -> (id, v) :: acc) m []
 let intmap_string_of_t f a = "<Not Yet>"
@@ -4639,11 +4639,11 @@ module IntIntMap = Map.Make
     (struct
       type t = int * int
       let compare ((x1, y1) : int * int) ((x2, y2) : int * int) =
-	let cmp_x = Pervasives.compare x1 x2 in
+	let cmp_x = Stdcompat.Stdlib.compare x1 x2 in
 	if cmp_x <> 0 then
 	  cmp_x
 	else
-	  Pervasives.compare y1 y2
+	  Stdcompat.Stdlib.compare y1 y2
 end)
 
 let intintmap_to_list m = IntIntMap.fold (fun id v acc -> (id, v) :: acc) m []
