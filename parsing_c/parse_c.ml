@@ -983,12 +983,12 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
         Some result
   end
 
-
 and handle_include file wrapped_incl k =
     let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
     let parsing_style = Includes.get_parsing_style () in
     if Includes.should_parse parsing_style file incl
-    then begin match Includes.resolve file parsing_style incl with
+    then
+      match Includes.resolve file parsing_style incl with
       | Some header_filename when Common.lfile_exists header_filename ->
 	  (if !Flag_parsing_c.verbose_includes
 	  then pr2 ("including "^header_filename));
@@ -996,8 +996,6 @@ and handle_include file wrapped_incl k =
 	    match incl with Ast_c.NonLocal _ -> true | _ -> false in
           ignore (k nonlocal header_filename)
       | _ -> ()
-    end
-
 
 and _parse_print_error_heuristic2bis saved_typedefs saved_macros
   parse_strings file use_header_cache =
