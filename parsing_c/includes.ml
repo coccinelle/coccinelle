@@ -120,10 +120,14 @@ let should_parse parsing_style filename incl = match parsing_style with
 let resolve filename parsingstyle x =
   let all_includes = parse_all_includes parsingstyle in
   let dir = Filename.dirname filename in
+  let clean s =
+    if Str.string_match (Str.regexp_string "./") s 0
+    then String.sub s 2 (String.length s - 2)
+    else s in
   match x with
     | Ast_c.Local include_path ->
       let relpath = String.concat "/" include_path in
-      let f = Filename.concat dir relpath in
+      let f = Filename.concat dir (clean relpath) in
       if (Sys.file_exists f)
       then Some f
       else if !relax_include_path
