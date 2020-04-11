@@ -32,7 +32,7 @@ let get_seeded seed =
 let read_fresh_id _ =
   try
     let s = read_line () in
-    match Parse_c.tokens_of_string s with
+    match Parse_c.tokens_of_string s None with
       [Parser_c.TIdent _; Parser_c.EOF _] -> s
     | [Parser_c.EOF _] -> get_extra()
     | _ -> failwith ("wrong fresh id: " ^ s)

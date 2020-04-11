@@ -393,7 +393,7 @@ module Ast_c :
       Ast_c.ifdef_guard =
         Gifdef of macro_symbol
       | Gifndef of macro_symbol
-      | Gif_str of string
+      | Gif_str of Lexing.position * string
       | Gif of expression
       | Gnone
     and macro_symbol = string
@@ -609,13 +609,14 @@ module Parse_c :
     val extract_macros :
       Common.filename -> (string, Cpp_token_c.define_def) Common.assoc
     val tokens : ?profile:bool -> Common.filename -> Parser_c.token list
-    val tokens_of_string : string -> Parser_c.token list
+    val tokens_of_string :
+	string -> Lexing.position option -> Parser_c.token list
     val parse : Common.filename -> Ast_c.program
     val parse_gen :
       cpp:bool ->
       tos:bool ->
       ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a) ->
-      string -> 'a
+      Lexing.position option -> string -> 'a
     val type_of_string : string -> Ast_c.fullType
     val statement_of_string : string -> Ast_c.statement
     val cstatement_of_string : string -> Ast_c.statement

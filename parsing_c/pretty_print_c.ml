@@ -1659,7 +1659,7 @@ let string_of_expression e =
 let string_of_ifdef_guard = function
   | Gifdef s  -> "defined(" ^ s ^ ")"
   | Gifndef s -> "!defined(" ^ s ^ ")"
-  | Gif_str s -> s
+  | Gif_str (_,s) -> s
   | Gif e     -> string_of_expression e
   | Gnone     -> "0"
 

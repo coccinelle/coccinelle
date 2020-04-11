@@ -287,7 +287,7 @@ and ifdefkind =
 and ifdef_guard =
     Gifdef of macro_symbol
   | Gifndef of macro_symbol
-  | Gif_str of string
+  | Gif_str of Lexing.position * string
   | Gif of expression
   | Gnone
 and macro_symbol = string

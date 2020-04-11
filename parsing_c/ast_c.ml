@@ -717,12 +717,13 @@ and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
      *
      * @author Iago Abal
      *)
-  and ifdef_guard = Gifdef  of macro_symbol (* #ifdef *)
-                  | Gifndef of macro_symbol (* #ifndef *)
-                  | Gif_str of string       (* #if <string to be parsed> *)
-                  | Gif     of expression   (* #if *)
-                  | Gnone   (* ignored #if condition: TIfdefBool,
-                             * TIfdefMisc, and TIfdefVersion
+  and ifdef_guard =
+      Gifdef  of macro_symbol (* #ifdef *)
+    | Gifndef of macro_symbol (* #ifndef *)
+    | Gif_str of Lexing.position * string (* #if <string to be parsed> *)
+    | Gif     of expression   (* #if *)
+    | Gnone   (* ignored #if condition: TIfdefBool,
+                 * TIfdefMisc, and TIfdefVersion
                              *)
   and macro_symbol = string
   (* set in Parsing_hacks.set_ifdef_parenthize_info. It internally use

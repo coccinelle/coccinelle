@@ -653,7 +653,9 @@ rule token = parse
         then TIfdefBool (false, no_ifdef_mark(), info)
         else if List.mem str_guard !Flag_parsing_c.defined
         then TIfdefBool (true, no_ifdef_mark(), info)
-        else TIfdef (Gif_str str_guard, no_ifdef_mark(), info)
+        else
+	  let pos = lexbuf.Lexing.lex_start_p in
+	  TIfdef (Gif_str (pos, str_guard), no_ifdef_mark(), info)
       }
   | "#" [' ' '\t']* "if" '('
       { let info = tokinfo lexbuf in
@@ -665,12 +667,15 @@ rule token = parse
         then TIfdefBool (false, no_ifdef_mark(), info)
         else if List.mem test_str_guard !Flag_parsing_c.defined
         then TIfdefBool (true, no_ifdef_mark(), info)
-        else TIfdef (Gif_str str_guard, no_ifdef_mark(), info)
+        else
+	  let pos = lexbuf.Lexing.lex_start_p in
+	  TIfdef (Gif_str (pos, str_guard), no_ifdef_mark(), info)
       }
   | "#" [' ' '\t']* "elif" [' ' '\t']+
       { let info = tokinfo lexbuf in
         let str_guard = cpp_eat_until_nl lexbuf in
-        TIfdefelif (Gif_str str_guard,
+	let pos = lexbuf.Lexing.lex_start_p in
+        TIfdefelif (Gif_str (pos, str_guard),
                     no_ifdef_mark(),
                     info +> tok_add_s str_guard
                    )

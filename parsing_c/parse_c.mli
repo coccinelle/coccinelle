@@ -67,12 +67,12 @@ val extract_macros :
 (* ---------------------------------------------------------------------- *)
 (* used also for the standard.h file *)
 val tokens:      ?profile:bool -> Common.filename -> Parser_c.token list
-val tokens_of_string: string -> Parser_c.token list
+val tokens_of_string: string -> Lexing.position option -> Parser_c.token list
 
 val parse:                        Common.filename -> Ast_c.program
 val parse_gen: cpp:bool -> tos:bool
     -> ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a)
-    -> string -> 'a
+    -> Lexing.position option -> string -> 'a
 
 (* ---------------------------------------------------------------------- *)
 (* Easy way to build complex Ast elements from simple strings.
