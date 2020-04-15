@@ -310,7 +310,7 @@ install-spatch : spatch$(TOOLS_SUFFIX)
 	$(INSTALL_DATA) standard.iso $(DESTDIR)$(LIBDIR)
 	$(INSTALL_DATA) ocaml/*.cmi $(DESTDIR)$(LIBDIR)/ocaml/
 	if test -f ocaml/coccilib.cmx; then \
-		$(INSTALL_DATA) ocaml/*.cmx $(DESTDIR)$(LIBDIR)/ocaml/ \
+		$(INSTALL_DATA) ocaml/*.cmx $(DESTDIR)$(LIBDIR)/ocaml/; \
 	fi
 
 .PHONY : install-man
