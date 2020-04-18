@@ -565,11 +565,21 @@ module XMATCH = struct
 		match (infos,List.rev infos) with
 		  ([],_) | (_,[]) -> [([],[],[])]
 		| (fst::mid,last::_) ->
-		    let before = Ast_c.get_comments_before fst in
-		    let after = Ast_c.get_comments_after last in
+		    let get_real_comments l =
+		      List.filter
+			(function
+			    (Token_c.TComment,_)
+			  | (Token_c.TCommentCpp _,_) -> true
+			  | _ -> false)
+			l in
+		    let before =
+		      get_real_comments(Ast_c.get_comments_before fst) in
+		    let after =
+		      get_real_comments(Ast_c.get_comments_after last) in
 		    let mid =
-		      List.concat
-			(List.map Ast_c.get_comments_before mid) in
+		      get_real_comments
+			(List.concat
+			   (List.map Ast_c.get_comments_before mid)) in
 		    [(before,mid,after)]) in
 	    let rec loop tin = function
 		[] -> finish tin
