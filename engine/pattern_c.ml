@@ -562,7 +562,13 @@ module XMATCH = struct
 	      lazy
 		(let infos =
 		  List.filter (function ii -> not (Ast_c.is_fake ii)) infos in
-		let infos = List.sort Ast_c.compare_pos infos in
+		let rec uniq = function
+		    x::y::xs ->
+		      if Ast_c.compare_pos x y = 0
+		      then uniq (x::xs)
+		      else x :: uniq (y :: xs)
+		  | l -> l in
+		let infos = uniq(List.sort Ast_c.compare_pos infos) in
 		match (infos,List.rev infos) with
 		  ([],_) | (_,[]) -> [([],[],[])]
 		| (fst::mid,last::_) ->
