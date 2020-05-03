@@ -1298,8 +1298,9 @@ singleton lists are then just appended to each other during the merge. *)
 					if !dir || !file_groups
 					then begin
 					  (* not hidden by --very-quiet *)
-					  Printf.eprintf "EXN: %s\n"
-					    (Printexc.to_string e);
+					  Printf.eprintf "EXN: %s in %s\n"
+					    (Printexc.to_string e)
+					    all_cfiles;
 					  flush stderr;
 					  prev (* *)
 					end
