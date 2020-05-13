@@ -1076,6 +1076,7 @@ let find_function_names l =
     | (PC.TMetaId(_),_)::_
     | (PC.TMetaLocalIdExp(_),_)::_
     | (PC.TEq(_),_)::_
+    | (PC.TPtrOp(_),_)::_
     | (PC.TEllipsis(_),_)::_
     | (PC.TOEllipsis(_),_)::_
     | (PC.TCEllipsis(_),_)::_
