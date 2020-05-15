@@ -1502,7 +1502,7 @@ let main arglist =
     let arg_parse =
       let speclist = Arg.align all_options in
       let anon_fun = (fun x -> args := x::!args) in
-      fun some_args args_location ->
+      fun ?(anon_fun=anon_fun) some_args args_location ->
         let rec split_c_plus_plus_equal = function
           (* hack to separate '--c++=<version>' as '--c++=' '<version>',
            * otherwise, '<version>' would be considered to be an argument for
@@ -1521,7 +1521,9 @@ let main arglist =
                    (Array.of_list (spatch_bin_name::some_args))
                    args_location in
     arg_parse config_args "in a cocciconfig file";
-    arg_parse cocci_args "in the cocci file";
+    if List.mem "--parse-cocci" cl_args
+    then arg_parse ~anon_fun:(fun _ -> ()) cocci_args "in the cocci file"
+    else arg_parse cocci_args "in the cocci file";
     arg_parse cl_args "on the command line";
     args := List.filter (function arg ->
               if Filename.check_suffix arg ".cocci"
