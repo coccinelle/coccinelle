@@ -20,7 +20,7 @@ depends: [
   "ocamlfind"
   "pcre"
   "stdcompat"
-  "pyml"
+  "pyml" {>= "20190626"}
   "conf-pkg-config"
   "conf-python-3"
   "conf-python-3-dev"
