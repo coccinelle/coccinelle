@@ -2261,6 +2261,37 @@ cpp_other:
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
+ | identifier TOPar argument_list TCPar end_attributes TPtVirg
+     {
+       if args_are_params $3
+       then
+	 (* if all args are params, assume it is a prototype of a function
+	    with no return type *)
+	 let parameters = args_to_params $3 None in
+	 let paramlist = (parameters, (false, [])) in (* no varargs *)
+	 let id = RegularName (mk_string_wrap $1) in
+	 let ret =
+	   warning "type defaults to 'int'"
+	     (mk_ty defaultInt [fakeInfo fake_pi]) in
+	 let ty =
+	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
+	 let attrs = Ast_c.noattr in
+	 let sto = (NoSto, false), [] in
+	 let iistart = Ast_c.fakeInfo () in
+	 Declaration(
+	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
+                      v_storage = unwrap sto; v_local = NotLocalDecl;
+                      v_attr = attrs; v_endattr = $5;
+		      v_type_bis = ref None;
+                    },[]],
+                   ($6::iistart::snd sto)))
+       else
+	 Declaration
+	   (MacroDecl((NoSto, fst $1, $3, true), [snd $1;$2;$4;$6;fakeInfo()]))
+           (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
+     }
+
+
  /* cheap solution for functions with no return type.  Not really a
        cpp_other, but avoids conflicts */
  | identifier TOPar argument_list TCPar compound {
