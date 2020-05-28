@@ -162,6 +162,9 @@ module type PARAM =
       (Ast_cocci.meta_name Ast_cocci.mcode,
        (Ast_c.exec_code, Ast_c.il) Common.either list) matcher
 
+    val distrf_attr :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.attribute) matcher
+
     val distrf_attrs :
       (Ast_cocci.meta_name Ast_cocci.mcode,
        (Ast_c.attribute, Ast_c.il) Common.either list) matcher
