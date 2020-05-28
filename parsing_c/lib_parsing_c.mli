@@ -125,6 +125,7 @@ val ii_of_ident_list :
   (Ast_c.name, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_exec_code_list :
   (Ast_c.exec_code, Ast_c.il) Common.either list -> Ast_c.info list
+val ii_of_attr : Ast_c.attribute -> Ast_c.info list
 val ii_of_attrs :
   (Ast_c.attribute, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_toplevel : Ast_c.toplevel -> Ast_c.info list
