@@ -2563,7 +2563,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
-       attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
+       attribute_list allminus attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
@@ -2592,7 +2592,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
-       attribute_list attrsa endattrs >>= (fun attrsa endattrs ->
+       attribute_list allminus attrsa endattrs >>= (fun attrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
@@ -2651,7 +2651,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
           inla (stob, iistob) >>= (fun inla (stob, iistob) ->
         storage_optional_allminus allminus
           stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
-        attribute_list attras attrs >>= (fun attras attrs ->
+        attribute_list allminus attras attrs >>= (fun attras attrs ->
         fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
 	let fninfoa = put_fninfo stoa tya inla attras in
         parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
@@ -4194,29 +4194,41 @@ and attribute_list attras attrbs =
 
 (* The cheap hackish version.  No wrapping requires... *)
 
-and attribute_list attras attrbs =
+and attribute_list allminus attras attrbs =
   X.optional_attributes_flag (fun optional_attributes ->
   match attras,attrbs with
     [], _ when optional_attributes || attrbs = [] ->
-      return ([], attrbs)
+      if allminus
+      then
+        let rec loop = function
+            [] -> return ([],[])
+          | ib::ibs ->
+              X.distrf_attr minusizer ib >>= (fun _ ib ->
+                  loop ibs >>= (fun l ibs ->
+                    return([],ib::ibs))) in
+        loop attrbs
+      else return ([], attrbs)
   | [], _ -> fail
   | [attra], [attrb] ->
-    attribute attra attrb >>= (fun attra attrb ->
+    attribute allminus attra attrb >>= (fun attra attrb ->
       return ([attra], [attrb])
     )
   | [attra], attrb -> fail
   | _ -> failwith "only one attribute allowed in SmPL")
 
-and attribute = fun ea eb ->
+and attribute = fun allminus ea eb ->
   match ea, eb with
     attra, (B.Attribute attrb, ii)
       when (A.unwrap_mcode attra) = attrb ->
       let ib1 = tuple_of_list1 ii in
       tokenf attra ib1 >>= (fun attra ib1 ->
+       (if allminus
+        then minusize_list [ib1]
+        else return ((), [ib1])) >>= (fun _ ib1 ->
 	return (
 	  attra,
-	  (B.Attribute attrb, [ib1])
-        ))
+          (B.Attribute attrb,ib1)
+        )))
   | _ -> fail
 
 (*---------------------------------------------------------------------------*)
@@ -4927,7 +4939,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
             inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
-          attribute_list attras attrs >>= (fun attras attrs ->
+          attribute_list allminus attras attrs >>= (fun attras attrs ->
               (
                 if isvaargs
                 then
