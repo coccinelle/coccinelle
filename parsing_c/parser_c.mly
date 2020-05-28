@@ -1597,6 +1597,17 @@ decl2:
 	   MacroDecl
 	     ((NoSto, fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo()]) }
 
+ | storage_const_opt TMacroDecl TOPar argument_list TCPar end_attributes
+   TPtVirg
+     { function _ ->
+       match $1 with
+	 Some (sto,stoii) ->
+	   MacroDecl
+	     ((sto, fst $2, $4, true), (snd $2::$3::$5::$7::fakeInfo()::stoii))
+       | None ->
+	   MacroDecl
+	     ((NoSto, fst $2, $4, true), [snd $2;$3;$5;$7;fakeInfo()]) }
+
  | storage_const_opt
      TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
      { function _ ->
