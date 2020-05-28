@@ -1846,6 +1846,22 @@ field_declaration:
           *)
      }
 
+ | spec_qualif_list struct_declarator_list end_attributes TPtVirg
+     {
+       let (attrs, ds) = $1 in
+       let (returnType,storage) = fixDeclSpecForDecl ds in
+       if fst (unwrap storage) <> NoSto
+       then internal_error "parsing don't allow this";
+
+       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
+         f returnType, iivirg))
+                         ,[$4;iistart])
+         (* don't need to check if typedef or func initialised cos
+          * grammar don't allow typedef nor initialiser in struct
+          *)
+     }
+
  | spec_qualif_list TPtVirg
      {
        let (attrs, ds) = $1 in
@@ -1856,6 +1872,18 @@ field_declaration:
 
        let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
        FieldDeclList ([(Simple (None, returnType)) , []], [$2;iistart])
+     }
+
+ | spec_qualif_list end_attributes TPtVirg
+     {
+       let (attrs, ds) = $1 in
+       (* gccext: allow empty elements if it is a structdef or enumdef *)
+       let (returnType,storage) = fixDeclSpecForDecl ds in
+       if fst (unwrap storage) <> NoSto
+       then internal_error "parsing don't allow this";
+
+       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       FieldDeclList ([(Simple (None, returnType)) , []], [$3;iistart])
      }
 
 
