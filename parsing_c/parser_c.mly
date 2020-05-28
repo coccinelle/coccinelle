@@ -1553,6 +1553,17 @@ decl2:
                 },[]],
                 ($2::iistart::snd storage))
      }
+ | decl_spec end_attributes TPtVirg
+     { function local ->
+       let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
+       let iistart = Ast_c.fakeInfo () in
+       DeclList ([{v_namei = None; v_type = returnType;
+                   v_storage = unwrap storage; v_local = local;
+                   v_attr = fst $1; v_endattr = $2;
+                   v_type_bis = ref None;
+                },[]],
+                ($3::iistart::snd storage))
+     }
  | decl_spec init_declarator_list TPtVirg
      { function local ->
        let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
