@@ -1,4 +1,4 @@
-AC_INIT([[stdcompat]], m4_esyscmd([tr -d '\n' <VERSION]),
+AC_INIT([[stdcompat]], m4_esyscmd([tr -d '\n' < VERSION]),
   [[Thierry.Martinez@inria.fr]], [[stdcompat]],
   [[https://github.com/thierry.martinez/stdcompat/]])
 AM_INIT_AUTOMAKE([foreign])
