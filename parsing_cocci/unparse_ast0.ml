@@ -546,9 +546,18 @@ and parameterTypeDef p =
   print_context p
     (function _ ->
       match Ast0.unwrap p with
-	Ast0.VoidParam(ty) -> typeC ty
-      | Ast0.Param(ty,Some id) -> print_named_type ty id
-      |	Ast0.Param(ty,None) -> typeC ty
+        Ast0.VoidParam(ty,attr) ->
+          typeC ty;
+          (if (attr = []) then print_string " ");
+          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+      | Ast0.Param(ty,Some id,attr) ->
+          print_named_type ty id;
+          (if (attr = []) then print_string " ");
+          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+      | Ast0.Param(ty,None,attr) ->
+          typeC ty;
+          (if (attr = []) then print_string " ");
+          print_between (fun _ -> print_string " ") (mcode print_string) attr;
       | Ast0.MetaParam(name,_,_) -> mcode print_meta name
       | Ast0.MetaParamList(name,_,_,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()

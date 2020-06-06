@@ -1089,10 +1089,18 @@ and designator = function
 
 and parameterTypeDef p =
   match Ast.unwrap p with
-    Ast.VoidParam(ty) -> fullType ty
-  | Ast.Param(ty,Some id) -> print_named_type ty (fun _ -> ident id)
-  | Ast.Param(ty,None) -> fullType ty
-
+    Ast.VoidParam(ty,attr) ->
+      fullType ty;
+      (if not (attr = []) then pr_space());
+      print_between pr_space (mcode print_string) attr;
+  | Ast.Param(ty,Some id,attr) ->
+      print_named_type ty (fun _ -> ident id);
+      (if not (attr = []) then pr_space());
+      print_between pr_space (mcode print_string) attr;
+  | Ast.Param(ty,None,attr) ->
+      fullType ty;
+      (if not (attr = []) then pr_space());
+      print_between pr_space (mcode print_string) attr;
   | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name
 	(function

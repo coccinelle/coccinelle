@@ -1165,10 +1165,22 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context p
 	then
 	  match (up,Ast0.unwrap p) with
-	    (Ast0.VoidParam(tya),Ast0.VoidParam(tyb)) -> match_typeC tya tyb
-	  | (Ast0.Param(tya,ida),Ast0.Param(tyb,idb)) ->
-	      conjunct_bindings (match_typeC tya tyb)
-		(match_option match_ident ida idb)
+	    (Ast0.VoidParam(tya,attra),Ast0.VoidParam(tyb,attrb)) ->
+               if (List.length attra = List.length attrb &&
+                 List.fold_left2 (fun p a b -> p && mcode_equal a b) true
+                 attra attrb)
+               then
+                 match_typeC tya tyb
+               else return false
+	  | (Ast0.Param(tya,ida,attra),Ast0.Param(tyb,idb,attrb)) ->
+               if (List.length attra = List.length attrb &&
+                 List.fold_left2 (fun p a b -> p && mcode_equal a b) true
+                 attra attrb)
+              then
+	        conjunct_bindings (match_typeC tya tyb)
+		  (match_option match_ident ida idb)
+              else
+                return false
 	  | (Ast0.PComma(c1),Ast0.PComma(c)) -> check_mcode c1 c
 	  | (Ast0.Pdots(d1),Ast0.Pdots(d)) -> check_mcode d1 d
 	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb)) ->

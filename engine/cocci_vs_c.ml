@@ -594,6 +594,23 @@ let initialisation_to_affectation decl =
 	Some x -> F.DefineExpr x
       |	None -> F.Decl decl
 
+let check_allminus =
+  let mcode r (_,_,kind,_) =
+    match kind with
+      A.MINUS(_,_,_,_) -> true
+    | _ -> false in
+  let bind x y = x && y in
+  let option_default = true in
+  let donothing r k re = k re in
+  Visitor_ast.combiner bind option_default
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode mcode mcode mcode
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing
+
 (*****************************************************************************)
 (* Functor parameter combinators *)
 (*****************************************************************************)
@@ -1994,7 +2011,8 @@ and argument arga argb =
   X.all_bound (A.get_inherited arga) >&&>
   match A.unwrap arga, argb with
   | A.TypeExp tya,
-    Right (B.ArgType {B.p_register=b,iib; p_namei=sopt;p_type=tyb}) ->
+    Right (B.ArgType
+            {B.p_register=b,iib; p_namei=sopt;p_type=tyb;p_attr=attrs}) ->
       if b || sopt <> None
       then
         (* failwith "the argument have a storage and ast_cocci does not have"*)
@@ -2006,7 +2024,8 @@ and argument arga argb =
             (A.TypeExp tya) +> A.rewrap arga,
             (Right (B.ArgType {B.p_register=(b,iib);
                                p_namei=sopt;
-                               p_type=tyb;}))
+                               p_type=tyb;
+                               p_attr=attrs;}))
         ))
 
   | A.TypeExp tya,  _                                  -> fail
@@ -2093,25 +2112,31 @@ and parameters_bis eas ebs =
   let special_cases ea eas ebs =
     (* a case where one smpl parameter matches a list of C parameters *)
     match A.unwrap ea,ebs with
-      A.VoidParam ta, ys ->
+      A.VoidParam (ta, attrsa), ys ->
 	Some
           (match eas, ebs with
           | [], [Left eb] ->
               let {B.p_register=(hasreg,iihasreg);
                     p_namei = idbopt;
-                    p_type=tb; } = eb in
+                    p_type=tb;
+                    p_attr=attrsb; } = eb in
 
+              let attr_allminus =
+                check_allminus.Visitor_ast.combiner_parameter ea in
               if idbopt = None && not hasreg
               then
                 match tb with
                 | (qub, (B.BaseType B.Void,_)) ->
                     fullType ta tb >>= (fun ta tb ->
+                    attribute_list attr_allminus attrsa attrsb >>=
+                    (fun attrsa attrsb ->
                       return (
-                      [(A.VoidParam ta) +> A.rewrap ea],
+                      [(A.VoidParam (ta, attrsa)) +> A.rewrap ea],
                       [Left {B.p_register=(hasreg, iihasreg);
                               p_namei = idbopt;
-                              p_type = tb;}]
-			))
+                              p_type = tb;
+                              p_attr = attrsb;}]
+			)))
                 | _ -> fail
               else fail
           | _ -> fail)
@@ -2146,29 +2171,36 @@ and parameter = fun parama paramb ->
 	      return
 		(A.MetaParam(ida,constraints,keep,inherited)+>
 		 A.rewrap parama,eb)))
-  | A.Param (typa, idaopt), eb ->
+  | A.Param (typa, idaopt, attrsa), eb ->
       let {B.p_register = (hasreg,iihasreg);
 	    p_namei = nameidbopt;
-	    p_type = typb;} = paramb in
+	    p_type = typb;
+            p_attr = attrsb;} = paramb in
+
+      let attr_allminus =
+        check_allminus.Visitor_ast.combiner_parameter parama in
 
       fullType typa typb >>= (fun typa typb ->
+      attribute_list attr_allminus attrsa attrsb >>= (fun attrsa attrsb ->
 	match idaopt, nameidbopt with
 	| Some ida, Some nameidb ->
       (* todo: if minus on ida, should also minus the iihasreg ? *)
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
               return (
-              A.Param (typa, Some ida)+> A.rewrap parama,
+              A.Param (typa, Some ida, attrsa)+> A.rewrap parama,
               {B.p_register = (hasreg, iihasreg);
 		p_namei = Some (nameidb);
-		p_type = typb}
+                p_type = typb;
+                p_attr = attrsb;}
 		))
 
 	| None, None ->
 	    return (
-            A.Param (typa, None)+> A.rewrap parama,
+            A.Param (typa, None, attrsa)+> A.rewrap parama,
             {B.p_register=(hasreg,iihasreg);
               p_namei = None;
-              p_type = typb;}
+              p_type = typb;
+              p_attr = attrsb;}
 	      )
   (* why handle this case ? because of transform_proto ? we may not
    * have an ident in the proto.
@@ -2183,7 +2215,7 @@ and parameter = fun parama paramb ->
  *)
 
 	| Some _, None -> fail
-	| None, Some _ -> fail)
+	| None, Some _ -> fail))
   | A.OptParam _, _ ->
       failwith "not handling Opt for Param"
   | _ -> fail

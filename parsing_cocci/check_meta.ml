@@ -374,7 +374,8 @@ and initialiser_list old_metas table minus =
 
 and parameterTypeDef old_metas table minus param =
   match Ast0.unwrap param with
-    Ast0.Param(ty,id) ->
+    Ast0.Param(ty,id,attr) ->
+      (* No meta attribute yet *)
       get_opt (ident ID old_metas table minus) id;
       typeC old_metas table minus ty
   | Ast0.MetaParam(name,_,_) ->

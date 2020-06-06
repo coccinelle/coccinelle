@@ -287,6 +287,7 @@ and fullType = typeQualifier * typeC
         { p_namei: name option;
           p_register: bool wrap;
           p_type: fullType;
+          p_attr: attribute list;
         }
         (* => (bool (register) * fullType) list * bool *)
 

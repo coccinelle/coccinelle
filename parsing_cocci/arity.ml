@@ -812,26 +812,29 @@ and make_param =
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
   match Ast0.unwrap param with
-    Ast0.VoidParam(ty) -> Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty))
-  | Ast0.Param(ty,Some id) ->
+    Ast0.VoidParam(ty,attr) ->
+      Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty,List.map mcode attr))
+  | Ast0.Param(ty,Some id,attr) ->
       let ty = top_typeC tgt true ty in
       let id = ident true tgt id in
+      let attr = List.map mcode attr in
       Ast0.rewrap param
 	(match (Ast0.unwrap ty,Ast0.unwrap id) with
 	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
-	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id)))
+	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id,attr)))
 	| (Ast0.OptType(ty),_) ->
 	    fail param "arity mismatch in param declaration"
 	| (_,Ast0.OptIdent(id)) ->
 	    fail param "arity mismatch in param declaration"
-	| _ -> Ast0.Param(ty,Some id))
-  | Ast0.Param(ty,None) ->
+	| _ -> Ast0.Param(ty,Some id,attr))
+  | Ast0.Param(ty,None,attr) ->
       let ty = top_typeC tgt true ty in
+      let attr = List.map mcode attr in
       Ast0.rewrap param
 	(match Ast0.unwrap ty with
 	  Ast0.OptType(ty) ->
-	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None)))
-	| _ -> Ast0.Param(ty,None))
+	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None,attr)))
+	| _ -> Ast0.Param(ty,None,attr))
   | Ast0.MetaParam(name,cstr,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in

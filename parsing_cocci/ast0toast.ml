@@ -857,10 +857,11 @@ and designator = function
 and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
-      Ast0.VoidParam(ty) -> Ast.VoidParam(typeC false ty)
-    | Ast0.Param(ty,id) ->
+      Ast0.VoidParam(ty,attr) ->
+        Ast.VoidParam(typeC false ty,List.map mcode attr)
+    | Ast0.Param(ty,id,attr) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
-	Ast.Param(typeC allminus ty,get_option ident id)
+	Ast.Param(typeC allminus ty,get_option ident id,List.map mcode attr)
     | Ast0.MetaParam(name,cstr,_) ->
 	Ast.MetaParam(mcode name,constraints cstr,unitary,false)
     | Ast0.MetaParamList(name,lenname,cstr,_) ->

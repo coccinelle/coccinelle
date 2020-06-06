@@ -542,11 +542,17 @@ and unify_designator d1 d2 =
 
 and unify_parameterTypeDef p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
-    (Ast.VoidParam(ft1),Ast.VoidParam(ft2)) -> unify_fullType ft1 ft2
-  | (Ast.Param(ft1,i1),Ast.Param(ft2,i2)) ->
-      unify_fullType ft1 ft2 &&
-      unify_option unify_ident i1 i2
+    (Ast.VoidParam(ft1,attr1),Ast.VoidParam(ft2,attr2)) ->
+      if List.for_all2 unify_mcode attr1 attr2
+      then unify_fullType ft1 ft2
+      else false
+  | (Ast.Param(ft1,i1,attr1),Ast.Param(ft2,i2,attr2)) ->
 
+      if List.for_all2 unify_mcode attr1 attr2
+      then
+        unify_fullType ft1 ft2 &&
+        unify_option unify_ident i1 i2
+      else false
   | (Ast.MetaParam(_,_,_,_),_)
   | (Ast.MetaParamList(_,_,_,_,_),_)
   | (_,Ast.MetaParam(_,_,_,_))

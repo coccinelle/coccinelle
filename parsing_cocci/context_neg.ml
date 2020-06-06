@@ -466,9 +466,11 @@ let classify is_minus all_marked table code =
   let param r k e =
     compute_result Ast0.param e
       (match Ast0.unwrap e with
-	Ast0.Param(ty,Some id) ->
+	Ast0.Param(ty,Some id,attr) ->
 	  (* needed for the same reason as in the Init and UnInit cases *)
-	  bind (r.VT0.combiner_rec_typeC ty) (r.VT0.combiner_rec_ident id)
+	  bind (r.VT0.combiner_rec_typeC ty)
+           (bind (r.VT0.combiner_rec_ident id)
+              (List.fold_right bind (List.map mcode attr) option_default))
       |	_ -> k e) in
 
   let typeC r k e =
@@ -839,8 +841,8 @@ let equal_initialiser i1 i2 =
 
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
-    (Ast0.VoidParam(_),Ast0.VoidParam(_)) -> true
-  | (Ast0.Param(_,_),Ast0.Param(_,_)) -> true
+    (Ast0.VoidParam(_,_),Ast0.VoidParam(_,_)) -> true
+  | (Ast0.Param(_,_,_),Ast0.Param(_,_,_)) -> true
   | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
   | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->
       equal_mcode name1 name2

@@ -914,13 +914,31 @@ and is_param_dots p =
 
 and parameterTypeDef p =
   match Ast0.unwrap p with
-    Ast0.VoidParam(ty) ->
-      let ty = typeC ty in mkres p (Ast0.VoidParam(ty)) ty ty
-  | Ast0.Param(ty,Some id) ->
+    Ast0.VoidParam(ty,attr) ->
+      let attr = List.map normal_mcode attr in
+      let ty = typeC ty in
+      (match attr with
+        [] -> mkres p (Ast0.VoidParam(ty,attr)) ty ty
+      | l ->
+          let lattr = List.hd (List.rev l) in
+          mkres p (Ast0.VoidParam(ty,attr)) ty (promote_mcode lattr))
+  | Ast0.Param(ty,Some id,attr) ->
       let id = ident id in
-      let ty = typeC ty in mkres p (Ast0.Param(ty,Some id)) ty id
-  | Ast0.Param(ty,None) ->
-      let ty = typeC ty in mkres p (Ast0.Param(ty,None)) ty ty
+      let ty = typeC ty in
+      let attr = List.map normal_mcode attr in
+      (match attr with
+        [] -> mkres p (Ast0.Param(ty,Some id,attr)) ty id
+      | l ->
+          let lattr = List.hd (List.rev l) in
+          mkres p (Ast0.Param(ty,Some id,attr)) ty (promote_mcode lattr))
+  | Ast0.Param(ty,None,attr) ->
+      let attr = List.map normal_mcode attr in
+      let ty = typeC ty in
+      (match attr with
+        [] -> mkres p (Ast0.Param(ty,None,attr)) ty ty
+      | l ->
+          let lattr = List.hd (List.rev l) in
+          mkres p (Ast0.Param(ty,None,attr)) ty (promote_mcode lattr))
   | Ast0.MetaParam(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

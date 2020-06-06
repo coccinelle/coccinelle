@@ -1541,9 +1541,10 @@ storage:
        | s=Tregister    { P.clt2mcode Ast.Register s }
        | s=Textern      { P.clt2mcode Ast.Extern s }
 
-decl: t=ctype d=direct_declarator(disj_ident)
-	{ let (i,fn) = d in Ast0.wrap(Ast0.Param(fn t, Some i)) }
-    | t=ctype { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None)) }
+decl: t=ctype d=direct_declarator(disj_ident) ar=attr_list
+	{ let (i,fn) = d in Ast0.wrap(Ast0.Param(fn t, Some i, ar)) }
+    | t=ctype ar=attr_list
+        { (*verify in FunDecl*) Ast0.wrap(Ast0.Param(t, None, ar)) }
     | TMetaParam
 	{ let (nm,cstr,pure,clt) = $1 in
 	Ast0.wrap(Ast0.MetaParam(P.clt2mcode nm clt,cstr,pure)) }
