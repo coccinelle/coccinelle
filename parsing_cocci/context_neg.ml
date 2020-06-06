@@ -754,9 +754,9 @@ let equal_declaration d1 d2 =
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
        equal_mcode lp1 lp2 && equal_varargs va1 va2 &&
        equal_mcode rp1 rp2 && equal_mcode sem1 sem2
-  | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,sem1),
-     Ast0.MacroDecl(stg2,nm2,lp2,_,rp2,sem2)) ->
-      equal_option stg1 stg2 &&
+  | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,attr1,sem1),
+     Ast0.MacroDecl(stg2,nm2,lp2,_,rp2,attr2,sem2)) ->
+      equal_option stg1 stg2 && List.for_all2 equal_mcode attr1 attr2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDeclInit(stg1,nm1,lp1,_,rp1,eq1,_,sem1),
      Ast0.MacroDeclInit(stg2,nm2,lp2,_,rp2,eq2,_,sem2)) ->

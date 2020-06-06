@@ -1711,9 +1711,9 @@ decl_var:
       [Ast0.wrap(Ast0.Init(s,fn idtype,id,a,P.clt2mcode "=" q,e,
 			   P.clt2mcode ";" pv))] }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
-      p=TPtVirg
+      ar=attr_list p=TPtVirg
       { [Ast0.wrap(Ast0.MacroDecl(s,d,P.clt2mcode "(" o,e,
-				  P.clt2mcode ")" c,P.clt2mcode ";" p))] }
+				  P.clt2mcode ")" c,ar,P.clt2mcode ";" p))] }
   | s=ioption(storage)
       d=decl_ident o=TOPar e=eexpr_list_option c=TCPar q=TEq i=initialize
       p=TPtVirg
@@ -1759,9 +1759,9 @@ one_decl_var:
       Ast0.wrap(Ast0.Init(s,fn idtype,id,a,P.clt2mcode "=" q,e,
 			   P.clt2mcode ";" pv)) }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
-      p=TPtVirg
+      ar=attr_list p=TPtVirg
       { Ast0.wrap(Ast0.MacroDecl(s,d,P.clt2mcode "(" o,e,
-				  P.clt2mcode ")" c,P.clt2mcode ";" p)) }
+				  P.clt2mcode ")" c,ar,P.clt2mcode ";" p)) }
   | s=ioption(storage)
       d=decl_ident o=TOPar e=eexpr_list_option c=TCPar q=TEq i=initialize
       p=TPtVirg

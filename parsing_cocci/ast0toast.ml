@@ -658,15 +658,16 @@ and declaration d =
 	  let rp = mcode rp in
 	  let sem = mcode sem in
 	  Ast.FunProto(fi,name,lp,params,va,rp,sem)
-    | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
+    | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	(* this would seem to need allminus... *)
 	let stg = get_option mcode stg in
 	let name = ident name in
 	let lp = mcode lp in
 	let args = dots expression args in
 	let rp = mcode rp in
+	let attr = List.map mcode attr in
 	let sem = mcode sem in
-	Ast.MacroDecl(stg,name,lp,args,rp,sem)
+	Ast.MacroDecl(stg,name,lp,args,rp,attr,sem)
     | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
 	(* this would seem to need allminus... *)
 	let stg = get_option mcode stg in

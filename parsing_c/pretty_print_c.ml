@@ -1044,7 +1044,8 @@ and pp_string_format (e,ii) =
 
 	pr_elem iivirg;
 
-    | MacroDecl ((sto, s, es, true), iis::lp::rp::iiend::ifakestart::iisto) ->
+    | MacroDecl
+      ((sto, s, es, attrs, true), iis::lp::rp::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;
@@ -1054,11 +1055,11 @@ and pp_string_format (e,ii) =
           opt +> List.iter pr_elem;
           pp_argument e;
 	);
-
 	pr_elem rp;
 	pr_elem iiend;
 
-    | MacroDecl ((sto, s, es, false), iis::lp::rp::ifakestart::iisto) ->
+    | MacroDecl
+      ((sto, s, es, attrs, false), iis::lp::rp::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
 	pr_elem iis;

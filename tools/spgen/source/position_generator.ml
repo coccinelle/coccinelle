@@ -419,8 +419,8 @@ let rec declaration_pos decl snp
   | Ast0.Typedef (tm, tc, tc2, sem) ->
       let constructor ~mc = Ast0.Typedef (mc, tc, tc2, sem) in
       mcode_wrap ~mc:tm ~constructor snp
-  | Ast0.MacroDecl (st,id,lp,ed,rp,sem) ->
-      let constructor ~id = Ast0.MacroDecl (st, id, lp, ed, rp, sem) in
+  | Ast0.MacroDecl (st,id,lp,ed,rp,attr,sem) ->
+      let constructor ~id = Ast0.MacroDecl (st, id, lp, ed, rp, attr, sem) in
       id_wrap ~id ~constructor snp
   | Ast0.MacroDeclInit (st,id,lp,ed,rp,eq,init,sem) ->
       let constructor ~id = Ast0.MacroDeclInit (st,id,lp,ed,rp,eq,init,sem) in

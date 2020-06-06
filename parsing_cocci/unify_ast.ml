@@ -411,8 +411,8 @@ and unify_declaration d1 d2 =
 	  unify_ident nm1 nm2 &&
 	  unify_dots unify_parameterTypeDef pdots params1 params2
        else false
-  | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,sem1),
-     Ast.MacroDecl(s2,n2,lp2,args2,rp2,sem2)) ->
+  | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,attr1,sem1),
+     Ast.MacroDecl(s2,n2,lp2,args2,rp2,attr2,sem2)) ->
        if bool_unify_option unify_mcode s1 s2
        then
 	 unify_ident n1 n2 &&

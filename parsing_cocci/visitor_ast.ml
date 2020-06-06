@@ -471,14 +471,15 @@ let combiner bind option_default
 	  let lrp1 = string_mcode rp1 in
 	  multibind
 	    (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
-      | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
+      | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lname = ident name in
 	  let llp = string_mcode lp in
 	  let largs = expression_dots args in
 	  let lrp = string_mcode rp in
+	  let lattr = multibind (List.map string_mcode attr) in
 	  let lsem = string_mcode sem in
-	  multibind [lstg; lname; llp; largs; lrp; lsem]
+	  multibind [lstg; lname; llp; largs; lrp; lattr; lsem]
       | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lname = ident name in
@@ -1428,14 +1429,15 @@ let rebuilder
 	    let lrp = string_mcode rp in
 	    let lsem = string_mcode sem in
 	    Ast.FunProto(lfi,lname,llp,lparams,lva,lrp,lsem)
-	| Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
+	| Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
 	    let largs = expression_dots args in
 	    let lrp = string_mcode rp in
+	    let lattr = List.map string_mcode attr in
 	    let lsem = string_mcode sem in
-	    Ast.MacroDecl(lstg, lname, llp, largs, lrp, lsem)
+	    Ast.MacroDecl(lstg, lname, llp, largs, lrp, lattr, lsem)
 	| Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lname = ident name in

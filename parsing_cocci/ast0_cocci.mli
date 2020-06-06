@@ -243,7 +243,8 @@ and base_declaration =
   | TyDecl of typeC * string mcode (* ; *)
   | MacroDecl of Ast_cocci.storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
-        expression dots * string mcode (* ) *) * string mcode (* ; *)
+        expression dots * string mcode (* ) *) *
+        attr list * string mcode (* ; *)
   | MacroDeclInit of Ast_cocci.storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (*=*) *

@@ -716,19 +716,20 @@ and declaration d =
 	| Ast0.FType(ty)::_ -> mkres d res ty right
 	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right
 	| Ast0.FAttr(attr)::_ -> mkres d res (promote_mcode attr) right)
-  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
+  | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       let rp = normal_mcode rp in
+      let attr = List.map normal_mcode attr in
       let sem = normal_mcode sem in
       (match stg with
 	None ->
-	  mkres d (Ast0.MacroDecl(None,name,lp,args,rp,sem))
+	  mkres d (Ast0.MacroDecl(None,name,lp,args,rp,attr,sem))
 	    name (promote_mcode sem)
       | Some x ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.MacroDecl(stg,name,lp,args,rp,sem))
+	  mkres d (Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       let name = ident name in

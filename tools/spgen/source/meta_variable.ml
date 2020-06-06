@@ -538,7 +538,7 @@ let metavar_combiner rn =
         meta_mc_format ~mc ~typ:"declaration " ~constr
     | Ast0.AsDecl(dc1, dc2) ->
         let dec = c.VT0.combiner_rec_declaration in as_format dc1 dc2 dec dec
-    | Ast0.MacroDecl(_, id, _, expdots, _, _) ->
+    | Ast0.MacroDecl(_, id, _, expdots, _, _, _) ->
         let expids = c.VT0.combiner_rec_expression_dots expdots in
         MVSet.union (ids ~rn ~typ:"declarer" ~id) expids
     | Ast0.MacroDeclInit(_, id, _, expdots, _, _, ini, _) ->

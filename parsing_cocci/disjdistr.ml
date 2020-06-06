@@ -343,10 +343,10 @@ and disjdecl d =
       disjmult2 (disjmult disjfninfo fninfo) (disjident name)
 	(fun fninfo name ->
 	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
-  | Ast.MacroDecl(stg,name,lp,args,rp,sem) ->
+  | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       disjmult2 (disjident name) (disjdots disjexp args)
 	(fun name args ->
-	  Ast.rewrap d (Ast.MacroDecl(stg,name,lp,args,rp,sem)))
+	  Ast.rewrap d (Ast.MacroDecl(stg,name,lp,args,rp,attr,sem)))
   | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       disjmult3 (disjident name) (disjdots disjexp args) (disjini ini)
 	(fun name args ini ->

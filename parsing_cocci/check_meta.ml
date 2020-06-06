@@ -282,7 +282,8 @@ and declaration context old_metas table minus d =
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
       parameter_list old_metas table minus params
-  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) ->
+  | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+      (* no meta attribute yet *)
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->

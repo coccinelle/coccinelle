@@ -971,9 +971,12 @@ let match_maker checks_needed context_required whencode_allowed =
 		     params1 params;
                    match_option varargs_equal va1a va1b
                  ]
-	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,sc1),
-	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,sc)) ->
-	       if bool_match_option mcode_equal stga stgb
+	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,attra,sc1),
+	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,attrb,sc)) ->
+	       if bool_match_option mcode_equal stga stgb &&
+                 (List.length attra = List.length attrb &&
+                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
+                    attra attrb) (* no metavars *)
 	       then
 		 conjunct_many_bindings
 		   [match_ident namea nameb;

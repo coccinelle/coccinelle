@@ -1610,10 +1610,11 @@ decl2:
        match $1 with
 	 Some (sto,stoii) ->
 	   MacroDecl
-	     ((sto, fst $2, $4, true), (snd $2::$3::$5::$6::fakeInfo()::stoii))
+             ((sto, fst $2, $4, [], true),
+              (snd $2::$3::$5::$6::fakeInfo()::stoii))
        | None ->
 	   MacroDecl
-	     ((NoSto, fst $2, $4, true), [snd $2;$3;$5;$6;fakeInfo()]) }
+             ((NoSto, fst $2, $4, [], true), [snd $2;$3;$5;$6;fakeInfo()]) }
 
  | storage_const_opt TMacroDecl TOPar argument_list TCPar end_attributes
    TPtVirg
@@ -1621,10 +1622,12 @@ decl2:
        match $1 with
 	 Some (sto,stoii) ->
 	   MacroDecl
-	     ((sto, fst $2, $4, true), (snd $2::$3::$5::$7::fakeInfo()::stoii))
+	     ((sto, fst $2, $4, $6, true),
+              (snd $2::$3::$5::$7::fakeInfo()::stoii))
        | None ->
 	   MacroDecl
-	     ((NoSto, fst $2, $4, true), [snd $2;$3;$5;$7;fakeInfo()]) }
+	     ((NoSto, fst $2, $4, $6, true),
+              [snd $2;$3;$5;$7;fakeInfo()]) }
 
  | storage_const_opt
      TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
@@ -2275,7 +2278,9 @@ cpp_other:
                    ($5::iistart::snd sto)))
        else
 	 Declaration
-	   (MacroDecl((NoSto, fst $1, $3, true), [snd $1;$2;$4;$5;fakeInfo()]))
+	   (MacroDecl
+             ((NoSto, fst $1, $3, Ast_c.noattr, true),
+               [snd $1;$2;$4;$5;fakeInfo()]))
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
@@ -2305,7 +2310,9 @@ cpp_other:
                    ($6::iistart::snd sto)))
        else
 	 Declaration
-	   (MacroDecl((NoSto, fst $1, $3, true), [snd $1;$2;$4;$6;fakeInfo()]))
+	   (MacroDecl
+             ((NoSto, fst $1, $3, $5, true),
+              [snd $1;$2;$4;$6;fakeInfo()]))
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
@@ -2331,7 +2338,9 @@ cpp_other:
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
      { Declaration
-	 (MacroDecl ((NoSto, fst $1, $3, false), [snd $1;$2;$4;fakeInfo()])) }
+	 (MacroDecl
+           ((NoSto, fst $1, $3, Ast_c.noattr, false),
+            [snd $1;$2;$4;fakeInfo()])) }
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/
  | identifier TPtVirg { EmptyDef [snd $1;$2] }

@@ -117,7 +117,7 @@ let declaration d =
   | Ast0.Init(stg,ty,id,attr,eq,exp,sem) -> [54]
   | Ast0.UnInit(stg,ty,id,attr,sem) -> [55]
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
-  | Ast0.MacroDecl(stg,name,lp,args,rp,sem) -> [137]
+  | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) -> [137]
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) -> [157]
   | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]

@@ -288,7 +288,9 @@ module Ast_c :
     and declaration =
       Ast_c.declaration =
         DeclList of onedecl wrap2 list wrap
-      | MacroDecl of (storagebis * string * argument wrap2 list * bool) wrap
+      | MacroDecl of
+          (storagebis * string * argument wrap2 list * attribute list * bool)
+            wrap
       | MacroDeclInit of
           (storagebis * string * argument wrap2 list * initialiser) wrap
     and onedecl =
@@ -2766,7 +2768,7 @@ module Ast_cocci :
           (string mcode * string mcode) option * string mcode * string mcode
       | TyDecl of fullType * string mcode
       | MacroDecl of storage mcode option * ident * string mcode *
-          expression dots * string mcode * string mcode
+          expression dots * string mcode * attr list * string mcode
       | MacroDeclInit of storage mcode option * ident * string mcode *
           expression dots * string mcode * string mcode * initialiser *
           string mcode
@@ -3401,7 +3403,7 @@ module Ast0_cocci :
           (string mcode * string mcode) option * string mcode * string mcode
       | TyDecl of typeC * string mcode
       | MacroDecl of Ast_cocci.storage mcode option * ident * string mcode *
-          expression dots * string mcode * string mcode
+          expression dots * string mcode * attr list * string mcode
       | MacroDeclInit of Ast_cocci.storage mcode option * ident *
           string mcode * expression dots * string mcode * string mcode *
           initialiser * string mcode

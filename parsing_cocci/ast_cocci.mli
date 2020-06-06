@@ -381,7 +381,8 @@ and base_declaration =
   | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
-        expression dots * string mcode (* ) *) * string mcode (* ; *)
+        expression dots * string mcode (* ) *) *
+        attr list * string mcode (* ; *)
   | MacroDeclInit of storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) * string mcode (*=*) *
