@@ -490,10 +490,11 @@ let combiner bind option_default
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lname; llp; largs; lrp; leq; lini; lsem]
-      | Ast.TyDecl(ty,sem) ->
+      | Ast.TyDecl(ty,attr,sem) ->
 	  let lty = fullType ty in
+	  let lattr = multibind (List.map string_mcode attr) in
 	  let lsem = string_mcode sem in
-	  bind lty lsem
+	  multibind [lty; lattr; lsem]
       | Ast.Typedef(stg,ty,id,sem) ->
 	  let lstg = string_mcode stg in
 	  let lty = fullType ty in
@@ -1448,10 +1449,11 @@ let rebuilder
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
 	    Ast.MacroDeclInit(lstg, lname, llp, largs, lrp, leq, lini, lsem)
-	| Ast.TyDecl(ty,sem) ->
+	| Ast.TyDecl(ty,attr,sem) ->
 	    let lty = fullType ty in
+	    let lattr = List.map string_mcode attr in
 	    let lsem = string_mcode sem in
-	    Ast.TyDecl(lty, lsem)
+	    Ast.TyDecl(lty, lattr, lsem)
 	| Ast.Typedef(stg,ty,id,sem) ->
 	    let lstg = string_mcode stg in
 	    let lty = fullType ty in

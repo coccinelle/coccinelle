@@ -119,7 +119,7 @@ let declaration d =
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) -> [137]
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) -> [157]
-  | Ast0.TyDecl(ty,sem) -> [116]
+  | Ast0.TyDecl(ty,attr,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.ConjDecl(_,decls,_,_) -> [88] (* added after *)

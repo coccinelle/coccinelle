@@ -998,8 +998,13 @@ let match_maker checks_needed context_required whencode_allowed =
 		       argsa argsb;
 		     match_init ini1 ini]
 	       else return false
-	  | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
-	      conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
+	  | (Ast0.TyDecl(tya,attra,sc1),Ast0.TyDecl(tyb,attrb,sc)) ->
+	      if (List.length attra = List.length attrb &&
+                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
+                    attra attrb) (* no metavars *)
+              then
+	        conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
+              else return false
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))

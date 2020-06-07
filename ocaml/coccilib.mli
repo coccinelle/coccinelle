@@ -2766,7 +2766,7 @@ module Ast_cocci :
           string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
-      | TyDecl of fullType * string mcode
+      | TyDecl of fullType * attr list * string mcode
       | MacroDecl of storage mcode option * ident * string mcode *
           expression dots * string mcode * attr list * string mcode
       | MacroDeclInit of storage mcode option * ident * string mcode *
@@ -3401,7 +3401,7 @@ module Ast0_cocci :
           attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
-      | TyDecl of typeC * string mcode
+      | TyDecl of typeC * attr list * string mcode
       | MacroDecl of Ast_cocci.storage mcode option * ident * string mcode *
           expression dots * string mcode * attr list * string mcode
       | MacroDeclInit of Ast_cocci.storage mcode option * ident *

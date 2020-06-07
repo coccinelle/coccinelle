@@ -679,9 +679,10 @@ and declaration d =
 	let ini = initialiser ini in
 	let sem = mcode sem in
 	Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)
-    | Ast0.TyDecl(ty,sem) ->
+    | Ast0.TyDecl(ty,attr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	Ast.TyDecl(typeC allminus ty,mcode sem)
+	let attr = List.map mcode attr in
+	Ast.TyDecl(typeC allminus ty,attr,mcode sem)
     | Ast0.Typedef(stg,ty,id,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let id = typeC allminus id in

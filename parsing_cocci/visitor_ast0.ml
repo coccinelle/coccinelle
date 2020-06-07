@@ -660,10 +660,11 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;name_n;lp_n;args_n;rp_n;eq_n;ini_n;sem_n],
 	     Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
-	| Ast0.TyDecl(ty,sem) ->
+	| Ast0.TyDecl(ty,attr,sem) ->
 	    let (ty_n,ty) = typeC ty in
+	    let (attr_n,attr) = map_split_bind string_mcode attr in
 	    let (sem_n,sem) = string_mcode sem in
-	    (bind ty_n sem_n, Ast0.TyDecl(ty,sem))
+            (multibind [ty_n; attr_n; sem_n], Ast0.TyDecl(ty,attr,sem))
 	| Ast0.Typedef(stg,ty,id,sem) ->
 	    let (stg_n,stg) = string_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type_typedef ty id in

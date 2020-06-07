@@ -426,7 +426,10 @@ and unify_declaration d1 d2 =
 	 unify_dots unify_expression edots args1 args2 &&
 	 unify_initialiser ini1 ini2
        else false
-  | (Ast.TyDecl(ft1,s1),Ast.TyDecl(ft2,s2)) -> unify_fullType ft1 ft2
+  | (Ast.TyDecl(ft1,attr1,s1),Ast.TyDecl(ft2,attr2,s2)) ->
+      if List.for_all2 unify_mcode attr1 attr2
+      then unify_fullType ft1 ft2
+      else false
   | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
       unify_fullType ft1 ft2 && unify_typeC id1 id2
   | (Ast.DisjDecl(d1),_) ->

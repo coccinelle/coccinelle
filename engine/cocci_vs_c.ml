@@ -2461,7 +2461,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
 
- | A.TyDecl (tya0, ptvirga),
+ | A.TyDecl (tya0, attra, ptvirga),
    ({B.v_namei = Some (nameidb, B.NoInit);
      B.v_type = typb0;
      B.v_storage = (B.StoTypedef, inl);
@@ -2503,6 +2503,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        in
 
        struct_fields (A.unwrap declsa) declsb >>= (fun undeclsa declsb ->
+         attribute_list allminus attra endattrs >>= (fun attra endattrs ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
          tokenf lba lbb >>= (fun lba lbb ->
          tokenf rba rbb >>= (fun rba rbb ->
@@ -2531,7 +2532,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 			   check_constraints cstr ida (B.MetaTypeVal typ')
 			     (fun () ->
 			       return (
-			       (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
+			       (A.TyDecl (tya0, attra, ptvirga))
+			        +> A.rewrap decla,
 			       (({B.v_namei = Some (nameidb, B.NoInit);
 				  B.v_type = typb0;
 				  B.v_storage = (B.StoTypedef, inl);
@@ -2563,7 +2565,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                    let typb0 = ((qu, il), typb1) in
 
                    return (
-                     (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
+                     (A.TyDecl (tya0, attra, ptvirga)) +> A.rewrap decla,
                      (({B.v_namei = Some (nameidb, B.NoInit);
                         B.v_type = typb0;
                         B.v_storage = (B.StoTypedef, inl);
@@ -2579,7 +2581,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            | _ -> raise (Impossible 31)
            )
          | _ -> fail
-       )))))
+       ))))))
      | _ -> fail
      )
    | _ -> fail
@@ -2718,7 +2720,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 	      )))))))))
 
    (* do iso-by-absence here ? allow typedecl and var ? *)
-   | A.TyDecl (typa, ptvirga),
+   | A.TyDecl (typa, attra, ptvirga),
      ({B.v_namei = None; B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -2730,9 +2732,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        if stob = (B.NoSto, false)
        then
          fullType typa typb >>= (fun typa typb ->
+         attribute_list allminus attra endattrs >>= (fun attra endattrs ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
            return (
-             (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
+             (A.TyDecl (typa, attra, ptvirga)) +> A.rewrap decla,
              (({B.v_namei = None;
                 B.v_type = typb;
                 B.v_storage = stob;
@@ -2741,7 +2744,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
              }, iivirg), iiptvirgb, iistob)
-           )))
+           ))))
        else fail
 
 

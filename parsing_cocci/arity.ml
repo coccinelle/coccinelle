@@ -624,12 +624,14 @@ and declaration tgt decl =
       let sem = mcode sem in
       make_decl decl tgt arity
 	(Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
-  | Ast0.TyDecl(ty,sem) ->
+  | Ast0.TyDecl(ty,attr,sem) ->
       let arity =
-	all_same true tgt (mcode2line sem) [mcode2arity sem] in
+        all_same true tgt
+          (mcode2line sem) (List.map mcode2arity (attr @ [sem])) in
       let ty = typeC arity ty in
+      let attr = List.map mcode attr in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.TyDecl(ty,sem))
+      make_decl decl tgt arity (Ast0.TyDecl(ty,attr,sem))
   | Ast0.Typedef(stg,ty,id,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)

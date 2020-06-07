@@ -384,7 +384,7 @@ let rec propagate_types env =
     | Ast0.MacroDeclInit(_,_,_,_,_,_,exp,_) ->
         let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	[]
-    | Ast0.TyDecl(ty,_) -> []
+    | Ast0.TyDecl(ty,_,_) -> []
               (* pad: should handle typedef one day and add a binding *)
     | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) ->
 	[]

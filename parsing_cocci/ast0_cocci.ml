@@ -252,7 +252,7 @@ and base_declaration =
         (string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) *
 	string mcode (* ; *)
-  | TyDecl of typeC * string mcode (* ; *)
+  | TyDecl of typeC * attr list * string mcode (* ; *)
   | MacroDecl of Ast.storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *

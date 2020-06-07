@@ -351,9 +351,9 @@ and disjdecl d =
       disjmult3 (disjident name) (disjdots disjexp args) (disjini ini)
 	(fun name args ini ->
 	  Ast.rewrap d (Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)))
-  | Ast.TyDecl(ty,sem) ->
+  | Ast.TyDecl(ty,attr,sem) ->
       let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,sem))) ty
+      List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,attr,sem))) ty
   | Ast.Typedef(stg,ty,id,sem) ->
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty

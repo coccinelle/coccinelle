@@ -440,7 +440,11 @@ and declaration d =
           print_string " ";
           mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
-      | Ast0.TyDecl(ty,sem) -> typeC ty; mcode print_string sem
+      | Ast0.TyDecl(ty,attr,sem) ->
+          typeC ty;
+          (if not (attr = []) then print_string " ");
+          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          mcode print_string sem
       | Ast0.Typedef(stg,ty,id,sem) ->
 	  mcode print_string stg; typeC ty; typeC id;
 	  mcode print_string sem

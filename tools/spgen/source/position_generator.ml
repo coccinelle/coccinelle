@@ -412,8 +412,8 @@ let rec declaration_pos decl snp
       let _ = type_pos ty snp in (* sanity check *)
       let constructor ~id = Ast0.UnInit(st, ty, id, attr, sem) in
       id_wrap ~id ~constructor snp
-  | Ast0.TyDecl (t, sem) ->
-      let c ~item ~mc = Ast0.TyDecl(item, mc) in
+  | Ast0.TyDecl (t, attr, sem) ->
+      let c ~item ~mc = Ast0.TyDecl(item, attr, mc) in
       let alt() = mcode_wrap ~mc:sem ~constructor:(c ~item:t) snp in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:sem) ~alt snp
   | Ast0.Typedef (tm, tc, tc2, sem) ->

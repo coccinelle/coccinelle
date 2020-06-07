@@ -1678,8 +1678,8 @@ the language is ambiguous: what is foo * bar; */
 /* The AST DisjDecl cannot be generated because it would be ambiguous with
 a disjunction on a statement with a declaration in each branch */
 decl_var:
-    t=ctype pv=TPtVirg
-      { [Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv))] }
+    t=ctype ar=attr_list pv=TPtVirg
+      { [Ast0.wrap(Ast0.TyDecl(t,ar,P.clt2mcode ";" pv))] }
   | TMetaDecl { [P.meta_decl $1] }
   | s=ioption(storage) t=ctype
       d=comma_list(direct_declarator(disj_ident)) pv=TPtVirg
@@ -1731,8 +1731,8 @@ decl_var:
 	  d }
 
 one_decl_var:
-    t=ctype pv=TPtVirg
-      { Ast0.wrap(Ast0.TyDecl(t,P.clt2mcode ";" pv)) }
+    t=ctype ar=attr_list pv=TPtVirg
+      { Ast0.wrap(Ast0.TyDecl(t,ar,P.clt2mcode ";" pv)) }
   | TMetaDecl { P.meta_decl $1 }
   | s=ioption(storage) t=ctype d=direct_declarator(disj_ident)
       a=attr_list pv=TPtVirg

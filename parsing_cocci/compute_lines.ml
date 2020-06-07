@@ -747,10 +747,11 @@ and declaration d =
 	  let stg = Some (normal_mcode x) in
 	  mkres d (Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
 	    (promote_mcode x) (promote_mcode sem))
-  | Ast0.TyDecl(ty,sem) ->
+  | Ast0.TyDecl(ty,attr,sem) ->
       let ty = typeC ty in
+      let attr = List.map normal_mcode attr in
       let sem = normal_mcode sem in
-      mkres d (Ast0.TyDecl(ty,sem)) ty (promote_mcode sem)
+      mkres d (Ast0.TyDecl(ty,attr,sem)) ty (promote_mcode sem)
   | Ast0.Typedef(stg,ty,id,sem) ->
       let stg = normal_mcode stg in
       let ty = typeC ty in
