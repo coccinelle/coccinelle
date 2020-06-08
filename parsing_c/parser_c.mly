@@ -2542,6 +2542,10 @@ end_attribute_list:
 
 end_attributes: end_attribute_list { $1 }
 
+end_attributes_opt:
+ | end_attributes { $1 }
+ | /*(* empty *)*/ { [] }
+
 comma_opt:
  | TComma {  [$1] }
  | /*(* empty *)*/  {  []  }
