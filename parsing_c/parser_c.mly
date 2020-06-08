@@ -1560,18 +1560,7 @@ abstract_declaratort:
 /*(*************************************************************************)*/
 
 decl2:
- | decl_spec TPtVirg
-     { function local ->
-       let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
-       let iistart = Ast_c.fakeInfo () in
-       DeclList ([{v_namei = None; v_type = returnType;
-                   v_storage = unwrap storage; v_local = local;
-                   v_attr = fst $1; v_endattr = Ast_c.noattr;
-                   v_type_bis = ref None;
-                },[]],
-                ($2::iistart::snd storage))
-     }
- | decl_spec end_attributes TPtVirg
+ | decl_spec end_attributes_opt TPtVirg
      { function local ->
        let (returnType,storage) = fixDeclSpecForDecl (snd $1) in
        let iistart = Ast_c.fakeInfo () in
@@ -1605,18 +1594,7 @@ decl2:
      }
  /*(* cppext: *)*/
 
- | storage_const_opt TMacroDecl TOPar argument_list TCPar TPtVirg
-     { function _ ->
-       match $1 with
-	 Some (sto,stoii) ->
-	   MacroDecl
-             ((sto, fst $2, $4, [], true),
-              (snd $2::$3::$5::$6::fakeInfo()::stoii))
-       | None ->
-	   MacroDecl
-             ((NoSto, fst $2, $4, [], true), [snd $2;$3;$5;$6;fakeInfo()]) }
-
- | storage_const_opt TMacroDecl TOPar argument_list TCPar end_attributes
+ | storage_const_opt TMacroDecl TOPar argument_list TCPar end_attributes_opt
    TPtVirg
      { function _ ->
        match $1 with
