@@ -630,8 +630,10 @@ let rec equal_expression e1 e2 =
       equal_mcode pt1 pt2
   | (Ast0.RecordPtAccess(_,ar1,_),Ast0.RecordPtAccess(_,ar2,_)) ->
       equal_mcode ar1 ar2
-  | (Ast0.Cast(lp1,_,_,rp1,_),Ast0.Cast(lp2,_,_,rp2,_)) ->
-      equal_mcode lp1 lp2 && equal_mcode rp1 rp2
+  | (Ast0.Cast(lp1,_,ar1,rp1,_),Ast0.Cast(lp2,_,ar2,rp2,_)) ->
+      equal_mcode lp1 lp2 &&
+      List.for_all2 equal_mcode ar1 ar2 &&
+      equal_mcode rp1 rp2
   | (Ast0.SizeOfExpr(szf1,_),Ast0.SizeOfExpr(szf2,_)) ->
       equal_mcode szf1 szf2
   | (Ast0.SizeOfType(szf1,lp1,_,rp1),Ast0.SizeOfType(szf2,lp2,_,rp2)) ->
@@ -842,8 +844,10 @@ let equal_initialiser i1 i2 =
 
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
-    (Ast0.VoidParam(_,_),Ast0.VoidParam(_,_)) -> true
-  | (Ast0.Param(_,_,_),Ast0.Param(_,_,_)) -> true
+    (Ast0.VoidParam(_,ar1),Ast0.VoidParam(_,ar2)) ->
+      List.for_all2 equal_mcode ar1 ar2
+  | (Ast0.Param(_,_,ar1),Ast0.Param(_,_,ar2)) ->
+      List.for_all2 equal_mcode ar1 ar2
   | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
   | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->
       equal_mcode name1 name2
