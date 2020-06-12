@@ -413,7 +413,8 @@ and unify_declaration d1 d2 =
        else false
   | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,attr1,sem1),
      Ast.MacroDecl(s2,n2,lp2,args2,rp2,attr2,sem2)) ->
-       if bool_unify_option unify_mcode s1 s2
+       if bool_unify_option unify_mcode s1 s2 &&
+         List.for_all2 unify_mcode attr1 attr2
        then
 	 unify_ident n1 n2 &&
 	 unify_dots unify_expression edots args1 args2
