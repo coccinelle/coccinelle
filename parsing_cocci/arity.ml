@@ -601,7 +601,7 @@ and declaration tgt decl =
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
-	   (List.map mcode2arity [lp;rp;sem])) in
+	   (List.map mcode2arity ([lp;rp] @ attr @ [sem]))) in
       let stg = get_option mcode stg in
       let name = ident false arity name in
       let lp = mcode lp in
@@ -816,30 +816,40 @@ and make_param =
 
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
+  let make_param_attr param tgt ret = function
+      [] -> Ast0.rewrap param ret
+    | x::_ as xs ->
+        let arity = param_same (mcode2line x) (List.map mcode2arity xs) in
+        make_param param tgt arity ret in
   match Ast0.unwrap param with
     Ast0.VoidParam(ty,attr) ->
-      Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty,List.map mcode attr))
+      let ty = top_typeC tgt true ty in
+      let attr = List.map mcode attr in
+      let ret = Ast0.VoidParam(ty,attr) in
+      make_param_attr param tgt ret attr
   | Ast0.Param(ty,Some id,attr) ->
       let ty = top_typeC tgt true ty in
       let id = ident true tgt id in
       let attr = List.map mcode attr in
-      Ast0.rewrap param
-	(match (Ast0.unwrap ty,Ast0.unwrap id) with
+      let ret =
+	match (Ast0.unwrap ty,Ast0.unwrap id) with
 	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id,attr)))
 	| (Ast0.OptType(ty),_) ->
 	    fail param "arity mismatch in param declaration"
 	| (_,Ast0.OptIdent(id)) ->
 	    fail param "arity mismatch in param declaration"
-	| _ -> Ast0.Param(ty,Some id,attr))
+	| _ -> Ast0.Param(ty,Some id,attr) in
+      make_param_attr param tgt ret attr
   | Ast0.Param(ty,None,attr) ->
       let ty = top_typeC tgt true ty in
       let attr = List.map mcode attr in
-      Ast0.rewrap param
-	(match Ast0.unwrap ty with
+      let ret =
+	match Ast0.unwrap ty with
 	  Ast0.OptType(ty) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None,attr)))
-	| _ -> Ast0.Param(ty,None,attr))
+	| _ -> Ast0.Param(ty,None,attr) in
+      make_param_attr param tgt ret attr
   | Ast0.MetaParam(name,cstr,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
