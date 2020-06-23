@@ -1673,7 +1673,7 @@ and vk_toplevel_s = fun bigf p ->
   in f (k, bigf) p
 
 and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
-      fun bigf -> List.map (vk_toplevel_s bigf)
+      fun bigf ast -> List.rev (List.rev_map (vk_toplevel_s bigf) ast)
 
 
 and vk_cpp_directive_s = fun bigf top ->
@@ -1800,7 +1800,7 @@ and vk_info_s = fun bigf info ->
   infof info
 
 and vk_ii_s = fun bigf ii ->
-  List.map (vk_info_s bigf) ii
+  List.rev (List.rev_map (vk_info_s bigf) ii)
 
 (* ------------------------------------------------------------------------ *)
 
