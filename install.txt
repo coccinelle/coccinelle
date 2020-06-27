@@ -45,7 +45,7 @@ Then simply type
  ./autogen
  ./configure
  make
- make install
+ sudo make install
 
 
 Other configuration flags of interest:
