@@ -67,8 +67,7 @@ defaults to the optimized version, unless --disable-opt is given
 to configure. You could use 'make opt-only' to compile the
 optimized version only. Similarly, you can use 'make byte-only' for
 the unoptimized version. 'make install' installs whichever version
-was compiled, and installs a script 'spatch' (the frontend) that invokes
-the 'best' one with proper environment variables.
+was compiled.
 You can also use 'make world' to compile the bytecode
 and the optimized code version.
 
