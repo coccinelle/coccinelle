@@ -811,7 +811,7 @@ let string_of_expression exp =
 	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
   | Ast_c.Constant cst ->
       (match cst with
-	Ast_c.String (str, _) -> str
+	Ast_c.String (str, _) -> Printf.sprintf "\"%s\"" str
       | Ast_c.MultiString strlist ->
 	  warning "Unable to apply a constraint on a multistring constant!"
       | Ast_c.Char  (char , _) -> char
