@@ -33,7 +33,8 @@ AS_IF([test "x$OCAMLFIND" = "x"],
    AC_SUBST([SEQ_PKG], [])
    AC_SUBST([UCHAR_PKG], [])],
   [AC_SUBST([OCAMLC], [["$OCAMLFIND ocamlc"]])
-   AC_SUBST([OCAMLOPT], [["$OCAMLFIND ocamlopt"]])
+   AS_IF([$OCAMLFIND ocamlopt],
+     AC_SUBST([OCAMLOPT], [["$OCAMLFIND ocamlopt"]]))
    AC_SUBST([OCAMLDOC], [["$OCAMLFIND ocamldoc"]])
    AC_SUBST([OCAMLDEP], [["$OCAMLFIND ocamldep"]])
    AC_SUBST([OCAMLMKLIB], [["$OCAMLFIND ocamlmklib"]])
