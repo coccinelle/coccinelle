@@ -32,8 +32,14 @@ else ifeq ($(ARCH),Darwin)
 	PYML_ARCH=pyml_arch_darwin.ml
 else ifeq ($(findstring CYGWIN,$(ARCH)),CYGWIN)
 	PYML_ARCH=pyml_arch_cygwin.ml
+else ifeq ($(ARCH),OpenBSD)
+	PYML_ARCH=pyml_arch_linux.ml
+else ifeq ($(ARCH),NetBSD)
+	PYML_ARCH=pyml_arch_linux.ml
+else ifeq ($(ARCH),FreeBSD)
+	PYML_ARCH=pyml_arch_linux.ml
 else
-	$(error Unsupported OS $(ARCH)
+	$(error Unsupported OS $(ARCH))
 endif
 
 include ../Makefile.bundles
