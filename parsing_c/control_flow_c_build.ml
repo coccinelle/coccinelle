@@ -78,7 +78,13 @@ let lbl_0 = []
 
 let pinfo_of_ii ii = Ast_c.get_opi (List.hd ii).Ast_c.pinfo
 
-
+(* Use the following when pinfo may be a FakeTok, which contains no
+   information *)
+let rec safe_pinfo_of_ii = function
+    [] -> None
+  | i::ii ->
+      try Some (Ast_c.get_opi i.Ast_c.pinfo)
+      with Failure _ -> safe_pinfo_of_ii ii
 
 (*****************************************************************************)
 (* Contextual information passed in aux_statement *)
@@ -1568,8 +1574,12 @@ let deadcode_detection (g : Control_flow_c.cflow) =
       | x ->
           (match Control_flow_c.extract_fullstatement node with
           | Some st ->
-              let ii = Ast_c.get_ii_st_take_care st in
-              raise (Error (DeadCode (Some (pinfo_of_ii ii))))
+	      let ii = Ast_c.get_ii_st_take_care st in
+	      (match safe_pinfo_of_ii ii with
+		Some info -> raise (Error (DeadCode (Some info)))
+	      | None ->
+		  let ii = Lib_parsing_c.ii_of_stmt st in
+		  raise (Error (DeadCode (safe_pinfo_of_ii ii))))
           | _ -> pr2 "CFG: orphan nodes, maybe something weird happened"
           )
       )

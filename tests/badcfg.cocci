@@ -1,0 +1,6 @@
+@@
+symbol cmd;
+@@
+
+- cmd
++ replacement
