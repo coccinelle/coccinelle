@@ -441,7 +441,7 @@ and expression e =
 	Ast.RecordPtAccess(expression exp,mcode ar,ident field)
     | Ast0.Cast(lp,ty,attr,rp,exp) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
-	let attr = List.map mcode attr in
+	let attr = List.map attribute attr in
 	Ast.Cast(mcode lp,typeC allminus ty,attr,mcode rp,expression exp)
     | Ast0.SizeOfExpr(szf,exp) ->
 	Ast.SizeOfExpr(mcode szf,expression exp)
@@ -637,14 +637,14 @@ and declaration d =
 	let stg = get_option mcode stg in
 	let ty = typeC allminus ty in
 	let id = ident id in
-	let attr = List.map mcode attr in
+	let attr = List.map attribute attr in
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
 	Ast.Init(stg,ty,id,attr,eq,ini,sem)
     | Ast0.UnInit(stg,ty,id,attr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	let attr = List.map mcode attr in
+	let attr = List.map attribute attr in
 	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,attr,
 		   mcode sem)
     | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
@@ -665,7 +665,7 @@ and declaration d =
 	let lp = mcode lp in
 	let args = dots expression args in
 	let rp = mcode rp in
-	let attr = List.map mcode attr in
+	let attr = List.map attribute attr in
 	let sem = mcode sem in
 	Ast.MacroDecl(stg,name,lp,args,rp,attr,sem)
     | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
@@ -681,7 +681,7 @@ and declaration d =
 	Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)
     | Ast0.TyDecl(ty,attr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	let attr = List.map mcode attr in
+	let attr = List.map attribute attr in
 	Ast.TyDecl(typeC allminus ty,attr,mcode sem)
     | Ast0.Typedef(stg,ty,id,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
@@ -861,10 +861,10 @@ and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty,attr) ->
-        Ast.VoidParam(typeC false ty,List.map mcode attr)
+        Ast.VoidParam(typeC false ty,List.map attribute attr)
     | Ast0.Param(ty,id,attr) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
-	Ast.Param(typeC allminus ty,get_option ident id,List.map mcode attr)
+	Ast.Param(typeC allminus ty,get_option ident id,List.map attribute attr)
     | Ast0.MetaParam(name,cstr,_) ->
 	Ast.MetaParam(mcode name,constraints cstr,unitary,false)
     | Ast0.MetaParamList(name,lenname,cstr,_) ->
@@ -1195,7 +1195,12 @@ and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
   | Ast0.FType(ty) -> Ast.FType(typeC false ty)
   | Ast0.FInline(inline) -> Ast.FInline(mcode inline)
-  | Ast0.FAttr(attr) -> Ast.FAttr(mcode attr)
+  | Ast0.FAttr(attr) -> Ast.FAttr(attribute attr)
+
+and attribute a =
+  rewrap a no_isos
+    (match Ast0.unwrap a with
+      Ast0.Attribute(attr) -> Ast.Attribute(mcode attr))
 
 and option_to_list = function
     Some x -> [x]

@@ -624,7 +624,10 @@ and fninfo =
   | FInline of string mcode
   | FAttr of attr
 
-and attr = string mcode
+and base_attr =
+    Attribute of string mcode
+
+and attr = base_attr wrap
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible

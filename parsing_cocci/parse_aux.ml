@@ -152,6 +152,9 @@ let logic_op ast_op left op right =
 let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
 
+let make_attr attr =
+  Ast0.wrap(Ast0.Attribute(id2mcode attr))
+
 let top_dots l = Ast0.wrap l
 
 (* here the offset is that of the first in the sequence of *s, not that of

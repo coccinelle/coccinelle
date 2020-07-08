@@ -201,7 +201,7 @@ let combiner bind option_default
       | Ast.Cast(lp,ty,attr,rp,exp) ->
 	  let llp = string_mcode lp in
 	  let lty = fullType ty in
-	  let lattr = multibind (List.map string_mcode attr) in
+	  let lattr = multibind (List.map attribute attr) in
 	  let lrp = string_mcode rp in
 	  let lexp = expression exp in
           multibind [llp; lty; lattr; lrp; lexp]
@@ -448,7 +448,7 @@ let combiner bind option_default
       |	Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
-	  let lattr = multibind (List.map string_mcode attr) in
+	  let lattr = multibind (List.map attribute attr) in
 	  let leq = string_mcode eq in
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
@@ -456,7 +456,7 @@ let combiner bind option_default
       | Ast.UnInit(stg,ty,id,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
-	  let lattr = multibind (List.map string_mcode attr) in
+	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lid; lattr; lsem]
       | Ast.FunProto(fi,name,lp1,params,va,rp1,sem) ->
@@ -477,7 +477,7 @@ let combiner bind option_default
 	  let llp = string_mcode lp in
 	  let largs = expression_dots args in
 	  let lrp = string_mcode rp in
-	  let lattr = multibind (List.map string_mcode attr) in
+	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lname; llp; largs; lrp; lattr; lsem]
       | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
@@ -492,7 +492,7 @@ let combiner bind option_default
 	  multibind [lstg; lname; llp; largs; lrp; leq; lini; lsem]
       | Ast.TyDecl(ty,attr,sem) ->
 	  let lty = fullType ty in
-	  let lattr = multibind (List.map string_mcode attr) in
+	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
 	  multibind [lty; lattr; lsem]
       | Ast.Typedef(stg,ty,id,sem) ->
@@ -626,15 +626,15 @@ let combiner bind option_default
       match Ast.unwrap p with
         Ast.VoidParam(ty,attr) ->
           let lty = fullType ty in
-          let lattr = multibind (List.map string_mcode attr) in
+          let lattr = multibind (List.map attribute attr) in
           bind lty lattr
       | Ast.Param(ty,Some id,attr) ->
           let lid = named_type ty id in
-          let lattr = multibind (List.map string_mcode attr) in
+          let lattr = multibind (List.map attribute attr) in
           bind lid lattr
       | Ast.Param(ty,None,attr) ->
           let lty = fullType ty in
-          let lattr = multibind (List.map string_mcode attr) in
+          let lattr = multibind (List.map attribute attr) in
           bind lty lattr
       | Ast.MetaParam(name,_,_,_) -> meta_mcode name
       | Ast.MetaParamList(name,_,_,_,_) -> meta_mcode name
@@ -915,7 +915,14 @@ let combiner bind option_default
       Ast.FStorage(stg) -> storage_mcode stg
     | Ast.FType(ty) -> fullType ty
     | Ast.FInline(inline) -> string_mcode inline
-    | Ast.FAttr(attr) -> string_mcode attr
+    | Ast.FAttr(attr) -> attribute attr
+
+  and attribute a =
+    let k a =
+      match Ast.unwrap a with
+        Ast.Attribute(attr) -> string_mcode attr in
+    k a
+
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> notfn a
@@ -1199,7 +1206,7 @@ let rebuilder
 	| Ast.Cast(lp,ty,attr,rp,exp) ->
 	    let llp = string_mcode lp in
 	    let lty = fullType ty in
-	    let lattr = List.map string_mcode attr in
+	    let lattr = List.map attribute attr in
 	    let lrp = string_mcode rp in
 	    let lexp = expression exp in
 	    Ast.Cast(llp, lty, lattr, lrp, lexp)
@@ -1406,7 +1413,7 @@ let rebuilder
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
 	    let lid = ident id in
-	    let lattr = List.map string_mcode attr in
+	    let lattr = List.map attribute attr in
 	    let leq = string_mcode eq in
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
@@ -1415,7 +1422,7 @@ let rebuilder
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
 	    let lid = ident id in
-	    let lattr = List.map string_mcode attr in
+	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
 	    Ast.UnInit(lstg, lty, lid, lattr, lsem)
 	| Ast.FunProto(fi,name,lp,params,va,rp,sem) ->
@@ -1436,7 +1443,7 @@ let rebuilder
 	    let llp = string_mcode lp in
 	    let largs = expression_dots args in
 	    let lrp = string_mcode rp in
-	    let lattr = List.map string_mcode attr in
+	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
 	    Ast.MacroDecl(lstg, lname, llp, largs, lrp, lattr, lsem)
 	| Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
@@ -1451,7 +1458,7 @@ let rebuilder
 	    Ast.MacroDeclInit(lstg, lname, llp, largs, lrp, leq, lini, lsem)
 	| Ast.TyDecl(ty,attr,sem) ->
 	    let lty = fullType ty in
-	    let lattr = List.map string_mcode attr in
+	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
 	    Ast.TyDecl(lty, lattr, lsem)
 	| Ast.Typedef(stg,ty,id,sem) ->
@@ -1598,10 +1605,10 @@ let rebuilder
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.VoidParam(ty,attr) ->
-            Ast.VoidParam(fullType ty,List.map string_mcode attr)
+            Ast.VoidParam(fullType ty,List.map attribute attr)
 	| Ast.Param(ty,id,attr) ->
             Ast.Param
-              (fullType ty, get_option ident id,List.map string_mcode attr)
+              (fullType ty, get_option ident id,List.map attribute attr)
 	| Ast.MetaParam(name,constraints,keep,inherited) ->
 	    Ast.MetaParam(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaParamList(name,lenname_inh,constraints,keep,inherited) ->
@@ -1902,7 +1909,14 @@ let rebuilder
       Ast.FStorage(stg) -> Ast.FStorage(storage_mcode stg)
     | Ast.FType(ty) -> Ast.FType(fullType ty)
     | Ast.FInline(inline) -> Ast.FInline(string_mcode inline)
-    | Ast.FAttr(attr) -> Ast.FAttr(string_mcode attr)
+    | Ast.FAttr(attr) -> Ast.FAttr(attribute attr)
+
+  and attribute a =
+    let k a =
+      Ast.rewrap a
+        (match Ast.unwrap a with
+          Ast.Attribute(attr) -> Ast.Attribute(string_mcode attr)) in
+    k a
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> Ast.WhenNot (notfn a)

@@ -223,8 +223,7 @@ let rec expression e =
 	  expression exp; mcode print_string ar; ident field
       | Ast0.Cast(lp,ty,attr,rp,exp) ->
 	  mcode print_string_box lp; typeC ty; close_box();
-	  (if not (attr = []) then print_string " ");
-	  print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
 	  mcode print_string rp; expression exp
       | Ast0.SizeOfExpr(szf,exp) ->
 	  mcode print_string szf; expression exp
@@ -408,15 +407,13 @@ and declaration d =
       |	Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
 	  print_named_type ty id;
-	  (if not (attr = []) then print_string " ");
-	  print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
 	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
       | Ast0.UnInit(stg,ty,id,attr,sem) ->
 	  print_option (mcode U.storage) stg; print_named_type ty id;
-	  (if not (attr = []) then print_string " ");
-	  print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
 	  mcode print_string sem
       | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
 	  List.iter print_fninfo fninfo;
@@ -429,8 +426,7 @@ and declaration d =
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp;
-	  (if not (attr = []) then print_string " ");
-	  print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
 	  mcode print_string sem
       | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
@@ -442,8 +438,7 @@ and declaration d =
 	  mcode print_string sem
       | Ast0.TyDecl(ty,attr,sem) ->
           typeC ty;
-          (if not (attr = []) then print_string " ");
-          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
           mcode print_string sem
       | Ast0.Typedef(stg,ty,id,sem) ->
 	  mcode print_string stg; typeC ty; typeC id;
@@ -557,16 +552,13 @@ and parameterTypeDef p =
       match Ast0.unwrap p with
         Ast0.VoidParam(ty,attr) ->
           typeC ty;
-          (if (attr = []) then print_string " ");
-          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
       | Ast0.Param(ty,Some id,attr) ->
           print_named_type ty id;
-          (if (attr = []) then print_string " ");
-          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
       | Ast0.Param(ty,None,attr) ->
           typeC ty;
-          (if (attr = []) then print_string " ");
-          print_between (fun _ -> print_string " ") (mcode print_string) attr;
+          print_attribute_list attr;
       | Ast0.MetaParam(name,_,_) -> mcode print_meta name
       | Ast0.MetaParamList(name,_,_,_) -> mcode print_meta name
       | Ast0.PComma(cm) -> mcode print_string cm; print_space()
@@ -767,7 +759,15 @@ and print_fninfo = function
     Ast0.FStorage(stg) -> mcode U.storage stg
   | Ast0.FType(ty) -> typeC ty
   | Ast0.FInline(inline) -> mcode print_string inline
-  | Ast0.FAttr(attr) -> mcode print_string attr
+  | Ast0.FAttr(attr) -> print_attribute attr
+
+and print_attribute_list attrs =
+  if not (attrs = []) then print_string " ";
+  print_between (fun _ -> print_string " ") print_attribute attrs
+
+and print_attribute a =
+  match Ast0.unwrap a with
+    Ast0.Attribute(attr) -> mcode print_string attr
 
 and whencode notfn alwaysfn = function
     Ast0.WhenNot (_,_,a) ->

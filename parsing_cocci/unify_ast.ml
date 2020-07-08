@@ -221,7 +221,7 @@ and unify_expression e1 e2 =
   | (Ast.RecordPtAccess(e1,pt1,fld1),Ast.RecordPtAccess(e2,pt2,fld2)) ->
       unify_expression e1 e2 && unify_ident fld1 fld2
   | (Ast.Cast(lp1,ty1,attr1,rp1,e1),Ast.Cast(lp2,ty2,attr2,rp2,e2)) ->
-      if List.for_all2 unify_mcode attr1 attr2
+      if List.for_all2 unify_attribute attr1 attr2
       then unify_fullType ty1 ty2 && unify_expression e1 e2
       else false
   | (Ast.SizeOfExpr(szf1,e1),Ast.SizeOfExpr(szf2,e2)) ->
@@ -386,7 +386,7 @@ and unify_declaration d1 d2 =
   | (Ast.Init(stg1,ft1,id1,attr1,eq1,i1,s1),
      Ast.Init(stg2,ft2,id2,attr2,eq2,i2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2 &&
-         List.for_all2 unify_mcode attr1 attr2
+         List.for_all2 unify_attribute attr1 attr2
       then
 	unify_fullType ft1 ft2 &&
 	unify_ident id1 id2 &&
@@ -394,7 +394,7 @@ and unify_declaration d1 d2 =
       else false
   | (Ast.UnInit(stg1,ft1,id1,attr1,s1),Ast.UnInit(stg2,ft2,id2,attr2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2 &&
-         List.for_all2 unify_mcode attr1 attr2
+         List.for_all2 unify_attribute attr1 attr2
       then unify_fullType ft1 ft2 && unify_ident id1 id2
       else false
   | (Ast.FunProto(fi1,nm1,lp1,params1,va1,rp1,sem1),
@@ -414,7 +414,7 @@ and unify_declaration d1 d2 =
   | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,attr1,sem1),
      Ast.MacroDecl(s2,n2,lp2,args2,rp2,attr2,sem2)) ->
        if bool_unify_option unify_mcode s1 s2 &&
-         List.for_all2 unify_mcode attr1 attr2
+         List.for_all2 unify_attribute attr1 attr2
        then
 	 unify_ident n1 n2 &&
 	 unify_dots unify_expression edots args1 args2
@@ -428,7 +428,7 @@ and unify_declaration d1 d2 =
 	 unify_initialiser ini1 ini2
        else false
   | (Ast.TyDecl(ft1,attr1,s1),Ast.TyDecl(ft2,attr2,s2)) ->
-      if List.for_all2 unify_mcode attr1 attr2
+      if List.for_all2 unify_attribute attr1 attr2
       then unify_fullType ft1 ft2
       else false
   | (Ast.Typedef(stg1,ft1,id1,s1),Ast.Typedef(stg2,ft2,id2,s2)) ->
@@ -549,12 +549,12 @@ and unify_designator d1 d2 =
 and unify_parameterTypeDef p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.VoidParam(ft1,attr1),Ast.VoidParam(ft2,attr2)) ->
-      if List.for_all2 unify_mcode attr1 attr2
+      if List.for_all2 unify_attribute attr1 attr2
       then unify_fullType ft1 ft2
       else false
   | (Ast.Param(ft1,i1,attr1),Ast.Param(ft2,i2,attr2)) ->
 
-      if List.for_all2 unify_mcode attr1 attr2
+      if List.for_all2 unify_attribute attr1 attr2
       then
         unify_fullType ft1 ft2 &&
         unify_option unify_ident i1 i2
@@ -704,7 +704,7 @@ and unify_fninfo patterninfo cinfo =
     | (Ast.FInline(ia)::resta,Ast.FInline(ib)::restb) ->
 	if unify_mcode ia ib then loop (resta,restb) else false
     | (Ast.FAttr(ia)::resta,Ast.FAttr(ib)::restb) ->
-	if unify_mcode ia ib then loop (resta,restb) else false
+	if unify_attribute ia ib then loop (resta,restb) else false
     | (x::resta,((y::_) as restb)) ->
 	(match compare x y with
 	  -1 -> false
@@ -712,6 +712,11 @@ and unify_fninfo patterninfo cinfo =
 	| _ -> failwith "not possible")
     | _ -> false in
   loop (patterninfo,cinfo)
+
+and unify_attribute attr1 attr2 =
+  match (Ast.unwrap attr1,Ast.unwrap attr2) with
+    (Ast.Attribute(attr1),Ast.Attribute(attr2)) ->
+      unify_mcode attr1 attr2
 
 and unify_exec_code ec1 ec2 =
   match (Ast.unwrap ec1,Ast.unwrap ec2) with

@@ -759,14 +759,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		   match_ident fielda fieldb]
 	  | (Ast0.Cast(lp1,tya,attra,rp1,expa),
              Ast0.Cast(lp,tyb,attrb,rp,expb)) ->
-              if (List.length attra = List.length attrb &&
-                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                  attra attrb)
-              then
 	      conjunct_many_bindings
 		[check_mcode lp1 lp; check_mcode rp1 rp;
+                  match_attributes attra attrb;
 		  match_typeC tya tyb; match_expr expa expb]
-              else return false
 	  | (Ast0.SizeOfExpr(szf1,expa),Ast0.SizeOfExpr(szf,expb)) ->
 	      conjunct_bindings (check_mcode szf1 szf) (match_expr expa expb)
 	  | (Ast0.SizeOfType(szf1,lp1,tya,rp1),
@@ -940,27 +936,23 @@ let match_maker checks_needed context_required whencode_allowed =
 	  match (up,Ast0.unwrap d) with
 	    (Ast0.Init(stga,tya,ida,attra,eq1,inia,sc1),
 	     Ast0.Init(stgb,tyb,idb,attrb,eq,inib,sc)) ->
-	       if bool_match_option mcode_equal stga stgb &&
-                 (List.length attra = List.length attrb &&
-                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                    attra attrb) (* no metavars *)
+	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_many_bindings
 		   [check_mcode eq1 eq; check_mcode sc1 sc;
 		     match_option check_mcode stga stgb;
 		     match_typeC tya tyb; match_ident ida idb;
+                     match_attributes attra attrb;
 		     match_init inia inib]
 	       else return false
 	  | (Ast0.UnInit(stga,tya,ida,attra,sc1),
 	     Ast0.UnInit(stgb,tyb,idb,attrb,sc)) ->
-	      if bool_match_option mcode_equal stga stgb &&
-                (List.length attra = List.length attrb &&
-                 List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                   attra attrb) (* no metavars *)
+	      if bool_match_option mcode_equal stga stgb
 	      then
 		conjunct_many_bindings
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
-		    match_typeC tya tyb; match_ident ida idb]
+		    match_typeC tya tyb; match_ident ida idb;
+                    match_attributes attra attrb]
 	      else return false
 	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,va1a,rp1,sem1),
 	     Ast0.FunProto(fninfo,name,lp,params,va1b,rp,sem)) ->
@@ -973,17 +965,15 @@ let match_maker checks_needed context_required whencode_allowed =
                  ]
 	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,attra,sc1),
 	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,attrb,sc)) ->
-	       if bool_match_option mcode_equal stga stgb &&
-                 (List.length attra = List.length attrb &&
-                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                    attra attrb) (* no metavars *)
+	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_many_bindings
 		   [match_ident namea nameb;
 		     check_mcode lp1 lp; check_mcode rp1 rp;
 		     check_mcode sc1 sc;
 		     match_dots match_expr is_elist_matcher do_elist_match
-		       argsa argsb]
+                       argsa argsb;
+                     match_attributes attra attrb]
 	       else return false
 	  | (Ast0.MacroDeclInit(stga,namea,lp1,argsa,rp1,eq1,ini1,sc1),
 	     Ast0.MacroDeclInit(stgb,nameb,lp,argsb,rp,eq,ini,sc)) ->
@@ -999,12 +989,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		     match_init ini1 ini]
 	       else return false
 	  | (Ast0.TyDecl(tya,attra,sc1),Ast0.TyDecl(tyb,attrb,sc)) ->
-	      if (List.length attra = List.length attrb &&
-                  List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                    attra attrb) (* no metavars *)
-              then
-	        conjunct_bindings (check_mcode sc1 sc) (match_typeC tya tyb)
-              else return false
+              conjunct_many_bindings
+                  [check_mcode sc1 sc;
+                    match_typeC tya tyb;
+                    match_attributes attra attrb]
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
@@ -1180,21 +1168,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	then
 	  match (up,Ast0.unwrap p) with
 	    (Ast0.VoidParam(tya,attra),Ast0.VoidParam(tyb,attrb)) ->
-               if (List.length attra = List.length attrb &&
-                 List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                 attra attrb)
-               then
-                 match_typeC tya tyb
-               else return false
+               conjunct_bindings (match_typeC tya tyb)
+                   (match_attributes attra attrb)
 	  | (Ast0.Param(tya,ida,attra),Ast0.Param(tyb,idb,attrb)) ->
-               if (List.length attra = List.length attrb &&
-                 List.fold_left2 (fun p a b -> p && mcode_equal a b) true
-                 attra attrb)
-              then
-	        conjunct_bindings (match_typeC tya tyb)
+	      conjunct_bindings (match_typeC tya tyb)
 		  (match_option match_ident ida idb)
-              else
-                return false
 	  | (Ast0.PComma(c1),Ast0.PComma(c)) -> check_mcode c1 c
 	  | (Ast0.Pdots(d1),Ast0.Pdots(d)) -> check_mcode d1 d
 	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb)) ->
@@ -1427,9 +1405,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	  then conjunct_bindings (check_mcode ia ib) (loop (resta,restb))
 	  else return false
       |	(Ast0.FAttr(ia)::resta,Ast0.FAttr(ib)::restb) ->
-	  if mcode_equal ia ib
-	  then conjunct_bindings (check_mcode ia ib) (loop (resta,restb))
-	  else return false
+          conjunct_bindings (match_attributes [ia] [ib]) (loop (resta,restb))
       |	(x::resta,((y::_) as restb)) ->
 	  (match compare x y with
 	    -1 -> return false
@@ -1437,6 +1413,16 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | _ -> failwith "not possible")
       |	_ -> return false in
     loop (patterninfo,cinfo)
+
+  and match_attribute a1 a2 =
+    match (Ast0.unwrap a1,Ast0.unwrap a2) with
+      (Ast0.Attribute(attr1),Ast0.Attribute(attr2)) ->
+        check_mcode attr1 attr2
+
+  and match_attributes a1 a2 =
+    match_list match_attribute
+     (function _ -> false) (function _ -> failwith "")
+     a1 a2
 
   and match_case_line pattern c =
     if not(checks_needed) || not(context_required) || is_context c

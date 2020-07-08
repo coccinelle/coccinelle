@@ -505,8 +505,7 @@ let rec expression e =
       loop exp postfix; mcode print_string ar; ident field
   | Ast.Cast(lp,ty,attr,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
       mcode print_string rp; loop exp cast
   | Ast.SizeOfExpr(sizeof,exp) ->
       mcode print_string sizeof; loop exp unary
@@ -706,7 +705,15 @@ and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
   | Ast.FType(ty) -> fullType ty
   | Ast.FInline(inline) -> mcode print_string inline; pr_space()
-  | Ast.FAttr(attr) -> mcode print_string attr; pr_space()
+  | Ast.FAttr(attr) -> print_attribute attr; pr_space()
+
+and print_attribute_list attrs =
+  if not (attrs = []) then pr_space();
+  print_between pr_space print_attribute attrs
+
+and print_attribute attr =
+  match Ast.unwrap attr with
+    Ast.Attribute(a) -> mcode print_string a
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -915,16 +922,14 @@ and declaration d =
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty (fun _ -> ident id);
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
   | Ast.UnInit(stg,ty,id,attr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty (fun _ -> ident id);
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
       mcode print_string sem
   | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;
@@ -944,8 +949,7 @@ and declaration d =
       ident name; mcode print_string_box lp;
       dots (function _ -> ()) arg_expression args;
       close_box(); mcode print_string rp;
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
       mcode print_string sem
   | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       print_option (mcode storage) stg;
@@ -957,8 +961,7 @@ and declaration d =
       pr_space(); initialiser true ini; mcode print_string sem
   | Ast.TyDecl(ty,attr,sem) ->
       fullType ty;
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
       mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; pr_space();
@@ -1100,16 +1103,13 @@ and parameterTypeDef p =
   match Ast.unwrap p with
     Ast.VoidParam(ty,attr) ->
       fullType ty;
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
   | Ast.Param(ty,Some id,attr) ->
       print_named_type ty (fun _ -> ident id);
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
   | Ast.Param(ty,None,attr) ->
       fullType ty;
-      (if not (attr = []) then pr_space());
-      print_between pr_space (mcode print_string) attr;
+      print_attribute_list attr;
   | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name
 	(function

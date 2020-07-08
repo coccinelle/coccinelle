@@ -187,7 +187,7 @@ let visitor mode bind option_default
 	| Ast0.Cast(lp,ty,attr,rp,exp) ->
 	    let (lp_n,lp) = string_mcode lp in
 	    let (ty_n,ty) = typeC ty in
-	    let (attr_n,attr) = map_split_bind string_mcode attr in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (exp_n,exp) = expression exp in
             (multibind [lp_n;ty_n;attr_n;rp_n;exp_n],
@@ -611,7 +611,7 @@ let visitor mode bind option_default
 	| Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in
-	    let (attr_n,attr) = map_split_bind string_mcode attr in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (eq_n,eq) = string_mcode eq in
 	    let (ini_n,ini) = initialiser ini in
 	    let (sem_n,sem) = string_mcode sem in
@@ -620,7 +620,7 @@ let visitor mode bind option_default
 	| Ast0.UnInit(stg,ty,id,attr,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type ty id in
-	    let (attr_n,attr) = map_split_bind string_mcode attr in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;ty_id_n;attr_n;sem_n],
 	     Ast0.UnInit(stg,ty,id,attr,sem))
@@ -645,7 +645,7 @@ let visitor mode bind option_default
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
-	    let (attr_n,attr) = map_split_bind string_mcode attr in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;name_n;lp_n;args_n;rp_n;attr_n;sem_n],
 	     Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
@@ -662,7 +662,7 @@ let visitor mode bind option_default
 	     Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
 	| Ast0.TyDecl(ty,attr,sem) ->
 	    let (ty_n,ty) = typeC ty in
-	    let (attr_n,attr) = map_split_bind string_mcode attr in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (sem_n,sem) = string_mcode sem in
             (multibind [ty_n; attr_n; sem_n], Ast0.TyDecl(ty,attr,sem))
 	| Ast0.Typedef(stg,ty,id,sem) ->
@@ -832,15 +832,15 @@ let visitor mode bind option_default
 	(match Ast0.unwrap p with
 	  Ast0.VoidParam(ty, attrs) ->
 	    let (ty_n,ty) = typeC ty in
-	    let (attr_n,attr) = map_split_bind string_mcode attrs in
+	    let (attr_n,attr) = map_split_bind attribute attrs in
             (bind ty_n attr_n,Ast0.VoidParam(ty, attrs))
 	| Ast0.Param(ty,Some id,attrs) ->
 	    let ((ty_id_n,ty),id) = named_type ty id in
-	    let (attr_n,attr) = map_split_bind string_mcode attrs in
+	    let (attr_n,attr) = map_split_bind attribute attrs in
 	    (bind ty_id_n attr_n, Ast0.Param(ty,Some id,attr))
 	| Ast0.Param(ty,None,attrs) ->
 	    let (ty_n,ty) = typeC ty in
-	    let (attr_n,attr) = map_split_bind string_mcode attrs in
+	    let (attr_n,attr) = map_split_bind attribute attrs in
 	    (bind ty_n attr_n, Ast0.Param(ty,None,attr))
 	| Ast0.MetaParam(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
@@ -1146,7 +1146,16 @@ let visitor mode bind option_default
     | Ast0.FInline(inline) ->
 	let (n,inline) = string_mcode inline in (n,Ast0.FInline(inline))
     | Ast0.FAttr(init) ->
-	let (n,init) = string_mcode init in (n,Ast0.FAttr(init))
+	let (n,init) = attribute init in (n,Ast0.FAttr(init))
+
+  and attribute a =
+    let k a =
+      rewrap a
+        (match Ast0.unwrap a with
+          Ast0.Attribute(attr) ->
+            let (attr_n,attr) = string_mcode attr in
+            (attr_n,Ast0.Attribute(attr))) in
+    k a
 
   (* we only include the when string mcode w because the parameterised
      string_mcodefn function might have side-effects *)

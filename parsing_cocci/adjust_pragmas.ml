@@ -221,6 +221,11 @@ let rec left_ident i =
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
   | Ast0.AsIdent(id,asid) -> failwith "not possible"
 
+let left_attribute attr =
+  match Ast0.unwrap attr with
+    Ast0.Attribute(a) ->
+      call_right left_mcode a attr (function a -> Ast0.Attribute(a))
+
 let left_fundecl name fninfo =
   let fncall_right processor data cont =
     match processor data with
@@ -238,7 +243,7 @@ let left_fundecl name fninfo =
   | (Ast0.FInline inl)::x ->
       fncall_right left_mcode inl (function inl -> (Ast0.FInline inl)::x)
   | (Ast0.FAttr atr)::x ->
-      fncall_right left_mcode atr (function atr -> (Ast0.FAttr atr)::x)
+      fncall_right left_attribute atr (function atr -> (Ast0.FAttr atr)::x)
 
 let rec left_decl decl =
   match Ast0.unwrap decl with
@@ -276,7 +281,7 @@ let rec left_decl decl =
 	    (function inl ->
 	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,va,rp1,sem))
       | (Ast0.FAttr attr)::x ->
-	  call_right left_mcode attr decl
+	  call_right left_attribute attr decl
 	    (function attr ->
 	      Ast0.FunProto((Ast0.FAttr attr)::x,name,lp1,params,va,rp1,sem)))
   | Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem) ->

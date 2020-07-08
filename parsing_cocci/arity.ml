@@ -256,10 +256,10 @@ let rec top_expression opt_allowed tgt expr =
       make_exp expr tgt arity (Ast0.RecordPtAccess(exp,ar,field))
   | Ast0.Cast(lp,ty,attr,rp,exp) ->
       let arity =
-        exp_same (mcode2line lp) (List.map mcode2arity ([lp] @ attr @ [rp])) in
+	exp_same (mcode2line lp) (List.map mcode2arity ([lp;rp])) in
       let lp = mcode lp in
       let ty = typeC arity ty in
-      let attr = List.map mcode attr in
+      let attr = List.map attribute attr in
       let rp = mcode rp in
       let exp = expression arity exp in
       make_exp expr tgt arity (Ast0.Cast(lp,ty,attr,rp,exp))
@@ -564,7 +564,7 @@ and declaration tgt decl =
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false arity id in
-      let attr = List.map mcode attr in
+      let attr = List.map attribute attr in
       let eq = mcode eq in
       let exp = initialiser arity exp in
       let sem = mcode sem in
@@ -577,7 +577,7 @@ and declaration tgt decl =
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false arity id in
-      let attr = List.map mcode attr in
+      let attr = List.map attribute attr in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,attr,sem))
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
@@ -601,13 +601,13 @@ and declaration tgt decl =
       let arity =
 	all_same true tgt (mcode2line lp)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
-	   (List.map mcode2arity ([lp;rp] @ attr @ [sem]))) in
+	   (List.map mcode2arity ([lp;rp;sem]))) in
       let stg = get_option mcode stg in
       let name = ident false arity name in
       let lp = mcode lp in
       let args = dots (expression arity) args in
       let rp = mcode rp in
-      let attr = List.map mcode attr in
+      let attr = List.map attribute attr in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
@@ -626,10 +626,10 @@ and declaration tgt decl =
 	(Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
   | Ast0.TyDecl(ty,attr,sem) ->
       let arity =
-        all_same true tgt
-          (mcode2line sem) (List.map mcode2arity (attr @ [sem])) in
+	all_same true tgt
+	  (mcode2line sem) [mcode2arity sem] in
       let ty = typeC arity ty in
-      let attr = List.map mcode attr in
+      let attr = List.map attribute attr in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.TyDecl(ty,attr,sem))
   | Ast0.Typedef(stg,ty,id,sem) ->
@@ -816,40 +816,30 @@ and make_param =
 
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
-  let make_param_attr param tgt ret = function
-      [] -> Ast0.rewrap param ret
-    | x::_ as xs ->
-        let arity = param_same (mcode2line x) (List.map mcode2arity xs) in
-        make_param param tgt arity ret in
   match Ast0.unwrap param with
     Ast0.VoidParam(ty,attr) ->
-      let ty = top_typeC tgt true ty in
-      let attr = List.map mcode attr in
-      let ret = Ast0.VoidParam(ty,attr) in
-      make_param_attr param tgt ret attr
+      Ast0.rewrap param (Ast0.VoidParam(typeC tgt ty,List.map attribute attr))
   | Ast0.Param(ty,Some id,attr) ->
       let ty = top_typeC tgt true ty in
       let id = ident true tgt id in
-      let attr = List.map mcode attr in
-      let ret =
-	match (Ast0.unwrap ty,Ast0.unwrap id) with
+      let attr = List.map attribute attr in
+      Ast0.rewrap param
+	(match (Ast0.unwrap ty,Ast0.unwrap id) with
 	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id,attr)))
 	| (Ast0.OptType(ty),_) ->
 	    fail param "arity mismatch in param declaration"
 	| (_,Ast0.OptIdent(id)) ->
 	    fail param "arity mismatch in param declaration"
-	| _ -> Ast0.Param(ty,Some id,attr) in
-      make_param_attr param tgt ret attr
+	| _ -> Ast0.Param(ty,Some id,attr))
   | Ast0.Param(ty,None,attr) ->
       let ty = top_typeC tgt true ty in
-      let attr = List.map mcode attr in
-      let ret =
-	match Ast0.unwrap ty with
+      let attr = List.map attribute attr in
+      Ast0.rewrap param
+	(match Ast0.unwrap ty with
 	  Ast0.OptType(ty) ->
 	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None,attr)))
-	| _ -> Ast0.Param(ty,None,attr) in
-      make_param_attr param tgt ret attr
+	| _ -> Ast0.Param(ty,None,attr))
   | Ast0.MetaParam(name,cstr,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in
@@ -1272,7 +1262,7 @@ and fninfo arity = function
     Ast0.FStorage(stg) -> Ast0.FStorage(mcode stg)
   | Ast0.FType(ty) -> Ast0.FType(typeC arity ty)
   | Ast0.FInline(inline) -> Ast0.FInline(mcode inline)
-  | Ast0.FAttr(attr) -> Ast0.FAttr(mcode attr)
+  | Ast0.FAttr(attr) -> Ast0.FAttr(attribute attr)
 
 and fninfo2arity fninfo =
   List.concat
@@ -1281,8 +1271,13 @@ and fninfo2arity fninfo =
 	   Ast0.FStorage(stg) -> [mcode2arity stg]
 	 | Ast0.FType(ty) -> []
 	 | Ast0.FInline(inline) -> [mcode2arity inline]
-	 | Ast0.FAttr(attr) -> [mcode2arity attr])
+	 | Ast0.FAttr(attr) -> [])
        fninfo)
+
+and attribute attr =
+  match Ast0.unwrap attr with
+    Ast0.Attribute(a) ->
+      Ast0.rewrap attr (Ast0.Attribute(mcode a))
 
 and whencode notfn alwaysfn expression = function
     Ast0.WhenNot (w,e,a) -> Ast0.WhenNot (w,e,notfn a)

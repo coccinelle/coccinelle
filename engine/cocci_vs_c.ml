@@ -1529,11 +1529,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
     ((B.Cast (typb, attrsb, eb), typ),ii) ->
 
       let attr_allminus =
-        let mcode_is_not_context = function
-          | (_,_,A.CONTEXT(_,_),_) -> false
+        let attr_is_not_context a =
+          match A.unwrap a with
+          | A.Attribute(_,_,A.CONTEXT(_,_),_) -> false
           | _ -> true in
         check_allminus.Visitor_ast.combiner_fullType typa &&
-        List.for_all mcode_is_not_context attrsa in
+        List.for_all attr_is_not_context attrsa in
 
       let (ib1, ib2) = tuple_of_list2 ii in
       fullType typa typb >>= (fun typa typb ->
@@ -4265,8 +4266,8 @@ and attribute_list allminus attras attrbs =
   | _ -> failwith "only one attribute allowed in SmPL")
 
 and attribute = fun allminus ea eb ->
-  match ea, eb with
-    attra, (B.Attribute attrb, ii)
+  match A.unwrap ea, eb with
+    A.Attribute(attra), (B.Attribute attrb, ii)
       when (A.unwrap_mcode attra) = attrb ->
       let ib1 = tuple_of_list1 ii in
       tokenf attra ib1 >>= (fun attra ib1 ->
@@ -4274,7 +4275,7 @@ and attribute = fun allminus ea eb ->
         then minusize_list [ib1]
         else return ((), [ib1])) >>= (fun _ ib1 ->
 	return (
-	  attra,
+	  A.rewrap ea (A.Attribute(attra)),
           (B.Attribute attrb,ib1)
         )))
   | _ -> fail

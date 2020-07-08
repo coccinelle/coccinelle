@@ -400,6 +400,10 @@ let classify is_minus all_marked table code =
 	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
+  let attribute a =
+    match Ast0.unwrap a with
+      Ast0.Attribute(attr) -> mcode attr in
+
   (* not clear why we have the next cases, since DisjDecl and
   as it only comes from isos *)
   (* actually, DisjDecl now allowed in source struct decls *)
@@ -423,7 +427,7 @@ let classify is_minus all_marked table code =
 	    (bind (r.VT0.combiner_rec_typeC ty)
 	       (bind (r.VT0.combiner_rec_ident id)
                   (bind
-                     (List.fold_right bind (List.map mcode attr)
+                     (List.fold_right bind (List.map attribute attr)
 			option_default)
 		     (bind (mcode eq)
 			(bind (r.VT0.combiner_rec_initialiser ini)
@@ -433,7 +437,7 @@ let classify is_minus all_marked table code =
 	    (bind (r.VT0.combiner_rec_typeC ty)
 	       (bind (r.VT0.combiner_rec_ident id)
                   (bind
-                     (List.fold_right bind (List.map mcode attr)
+                     (List.fold_right bind (List.map attribute attr)
 			option_default)
 		     (mcode sem))))
       |	_ -> k e) in
@@ -470,7 +474,7 @@ let classify is_minus all_marked table code =
 	  (* needed for the same reason as in the Init and UnInit cases *)
 	  bind (r.VT0.combiner_rec_typeC ty)
            (bind (r.VT0.combiner_rec_ident id)
-              (List.fold_right bind (List.map mcode attr) option_default))
+              (List.fold_right bind (List.map attribute attr) option_default))
       |	_ -> k e) in
 
   let typeC r k e =
@@ -585,6 +589,11 @@ let equal_option e1 e2 =
 let dots fn d1 d2 =
   List.length (Ast0.unwrap d1) = List.length (Ast0.unwrap d2)
 
+let equal_attribute a1 a2 =
+  match (Ast0.unwrap a1, Ast0.unwrap a2) with
+    (Ast0.Attribute(attr1),Ast0.Attribute(attr2)) ->
+      equal_mcode attr1 attr2
+
 let equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
     (Ast0.Id(name1),Ast0.Id(name2)) -> equal_mcode name1 name2
@@ -632,7 +641,7 @@ let rec equal_expression e1 e2 =
       equal_mcode ar1 ar2
   | (Ast0.Cast(lp1,_,ar1,rp1,_),Ast0.Cast(lp2,_,ar2,rp2,_)) ->
       equal_mcode lp1 lp2 &&
-      List.for_all2 equal_mcode ar1 ar2 &&
+      List.for_all2 equal_attribute ar1 ar2 &&
       equal_mcode rp1 rp2
   | (Ast0.SizeOfExpr(szf1,_),Ast0.SizeOfExpr(szf2,_)) ->
       equal_mcode szf1 szf2
@@ -731,7 +740,7 @@ let equal_fninfo x y =
     (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
   | (Ast0.FType(_),Ast0.FType(_)) -> true
   | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
-  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_mcode i1 i2
+  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_attribute i1 i2
   | _ -> false
 
 let equal_declaration d1 d2 =
@@ -740,10 +749,10 @@ let equal_declaration d1 d2 =
       equal_mcode name1 name2
   | (Ast0.Init(stg1,_,_,attr1,eq1,_,sem1),
      Ast0.Init(stg2,_,_,attr2,eq2,_,sem2)) ->
-      equal_option stg1 stg2 && List.for_all2 equal_mcode attr1 attr2 &&
+      equal_option stg1 stg2 && List.for_all2 equal_attribute attr1 attr2 &&
       equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,attr1,sem1),Ast0.UnInit(stg2,_,_,attr2,sem2)) ->
-      equal_option stg1 stg2 && List.for_all2 equal_mcode attr1 attr2 &&
+      equal_option stg1 stg2 && List.for_all2 equal_attribute attr1 attr2 &&
       equal_mcode sem1 sem2
   | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
      Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
@@ -758,7 +767,7 @@ let equal_declaration d1 d2 =
        equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,attr1,sem1),
      Ast0.MacroDecl(stg2,nm2,lp2,_,rp2,attr2,sem2)) ->
-      equal_option stg1 stg2 && List.for_all2 equal_mcode attr1 attr2 &&
+      equal_option stg1 stg2 && List.for_all2 equal_attribute attr1 attr2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDeclInit(stg1,nm1,lp1,_,rp1,eq1,_,sem1),
      Ast0.MacroDeclInit(stg2,nm2,lp2,_,rp2,eq2,_,sem2)) ->
@@ -766,7 +775,7 @@ let equal_declaration d1 d2 =
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
 	 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,attr1,sem1),Ast0.TyDecl(_,attr2,sem2)) ->
-       List.for_all2 equal_mcode attr1 attr2 && equal_mcode sem1 sem2
+       List.for_all2 equal_attribute attr1 attr2 && equal_mcode sem1 sem2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
      Ast0.DisjDecl(starter2,_,mids2,ender2))
@@ -845,9 +854,9 @@ let equal_initialiser i1 i2 =
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_,ar1),Ast0.VoidParam(_,ar2)) ->
-      List.for_all2 equal_mcode ar1 ar2
+      List.for_all2 equal_attribute ar1 ar2
   | (Ast0.Param(_,_,ar1),Ast0.Param(_,_,ar2)) ->
-      List.for_all2 equal_mcode ar1 ar2
+      List.for_all2 equal_attribute ar1 ar2
   | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
   | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->
       equal_mcode name1 name2

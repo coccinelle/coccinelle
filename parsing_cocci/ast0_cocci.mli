@@ -445,7 +445,10 @@ and fninfo =
   | FInline of string mcode
   | FAttr of attr
 
-and attr = string mcode
+and base_attr =
+    Attribute of string mcode
+
+and attr = base_attr wrap
 
 and ('a,'b) whencode =
     WhenNot of string mcode (* when *) * string mcode (* != *) * 'a

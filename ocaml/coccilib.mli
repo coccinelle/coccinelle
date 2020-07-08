@@ -2925,7 +2925,10 @@ module Ast_cocci :
       | FType of fullType
       | FInline of string mcode
       | FAttr of attr
-    and attr = string mcode
+    and base_attr =
+      Ast_cocci.base_attr =
+        Attribute of string mcode
+    and attr = base_attr wrap
     and metaStmtInfo =
       Ast_cocci.metaStmtInfo =
         NotSequencible
@@ -3553,7 +3556,10 @@ module Ast0_cocci :
       | FType of typeC
       | FInline of string mcode
       | FAttr of attr
-    and attr = string mcode
+    and base_attr =
+      Ast0_cocci.base_attr =
+        Attribute of string mcode
+    and attr = base_attr wrap
     and ('a, 'b) whencode =
       ('a, 'b) Ast0_cocci.whencode =
         WhenNot of string mcode * string mcode * 'a
