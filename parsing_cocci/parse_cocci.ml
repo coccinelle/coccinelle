@@ -1015,6 +1015,16 @@ let find_function_names l =
   let is_par = function
       (PC.TOPar0(_),info) -> true
     | _ -> false in
+  let is_obrace = function
+      (PC.TOBrace(_),info) -> true
+    | (PC.TOPar(_),info) -> true
+    | (PC.TOCro(_),info) -> true
+    | _ -> false in
+  let is_cbrace = function
+      (PC.TCBrace(_),info) -> true
+    | (PC.TCPar(_),info) -> true
+    | (PC.TCCro(_),info) -> true
+    | _ -> false in
   let rec split acc = function
       [] | [_] -> raise Irrelevant
     | ((PC.TCPar(_),_) as t1) :: ((PC.TOBrace(_),_) as t2) :: rest
@@ -1115,10 +1125,10 @@ let find_function_names l =
       (PC.TOBrace(_),_)::_ -> (((PC.TFunDecl(clt),info) :: bef), aft)
     | (PC.TPtVirg(_),_)::_ -> (((PC.TFunProto(clt),info) :: bef), aft)
     | _ -> raise Irrelevant in
-  let rec loop acc = function
+  let rec loop acc depth = function
       [] -> []
     | t :: rest ->
-	if is_par t || is_mid t || is_ident t
+	if depth = 0 && (is_par t || is_mid t || is_ident t)
 	then
 	  let (t,rest) =
 	    try
@@ -1145,9 +1155,14 @@ let find_function_names l =
 		  | _ -> raise Irrelevant)
 	      | _ -> raise Irrelevant))
 	    with Irrelevant -> ([t],rest) in
-          t @ (loop (t @ acc) rest)
-        else t :: (loop (t :: acc) rest) in
-  loop [] l
+          t @ (loop (t @ acc) depth rest)
+        else
+	  if is_obrace t
+	  then t :: (loop (t :: acc) (depth + 1) rest)
+	  else if is_cbrace t
+	  then t :: (loop (t :: acc) (depth - 1) rest)
+	  else t :: (loop (t :: acc) depth rest) in
+  loop [] 0 l
 
 (* ----------------------------------------------------------------------- *)
 (* an attribute is an identifier that precedes another identifier and
