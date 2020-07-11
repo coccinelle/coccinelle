@@ -1052,7 +1052,8 @@ let find_function_names l =
       ((PC.TMid0(_),_) | (PC.TAnd0(_),_))::
       (PC.TOPar0(_),_)::_ -> false
     | (PC.TOPar0(_),_)::rest
-    | (PC.TCPar0(_),_)::rest -> is_permissible_proto rest
+    | (PC.TCPar0(_),_)::rest
+    | (PC.TMul(_),_)::rest -> is_permissible_proto rest
     | x::rest when is_mid x ->
         let rec loop = function
           [] -> false
@@ -1076,6 +1077,21 @@ let find_function_names l =
     | (PC.TMetaId(_),_)::_
     | (PC.TMetaLocalIdExp(_),_)::_
     | (PC.TEq(_),_)::_
+    | (PC.TEqEq(_),_)::_
+    | (PC.TNotEq(_),_)::_
+    | (PC.TShROp(_),_)::_
+    | (PC.TShLOp(_),_)::_
+    | (PC.TSub(_),_)::_
+    | (PC.TPlus(_),_)::_
+    | (PC.TMinus(_),_)::_
+    | (PC.TDmOp(_),_)::_
+    | (PC.TAnd(_),_)::_
+    | (PC.TOr(_),_)::_
+    | (PC.TXor(_),_)::_
+    | (PC.TLogOp(_),_)::_
+    | (PC.TAndLog(_),_)::_
+    | (PC.TOrLog(_),_)::_
+    | (PC.TDotDot(_),_)::_
     | (PC.TPtrOp(_),_)::_
     | (PC.TEllipsis(_),_)::_
     | (PC.TOEllipsis(_),_)::_
@@ -1086,6 +1102,7 @@ let find_function_names l =
     | (PC.TOBrace(_),_)::_
     | (PC.TCBrace(_),_)::_
     | (PC.TOPar(_),_)::_
+    | (PC.TOCro(_),_)::_
     | (PC.TIdent(_),_)::_ -> false
     | _ -> true in
   let decl_or_proto clt info bef aft =
