@@ -291,7 +291,7 @@ module XTRANS = struct
 	ident expression donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing in
+	donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
 

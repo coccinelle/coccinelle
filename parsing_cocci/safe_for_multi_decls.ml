@@ -43,7 +43,7 @@ let all_removed_recursor =
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing
 
 let all_removed_decl =
   all_removed_recursor.V.combiner_declaration
@@ -100,7 +100,7 @@ let contains_modif =
       do_nothing do_nothing do_nothing init do_nothing
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-      do_nothing in
+      do_nothing do_nothing in
   recursor.V.combiner_fullType
 
 let attribute a =
@@ -178,7 +178,7 @@ let process =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing decl anndecl field annfield
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing in
   List.map fn.V.rebuilder_top_level
 
 let safe_for_multi_decls rules =

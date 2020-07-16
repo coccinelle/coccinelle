@@ -2620,7 +2620,7 @@ let contains_modifs ast =
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing in
   List.exists
     (function
 	Ast.CocciRule(nm,infos,ast,_,_) ->

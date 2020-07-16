@@ -253,7 +253,7 @@ let collect_refs include_constraints =
     astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
     astfvfullType astfvtypeC astfvinit astfvparam astfvdefine_param
     astfvdecls donothing astfvfields astafvfields donothing
-    astfvrule_elem astfvstatement donothing donothing donothing_a
+    astfvrule_elem astfvstatement donothing donothing donothing donothing_a
 
 let collect_all_refs = collect_refs true
 let collect_non_constraint_refs = collect_refs false
@@ -303,7 +303,7 @@ let collect_pos_positions =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing
-    cprule_elem cpstmt donothing donothing donothing
+    cprule_elem cpstmt donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -479,7 +479,7 @@ let collect_saved =
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
     astfvtypeC astfvinit astfvparam astfvdefine_param astfvdecls donothing
     astfvfields donothing donothing astfvrule_elem donothing donothing
-    donothing donothing
+    donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -612,7 +612,7 @@ let collect_in_plus_term =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing astfvrule_elem
-    astfvstatement donothing donothing donothing
+    astfvstatement donothing donothing donothing donothing
 
 let collect_in_plus metavars minirules =
   nub
@@ -905,7 +905,7 @@ let classify_variables metavar_decls minirules used_after =
       ident expression string_fragment string_format assignop binaryop
       donothing typeC
       init param define_param decl donothing field donothing donothing
-      rule_elem donothing donothing donothing donothing in
+      rule_elem donothing donothing donothing donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
 
@@ -1091,7 +1091,8 @@ let astfvs metavars bound =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing
-    astfvrule_elem astfvstatement astfvcase_line astfvtoplevel donothing
+    astfvrule_elem astfvstatement astfvcase_line donothing astfvtoplevel
+    donothing
 
 (*
 let collect_astfvs rules =
@@ -1175,7 +1176,8 @@ let get_neg_pos_list (_,rule) used_after_list =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing in
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing in
   match rule with
     Ast.CocciRule(rule_name,_,minirules,_,_) ->
       List.map

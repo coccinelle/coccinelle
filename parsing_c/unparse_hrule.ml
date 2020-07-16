@@ -136,7 +136,7 @@ let get_function_name rule env =
       donothing donothing donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing
+      donothing donothing donothing
       donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
