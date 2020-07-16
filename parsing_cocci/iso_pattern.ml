@@ -45,7 +45,7 @@ let strip_info =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -92,6 +92,9 @@ let anything_equal = function
   | (Ast0.StringFragmentTag(d1),Ast0.StringFragmentTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_string_fragment d1) =
       (strip_info.VT0.rebuilder_rec_string_fragment d2)
+  | (Ast0.AttributeTag(d1),Ast0.AttributeTag(d2)) ->
+      (strip_info.VT0.rebuilder_rec_attribute d1) =
+      (strip_info.VT0.rebuilder_rec_attribute d2)
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_top_level d1) =
       (strip_info.VT0.rebuilder_rec_top_level d2)
@@ -478,7 +481,7 @@ let match_maker checks_needed context_required whencode_allowed =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing
       ident expression assignOp binaryOp typeC init param decl field donothing
-      stmt donothing donothing donothing donothing in
+      stmt donothing donothing donothing donothing donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -1595,7 +1598,7 @@ let make_minus =
     dots dots dots dots dots dots dots dots dots
     donothing expression donothing donothing donothing initialiser donothing
     declaration field enum_decl statement donothing donothing donothing
-    donothing
+    donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1687,7 +1690,7 @@ let rebuild_mcode start_line =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing statement donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -2172,7 +2175,7 @@ let instantiate bindings mv_bindings model =
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     donothing donothing donothing
     identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn donothing donothing donothing donothing
+    enumdeclfn stmtfn donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2902,7 +2905,7 @@ let rewrap =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2946,6 +2949,8 @@ let rec rewrap_anything = function
       Ast0.CaseLineTag(rewrap.VT0.rebuilder_rec_case_line d)
   | Ast0.StringFragmentTag(d) ->
       Ast0.StringFragmentTag(rewrap.VT0.rebuilder_rec_string_fragment d)
+  | Ast0.AttributeTag(d) ->
+      Ast0.AttributeTag(rewrap.VT0.rebuilder_rec_attribute d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.VT0.rebuilder_rec_top_level d)
   | Ast0.IsoWhenTag(_) | Ast0.IsoWhenTTag(_) | Ast0.IsoWhenFTag(_) ->
       failwith "only for isos within iso phase"

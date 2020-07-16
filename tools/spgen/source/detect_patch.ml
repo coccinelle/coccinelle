@@ -111,6 +111,7 @@ let patch_combiner =
   let paramfn = donothing in
   let forinfofn = donothing in
   let string_fragmentfn = donothing in
+  let attributefn = donothing in
   let topfn = donothing in
   let dotsstmtfn = donothing in
 
@@ -163,7 +164,7 @@ let patch_combiner =
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn forinfofn casefn string_fragmentfn topfn
+    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn topfn
 
 
 (* ------------------------------------------------------------------------- *)

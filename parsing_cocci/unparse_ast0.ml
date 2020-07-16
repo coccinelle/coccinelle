@@ -873,6 +873,7 @@ let rec unparse_anything x =
       | Ast0.ForDecl (_,decl) -> declaration decl)
   | Ast0.CaseLineTag(d)  -> case_line "" d
   | Ast0.StringFragmentTag(d)  -> string_fragment d
+  | Ast0.AttributeTag(d) -> print_attribute d
   | Ast0.TopTag(d)       -> top_level d
   | Ast0.IsoWhenTag(x)   -> U.print_when_modif x
   | Ast0.IsoWhenTTag(e)  -> expression e

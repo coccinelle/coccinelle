@@ -3078,6 +3078,7 @@ module Ast_cocci :
       | ForInfoTag of forinfo
       | CaseLineTag of case_line
       | StringFragmentTag of string_fragment
+      | AttributeTag of attr
       | ConstVolTag of const_vol
       | Token of string * info option
       | Directive of added_string list
@@ -3660,6 +3661,7 @@ module Ast0_cocci :
       | ForInfoTag of forinfo
       | CaseLineTag of case_line
       | StringFragmentTag of string_fragment
+      | AttributeTag of attr
       | TopTag of top_level
       | IsoWhenTag of Ast_cocci.when_modifier
       | IsoWhenTTag of expression

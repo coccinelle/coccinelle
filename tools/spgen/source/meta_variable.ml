@@ -396,6 +396,7 @@ let metavar_combiner rn =
   let casefn = donothing in
   let topfn = donothing in
   let enumdeclfn = donothing in
+  let attributefn = donothing in
 
   (* --- These are shortened formatting functions that return MVSets --- *)
 
@@ -577,7 +578,7 @@ let metavar_combiner rn =
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn forinfofn casefn string_fragmentfn topfn
+    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn topfn
 
 
 (* ------------------------------------------------------------------------- *)

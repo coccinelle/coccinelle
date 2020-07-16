@@ -1512,6 +1512,7 @@ let pp_any = function
   | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
   | Ast.StringFragmentTag(x) -> string_fragment x; false
+  | Ast.AttributeTag(x) -> print_attribute x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
   | Ast.Directive(xs) ->

@@ -1169,6 +1169,7 @@ let _ =
     | Ast.ForInfoTag(x) -> forinfo x
     | Ast.CaseLineTag(x) -> case_line "" x
     | Ast.StringFragmentTag(x) -> string_fragment x
+    | Ast.AttributeTag(x) -> print_attribute x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x

@@ -50,6 +50,7 @@ val flat_combiner :
     ((Ast0_cocci.forinfo,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.case_line,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.string_fragment,'a) Visitor_ast0_types.ccode) ->
+    ((Ast0_cocci.attr,'a) Visitor_ast0_types.ccode) ->
     ((Ast0_cocci.top_level,'a) Visitor_ast0_types.ccode) ->
     'a Visitor_ast0_types.combiner_rec_functions
 
@@ -95,6 +96,7 @@ val flat_rebuilder :
     (Ast0_cocci.forinfo Visitor_ast0_types.rcode) ->
     (Ast0_cocci.case_line Visitor_ast0_types.rcode) ->
     (Ast0_cocci.string_fragment Visitor_ast0_types.rcode) ->
+    (Ast0_cocci.attr Visitor_ast0_types.rcode) ->
     (Ast0_cocci.top_level Visitor_ast0_types.rcode) ->
       Visitor_ast0_types.rebuilder_rec_functions
 

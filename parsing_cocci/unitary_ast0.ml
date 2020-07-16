@@ -207,7 +207,7 @@ let get_free checker t =
       donothing donothing
       ident expression donothing donothing typeC donothing parameter
       declaration field donothing statement donothing case_line donothing
-      donothing in
+      donothing donothing in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

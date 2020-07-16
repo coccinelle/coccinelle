@@ -577,6 +577,7 @@ and anything =
   | ForInfoTag of forinfo
   | CaseLineTag of case_line
   | StringFragmentTag of string_fragment
+  | AttributeTag of attr
   | TopTag of top_level
   | IsoWhenTag of Ast.when_modifier
   | IsoWhenTTag of expression
@@ -608,6 +609,7 @@ let stmt x = StmtTag x
 let forinfo x = ForInfoTag x
 let case_line x = CaseLineTag x
 let string_fragment x = StringFragmentTag x
+let attr x = AttributeTag x
 let top x = TopTag x
 let enum_decl x = EnumDeclTag x
 

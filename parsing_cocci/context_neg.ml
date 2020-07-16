@@ -46,6 +46,7 @@ let set_mcodekind x mcodekind =
   | Ast0.ForInfoTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StringFragmentTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.AttributeTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -81,6 +82,7 @@ let set_index x index =
   | Ast0.ForInfoTag(d) -> Ast0.set_index d index
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
   | Ast0.StringFragmentTag(d) -> Ast0.set_index d index
+  | Ast0.AttributeTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -115,6 +117,7 @@ let get_index = function
   | Ast0.ForInfoTag(d) -> Index.forinfo d
   | Ast0.CaseLineTag(d) -> Index.case_line d
   | Ast0.StringFragmentTag(d) -> Index.string_fragment d
+  | Ast0.AttributeTag(d) -> Index.attribute d
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -183,7 +186,7 @@ let collect_plus_lines top =
       donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing statement donothing donothing donothing
-      donothing in
+      donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -554,7 +557,7 @@ let classify is_minus all_marked table code =
       ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
       typeC initialiser param declaration field enum_decl
       statement (do_nothing Ast0.forinfo) case_line string_fragment
-      (do_top Ast0.top) in
+      (do_nothing Ast0.attr) (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -641,6 +644,7 @@ let rec equal_expression e1 e2 =
       equal_mcode ar1 ar2
   | (Ast0.Cast(lp1,_,ar1,rp1,_),Ast0.Cast(lp2,_,ar2,rp2,_)) ->
       equal_mcode lp1 lp2 &&
+      (List.length ar1) = (List.length ar2) &&
       List.for_all2 equal_attribute ar1 ar2 &&
       equal_mcode rp1 rp2
   | (Ast0.SizeOfExpr(szf1,_),Ast0.SizeOfExpr(szf2,_)) ->
@@ -749,10 +753,14 @@ let equal_declaration d1 d2 =
       equal_mcode name1 name2
   | (Ast0.Init(stg1,_,_,attr1,eq1,_,sem1),
      Ast0.Init(stg2,_,_,attr2,eq2,_,sem2)) ->
-      equal_option stg1 stg2 && List.for_all2 equal_attribute attr1 attr2 &&
+      equal_option stg1 stg2 &&
+      (List.length attr1) = (List.length attr2) &&
+      List.for_all2 equal_attribute attr1 attr2 &&
       equal_mcode eq1 eq2 && equal_mcode sem1 sem2
   | (Ast0.UnInit(stg1,_,_,attr1,sem1),Ast0.UnInit(stg2,_,_,attr2,sem2)) ->
-      equal_option stg1 stg2 && List.for_all2 equal_attribute attr1 attr2 &&
+      equal_option stg1 stg2 &&
+      (List.length attr1) = (List.length attr2) &&
+      List.for_all2 equal_attribute attr1 attr2 &&
       equal_mcode sem1 sem2
   | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
      Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
@@ -767,7 +775,9 @@ let equal_declaration d1 d2 =
        equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,attr1,sem1),
      Ast0.MacroDecl(stg2,nm2,lp2,_,rp2,attr2,sem2)) ->
-      equal_option stg1 stg2 && List.for_all2 equal_attribute attr1 attr2 &&
+      equal_option stg1 stg2 &&
+      (List.length attr1) = (List.length attr2) &&
+      List.for_all2 equal_attribute attr1 attr2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDeclInit(stg1,nm1,lp1,_,rp1,eq1,_,sem1),
      Ast0.MacroDeclInit(stg2,nm2,lp2,_,rp2,eq2,_,sem2)) ->
@@ -775,6 +785,7 @@ let equal_declaration d1 d2 =
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
 	 && equal_mcode sem1 sem2
   | (Ast0.TyDecl(_,attr1,sem1),Ast0.TyDecl(_,attr2,sem2)) ->
+       (List.length attr1) = (List.length attr2) &&
        List.for_all2 equal_attribute attr1 attr2 && equal_mcode sem1 sem2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
@@ -1052,7 +1063,7 @@ let contextify_all =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 let contextify_whencode =
   let bind x y = () in

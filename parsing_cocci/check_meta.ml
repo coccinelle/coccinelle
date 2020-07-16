@@ -597,7 +597,7 @@ let positions rname table rules =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
 
   List.iter fn.VT0.combiner_rec_top_level rules
 
@@ -667,7 +667,7 @@ let dup_positions rules =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing expression donothing donothing typeC
       donothing donothing declaration field donothing statement
-      donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing in
 
   let res =
     List.sort compare
