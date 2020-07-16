@@ -88,6 +88,10 @@ In order to use the OCaml scripting feature in SmPL, an extra file,
 coccilib.cmi, is produced and installed in /usr/share/cocci/ocaml, which is
 needed for the compilation of ocaml scripts.
 
+By default, Coccinelle Makefile is silent and does not print fully the
+commands that are executed. Compilation can be turned verbose with
+
+    make VERBOSE=yes
 
  ** Bash integration **
 
