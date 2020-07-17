@@ -72,8 +72,10 @@ examples:
 .ml.cmx:
 	$(OCAMLOPT) -package "$(REQUIRES)" -c $<
 
-depend: *.ml *.mli
+.depend: *.ml *.mli
 	$(OCAMLDEP) *.ml *.mli >.depend
+
+depend: .depend
 
 include .depend
 
