@@ -358,7 +358,12 @@ let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
   ) !g#nodes;
 
   F.KeyMap.iter (fun nodei node ->
-    assert (F.KeyEdgeSet.cardinal (!g#successors nodei) >= 1);
+    if not(F.KeyEdgeSet.cardinal (!g#successors nodei) >= 1)
+    then
+      failwith
+	(Printf.sprintf
+	   "expected >= 1 successors, no successors forund for %s"
+	   (Pretty_print_c.debug_info_of_node nodei !g))
     ) !g#nodes;
 
   !g
