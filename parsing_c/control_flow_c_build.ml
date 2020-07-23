@@ -202,7 +202,13 @@ let compute_labels_and_create_them st =
               k st;
             end
         | _st -> k st
-      )
+      );
+      Visitor_c.kexpr = (fun (k, bigf) exp ->
+	match Ast_c.unwrap_expr exp with
+        | StatementExpr ((statxs, is)) ->
+	    (* don't visit labels, because CFG won't be made for them later *)
+	    ()
+	| _ -> k exp)
     };
     !h;
   end
