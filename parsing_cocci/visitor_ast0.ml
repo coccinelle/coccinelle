@@ -1154,7 +1154,10 @@ let visitor mode bind option_default
         (match Ast0.unwrap a with
           Ast0.Attribute(attr) ->
             let (attr_n,attr) = string_mcode attr in
-            (attr_n,Ast0.Attribute(attr))) in
+            (attr_n,Ast0.Attribute(attr))
+	| Ast0.MetaAttribute(name,constraints,pure) ->
+	    let (n,name) = meta_mcode name in
+	    (n,Ast0.MetaAttribute(name,constraints,pure))) in
     attributefn all_functions k a
 
   (* we only include the when string mcode w because the parameterised

@@ -112,6 +112,7 @@ val add_binaryOp_meta:
 
 val add_type_name: (string -> unit) ref
 val add_attribute: (string -> unit) ref
+val add_attribute_meta: cstr_meta_type ref
 val add_declarer_name: (string -> unit) ref
 val add_iterator_name: (string -> unit) ref
 val init_rule: (unit -> unit) ref

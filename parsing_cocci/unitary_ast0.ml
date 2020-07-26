@@ -174,6 +174,12 @@ let get_free checker t =
 	detect_unitary_frees(List.map r.VT0.combiner_rec_case_line case_lines)
     | _ -> k c in
 
+  let attribute r k a =
+    match Ast0.unwrap a with
+      Ast0.MetaAttribute(name,_,_) ->
+	bind (k a) (checker name)
+    | _ -> option_default in
+
   let statement r k s =
    match Ast0.unwrap s with
      Ast0.MetaStmt(name,_,_) | Ast0.MetaStmtList(name,_,_,_) ->
@@ -207,7 +213,7 @@ let get_free checker t =
       donothing donothing
       ident expression donothing donothing typeC donothing parameter
       declaration field donothing statement donothing case_line donothing
-      donothing donothing in
+      attribute donothing in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))

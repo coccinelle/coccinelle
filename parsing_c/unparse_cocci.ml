@@ -714,6 +714,12 @@ and print_attribute_list attrs =
 and print_attribute attr =
   match Ast.unwrap attr with
     Ast.Attribute(a) -> mcode print_string a
+  | Ast.MetaAttribute(name,_,_,_) ->
+      handle_metavar name
+	(function
+	    Ast_c.MetaAttributeVal a ->
+              pretty_print_c.Pretty_print_c.attribute a
+          | _ -> error name attr "attribute value expected")
 
 and typeC ty =
   match Ast.unwrap ty with

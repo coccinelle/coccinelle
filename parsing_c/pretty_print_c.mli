@@ -26,6 +26,7 @@ type pretty_printers = {
   fragment        : Ast_c.string_fragment printer;
   fragment_list   : (Ast_c.string_fragment list) printer;
   format          : Ast_c.string_format printer;
+  attribute       : Ast_c.attribute printer;
   flow            : Control_flow_c.node printer;
   name            : Ast_c.name printer
 }
@@ -80,6 +81,9 @@ val pp_string_fragment_list_gen:
 val pp_string_format_gen:
     pr_elem:Ast_c.info printer -> pr_space:unit printer ->
       Ast_c.string_format printer
+val pp_attribute_gen:
+    pr_elem:Ast_c.info printer -> pr_space:unit printer ->
+      Ast_c.attribute printer
 val pp_program_gen : pr_elem:Ast_c.info printer -> pr_space:unit printer ->
   Ast_c.toplevel printer
 
@@ -98,6 +102,7 @@ val pp_statement_seq_list_simple: Ast_c.statement_sequencable list printer
 val pp_toplevel_simple:   Ast_c.toplevel printer
 val pp_string_fragment_simple:   Ast_c.string_fragment printer
 val pp_string_format_simple:     Ast_c.string_format printer
+val pp_attribute_simple:     Ast_c.attribute printer
 
 val debug_info_of_node:
   Control_flow_c.G.key -> Control_flow_c.cflow -> string

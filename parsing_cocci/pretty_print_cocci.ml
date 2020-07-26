@@ -458,6 +458,7 @@ and print_attribute_list attrs =
 and print_attribute attr =
   match Ast.unwrap attr with
     Ast.Attribute(a) -> mcode print_string a
+  | Ast.MetaAttribute(name,_,_,_) -> mcode print_meta name
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -1110,6 +1111,8 @@ let unparse_cocci_mv rule = function
       print_string "comments "; print_name rule r n; print_string ";"
   | Ast.MetaFmtDecl(_,(r,n)) ->
       print_string "format "; print_name rule r n; print_string ";"
+  | Ast.MetaAttributeDecl(_,(r,n)) ->
+      print_string "attribute "; print_name rule r n; print_string ";"
   | Ast.MetaFragListDecl(_,(r,n),len) ->
       print_string "fragment list"; print_listlen rule len;
       print_name rule r n; print_string ";"

@@ -173,8 +173,9 @@ let rec expression context old_metas table minus e =
       expression ID old_metas table minus exp;
       ident FIELD old_metas table minus field
   | Ast0.Cast(lp,ty,attr,rp,exp) ->
-      (* No meta attribute yet *)
-      typeC old_metas table minus ty; expression ID old_metas table minus exp
+      typeC old_metas table minus ty;
+      List.iter (attribute old_metas table minus) attr;
+      expression ID old_metas table minus exp
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
@@ -266,6 +267,7 @@ and declaration context old_metas table minus d =
   | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
       typeC old_metas table minus ty;
       ident context old_metas table minus id;
+      List.iter (attribute old_metas table minus) attr;
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->
 	  expression ID old_metas table minus exp
@@ -277,14 +279,15 @@ and declaration context old_metas table minus d =
 	  else*)
 	    initialiser old_metas table minus ini)
   | Ast0.UnInit(stg,ty,id,attr,sem) ->
-      typeC old_metas table minus ty; ident context old_metas table minus id
+      typeC old_metas table minus ty; ident context old_metas table minus id;
+      List.iter (attribute old_metas table minus) attr
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
       parameter_list old_metas table minus params
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
-      (* no meta attribute yet *)
       ident GLOBAL old_metas table minus name;
+      List.iter (attribute old_metas table minus) attr;
       dots (expression ID old_metas table minus) args
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
       ident GLOBAL old_metas table minus name;
@@ -292,7 +295,9 @@ and declaration context old_metas table minus d =
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp -> expression ID old_metas table minus exp
       |	_ -> initialiser old_metas table minus ini)
-  | Ast0.TyDecl(ty,attr,sem) -> typeC old_metas table minus ty
+  | Ast0.TyDecl(ty,attr,sem) ->
+      typeC old_metas table minus ty;
+      List.iter (attribute old_metas table minus) attr
   | Ast0.Typedef(stg,ty,id,sem) ->
       typeC old_metas table minus ty;
       typeC old_metas table minus id
@@ -377,9 +382,9 @@ and initialiser_list old_metas table minus =
 and parameterTypeDef old_metas table minus param =
   match Ast0.unwrap param with
     Ast0.Param(ty,id,attr) ->
-      (* No meta attribute yet *)
       get_opt (ident ID old_metas table minus) id;
-      typeC old_metas table minus ty
+      typeC old_metas table minus ty;
+      List.iter (attribute old_metas table minus) attr
   | Ast0.MetaParam(name,_,_) ->
       check_table table minus name
   | Ast0.MetaParamList(name,len,_,_) ->
@@ -519,7 +524,13 @@ and fninfo old_metas table minus = function
     Ast0.FStorage(stg) -> ()
   | Ast0.FType(ty) -> typeC old_metas table minus ty
   | Ast0.FInline(inline) -> ()
-  | Ast0.FAttr(attr) -> ()
+  | Ast0.FAttr(attr) -> attribute old_metas table minus attr
+
+and attribute old_metas table minus x =
+  match Ast0.unwrap x with
+    Ast0.MetaAttribute(name,_,_) ->
+      check_table table minus name
+  | _ -> ()
 
 and whencode notfn alwaysfn expression = function
     Ast0.WhenNot (_,_,a) -> notfn a

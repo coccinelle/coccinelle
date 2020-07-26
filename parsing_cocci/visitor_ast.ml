@@ -921,7 +921,8 @@ let combiner bind option_default
   and attribute a =
     let k a =
       match Ast.unwrap a with
-        Ast.Attribute(attr) -> string_mcode attr in
+        Ast.Attribute(attr) -> string_mcode attr
+      | Ast.MetaAttribute(name,_,_,_) -> meta_mcode name in
     attributefn all_functions k a
 
 
@@ -1919,7 +1920,9 @@ let rebuilder
     let k a =
       Ast.rewrap a
         (match Ast.unwrap a with
-          Ast.Attribute(attr) -> Ast.Attribute(string_mcode attr)) in
+          Ast.Attribute(attr) -> Ast.Attribute(string_mcode attr)
+	| Ast.MetaAttribute(name,constraints,keep,inherited) ->
+	    Ast.MetaAttribute(meta_mcode name,constraints,keep,inherited)) in
     attributefn all_functions k a
 
   and whencode notfn alwaysfn = function

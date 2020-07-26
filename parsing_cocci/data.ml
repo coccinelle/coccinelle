@@ -132,6 +132,7 @@ let add_binaryOp_meta:
 
 let add_type_name: (string -> unit) ref = ref uninitialized_add_meta
 let add_attribute: (string -> unit) ref = ref uninitialized_add_meta
+let add_attribute_meta: cstr_meta_type ref = ref uninitialized_add_meta
 let add_declarer_name: (string -> unit) ref = ref uninitialized_add_meta
 let add_iterator_name: (string -> unit) ref = ref uninitialized_add_meta
 

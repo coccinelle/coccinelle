@@ -225,6 +225,9 @@ let left_attribute attr =
   match Ast0.unwrap attr with
     Ast0.Attribute(a) ->
       call_right left_mcode a attr (function a -> Ast0.Attribute(a))
+  | Ast0.MetaAttribute(name,a,b) ->
+      call_right left_mcode name attr
+        (function name -> Ast0.MetaAttribute(name,a,b))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

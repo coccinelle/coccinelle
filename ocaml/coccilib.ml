@@ -70,6 +70,7 @@ type param_type =
   | FieldList of Ast_c.field list
   | FragList of Ast_c.string_fragment list
   | Fmt of Ast_c.string_format
+  | Attribute of Ast_c.attribute
   | Stmt of Ast_c.statement
   | StmtList of Ast_c.statement_sequencable list
 

@@ -167,6 +167,14 @@ and strip =
 	     Ast0.MetaParamList(nm,lenname,cstr,Ast0.Pure)
 	 | e -> e)) in
 
+  let attribute r k e =
+    donothing r k
+      (Ast0.rewrap e
+	 (match Ast0.unwrap e with
+	   Ast0.MetaAttribute(nm,cstr,pure) ->
+	     Ast0.MetaAttribute(nm,cstr,Ast0.Pure)
+	 | e -> e)) in
+
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
@@ -174,7 +182,7 @@ and strip =
     donothing donothing
     ident donothing donothing donothing typeC donothing param
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing
+    attribute donothing
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true

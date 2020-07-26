@@ -1200,7 +1200,9 @@ and fninfo = function
 and attribute a =
   rewrap a no_isos
     (match Ast0.unwrap a with
-      Ast0.Attribute(attr) -> Ast.Attribute(mcode attr))
+      Ast0.Attribute(attr) -> Ast.Attribute(mcode attr)
+    | Ast0.MetaAttribute(name,cstr,_) ->
+	Ast.MetaAttribute(mcode name,constraints cstr,unitary,false))
 
 and option_to_list = function
     Some x -> [x]

@@ -447,6 +447,7 @@ and fninfo =
 
 and base_attr =
     Attribute of string mcode
+  | MetaAttribute of Ast_cocci.meta_name mcode * constraints * pure
 
 and attr = base_attr wrap
 

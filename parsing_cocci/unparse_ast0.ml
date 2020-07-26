@@ -768,6 +768,7 @@ and print_attribute_list attrs =
 and print_attribute a =
   match Ast0.unwrap a with
     Ast0.Attribute(attr) -> mcode print_string attr
+  | Ast0.MetaAttribute(name,_,_) -> mcode print_meta name
 
 and whencode notfn alwaysfn = function
     Ast0.WhenNot (_,_,a) ->

@@ -821,6 +821,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaStmtListVal  of statement_sequencable list * stripped
   | MetaDParamListVal of (string wrap) wrap2 list
   | MetaFmtVal       of string_format
+  | MetaAttributeVal of attribute
   | MetaFragListVal  of string_fragment list
   | MetaAssignOpVal  of assignOp
   | MetaBinaryOpVal  of binaryOp

@@ -529,9 +529,10 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.MetaType(name,_,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
 
-  let attribute a =
+  let attribute r k a =
     match Ast.unwrap a with
-      Ast.Attribute(attr) -> Ast.unwrap_mcode attr in
+      Ast.MetaAttribute(name,_,_,_) -> bind (k a) (minherited name)
+    | Ast.Attribute(attr) -> constants (Ast.unwrap_mcode attr) in
 
   let declaration r k d =
     match Ast.unwrap d with
@@ -543,7 +544,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     (* need things with explicit names too *)
     | Ast.Init(_,_,_,attr,_,_,_) | Ast.UnInit(_,_,_,attr,_) ->
 	List.fold_left bind (k d)
-	  (List.map (fun attr -> constants (attribute attr)) attr)
+	  (List.map r.V.combiner_attribute attr)
     | _ -> k d in
 
   let field r k d =
@@ -645,7 +646,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     donothing donothing donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
     fullType typeC initialiser parameter define_parameter declaration donothing
-    field ann_field donothing rule_elem statement donothing donothing donothing
+    field ann_field donothing rule_elem statement donothing attribute donothing
     donothing
 
 (* ------------------------------------------------------------------------ *)

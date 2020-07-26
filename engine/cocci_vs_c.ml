@@ -229,6 +229,8 @@ let equal_metavarval valu valu' =
 
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
       Lib_parsing_c.al_string_format a = Lib_parsing_c.al_string_format b
+  | Ast_c.MetaAttributeVal a, Ast_c.MetaAttributeVal b ->
+      Lib_parsing_c.al_attribute a = Lib_parsing_c.al_attribute b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
       Lib_parsing_c.al_string_fragments a =
       Lib_parsing_c.al_string_fragments b
@@ -287,7 +289,7 @@ let equal_metavarval valu valu' =
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
-      |B.MetaFmtVal _|B.MetaFragListVal _
+      |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttributeVal _
     ), _
       -> raise (Impossible 16)
 
@@ -322,6 +324,8 @@ let equal_inh_metavarval valu valu'=
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
       Lib_parsing_c.al_inh_string_format a =
       Lib_parsing_c.al_inh_string_format b
+  | Ast_c.MetaAttributeVal a, Ast_c.MetaAttributeVal b ->
+      Lib_parsing_c.al_inh_attribute a = Lib_parsing_c.al_inh_attribute b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
       Lib_parsing_c.al_inh_string_fragments a =
       Lib_parsing_c.al_inh_string_fragments b
@@ -388,7 +392,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
-      |B.MetaFmtVal _|B.MetaFragListVal _
+      |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttributeVal _
     ), _
       -> raise (Impossible 17)
 
@@ -1531,7 +1535,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       let attr_allminus =
         let attr_is_not_context a =
           match A.unwrap a with
-          | A.Attribute(_,_,A.CONTEXT(_,_),_) -> false
+          | A.Attribute(_,_,A.CONTEXT(_,_),_)
+          | A.MetaAttribute((_,_,A.CONTEXT(_,_),_),_,_,_) -> false
           | _ -> true in
         check_allminus.Visitor_ast.combiner_fullType typa &&
         List.for_all attr_is_not_context attrsa in
@@ -4278,6 +4283,18 @@ and attribute = fun allminus ea eb ->
 	  A.rewrap ea (A.Attribute(attra)),
           (B.Attribute attrb,ib1)
         )))
+  | A.MetaAttribute (ida,constraints,keep,inherited), _ ->
+      (* todo: use quaopt, hasreg ? *)
+      let max_min _ = Lib_parsing_c.ii_of_attr eb in
+      let mn = Ast_c.MetaAttributeVal eb in
+      check_constraints constraints ida mn
+	(fun () ->
+	  X.envf keep inherited (ida,mn,max_min) (fun () ->
+            X.distrf_attr ida eb)
+	    >>= (fun ida eb ->
+	      return
+		(A.MetaAttribute(ida,constraints,keep,inherited)+>
+		 A.rewrap ea,eb)))
   | _ -> fail
 
 (*---------------------------------------------------------------------------*)

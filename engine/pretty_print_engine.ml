@@ -42,6 +42,7 @@ let rec pp_binding_kind = function
   | Ast_c.MetaStmtListVal      (statxs,_) ->
       Pretty_print_c.pp_statement_seq_list_simple statxs
   | Ast_c.MetaFmtVal fmt -> Pretty_print_c.pp_string_format_simple fmt
+  | Ast_c.MetaAttributeVal attr -> Pretty_print_c.pp_attribute_simple attr
   | Ast_c.MetaFragListVal frags ->
       frags +> (List.iter Pretty_print_c.pp_string_fragment_simple)
   | Ast_c.MetaParamVal     params -> pp "<<param>>"

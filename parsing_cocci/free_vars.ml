@@ -137,6 +137,13 @@ let collect_refs include_constraints =
 	  bind (constraints cstr) [metaid name]
       | _ -> option_default) in
 
+  let astfvattribute recursor k a =
+    bind (k a)
+      (match Ast.unwrap a with
+	Ast.MetaAttribute(name,cstr,_,_) ->
+	  bind (constraints cstr) [metaid name]
+      | _ -> option_default) in
+
   let rec collect_assign_names aop =
     match Ast.unwrap aop with
       Ast.MetaAssign(name,cstr,_,_) ->
@@ -253,7 +260,8 @@ let collect_refs include_constraints =
     astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
     astfvfullType astfvtypeC astfvinit astfvparam astfvdefine_param
     astfvdecls donothing astfvfields astafvfields donothing
-    astfvrule_elem astfvstatement donothing donothing donothing donothing_a
+    astfvrule_elem astfvstatement donothing astfvattribute
+    donothing donothing_a
 
 let collect_all_refs = collect_refs true
 let collect_non_constraint_refs = collect_refs false
@@ -369,6 +377,12 @@ let collect_saved =
 	Ast.MetaFormat(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
+  let astfvattribute recursor k a =
+    bind (k a)
+      (match Ast.unwrap a with
+	Ast.MetaAttribute(name,_,Ast.Saved,_) -> [metaid name]
+      | _ -> option_default) in
+
   let astfvassign recursor k aop =
     bind (k aop)
       (match Ast.unwrap aop with
@@ -479,7 +493,7 @@ let collect_saved =
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
     astfvtypeC astfvinit astfvparam astfvdefine_param astfvdecls donothing
     astfvfields donothing donothing astfvrule_elem donothing donothing
-    donothing donothing donothing
+    astfvattribute donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -779,6 +793,14 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap ft (Ast.MetaFormat(name,constraints,unitary,inherited))
     | _ -> ft in
 
+  let attribute r k a =
+    let a = k a in
+    match Ast.unwrap a with
+      Ast.MetaAttribute(name,constraints,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap a (Ast.MetaAttribute(name,constraints,unitary,inherited))
+    | _ -> a in
+
   let assignop r k ft =
     let ft = k ft in
     match Ast.unwrap ft with
@@ -905,7 +927,7 @@ let classify_variables metavar_decls minirules used_after =
       ident expression string_fragment string_format assignop binaryop
       donothing typeC
       init param define_param decl donothing field donothing donothing
-      rule_elem donothing donothing donothing donothing donothing in
+      rule_elem donothing donothing attribute donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
 

@@ -396,7 +396,6 @@ let metavar_combiner rn =
   let casefn = donothing in
   let topfn = donothing in
   let enumdeclfn = donothing in
-  let attributefn = donothing in
 
   (* --- These are shortened formatting functions that return MVSets --- *)
 
@@ -569,6 +568,13 @@ let metavar_combiner rn =
             meta_mc_format ~mc ~typ:"format " ~constr
         | _ -> fn v
        )
+    | _ -> fn v in
+
+  let attributefn c fn v =
+    match Ast0.unwrap v with
+    | Ast0.MetaAttribute(mc, idconstr, pure) ->
+        let constr = constraints ~rn idconstr in
+        meta_mc_format ~mc ~typ:"parameter " ~constr
     | _ -> fn v in
 
   V0.flat_combiner bind option_default

@@ -475,13 +475,19 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaStmt(name,_,pure) | Ast0.MetaStmtList(name,_,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
+    let attribute r k a =
+      bind (bind (pure_mcodekind (Ast0.get_mcodekind a)) (k a))
+	(match Ast0.unwrap a with
+	  Ast0.MetaAttribute(name,_,pure) -> pure
+	| _ -> Ast0.Impure) in
+
     V0.flat_combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing
       ident expression assignOp binaryOp typeC init param decl field donothing
-      stmt donothing donothing donothing donothing donothing in
+      stmt donothing donothing donothing attribute donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -1417,10 +1423,22 @@ let match_maker checks_needed context_required whencode_allowed =
       |	_ -> return false in
     loop (patterninfo,cinfo)
 
-  and match_attribute a1 a2 =
-    match (Ast0.unwrap a1,Ast0.unwrap a2) with
-      (Ast0.Attribute(attr1),Ast0.Attribute(attr2)) ->
-        check_mcode attr1 attr2
+  and match_attribute pattern a =
+    match Ast0.unwrap pattern with
+      Ast0.MetaAttribute(name,_,pure) ->
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_attribute
+	  (function a -> Ast0.AttributeTag a)
+	  a
+    | up ->
+	if not(checks_needed) || not(context_required) || is_context a
+	then
+	  match (up,Ast0.unwrap a) with
+	    (Ast0.Attribute(attra),Ast0.Attribute(attrb)) ->
+              if mcode_equal attra attrb
+              then check_mcode attra attrb
+              else return false
+	  | _ -> return false
+	else return_false (ContextRequired (Ast0.AttributeTag a))
 
   and match_attributes a1 a2 =
     match_list match_attribute
@@ -2169,13 +2187,27 @@ let instantiate bindings mv_bindings model =
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | _ -> e in
 
+  let attributefn r k e =
+    let e = k e in
+    match Ast0.unwrap e with
+      Ast0.MetaAttribute(name,cstr,pure) ->
+	(rebuild_mcode None).VT0.rebuilder_rec_attribute
+	  (match lookup name bindings mv_bindings with
+	    Common.Left(Ast0.AttributeTag(a)) -> a
+	  | Common.Left(_) -> failwith "not possible 1"
+	  | Common.Right(new_mv) ->
+	      Ast0.rewrap e
+		(Ast0.MetaAttribute
+                  (Ast0.set_mcode_data new_mv name,cstr,pure)))
+    | _ -> e in
+
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     donothing donothing donothing
     identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn donothing donothing donothing donothing donothing
+    enumdeclfn stmtfn donothing donothing donothing attributefn donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2458,6 +2490,8 @@ let get_name bindings = function
       (nm,function nm -> Ast.MetaFragListDecl(ar,nm,nm1))
   | Ast.MetaFmtDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaFmtDecl(ar,nm))
+  | Ast.MetaAttributeDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaAttributeDecl(ar,nm))
   | Ast.MetaAnalysisDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaAnalysisDecl(ar,nm))
   | Ast.MetaDeclarerDecl(ar,nm) ->

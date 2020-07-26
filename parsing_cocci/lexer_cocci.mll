@@ -533,6 +533,18 @@ let init _ = (* per file, first .cocci then iso *)
 	    TDirective (Ast.Space name, clt)
 	| _ -> Tattr (name, clt) in
       Hashtbl.replace attr_names name fn);
+  Data.add_attribute_meta :=
+    (fun name cstr pure ->
+      let fn ((d,ln,_,_,_,_,_,_,_,_) as clt) =
+        if (match d with (Data.PLUS | Data.PLUSPLUS) -> true | _ -> false)
+        then
+          (* TODO support meta attributes in plus code *)
+	  failwith
+	    (Printf.sprintf
+             "%d: meta attributes currently only allowed in context/minus code"
+             ln);
+        TMetaAttribute(name,cstr,pure,clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in

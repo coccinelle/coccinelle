@@ -128,6 +128,7 @@ and metavar =
   | MetaPosDecl of arity * meta_name (* name *)
   | MetaComDecl of arity * meta_name (* name *)
   | MetaFmtDecl of arity * meta_name (* name *)
+  | MetaAttributeDecl of arity * meta_name (* name *)
   | MetaFragListDecl of arity * meta_name (* name *) * list_len (*len*)
   | MetaAnalysisDecl of string * meta_name (* name *)
   | MetaDeclarerDecl of arity * meta_name (* name *)
@@ -626,6 +627,7 @@ and fninfo =
 
 and base_attr =
     Attribute of string mcode
+  | MetaAttribute of meta_name mcode * constraints * keep_binding * inherited
 
 and attr = base_attr wrap
 
@@ -914,6 +916,7 @@ let get_meta_name = function
   | MetaPosDecl(_ar,nm) -> nm
   | MetaComDecl(_ar,nm) -> nm
   | MetaFmtDecl(_ar,nm) -> nm
+  | MetaAttributeDecl(_ar,nm) -> nm
   | MetaFragListDecl(_ar,nm,_nm1) -> nm
   | MetaAnalysisDecl(_code,nm) -> nm
   | MetaDeclarerDecl(_ar,nm) -> nm

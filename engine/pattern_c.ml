@@ -538,6 +538,12 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_string_format a
 		   else Lib_parsing_c.semi_al_string_format a))
+          | Ast_c.MetaAttributeVal a ->
+	      success
+		(Ast_c.MetaAttributeVal
+		   (if strip
+		   then Lib_parsing_c.al_attribute a
+		   else Lib_parsing_c.semi_al_attribute a))
 
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))

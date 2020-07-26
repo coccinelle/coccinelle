@@ -326,6 +326,7 @@ and metavar_binding_kind =
   | MetaStmtListVal of statement_sequencable list * stripped
   | MetaDParamListVal of string wrap wrap2 list
   | MetaFmtVal of string_format
+  | MetaAttributeVal of attribute
   | MetaFragListVal of string_fragment list
   | MetaAssignOpVal of assignOp
   | MetaBinaryOpVal of binaryOp

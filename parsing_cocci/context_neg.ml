@@ -403,9 +403,6 @@ let classify is_minus all_marked table code =
 	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
-  let attribute a =
-    match Ast0.unwrap a with
-      Ast0.Attribute(attr) -> mcode attr in
 
   (* not clear why we have the next cases, since DisjDecl and
   as it only comes from isos *)
@@ -430,7 +427,8 @@ let classify is_minus all_marked table code =
 	    (bind (r.VT0.combiner_rec_typeC ty)
 	       (bind (r.VT0.combiner_rec_ident id)
                   (bind
-                     (List.fold_right bind (List.map attribute attr)
+                     (List.fold_right bind
+                       (List.map r.VT0.combiner_rec_attribute attr)
 			option_default)
 		     (bind (mcode eq)
 			(bind (r.VT0.combiner_rec_initialiser ini)
@@ -440,7 +438,8 @@ let classify is_minus all_marked table code =
 	    (bind (r.VT0.combiner_rec_typeC ty)
 	       (bind (r.VT0.combiner_rec_ident id)
                   (bind
-                     (List.fold_right bind (List.map attribute attr)
+                     (List.fold_right bind
+                       (List.map r.VT0.combiner_rec_attribute attr)
 			option_default)
 		     (mcode sem))))
       |	_ -> k e) in
@@ -477,7 +476,9 @@ let classify is_minus all_marked table code =
 	  (* needed for the same reason as in the Init and UnInit cases *)
 	  bind (r.VT0.combiner_rec_typeC ty)
            (bind (r.VT0.combiner_rec_ident id)
-              (List.fold_right bind (List.map attribute attr) option_default))
+              (List.fold_right bind
+                 (List.map r.VT0.combiner_rec_attribute attr)
+                 option_default))
       |	_ -> k e) in
 
   let typeC r k e =
@@ -596,6 +597,9 @@ let equal_attribute a1 a2 =
   match (Ast0.unwrap a1, Ast0.unwrap a2) with
     (Ast0.Attribute(attr1),Ast0.Attribute(attr2)) ->
       equal_mcode attr1 attr2
+  | (Ast0.MetaAttribute(name1,_,_),Ast0.MetaAttribute(name2,_,_)) ->
+      equal_mcode name1 name2
+  | _ -> false
 
 let equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
@@ -865,8 +869,10 @@ let equal_initialiser i1 i2 =
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
     (Ast0.VoidParam(_,ar1),Ast0.VoidParam(_,ar2)) ->
+      (List.length ar1) = (List.length ar2) &&
       List.for_all2 equal_attribute ar1 ar2
   | (Ast0.Param(_,_,ar1),Ast0.Param(_,_,ar2)) ->
+      (List.length ar1) = (List.length ar2) &&
       List.for_all2 equal_attribute ar1 ar2
   | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
   | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->

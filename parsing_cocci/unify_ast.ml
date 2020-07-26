@@ -723,6 +723,8 @@ and unify_attribute attr1 attr2 =
   match (Ast.unwrap attr1,Ast.unwrap attr2) with
     (Ast.Attribute(attr1),Ast.Attribute(attr2)) ->
       unify_mcode attr1 attr2
+  | (Ast.MetaAttribute(_,_,_,_),_)
+  | (_,Ast.MetaAttribute(_,_,_,_)) -> true
 
 and unify_exec_code ec1 ec2 =
   match (Ast.unwrap ec1,Ast.unwrap ec2) with

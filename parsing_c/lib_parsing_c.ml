@@ -86,6 +86,7 @@ let al_name      x = Visitor_c.vk_name_s      (strip_info_visitor()) x
 let al_string_format x = Visitor_c.vk_string_format_s (strip_info_visitor()) x
 let al_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_info_visitor()) x
+let al_attribute x = Visitor_c.vk_attribute_s (strip_info_visitor()) x
 
 let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
@@ -147,6 +148,7 @@ let al_inh_string_format x =
   Visitor_c.vk_string_format_s (strip_inh_info_visitor()) x
 let al_inh_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_inh_info_visitor()) x
+let al_inh_attribute x = Visitor_c.vk_attribute_s (strip_inh_info_visitor()) x
 
 
 
@@ -184,6 +186,7 @@ let semi_al_string_format =
   Visitor_c.vk_string_format_s semi_strip_info_visitor
 let semi_al_string_fragments =
   Visitor_c.vk_string_fragments_s semi_strip_info_visitor
+let semi_al_attribute = Visitor_c.vk_attribute_s semi_strip_info_visitor
 
 let semi_al_program =
   List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)

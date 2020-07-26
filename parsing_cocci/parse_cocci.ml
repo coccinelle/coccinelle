@@ -243,6 +243,7 @@ let token2c (tok,_) add_clt =
   | PC.TMetaDParamList(_,_,_,_,clt) -> add_clt "dparamlistmeta" clt
   | PC.TMetaFunc(_,_,_,clt)  -> add_clt "funcmeta" clt
   | PC.TMetaLocalFunc(_,_,_,clt) -> add_clt "funcmeta" clt
+  | PC.TMetaAttribute(_,_,_,clt) -> add_clt "attributemeta" clt
   | PC.TMetaPos(_,_,_,clt)   -> "posmeta"
   | PC.TMetaCom(_,_,clt)   -> "commeta"
   | PC.TMPtVirg -> ";"
@@ -404,6 +405,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TCPar0(s,clt) -> NOTPLUS
   | PC.TMetaPos(nm,_,_,_) -> NOTPLUS
   | PC.TMetaCom(nm,_,_) -> NOTPLUS
+  | PC.TMetaAttribute(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
   | PC.TAttr_(clt) -> NOTPLUS
@@ -466,6 +468,7 @@ let get_clt (tok,_) =
   | PC.TMetaFieldList(_,_,_,_,clt)
   | PC.TMetaFunc(_,_,_,clt) | PC.TMetaLocalFunc(_,_,_,clt)
   | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt)
+  | PC.TMetaAttribute(_,_,_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -680,6 +683,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaDParamList(a,b,c,d,_) -> (PC.TMetaDParamList(a,b,c,d,clt),x)
   | PC.TMetaFunc(a,b,c,_)  -> (PC.TMetaFunc(a,b,c,clt),x)
   | PC.TMetaLocalFunc(a,b,c,_) -> (PC.TMetaLocalFunc(a,b,c,clt),x)
+  | PC.TMetaAttribute(a,b,c,_) -> (PC.TMetaAttribute(a,b,c,clt),x)
 
   | PC.TMetaDeclarer(a,b,c,_) -> (PC.TMetaDeclarer(a,b,c,clt),x)
   | PC.TMetaIterator(a,b,c,_) -> (PC.TMetaIterator(a,b,c,clt),x)
@@ -929,7 +933,8 @@ let split_token ((tok,_) as t) =
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt) -> split t clt
   | PC.TMPtVirg | PC.TArob | PC.TArobArob | PC.TScript _
   | PC.TInitialize | PC.TFinalize -> ([t],[t])
-  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt) -> split t clt
+  | PC.TPArob clt | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt)
+  | PC.TMetaAttribute (_,_,_,clt) -> split t clt
 
   | PC.TFunDecl(clt) | PC.TFunProto(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
@@ -1220,7 +1225,8 @@ let detect_types in_meta_decls l =
     | (PC.TMetaStmList(_,_,_,_,_),_)
     | (PC.TMetaDParamList(_,_,_,_,_),_)
     | (PC.TMetaPos(_,_,_,_),_)
-    | (PC.TMetaCom(_,_,_),_) -> in_meta_decls
+    | (PC.TMetaCom(_,_,_),_)
+    | (PC.TMetaAttribute(_,_,_,_),_) -> in_meta_decls
     | _ -> false in
   let is_tyleft = function (* things that can start a var decl *)
       (PC.TMul(_),_)
@@ -1330,6 +1336,7 @@ let token2line (tok,_) =
   | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,_,clt) | PC.TMetaFunc(_,_,_,clt)
   | PC.TMetaLocalFunc(_,_,_,clt) | PC.TMetaPos(_,_,_,clt) | PC.TMetaCom(_,_,clt)
+  | PC.TMetaAttribute(_,_,_,clt)
 
   | PC.TFunDecl(clt) | PC.TFunProto(clt)
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)

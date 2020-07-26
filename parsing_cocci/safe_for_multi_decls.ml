@@ -106,6 +106,7 @@ let contains_modif =
 let attribute a =
   match Ast.unwrap a with
     Ast.Attribute(attr) -> mcode () attr
+  | Ast.MetaAttribute(name,b,c,d) -> mcode () name
 
 let decl r k e =
   let e = k e in

@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 192, also unused: 8-9, 15, 40, 42, 46, 57, 65, 85-86,
+(* current max is 192, also unused: 8-9, 15, 42, 46, 57, 65, 85-86,
  113-115, 140, 162 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -232,6 +232,7 @@ let string_fragment f =
 let attribute a =
   match Ast0.unwrap a with
     Ast0.Attribute(attr) -> [39]
+  | Ast0.MetaAttribute(name,_,_) -> [40]
 
 let top_level t =
   match Ast0.unwrap t with

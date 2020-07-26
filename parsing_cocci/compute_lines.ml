@@ -907,11 +907,15 @@ and initialiser_list prev = dots is_init_dots prev initialiser
 (* for export *)
 and initialiser_dots x = dots is_init_dots None initialiser x
 
-and attribute a =
-  match Ast0.unwrap a with
-    Ast0.Attribute(attr) ->
-      let ln = promote_mcode attr in
-      mkres a (Ast0.Attribute(attr)) ln ln
+and attribute attr =
+  match Ast0.unwrap attr with
+    Ast0.Attribute(a) ->
+      let ln = promote_mcode a in
+      mkres attr (Ast0.Attribute(a)) ln ln
+  | Ast0.MetaAttribute(name,a,b) ->
+      let name = normal_mcode name in
+      let ln = promote_mcode name in
+      mkres attr (Ast0.MetaAttribute(name,a,b)) ln ln
 
 
 (* --------------------------------------------------------------------- *)

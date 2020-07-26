@@ -244,6 +244,14 @@ let statement r k s =
   | Ast.OptStm(_) -> s
   | _ -> k s
 
+let attribute r k a =
+  match Ast.unwrap a with
+    Ast.MetaAttribute(name,_,_,_) ->
+      (if List.mem (get_rule name) !dropped
+      then set_failed !drop_stack);
+      k a
+  | _ -> k a
+
 let do_cleanup =
   let donothing r k e = k e in
   V.rebuilder
@@ -254,7 +262,7 @@ let do_cleanup =
     ident expression string_fragment string_format assignOp
     binaryOp fullType typeC initialiser parameterTypeDef define_param
     declaration donothing field ann_field donothing
-    rule_elem statement donothing donothing donothing donothing
+    rule_elem statement donothing attribute donothing donothing
 
 let cleanup_rules rules d =
   dropped := d;

@@ -114,6 +114,7 @@ let ast_rep_binding ctr = function
   | (Some nm,Ast.MetaStmDecl _) -> print_match ctr nm "Stmt"
   | (Some nm,Ast.MetaStmListDecl _) -> print_match ctr nm "StmtList"
   | (Some nm,Ast.MetaFmtDecl _) -> print_match ctr nm "Fmt"
+  | (Some nm,Ast.MetaAttributeDecl _) -> print_match ctr nm "Attribute"
   | (Some nm,Ast.MetaFragListDecl _) -> print_match ctr nm "FragList"
   | (Some nm,Ast.MetaFuncDecl _) -> print_match ctr nm "Str"
   | (Some nm,Ast.MetaLocalFuncDecl _) -> print_match ctr nm "Str"

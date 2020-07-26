@@ -345,6 +345,10 @@ let check_meta_tyopt type_irrelevant v =
       (match meta_lookup rule name v with
 	Ast.MetaFragListDecl(_,_,_) -> ()
       | _ -> fail name)
+  | Ast.MetaAttributeDecl(Ast.NONE,(rule,name)) ->
+      (match meta_lookup rule name v with
+	Ast.MetaAttributeDecl(_,_) -> ()
+      | _ -> fail name)
   | Ast.MetaAnalysisDecl(analyzer,(rule,name)) ->
       (match meta_lookup rule name v with
 	Ast.MetaAnalysisDecl(analyzer1,_) ->

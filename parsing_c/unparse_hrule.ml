@@ -251,6 +251,7 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaFieldListVal(fields) ->
 	  Visitor_c.vk_struct_fields bigf fields
       | Ast_c.MetaFmtVal(fmt) -> Visitor_c.vk_string_format bigf fmt
+      | Ast_c.MetaAttributeVal(attr) -> Visitor_c.vk_attribute bigf attr
       | Ast_c.MetaFragListVal(frags) ->
 	  Visitor_c.vk_string_fragments bigf frags
       | Ast_c.MetaStmtVal(stm,_,_) -> Visitor_c.vk_statement bigf stm
@@ -313,6 +314,8 @@ let rename argids env =
 	   Ast_c.MetaFieldListVal(Visitor_c.vk_struct_fields_s bigf stm)
        | Ast_c.MetaFmtVal(fmt) ->
 	   Ast_c.MetaFmtVal(Visitor_c.vk_string_format_s bigf fmt)
+       | Ast_c.MetaAttributeVal(attr) ->
+	   Ast_c.MetaAttributeVal(Visitor_c.vk_attribute_s bigf attr)
        | Ast_c.MetaFragListVal(frags) ->
 	   Ast_c.MetaFragListVal(Visitor_c.vk_string_fragments_s bigf frags)
        | Ast_c.MetaStmtVal(stm,original,ty) ->
@@ -432,6 +435,8 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "comments "; pp_name name; pr ";\n"
   | Ast.MetaFmtDecl(ar, name) ->
       no_arity ar; pr "format "; pp_name name; pr ";\n"
+  | Ast.MetaAttributeDecl(ar, name) ->
+      no_arity ar; pr "attribute "; pp_name name; pr ";\n"
   | Ast.MetaFragListDecl(ar, name, len) ->
       no_arity ar; pr "format list "; pp_len pr len; pp_name name; pr ";\n"
   | Ast.MetaAnalysisDecl(code, name) ->

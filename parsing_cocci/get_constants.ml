@@ -235,6 +235,11 @@ let check_inherited nm =
     | Ast.MetaStmtList(name,_,_) -> bind (k re) (minherited name)
     | _ -> k re in
 
+  let strictattribute recursor k a =
+    match Ast.unwrap a with
+      Ast.MetaAttribute(name,_,_) -> bind (k a) (minherited name)
+    | _ -> k a in
+
   let strictstatement recursor k s =
     match Ast.unwrap s with
       Ast.Disj(stms) -> option_default
@@ -244,7 +249,7 @@ let check_inherited nm =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     donothing donothing donothing donothing
     strictident strictexpr strictfullType stricttypeC donothing strictparam
-    strictdecls strictrule_elem strictstatement donothing donothing donothing
+    strictdecls strictrule_elem strictstatement attributefn donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
