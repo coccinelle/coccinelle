@@ -243,6 +243,7 @@ i.e., including as an element of another statement list.
   \CASE{symbol \NT{pmids};}
   \CASE{typedef \NT{pmids} ;}
   \CASE{attribute name \NT{ids} ;}
+  \CASE{attribute \NT{ids} ;}
   \CASE{declarer name \NT{ids} ;}
   \CASE{declarer \NT{pmids\_with\_constraints} ;}
   \CASE{iterator name \NT{ids} ;}
@@ -448,6 +449,11 @@ semantic patch. It is not required, but it will not cause a parse error, to
 redeclare a name as a typedef. A name declared as a typedef can, furthermore, be
 redeclared as another metavariable. It will be considered to be a metavariable
 in such rules, and will revert to being a typedef in subsequent rules.
+
+An {\bf attribute} metavariable matches an attribute.  {\bf Attribute}
+metavariables are only allowed in context or minus code, and not in added
+code.  Indeed, attributes in added code are not parsed, to allow them to be
+placed at places that go beyond what is supported by the SmPL parser.
 
 An {\bf attribute name} declaration indicates the given identifiers should be
 considered to be attributes.
