@@ -202,26 +202,26 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
 
 
 let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) ->
-  let ((qu,ty) as v,_st) = fixDeclSpecForDecl r in
+  let (qu_ty,_st) = fixDeclSpecForDecl r in
   match st with
-  | (Sto Register) -> (v, true), iist
-  | NoSto -> (v, false), iist
+  | (Sto Register) -> (qu_ty, true), iist
+  | NoSto -> (qu_ty, false), iist
   | _ ->
       raise
         (Semantic ("storage class specified for parameter of function",
                   fake_pi))
 
 let fixDeclSpecForArg = function ({storageD = (st,iist)} as r) ->
-  let ((qu,ty) as v,_st) = fixDeclSpecForDecl r in
+  let (qu_ty,_st) = fixDeclSpecForDecl r in
   match st with
-  | (Sto Register) -> (v, true), iist
-  | (Sto _) -> (v, false), iist
-  | NoSto | StoTypedef -> (v, false), iist
+  | (Sto Register) -> (qu_ty, true), iist
+  | (Sto _) -> (qu_ty, false), iist
+  | NoSto | StoTypedef -> (qu_ty, false), iist
 
 let fixDeclSpecForMacro = function ({storageD = (st,iist)} as r) ->
-  let ((qu,ty) as v,_st) = fixDeclSpecForDecl r in
+  let (qu_ty,_st) = fixDeclSpecForDecl r in
   match st with
-  | NoSto -> v
+  | NoSto -> qu_ty
   | _ ->
       raise
         (Semantic ("storage class specified for macro type decl",
