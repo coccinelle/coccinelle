@@ -95,4 +95,7 @@ let py_finalize () =
 let run_constraint args pos body =
   failwith errmsg
 
+let run_fresh_id _ _ _ =
+  failwith errmsg
+
 let flush_stdout_and_stderr () = ()

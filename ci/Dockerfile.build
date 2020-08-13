@@ -1,4 +1,5 @@
 ARG from
 FROM $from
 COPY --chown=ci:users . /home/ci/coccinelle/
-RUN cd /home/ci/coccinelle && ./autogen && ./configure && make
+ARG configure_options
+RUN cd /home/ci/coccinelle && ./autogen && ./configure $configure_options && make

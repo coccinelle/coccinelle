@@ -103,7 +103,7 @@ prepare debian docker image with 4.09.0 and all dependencies:
   stage: build
   script:
     - docker build --tag coccinelle-with-$from . -f ci/Dockerfile.build
-        --build-arg from=$from
+        --build-arg from=$from --build-arg configure_options=$configure_options
 
 build with debian 3.12:
   <<: *build_coccinelle_def
@@ -198,6 +198,12 @@ test with debian 4.09 with all dependencies:
   <<: *test_coccinelle_def
   variables:
     from: debian-4.09.0-all-dependencies
+
+test with debian 4.09 without python:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.09.0
+    configure_options: --disable-python
 
 test with opensuse/leap:
   <<: *test_coccinelle_def
