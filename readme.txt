@@ -48,6 +48,10 @@ files.
 	ocaml-native-compilers
      or ocaml-nox
 
+ - For the Python scripting feature in SmPL: python3-dev
+   Note python3-dev is only a runtime dependency: it is _not_ required for
+   building coccinelle.
+
 ---------------------------------------------------------------------------
 
 Contributing:
