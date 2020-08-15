@@ -1947,7 +1947,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    (match (pm,satv unchecked new_required new_required_states phi2
 		env) with
 	      (false,(child2,[])) ->
-		output "andany";
+		output "andany1";
 		anno res1 [child1;child2]
 	    | (_,(child2,res2)) ->
 		(match res1 with
@@ -1965,7 +1965,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 		| [(state,_,_)] ->
 		    let res2 =
 		      List.map (function (s,e,w) -> [(state,e,w)]) res2 in
-		    output "andany";
+		    output "andany2";
 		    let res =
 		      let s = mkstates states required_states in
 		      List.fold_left
@@ -1989,7 +1989,7 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 	    (match (pm,satv unchecked new_required new_required_states phi2
 		env) with
 	      (false,(child2,[])) ->
-		output "andany";
+		output "andany3";
 		anno res1 [child1;child2]
 	    | (_,(child2,res2)) ->
 		let res =
