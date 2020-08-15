@@ -1700,13 +1700,28 @@ let rec satloop unchecked required required_states
 			  strict_triples_conj strict s a [b])
 			[List.hd phi2res] (List.tl phi2res)
 		| [(state,_,_)] ->
-		    let phi2res =
-		      List.map (function (s,e,w) -> [(state,e,w)]) phi2res in
+		    let reachable_states =
+		      match new_required_states with
+			None ->
+			  failwith
+			    "AndAny makes no sense with no reachable states"
+		      | Some states -> states in
+		    let phi2res_tbl = Hashtbl.create 101 in
+		    List.iter
+		      (function (s1,e,w) ->
+			(* collect the states with the state number at which
+			   they are found, and then move them back to the
+			   phi1res state for future folding *)
+			Common.hashadd_notest phi2res_tbl s1 (state,e,w))
+		      phi2res;
 		    let s = mkstates states required_states in
 		    List.fold_left
-		      (function a -> function b ->
-			strict_triples_conj strict s a b)
-		      phi1res phi2res
+		      (fun a st ->
+			try
+			  let b = Hashtbl.find phi2res_tbl st in
+			  strict_triples_conj strict s a b
+			with Not_found -> a)
+		      phi1res reachable_states
 		| _ ->
 		    failwith
 		      "only one result allowed for the left arg of AndAny")))
@@ -1963,15 +1978,30 @@ let rec sat_verbose_loop unchecked required required_states annot maxlvl lvl
 			  [List.hd res2] (List.tl res2) in
 		      anno res [child1; child2]
 		| [(state,_,_)] ->
-		    let res2 =
-		      List.map (function (s,e,w) -> [(state,e,w)]) res2 in
+		    let reachable_states =
+		      match new_required_states with
+			None ->
+			  failwith
+			    "AndAny makes no sense with no reachable states"
+		      | Some states -> states in
+		    let res2_tbl = Hashtbl.create 101 in
+		    List.iter
+		      (function (s1,e,w) ->
+			(* collect the states with the state number at which
+			   they are found, and then move them back to the
+			   res1 state for future folding *)
+			Common.hashadd_notest res2_tbl s1 (state,e,w))
+		      res2;
 		    output "andany2";
+		    let s = mkstates states required_states in
 		    let res =
-		      let s = mkstates states required_states in
 		      List.fold_left
-			(function a -> function b ->
-			  strict_triples_conj strict s a b)
-			res1 res2 in
+			(fun a st ->
+			  try
+			    let b = Hashtbl.find res2_tbl st in
+			    strict_triples_conj strict s a b
+			  with Not_found -> a)
+			res1 reachable_states in
 		    anno res [child1; child2]
 		| _ ->
 		    failwith

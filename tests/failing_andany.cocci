@@ -1,3 +1,6 @@
+/* The following comment is kept for historical reasons, but the example now
+works, due to improving andany to address the problem described below. */
+
 /* This test case shows that the andany optimization doesn't work.  This
 optimization requires that the left argument of the conjunction have at most
 one match.  This will always be true because every function has only one
