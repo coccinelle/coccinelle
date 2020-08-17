@@ -4688,6 +4688,12 @@ let hashadd tbl k v =
       cell in
   if not (List.mem v !cell) then cell := v :: !cell
 
+let hashadd_notest tbl k v =
+  try
+    let cur = Hashtbl.find tbl k in
+    Hashtbl.replace tbl k (v::cur)
+  with Not_found -> Hashtbl.add tbl k [v]
+
 let hashinc tbl k v =
   let cell =
     try Hashtbl.find tbl k
