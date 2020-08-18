@@ -329,6 +329,7 @@ install-spgen : tools/spgen/source/spgen$(TOOLS_SUFFIX)
 
 .PHONY : install-python
 install-python:
+	$(MKDIR_P) $(DESTDIR)$(LIBDIR)/python/coccilib
 	$(INSTALL_DATA) python/coccilib/*.py \
 		$(DESTDIR)$(LIBDIR)/python/coccilib
 
