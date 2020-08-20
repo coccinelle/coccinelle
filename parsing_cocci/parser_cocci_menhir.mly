@@ -2860,6 +2860,7 @@ toplevel_after_stm:
   /* empty */                        {[]}
 | stm_dots toplevel_after_dots       {$1::$2}
 | decl_statement toplevel_after_stm  {$1@$2}
+| expr toplevel_after_exp            { (Ast0_cocci.wrap(Ast0_cocci.Exp($1)))::$2 }
 
 top_init:
   TOInit initialize_list TCBrace
@@ -2904,6 +2905,8 @@ plus_after_stm:
 | fundecl plus_after_stm                     { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
 | decl_statement plus_after_stm
                 { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
+| expr plus_after_exp
+                     { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))::$2 }
 
 /* ------------------------------------------------------------------------ */
 /* Function body */
