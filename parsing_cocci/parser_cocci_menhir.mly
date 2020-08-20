@@ -2867,46 +2867,61 @@ top_init:
     { if Parse_aux.struct_initializer $2
     then
       let il = Parse_aux.drop_dot_commas $2 in
-      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,il,Parse_aux.clt2mcode "}" $3,false))
+      Ast0_cocci.wrap
+	(Ast0_cocci.InitList
+	   (Parse_aux.clt2mcode "{" $1,il,Parse_aux.clt2mcode "}" $3,false))
     else
-      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,$2,Parse_aux.clt2mcode "}" $3,true)) }
+      Ast0_cocci.wrap
+	(Ast0_cocci.InitList
+	   (Parse_aux.clt2mcode "{" $1,$2,Parse_aux.clt2mcode "}" $3,true)) }
 
 /* ------------------------------------------------------------------------ */
 /* Plus top level */
 
 /* does allow only ... also allows multiple top-level functions */
 plus_start:
-  ctype                   { [Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1))))] }
-| top_init           { [Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.TopInit($1))))] }
+  ctype
+    { [Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1))))] }
+| top_init
+    { [Ast0_cocci.wrap
+	  (Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.TopInit($1))))] }
 | stm_dots plus_after_dots
-                                          { (Ast0_cocci.wrap(Ast0_cocci.OTHER($1)))::$2 }
+    { (Ast0_cocci.wrap(Ast0_cocci.OTHER($1)))::$2 }
 | expr plus_after_exp
-                     { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))::$2 }
-| fundecl plus_after_stm                     { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
+    { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))
+      ::$2 }
+| fundecl plus_after_stm
+    { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
 | decl_statement_expr plus_after_stm
-                { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
+    { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
 
 plus_after_exp:
   /* empty */                                                            {[]}
-| stm_dots plus_after_dots                { (Ast0_cocci.wrap(Ast0_cocci.OTHER($1)))::$2 }
+| stm_dots plus_after_dots
+    { (Ast0_cocci.wrap(Ast0_cocci.OTHER($1)))::$2 }
 
 plus_after_dots:
   /* empty */                                                            {[]}
 | TNothing plus_after_exp                                                {$2}
 | expr plus_after_exp
-                     { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))::$2 }
-| fundecl plus_after_stm                     { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
+    { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))
+      ::$2 }
+| fundecl plus_after_stm
+    { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
 | decl_statement_expr plus_after_stm
-                { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
+    { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
 
 plus_after_stm:
   /* empty */                                                            {[]}
-| stm_dots plus_after_dots                { (Ast0_cocci.wrap(Ast0_cocci.OTHER($1)))::$2 }
-| fundecl plus_after_stm                     { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
+| stm_dots plus_after_dots
+    { (Ast0_cocci.wrap(Ast0_cocci.OTHER($1)))::$2 }
+| fundecl plus_after_stm
+    { Ast0_cocci.wrap(Ast0_cocci.OTHER($1))::$2 }
 | decl_statement plus_after_stm
-                { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
+    { (List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1)@$2 }
 | expr plus_after_exp
-                     { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))::$2 }
+    { (Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Exp($1)))))
+      ::$2 }
 
 /* ------------------------------------------------------------------------ */
 /* Function body */
