@@ -747,6 +747,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
       ((T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
+      let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let (pre_minus_list,_) = span not_context_newline minus_list in
       let contains_plus = exists_before_end is_plus pre_minus_list in
       let x =
@@ -759,6 +760,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
          @ adjust_around_minus rest
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
+      let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let (pre_minus_list,_) = span not_context_newline minus_list in
       let contains_plus = exists_before_end is_plus pre_minus_list in
       adjust_within_minus contains_plus minus_list
