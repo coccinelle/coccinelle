@@ -1222,10 +1222,16 @@ let check_danger toks =
 		    then danger @ de :: (search_danger rest)
 		    else
 		      (* some things removed, not others, unminus the type *)
+		      (* if next token is added, will need a newline *)
+		      let rest_with_nl =
+			match rest with
+			  t::_ when all_coccis t ->
+			    (Cocci2("\n",-1,-1,-1,None)) :: rest
+			|_ -> rest in
 		      drop_last_danger_comma
 			((unminus_initial_danger danger) @
 			 [(unminus_danger_end de)]) @
-		      (search_danger rest)
+		      (search_danger rest_with_nl)
 		| _ -> failwith "missing danger end")
 	    | _ -> failwith "missing danger end")
 	| _ -> x :: search_danger xs in
