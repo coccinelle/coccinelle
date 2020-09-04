@@ -10,7 +10,7 @@ int main2() {
   f(b,B);
 }
 
-int main2() {
+int main3() {
   int A;
   f(a,A);
   int B;
@@ -19,7 +19,7 @@ int main2() {
   f(c,C);
 }
 
-int main3() {
+int main4() {
   size_t a;
   int B;
   f(b,B);

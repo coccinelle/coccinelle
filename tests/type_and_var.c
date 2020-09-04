@@ -8,14 +8,14 @@ int main2() {
   f(b,B);
 }
 
-int main2() {
+int main3() {
   size_t a, b, c;
   f(a,A);
   f(b,B);
   f(c,C);
 }
 
-int main3() {
+int main4() {
   size_t a, b, c;
   f(b,B);
   f(c,C);
