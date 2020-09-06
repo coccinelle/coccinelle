@@ -589,6 +589,7 @@ let generated_newline = function
   | _ -> false
 
 let is_fake2 = function Fake2 _ -> true | _ -> false
+let is_comma = function Comma _ -> true | _ -> false
 
 let is_whitespace x =
   is_space x || is_newline_or_comment x
@@ -687,6 +688,9 @@ let drop_expanded xs =
 
 let drop_fake xs =
   xs +> exclude is_fake2
+
+let drop_comma xs =
+  xs +> exclude is_comma
 
 let remove_minus_and_between_and_expanded_and_fake1 xs =
 
@@ -2550,7 +2554,7 @@ let pp_program2 xs outfile  =
           if !Flag.sgrep_mode2
           then
             (* nothing else to do for sgrep *)
-            drop_expanded(drop_fake(drop_minus toks))
+            drop_expanded(drop_comma(drop_fake(drop_minus toks)))
           else
             begin
               (* phase2: can now start to filter and adjust *)
