@@ -677,25 +677,14 @@ let is_minus = function
   | T2 (_, Min _, _, _) -> true
   | _ -> false
 
-let drop_minus xs =
-  xs +> exclude is_minus
-
-let drop_expanded xs =
-  xs +> exclude (function
-    | T2 (t,_,_,_) when TH.is_expanded t -> true
-    | _ -> false
-  )
-
-let drop_fake xs =
-  xs +> exclude is_fake2
-
-let drop_comma xs =
-  xs +> exclude is_comma
+let is_expanded = function
+    T2 (t,_,_,_) when TH.is_expanded t -> true
+  | _ -> false
 
 let remove_minus_and_between_and_expanded_and_fake1 xs =
 
   (* get rid of expanded tok *)
-  let xs = drop_expanded xs in
+  let xs = xs +> exclude is_expanded in
 
   let minus_or_comment_or_fake x =
     is_minus x || is_minusable_comment x || is_fake2 x in
@@ -870,7 +859,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let xs = adjust_around_minus xs in
 
   (* get rid of fake tok *)
-  let xs = drop_fake xs in
+  let xs = xs +> exclude is_fake2 in
 
   (* this drops blank lines after a brace introduced by removing code *)
   let minus_or_comment_nonl = function
@@ -1023,8 +1012,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   cleanup_ifdefs xs
 
 let remove_minus_and_between_and_expanded_and_fake2 xs =
-  let xs = drop_minus xs in
-  xs
+  xs +> exclude is_minus
 
 (* things that should not be followed by space - boundary between SmPL
 code and C code *)
@@ -2554,7 +2542,9 @@ let pp_program2 xs outfile  =
           if !Flag.sgrep_mode2
           then
             (* nothing else to do for sgrep *)
-            drop_expanded(drop_comma(drop_fake(drop_minus toks)))
+	    toks +>
+	    exclude
+	      (fun x -> is_expanded x || is_comma x || is_fake2 x || is_minus x)
           else
             begin
               (* phase2: can now start to filter and adjust *)
