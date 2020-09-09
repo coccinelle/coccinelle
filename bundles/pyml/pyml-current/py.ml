@@ -458,9 +458,11 @@ let find_library ~verbose ~version_major ~version_minor ~debug_build
           failwith msg
       | filename :: others ->
           begin
+(*
             let pythonhome_set =
               not (Filename.is_implicit filename) &&
                 init_pythonhome verbose (parent_dir filename) in
+*)
             try
               if verbose then
                 begin
@@ -469,8 +471,10 @@ let find_library ~verbose ~version_major ~version_minor ~debug_build
                 end;
               load_library (Some filename) debug_build;
             with Failure msg ->
+(*
               if pythonhome_set then
                 uninit_pythonhome ();
+*)
               if verbose then
                 begin
                   Printf.eprintf "Failed: \"%s\".\n" msg;
@@ -490,6 +494,7 @@ let initialize_library ~verbose ~version_major ~version_minor
   end;
   find_library ~verbose ~version_major ~version_minor ~debug_build
     python_full_path;
+(*
   begin
     match python_full_path with
       None -> ()
@@ -502,6 +507,7 @@ let initialize_library ~verbose ~version_major ~version_minor
             dirname in
         ignore (init_pythonhome verbose pythonhome);
   end;
+*)
   set_program_name !program_name;
   begin
     match !python_home with
@@ -2088,6 +2094,10 @@ module Module = struct
   let sys () = Import.import_module "sys"
 
   let builtins () = get (main ()) "__builtins__"
+
+  let set_docstring m doc =
+    Pywrappers.pymodule_setdocstring m doc
+    |> assert_int_success
 end
 
 module Class = struct
@@ -2198,6 +2208,27 @@ module Iter = struct
           l := tail;
           Some (f head) in
     create next
+
+  let seq_iter seq =
+    check_not_null (Pywrappers.pyseqiter_new seq)
+
+  let call_iter call sentinel =
+    check_not_null (Pywrappers.pycalliter_new call sentinel)
+
+  (* As a sentinel we use a function so that there is no collision risk.
+     Only one such capsule is ever allocated.
+  *)
+  let sentinel = lazy (Callable.of_function_as_tuple (fun x -> x))
+
+  let create_call next =
+    let sentinel = Lazy.force sentinel in
+    let call =
+      Callable.of_function_as_tuple (fun _pyobject ->
+        match next () with
+        | None -> sentinel
+        | Some value -> value)
+    in
+    call_iter call sentinel
 end
 
 module List = struct
