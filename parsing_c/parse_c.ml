@@ -17,6 +17,7 @@ open Common
 
 module TH = Token_helpers
 module LP = Lexer_parser
+module IC = Includes_cache
 
 module Stat = Parsing_stat
 
@@ -995,15 +996,30 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
 and handle_include file wrapped_incl k =
     let incl = Ast_c.unwrap wrapped_incl.Ast_c.i_include in
     let parsing_style = Includes.get_parsing_style () in
+    let f = Includes.resolve file parsing_style incl in
     if Includes.should_parse parsing_style file incl
     then
-      match Includes.resolve file parsing_style incl with
+      match f with
       | Some header_filename when Common.lfile_exists header_filename ->
-	  (if !Flag_parsing_c.verbose_includes
-	  then pr2 ("including "^header_filename));
-	  let nonlocal =
-	    match incl with Ast_c.NonLocal _ -> true | _ -> false in
-          ignore (k nonlocal header_filename)
+          if not (IC.has_been_parsed header_filename)
+          then
+            begin
+              IC.add_to_parsed_files header_filename;
+              (if !Flag_parsing_c.verbose_includes
+              then pr2 ("including "^header_filename));
+              let nonlocal =
+                match incl with Ast_c.NonLocal _ -> true | _ -> false in
+              let res = k nonlocal header_filename in
+              match res with
+                None -> ()
+              | Some x ->
+                  let pt = x.parse_trees in
+                  let (p, _, _) = pt in
+                  with_program2_unit
+                    (IC.extract_names header_filename)
+                    p
+            end;
+          IC.add_to_dependency_graph file header_filename;
       | _ -> ()
 
 and _parse_print_error_heuristic2bis saved_typedefs saved_macros
