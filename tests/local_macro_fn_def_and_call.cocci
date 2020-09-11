@@ -1,0 +1,4 @@
+@@
+statement S;
+@@
+* S
