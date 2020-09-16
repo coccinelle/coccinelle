@@ -1190,14 +1190,20 @@ let rec is_exp s =
   match Ast0.unwrap s with
     Ast0.Exp(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_exp stmts
-  | Ast0.Conj(_,stmts,_,_) -> isany is_exp stmts
+  | Ast0.Conj(_,s::_,_,_) ->
+      (* the parser ensures that if the Conj matches a
+	 statement, the statement is in the first position *)
+      isonly is_exp s
   | _ -> false
 
 let rec is_ty s =
   match Ast0.unwrap s with
     Ast0.Ty(e) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_ty stmts
-  | Ast0.Conj(_,stmts,_,_) -> isany is_ty stmts
+  | Ast0.Conj(_,s::_,_,_) ->
+      (* the parser ensures that if the Conj matches a
+	 statement, the statement is in the first position *)
+      isonly is_ty s
   | _ -> false
 
 let rec is_init s =
