@@ -1959,15 +1959,13 @@ decl_statement:
       else
 	  [Ast0_cocci.wrap(Ast0_cocci.Disj(Parse_aux.id2mcode $1, code, mids,
 			       Parse_aux.id2mcode $3))] }
-  | TOPar0 t=andzero_list(fun_start,fun_start) TCPar0
+  | TOPar0 t=andzero_list(fun_after_stm,fun_after_dots_or) TCPar0
       { let (mids,code) = t in
-	if List.for_all
-	    (function x ->
-	      match Ast0_cocci.unwrap x with [] -> true | _ -> false)
-	    code
+	if List.for_all (function [] -> true | _ -> false) code
       then []
       else
-	  [Ast0_cocci.wrap(Ast0_cocci.Conj(Parse_aux.id2mcode $1, code, mids,
+	  let dot_code = List.map Ast0_cocci.wrap code in
+	  [Ast0_cocci.wrap(Ast0_cocci.Conj(Parse_aux.id2mcode $1, dot_code, mids,
 			       Parse_aux.id2mcode $3))] }
 
 /* a statement that is part of a list */
