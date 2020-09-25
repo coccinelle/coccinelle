@@ -444,7 +444,9 @@ let test_okfailed cocci_file cfiles =
           | None, false ->
               ()
           | Some outfile, false ->
-              let s =("PB: input file " ^ infile ^ " modified but no .res") in
+              let s =
+		Printf.sprintf
+		  "PB: input file %s modified but no %s" infile expected_res in
               push2 (infile^t_to_s Failed, [s;time_str]) final_files
 
           | x, true ->
@@ -558,7 +560,9 @@ let compare_with_expected outfiles extension =
     match outopt, Common.lfile_exists expected_res with
     | None, false -> ()
     | Some outfile, false ->
-        let s =("PB: input file " ^ infile ^ " modified but no .res") in
+        let s =
+	  Printf.sprintf
+	    "PB: input file %s modified but no %s" infile expected_res in
         pr2 s
     | x, true ->
         let outfile =
