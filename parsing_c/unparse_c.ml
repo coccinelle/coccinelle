@@ -1985,6 +1985,10 @@ let sub1top op accumulator =
   let sub1 = function x::xs -> (max 0 (x-1))::xs | _ -> [] in
   adjust_by_op sub1 accumulator op
 
+let assign bop =
+  List.mem bop
+    ["=";"+=";"-=";"*=";"/=";"%=";"&=";"|=";"^=";">?=";"<?=";"<<=";">>="]
+
 let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
   let info = parse_token tok in
   match info with
@@ -2020,7 +2024,7 @@ let token_effect tok dmin dplus inparens inassn inbrace accumulator xs =
       (Other 4,dmin,dplus,inparens,(0,0),inbrace,drop_zeroes op accumulator xs)
   | (Tok ";",op) ->
       (Other 5,dmin,dplus,inparens,sub1 op inassn,inbrace,accumulator)
-  | (Tok "=",op) when getval inparens op + getval inassn op = 0 ->
+  | (Tok bop,op) when assign bop && getval inparens op + getval inassn op = 0 ->
       (Other 6,dmin,dplus,inparens,add1 op (0,0),inbrace,accumulator)
   | (Tok "(",op) ->
       (Other 7,dmin,dplus,add1 op inparens,inassn,inbrace,accumulator)
