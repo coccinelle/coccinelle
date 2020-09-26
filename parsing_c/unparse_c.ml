@@ -1902,7 +1902,7 @@ let open_brace op xs =
   let is_whitespace t = is_whitespace t || is_added_whitespace t in
   match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | t::_ -> (str_of_token2 t) = "{" || (str_of_token2 t) = ";"
+  | t::_ -> List.mem (str_of_token2 t) ["{";";";","]
 
 let notelse op xs =
   not
