@@ -247,6 +247,14 @@ and typeC tya tyb =
                    return (((DeclarationField
                                (FieldDeclList (List.rev fx,iipt))))::xs)
                  )
+	    (* TODO: MacroDeclField args may contain typedefs that will not be
+	       handled by eq_type *)
+	    | (MacroDeclField _,MacroDeclField _)
+	    | (CppDirectiveStruct _,CppDirectiveStruct _)
+	    | (IfdefStruct _,IfdefStruct _) ->
+		if Lib_parsing_c.al_field fielda = Lib_parsing_c.al_field fieldb
+		then return (fielda::xs)
+		else fail
             | _ -> fail
           )
 
