@@ -228,8 +228,6 @@ and typeC tya tyb =
                     acc2 >>= (fun xs ->
                       match fielda, fieldb with
                       | Simple (nameaopt, ta), Simple (namebopt, tb) ->
-
-
                           same_s nameaopt namebopt >&&>
                           fullType ta tb >>= (fun tx ->
                             return (((Simple (nameaopt, tx)), iix)::xs)
