@@ -213,10 +213,7 @@ let fixDeclSpecForParam = function ({storageD = (st,iist)} as r) ->
 
 let fixDeclSpecForArg = function ({storageD = (st,iist)} as r) ->
   let (qu_ty,_st) = fixDeclSpecForDecl r in
-  match st with
-  | (Sto Register) -> (qu_ty, true), iist
-  | (Sto _) -> (qu_ty, false), iist
-  | NoSto | StoTypedef -> (qu_ty, false), iist
+  (qu_ty, st = Sto Register), iist
 
 let fixDeclSpecForMacro = function ({storageD = (st,iist)} as r) ->
   let (qu_ty,_st) = fixDeclSpecForDecl r in
