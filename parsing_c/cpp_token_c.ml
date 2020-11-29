@@ -589,7 +589,25 @@ let macro_body_to_maybe_hint body =
       | Some hint -> DefineHint hint
       | None -> DefineBody body
       )
-  | xs -> DefineBody body
+  | _ ->
+      let lexbuf_fake = Lexing.from_function (fun _buf _n -> assert false) in
+      let read_tokens tokens _lexbuf =
+        match !tokens with
+        | [] -> TDefEOL (Ast_c.fakeInfo ())
+        | tok::toks ->
+            tokens := toks;
+            tok
+      in
+      let macro_tokens =
+        TDefine (Ast_c.fakeInfo())::TIdentDefine ("Fake ident", Ast_c.fakeInfo())::body
+      in
+      try
+        match Parser_c.cpp_directive (read_tokens (ref macro_tokens)) lexbuf_fake with
+        | Ast_c.Define(_, (_, (Ast_c.DefineStmt _ | Ast_c.DefineMulti _))) ->
+            DefineHint HintMacroStatement
+        | _ -> DefineBody body
+      with _ ->
+        DefineBody body
 
 exception Bad_param
 
