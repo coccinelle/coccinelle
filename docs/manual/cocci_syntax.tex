@@ -1998,7 +1998,8 @@ future.
 
 Modification is not allowed when using iteration.  Thus, it is required to
 use the {\tt -{}-no-show-diff}, unless the semantic patch contains {\tt *}s
-(a semantic match rather than a semantic patch).
+(a semantic match rather than a semantic patch).  This restriction does not
+hold if the argument {\tt -{}-in-place} is used.
 
 When using Python scripting a tuple may be used
 to ensure that the same information is not enqueued more than once.
