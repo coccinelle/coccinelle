@@ -1,6 +1,7 @@
 typedef int *foo;
 
-void *bar(int *baz) {
+void *bar(int *baz)
+{
 	return baz;
 }
 
@@ -14,6 +15,7 @@ int f(int x) {
   }
 }
 
-void *bar(int *baz) {
+void *bar(int *baz)
+{
   return baz;
 }
