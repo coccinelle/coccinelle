@@ -9,8 +9,8 @@ int main() {
   Some info about @foo()
   @return void
 */
-void foo() {
-   /* Do nothing */
-	
+void foo()
+{
+	/* Do nothing */
 }
 
