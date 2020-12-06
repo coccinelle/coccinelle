@@ -15,6 +15,7 @@ void init_IRQ(void)
 #ifndef TIMER_32K_SYNCHRONIZED
 #define TIMER_32K_SYNCHRONIZED 0xffffffff
 #endif
-unsigned long nk_vtick_read_stamp(void) {
+unsigned long nk_vtick_read_stamp(void)
+{
 	return omap_readl(TIMER_32K_SYNCHRONIZED);
 }
