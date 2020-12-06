@@ -1019,7 +1019,7 @@ code and C code *)
 let adjust_eat_space toks =
   let rec loop = function
     | [] -> []
-    | EatSpace2 :: x :: rest when is_space x -> loop rest
+    | EatSpace2 :: x :: rest when is_space x || is_added_space x -> loop rest
     | EatSpace2 :: rest -> loop rest
     | x :: xs -> x :: loop xs in
   loop toks
