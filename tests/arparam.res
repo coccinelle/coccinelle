@@ -1,4 +1,5 @@
-g(int q[1024]) {
+int g(int q[1024])
+{
 	return 12;
 }
 
