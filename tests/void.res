@@ -1,6 +1,7 @@
 int xbar(void) { return; }
 
-int foo(void) {
+int foo(void)
+{
 	return;
 }
 
@@ -8,6 +9,7 @@ int foo(void) {
 
 int bar(void) { return; }
 
-int foo(void) {
+int foo(void)
+{
 	return;
 }
