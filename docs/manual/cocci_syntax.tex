@@ -749,7 +749,8 @@ flow. A control flow describes a possible run time path taken by a program.
 \subsection{Basic dots}
 When using Coccinelle, it is possible to express matches of certain code
 within certain types of control flows. Ellipses (``...'') can be used to
-indicate to Coccinelle that anything can be present between consecutive
+indicate to Coccinelle that anything can be present in a control-flow graph
+path between matches of two
 statements. For instance the following SmPL patch tells Coccinelle that
 rule r0 wishes to remove all calls to function c().
 
