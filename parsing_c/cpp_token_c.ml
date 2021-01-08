@@ -56,6 +56,11 @@ type define_def = string * define_param * define_body
  and define_body =
    | DefineBody of Parser_c.token list
    | DefineHint of parsinghack_hint
+   (* Special case when a hint was inferred from the body.
+    * Because the hint may be wrong, we will first try to parse using it and
+    * then using the body if there was a parse error.
+    * The bool indicates if the hint has been used yet *)
+   | DefineHintBody of parsinghack_hint * Parser_c.token list * bool ref
 
    and parsinghack_hint =
      | HintIterator
@@ -130,8 +135,13 @@ let string_of_define_def (s, params, body) =
   in
   let s2 =
     match body with
+    (* `{contents = ...}' allows checking the value of a ref without using `!'
+     * and, therefore, simplify the pattern matching by avoiding
+     * `when' clauses *)
+    | DefineHintBody (hint,  _, {contents = false})
     | DefineHint hint ->
         string_of_parsinghack_hint hint
+    | DefineHintBody (_,  xs, {contents = true})
     | DefineBody xs ->
         String.concat " " (xs +> List.map Token_helpers.str_of_tok)
   in
@@ -370,15 +380,21 @@ let apply_macro_defs
           (* ex: PRINTP("NCR53C400 card%s detected\n" ANDP(((struct ... *)
 
           (match body with
+          (* `{contents = ...}' allows checking the value of a ref without
+           * using `!' and, therefore, simplify the pattern matching by avoiding
+           * `when' clauses *)
+          | DefineHintBody (_,  bodymacro, {contents = true})
           | DefineBody bodymacro ->
               set_as_comment (Token_c.CppMacro) id;
               id.new_tokens_before <- bodymacro;
+          | DefineHintBody (hint,  _, {contents = false})
           | DefineHint hint ->
               msg_apply_known_macro_hint s;
               id.tok <- token_from_parsinghack_hint (s,i1) hint;
           )
       | Params params ->
           (match body with
+          | DefineHintBody (_,  bodymacro, {contents = true})
           | DefineBody bodymacro ->
 
               (* bugfix: better to put this that before the match body,
@@ -430,7 +446,8 @@ let apply_macro_defs
                   iter_token_paren (set_as_comment Token_c.CppMacro);
                   set_as_comment Token_c.CppMacro id)
 
-          | DefineHint (HintMacroStatement as hint) ->
+          | DefineHintBody (HintMacroStatement,  _, {contents = false})
+          | DefineHint (HintMacroStatement) ->
                 (* important to do that after have apply the macro, otherwise
                    * will pass as argument to the macro some tokens that
                  * are all TCommentCpp
@@ -481,10 +498,17 @@ let apply_macro_defs
                 )
 
 
+            | DefineHintBody (hint,  _, {contents = false})
             | DefineHint hint ->
                 msg_apply_known_macro_hint s;
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
             )
+      );
+      (match body with
+      (* The hint has been used. If we try to expand the macro again, we assume
+       * it is because of a parse error and will want to use the body next time *)
+        | DefineHintBody (hint,  bodymacro, hint_used) -> hint_used := true
+        | _ -> ()
       );
       apply_macro_defs dynamic_macs pos xs
 
@@ -552,13 +576,16 @@ let apply_macro_defs
           (* bugfix: we prefer not using this special case when we come
            * from extract_macros context
            *)
+          | DefineHintBody (_,  [newtok], {contents = true})
           | DefineBody [newtok] when inplace_when_single ->
              (* special case when 1-1 substitution, we reuse the token *)
               id.tok <- (newtok +> TH.visitor_info_of_tok (fun _ ->
                 TH.info_of_tok id.tok))
+          | DefineHintBody (_,  bodymacro, {contents = true})
           | DefineBody bodymacro ->
               set_as_comment Token_c.CppMacro id;
               id.new_tokens_before <- bodymacro;
+          | DefineHintBody (hint,  _, {contents = false})
           | DefineHint hint ->
                 msg_apply_known_macro_hint s;
                 id.tok <- token_from_parsinghack_hint (s,i1) hint;
@@ -604,7 +631,7 @@ let macro_body_to_maybe_hint body =
       try
         match Parser_c.cpp_directive (read_tokens (ref macro_tokens)) lexbuf_fake with
         | Ast_c.Define(_, (_, (Ast_c.DefineStmt _ | Ast_c.DefineMulti _))) ->
-            DefineHint HintMacroStatement
+            DefineHintBody (HintMacroStatement, body, ref false)
         | _ -> DefineBody body
       with _ ->
         DefineBody body

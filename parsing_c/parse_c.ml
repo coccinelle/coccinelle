@@ -711,6 +711,11 @@ let candidate_macros_in_passed2 ~defs passed  =
   | Parser_c.TIdent (s,_)
    (* bugfix: may have to undo some inferred things *)
   | Parser_c.TMacroIterator (s,_)
+  | Parser_c.TMacroDecl (s,_)
+  | Parser_c.TMacroString (s,_)
+  | Parser_c.TMacroStmt (s,_)
+  | Parser_c.TMacroAttr (s,_)
+  | Parser_c.TMacroIdentBuilder (s,_)
   | Parser_c.TypedefIdent (s,_)
     ->
       (match Common.hfind_option s defs with
@@ -749,6 +754,31 @@ let find_optional_macro_to_expand2 ~defs pos toks =
         if Hashtbl.mem defs s
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroIterator (s, ii)
+
+    | Parser_c.TMacroDecl (s, ii) ->
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroDecl (s, ii)
+
+    | Parser_c.TMacroString (s, ii) ->
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroString (s, ii)
+
+    | Parser_c.TMacroStmt (s, ii) ->
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroStmt (s, ii)
+
+    | Parser_c.TMacroAttr (s, ii) ->
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroAttr (s, ii)
+
+    | Parser_c.TMacroIdentBuilder (s, ii) ->
+        if Hashtbl.mem defs s
+        then Parser_c.TIdent (s, ii)
+        else Parser_c.TMacroIdentBuilder (s, ii)
 
     | Parser_c.TypedefIdent (s, ii) ->
         if Hashtbl.mem defs s

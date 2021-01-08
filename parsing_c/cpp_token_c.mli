@@ -9,6 +9,11 @@ type define_def = string * define_param * define_body
  and define_body =
    | DefineBody of Parser_c.token list
    | DefineHint of parsinghack_hint
+   (* Special case when a hint was inferred from the body.
+    * Because the hint may be wrong, we will first try to parse using it and
+    * then using the body if there was a parse error.
+    * The bool indicates if the hint has been used yet *)
+   | DefineHintBody of parsinghack_hint * Parser_c.token list * bool ref
 
    (* strongly corresponds to the TMacroXxx in the grammar and lexer and the
     * MacroXxx in the ast.

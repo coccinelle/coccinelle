@@ -85,9 +85,14 @@ let rootname = "__ROOT__"
 (*****************************************************************************)
 let bodytoks_of_body body =
   match body with
+    (* `{contents = ...}' allows checking the value of a ref without using `!'
+     * and, therefore, simplify the pattern matching by avoiding
+     * `when' clauses *)
+  | Cpp_token_c.DefineHintBody (_,  _, {contents = false})
   | Cpp_token_c.DefineHint _ ->
       pr2 "weird, hint in cpp_analysis_c";
       []
+  | Cpp_token_c.DefineHintBody (_,  xs, {contents = true})
   | Cpp_token_c.DefineBody xs ->
       xs
 
@@ -227,8 +232,13 @@ let (macro_expand:
   let (s, params, body) = def in
   let body' =
     match body with
+    (* `{contents = ...}' allows checking the value of a ref without using `!'
+     * and, therefore, simplify the pattern matching by avoiding
+     * `when' clauses *)
+    | Cpp_token_c.DefineHintBody (_,  _, {contents = false})
     | Cpp_token_c.DefineHint _ ->
         body
+    | Cpp_token_c.DefineHintBody (_,  xs, {contents = true})
     | Cpp_token_c.DefineBody xs ->
         (* bugfix: we don't want to evaluate the x ## b at this moment.
          * so can not use fix_tokens_cpp in the same we use it

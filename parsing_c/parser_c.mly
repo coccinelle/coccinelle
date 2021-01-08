@@ -1008,7 +1008,7 @@ statement2:
  | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm $4, [$1;$2;$3;$5;$6] }
 
  /*(* cppext: *)*/
- | TMacroStmt TOPar argument_list_ne TCPar {
+ | TMacroStmt TOPar argument_list TCPar {
    let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
    ExprStatement (Some(mk_e (FunCall (fn, $3)) [$2;$4])), [Ast_c.fakeInfo ()] }
  | TMacroIdStmt { MacroStmt, [snd $1] }
