@@ -306,10 +306,40 @@ let () =
 from test import ocaml_iterator
 res = 0
 for v in ocaml_iterator: res += v
-assert res == 14
 ");
-
+      let res = Py.Dict.find_string (Py.Eval.get_globals ()) "res" in
+      assert (Py.Int.to_int res = 14);
       let iter = Py.Iter.of_list_map Py.String.of_string ["a"; "b"; "c"] in
+      let list = Py.Iter.to_list_map Py.String.to_string iter in
+      assert (list = ["a"; "b"; "c"]);
+      Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Iterator.create_call"
+    (fun () ->
+      let iter_of_list python_of list =
+        let list = ref list in
+        let next () =
+          match !list with
+          | [] -> None
+          | p :: q ->
+              list := q;
+              Some (python_of p)
+        in
+        Py.Iter.create_call next
+      in
+      let m = Py.Import.add_module "test" in
+      let iter = iter_of_list Py.Int.of_int [3; 1; 4; 1; 5] in
+      Py.Module.set m "ocaml_iterator2" iter;
+      assert (Py.Run.simple_string "
+from test import ocaml_iterator2
+res = 0
+for v in ocaml_iterator2: res += v
+");
+      let res = Py.Dict.find_string (Py.Eval.get_globals ()) "res" in
+      assert (Py.Int.to_int res = 14);
+      let iter = iter_of_list Py.String.of_string ["a"; "b"; "c"] in
       let list = Py.Iter.to_list_map Py.String.to_string iter in
       assert (list = ["a"; "b"; "c"]);
       Pyml_tests_common.Passed)
@@ -586,6 +616,27 @@ let () =
       assert (not (Py.Object.is_subclass int cls2));
       Pyml_tests_common.Passed
     )
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Set"
+    (fun () ->
+      let set = Py.Set.create () in
+      for i = 0 to 9 do
+        Py.Set.add set (Py.Long.of_int i)
+      done;
+      assert (Py.Set.check set);
+      assert (Py.Set.size set = 10);
+      Py.Set.discard set (Py.Long.of_int 5);
+      assert (Py.Set.size set = 9);
+      let values = Py.Set.to_list_map Py.Long.to_int set in
+      assert (values = [0; 1; 2; 3; 4; 6; 7; 8; 9]);
+      let set' = Py.Set.copy set in
+      Py.Set.add set' (Py.Long.of_int 42);
+      Py.Set.add set' (Py.Long.of_int 42);
+      assert (Py.Set.size set = 9);
+      assert (Py.Set.size set' = 10);
+      Pyml_tests_common.Passed)
 
 let () =
   if not !Sys.interactive then

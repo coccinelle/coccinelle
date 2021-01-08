@@ -91,7 +91,7 @@ ifeq ($(OCAMLOPTEXE),)
 	CMOX := cmo
 	CMAX := cma
 	ALLOPT :=
-	TESTSOPT :=
+	TESTOPT :=
 	OCAMLPREFERREDLIBS := $(OCAMLBYTECODELIBS)
 else
 	OCAMLOPT := $(OCAMLOPTEXE)
@@ -99,7 +99,7 @@ else
 	CMOX := cmx
 	CMAX := cmxa
 	ALLOPT := all.native
-	TESTSOPT := tests.native
+	TESTOPT := test.native
 	OCAMLPREFERREDLIBS := $(OCAMLNATIVELIBS)
 endif
 
@@ -121,16 +121,12 @@ OCAMLLIBFLAGSBYTECODE := -custom $(OCAMLLIBFLAGS)
 
 UNAME_ARCH := $(shell uname)
 
-ifeq ($(UNAME_ARCH),Linux)
-	PYML_ARCH := pyml_arch_linux.ml
-else ifeq ($(UNAME_ARCH),Darwin)
+ifeq ($(UNAME_ARCH),Darwin)
 	PYML_ARCH := pyml_arch_darwin.ml
 else ifeq ($(findstring CYGWIN,$(UNAME_ARCH)),CYGWIN)
 	PYML_ARCH := pyml_arch_cygwin.ml
-else ifeq ($(UNAME_ARCH),FreeBSD)
-	PYML_ARCH := pyml_arch_freebsd.ml
 else
-	$(error Unsupported OS $(UNAME_ARCH))
+	PYML_ARCH := pyml_arch_unix.ml
 endif
 
 INSTALL_FILES := \
@@ -138,6 +134,7 @@ INSTALL_FILES := \
 	numpy.cmi \
 	pyml.cma pyml.cmxa pyml.cmxs pyml.a \
 	numpy.cma numpy.cmxa numpy.cmxs numpy.a \
+	$(MODULES:=.cmx) numpy.cmx \
 	libpyml_stubs.a dllpyml_stubs.so \
 	libnumpy_stubs.a dllnumpy_stubs.so \
 	META
@@ -146,7 +143,7 @@ INSTALL_FILES := \
 all : all.bytecode $(ALLOPT)
 	@echo The py.ml library is compiled.
 	@echo Run \`make doc\' to build the documentation.
-	@echo Run \`make tests\' to check the test suite.
+	@echo Run \`make test\' to check the test suite.
 ifneq ($(HAVE_OCAMLFIND),no)
 	@echo Run \`make install\' to install the library via ocamlfind.
 endif
@@ -189,16 +186,16 @@ all.bytecode : pyml.cma numpy.cma
 .PHONY : all.native
 all.native : pyml.cmxa pyml.cmxs numpy.cmxa numpy.cmxs
 
-.PHONY : tests
-tests : tests.bytecode $(TESTSOPT)
+.PHONY : test
+test : test.bytecode $(TESTOPT)
 
-.PHONY : tests.bytecode
-tests.bytecode : pyml_tests.bytecode numpy_tests.bytecode
+.PHONY : test.bytecode
+test.bytecode : pyml_tests.bytecode numpy_tests.bytecode
 	./pyml_tests.bytecode
 	./numpy_tests.bytecode
 
-.PHONY : tests.native
-tests.native : pyml_tests.native numpy_tests.native
+.PHONY : test.native
+test.native : pyml_tests.native numpy_tests.native
 	./pyml_tests.native
 	./numpy_tests.native
 

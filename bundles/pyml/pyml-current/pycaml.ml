@@ -67,7 +67,7 @@ let _py_type_of_pyobject_type t =
 
 let pyobject_type_of_py_type t =
   match t with
-    Py.Type.Unknown | Py.Type.Iter -> OtherType
+    Py.Type.Unknown | Py.Type.Iter | Py.Type.Set -> OtherType
   | Py.Type.Bool -> BoolType
   | Py.Type.Bytes -> BytesType
   | Py.Type.Callable -> CallableType

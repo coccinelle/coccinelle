@@ -715,6 +715,54 @@ module Dict: sig
       [key] to [value] *)
 end
 
+(** Interface for Python values of type [Set]. *)
+module Set: sig
+  val check: Object.t -> bool
+  (** [check o] returns [true] if [o] is a Python set. *)
+
+  val add: Object.t -> Object.t -> unit
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_Add} PySet_Add} *)
+
+  val clear: Object.t -> unit
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_Clear} PySet_Clear} *)
+
+  val contains: Object.t -> Object.t -> bool
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_Contains} PySet_Contains} *)
+
+  val copy: Object.t -> Object.t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_New} PySet_New} *)
+
+  val create: unit -> Object.t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_New} PySet_New} *)
+
+  val discard: Object.t -> Object.t -> unit
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_Discard} PySet_Discard} *)
+
+  val size: Object.t -> int
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/set.html#c.PySet_Size} PySet_Size} *)
+
+  val to_list: Object.t -> Object.t list
+  (** [to_list o] returns the list of all elements in Python set [o]. *)
+
+  val to_list_map: (Object.t -> 'a) -> Object.t -> 'a list
+  (** [to_list_map f o] returns the list of [f v] for all elements v in
+      Python set [o]. *)
+
+  val of_list: Object.t list -> Object.t
+  (** [of_list l] returns then Python set containing all elements from [l]. *)
+
+  val of_list_map: ('a -> Object.t) -> 'a list -> Object.t
+  (** [of_list_map f l] returns then Python set containing [f e] for any
+      [e] from [l]. *)
+end
+
 module Err: sig
   type t =
       Exception
@@ -1022,6 +1070,19 @@ module Iter: sig
 
   val create: (unit -> Object.t option) -> Object.t
   (** [create next] returns an iterator that calls [next]. *)
+
+  val seq_iter: Object.t -> Object.t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/iterator.html#c.PySeqIter_New} PySeqIter_New} *)
+
+  val call_iter: Object.t -> Object.t -> Object.t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/iterator.html#c.PyCallIter_New} PyCallIter_New} *)
+
+  val create_call: (unit -> Object.t option) -> Object.t
+  (** [create_call next] returns an iterator that calls [next]. The difference
+      with [create] is that this uses [PyCallIter_New] rather than creating
+      an object and use the __next__ method. *)
 end
 
 (** Interface for Python values of type [List]. *)
@@ -1240,6 +1301,10 @@ module Module: sig
   (** Returns the [__builtins__] module.
       We have
 [Py.Module.builtins () = Py.Module.find (Py.Module.main ()) "__builtins__"]. *)
+
+  val set_docstring: Object.t -> string -> unit
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/module.html#c.PyModule_SetDocString} PyModule_SetDocString} *)
 end
 
 (** Interface for Python values of type [Number]. *)
@@ -1891,6 +1956,7 @@ module Type: sig
     | Type
     | Unicode
     | Iter
+    | Set
   (** Some types of Python values.
       [Bytes] covers both the [Str] values of Python 2
       and the [Bytes] values of Python 3.

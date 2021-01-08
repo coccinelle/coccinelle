@@ -893,6 +893,7 @@ module Type = struct
     | Type
     | Unicode
     | Iter
+    | Set
 
   external get: pyobject -> t = "pytype"
 
@@ -919,6 +920,7 @@ module Type = struct
     | Type -> "Type"
     | Unicode -> "Unicode"
     | Iter -> "Iter"
+    | Set -> "Set"
 
   let to_string s =
     match get s with
@@ -1943,6 +1945,44 @@ module Dict = struct
   let singleton key value = of_bindings [(key, value)]
 
   let singleton_string key value = of_bindings_string [(key, value)]
+end
+
+module Set = struct
+  let check o = Type.get o = Type.Set
+
+  let clear = Pywrappers.pyset_clear
+
+  let copy v = check_not_null (Pywrappers.pyset_new v)
+
+  let create () = check_not_null (Pywrappers.pyset_new null)
+
+  let size set =
+    let sz = Pywrappers.pyset_size set in
+    assert_int_success sz;
+    sz
+
+  let add set value =
+    assert_int_success (Pywrappers.pyset_add set value)
+
+  let contains set value =
+    bool_of_int (Pywrappers.pyset_contains set value)
+
+  let discard set value =
+    assert_int_success (Pywrappers.pyset_discard set value)
+
+  let to_list_map f set =
+    Iter_.to_list_map f (Object.get_iter set)
+
+  let to_list = to_list_map id
+
+  let of_list_map f list =
+    let result = create () in
+    List.iter begin fun value ->
+      add result (f value)
+    end list;
+    result
+
+  let of_list = of_list_map id
 end
 
 module Callable = struct

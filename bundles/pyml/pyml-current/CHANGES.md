@@ -2,6 +2,16 @@
 
 # Next version
 
+- Compatibility with Python 3.10 (reported by Richard W.M. Jones)
+
+    - `PyObject_AsCharBuffer`, `PyObject_AsReadBuffer`,
+      `PyObject_AsWriteBuffer` bindings are marked optional as they have
+      been removed in Python 3.10.
+
+    - `Py_fopen` is optional and `Py_wfopen` is used instead if available.
+
+# 2020-05-18
+
 - Fix: Add an `__iter__` method to python iterators.
   (Fixed by Laurent Mazare, https://github.com/thierry-martinez/pyml/pull/47)
 
@@ -12,6 +22,16 @@
   was marked "for internal use only" before.
   (Reported by Victor Stinner,
    https://github.com/thierry-martinez/pyml/issues/49)
+
+- Fix: memory leak in `pyml_wrap_closure`
+  (Fixed by Laurent Mazare, https://github.com/thierry-martinez/pyml/pull/53)
+
+- Add `Py.Module.set_docstring`, for Python >=3.5.
+  (Added by Laurent Mazare, https://github.com/thierry-martinez/pyml/pull/54)
+
+- Fix: install `.cmx` files
+  (Reported by Jonathan Laurent,
+  https://github.com/thierry-martinez/pyml/issues/55)
 
 # 2020-02-22
 

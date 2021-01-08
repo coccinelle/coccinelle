@@ -7,13 +7,14 @@ license: "BSD"
 dev-repo: "git+https://github.com/thierry-martinez/pyml.git"
 build: [make "all" "pymltop" "pymlutop" {utop:installed} "PREFIX=%{prefix}%"]
 install: [make "install" "PREFIX=%{prefix}%"]
-run-test: [make "tests"]
+run-test: [make "test"]
 synopsis: "OCaml bindings for Python"
 description: "OCaml bindings for Python 2 and Python 3"
 depends: [
   "ocaml" {>= "3.12.1" & < "4.12.0"}
   "ocamlfind" {build}
   "stdcompat" {>= "13"}
+  "conf-python-3-dev" {with-test}
 ]
 depopts: ["utop"]
-version: "20200222"
+version: "20200518"

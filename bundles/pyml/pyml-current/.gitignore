@@ -1,9 +1,12 @@
+_build
+.merlin
 .depend
 *.cm[aioxt]
 *.cmti
 *.cmx[as]
 *.[ao]
 *.so
+*.swp
 *~
 *.inc
 /generate
@@ -14,3 +17,7 @@
 /pywrappers.mli
 /pywrappers.ml
 /pymlutop
+/pyml_tests.bytecode
+/numpy_tests.bytecode
+/pyml_tests.native
+/numpy_tests.native

@@ -1,0 +1,43 @@
+(library
+  (name pyml)
+  (modules numpy py pycaml pyml_arch pytypes pywrappers)
+  (c_names numpy_stubs pyml_stubs)
+  (wrapped false)
+  (libraries bigarray stdcompat pyutils))
+
+(executables
+  (names generate)
+  (modules generate)
+  (libraries stdcompat pyutils))
+
+(library
+  (name pyutils)
+  (modules pyutils)
+  (wrapped false)
+  (libraries stdcompat unix))
+
+(rule
+  (targets pywrappers.ml pyml.h pyml_dlsyms.inc pyml_wrappers.inc)
+  (deps (:gen generate.exe))
+  (action (run %{gen})))
+
+(rule
+  (targets pyml_arch.ml)
+  (deps (:pyml_arch pyml_arch_%{ocaml-config:system}.ml))
+  (action (copy %{pyml_arch} pyml_arch.ml)))
+
+(library
+  (name pyml_tests_common)
+  (modules pyml_tests_common)
+  (wrapped false)
+  (libraries pyml stdcompat))
+
+(test
+  (name numpy_tests)
+  (modules numpy_tests)
+  (libraries pyml pyml_tests_common stdcompat pyutils))
+
+(test
+  (name pyml_tests)
+  (modules pyml_tests)
+  (libraries pyml pyml_tests_common stdcompat pyutils))
