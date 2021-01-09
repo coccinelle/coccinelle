@@ -1687,11 +1687,12 @@ decl_var:
       { [Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,ar,Parse_aux.clt2mcode ";" pv))] }
   | TMetaDecl { [Parse_aux.meta_decl $1] }
   | s=ioption(storage) t=ctype
-      d=comma_list(direct_declarator(disj_ident)) pv=TPtVirg
-      { List.map
+      d=comma_list_attr(direct_declarator(disj_ident)) pv=TPtVirg
+      { let (vars,attrs) = d in
+        List.map
 	  (function (id,fn) ->
-	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn t,id,[],Parse_aux.clt2mcode ";" pv)))
-	  d }
+	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn t,id,attrs,Parse_aux.clt2mcode ";" pv)))
+	  vars }
   | f=funproto { [f] }
   | s=ioption(storage) t=ctype d=direct_declarator(disj_ident)
     a=attr_list q=TEq e=initialize
@@ -3077,6 +3078,10 @@ token:
 // non-empty lists - drop separator
 %inline comma_list(elem):
   l=separated_nonempty_list(TComma,elem) { l }
+
+comma_list_attr(elem):
+    elem ar=attr_list { ([$1],ar) }
+  | elem TComma comma_list_attr(elem) { let (l,a) = $3 in ($1 :: l,a) }
 
 midzero_list(elem,aft):
   a=elem b=list(mzl(aft))
