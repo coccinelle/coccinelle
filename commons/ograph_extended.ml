@@ -349,14 +349,19 @@ struct
     ()
 
   let launch_gv_cmd filename =
-    let check str = function
-	Unix.WEXITED 0 -> ()
-      | _ -> failwith (Printf.sprintf "problem in %s of %s" str filename) in
-    let status =
-      Unix.system ("dot " ^ filename ^ " -Tps  -o " ^ filename ^ ".ps;") in
-    check "dot" status;
-    let status = Unix.system ("gv " ^ filename ^ ".ps &") in
-    check "gv" status;
+    let check prefix suffix =
+       match Unix.system (prefix ^ filename ^ suffix) with
+         Unix.WEXITED rc ->
+	   if rc <> 0
+           then
+	     failwith
+	       (Printf.sprintf "call failure %d: %sfor %s" rc prefix filename)
+       | Unix.WSIGNALED s ->
+	   failwith (Printf.sprintf "%swas killed: %s" prefix filename)
+       | Unix.WSTOPPED s ->
+	   failwith (Printf.sprintf "%swas halted: %s" prefix filename) in
+    check "dot " (" -Tps -o " ^ filename ^ ".ps");
+    check "gv " ".ps &";
     (* zarb: I need this when I launch the program via eshell, otherwise gv
        do not get the chance to be launched *)
     Unix.sleep 1;
