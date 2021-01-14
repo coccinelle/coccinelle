@@ -778,13 +778,10 @@ expr:
  | assign_expr             { $1 }
  | expr TComma assign_expr { mk_e (Sequence ($1,$3)) [$2] }
 
-/*(* bugfix: in C grammar they put unary_expr, but in fact it must be
-   * cast_expr, otherwise (int * ) xxx = &yy; is not allowed
-   *)*/
 assign_expr:
  | cond_expr                     { $1 }
- | cast_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
- | cast_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
+ | assign_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
+ | assign_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
 
 /*(* gccext: allow optional then part hence gcc_opt_expr
    * bugfix: in C grammar they put TDotDot cond_expr, but in fact it must be
