@@ -783,14 +783,11 @@ assign_expr:
  | assign_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
  | assign_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
 
-/*(* gccext: allow optional then part hence gcc_opt_expr
-   * bugfix: in C grammar they put TDotDot cond_expr, but in fact it must be
-   * assign_expr, otherwise   pnp ? x : x = 0x388  is not allowed
-   *)*/
+/*(* gccext: allow optional then part hence gcc_opt_expr *)*/
 cond_expr:
  | arith_expr
      { $1 }
- | arith_expr TWhy gcc_opt_expr TDotDot assign_expr
+ | arith_expr TWhy gcc_opt_expr TDotDot cond_expr
      { mk_e (CondExpr ($1,$3,$5)) [$2;$4] }
 
 
