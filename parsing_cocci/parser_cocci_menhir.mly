@@ -1179,6 +1179,7 @@ enum_val:
      { let (x,clt) = $1 in
      Ast0_cocci.wrap(Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Int x) clt)) }
  | TMeta { tmeta_to_exp $1 }
+ | TEllipsis { Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." $1,None)) }
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0_cocci.wrap
