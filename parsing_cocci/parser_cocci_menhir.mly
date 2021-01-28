@@ -2019,7 +2019,6 @@ argument lists.
 expr:  pre_basic_expr(expr,invalid) { $1 }
 /* allows ... and nests */
 eexpr: pre_basic_expr(eexpr,dot_expressions) { $1 }
-eargexpr: basic_expr(eexpr,dot_expressions) { $1 } /* no sequences */
 /* allows nests but not .... */
 dexpr: pre_basic_expr(eexpr,nest_expressions) { $1 }
 dargexpr: basic_expr(eexpr,nest_expressions) { $1 } /* no sequences */
@@ -2107,7 +2106,7 @@ assign_expr_bis:
 cond_expr(r,pe):
     arith_expr(r,pe)                         { $1 }
   | l=arith_expr(r,pe) w=TWhy t=option(eexpr)
-      dd=TDotDot r=eargexpr/*see parser_c*/
+      dd=TDotDot r=cond_expr(r, pe)
       { Ast0_cocci.wrap(Ast0_cocci.CondExpr (l, Parse_aux.clt2mcode "?" w, t,
 				 Parse_aux.clt2mcode ":" dd, r)) }
 
