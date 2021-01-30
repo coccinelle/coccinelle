@@ -2940,7 +2940,8 @@ fun_after_dots:
 | decl_statement_expr fun_after_stm {$1@$2}
 
 fun_after_exp:
-  stm_dots fun_after_dots      {$1::$2}
+  /* empty */                  {[]}
+| stm_dots fun_after_dots      {$1::$2}
 
 /* hack to allow mixing statements and expressions in an or */
 fun_after_dots_or:
