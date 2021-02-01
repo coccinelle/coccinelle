@@ -747,6 +747,12 @@ let find_optional_macro_to_expand2 ~defs pos toks =
 
   let defs = Common.hash_of_list defs in
 
+  let is_hintbody = function
+    | (_, _, Cpp_token_c.DefineHintBody _) -> true
+    | _ -> false
+  in
+
+
   let toks = toks +> Common.tail_map (function
 
     (* special cases to undo *)
@@ -756,27 +762,27 @@ let find_optional_macro_to_expand2 ~defs pos toks =
         else Parser_c.TMacroIterator (s, ii)
 
     | Parser_c.TMacroDecl (s, ii) ->
-        if Hashtbl.mem defs s
+        if try is_hintbody (Hashtbl.find defs s) with Not_found -> false
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroDecl (s, ii)
 
     | Parser_c.TMacroString (s, ii) ->
-        if Hashtbl.mem defs s
+        if try is_hintbody (Hashtbl.find defs s) with Not_found -> false
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroString (s, ii)
 
     | Parser_c.TMacroStmt (s, ii) ->
-        if Hashtbl.mem defs s
+        if try is_hintbody (Hashtbl.find defs s) with Not_found -> false
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroStmt (s, ii)
 
     | Parser_c.TMacroAttr (s, ii) ->
-        if Hashtbl.mem defs s
+        if try is_hintbody (Hashtbl.find defs s) with Not_found -> false
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroAttr (s, ii)
 
     | Parser_c.TMacroIdentBuilder (s, ii) ->
-        if Hashtbl.mem defs s
+        if try is_hintbody (Hashtbl.find defs s) with Not_found -> false
         then Parser_c.TIdent (s, ii)
         else Parser_c.TMacroIdentBuilder (s, ii)
 
