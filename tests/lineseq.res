@@ -1,0 +1,4 @@
+int main () {
+  three();
+  three();
+}
