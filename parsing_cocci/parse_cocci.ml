@@ -1107,6 +1107,7 @@ let find_function_names l =
     | (PC.TAndLog(_),_)::_
     | (PC.TOrLog(_),_)::_
     | (PC.TDotDot(_),_)::_
+    | (PC.TDot(_),_)::_
     | (PC.TPtrOp(_),_)::_
     | (PC.TEllipsis(_),_)::_
     | (PC.TOEllipsis(_),_)::_
