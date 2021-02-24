@@ -24,6 +24,34 @@
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)
 
+* 1.1.0
+** Language
+- Allow fresh ids to be generated from a script
+- Account for metavariables used as the argument of typeof
+- Allow for annotations as metavariables
+- Allow auto as type when processing a C++ file (C++ >= 11)
+- bool is now a known typedef
+- Add support for statement list
+- Better handling of annotations
+** Features
+- Allow command line options to be written in cocci files using the #spatch
+  directive
+- Add --opt-c option to try and process a C file only if it exists (ignore
+  its abence otherwise)
+- Allow for user to optionally specify the C++ version with the --c++ argument
+- More efficient management of header files
+** Bugfix
+- Improved documentation (mostly metadecl)
+- Improved pretty printing
+- Improved error reporting
+- Better handling of "complex" pointer types (e.g. char * const *)
+- Fix expected grammar to better fit C99's:
+  - Allow assigning to the dereferencing of a function call. Problem reported
+    by Joe Perches
+- Camlp4 is no longer needed
+- Removed the pygtk dependency
+- Stop relying on Pervasives but on Stdcompat.Stdlib for backward compatibility
+
 * 1.0.9
 ** Language:
 - More kinds of string and char constants, mostly from C11. Not typed
