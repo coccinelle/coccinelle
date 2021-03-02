@@ -1,4 +1,14 @@
 module type S = sig
+val ibprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
+(** @since 4.11.0:
+    val ibprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a *)
+
+val ikbprintf :
+  (Buffer.t -> 'd) -> Buffer.t -> ('a, Buffer.t, unit, 'd) format4 -> 'a
+(** @since 4.11.0:
+    val ikbprintf :
+      (Buffer.t -> 'd) -> Buffer.t -> ('a, Buffer.t, unit, 'd) format4 -> 'a *)
+
 @BEGIN_FROM_4_03_0@
 val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a
 (** @since 4.03.0: val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a *)
@@ -11,11 +21,11 @@ val ifprintf : 'b -> ('a, 'b, unit) format -> 'a
 val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a
 @END_BEFORE_3_10_0@
 @END_BEFORE_4_03_0@
+(** @since 4.03.0: val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a *)
 
 @BEGIN_FROM_4_03_0@
 val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
-(** @since 4.03.0:
-    val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a *)
+(** @since 4.03.0: val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a *)
 @END_FROM_4_03_0@
 @BEGIN_BEFORE_4_03_0@
 @BEGIN_FROM_4_01_0@
@@ -27,6 +37,8 @@ val ikfprintf :
 val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
 @END_BEFORE_4_01_0@
 @END_BEFORE_4_03_0@
+(** @since 4.03.0:
+    val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a *)
 
 @BEGIN_FROM_4_03_0@
 val kbprintf :
@@ -41,6 +53,7 @@ val kbprintf :
 val kbprintf :
   (Buffer.t -> 'd) -> Buffer.t -> ('a, Buffer.t, unit, 'd) format4 -> 'a
 @END_BEFORE_3_10_0@
+
 @END_BEFORE_4_03_0@
 (** @since 4.03.0:
     val kbprintf :

@@ -1,4 +1,4 @@
-AC_INIT([[stdcompat]], m4_esyscmd([tr -d '\n' < VERSION]),
+AC_INIT([[stdcompat]], m4_esyscmd([tr -d '\n' <VERSION]),
   [[Thierry.Martinez@inria.fr]], [[stdcompat]],
   [[https://github.com/thierry.martinez/stdcompat/]])
 AM_INIT_AUTOMAKE([foreign])
@@ -7,17 +7,34 @@ AC_DEFUN([AC_OCAMLFIND_PKG],
   [AC_MSG_CHECKING([for ocamlfind package $2])
    AS_IF([$OCAMLFIND query $2 >/dev/null 2>&1],
      [AC_MSG_RESULT([yes])
-      AC_SUBST([$1], [$2])],
+      AC_MSG_CHECKING([if package $2 is usable])
+      echo "module M = $3" > configure_test.ml
+      AS_IF([$OCAMLFIND c -package $2 configure_test.ml -o /dev/null >/dev/null 2>&1],
+        [rm configure_test.ml
+         AC_MSG_RESULT([yes])
+         AC_SUBST([$1], [$2])],
+        [rm configure_test.ml
+         AC_MSG_RESULT([no])
+         AC_SUBST([$1], [])])],
      [AC_MSG_RESULT([no])
       AC_SUBST([$1], [])])])
 
 AC_CHECK_TOOL([OCAML], [ocaml], [])
+AC_CHECK_TOOL([OCAMLC], [ocamlc.opt], [])
+AS_IF([test "x$OCAMLC" = "x"],
+  [AC_CHECK_TOOL([OCAMLC], [ocamlc], [])])
+
+# ocamlc --version is not supported by OCaml <4.03
+# \($\|\r\) is not supported by Mac OS sed
+
+AC_MSG_CHECKING([OCaml version])
+AC_SUBST([OCAMLVERSION],
+  [[`$OCAMLC -v | sed -n 's/^.*version \(.*\)$/\1/p' | sed 's/\r//'`]])
+AC_MSG_RESULT([$OCAMLVERSION])
+
 AC_CHECK_TOOL([OCAMLFIND], [ocamlfind], [])
 AS_IF([test "x$OCAMLFIND" = "x"],
-  [AC_CHECK_TOOL([OCAMLC], [ocamlc.opt], [])
-   AS_IF([test "x$OCAMLC" = "x"],
-     [AC_CHECK_TOOL([OCAMLC], [ocamlc], [])])
-   AC_CHECK_TOOL([OCAMLOPT], [ocamlopt.opt], [])
+  [AC_CHECK_TOOL([OCAMLOPT], [ocamlopt.opt], [])
    AS_IF([test "x$OCAMLOPT" = "x"],
      [AC_CHECK_TOOL([OCAMLOPT], [ocamlopt], [])])
    AC_CHECK_TOOL([OCAMLDOC], [ocamldoc.opt], [])
@@ -33,14 +50,13 @@ AS_IF([test "x$OCAMLFIND" = "x"],
    AC_SUBST([SEQ_PKG], [])
    AC_SUBST([UCHAR_PKG], [])],
   [AC_SUBST([OCAMLC], [["$OCAMLFIND ocamlc"]])
-   AS_IF([$OCAMLFIND ocamlopt],
-     AC_SUBST([OCAMLOPT], [["$OCAMLFIND ocamlopt"]]))
+   AC_SUBST([OCAMLOPT], [["$OCAMLFIND ocamlopt"]])
    AC_SUBST([OCAMLDOC], [["$OCAMLFIND ocamldoc"]])
    AC_SUBST([OCAMLDEP], [["$OCAMLFIND ocamldep"]])
    AC_SUBST([OCAMLMKLIB], [["$OCAMLFIND ocamlmklib"]])
-   AC_OCAMLFIND_PKG([RESULT_PKG], [result])
-   AC_OCAMLFIND_PKG([SEQ_PKG], [seq])
-   AC_OCAMLFIND_PKG([UCHAR_PKG], [uchar])])
+   AC_OCAMLFIND_PKG([RESULT_PKG], [result], [Result])
+   AC_OCAMLFIND_PKG([SEQ_PKG], [seq], [Seq])
+   AC_OCAMLFIND_PKG([UCHAR_PKG], [uchar], [Uchar])])
 
 AS_IF([test "x$OCAMLOPT" = "x"],
   [AS_IF([test "x$OCAMLC" = "x"],
@@ -58,14 +74,6 @@ AC_C_BIGENDIAN(
   [AC_SUBST([BIG_ENDIAN], [[true]])],
   [AC_SUBST([BIG_ENDIAN], [[false]])],
   [AC_MSG_ERROR([[Unknown endianness]])])
-
-# ocamlc --version is not supported by OCaml <4.03
-# \($\|\r\) is not supported by Mac OS sed
-
-AC_MSG_CHECKING([OCaml version])
-AC_SUBST([OCAMLVERSION],
-  [[`$OCAMLBEST -v | sed -n 's/^.*version \(.*\)$/\1/p' | sed 's/\r//'`]])
-AC_MSG_RESULT([$OCAMLVERSION])
 
 AC_MSG_CHECKING([OCaml target OS type])
 
@@ -142,6 +150,8 @@ AC_WITH_OCAML_VERSION([4_07_1], [4.07.1])
 AC_WITH_OCAML_VERSION([4_08_0], [4.08.0])
 AC_WITH_OCAML_VERSION([4_09_0], [4.09.0])
 AC_WITH_OCAML_VERSION([4_10_0], [4.10.0])
+AC_WITH_OCAML_VERSION([4_11_0], [4.11.0])
+AC_WITH_OCAML_VERSION([4_12_0], [4.12.0])
 
 AS_IF([test "x$target_os_type" = "xWin32"],
   [AC_WITH_BLOCK([WIN32])],
@@ -201,12 +211,14 @@ AC_CONFIG_FILES([stdcompat__pervasives_s.mli])
 AC_CONFIG_FILES([stdcompat__arg_s.mli])
 AC_CONFIG_FILES([stdcompat__array_s.mli])
 AC_CONFIG_FILES([stdcompat__arrayLabels_s.mli])
+AC_CONFIG_FILES([stdcompat__atomic_s.mli])
 AC_CONFIG_FILES([stdcompat__bool_s.mli])
 AC_CONFIG_FILES([stdcompat__buffer_s.mli])
 AC_CONFIG_FILES([stdcompat__bytes_s.mli])
 AC_CONFIG_FILES([stdcompat__bytesLabels_s.mli])
 AC_CONFIG_FILES([stdcompat__char_s.mli])
 AC_CONFIG_FILES([stdcompat__digest_s.mli])
+AC_CONFIG_FILES([stdcompat__either_s.mli])
 AC_CONFIG_FILES([stdcompat__ephemeron_s.mli])
 AC_CONFIG_FILES([stdcompat__filename_s.mli])
 AC_CONFIG_FILES([stdcompat__float_s.mli])
@@ -230,7 +242,6 @@ AC_CONFIG_FILES([stdcompat__queue_s.mli])
 AC_CONFIG_FILES([stdcompat__result_s.mli])
 AC_CONFIG_FILES([stdcompat__seq_s.mli])
 AC_CONFIG_FILES([stdcompat__set_s.mli])
-AC_CONFIG_FILES([stdcompat__spacetime_s.mli])
 AC_CONFIG_FILES([stdcompat__stack_s.mli])
 AC_CONFIG_FILES([stdcompat__stream_s.mli])
 AC_CONFIG_FILES([stdcompat__string_s.mli])
@@ -243,12 +254,14 @@ AC_CONFIG_FILES([stdcompat__pervasives_s.ml:stdcompat__pervasives_s.mli.in])
 AC_CONFIG_FILES([stdcompat__arg_s.ml:stdcompat__arg_s.mli.in])
 AC_CONFIG_FILES([stdcompat__array_s.ml:stdcompat__array_s.mli.in])
 AC_CONFIG_FILES([stdcompat__arrayLabels_s.ml:stdcompat__arrayLabels_s.mli.in])
+AC_CONFIG_FILES([stdcompat__atomic_s.ml:stdcompat__atomic_s.mli.in])
 AC_CONFIG_FILES([stdcompat__bool_s.ml:stdcompat__bool_s.mli.in])
 AC_CONFIG_FILES([stdcompat__buffer_s.ml:stdcompat__buffer_s.mli.in])
 AC_CONFIG_FILES([stdcompat__bytes_s.ml:stdcompat__bytes_s.mli.in])
 AC_CONFIG_FILES([stdcompat__bytesLabels_s.ml:stdcompat__bytesLabels_s.mli.in])
 AC_CONFIG_FILES([stdcompat__char_s.ml:stdcompat__char_s.mli.in])
 AC_CONFIG_FILES([stdcompat__digest_s.ml:stdcompat__digest_s.mli.in])
+AC_CONFIG_FILES([stdcompat__either_s.ml:stdcompat__either_s.mli.in])
 AC_CONFIG_FILES([stdcompat__ephemeron_s.ml:stdcompat__ephemeron_s.mli.in])
 AC_CONFIG_FILES([stdcompat__filename_s.ml:stdcompat__filename_s.mli.in])
 AC_CONFIG_FILES([stdcompat__float_s.ml:stdcompat__float_s.mli.in])
@@ -272,7 +285,6 @@ AC_CONFIG_FILES([stdcompat__queue_s.ml:stdcompat__queue_s.mli.in])
 AC_CONFIG_FILES([stdcompat__result_s.ml:stdcompat__result_s.mli.in])
 AC_CONFIG_FILES([stdcompat__seq_s.ml:stdcompat__seq_s.mli.in])
 AC_CONFIG_FILES([stdcompat__set_s.ml:stdcompat__set_s.mli.in])
-AC_CONFIG_FILES([stdcompat__spacetime_s.ml:stdcompat__spacetime_s.mli.in])
 AC_CONFIG_FILES([stdcompat__stack_s.ml:stdcompat__stack_s.mli.in])
 AC_CONFIG_FILES([stdcompat__stdlib_s.ml:stdcompat__stdlib_s.mli.in])
 AC_CONFIG_FILES([stdcompat__stream_s.ml:stdcompat__stream_s.mli.in])
@@ -285,12 +297,14 @@ AC_CONFIG_FILES([stdcompat__pervasives.ml])
 AC_CONFIG_FILES([stdcompat__arg.ml])
 AC_CONFIG_FILES([stdcompat__array.ml])
 AC_CONFIG_FILES([stdcompat__arrayLabels.ml])
+AC_CONFIG_FILES([stdcompat__atomic.ml])
 AC_CONFIG_FILES([stdcompat__bool.ml])
 AC_CONFIG_FILES([stdcompat__buffer.ml])
 AC_CONFIG_FILES([stdcompat__bytes.ml])
 AC_CONFIG_FILES([stdcompat__bytesLabels.ml])
 AC_CONFIG_FILES([stdcompat__char.ml])
 AC_CONFIG_FILES([stdcompat__digest.ml])
+AC_CONFIG_FILES([stdcompat__either.ml])
 AC_CONFIG_FILES([stdcompat__ephemeron.ml])
 AC_CONFIG_FILES([stdcompat__filename.ml])
 AC_CONFIG_FILES([stdcompat__float.ml])
@@ -314,7 +328,6 @@ AC_CONFIG_FILES([stdcompat__queue.ml])
 AC_CONFIG_FILES([stdcompat__result.ml])
 AC_CONFIG_FILES([stdcompat__seq.ml])
 AC_CONFIG_FILES([stdcompat__set.ml])
-AC_CONFIG_FILES([stdcompat__spacetime.ml])
 AC_CONFIG_FILES([stdcompat__stack.ml])
 AC_CONFIG_FILES([stdcompat__stdlib.ml])
 AC_CONFIG_FILES([stdcompat__stream.ml])
@@ -327,12 +340,14 @@ AC_CONFIG_FILES([stdcompat__pervasives.mli])
 AC_CONFIG_FILES([stdcompat__arg.mli])
 AC_CONFIG_FILES([stdcompat__array.mli])
 AC_CONFIG_FILES([stdcompat__arrayLabels.mli])
+AC_CONFIG_FILES([stdcompat__atomic.mli])
 AC_CONFIG_FILES([stdcompat__bool.mli])
 AC_CONFIG_FILES([stdcompat__buffer.mli])
 AC_CONFIG_FILES([stdcompat__bytes.mli])
 AC_CONFIG_FILES([stdcompat__bytesLabels.mli])
 AC_CONFIG_FILES([stdcompat__char.mli])
 AC_CONFIG_FILES([stdcompat__digest.mli])
+AC_CONFIG_FILES([stdcompat__either.mli])
 AC_CONFIG_FILES([stdcompat__ephemeron.mli])
 AC_CONFIG_FILES([stdcompat__filename.mli])
 AC_CONFIG_FILES([stdcompat__float.mli])
@@ -356,7 +371,6 @@ AC_CONFIG_FILES([stdcompat__queue.mli])
 AC_CONFIG_FILES([stdcompat__result.mli])
 AC_CONFIG_FILES([stdcompat__seq.mli])
 AC_CONFIG_FILES([stdcompat__set.mli])
-AC_CONFIG_FILES([stdcompat__spacetime.mli])
 AC_CONFIG_FILES([stdcompat__stack.mli])
 AC_CONFIG_FILES([stdcompat__stdlib.mli])
 AC_CONFIG_FILES([stdcompat__stream.mli])

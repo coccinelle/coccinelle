@@ -8,7 +8,7 @@ ability to be compiled on former versions of OCaml.
 The ``Stdcompat`` API is not intended to be stable, but there will be
 efforts to allow future versions of ``Stdcompat`` to be compiled on a
 large range of versions of OCaml: ``Stdcompat`` should compile (at least)
-on every version of OCaml from 3.07 (included).
+on every version of OCaml from 3.08 (included).
 
 The module ``Stdcompat`` provides some definitions for values and
 types introduced in recent versions of the standard library. These

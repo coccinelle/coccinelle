@@ -1,3 +1,34 @@
+* Next version
+
+- Add module Atomic
+
+* Version 15, 2021-02-17
+
+- Support for OCaml 4.12.0 with
+  - Sys.{mkdir, rmdir}
+  - {Set,Map}.to_rev_seq
+  - Either module
+  - List.{partition_map, compare, equal}
+  - Hashtbl.rebuild
+  - Format.pp_print_seq
+
+- VERSION file was missing in distributed archive
+
+* Version 14, 2020-05-10
+
+- Support for OCaml 4.11.0 with
+  - Array.{for_all2, exists2}
+  - Lexing.{set_position, set_filename}
+  - List.{filteri, fold_left_map}
+  - Printexc.{default_uncaught_exception_handler, Slot.name}
+  - Seq.{cons, append, unfold}
+  - {Set,Map}.filter_map
+  - Printf.{ibprintf, ikbprintf}
+
+- More efficient implementation of Set functions
+
+- Support for version mismatch between ocamlc and ocamlfind packages
+
 * Version 13, 2020-02-22
 
 - Add: stdcompat.h, provides prototype for caml_alloc_initialized_string
@@ -16,7 +47,7 @@
 
 - Support for Windows
 
-- Added Bytes.unsafe_blit_string, Filename.quote_command, List.concat_map,
+- Add Bytes.unsafe_blit_string, Filename.quote_command, List.concat_map,
   List.find_map, Sys.Immediate64
 
 - Equality Lexing.lexbuf = Stdcompat.Lexing.lexbuf is available even for
@@ -26,7 +57,7 @@
 
 - caml_alloc_initialized_string is now available for OCaml 4.05.0
 
-- Added Printexc.to_string_default and Printexc.use_printers
+- Add Printexc.to_string_default and Printexc.use_printers
 
 * Version 10, 2019-06-26
 

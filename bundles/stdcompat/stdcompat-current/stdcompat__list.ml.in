@@ -1,5 +1,4 @@
 include List
-
 @BEGIN_BEFORE_4_08_0@
 type 'a t = 'a list
 @BEGIN_FROM_4_03_0@
@@ -18,6 +17,37 @@ let filter_map f list =
         aux accu' tail in
   aux [] list
 @END_BEFORE_4_08_0@
+
+@BEGIN_BEFORE_4_12_0@
+let rec partition_map_aux left right f list =
+  match list with
+  | [] -> rev left, rev right
+  | hd :: tl ->
+      match f hd with
+      | Stdcompat__either.Left v -> partition_map_aux (v :: left) right f tl
+      | Stdcompat__either.Right v -> partition_map_aux left (v :: right) f tl
+
+let partition_map f list =
+  partition_map_aux [] [] f list
+
+let rec compare cmp l0 l1 =
+  match l0, l1 with
+  | [], [] -> 0
+  | [], _ :: _ -> -1
+  | _ :: _, [] -> 1
+  | hd0 :: tl0, hd1 :: tl1 ->
+      match cmp hd0 hd1 with
+      | 0 -> compare cmp tl0 tl1
+      | c -> c
+
+let rec equal eq l0 l1 =
+  match l0, l1 with
+  | [], [] -> true
+  | [], _ :: _
+  | _ :: _, [] -> false
+  | hd0 :: tl0, hd1 :: tl1 ->
+      eq hd0 hd1 && equal eq tl0 tl1
+@END_BEFORE_4_12_0@
 
 @BEGIN_BEFORE_4_00_0@
 let rec iteri_aux i f l =
@@ -133,3 +163,26 @@ let rec concat_rev_map_aux f l accu =
 let concat_map f l =
   rev (concat_rev_map_aux f l [])
 @END_BEFORE_4_10_0@
+
+@BEGIN_BEFORE_4_11_0@
+let rec filteri_rev_aux f l i accu =
+  match l with
+  | [] -> accu
+  | hd :: tl ->
+      let accu =
+        if f i hd then
+          hd :: accu
+        else
+          accu in
+      filteri_rev_aux f tl (succ i) accu
+
+let filteri f l =
+  rev (filteri_rev_aux f l 0 [])
+
+let fold_left_map f accu l =
+  let accu, rev =
+    fold_left (fun (accu, rev) item ->
+      let accu, x = f accu item in
+      (accu, x :: rev)) (accu, []) l in
+  accu, List.rev rev
+@END_BEFORE_4_11_0@

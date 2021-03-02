@@ -1,5 +1,5 @@
 module type S = sig
-@BEGIN_FROM_4_05_0@
+@BEGIN_FROM_4_12_0@
 type spec = Arg.spec =
   | Unit of (unit -> unit) 
   | Bool of (bool -> unit) 
@@ -14,9 +14,10 @@ type spec = Arg.spec =
   | Tuple of spec list 
   | Symbol of string list * (string -> unit) 
   | Rest of (string -> unit) 
+  | Rest_all of (string list -> unit) 
   | Expand of (string -> string array) 
-@END_FROM_4_05_0@
-@BEGIN_BEFORE_4_05_0@
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
 type spec =
   | Unit of (unit -> unit) 
   | Bool of (bool -> unit) 
@@ -31,9 +32,10 @@ type spec =
   | Tuple of spec list 
   | Symbol of string list * (string -> unit) 
   | Rest of (string -> unit) 
+  | Rest_all of (string list -> unit) 
   | Expand of (string -> string array) 
-@END_BEFORE_4_05_0@
-(** @since 4.05.0:
+@END_BEFORE_4_12_0@
+(** @since 4.12.0:
     type spec =
       | Unit of (unit -> unit) 
       | Bool of (bool -> unit) 
@@ -48,6 +50,7 @@ type spec =
       | Tuple of spec list 
       | Symbol of string list * (string -> unit) 
       | Rest of (string -> unit) 
+      | Rest_all of (string list -> unit) 
       | Expand of (string -> string array) 
  *)
 

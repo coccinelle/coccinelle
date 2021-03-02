@@ -1,0 +1,243 @@
+module type S = sig
+@BEGIN_FROM_4_08_0@
+@BEGIN_FROM_4_03_0@
+type 'a t = 'a list =
+  | []
+  | (::) of 'a * 'a list
+@END_FROM_4_03_0@
+@BEGIN_BEFORE_4_03_0@
+type 'a t = 'a list
+@END_BEFORE_4_03_0@
+@END_FROM_4_08_0@
+@BEGIN_BEFORE_4_08_0@
+@BEGIN_FROM_4_03_0@
+type 'a t = 'a list =
+  | []
+  | (::) of 'a * 'a list
+@END_FROM_4_03_0@
+@BEGIN_BEFORE_4_03_0@
+type 'a t = 'a list
+@END_BEFORE_4_03_0@
+@END_BEFORE_4_08_0@
+(** @since 4.08.0: type 'a t = 'a list =
+                     | [] 
+                     | (::) of 'a * 'a list 
+ *)
+
+val equal : eq:('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+(** @since 4.12.0:
+    val equal : eq:('a -> 'a -> bool) -> 'a list -> 'a list -> bool *)
+
+val compare : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> int
+(** @since 4.12.0:
+    val compare : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> int *)
+
+@BEGIN_FROM_4_12_0@
+val partition_map :
+  f:('a -> ('b, 'c) Either.t) -> 'a list -> ('b list * 'c list)
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+val partition_map :
+  f:('a -> ('b, 'c) Stdcompat__either.t) -> 'a list -> ('b list * 'c list)
+@END_BEFORE_4_12_0@
+(** @since 4.12.0:
+    val partition_map :
+      f:('a -> ('b, 'c) Either.t) -> 'a list -> ('b list * 'c list)
+ *)
+
+val fold_left_map :
+  f:('a -> 'b -> ('a * 'c)) -> init:'a -> 'b list -> ('a * 'c list)
+(** @since 4.11.0:
+    val fold_left_map :
+      f:('a -> 'b -> ('a * 'c)) -> init:'a -> 'b list -> ('a * 'c list) *)
+
+val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list
+(** @since 4.11.0: val filteri : f:(int -> 'a -> bool) -> 'a list -> 'a list *)
+
+val concat_map : f:('a -> 'b list) -> 'a list -> 'b list
+(** @since 4.10.0: val concat_map : f:('a -> 'b list) -> 'a list -> 'b list *)
+
+val find_map : f:('a -> 'b option) -> 'a list -> 'b option
+(** @since 4.10.0: val find_map : f:('a -> 'b option) -> 'a list -> 'b option *)
+
+val filter_map : f:('a -> 'b option) -> 'a list -> 'b list
+(** @since 4.08.0: val filter_map : f:('a -> 'b option) -> 'a list -> 'b list *)
+
+@BEGIN_FROM_4_07_0@
+val to_seq : 'a list -> 'a Seq.t
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+val to_seq : 'a list -> 'a Stdcompat__seq.t
+@END_BEFORE_4_07_0@
+(** @since 4.07.0: val to_seq : 'a list -> 'a Seq.t
+ *)
+
+@BEGIN_FROM_4_07_0@
+val of_seq : 'a Seq.t -> 'a list
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+val of_seq : 'a Stdcompat__seq.t -> 'a list
+@END_BEFORE_4_07_0@
+(** @since 4.07.0: val of_seq : 'a Seq.t -> 'a list
+ *)
+
+val init : len:int -> f:(int -> 'a) -> 'a list
+(** @since 4.06.0: val init : len:int -> f:(int -> 'a) -> 'a list *)
+
+val compare_lengths : 'a list -> 'b list -> int
+(** @since 4.05.0: val compare_lengths : 'a list -> 'b list -> int *)
+
+val compare_length_with : 'a list -> len:int -> int
+(** @since 4.05.0: val compare_length_with : 'a list -> len:int -> int *)
+
+val cons : 'a -> 'a list -> 'a list
+(** @since 4.05.0: val cons : 'a -> 'a list -> 'a list *)
+
+val nth_opt : 'a list -> int -> 'a option
+(** @since 4.05.0: val nth_opt : 'a list -> int -> 'a option *)
+
+val find_opt : f:('a -> bool) -> 'a list -> 'a option
+(** @since 4.05.0: val find_opt : f:('a -> bool) -> 'a list -> 'a option *)
+
+val assoc_opt : 'a -> ('a * 'b) list -> 'b option
+(** @since 4.05.0: val assoc_opt : 'a -> ('a * 'b) list -> 'b option *)
+
+val assq_opt : 'a -> ('a * 'b) list -> 'b option
+(** @since 4.05.0: val assq_opt : 'a -> ('a * 'b) list -> 'b option *)
+
+val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+(** @since 4.03.0:
+    val sort_uniq : cmp:('a -> 'a -> int) -> 'a list -> 'a list *)
+
+val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
+(** @since 4.00.0: val iteri : f:(int -> 'a -> unit) -> 'a list -> unit *)
+
+val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
+(** @since 4.00.0: val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list *)
+
+val length : 'a list -> int
+(** Alias for {!ListLabels.length} *)
+
+val hd : 'a list -> 'a
+(** Alias for {!ListLabels.hd} *)
+
+val tl : 'a list -> 'a list
+(** Alias for {!ListLabels.tl} *)
+
+val nth : 'a list -> int -> 'a
+(** Alias for {!ListLabels.nth} *)
+
+val rev : 'a list -> 'a list
+(** Alias for {!ListLabels.rev} *)
+
+val append : 'a list -> 'a list -> 'a list
+(** Alias for {!ListLabels.append} *)
+
+val rev_append : 'a list -> 'a list -> 'a list
+(** Alias for {!ListLabels.rev_append} *)
+
+val concat : 'a list list -> 'a list
+(** Alias for {!ListLabels.concat} *)
+
+val flatten : 'a list list -> 'a list
+(** Alias for {!ListLabels.flatten} *)
+
+val iter : f:('a -> unit) -> 'a list -> unit
+(** Alias for {!ListLabels.iter} *)
+
+val map : f:('a -> 'b) -> 'a list -> 'b list
+(** Alias for {!ListLabels.map} *)
+
+val rev_map : f:('a -> 'b) -> 'a list -> 'b list
+(** Alias for {!ListLabels.rev_map} *)
+
+val fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
+(** Alias for {!ListLabels.fold_left} *)
+
+val fold_right : f:('a -> 'b -> 'b) -> 'a list -> init:'b -> 'b
+(** Alias for {!ListLabels.fold_right} *)
+
+val iter2 : f:('a -> 'b -> unit) -> 'a list -> 'b list -> unit
+(** Alias for {!ListLabels.iter2} *)
+
+val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+(** Alias for {!ListLabels.map2} *)
+
+val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
+(** Alias for {!ListLabels.rev_map2} *)
+
+val fold_left2 :
+  f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
+(** Alias for {!ListLabels.fold_left2} *)
+
+val fold_right2 :
+  f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
+(** Alias for {!ListLabels.fold_right2} *)
+
+val for_all : f:('a -> bool) -> 'a list -> bool
+(** Alias for {!ListLabels.for_all} *)
+
+val exists : f:('a -> bool) -> 'a list -> bool
+(** Alias for {!ListLabels.exists} *)
+
+val for_all2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+(** Alias for {!ListLabels.for_all2} *)
+
+val exists2 : f:('a -> 'b -> bool) -> 'a list -> 'b list -> bool
+(** Alias for {!ListLabels.exists2} *)
+
+val mem : 'a -> set:'a list -> bool
+(** Alias for {!ListLabels.mem} *)
+
+val memq : 'a -> set:'a list -> bool
+(** Alias for {!ListLabels.memq} *)
+
+val find : f:('a -> bool) -> 'a list -> 'a
+(** Alias for {!ListLabels.find} *)
+
+val filter : f:('a -> bool) -> 'a list -> 'a list
+(** Alias for {!ListLabels.filter} *)
+
+val find_all : f:('a -> bool) -> 'a list -> 'a list
+(** Alias for {!ListLabels.find_all} *)
+
+val partition : f:('a -> bool) -> 'a list -> ('a list * 'a list)
+(** Alias for {!ListLabels.partition} *)
+
+val assoc : 'a -> ('a * 'b) list -> 'b
+(** Alias for {!ListLabels.assoc} *)
+
+val assq : 'a -> ('a * 'b) list -> 'b
+(** Alias for {!ListLabels.assq} *)
+
+val mem_assoc : 'a -> map:('a * 'b) list -> bool
+(** Alias for {!ListLabels.mem_assoc} *)
+
+val mem_assq : 'a -> map:('a * 'b) list -> bool
+(** Alias for {!ListLabels.mem_assq} *)
+
+val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
+(** Alias for {!ListLabels.remove_assoc} *)
+
+val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
+(** Alias for {!ListLabels.remove_assq} *)
+
+val split : ('a * 'b) list -> ('a list * 'b list)
+(** Alias for {!ListLabels.split} *)
+
+val combine : 'a list -> 'b list -> ('a * 'b) list
+(** Alias for {!ListLabels.combine} *)
+
+val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+(** Alias for {!ListLabels.sort} *)
+
+val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+(** Alias for {!ListLabels.stable_sort} *)
+
+val fast_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
+(** Alias for {!ListLabels.fast_sort} *)
+
+val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
+(** Alias for {!ListLabels.merge} *)
+
+end

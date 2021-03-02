@@ -1,5 +1,11 @@
 module type S = sig
+@BEGIN_FROM_4_12_0@
+type (!'a, !'b) t = ('a, 'b) Hashtbl.t
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+
 type ('a, 'b) t = ('a, 'b) Hashtbl.t
+@END_BEFORE_4_12_0@
 (** Alias for {!Hashtbl.t} *)
 
 @BEGIN_FROM_4_00_0@
@@ -27,73 +33,57 @@ type statistics = Stdcompat__hashtbl_ext.statistics =
       bucket_histogram: int array }
  *)
 
-module type HashedType  =
-  sig type t val equal : t -> t -> bool val hash : t -> int end
+module type HashedType =
+sig type t val equal : t -> t -> bool val hash : t -> int end
 (** Alias for {!Hashtbl.HashedType} *)
 
 @BEGIN_FROM_4_07_0@
-module type S  =
-  sig
-    type key
-    type 'a t
-    val create : int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats : 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_seq_keys : 'a t -> key Seq.t
-    val to_seq_values : 'a t -> 'a Seq.t
-    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val of_seq : (key * 'a) Seq.t -> 'a t
-  end
+module type S =
+sig type key
+@BEGIN_FROM_4_12_0@
+type !'a t
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+
+type 'a t
+@END_BEFORE_4_12_0@ val create : int -> 'a t
+val clear : 'a t -> unit val reset : 'a t -> unit val copy : 'a t -> 'a t
+val add : 'a t -> key -> 'a -> unit val remove : 'a t -> key -> unit
+val find : 'a t -> key -> 'a val find_opt : 'a t -> key -> 'a option
+val find_all : 'a t -> key -> 'a list val replace : 'a t -> key -> 'a -> unit
+val mem : 'a t -> key -> bool val iter : (key -> 'a -> unit) -> 'a t -> unit
+val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+val length : 'a t -> int val stats : 'a t -> statistics
+val to_seq : 'a t -> (key * 'a) Seq.t val to_seq_keys : 'a t -> key Seq.t
+val to_seq_values : 'a t -> 'a Seq.t
+val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+val of_seq : (key * 'a) Seq.t -> 'a t end
 @END_FROM_4_07_0@
 @BEGIN_BEFORE_4_07_0@
-module type S  =
-  sig
-    type key
-    type 'a t
-    val create : int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats : 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-    val to_seq_keys : 'a t -> key Stdcompat__seq.t
-    val to_seq_values : 'a t -> 'a Stdcompat__seq.t
-    val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
-  end
+module type S =
+sig type key type 'a t val create : int -> 'a t val clear : 'a t -> unit
+val reset : 'a t -> unit val copy : 'a t -> 'a t
+val add : 'a t -> key -> 'a -> unit val remove : 'a t -> key -> unit
+val find : 'a t -> key -> 'a val find_opt : 'a t -> key -> 'a option
+val find_all : 'a t -> key -> 'a list val replace : 'a t -> key -> 'a -> unit
+val mem : 'a t -> key -> bool val iter : (key -> 'a -> unit) -> 'a t -> unit
+val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+val length : 'a t -> int val stats : 'a t -> statistics
+val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+val to_seq_keys : 'a t -> key Stdcompat__seq.t
+val to_seq_values : 'a t -> 'a Stdcompat__seq.t
+val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t end
 @END_BEFORE_4_07_0@
 (** @since 4.07.0:
     module type S  =
       sig
         type key
-        type 'a t
+        type !'a t
         val create : int -> 'a t
         val clear : 'a t -> unit
         val reset : 'a t -> unit
@@ -125,43 +115,32 @@ module Make = Hashtbl.Make
 @BEGIN_BEFORE_4_07_0@
 module Make :
 functor (H : HashedType) ->
-  sig
-    type key = H.t
-    type 'a t = 'a Hashtbl.Make(H).t
-    val create : int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats : 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-    val to_seq_keys : 'a t -> key Stdcompat__seq.t
-    val to_seq_values : 'a t -> 'a Stdcompat__seq.t
-    val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
-  end
+sig type key = H.t type 'a t = 'a Hashtbl.Make(H).t val create : int -> 'a t
+val clear : 'a t -> unit val reset : 'a t -> unit val copy : 'a t -> 'a t
+val add : 'a t -> key -> 'a -> unit val remove : 'a t -> key -> unit
+val find : 'a t -> key -> 'a val find_opt : 'a t -> key -> 'a option
+val find_all : 'a t -> key -> 'a list val replace : 'a t -> key -> 'a -> unit
+val mem : 'a t -> key -> bool val iter : (key -> 'a -> unit) -> 'a t -> unit
+val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+val length : 'a t -> int val stats : 'a t -> statistics
+val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+val to_seq_keys : 'a t -> key Stdcompat__seq.t
+val to_seq_values : 'a t -> 'a Stdcompat__seq.t
+val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t end
 @END_BEFORE_4_07_0@
 (** @since 4.07.0: module Make = Hashtbl.Make
  *)
 
 @BEGIN_FROM_4_00_0@
-module type SeededHashedType  =
-  sig type t val equal : t -> t -> bool val hash : int -> t -> int end
+module type SeededHashedType =
+sig type t val equal : t -> t -> bool val hash : int -> t -> int end
 @END_FROM_4_00_0@
 @BEGIN_BEFORE_4_00_0@
-module type SeededHashedType  =
-  sig type t val equal : t -> t -> bool val hash : int -> t -> int end
+module type SeededHashedType =
+sig type t val equal : t -> t -> bool val hash : int -> t -> int end
 @END_BEFORE_4_00_0@
 (** @since 4.00.0:
     module type SeededHashedType  =
@@ -169,68 +148,52 @@ module type SeededHashedType  =
  *)
 
 @BEGIN_FROM_4_07_0@
-module type SeededS  =
-  sig
-    type key
-    type 'a t
-    val create : ?random:bool -> int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats : 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Seq.t
-    val to_seq_keys : 'a t -> key Seq.t
-    val to_seq_values : 'a t -> 'a Seq.t
-    val add_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
-    val of_seq : (key * 'a) Seq.t -> 'a t
-  end
+module type SeededS =
+sig type key
+@BEGIN_FROM_4_12_0@
+type !'a t
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+
+type 'a t
+@END_BEFORE_4_12_0@ val create : ?random:bool -> int -> 'a t
+val clear : 'a t -> unit val reset : 'a t -> unit val copy : 'a t -> 'a t
+val add : 'a t -> key -> 'a -> unit val remove : 'a t -> key -> unit
+val find : 'a t -> key -> 'a val find_opt : 'a t -> key -> 'a option
+val find_all : 'a t -> key -> 'a list val replace : 'a t -> key -> 'a -> unit
+val mem : 'a t -> key -> bool val iter : (key -> 'a -> unit) -> 'a t -> unit
+val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+val length : 'a t -> int val stats : 'a t -> statistics
+val to_seq : 'a t -> (key * 'a) Seq.t val to_seq_keys : 'a t -> key Seq.t
+val to_seq_values : 'a t -> 'a Seq.t
+val add_seq : 'a t -> (key * 'a) Seq.t -> unit
+val replace_seq : 'a t -> (key * 'a) Seq.t -> unit
+val of_seq : (key * 'a) Seq.t -> 'a t end
 @END_FROM_4_07_0@
 @BEGIN_BEFORE_4_07_0@
-module type SeededS  =
-  sig
-    type key
-    type 'a t
-    val create : ?random:bool -> int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats : 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-    val to_seq_keys : 'a t -> key Stdcompat__seq.t
-    val to_seq_values : 'a t -> 'a Stdcompat__seq.t
-    val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
-  end
+module type SeededS =
+sig type key type 'a t val create : ?random:bool -> int -> 'a t
+val clear : 'a t -> unit val reset : 'a t -> unit val copy : 'a t -> 'a t
+val add : 'a t -> key -> 'a -> unit val remove : 'a t -> key -> unit
+val find : 'a t -> key -> 'a val find_opt : 'a t -> key -> 'a option
+val find_all : 'a t -> key -> 'a list val replace : 'a t -> key -> 'a -> unit
+val mem : 'a t -> key -> bool val iter : (key -> 'a -> unit) -> 'a t -> unit
+val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+val length : 'a t -> int val stats : 'a t -> statistics
+val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+val to_seq_keys : 'a t -> key Stdcompat__seq.t
+val to_seq_values : 'a t -> 'a Stdcompat__seq.t
+val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t end
 @END_BEFORE_4_07_0@
 (** @since 4.07.0:
     module type SeededS  =
       sig
         type key
-        type 'a t
+        type !'a t
         val create : ?random:bool -> int -> 'a t
         val clear : 'a t -> unit
         val reset : 'a t -> unit
@@ -262,35 +225,28 @@ module MakeSeeded = Hashtbl.MakeSeeded
 @BEGIN_BEFORE_4_07_0@
 module MakeSeeded :
 functor (H : SeededHashedType) ->
-  sig
-    type key = H.t
-    type 'a t = 'a Stdcompat__hashtbl_ext.MakeSeeded(H).t
-    val create : ?random:bool -> int -> 'a t
-    val clear : 'a t -> unit
-    val reset : 'a t -> unit
-    val copy : 'a t -> 'a t
-    val add : 'a t -> key -> 'a -> unit
-    val remove : 'a t -> key -> unit
-    val find : 'a t -> key -> 'a
-    val find_opt : 'a t -> key -> 'a option
-    val find_all : 'a t -> key -> 'a list
-    val replace : 'a t -> key -> 'a -> unit
-    val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    val length : 'a t -> int
-    val stats : 'a t -> statistics
-    val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-    val to_seq_keys : 'a t -> key Stdcompat__seq.t
-    val to_seq_values : 'a t -> 'a Stdcompat__seq.t
-    val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
-    val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
-  end
+sig type key = H.t type 'a t = 'a Stdcompat__hashtbl_ext.MakeSeeded(H).t
+val create : ?random:bool -> int -> 'a t val clear : 'a t -> unit
+val reset : 'a t -> unit val copy : 'a t -> 'a t
+val add : 'a t -> key -> 'a -> unit val remove : 'a t -> key -> unit
+val find : 'a t -> key -> 'a val find_opt : 'a t -> key -> 'a option
+val find_all : 'a t -> key -> 'a list val replace : 'a t -> key -> 'a -> unit
+val mem : 'a t -> key -> bool val iter : (key -> 'a -> unit) -> 'a t -> unit
+val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
+val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+val length : 'a t -> int val stats : 'a t -> statistics
+val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
+val to_seq_keys : 'a t -> key Stdcompat__seq.t
+val to_seq_values : 'a t -> 'a Stdcompat__seq.t
+val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
+val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t end
 @END_BEFORE_4_07_0@
 (** @since 4.07.0: module MakeSeeded = Hashtbl.MakeSeeded
  *)
+
+val rebuild : ?random:bool -> ('a, 'b) t -> ('a, 'b) t
+(** @since 4.12.0: val rebuild : ?random:bool -> ('a, 'b) t -> ('a, 'b) t *)
 
 @BEGIN_FROM_4_07_0@
 val to_seq : ('a, 'b) t -> ('a * 'b) Seq.t

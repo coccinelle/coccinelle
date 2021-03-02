@@ -31,34 +31,59 @@ module Immediate64 = Sys.Immediate64
 @END_FROM_4_10_0@
 @BEGIN_BEFORE_4_10_0@
 module Immediate64 :
+sig module type Non_immediate = sig type t end
+module type Immediate =
 sig
-  module type Non_immediate  = sig type t end
-  module type Immediate  = sig type t
 @BEGIN_FROM_4_02_0@
-[@@immediate ]
-@END_FROM_4_02_0@ end
-  module Make :
-  functor (Immediate : Immediate) ->
-    functor (Non_immediate : Non_immediate) ->
-      sig
-        type t
-@BEGIN_FROM_4_02_0@
-[@@immediate64 ]
+type t[@@immediate ]
 @END_FROM_4_02_0@
-        type 'a repr =
+@BEGIN_BEFORE_4_02_0@
+
+type t
+@END_BEFORE_4_02_0@ end
+module Make :
+functor (Immediate : Immediate) ->
+functor (Non_immediate : Non_immediate) ->
+sig
+@BEGIN_FROM_4_02_0@
+type t[@@immediate64 ]
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+
+type t
+@END_BEFORE_4_02_0@
 @BEGIN_FROM_4_00_0@
-          | Immediate: Immediate.t repr
-          | Non_immediate: Non_immediate.t repr
+type 'a repr =
+                      | Immediate: Immediate.t repr 
+                      | Non_immediate: Non_immediate.t repr 
 @END_FROM_4_00_0@
 @BEGIN_BEFORE_4_00_0@
-          | Immediate
-          | Non_immediate
+
+type 'a repr =
+  | Immediate 
+  | Non_immediate 
 @END_BEFORE_4_00_0@
-        val repr : t repr
-      end
-end
+val repr : t repr end end
 @END_BEFORE_4_10_0@
 (** @since 4.10.0: module Immediate64 = Sys.Immediate64
+ *)
+
+@BEGIN_FROM_4_12_0@
+external mkdir : string -> int -> unit = "caml_sys_mkdir"
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+val mkdir : string -> int -> unit
+@END_BEFORE_4_12_0@
+(** @since 4.12.0: external mkdir : string -> int -> unit = "caml_sys_mkdir"
+ *)
+
+@BEGIN_FROM_4_12_0@
+external rmdir : string -> unit = "caml_sys_rmdir"
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+val rmdir : string -> unit
+@END_BEFORE_4_12_0@
+(** @since 4.12.0: external rmdir : string -> unit = "caml_sys_rmdir"
  *)
 
 val max_floatarray_length : int

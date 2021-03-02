@@ -62,3 +62,19 @@ let iter f seq =
   aux seq
 @END_WITHOUT_SEQ_PKG@
 @END_BEFORE_4_07_0@
+@BEGIN_BEFORE_4_11_0@
+let cons x seq () =
+  Cons (x, seq)
+
+let rec append a b () =
+  match a () with
+  | Nil -> b ()
+  | Cons (hd, tl) ->
+      Cons (hd, append tl b)
+
+let rec unfold f state () =
+  match f state with
+  | None -> Nil
+  | Some (value, state) ->
+      Cons (value, unfold f state)
+@END_BEFORE_4_11_0@

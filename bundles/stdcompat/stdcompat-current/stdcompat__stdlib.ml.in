@@ -1,7 +1,7 @@
-@BEGIN_FROM_4_10_0@
+@BEGIN_FROM_4_12_0@
 include Stdlib
-@END_FROM_4_10_0@
-@BEGIN_BEFORE_4_10_0@
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
 module Pervasives = Stdcompat__pervasives
 
 include Pervasives
@@ -11,6 +11,8 @@ module Arg = Stdcompat__arg
 module Array = Stdcompat__array
 
 module ArrayLabels = Stdcompat__arrayLabels
+
+module Atomic = Stdcompat__atomic
 
 (* Bigarray is not exported before 4.02.0 to allow programs not
    to be compiled with this module, this may change in the future.
@@ -37,6 +39,8 @@ module Char = Stdcompat__char
 module Complex = Complex
 
 module Digest = Stdcompat__digest
+
+module Either = Stdcompat__either
 
 module Ephemeron = Stdcompat__ephemeron
 
@@ -100,8 +104,6 @@ module Seq = Stdcompat__seq
 
 module Set = Stdcompat__set
 
-module Spacetime = Stdcompat__spacetime
-
 module Stack = Stdcompat__stack
 
 module StdLabels = struct
@@ -125,4 +127,4 @@ module Sys = Stdcompat__sys
 module Uchar = Stdcompat__uchar
 
 module Weak = Stdcompat__weak
-@END_BEFORE_4_10_0@
+@END_BEFORE_4_12_0@

@@ -165,7 +165,12 @@ let stats h =
 
 module type S = sig
   type key
-  type 'a t
+  @BEGIN_FROM_4_12_0@
+    type !'a t
+  @END_FROM_4_12_0@
+  @BEGIN_BEFORE_4_12_0@
+    type 'a t
+  @END_BEFORE_4_12_0@
   val create : int -> 'a t
   val clear : 'a t -> unit
   val reset : 'a t -> unit
@@ -280,7 +285,12 @@ end
 
 module type SeededS = sig
   type key
-  type 'a t
+  @BEGIN_FROM_4_12_0@
+    type !'a t
+  @END_FROM_4_12_0@
+  @BEGIN_BEFORE_4_12_0@
+    type 'a t
+  @END_BEFORE_4_12_0@
   val create : ?random:bool -> int -> 'a t
   val clear : 'a t -> unit
   val reset : 'a t -> unit
@@ -387,3 +397,13 @@ let length table =
 @END_BEFORE_4_00_0@
 end
 @END_BEFORE_4_07_0@
+
+@BEGIN_FROM_4_12_0@
+let rebuild = Hashtbl.rebuild
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+let rebuild ?random tbl =
+  let result = create ?random (stats tbl).num_buckets in
+  iter (add result) tbl;
+  result
+@END_BEFORE_4_12_0@

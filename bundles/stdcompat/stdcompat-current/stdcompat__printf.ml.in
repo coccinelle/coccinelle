@@ -1,6 +1,10 @@
 let not_implemented _ =
   failwith "Stdcompat.Printf is not implemented yet. Please fill an issue: https://github.com/thierry-martinez/stdcompat/issues ."
 
+let ikbprintf = not_implemented
+
+let ibprintf = not_implemented
+
 let ifprintf = not_implemented
 
 let ikfprintf = not_implemented

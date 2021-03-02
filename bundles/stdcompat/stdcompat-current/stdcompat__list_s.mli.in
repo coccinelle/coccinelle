@@ -1,8 +1,13 @@
 module type S = sig
 @BEGIN_FROM_4_08_0@
+@BEGIN_FROM_4_03_0@
 type 'a t = 'a list =
-  | [] 
-  | (::) of 'a * 'a list 
+  | []
+  | (::) of 'a * 'a list
+@END_FROM_4_03_0@
+@BEGIN_BEFORE_4_03_0@
+type 'a t = 'a list
+@END_BEFORE_4_03_0@
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
 @BEGIN_FROM_4_03_0@
@@ -18,6 +23,36 @@ type 'a t = 'a list
                      | [] 
                      | (::) of 'a * 'a list 
  *)
+
+val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool
+(** @since 4.12.0:
+    val equal : ('a -> 'a -> bool) -> 'a list -> 'a list -> bool *)
+
+val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int
+(** @since 4.12.0:
+    val compare : ('a -> 'a -> int) -> 'a list -> 'a list -> int *)
+
+@BEGIN_FROM_4_12_0@
+val partition_map :
+  ('a -> ('b, 'c) Either.t) -> 'a list -> ('b list * 'c list)
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+val partition_map :
+  ('a -> ('b, 'c) Stdcompat__either.t) -> 'a list -> ('b list * 'c list)
+@END_BEFORE_4_12_0@
+(** @since 4.12.0:
+    val partition_map :
+      ('a -> ('b, 'c) Either.t) -> 'a list -> ('b list * 'c list)
+ *)
+
+val fold_left_map :
+  ('a -> 'b -> ('a * 'c)) -> 'a -> 'b list -> ('a * 'c list)
+(** @since 4.11.0:
+    val fold_left_map :
+      ('a -> 'b -> ('a * 'c)) -> 'a -> 'b list -> ('a * 'c list) *)
+
+val filteri : (int -> 'a -> bool) -> 'a list -> 'a list
+(** @since 4.11.0: val filteri : (int -> 'a -> bool) -> 'a list -> 'a list *)
 
 val concat_map : ('a -> 'b list) -> 'a list -> 'b list
 (** @since 4.10.0: val concat_map : ('a -> 'b list) -> 'a list -> 'b list *)

@@ -67,3 +67,14 @@ and 'a seq_node =
   | Nil
   | Cons of 'a * 'a seq
 @END_BEFORE_4_07_0@
+
+@BEGIN_FROM_4_12_0@
+type ('a, 'b) either = ('a, 'b) Either.t =
+  | Left of 'a
+  | Right of 'b
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+type ('a, 'b) either =
+  | Left of 'a
+  | Right of 'b
+@END_BEFORE_4_12_0@

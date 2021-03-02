@@ -1,5 +1,11 @@
 module type S = sig
+@BEGIN_FROM_4_12_0@
+type !'a t = 'a Stream.t
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+
 type 'a t = 'a Stream.t
+@END_BEFORE_4_12_0@
 (** Alias for {!Stream.t} *)
 
 exception Failure 

@@ -1,9 +1,9 @@
 module type S = sig
 @BEGIN_FROM_4_07_0@
 type 'a t = unit -> 'a node
-and 'a node = 'a Seq.node =
-  | Nil 
-  | Cons of 'a * 'a t 
+and 'a node = 'a Stdcompat__init.seq_node =
+  | Nil
+  | Cons of 'a * 'a t
 @END_FROM_4_07_0@
 @BEGIN_BEFORE_4_07_0@
 type 'a t = unit -> 'a node
@@ -17,6 +17,15 @@ and 'a node = 'a Stdcompat__init.seq_node =
       | Nil 
       | Cons of 'a * 'a t 
  *)
+
+val cons : 'a -> 'a t -> 'a t
+(** @since 4.11.0: val cons : 'a -> 'a t -> 'a t *)
+
+val append : 'a t -> 'a t -> 'a t
+(** @since 4.11.0: val append : 'a t -> 'a t -> 'a t *)
+
+val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
+(** @since 4.11.0: val unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t *)
 
 val empty : 'a t
 (** @since 4.07.0: val empty : 'a t *)

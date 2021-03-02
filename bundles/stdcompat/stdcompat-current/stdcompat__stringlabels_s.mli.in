@@ -1,6 +1,12 @@
 module type S = sig
+@BEGIN_FROM_3_08_0@
 type t = string
-(** Alias for {!String.t} *)
+@END_FROM_3_08_0@
+@BEGIN_BEFORE_3_08_0@
+type t = string
+@END_BEFORE_3_08_0@
+(** @since 3.08.0: type t = string
+ *)
 
 @BEGIN_FROM_4_07_0@
 val to_seq : t -> char Seq.t
@@ -29,6 +35,24 @@ val of_seq : char Stdcompat__seq.t -> t
 (** @since 4.07.0: val of_seq : char Seq.t -> t
  *)
 
+val equal : t -> t -> bool
+(** @since 4.05.0: val equal : t -> t -> bool *)
+
+val split_on_char : sep:char -> string -> string list
+(** @since 4.05.0: val split_on_char : sep:char -> string -> string list *)
+
+val uppercase_ascii : string -> string
+(** @since 4.05.0: val uppercase_ascii : string -> string *)
+
+val lowercase_ascii : string -> string
+(** @since 4.05.0: val lowercase_ascii : string -> string *)
+
+val capitalize_ascii : string -> string
+(** @since 4.05.0: val capitalize_ascii : string -> string *)
+
+val uncapitalize_ascii : string -> string
+(** @since 4.05.0: val uncapitalize_ascii : string -> string *)
+
 val index_from_opt : string -> int -> char -> int option
 (** @since 4.05.0: val index_from_opt : string -> int -> char -> int option *)
 
@@ -41,29 +65,11 @@ val index_opt : string -> char -> int option
 val rindex_opt : string -> char -> int option
 (** @since 4.05.0: val rindex_opt : string -> char -> int option *)
 
-val split_on_char : char -> string -> string list
-(** @since 4.04.0: val split_on_char : char -> string -> string list *)
+val init : int -> f:(int -> char) -> string
+(** @since 4.02.0: val init : int -> f:(int -> char) -> string *)
 
-val equal : t -> t -> bool
-(** @since 4.03.0: val equal : t -> t -> bool *)
-
-val uppercase_ascii : string -> string
-(** @since 4.03.0: val uppercase_ascii : string -> string *)
-
-val lowercase_ascii : string -> string
-(** @since 4.03.0: val lowercase_ascii : string -> string *)
-
-val capitalize_ascii : string -> string
-(** @since 4.03.0: val capitalize_ascii : string -> string *)
-
-val uncapitalize_ascii : string -> string
-(** @since 4.03.0: val uncapitalize_ascii : string -> string *)
-
-val init : int -> (int -> char) -> string
-(** @since 4.02.0: val init : int -> (int -> char) -> string *)
-
-val mapi : (int -> char -> char) -> string -> string
-(** @since 4.02.0: val mapi : (int -> char -> char) -> string -> string *)
+val mapi : f:(int -> char -> char) -> string -> string
+(** @since 4.02.0: val mapi : f:(int -> char -> char) -> string -> string *)
 
 @BEGIN_FROM_4_08_0@
 external create : int -> bytes = "caml_create_string"
@@ -71,7 +77,7 @@ external create : int -> bytes = "caml_create_string"
 @BEGIN_BEFORE_4_08_0@
 @BEGIN_FROM_4_02_0@
 external create : int -> bytes = "caml_create_string"[@@ocaml.deprecated
-                                                       "Use Bytes.create instead."]
+                                                       "Use BytesLabels.create instead."]
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
 @BEGIN_FROM_3_08_0@
@@ -87,7 +93,7 @@ external create : int -> Stdcompat__init.bytes = "create_string"
 (** @since 4.08.0: external create : int -> bytes = "caml_create_string"
 @since 4.02.0:
 external create : int -> bytes = "caml_create_string"[@@ocaml.deprecated
-                                                       "Use Bytes.create instead."]
+                                                       "Use BytesLabels.create instead."]
  *)
 
 @BEGIN_FROM_4_08_0@
@@ -96,7 +102,7 @@ external set : bytes -> int -> char -> unit = "%string_safe_set"
 @BEGIN_BEFORE_4_08_0@
 @BEGIN_FROM_4_02_0@
 external set : bytes -> int -> char -> unit = "%string_safe_set"[@@ocaml.deprecated
-                                                                  "Use Bytes.set instead."]
+                                                                  "Use BytesLabels.set instead."]
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
 external set :
@@ -108,35 +114,42 @@ external set :
     external set : bytes -> int -> char -> unit = "%string_safe_set"
 @since 4.02.0:
 external set : bytes -> int -> char -> unit = "%string_safe_set"[@@ocaml.deprecated
-                                                                  "Use Bytes.set instead."]
+                                                                  "Use BytesLabels.set instead."]
  *)
 
 @BEGIN_FROM_4_02_0@
-val blit : string -> int -> bytes -> int -> int -> unit
+val blit :
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
-val blit : string -> int -> Stdcompat__init.bytes -> int -> int -> unit
+val blit :
+  src:string ->
+    src_pos:int ->
+      dst:Stdcompat__init.bytes -> dst_pos:int -> len:int -> unit
 @END_BEFORE_4_02_0@
-(** @since 4.02.0: val blit : string -> int -> bytes -> int -> int -> unit
+(** @since 4.02.0:
+    val blit :
+      src:string ->
+        src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
  *)
 
 @BEGIN_FROM_4_08_0@
-val fill : bytes -> int -> int -> char -> unit
+val fill : bytes -> pos:int -> len:int -> char -> unit
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
 @BEGIN_FROM_4_02_0@
-val fill : bytes -> int -> int -> char -> unit[@@ocaml.deprecated
-                                                "Use Bytes.fill instead."]
+val fill : bytes -> pos:int -> len:int -> char -> unit[@@ocaml.deprecated
+                                                        "Use BytesLabels.fill instead."]
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
-val fill : Stdcompat__init.bytes -> int -> int -> char -> unit
+val fill : Stdcompat__init.bytes -> pos:int -> len:int -> char -> unit
 @END_BEFORE_4_02_0@
 
 @END_BEFORE_4_08_0@
-(** @since 4.08.0: val fill : bytes -> int -> int -> char -> unit
+(** @since 4.08.0: val fill : bytes -> pos:int -> len:int -> char -> unit
 @since 4.02.0:
-val fill : bytes -> int -> int -> char -> unit[@@ocaml.deprecated
-                                                "Use Bytes.fill instead."]
+val fill : bytes -> pos:int -> len:int -> char -> unit[@@ocaml.deprecated
+                                                        "Use BytesLabels.fill instead."]
  *)
 
 @BEGIN_FROM_4_08_0@
@@ -162,23 +175,28 @@ external unsafe_set : bytes -> int -> char -> unit = "%string_unsafe_set"
 
 @BEGIN_FROM_4_03_0@
 external unsafe_blit :
-  string -> int -> bytes -> int -> int -> unit = "caml_blit_string"[@@noalloc
-                                                                    ]
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit =
+    "caml_blit_string"[@@noalloc ]
 @END_FROM_4_03_0@
 @BEGIN_BEFORE_4_03_0@
 @BEGIN_FROM_4_02_0@
 external unsafe_blit :
-  string -> int -> bytes -> int -> int -> unit = "caml_blit_string" "noalloc"
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit =
+    "caml_blit_string" "noalloc"
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
 @BEGIN_FROM_3_08_0@
 external unsafe_blit :
-  string -> int -> Stdcompat__init.bytes -> int -> int -> unit =
+  src:string ->
+    src_pos:int ->
+      dst:Stdcompat__init.bytes -> dst_pos:int -> len:int -> unit =
     "caml_blit_string" "noalloc"
 @END_FROM_3_08_0@
 @BEGIN_BEFORE_3_08_0@
 external unsafe_blit :
-  string -> int -> Stdcompat__init.bytes -> int -> int -> unit =
+  src:string ->
+    src_pos:int ->
+      dst:Stdcompat__init.bytes -> dst_pos:int -> len:int -> unit =
     "blit_string" "noalloc"
 @END_BEFORE_3_08_0@
 
@@ -187,39 +205,43 @@ external unsafe_blit :
 @END_BEFORE_4_03_0@
 (** @since 4.03.0:
     external unsafe_blit :
-      string -> int -> bytes -> int -> int -> unit = "caml_blit_string"
-    [@@noalloc ]
+      src:string ->
+        src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit =
+        "caml_blit_string"[@@noalloc ]
 @since 4.02.0:
 external unsafe_blit :
-  string -> int -> bytes -> int -> int -> unit = "caml_blit_string" "noalloc"
+  src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit =
+    "caml_blit_string" "noalloc"
  *)
 
 @BEGIN_FROM_4_08_0@
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string"[@@noalloc ]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string"[@@noalloc
+                                                                    ]
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
 @BEGIN_FROM_4_03_0@
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string"[@@ocaml.deprecated
-                                                            "- : bytes -> int -> int -> char -> unit = <fun>"]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string"[@@ocaml.deprecated
+                                                                    "- : bytes -> pos:int -> len:int -> char -> unit = <fun>"]
 [@@noalloc ]
 @END_FROM_4_03_0@
 @BEGIN_BEFORE_4_03_0@
 @BEGIN_FROM_4_02_0@
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"[@@ocaml.deprecated
-                                                                    "- : bytes -> int -> int -> char -> unit = <fun>"]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
+[@@ocaml.deprecated
+  "- : bytes -> pos:int -> len:int -> char -> unit = <fun>"]
 @END_FROM_4_02_0@
 @BEGIN_BEFORE_4_02_0@
 @BEGIN_FROM_3_08_0@
 external unsafe_fill :
-  Stdcompat__init.bytes -> int -> int -> char -> unit = "caml_fill_string"
-    "noalloc"
+  Stdcompat__init.bytes -> pos:int -> len:int -> char -> unit =
+    "caml_fill_string" "noalloc"
 @END_FROM_3_08_0@
 @BEGIN_BEFORE_3_08_0@
 external unsafe_fill :
-  Stdcompat__init.bytes -> int -> int -> char -> unit = "fill_string"
+  Stdcompat__init.bytes -> pos:int -> len:int -> char -> unit = "fill_string"
     "noalloc"
 @END_BEFORE_3_08_0@
 
@@ -230,87 +252,89 @@ external unsafe_fill :
 @END_BEFORE_4_08_0@
 (** @since 4.08.0:
     external unsafe_fill :
-      bytes -> int -> int -> char -> unit = "caml_fill_string"[@@noalloc ]
+      bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string"
+    [@@noalloc ]
 @since 4.03.0:
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string"[@@ocaml.deprecated
-                                                            "- : bytes -> int -> int -> char -> unit = <fun>"]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string"[@@ocaml.deprecated
+                                                                    "- : bytes -> pos:int -> len:int -> char -> unit = <fun>"]
 [@@noalloc ]
 @since 4.02.0:
 external unsafe_fill :
-  bytes -> int -> int -> char -> unit = "caml_fill_string" "noalloc"[@@ocaml.deprecated
-                                                                    "- : bytes -> int -> int -> char -> unit = <fun>"]
+  bytes -> pos:int -> len:int -> char -> unit = "caml_fill_string" "noalloc"
+[@@ocaml.deprecated
+  "- : bytes -> pos:int -> len:int -> char -> unit = <fun>"]
  *)
 
-val map : (char -> char) -> string -> string
-(** @since 4.00.0: val map : (char -> char) -> string -> string *)
+val map : f:(char -> char) -> string -> string
+(** @since 4.00.0: val map : f:(char -> char) -> string -> string *)
 
 val trim : string -> string
 (** @since 4.00.0: val trim : string -> string *)
 
-val iteri : (int -> char -> unit) -> string -> unit
-(** @since 4.00.0: val iteri : (int -> char -> unit) -> string -> unit *)
-
-val make : int -> char -> string
-(** Alias for {!String.make} *)
-
-external length : string -> int = "%string_length"
-(** Alias for {!String.length} *)
-
-external get : string -> int -> char = "%string_safe_get"
-(** Alias for {!String.get} *)
-
-val concat : string -> string list -> string
-(** Alias for {!String.concat} *)
+val iteri : f:(int -> char -> unit) -> string -> unit
+(** @since 4.00.0: val iteri : f:(int -> char -> unit) -> string -> unit *)
 
 val compare : t -> t -> int
-(** Alias for {!String.compare} *)
+(** @since 3.08.0: val compare : t -> t -> int *)
+
+val make : int -> char -> string
+(** Alias for {!StringLabels.make} *)
+
+external length : string -> int = "%string_length"
+(** Alias for {!StringLabels.length} *)
+
+external get : string -> int -> char = "%string_safe_get"
+(** Alias for {!StringLabels.get} *)
+
+val concat : sep:string -> string list -> string
+(** Alias for {!StringLabels.concat} *)
 
 val contains_from : string -> int -> char -> bool
-(** Alias for {!String.contains_from} *)
+(** Alias for {!StringLabels.contains_from} *)
 
 val rcontains_from : string -> int -> char -> bool
-(** Alias for {!String.rcontains_from} *)
+(** Alias for {!StringLabels.rcontains_from} *)
 
 val contains : string -> char -> bool
-(** Alias for {!String.contains} *)
+(** Alias for {!StringLabels.contains} *)
 
-val sub : string -> int -> int -> string
-(** Alias for {!String.sub} *)
+val sub : string -> pos:int -> len:int -> string
+(** Alias for {!StringLabels.sub} *)
 
 val escaped : string -> string
-(** Alias for {!String.escaped} *)
+(** Alias for {!StringLabels.escaped} *)
 
-val iter : (char -> unit) -> string -> unit
-(** Alias for {!String.iter} *)
+val iter : f:(char -> unit) -> string -> unit
+(** Alias for {!StringLabels.iter} *)
 
 val index_from : string -> int -> char -> int
-(** Alias for {!String.index_from} *)
+(** Alias for {!StringLabels.index_from} *)
 
 val rindex_from : string -> int -> char -> int
-(** Alias for {!String.rindex_from} *)
+(** Alias for {!StringLabels.rindex_from} *)
 
 val index : string -> char -> int
-(** Alias for {!String.index} *)
+(** Alias for {!StringLabels.index} *)
 
 val rindex : string -> char -> int
-(** Alias for {!String.rindex} *)
+(** Alias for {!StringLabels.rindex} *)
 
 @BEGIN_FROM_4_08_0@
 val copy : string -> string
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
-@BEGIN_FROM_4_02_0@
+@BEGIN_FROM_4_06_0@
 val copy : string -> string[@@ocaml.deprecated
                              "- : string -> string = <fun>"]
-@END_FROM_4_02_0@
-@BEGIN_BEFORE_4_02_0@
+@END_FROM_4_06_0@
+@BEGIN_BEFORE_4_06_0@
 val copy : string -> string
-@END_BEFORE_4_02_0@
+@END_BEFORE_4_06_0@
 
 @END_BEFORE_4_08_0@
 (** @since 4.08.0: val copy : string -> string
-@since 4.02.0:
+@since 4.06.0:
 val copy : string -> string[@@ocaml.deprecated
                              "- : string -> string = <fun>"]
 @since 3.07.0: val copy : string -> string
@@ -320,17 +344,17 @@ val copy : string -> string[@@ocaml.deprecated
 val uppercase : string -> string
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
-@BEGIN_FROM_4_03_0@
+@BEGIN_FROM_4_05_0@
 val uppercase : string -> string[@@ocaml.deprecated
                                   "Use String.uppercase_ascii instead."]
-@END_FROM_4_03_0@
-@BEGIN_BEFORE_4_03_0@
+@END_FROM_4_05_0@
+@BEGIN_BEFORE_4_05_0@
 val uppercase : string -> string
-@END_BEFORE_4_03_0@
+@END_BEFORE_4_05_0@
 
 @END_BEFORE_4_08_0@
 (** @since 4.08.0: val uppercase : string -> string
-@since 4.03.0:
+@since 4.05.0:
 val uppercase : string -> string[@@ocaml.deprecated
                                   "Use String.uppercase_ascii instead."]
 @since 3.07.0: val uppercase : string -> string
@@ -340,17 +364,17 @@ val uppercase : string -> string[@@ocaml.deprecated
 val lowercase : string -> string
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
-@BEGIN_FROM_4_03_0@
+@BEGIN_FROM_4_05_0@
 val lowercase : string -> string[@@ocaml.deprecated
                                   "Use String.lowercase_ascii instead."]
-@END_FROM_4_03_0@
-@BEGIN_BEFORE_4_03_0@
+@END_FROM_4_05_0@
+@BEGIN_BEFORE_4_05_0@
 val lowercase : string -> string
-@END_BEFORE_4_03_0@
+@END_BEFORE_4_05_0@
 
 @END_BEFORE_4_08_0@
 (** @since 4.08.0: val lowercase : string -> string
-@since 4.03.0:
+@since 4.05.0:
 val lowercase : string -> string[@@ocaml.deprecated
                                   "Use String.lowercase_ascii instead."]
 @since 3.07.0: val lowercase : string -> string
@@ -360,17 +384,17 @@ val lowercase : string -> string[@@ocaml.deprecated
 val capitalize : string -> string
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
-@BEGIN_FROM_4_03_0@
+@BEGIN_FROM_4_05_0@
 val capitalize : string -> string[@@ocaml.deprecated
                                    "Use String.capitalize_ascii instead."]
-@END_FROM_4_03_0@
-@BEGIN_BEFORE_4_03_0@
+@END_FROM_4_05_0@
+@BEGIN_BEFORE_4_05_0@
 val capitalize : string -> string
-@END_BEFORE_4_03_0@
+@END_BEFORE_4_05_0@
 
 @END_BEFORE_4_08_0@
 (** @since 4.08.0: val capitalize : string -> string
-@since 4.03.0:
+@since 4.05.0:
 val capitalize : string -> string[@@ocaml.deprecated
                                    "Use String.capitalize_ascii instead."]
 @since 3.07.0: val capitalize : string -> string
@@ -380,23 +404,23 @@ val capitalize : string -> string[@@ocaml.deprecated
 val uncapitalize : string -> string
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
-@BEGIN_FROM_4_03_0@
+@BEGIN_FROM_4_05_0@
 val uncapitalize : string -> string[@@ocaml.deprecated
                                      "Use String.uncapitalize_ascii instead."]
-@END_FROM_4_03_0@
-@BEGIN_BEFORE_4_03_0@
+@END_FROM_4_05_0@
+@BEGIN_BEFORE_4_05_0@
 val uncapitalize : string -> string
-@END_BEFORE_4_03_0@
+@END_BEFORE_4_05_0@
 
 @END_BEFORE_4_08_0@
 (** @since 4.08.0: val uncapitalize : string -> string
-@since 4.03.0:
+@since 4.05.0:
 val uncapitalize : string -> string[@@ocaml.deprecated
                                      "Use String.uncapitalize_ascii instead."]
 @since 3.07.0: val uncapitalize : string -> string
  *)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
-(** Alias for {!String.unsafe_get} *)
+(** Alias for {!StringLabels.unsafe_get} *)
 
 end

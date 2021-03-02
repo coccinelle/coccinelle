@@ -7,23 +7,7 @@ type position = Lexing.position =
   pos_cnum: int }
 (** Alias for {!Lexing.position} *)
 
-@BEGIN_FROM_4_02_0@
-type lexbuf = Lexing.lexbuf =
-  {
-  refill_buff: lexbuf -> unit ;
-  mutable lex_buffer: bytes ;
-  mutable lex_buffer_len: int ;
-  mutable lex_abs_pos: int ;
-  mutable lex_start_pos: int ;
-  mutable lex_curr_pos: int ;
-  mutable lex_last_pos: int ;
-  mutable lex_last_action: int ;
-  mutable lex_eof_reached: bool ;
-  mutable lex_mem: int array ;
-  mutable lex_start_p: position ;
-  mutable lex_curr_p: position }
-@END_FROM_4_02_0@
-@BEGIN_BEFORE_4_02_0@
+(* Local fix for menhir with OCaml <4.02 *)
 type lexbuf = Lexing.lexbuf =
   {
   refill_buff: lexbuf -> unit ;
@@ -38,23 +22,6 @@ type lexbuf = Lexing.lexbuf =
   mutable lex_mem: int array ;
   mutable lex_start_p: position ;
   mutable lex_curr_p: position }
-@END_BEFORE_4_02_0@
-(** @since 4.02.0:
-    type lexbuf =
-      {
-      refill_buff: lexbuf -> unit ;
-      mutable lex_buffer: bytes ;
-      mutable lex_buffer_len: int ;
-      mutable lex_abs_pos: int ;
-      mutable lex_start_pos: int ;
-      mutable lex_curr_pos: int ;
-      mutable lex_last_pos: int ;
-      mutable lex_last_action: int ;
-      mutable lex_eof_reached: bool ;
-      mutable lex_mem: int array ;
-      mutable lex_start_p: position ;
-      mutable lex_curr_p: position }
- *)
 
 type lex_tables = Lexing.lex_tables =
   {
@@ -70,6 +37,12 @@ type lex_tables = Lexing.lex_tables =
   lex_check_code: string ;
   lex_code: string }
 (** Alias for {!Lexing.lex_tables} *)
+
+val set_position : lexbuf -> position -> unit
+(** @since 4.11.0: val set_position : lexbuf -> position -> unit *)
+
+val set_filename : lexbuf -> string -> unit
+(** @since 4.11.0: val set_filename : lexbuf -> string -> unit *)
 
 val from_channel : ?with_positions:bool -> in_channel -> lexbuf
 (** @since 4.08.0:

@@ -1,5 +1,15 @@
 include Lexing
 
+@BEGIN_BEFORE_4_11_0@
+let set_position lexbuf position =
+  lexbuf.lex_curr_p <-
+    { position with pos_fname = lexbuf.lex_curr_p.pos_fname };
+  lexbuf.lex_abs_pos <- position.pos_cnum
+
+let set_filename lexbuf filename =
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename }
+@END_BEFORE_4_11_0@
+
 @BEGIN_BEFORE_4_08_0@
 let from_channel ?with_positions chan =
   from_channel chan

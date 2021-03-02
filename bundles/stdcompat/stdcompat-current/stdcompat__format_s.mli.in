@@ -18,7 +18,13 @@ type geometry = {
  *)
 
 @BEGIN_FROM_4_08_0@
+@BEGIN_FROM_4_02_0@
 type stag = Format.stag = ..
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+type stag = 
+Format.stag
+@END_BEFORE_4_02_0@
 @END_FROM_4_08_0@
 @BEGIN_BEFORE_4_08_0@
 @BEGIN_FROM_4_02_0@
@@ -128,6 +134,29 @@ type formatter_tag_functions = Format.formatter_tag_functions =
   print_open_tag: tag -> unit ;
   print_close_tag: tag -> unit }
 (** Alias for {!Format.formatter_tag_functions} *)
+
+@BEGIN_FROM_4_12_0@
+val pp_print_seq :
+  ?pp_sep:(formatter -> unit -> unit) ->
+    (formatter -> 'a -> unit) -> formatter -> 'a Seq.t -> unit
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+val pp_print_seq :
+  ?pp_sep:(formatter -> unit -> unit) ->
+    (formatter -> 'a -> unit) -> formatter -> 'a Stdcompat__seq.t -> unit
+@END_BEFORE_4_12_0@
+(** @since 4.12.0:
+    val pp_print_seq :
+      ?pp_sep:(formatter -> unit -> unit) ->
+        (formatter -> 'a -> unit) -> formatter -> 'a Seq.t -> unit
+ *)
+
+val pp_update_geometry : formatter -> (geometry -> geometry) -> unit
+(** @since 4.11.0:
+    val pp_update_geometry : formatter -> (geometry -> geometry) -> unit *)
+
+val update_geometry : (geometry -> geometry) -> unit
+(** @since 4.11.0: val update_geometry : (geometry -> geometry) -> unit *)
 
 val pp_print_custom_break :
   formatter ->

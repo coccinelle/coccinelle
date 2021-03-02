@@ -1,10 +1,10 @@
 module type S = sig
-@BEGIN_FROM_4_10_0@
+@BEGIN_FROM_4_12_0@
   include module type of struct
     include Stdlib
   end
-@END_FROM_4_10_0@
-@BEGIN_BEFORE_4_10_0@
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
   module Pervasives : Stdcompat__pervasives_s.S
 
   include Stdcompat__pervasives_s.S
@@ -14,6 +14,8 @@ module type S = sig
   module Array : Stdcompat__array_s.S
 
   module ArrayLabels : Stdcompat__arrayLabels_s.S
+
+  module Atomic : Stdcompat__atomic_s.S
 
 (* Bigarray is not exported before 4.02.0 to allow programs not
    to be compiled with this module, this may change in the future.
@@ -48,6 +50,8 @@ module type S = sig
   @END_FROM_3_12_0@
 
   module Digest : Stdcompat__digest_s.S
+
+  module Either : Stdcompat__either_s.S
 
   module Ephemeron : Stdcompat__ephemeron_s.S
 
@@ -135,8 +139,6 @@ module type S = sig
 
   module Set : Stdcompat__set_s.S
 
-  module Spacetime : Stdcompat__spacetime_s.S
-
   module Stack : Stdcompat__stack_s.S
 
   module StdLabels : sig
@@ -160,5 +162,5 @@ module type S = sig
   module Uchar : Stdcompat__uchar_s.S
 
   module Weak : Stdcompat__weak_s.S
-@END_BEFORE_4_10_0@
+@END_BEFORE_4_12_0@
 end
