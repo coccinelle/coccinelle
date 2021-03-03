@@ -2276,7 +2276,6 @@ let print_dep_image name deps virt depimage =
   Printf.fprintf stderr "Dependencies: %s\n"
     (Common.format_to_string
        (function _ -> Pretty_print_cocci.dependency deps));
-  Format.print_newline();
   Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
   Printf.fprintf stderr "Res: %s\n\n"
     (Common.format_to_string
