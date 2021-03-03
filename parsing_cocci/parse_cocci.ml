@@ -2273,7 +2273,7 @@ let eval_depend nofiles dep virt =
 
 let print_dep_image name deps virt depimage =
   Printf.fprintf stderr "Rule: %s\n" name;
-  Printf.fprintf stderr "Dependencies: %s\n"
+  Printf.fprintf stderr "Dependencies: %s"
     (Common.format_to_string
        (function _ -> Pretty_print_cocci.dependency deps));
   Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
