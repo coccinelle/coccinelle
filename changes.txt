@@ -37,7 +37,7 @@
 - Allow command line options to be written in cocci files using the #spatch
   directive
 - Add --opt-c option to try and process a C file only if it exists (ignore
-  its abence otherwise)
+  its absence otherwise)
 - Allow for user to optionally specify the C++ version with the --c++ argument
 - More efficient management of header files
 ** Bugfix
