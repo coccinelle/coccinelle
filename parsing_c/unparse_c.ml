@@ -1270,7 +1270,12 @@ let paren_then_brace toks =
 	| ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 ("\n",_,_,_,_)) as a) ::
 	  rest ->
 	    (* use what was there already, if available *)
-	    let nls = match nls with [] -> [a] | _ -> nls in
+            let nls =
+              match nls with
+              | [] -> [a]
+              | T2(Parser_c.TOBrace _, _, _, _)::_ -> a::nls
+              | _ -> nls
+            in
 	    spaces @ after @ x :: nls @ rest
 	| _ -> xs in
   search_paren toks
