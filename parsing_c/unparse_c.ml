@@ -758,6 +758,10 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       let contains_plus = exists_before_end is_plus pre_minus_list in
       adjust_within_minus contains_plus minus_list
       @ adjust_around_minus rest
+    | (T2(Parser_c.TCommentSpace info, b, c, d))::
+      (T2(Parser_c.TOBrace _, Min _,_,_) as t1)::
+      (T2(Parser_c.TCommentNewline _,_,_,_) as t2)::xs ->
+      C2("\n", None)::adjust_around_minus (t1::t2::xs)
     | x::xs ->
       x :: adjust_around_minus xs
   and adjust_within_minus cp (* contains plus *) = function
@@ -1797,6 +1801,7 @@ let parse_token tok =
 	[before;after] -> (NL after, minplus a)
       |	_ -> (Tok (str_of_token2 tok), minplus a))
   | T2(_,a,_,_) -> (Tok (str_of_token2 tok), minplus a)
+  | C2("\n",_) -> (NL "", PlusOnly)
   | C2 (s,_) -> (Tok s, PlusOnly)
   | Cocci2("\n",_,_,_,_) -> (NL "", PlusOnly)
   | Cocci2(s,_,_,_,_) -> (Tok s, PlusOnly)
