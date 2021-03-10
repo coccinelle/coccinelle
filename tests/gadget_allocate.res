@@ -32,45 +32,50 @@ void soa_abort(const char *s);
 void soa_init(void);
 void soa_alloc(size_t N);
 void soa_free(void);
-void allocate_memory() { return; soa_alloc(All.MaxPart);
-}
+void allocate_memory() { return; soa_alloc(All.MaxPart); }
 
-void soa_abort(const char *s) {
+void soa_abort(const char *s)
+{
 	// shall print error message here
 	abort(); // from stdlib.h
 }
-void soa_init(void) {
+void soa_init(void)
+{
 	soa_init__sph_particle_data_soa_t(&SphP_soa);
 	soa_init__particle_data_soa_t(&P_soa);
 	soa_init__particle_data_soa_t(&DomainPartBuf_soa);
 }
-void soa_alloc(size_t N) {
+void soa_alloc(size_t N)
+{
 	assert(N > 0);
 	soa_alloc__sph_particle_data_soa_t(&SphP_soa, N);
 	soa_alloc__particle_data_soa_t(&P_soa, N);
 	soa_alloc__particle_data_soa_t(&DomainPartBuf_soa, N);
 }
-void soa_free(void) {
+void soa_free(void)
+{
 	soa_free__sph_particle_data_soa_t(&SphP_soa);
 	soa_free__particle_data_soa_t(&P_soa);
 	soa_free__particle_data_soa_t(&DomainPartBuf_soa);
 }
 
-void soa_init__sph_particle_data_soa_t(struct sph_particle_data_soa_t *P) {
+void soa_init__sph_particle_data_soa_t(struct sph_particle_data_soa_t *P)
+{
 #ifdef HAVE__sph_particle_data_soa_t__d //;
 	P->d = NULL;
 #endif
 }
 void soa_alloc__sph_particle_data_soa_t(struct sph_particle_data_soa_t *P,
-					size_t N) {
+					size_t N)
+{
 #ifdef HAVE__sph_particle_data_soa_t__d //;
 	P->d = (double *)mymalloc("d", sizeof(*(P->d)) * N);
 	if (!P->d)
 		soa_abort(/*"allocating "*/"d");
 #endif
-
 }
-void soa_free__sph_particle_data_soa_t(struct sph_particle_data_soa_t *P) {
+void soa_free__sph_particle_data_soa_t(struct sph_particle_data_soa_t *P)
+{
 #ifdef HAVE__sph_particle_data_soa_t__d //;
 	P->d = NULL;
 	if (P->d) {
@@ -80,20 +85,22 @@ void soa_free__sph_particle_data_soa_t(struct sph_particle_data_soa_t *P) {
 #endif
 }
 
-void soa_init__particle_data_soa_t(struct particle_data_soa_t *P) {
+void soa_init__particle_data_soa_t(struct particle_data_soa_t *P)
+{
 #ifdef HAVE__particle_data_soa_t__d //;
 	P->d = NULL;
 #endif
 }
-void soa_alloc__particle_data_soa_t(struct particle_data_soa_t *P, size_t N) {
+void soa_alloc__particle_data_soa_t(struct particle_data_soa_t *P, size_t N)
+{
 #ifdef HAVE__particle_data_soa_t__d //;
 	P->d = (double *)mymalloc("d", sizeof(*(P->d)) * N);
 	if (!P->d)
 		soa_abort(/*"allocating "*/"d");
 #endif
-
 }
-void soa_free__particle_data_soa_t(struct particle_data_soa_t *P) {
+void soa_free__particle_data_soa_t(struct particle_data_soa_t *P)
+{
 #ifdef HAVE__particle_data_soa_t__d //;
 	P->d = NULL;
 	if (P->d) {
