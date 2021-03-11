@@ -775,7 +775,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	    else cp in
 
         if common_adj adj1 adj2
-        || ((not cp || not newcp) &&
+        || (not cp &&
 	    List.for_all is_whitespace_or_fake not_minus_list)
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
