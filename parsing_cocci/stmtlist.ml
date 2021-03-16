@@ -56,7 +56,7 @@ let stmtlist_rebuilder =
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
-    statement donothing donothing donothing donothing
+    statement donothing donothing donothing donothing donothing
 
 let stmtlist rule =
   match rule with

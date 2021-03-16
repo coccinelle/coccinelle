@@ -71,6 +71,7 @@ type param_type =
   | FragList of Ast_c.string_fragment list
   | Fmt of Ast_c.string_format
   | Attribute of Ast_c.attribute
+  | AttrArg of Ast_c.attr_arg
   | Stmt of Ast_c.statement
   | StmtList of Ast_c.statement_sequencable list
 

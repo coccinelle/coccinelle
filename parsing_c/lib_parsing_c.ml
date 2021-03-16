@@ -87,6 +87,7 @@ let al_string_format x = Visitor_c.vk_string_format_s (strip_info_visitor()) x
 let al_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_info_visitor()) x
 let al_attribute x = Visitor_c.vk_attribute_s (strip_info_visitor()) x
+let al_attr_arg  x = Visitor_c.vk_attr_arg_s  (strip_info_visitor()) x
 
 let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
@@ -149,6 +150,7 @@ let al_inh_string_format x =
 let al_inh_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_inh_info_visitor()) x
 let al_inh_attribute x = Visitor_c.vk_attribute_s (strip_inh_info_visitor()) x
+let al_inh_attr_arg  x = Visitor_c.vk_attr_arg_s  (strip_inh_info_visitor()) x
 
 
 
@@ -187,6 +189,7 @@ let semi_al_string_format =
 let semi_al_string_fragments =
   Visitor_c.vk_string_fragments_s semi_strip_info_visitor
 let semi_al_attribute = Visitor_c.vk_attribute_s semi_strip_info_visitor
+let semi_al_attr_arg  = Visitor_c.vk_attr_arg_s semi_strip_info_visitor
 
 let semi_al_program =
   List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)
@@ -319,6 +322,7 @@ let ii_of_ident_list = extract_info_visitor Visitor_c.vk_ident_list_splitted
 let ii_of_exec_code_list =
   extract_info_visitor Visitor_c.vk_exec_code_list_splitted
 let ii_of_attr = extract_info_visitor Visitor_c.vk_attribute
+let ii_of_attr_arg = extract_info_visitor Visitor_c.vk_attr_arg
 let ii_of_attrs = extract_info_visitor Visitor_c.vk_attrs_splitted
 let ii_of_toplevel = extract_info_visitor Visitor_c.vk_toplevel
 

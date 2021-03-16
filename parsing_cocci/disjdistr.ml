@@ -483,7 +483,7 @@ let disj_all =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing disj_rule_elem donothing donothing donothing donothing
-    donothing
+    donothing donothing
 
 (* ----------------------------------------------------------------------- *)
 (* collect iso information at the rule_elem level *)
@@ -501,7 +501,7 @@ let collect_all_isos =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     doanything donothing doanything donothing donothing donothing donothing
-    donothing donothing doanything
+    donothing donothing donothing doanything
 
 let collect_iso_info =
   let mcode x = x in
@@ -519,7 +519,7 @@ let collect_iso_info =
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing rule_elem donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 (* ----------------------------------------------------------------------- *)
 

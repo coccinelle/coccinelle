@@ -446,10 +446,15 @@ and fninfo =
   | FAttr of attr
 
 and base_attr =
-    Attribute of string mcode
-  | MetaAttribute of Ast_cocci.meta_name mcode * constraints * pure
+    Attribute of attr_arg
 
 and attr = base_attr wrap
+
+and base_attr_arg =
+    AttrName of string mcode
+  | MetaAttr of Ast_cocci.meta_name mcode * constraints * pure
+
+and attr_arg = base_attr_arg wrap
 
 and ('a,'b) whencode =
     WhenNot of string mcode (* when *) * string mcode (* != *) * 'a
@@ -568,6 +573,7 @@ and anything =
   | CaseLineTag of case_line
   | StringFragmentTag of string_fragment
   | AttributeTag of attr
+  | AttrArgTag of attr_arg
   | TopTag of top_level
   | IsoWhenTag of Ast_cocci.when_modifier (*only for when code, in iso phase*)
   | IsoWhenTTag of expression(*only for when code, in iso phase*)
@@ -601,6 +607,7 @@ val forinfo : forinfo -> anything
 val case_line : case_line -> anything
 val string_fragment : string_fragment -> anything
 val attr : attr -> anything
+val attr_arg : attr_arg -> anything
 val top : top_level -> anything
 
 (* --------------------------------------------------------------------- *)

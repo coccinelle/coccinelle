@@ -1281,12 +1281,21 @@ and make_attribute =
 
 and attribute tgt attr =
   match Ast0.unwrap attr with
-    Ast0.Attribute(a) ->
-      Ast0.rewrap attr (Ast0.Attribute(mcode a))
-  | Ast0.MetaAttribute(name,cstr,pure) ->
+    Ast0.Attribute(arg) ->
+      let arg = attr_arg tgt arg in
+      Ast0.rewrap attr (Ast0.Attribute(arg))
+
+and make_attr_arg =
+  make_opt
+    (function x -> failwith "opt not allowed for attr_arg")
+
+and attr_arg tgt arg =
+  match Ast0.unwrap arg with
+    Ast0.AttrName(name) -> Ast0.rewrap arg (Ast0.AttrName(mcode name))
+  | Ast0.MetaAttr(name,cstr,pure) ->
       let arity = all_same false tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_attribute attr tgt arity (Ast0.MetaAttribute(name,cstr,pure))
+      make_attr_arg arg tgt arity (Ast0.MetaAttr(name,cstr,pure))
 
 and whencode notfn alwaysfn expression = function
     Ast0.WhenNot (w,e,a) -> Ast0.WhenNot (w,e,notfn a)

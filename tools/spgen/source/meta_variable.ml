@@ -394,6 +394,7 @@ let metavar_combiner rn =
   let dotsdefparfn = donothing in
   let forinfofn = donothing in
   let casefn = donothing in
+  let attributefn = donothing in
   let topfn = donothing in
   let enumdeclfn = donothing in
 
@@ -570,9 +571,9 @@ let metavar_combiner rn =
        )
     | _ -> fn v in
 
-  let attributefn c fn v =
+  let attr_argfn c fn v =
     match Ast0.unwrap v with
-    | Ast0.MetaAttribute(mc, idconstr, pure) ->
+    | Ast0.MetaAttr(mc, idconstr, pure) ->
         let constr = constraints ~rn idconstr in
         meta_mc_format ~mc ~typ:"parameter " ~constr
     | _ -> fn v in
@@ -584,7 +585,7 @@ let metavar_combiner rn =
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn topfn
+    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

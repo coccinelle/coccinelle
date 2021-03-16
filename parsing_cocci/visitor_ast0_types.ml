@@ -29,6 +29,7 @@ type 'n all_functions =
       define_param : (Ast0.define_param,'n) inout;
       string_fragment : (Ast0.string_fragment,'n) inout;
       attribute : (Ast0.attr,'n) inout;
+      attr_arg : (Ast0.attr_arg,'n) inout;
       top_level : (Ast0.top_level,'n) inout;
       expression_dots : (Ast0.expression Ast0.dots,'n) inout;
       statement_dots : (Ast0.statement Ast0.dots,'n) inout;
@@ -65,6 +66,7 @@ type 'n combiner_rec_functions =
       combiner_rec_define_param : (Ast0.define_param,'n) combiner_inout;
       combiner_rec_string_fragment : (Ast0.string_fragment,'n) combiner_inout;
       combiner_rec_attribute : (Ast0.attr,'n) combiner_inout;
+      combiner_rec_attr_arg : (Ast0.attr_arg,'n) combiner_inout;
       combiner_rec_top_level : (Ast0.top_level,'n) combiner_inout;
       combiner_rec_expression_dots :
 	(Ast0.expression Ast0.dots,'n) combiner_inout;
@@ -125,6 +127,7 @@ type 'n combiner_functions =
    combiner_casefn : (Ast0.case_line,'n) ccode;
    combiner_string_fragmentfn : (Ast0.string_fragment,'n) ccode;
    combiner_attributefn : (Ast0.attr,'n) ccode;
+   combiner_attr_argfn : (Ast0.attr_arg,'n) ccode;
    combiner_topfn : (Ast0.top_level,'n) ccode}
 
 (* ----------------------------------------------------------------------- *)
@@ -152,6 +155,7 @@ type rebuilder_rec_functions =
       rebuilder_rec_case_line : Ast0.case_line rebuilder_inout;
       rebuilder_rec_string_fragment : Ast0.string_fragment rebuilder_inout;
       rebuilder_rec_attribute : Ast0.attr rebuilder_inout;
+      rebuilder_rec_attr_arg : Ast0.attr_arg rebuilder_inout;
       rebuilder_rec_top_level : Ast0.top_level rebuilder_inout;
       rebuilder_rec_expression_dots :
 	Ast0.expression Ast0.dots rebuilder_inout;
@@ -213,6 +217,7 @@ type rebuilder_functions =
    rebuilder_casefn : Ast0.case_line rcode;
    rebuilder_string_fragmentfn : Ast0.string_fragment rcode;
    rebuilder_attributefn : Ast0.attr rcode;
+   rebuilder_attr_argfn : Ast0.attr_arg rcode;
    rebuilder_topfn : Ast0.top_level rcode}
 
 (* ----------------------------------------------------------------------- *)
@@ -262,4 +267,5 @@ type 'n combiner_rebuilder_functions =
    combiner_rebuilder_casefn : (Ast0.case_line,'n) rccode;
    combiner_rebuilder_string_fragmentfn : (Ast0.string_fragment,'n) rccode;
    combiner_rebuilder_attributefn : (Ast0.attr,'n) rccode;
+   combiner_rebuilder_attr_argfn : (Ast0.attr_arg,'n) rccode;
    combiner_rebuilder_topfn : (Ast0.top_level,'n) rccode}

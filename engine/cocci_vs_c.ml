@@ -229,8 +229,8 @@ let equal_metavarval valu valu' =
 
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
       Lib_parsing_c.al_string_format a = Lib_parsing_c.al_string_format b
-  | Ast_c.MetaAttributeVal a, Ast_c.MetaAttributeVal b ->
-      Lib_parsing_c.al_attribute a = Lib_parsing_c.al_attribute b
+  | Ast_c.MetaAttrArgVal a, Ast_c.MetaAttrArgVal b ->
+      Lib_parsing_c.al_attr_arg a = Lib_parsing_c.al_attr_arg b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
       Lib_parsing_c.al_string_fragments a =
       Lib_parsing_c.al_string_fragments b
@@ -289,7 +289,7 @@ let equal_metavarval valu valu' =
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
-      |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttributeVal _
+      |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttrArgVal _
     ), _
       -> raise (Impossible 16)
 
@@ -324,8 +324,8 @@ let equal_inh_metavarval valu valu'=
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
       Lib_parsing_c.al_inh_string_format a =
       Lib_parsing_c.al_inh_string_format b
-  | Ast_c.MetaAttributeVal a, Ast_c.MetaAttributeVal b ->
-      Lib_parsing_c.al_inh_attribute a = Lib_parsing_c.al_inh_attribute b
+  | Ast_c.MetaAttrArgVal a, Ast_c.MetaAttrArgVal b ->
+      Lib_parsing_c.al_inh_attr_arg a = Lib_parsing_c.al_inh_attr_arg b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
       Lib_parsing_c.al_inh_string_fragments a =
       Lib_parsing_c.al_inh_string_fragments b
@@ -392,7 +392,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
-      |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttributeVal _
+      |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttrArgVal _
     ), _
       -> raise (Impossible 17)
 
@@ -613,7 +613,7 @@ let check_allminus =
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
@@ -720,6 +720,9 @@ module type PARAM =
 
     val distrf_exec_code_list :
       (A.meta_name A.mcode, (Ast_c.exec_code, Ast_c.il) either list) matcher
+
+    val distrf_attr_arg :
+      (A.meta_name A.mcode, Ast_c.attr_arg) matcher
 
     val distrf_attr :
       (A.meta_name A.mcode, Ast_c.attribute) matcher
@@ -1534,10 +1537,13 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
       let attr_allminus =
         let attr_is_not_context a =
+          let attr_arg_is_not_context a =
+            match A.unwrap a with
+              A.AttrName(_,_,A.CONTEXT(_,_),_) -> false
+            | A.MetaAttr((_,_,A.CONTEXT(_,_),_),_,_,_) -> false
+            | _ -> true in
           match A.unwrap a with
-          | A.Attribute(_,_,A.CONTEXT(_,_),_)
-          | A.MetaAttribute((_,_,A.CONTEXT(_,_),_),_,_,_) -> false
-          | _ -> true in
+          | A.Attribute arg -> attr_arg_is_not_context arg in
         check_allminus.Visitor_ast.combiner_fullType typa &&
         List.for_all attr_is_not_context attrsa in
 
@@ -2340,7 +2346,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
-	        donothing donothing donothing donothing donothing in
+		donothing donothing donothing donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->
@@ -4271,29 +4277,42 @@ and attribute_list allminus attras attrbs =
   | _ -> failwith "only one attribute allowed in SmPL")
 
 and attribute = fun allminus ea eb ->
+    match A.unwrap ea, eb with
+    A.Attribute(attra), (B.Attribute attrb, []) ->
+      attr_arg allminus attra attrb >>= (fun attra attrb ->
+       (if allminus
+        then minusize_list []
+        else return ((), [])) >>= (fun _ ib ->
+	return (
+	  A.rewrap ea (A.Attribute(attra)),
+          (B.Attribute attrb,ib)
+        )))
+  | _ -> fail
+
+and attr_arg = fun allminus ea eb ->
   match A.unwrap ea, eb with
-    A.Attribute(attra), (B.Attribute attrb, ii)
-      when (A.unwrap_mcode attra) = attrb ->
+    A.AttrName(namea), (B.AttrName nameb, ii)
+      when (A.unwrap_mcode namea) = nameb ->
       let ib1 = tuple_of_list1 ii in
-      tokenf attra ib1 >>= (fun attra ib1 ->
+      tokenf namea ib1 >>= (fun namea ib1 ->
        (if allminus
         then minusize_list [ib1]
         else return ((), [ib1])) >>= (fun _ ib1 ->
 	return (
-	  A.rewrap ea (A.Attribute(attra)),
-          (B.Attribute attrb,ib1)
-        )))
-  | A.MetaAttribute (ida,constraints,keep,inherited), _ ->
+	  A.rewrap ea (A.AttrName(namea)),
+          (B.AttrName nameb,ib1)
+      )))
+  | A.MetaAttr (ida,constraints,keep,inherited), _ ->
       (* todo: use quaopt, hasreg ? *)
-      let max_min _ = Lib_parsing_c.ii_of_attr eb in
-      let mn = Ast_c.MetaAttributeVal eb in
+      let max_min _ = Lib_parsing_c.ii_of_attr_arg eb in
+      let mn = Ast_c.MetaAttrArgVal eb in
       check_constraints constraints ida mn
 	(fun () ->
 	  X.envf keep inherited (ida,mn,max_min) (fun () ->
-            X.distrf_attr ida eb)
+            X.distrf_attr_arg ida eb)
 	    >>= (fun ida eb ->
 	      return
-		(A.MetaAttribute(ida,constraints,keep,inherited)+>
+		(A.MetaAttr(ida,constraints,keep,inherited)+>
 		 A.rewrap ea,eb)))
   | _ -> fail
 

@@ -83,7 +83,7 @@ it *)
       (donothing Ast0.param) (donothing Ast0.decl)
       (donothing Ast0.field) (donothing Ast0.enum_decl) statement
       (donothing Ast0.forinfo) (donothing Ast0.case_line)
-      (donothing Ast0.string_fragment) (donothing Ast0.attr)
+      (donothing Ast0.string_fragment) (donothing Ast0.attr) (donothing Ast0.attr_arg)
       topfn in
   res.VT0.combiner_rec_top_level e
 
@@ -135,6 +135,7 @@ let create_root_token_table minus =
 	  | Ast0.CaseLineTag(d) -> Ast0.get_index d
 	  | Ast0.StringFragmentTag(d) -> Ast0.get_index d
 	  | Ast0.AttributeTag(d) -> Ast0.get_index d
+	  | Ast0.AttrArgTag(d) -> Ast0.get_index d
 	  | Ast0.TopTag(d) -> Ast0.get_index d
 	  | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
 	  | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -387,7 +388,7 @@ bind to that; not good for isomorphisms *)
     edots idots pdots sdots ddots fdots enumdots cdots dpdots
     ident expression do_nothing do_nothing
     typeC initialiser param decl field do_nothing statement forinfo
-    case_line do_nothing do_nothing do_top
+    case_line do_nothing do_nothing do_nothing do_top
 
 
 let call_collect_minus context_nodes :
@@ -466,6 +467,9 @@ let call_collect_minus context_nodes :
       | Ast0.AttributeTag(e) ->
           (Ast0.get_index e,
            (collect_minus_join_points e).VT0.combiner_rec_attribute e)
+      | Ast0.AttrArgTag(e) ->
+          (Ast0.get_index e,
+           (collect_minus_join_points e).VT0.combiner_rec_attr_arg e)
       | Ast0.CaseLineTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_case_line e)
@@ -554,6 +558,7 @@ let mk_forinfo x          = Ast.ForInfoTag (Ast0toast.forinfo x)
 let mk_case_line x        = Ast.CaseLineTag (Ast0toast.case_line x)
 let mk_string_fragment x  = Ast.StringFragmentTag (Ast0toast.string_fragment x)
 let mk_attribute x        = Ast.AttributeTag (Ast0toast.attribute x)
+let mk_attr_arg x         = Ast.AttrArgTag (Ast0toast.attr_arg x)
 let mk_const_vol x        = Ast.ConstVolTag x
 let mk_token x info       = Ast.Token (x,Some info)
 let mk_meta (_,x) info    = Ast.Token (x,Some info)
@@ -680,6 +685,7 @@ let collect_plus_nodes root =
     (do_nothing mk_enum_decl)
     stmt (do_nothing mk_forinfo) (do_nothing mk_case_line)
     (do_nothing mk_string_fragment) (do_nothing mk_attribute)
+    (do_nothing mk_attr_arg)
     toplevel
 
 let call_collect_plus context_nodes :
@@ -761,6 +767,9 @@ let call_collect_plus context_nodes :
       | Ast0.AttributeTag(e) ->
           (Ast0.get_index e,
            (collect_plus_nodes e).VT0.combiner_rec_attribute e)
+      | Ast0.AttrArgTag(e) ->
+          (Ast0.get_index e,
+           (collect_plus_nodes e).VT0.combiner_rec_attr_arg e)
       | Ast0.TopTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_top_level e)
@@ -1241,7 +1250,7 @@ let reevaluate_contextness =
       donothing donothing donothing donothing donothing donothing stmt
       donothing
       donothing donothing
-      donothing donothing in
+      donothing donothing donothing in
   res.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)

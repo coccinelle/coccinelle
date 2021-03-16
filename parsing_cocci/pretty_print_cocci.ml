@@ -457,8 +457,12 @@ and print_attribute_list attrs =
 
 and print_attribute attr =
   match Ast.unwrap attr with
-    Ast.Attribute(a) -> mcode print_string a
-  | Ast.MetaAttribute(name,_,_,_) -> mcode print_meta name
+    Ast.Attribute(a) -> print_attr_arg a
+
+and print_attr_arg arg =
+  match Ast.unwrap arg with
+    Ast.AttrName(arg) -> mcode print_string arg
+  | Ast.MetaAttr(name,_,_,_) -> mcode print_meta name
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -1173,6 +1177,7 @@ let _ =
     | Ast.CaseLineTag(x) -> case_line "" x
     | Ast.StringFragmentTag(x) -> string_fragment x
     | Ast.AttributeTag(x) -> print_attribute x
+    | Ast.AttrArgTag(x) -> print_attr_arg x
     | Ast.ConstVolTag(x) -> const_vol x
     | Ast.Token(x,Some info) -> print_string_befaft print_string x info
     | Ast.Token(x,None) -> print_string x

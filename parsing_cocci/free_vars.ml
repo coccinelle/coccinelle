@@ -137,10 +137,10 @@ let collect_refs include_constraints =
 	  bind (constraints cstr) [metaid name]
       | _ -> option_default) in
 
-  let astfvattribute recursor k a =
+  let astfvattr_arg recursor k a =
     bind (k a)
       (match Ast.unwrap a with
-	Ast.MetaAttribute(name,cstr,_,_) ->
+	Ast.MetaAttr(name,cstr,_,_) ->
 	  bind (constraints cstr) [metaid name]
       | _ -> option_default) in
 
@@ -260,7 +260,7 @@ let collect_refs include_constraints =
     astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
     astfvfullType astfvtypeC astfvinit astfvparam astfvdefine_param
     astfvdecls donothing astfvfields astafvfields donothing
-    astfvrule_elem astfvstatement donothing astfvattribute
+    astfvrule_elem astfvstatement donothing donothing astfvattr_arg
     donothing donothing_a
 
 let collect_all_refs = collect_refs true
@@ -311,7 +311,7 @@ let collect_pos_positions =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing
-    cprule_elem cpstmt donothing donothing donothing donothing
+    cprule_elem cpstmt donothing donothing donothing donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -377,10 +377,10 @@ let collect_saved =
 	Ast.MetaFormat(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
-  let astfvattribute recursor k a =
+  let astfvattr_arg recursor k a =
     bind (k a)
       (match Ast.unwrap a with
-	Ast.MetaAttribute(name,_,Ast.Saved,_) -> [metaid name]
+	Ast.MetaAttr(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
   let astfvassign recursor k aop =
@@ -493,7 +493,7 @@ let collect_saved =
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary donothing
     astfvtypeC astfvinit astfvparam astfvdefine_param astfvdecls donothing
     astfvfields donothing donothing astfvrule_elem donothing donothing
-    astfvattribute donothing donothing
+    donothing astfvattr_arg donothing donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -626,7 +626,7 @@ let collect_in_plus_term =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing astfvrule_elem
-    astfvstatement donothing donothing donothing donothing
+    astfvstatement donothing donothing donothing donothing donothing
 
 let collect_in_plus metavars minirules =
   nub
@@ -793,12 +793,12 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap ft (Ast.MetaFormat(name,constraints,unitary,inherited))
     | _ -> ft in
 
-  let attribute r k a =
+  let attr_arg r k a =
     let a = k a in
     match Ast.unwrap a with
-      Ast.MetaAttribute(name,constraints,_,_) ->
+      Ast.MetaAttr(name,constraints,_,_) ->
 	let (unitary,inherited) = classify name in
-	Ast.rewrap a (Ast.MetaAttribute(name,constraints,unitary,inherited))
+	Ast.rewrap a (Ast.MetaAttr(name,constraints,unitary,inherited))
     | _ -> a in
 
   let assignop r k ft =
@@ -927,7 +927,7 @@ let classify_variables metavar_decls minirules used_after =
       ident expression string_fragment string_format assignop binaryop
       donothing typeC
       init param define_param decl donothing field donothing donothing
-      rule_elem donothing donothing attribute donothing donothing in
+      rule_elem donothing donothing donothing attr_arg donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
 
@@ -1113,7 +1113,7 @@ let astfvs metavars bound =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing
-    astfvrule_elem astfvstatement astfvcase_line donothing astfvtoplevel
+    astfvrule_elem astfvstatement astfvcase_line donothing donothing astfvtoplevel
     donothing
 
 (*
@@ -1199,7 +1199,7 @@ let get_neg_pos_list (_,rule) used_after_list =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing in
+    donothing donothing in
   match rule with
     Ast.CocciRule(rule_name,_,minirules,_,_) ->
       List.map

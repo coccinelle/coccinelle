@@ -47,6 +47,7 @@ let set_mcodekind x mcodekind =
   | Ast0.CaseLineTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.StringFragmentTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.AttributeTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.AttrArgTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.TopTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -83,6 +84,7 @@ let set_index x index =
   | Ast0.CaseLineTag(d) -> Ast0.set_index d index
   | Ast0.StringFragmentTag(d) -> Ast0.set_index d index
   | Ast0.AttributeTag(d) -> Ast0.set_index d index
+  | Ast0.AttrArgTag(d) -> Ast0.set_index d index
   | Ast0.TopTag(d) -> Ast0.set_index d index
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -118,6 +120,7 @@ let get_index = function
   | Ast0.CaseLineTag(d) -> Index.case_line d
   | Ast0.StringFragmentTag(d) -> Index.string_fragment d
   | Ast0.AttributeTag(d) -> Index.attribute d
+  | Ast0.AttrArgTag(d) -> Index.attr_arg d
   | Ast0.TopTag(d) -> Index.top_level d
   | Ast0.IsoWhenTag(_) -> failwith "only within iso phase"
   | Ast0.IsoWhenTTag(_) -> failwith "only within iso phase"
@@ -186,7 +189,7 @@ let collect_plus_lines top =
       donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing statement donothing donothing donothing
-      donothing donothing in
+      donothing donothing donothing in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -558,7 +561,7 @@ let classify is_minus all_marked table code =
       ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
       typeC initialiser param declaration field enum_decl
       statement (do_nothing Ast0.forinfo) case_line string_fragment
-      (do_nothing Ast0.attr) (do_top Ast0.top) in
+      (do_nothing Ast0.attr) (do_nothing Ast0.attr_arg) (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -593,13 +596,18 @@ let equal_option e1 e2 =
 let dots fn d1 d2 =
   List.length (Ast0.unwrap d1) = List.length (Ast0.unwrap d2)
 
+let equal_attr_arg a1 a2 =
+  match (Ast0.unwrap a1, Ast0.unwrap a2) with
+    (Ast0.AttrName(name1),Ast0.AttrName(name2)) ->
+      equal_mcode name1 name2
+  | (Ast0.MetaAttr(name1,_,_),Ast0.MetaAttr(name2,_,_)) ->
+      equal_mcode name1 name2
+  | _ -> false
+
 let equal_attribute a1 a2 =
   match (Ast0.unwrap a1, Ast0.unwrap a2) with
     (Ast0.Attribute(attr1),Ast0.Attribute(attr2)) ->
-      equal_mcode attr1 attr2
-  | (Ast0.MetaAttribute(name1,_,_),Ast0.MetaAttribute(name2,_,_)) ->
-      equal_mcode name1 name2
-  | _ -> false
+      equal_attr_arg attr1 attr2
 
 let equal_ident i1 i2 =
   match (Ast0.unwrap i1,Ast0.unwrap i2) with
@@ -1069,7 +1077,7 @@ let contextify_all =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
 
 let contextify_whencode =
   let bind x y = () in

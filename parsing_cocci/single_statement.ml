@@ -463,7 +463,7 @@ and contains_only_minus =
     dots dots dots dots dots dots dots dots dots
     identifier expression donothing donothing typeC donothing donothing
     declaration field donothing statement donothing case_line donothing
-    donothing donothing
+    donothing donothing donothing
 
 
 (* needs a special case when there is a Disj or an empty DOTS *)

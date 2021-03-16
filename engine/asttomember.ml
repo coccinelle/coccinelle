@@ -48,7 +48,7 @@ let contains_modif used_after x =
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing
 	do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-	do_nothing do_nothing in
+	do_nothing do_nothing do_nothing in
     recursor.V.combiner_rule_elem x
 
 (* contains an inherited metavariable or contains a constant *)
@@ -76,7 +76,7 @@ let contains_constant x =
 	  ident expr do_nothing do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing in
+	  do_nothing do_nothing do_nothing do_nothing in
       recursor.V.combiner_rule_elem x
   | _ -> true
 
@@ -138,7 +138,7 @@ let strip x =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       decl_or_field do_absolutely_nothing decl_or_field do_absolutely_nothing
       do_nothing rule_elem
-      do_nothing do_nothing do_nothing do_nothing do_absolutely_nothing in
+      do_nothing do_nothing do_nothing do_nothing do_nothing do_absolutely_nothing in
   r.V.rebuilder_rule_elem x
 
 (* --------------------------------------------------------------------- *)
@@ -206,7 +206,8 @@ let find_commonalities res : Ast_cocci.rule_elem option =
 	expression do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing in
+	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing in
     recursor.V.combiner_rule_elem x in
   match res with
     [] -> failwith "bad disjunction"

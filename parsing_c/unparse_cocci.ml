@@ -713,13 +713,17 @@ and print_attribute_list attrs =
 
 and print_attribute attr =
   match Ast.unwrap attr with
-    Ast.Attribute(a) -> mcode print_string a
-  | Ast.MetaAttribute(name,_,_,_) ->
+    Ast.Attribute(a) -> print_attr_arg a
+
+and print_attr_arg arg =
+  match Ast.unwrap arg with
+    Ast.AttrName(arg) -> mcode print_string arg
+  | Ast.MetaAttr(name,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaAttributeVal a ->
-              pretty_print_c.Pretty_print_c.attribute a
-          | _ -> error name attr "attribute value expected")
+	    Ast_c.MetaAttrArgVal a ->
+              pretty_print_c.Pretty_print_c.attr_arg a
+          | _ -> error name arg "attr_arg value expected")
 
 and typeC ty =
   match Ast.unwrap ty with
@@ -1519,6 +1523,7 @@ let pp_any = function
   | Ast.CaseLineTag(x) -> case_line "" x; false
   | Ast.StringFragmentTag(x) -> string_fragment x; false
   | Ast.AttributeTag(x) -> print_attribute x; false
+  | Ast.AttrArgTag(x) -> print_attr_arg x; false
 
   | Ast.ConstVolTag(x) -> const_vol x unknown unknown; false
   | Ast.Directive(xs) ->

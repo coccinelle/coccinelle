@@ -221,13 +221,18 @@ let rec left_ident i =
       call_right left_ident id i (function id -> Ast0.OptIdent(id))
   | Ast0.AsIdent(id,asid) -> failwith "not possible"
 
+let left_attr_arg arg =
+  match Ast0.unwrap arg with
+    Ast0.AttrName(a) ->
+      call_right left_mcode a arg (function a -> Ast0.AttrName(a))
+  | Ast0.MetaAttr(name,a,b) ->
+      call_right left_mcode name arg
+        (function name -> Ast0.MetaAttr(name,a,b))
+
 let left_attribute attr =
   match Ast0.unwrap attr with
     Ast0.Attribute(a) ->
-      call_right left_mcode a attr (function a -> Ast0.Attribute(a))
-  | Ast0.MetaAttribute(name,a,b) ->
-      call_right left_mcode name attr
-        (function name -> Ast0.MetaAttribute(name,a,b))
+      call_right left_attr_arg a attr (function a -> Ast0.Attribute(a))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

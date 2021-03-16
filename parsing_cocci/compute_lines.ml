@@ -910,13 +910,18 @@ and initialiser_dots x = dots is_init_dots None initialiser x
 and attribute attr =
   match Ast0.unwrap attr with
     Ast0.Attribute(a) ->
-      let ln = promote_mcode a in
+      let ln = attr_arg a in
       mkres attr (Ast0.Attribute(a)) ln ln
-  | Ast0.MetaAttribute(name,a,b) ->
+
+and attr_arg arg =
+  match Ast0.unwrap arg with
+    Ast0.AttrName(a) ->
+      let ln = promote_mcode a in
+      mkres arg (Ast0.AttrName(a)) ln ln
+  | Ast0.MetaAttr(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres attr (Ast0.MetaAttribute(name,a,b)) ln ln
-
+      mkres arg (Ast0.MetaAttr(name,a,b)) ln ln
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)

@@ -35,6 +35,7 @@ type 'a combiner =
      combiner_statement : Ast.statement -> 'a;
      combiner_case_line : Ast.case_line -> 'a;
      combiner_attribute : Ast.attr -> 'a;
+     combiner_attr_arg : Ast.attr_arg -> 'a;
      combiner_top_level : Ast.top_level -> 'a;
      combiner_anything : Ast.anything  -> 'a;
      combiner_expression_dots : Ast.expression Ast.dots -> 'a;
@@ -58,7 +59,7 @@ let combiner bind option_default
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
     paramfn define_paramfn declfn
     annotated_declfn fieldfn annotated_fieldfn enum_declfn rulefn stmtfn
-    casefn attributefn topfn anyfn =
+    casefn attributefn attr_argfn topfn anyfn =
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -921,10 +922,15 @@ let combiner bind option_default
   and attribute a =
     let k a =
       match Ast.unwrap a with
-        Ast.Attribute(attr) -> string_mcode attr
-      | Ast.MetaAttribute(name,_,_,_) -> meta_mcode name in
-    attributefn all_functions k a
+        Ast.Attribute(arg) -> attr_arg arg in
+          attributefn all_functions k a
 
+  and attr_arg a =
+    let k a =
+      match Ast.unwrap a with
+        Ast.AttrName(arg) -> string_mcode arg
+      | Ast.MetaAttr(name,_,_,_) -> meta_mcode name in
+    attr_argfn all_functions k a
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> notfn a
@@ -993,6 +999,7 @@ let combiner bind option_default
       | Ast.CaseLineTag(case) -> case_line case
       | Ast.StringFragmentTag(frag) -> string_fragment frag
       | Ast.AttributeTag(attr) -> attribute attr
+      | Ast.AttrArgTag(arg) -> attr_arg arg
       | Ast.ConstVolTag(cv) -> option_default
       | Ast.Token(tok,info) -> option_default
       | Ast.Directive(str) -> option_default
@@ -1030,6 +1037,7 @@ let combiner bind option_default
       combiner_statement = statement;
       combiner_case_line = case_line;
       combiner_attribute = attribute;
+      combiner_attr_arg = attr_arg;
       combiner_top_level = top_level;
       combiner_anything = anything;
       combiner_expression_dots = expression_dots;
@@ -1063,6 +1071,7 @@ type rebuilder =
       rebuilder_statement : Ast.statement inout;
       rebuilder_case_line : Ast.case_line inout;
       rebuilder_attribute : Ast.attr inout;
+      rebuilder_attr_arg : Ast.attr_arg inout;
       rebuilder_rule_elem : Ast.rule_elem inout;
       rebuilder_top_level : Ast.top_level inout;
       rebuilder_expression_dots : Ast.expression Ast.dots inout;
@@ -1089,7 +1098,7 @@ let rebuilder
     enumdecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
     paramfn define_paramfn declfn annotated_declfn fieldfn annotated_fieldfn
-    enum_declfn rulefn stmtfn casefn attributefn topfn anyfn =
+    enum_declfn rulefn stmtfn casefn attributefn attr_argfn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -1920,10 +1929,17 @@ let rebuilder
     let k a =
       Ast.rewrap a
         (match Ast.unwrap a with
-          Ast.Attribute(attr) -> Ast.Attribute(string_mcode attr)
-	| Ast.MetaAttribute(name,constraints,keep,inherited) ->
-	    Ast.MetaAttribute(meta_mcode name,constraints,keep,inherited)) in
-    attributefn all_functions k a
+          Ast.Attribute(arg) -> Ast.Attribute(attr_arg arg)) in
+            attributefn all_functions k a
+
+  and attr_arg a =
+    let k a =
+      Ast.rewrap a
+        (match Ast.unwrap a with
+          Ast.AttrName(arg) -> Ast.AttrName(string_mcode arg)
+        | Ast.MetaAttr(name,constraints,keep,inherited) ->
+            Ast.MetaAttr(meta_mcode name,constraints,keep,inherited)) in
+              attr_argfn all_functions k a
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> Ast.WhenNot (notfn a)
@@ -1996,6 +2012,7 @@ let rebuilder
       | Ast.StringFragmentTag(frag) ->
 	  Ast.StringFragmentTag(string_fragment frag)
       | Ast.AttributeTag(attr) -> Ast.AttributeTag(attribute attr)
+      | Ast.AttrArgTag(arg) -> Ast.AttrArgTag(attr_arg arg)
       | Ast.ConstVolTag(cv) as x -> x
       | Ast.Token(tok,info) as x -> x
       | Ast.Directive(str) as x -> x
@@ -2033,6 +2050,7 @@ let rebuilder
       rebuilder_statement = statement;
       rebuilder_case_line = case_line;
       rebuilder_attribute = attribute;
+      rebuilder_attr_arg = attr_arg;
       rebuilder_top_level = top_level;
       rebuilder_expression_dots = expression_dots;
       rebuilder_statement_dots = statement_dots;

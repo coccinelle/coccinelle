@@ -153,7 +153,7 @@ let make_cv cv ty =
   match cv with None -> ty | Some x -> Ast0.wrap (Ast0.ConstVol(x,ty))
 
 let make_attr attr =
-  Ast0.wrap(Ast0.Attribute(id2mcode attr))
+  Ast0.wrap(Ast0.Attribute(attr))
 
 let top_dots l = Ast0.wrap l
 

@@ -626,10 +626,15 @@ and fninfo =
   | FAttr of attr
 
 and base_attr =
-    Attribute of string mcode
-  | MetaAttribute of meta_name mcode * constraints * keep_binding * inherited
+    Attribute of attr_arg
 
 and attr = base_attr wrap
+
+and base_attr_arg =
+    AttrName of string mcode
+  | MetaAttr of meta_name mcode * constraints * keep_binding * inherited
+
+and attr_arg = base_attr_arg wrap
 
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
@@ -807,6 +812,7 @@ and anything =
   | CaseLineTag         of case_line
   | StringFragmentTag   of string_fragment
   | AttributeTag        of attr
+  | AttrArgTag          of attr_arg
   | ConstVolTag         of const_vol
   | Token               of string * info option
   | Directive           of added_string list
@@ -953,6 +959,7 @@ and tag2c = function
   | CaseLineTag _  -> "CaseLineTag"
   | StringFragmentTag _ -> "StringFragmentTag"
   | AttributeTag _ -> "AttributeTag"
+  | AttrArgTag _   -> "AttrArgTag"
   | ConstVolTag _  -> "ConstVolTag"
   | Token _ -> "Token"
   | Directive _ -> "Directive"

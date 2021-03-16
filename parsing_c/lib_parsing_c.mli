@@ -23,6 +23,7 @@ val al_fields : Ast_c.field list -> Ast_c.field list
 val al_name : Ast_c.name -> Ast_c.name
 val al_string_format : Ast_c.string_format -> Ast_c.string_format
 val al_attribute : Ast_c.attribute -> Ast_c.attribute
+val al_attr_arg : Ast_c.attr_arg -> Ast_c.attr_arg
 val al_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
 val al_node : Control_flow_c.node -> Control_flow_c.node
@@ -46,6 +47,7 @@ val al_inh_string_format : Ast_c.string_format -> Ast_c.string_format
 val al_inh_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
 val al_inh_attribute : Ast_c.attribute -> Ast_c.attribute
+val al_inh_attr_arg : Ast_c.attr_arg -> Ast_c.attr_arg
 val semi_strip_info_visitor : Visitor_c.visitor_c_s
 val semi_al_expr : Ast_c.expression -> Ast_c.expression
 val semi_al_declaration : Ast_c.declaration -> Ast_c.declaration
@@ -70,6 +72,7 @@ val semi_al_string_format : Ast_c.string_format -> Ast_c.string_format
 val semi_al_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
 val semi_al_attribute : Ast_c.attribute -> Ast_c.attribute
+val semi_al_attr_arg  : Ast_c.attr_arg -> Ast_c.attr_arg
 val semi_al_program : Ast_c.toplevel list -> Ast_c.toplevel list
 val real_strip_info_visitor : 'a -> Visitor_c.visitor_c_s
 val real_al_expr : Ast_c.expression -> Ast_c.expression
@@ -129,6 +132,7 @@ val ii_of_ident_list :
 val ii_of_exec_code_list :
   (Ast_c.exec_code, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_attr : Ast_c.attribute -> Ast_c.info list
+val ii_of_attr_arg : Ast_c.attr_arg -> Ast_c.info list
 val ii_of_attrs :
   (Ast_c.attribute, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_toplevel : Ast_c.toplevel -> Ast_c.info list

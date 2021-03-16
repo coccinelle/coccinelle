@@ -19,6 +19,7 @@ type 'n all_functions = {
   define_param : (Ast0_cocci.define_param, 'n) inout;
   string_fragment : (Ast0_cocci.string_fragment, 'n) inout;
   attribute : (Ast0_cocci.attr, 'n) inout;
+  attr_arg : (Ast0_cocci.attr_arg, 'n) inout;
   top_level : (Ast0_cocci.top_level, 'n) inout;
   expression_dots : (Ast0_cocci.expression Ast0_cocci.dots, 'n) inout;
   statement_dots : (Ast0_cocci.statement Ast0_cocci.dots, 'n) inout;
@@ -50,6 +51,7 @@ type 'n combiner_rec_functions = {
   combiner_rec_define_param : (Ast0_cocci.define_param, 'n) combiner_inout;
   combiner_rec_string_fragment : (Ast0_cocci.string_fragment, 'n) combiner_inout;
   combiner_rec_attribute : (Ast0_cocci.attr, 'n) combiner_inout;
+  combiner_rec_attr_arg : (Ast0_cocci.attr_arg, 'n) combiner_inout;
   combiner_rec_top_level : (Ast0_cocci.top_level, 'n) combiner_inout;
   combiner_rec_expression_dots :
     (Ast0_cocci.expression Ast0_cocci.dots, 'n) combiner_inout;
@@ -105,6 +107,7 @@ type 'n combiner_functions = {
   combiner_casefn : (Ast0_cocci.case_line, 'n) ccode;
   combiner_string_fragmentfn : (Ast0_cocci.string_fragment, 'n) ccode;
   combiner_attributefn : (Ast0_cocci.attr, 'n) ccode;
+  combiner_attr_argfn : (Ast0_cocci.attr_arg, 'n) ccode;
   combiner_topfn : (Ast0_cocci.top_level, 'n) ccode;
 }
 type 'a rebuilder_inout = 'a -> 'a
@@ -127,6 +130,7 @@ type rebuilder_rec_functions = {
   rebuilder_rec_case_line : Ast0_cocci.case_line rebuilder_inout;
   rebuilder_rec_string_fragment : Ast0_cocci.string_fragment rebuilder_inout;
   rebuilder_rec_attribute : Ast0_cocci.attr rebuilder_inout;
+  rebuilder_rec_attr_arg : Ast0_cocci.attr_arg rebuilder_inout;
   rebuilder_rec_top_level : Ast0_cocci.top_level rebuilder_inout;
   rebuilder_rec_expression_dots : Ast0_cocci.expression Ast0_cocci.dots rebuilder_inout;
   rebuilder_rec_statement_dots : Ast0_cocci.statement Ast0_cocci.dots rebuilder_inout;
@@ -180,6 +184,7 @@ type rebuilder_functions = {
   rebuilder_casefn : Ast0_cocci.case_line rcode;
   rebuilder_string_fragmentfn : Ast0_cocci.string_fragment rcode;
   rebuilder_attributefn : Ast0_cocci.attr rcode;
+  rebuilder_attr_argfn : Ast0_cocci.attr_arg rcode;
   rebuilder_topfn : Ast0_cocci.top_level rcode;
 }
 type ('mc, 'a) rcmcode = 'a -> 'mc Ast0_cocci.mcode -> 'a * 'mc Ast0_cocci.mcode
@@ -225,5 +230,6 @@ type 'n combiner_rebuilder_functions = {
   combiner_rebuilder_casefn : (Ast0_cocci.case_line, 'n) rccode;
   combiner_rebuilder_string_fragmentfn : (Ast0_cocci.string_fragment, 'n) rccode;
   combiner_rebuilder_attributefn : (Ast0_cocci.attr, 'n) rccode;
+  combiner_rebuilder_attr_argfn : (Ast0_cocci.attr_arg, 'n) rccode;
   combiner_rebuilder_topfn : (Ast0_cocci.top_level, 'n) rccode;
 }

@@ -529,10 +529,14 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.MetaType(name,_,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
 
+  let attr_arg r k a =
+    match Ast.unwrap a with
+      Ast.MetaAttr(name,_,_,_) -> bind (k a) (minherited name)
+    | Ast.AttrName(name) -> constants (Ast.unwrap_mcode name) in
+
   let attribute r k a =
     match Ast.unwrap a with
-      Ast.MetaAttribute(name,_,_,_) -> bind (k a) (minherited name)
-    | Ast.Attribute(attr) -> constants (Ast.unwrap_mcode attr) in
+      Ast.Attribute(attr) -> k a in
 
   let declaration r k d =
     match Ast.unwrap d with
@@ -646,8 +650,8 @@ let do_get_constants constants keywords env (neg_pos,_) =
     donothing donothing donothing donothing donothing donothing donothing
     ident expression string_fragment string_format donothing donothing
     fullType typeC initialiser parameter define_parameter declaration donothing
-    field ann_field donothing rule_elem statement donothing attribute donothing
-    donothing
+    field ann_field donothing rule_elem statement donothing attribute attr_arg
+    donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -717,6 +721,7 @@ let all_context =
     donothing
     initialiser donothing donothing donothing donothing donothing donothing
     donothing rule_elem statement donothing donothing donothing donothing
+    donothing
 
 (* ------------------------------------------------------------------------ *)
 

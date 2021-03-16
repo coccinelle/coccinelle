@@ -45,7 +45,7 @@ let strip_info =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -95,6 +95,9 @@ let anything_equal = function
   | (Ast0.AttributeTag(d1),Ast0.AttributeTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_attribute d1) =
       (strip_info.VT0.rebuilder_rec_attribute d2)
+  | (Ast0.AttrArgTag(d1),Ast0.AttrArgTag(d2)) ->
+      (strip_info.VT0.rebuilder_rec_attr_arg d1) =
+      (strip_info.VT0.rebuilder_rec_attr_arg d2)
   | (Ast0.TopTag(d1),Ast0.TopTag(d2)) ->
       (strip_info.VT0.rebuilder_rec_top_level d1) =
       (strip_info.VT0.rebuilder_rec_top_level d2)
@@ -475,10 +478,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaStmt(name,_,pure) | Ast0.MetaStmtList(name,_,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
-    let attribute r k a =
+    let attr_arg r k a =
       bind (bind (pure_mcodekind (Ast0.get_mcodekind a)) (k a))
 	(match Ast0.unwrap a with
-	  Ast0.MetaAttribute(name,_,pure) -> pure
+	  Ast0.MetaAttr(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
     V0.flat_combiner bind option_default
@@ -487,7 +490,7 @@ let match_maker checks_needed context_required whencode_allowed =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing
       ident expression assignOp binaryOp typeC init param decl field donothing
-      stmt donothing donothing donothing attribute donothing in
+      stmt donothing donothing donothing donothing attr_arg donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -1423,22 +1426,26 @@ let match_maker checks_needed context_required whencode_allowed =
       |	_ -> return false in
     loop (patterninfo,cinfo)
 
-  and match_attribute pattern a =
+  and match_attr_arg pattern a =
     match Ast0.unwrap pattern with
-      Ast0.MetaAttribute(name,_,pure) ->
-	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_attribute
-	  (function a -> Ast0.AttributeTag a)
+      Ast0.MetaAttr(name,_,pure) ->
+	add_pure_binding name pure pure_sp_code.VT0.combiner_rec_attr_arg
+	  (function a -> Ast0.AttrArgTag a)
 	  a
     | up ->
 	if not(checks_needed) || not(context_required) || is_context a
 	then
 	  match (up,Ast0.unwrap a) with
-	    (Ast0.Attribute(attra),Ast0.Attribute(attrb)) ->
+	    (Ast0.AttrName(attra),Ast0.AttrName(attrb)) ->
               if mcode_equal attra attrb
               then check_mcode attra attrb
               else return false
 	  | _ -> return false
-	else return_false (ContextRequired (Ast0.AttributeTag a))
+	else return_false (ContextRequired (Ast0.AttrArgTag a))
+
+  and match_attribute a1 a2 =
+    match (Ast0.unwrap a1,Ast0.unwrap a2) with
+      (Ast0.Attribute(arga),Ast0.Attribute(argb)) -> match_attr_arg arga argb
 
   and match_attributes a1 a2 =
     match_list match_attribute
@@ -1616,7 +1623,7 @@ let make_minus =
     dots dots dots dots dots dots dots dots dots
     donothing expression donothing donothing donothing initialiser donothing
     declaration field enum_decl statement donothing donothing donothing
-    donothing donothing
+    donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1708,7 +1715,7 @@ let rebuild_mcode start_line =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing statement donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -2187,18 +2194,17 @@ let instantiate bindings mv_bindings model =
 		(List.filter (function (x,v) -> x = (dot_term d)) bindings)))
     | _ -> e in
 
-  let attributefn r k e =
+  let attr_argfn r k e =
     let e = k e in
     match Ast0.unwrap e with
-      Ast0.MetaAttribute(name,cstr,pure) ->
-	(rebuild_mcode None).VT0.rebuilder_rec_attribute
+      Ast0.MetaAttr(name,cstr,pure) ->
+	(rebuild_mcode None).VT0.rebuilder_rec_attr_arg
 	  (match lookup name bindings mv_bindings with
-	    Common.Left(Ast0.AttributeTag(a)) -> a
+	    Common.Left(Ast0.AttrArgTag(a)) -> a
 	  | Common.Left(_) -> failwith "not possible 1"
 	  | Common.Right(new_mv) ->
 	      Ast0.rewrap e
-		(Ast0.MetaAttribute
-                  (Ast0.set_mcode_data new_mv name,cstr,pure)))
+		(Ast0.MetaAttr(Ast0.set_mcode_data new_mv name,cstr,pure)))
     | _ -> e in
 
   V0.flat_rebuilder
@@ -2207,7 +2213,7 @@ let instantiate bindings mv_bindings model =
     (dots elist) donothing (dots plist) (dots slist) donothing donothing
     donothing donothing donothing
     identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn donothing donothing donothing attributefn donothing
+    enumdeclfn stmtfn donothing donothing donothing donothing attr_argfn donothing
 
 (* --------------------------------------------------------------------- *)
 
@@ -2939,7 +2945,7 @@ let rewrap =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
@@ -2985,6 +2991,8 @@ let rec rewrap_anything = function
       Ast0.StringFragmentTag(rewrap.VT0.rebuilder_rec_string_fragment d)
   | Ast0.AttributeTag(d) ->
       Ast0.AttributeTag(rewrap.VT0.rebuilder_rec_attribute d)
+  | Ast0.AttrArgTag(d) ->
+      Ast0.AttrArgTag(rewrap.VT0.rebuilder_rec_attr_arg d)
   | Ast0.TopTag(d) -> Ast0.TopTag(rewrap.VT0.rebuilder_rec_top_level d)
   | Ast0.IsoWhenTag(_) | Ast0.IsoWhenTTag(_) | Ast0.IsoWhenFTag(_) ->
       failwith "only for isos within iso phase"

@@ -44,7 +44,7 @@ let disj_free re =
     donothing donothing donothing donothing donothing donothing donothing ident
     expr donothing donothing donothing donothing ty donothing
     donothing donothing donothing decl donothing donothing ann_field donothing
-    rule_elem statement donothing donothing donothing donothing in
+    rule_elem statement donothing donothing donothing donothing donothing in
   try Hashtbl.find disj_free_table re
   with Not_found ->
     let res = v.V.combiner_rule_elem re in
@@ -91,7 +91,7 @@ let ok_for_all_rule_elems cstr minirules =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing rule_elem donothing donothing donothing donothing
-      donothing in
+      donothing donothing in
   List.for_all v.V.combiner_top_level minirules
 
 let update_for_all_rule_elems cstr minirules =
@@ -115,7 +115,7 @@ let update_for_all_rule_elems cstr minirules =
       donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing
       donothing rule_elem donothing donothing donothing donothing
-      donothing in
+      donothing donothing in
   List.map v.V.rebuilder_top_level minirules
 
 let remove rule_name ((nm,_) as x) =

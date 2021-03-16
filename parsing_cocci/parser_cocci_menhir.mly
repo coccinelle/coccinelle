@@ -3262,10 +3262,13 @@ full_attr_list:
  | a=attr f=full_attr_list  { a::f }
 
 attr:
-   Tattr { Parse_aux.make_attr $1 }
+   attr_arg { Parse_aux.make_attr $1 }
+
+attr_arg:
+   Tattr { Ast0_cocci.wrap (Ast0_cocci.AttrName(Parse_aux.clt2mcode (fst $1) (snd $1))) }
  | TMetaAttribute
     { let (nm,cstr,pure,clt) = $1 in
-      Ast0_cocci.wrap(Ast0_cocci.MetaAttribute(Parse_aux.clt2mcode nm clt,cstr,pure)) }
+      Ast0_cocci.wrap (Ast0_cocci.MetaAttr(Parse_aux.clt2mcode nm clt,cstr,pure)) }
 
 anything: /* used for script code */
    TIdentifier { "identifier" }

@@ -48,7 +48,7 @@ let contains_modif =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing
       do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-      do_nothing do_nothing in
+      do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
 
 let ctl_exists keep_wit v x =

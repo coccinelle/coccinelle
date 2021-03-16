@@ -336,6 +336,7 @@ module XMATCH = struct
   let distrf_ident_list     = distrf Lib_parsing_c.ii_of_ident_list
   let distrf_exec_code_list = distrf Lib_parsing_c.ii_of_exec_code_list
   let distrf_attr           = distrf Lib_parsing_c.ii_of_attr
+  let distrf_attr_arg       = distrf Lib_parsing_c.ii_of_attr_arg
   let distrf_attrs          = distrf Lib_parsing_c.ii_of_attrs
 
 
@@ -538,12 +539,12 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_string_format a
 		   else Lib_parsing_c.semi_al_string_format a))
-          | Ast_c.MetaAttributeVal a ->
+          | Ast_c.MetaAttrArgVal a ->
 	      success
-		(Ast_c.MetaAttributeVal
+		(Ast_c.MetaAttrArgVal
 		   (if strip
-		   then Lib_parsing_c.al_attribute a
-		   else Lib_parsing_c.semi_al_attribute a))
+		   then Lib_parsing_c.al_attr_arg a
+		   else Lib_parsing_c.semi_al_attr_arg a))
 
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))

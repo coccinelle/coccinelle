@@ -43,7 +43,7 @@ let all_removed_recursor =
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 
 let all_removed_decl =
   all_removed_recursor.V.combiner_declaration
@@ -100,13 +100,17 @@ let contains_modif =
       do_nothing do_nothing do_nothing init do_nothing
       do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-      do_nothing do_nothing in
+      do_nothing do_nothing do_nothing in
   recursor.V.combiner_fullType
+
+let attr_arg a =
+  match Ast.unwrap a with
+    Ast.AttrName(attr) -> mcode () attr
+  | Ast.MetaAttr(name,b,c,d) -> mcode () name
 
 let attribute a =
   match Ast.unwrap a with
-    Ast.Attribute(attr) -> mcode () attr
-  | Ast.MetaAttribute(name,b,c,d) -> mcode () name
+    Ast.Attribute(attr) -> attr_arg attr
 
 let decl r k e =
   let e = k e in
@@ -179,7 +183,8 @@ let process =
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing decl anndecl field annfield
-      donothing donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing in
   List.map fn.V.rebuilder_top_level
 
 let safe_for_multi_decls rules =

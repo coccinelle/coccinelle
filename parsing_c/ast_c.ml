@@ -298,7 +298,11 @@ and typeQualifierbis = {const: bool; volatile: bool}
 (* gccext: cppext: *)
 and attribute = attributebis wrap
   and attributebis =
-    | Attribute of string
+    | Attribute of attr_arg
+
+and attr_arg = attr_arg_bis wrap
+  and attr_arg_bis =
+    | AttrName of string
 
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
@@ -821,7 +825,7 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaStmtListVal  of statement_sequencable list * stripped
   | MetaDParamListVal of (string wrap) wrap2 list
   | MetaFmtVal       of string_format
-  | MetaAttributeVal of attribute
+  | MetaAttrArgVal   of attr_arg
   | MetaFragListVal  of string_fragment list
   | MetaAssignOpVal  of assignOp
   | MetaBinaryOpVal  of binaryOp
@@ -1328,7 +1332,8 @@ let fieldname_of_fieldkind fieldkind =
 
 let s_of_attr attr =
   attr
-  +> List.map (fun (Attribute s, ii) -> s)
+  +> List.map (function (Attribute a, ii) -> unwrap a)
+  +> List.map (function AttrName s -> s)
   +> String.concat ","
 
 

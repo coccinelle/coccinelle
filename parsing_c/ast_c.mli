@@ -78,7 +78,9 @@ and parameterType = {
 and typeQualifier = typeQualifierbis wrap
 and typeQualifierbis = { const : bool; volatile : bool; }
 and attribute = attributebis wrap
-and attributebis = Attribute of string
+and attributebis = Attribute of attr_arg
+and attr_arg = attr_arg_bis wrap
+and attr_arg_bis = AttrName of string
 and expression = (expressionbis * exp_info ref) wrap3
 and exp_info = exp_type option * test
 and exp_type = fullType * local
@@ -326,7 +328,7 @@ and metavar_binding_kind =
   | MetaStmtListVal of statement_sequencable list * stripped
   | MetaDParamListVal of string wrap wrap2 list
   | MetaFmtVal of string_format
-  | MetaAttributeVal of attribute
+  | MetaAttrArgVal of attr_arg
   | MetaFragListVal of string_fragment list
   | MetaAssignOpVal of assignOp
   | MetaBinaryOpVal of binaryOp

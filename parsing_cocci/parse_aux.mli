@@ -152,12 +152,7 @@ val logic_op :
 val make_cv :
   Ast_cocci.const_vol Ast0_cocci.mcode option -> Ast0_cocci.typeC -> Ast0_cocci.typeC
 val make_attr:
-  string *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   Ast0_cocci.anything list * string) ->
-   Ast0_cocci.attr
+  Ast0_cocci.attr_arg -> Ast0_cocci.attr
 val top_dots : 'a -> 'a Ast0_cocci.wrap
 val pointerify :
   Ast0_cocci.typeC ->

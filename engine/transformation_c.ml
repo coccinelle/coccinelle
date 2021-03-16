@@ -291,7 +291,7 @@ module XTRANS = struct
 	ident expression donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing
 	donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing donothing in
+	donothing donothing donothing donothing donothing in
 
   fn.Visitor_ast.rebuilder_anything anything
 
@@ -621,6 +621,9 @@ module XTRANS = struct
   let distribute_mck_ini (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_ini_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_attr_arg (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_attr_arg_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_attr (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_attribute_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -753,6 +756,8 @@ module XTRANS = struct
     distrf (Lib_parsing_c.ii_of_ident_list,distribute_mck_ident_list)
   let distrf_exec_code_list =
     distrf (Lib_parsing_c.ii_of_exec_code_list,distribute_mck_exec_code_list)
+  let distrf_attr_arg =
+    distrf (Lib_parsing_c.ii_of_attr_arg,distribute_mck_attr_arg)
   let distrf_attr =
     distrf (Lib_parsing_c.ii_of_attr,distribute_mck_attr)
   let distrf_attrs =

@@ -721,10 +721,15 @@ and unify_fninfo patterninfo cinfo =
 
 and unify_attribute attr1 attr2 =
   match (Ast.unwrap attr1,Ast.unwrap attr2) with
-    (Ast.Attribute(attr1),Ast.Attribute(attr2)) ->
-      unify_mcode attr1 attr2
-  | (Ast.MetaAttribute(_,_,_,_),_)
-  | (_,Ast.MetaAttribute(_,_,_,_)) -> true
+    (Ast.Attribute(arg1),Ast.Attribute(arg2)) ->
+      unify_attr_arg arg1 arg2
+
+and unify_attr_arg arg1 arg2 =
+  match (Ast.unwrap arg1,Ast.unwrap arg2) with
+    (Ast.AttrName(arg_id1), Ast.AttrName(arg_id2)) ->
+      unify_mcode arg_id1 arg_id2
+  | (Ast.MetaAttr(_,_,_,_),_)
+  | (_,Ast.MetaAttr(_,_,_,_)) -> true
 
 and unify_exec_code ec1 ec2 =
   match (Ast.unwrap ec1,Ast.unwrap ec2) with
@@ -748,7 +753,7 @@ and subexp f =
       donothing expr
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -764,7 +769,7 @@ and subtype f =
       donothing donothing donothing donothing donothing donothing fullType
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

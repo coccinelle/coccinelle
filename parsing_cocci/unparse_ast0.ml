@@ -767,8 +767,12 @@ and print_attribute_list attrs =
 
 and print_attribute a =
   match Ast0.unwrap a with
-    Ast0.Attribute(attr) -> mcode print_string attr
-  | Ast0.MetaAttribute(name,_,_) -> mcode print_meta name
+    Ast0.Attribute(attr) -> print_attr_arg attr
+
+and print_attr_arg a =
+  match Ast0.unwrap a with
+    Ast0.AttrName(arg) -> mcode print_string arg
+  | Ast0.MetaAttr(name,_,_) -> mcode print_meta name
 
 and whencode notfn alwaysfn = function
     Ast0.WhenNot (_,_,a) ->
@@ -875,6 +879,7 @@ let rec unparse_anything x =
   | Ast0.CaseLineTag(d)  -> case_line "" d
   | Ast0.StringFragmentTag(d)  -> string_fragment d
   | Ast0.AttributeTag(d) -> print_attribute d
+  | Ast0.AttrArgTag(d)   -> print_attr_arg d
   | Ast0.TopTag(d)       -> top_level d
   | Ast0.IsoWhenTag(x)   -> U.print_when_modif x
   | Ast0.IsoWhenTTag(e)  -> expression e

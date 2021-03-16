@@ -1331,7 +1331,10 @@ type_qualif:
 attribute:
  | Tattribute TOPar /*stuff*/ TCPar { raise Todo }
  /*(* cppext: *)*/
- | TMacroAttr { Attribute (fst $1), [snd $1] }
+ | attr_arg { Attribute $1, [] }
+
+attr_arg:
+ | TMacroAttr { AttrName (fst $1), [snd $1] }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
@@ -2491,9 +2494,12 @@ attribute_list:
 
 attributes: attribute_list { $1 }
 
+end_attr_arg:
+ | TMacroEndAttr { AttrName (fst $1), [snd $1] }
+
 end_attribute_list:
- | TMacroEndAttr { [Attribute (fst $1), [snd $1]] }
- | end_attribute_list TMacroEndAttr { $1 @ [Attribute(fst $2), [snd $2]] }
+ | end_attr_arg { [Attribute $1, []] }
+ | end_attribute_list end_attr_arg { $1 @ [Attribute $2, []] }
 
 end_attributes: end_attribute_list { $1 }
 

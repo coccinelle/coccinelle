@@ -55,7 +55,7 @@ let sequence_tokens =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing
 
 (* In general, we will get a list of lists:
 

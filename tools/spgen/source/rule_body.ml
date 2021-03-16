@@ -232,6 +232,7 @@ let rec gen_combiner ~context_mode =
   let casefn = donothing in
   let string_fragmentfn = donothing in
   let attributefn = donothing in
+  let attr_argfn = donothing in
 
   (* Universal special cases, regardless of no_gen mode:
    * Disjunctions with SmPL style pattern-matching may need to be split into
@@ -354,7 +355,7 @@ let rec gen_combiner ~context_mode =
     dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
     identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
-    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn topfn
+    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn
 
 
 (* ------------------------------------------------------------------------- *)

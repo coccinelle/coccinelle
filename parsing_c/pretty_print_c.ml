@@ -56,6 +56,7 @@ type pretty_printers = {
   fragment_list   : (Ast_c.string_fragment list) printer;
   format          : Ast_c.string_format printer;
   attribute       : Ast_c.attribute printer;
+  attr_arg        : Ast_c.attr_arg printer;
   flow            : Control_flow_c.node printer;
   name            : Ast_c.name printer
 }
@@ -1149,6 +1150,11 @@ and pp_init (init, iinit) =
   and pp_attribute (e,ii) =
     match (e,ii) with
       Attribute(a), ii  ->
+        pp_attr_arg a
+
+  and pp_attr_arg (e,ii) =
+    match (e,ii) with
+      AttrName(a), ii ->
         let (i) = Common.tuple_of_list1 ii in
         pr_elem i
 
@@ -1532,6 +1538,7 @@ and pp_init (init, iinit) =
     fragment   = pp_string_fragment;
     fragment_list = pp_string_fragment_list;
     attribute  = pp_attribute;
+    attr_arg   = pp_attr_arg;
     format     = pp_string_format;
     flow       = pp_flow;
     name       = pp_name;
@@ -1592,6 +1599,7 @@ let pp_toplevel_simple   = ppc.toplevel
 let pp_string_fragment_simple = ppc.fragment
 let pp_string_format_simple = ppc.format
 let pp_attribute_simple  = ppc.attribute
+let pp_attr_arg_simple   = ppc.attr_arg
 let pp_flow_simple       = ppc.flow
 let pp_name              = ppc.name
 
@@ -1660,6 +1668,9 @@ let pp_string_format_gen ~pr_elem ~pr_space =
 
 let pp_attribute_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).attribute
+
+let pp_attr_arg_gen ~pr_elem ~pr_space =
+  (pp_elem_sp pr_elem pr_space).attr_arg
 
 let pp_program_gen ~pr_elem ~pr_space =
   (pp_elem_sp pr_elem pr_space).toplevel

@@ -118,7 +118,9 @@ module Ast_c :
       volatile : bool;
     }
     and attribute = attributebis wrap
-    and attributebis = Ast_c.attributebis = Attribute of string
+    and attributebis = Ast_c.attributebis = Attribute of attr_arg
+    and attr_arg = attr_arg_bis wrap
+    and attr_arg_bis = Ast_c.attr_arg_bis = AttrName of string
     and expression = (expressionbis * exp_info ref) wrap3
     and exp_info = exp_type option * test
     and exp_type = fullType * local
@@ -434,7 +436,7 @@ module Ast_c :
       | MetaStmtListVal of statement_sequencable list * stripped
       | MetaDParamListVal of string wrap wrap2 list
       | MetaFmtVal of string_format
-      | MetaAttributeVal of attribute
+      | MetaAttrArgVal of attr_arg
       | MetaFragListVal of string_fragment list
       | MetaAssignOpVal of assignOp
       | MetaBinaryOpVal of binaryOp
@@ -856,6 +858,7 @@ module Pretty_print_c :
       fragment_list : Ast_c.string_fragment list printer;
       format : Ast_c.string_format printer;
       attribute : Ast_c.attribute printer;
+      attr_arg : Ast_c.attr_arg printer;
       flow : Control_flow_c.node printer;
       name : Ast_c.name printer;
     }
@@ -2930,10 +2933,14 @@ module Ast_cocci :
       | FAttr of attr
     and base_attr =
       Ast_cocci.base_attr =
-        Attribute of string mcode
-      | MetaAttribute of meta_name mcode * constraints * keep_binding *
-          inherited
+        Attribute of Ast_cocci.attr_arg
     and attr = base_attr wrap
+    and base_attr_arg =
+      Ast_cocci.base_attr_arg =
+        AttrName of string mcode
+      | MetaAttr of meta_name mcode * constraints * keep_binding *
+          inherited
+    and attr_arg = base_attr_arg wrap
     and metaStmtInfo =
       Ast_cocci.metaStmtInfo =
         NotSequencible
@@ -3084,6 +3091,7 @@ module Ast_cocci :
       | CaseLineTag of case_line
       | StringFragmentTag of string_fragment
       | AttributeTag of attr
+      | AttrArgTag of attr_arg
       | ConstVolTag of const_vol
       | Token of string * info option
       | Directive of added_string list
@@ -3564,9 +3572,13 @@ module Ast0_cocci :
       | FAttr of attr
     and base_attr =
       Ast0_cocci.base_attr =
-        Attribute of string mcode
-      | MetaAttribute of Ast_cocci.meta_name mcode * constraints * pure
+        Attribute of Ast0_cocci.attr_arg
     and attr = base_attr wrap
+    and base_attr_arg =
+      Ast0_cocci.base_attr_arg =
+        AttrName of string mcode
+      | MetaAttr of Ast_cocci.meta_name mcode * constraints * pure
+    and attr_arg = base_attr_arg wrap
     and ('a, 'b) whencode =
       ('a, 'b) Ast0_cocci.whencode =
         WhenNot of string mcode * string mcode * 'a
@@ -3668,6 +3680,7 @@ module Ast0_cocci :
       | CaseLineTag of case_line
       | StringFragmentTag of string_fragment
       | AttributeTag of attr
+      | AttrArgTag of attr_arg
       | TopTag of top_level
       | IsoWhenTag of Ast_cocci.when_modifier
       | IsoWhenTTag of expression
@@ -3788,6 +3801,7 @@ type param_type =
   | FragList of Ast_c.string_fragment list
   | Fmt of Ast_c.string_format
   | Attribute of Ast_c.attribute
+  | AttrArg of Ast_c.attr_arg
   | Stmt of Ast_c.statement
   | StmtList of Ast_c.statement_sequencable list
 val fcts :

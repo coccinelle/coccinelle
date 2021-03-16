@@ -37,6 +37,7 @@ val define_param_dots :
 val case_line : Ast0_cocci.case_line -> Ast_cocci.case_line
 val string_fragment : Ast0_cocci.string_fragment -> Ast_cocci.string_fragment
 val attribute : Ast0_cocci.attr -> Ast_cocci.attr
+val attr_arg : Ast0_cocci.attr_arg -> Ast_cocci.attr_arg
 val typeC : bool (*allminus*) -> Ast0_cocci.typeC -> Ast_cocci.fullType
 val declaration : Ast0_cocci.declaration -> Ast_cocci.declaration
 val field : Ast0_cocci.field -> Ast_cocci.field
