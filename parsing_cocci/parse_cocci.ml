@@ -2228,7 +2228,7 @@ let parse_iso_files existing_isos iso_files extra_path =
 (* None = dependency not satisfied
    Some dep = dependency satisfied or unknown and dep has virts optimized
    away *)
-let eval_depend nofiles dep virt =
+let eval_depend nofiles dep virt fail_dep_rules =
   let rec loop dep =
     match dep with
       Ast.Dep req | Ast.EverDep req ->
@@ -2237,7 +2237,10 @@ let eval_depend nofiles dep virt =
 	  if List.mem req !Flag.defined_virtual_rules
 	  then Common.Left (Ast.NoDep)
 	  else Common.Left (Ast.FailDep)
-	else Common.Right dep
+	else if List.mem req fail_dep_rules then
+          Common.Left Ast.FailDep
+        else
+          Common.Right dep
     | Ast.AntiDep antireq | Ast.NeverDep antireq ->
 	if List.mem antireq virt
 	then
@@ -2274,12 +2277,13 @@ let eval_depend nofiles dep virt =
 	Common.Left d -> d
       | Common.Right d -> Ast.ForallDep d)
 
-let print_dep_image name deps virt depimage =
+let print_dep_image name deps virt fail_dep_rules depimage =
   Printf.fprintf stderr "Rule: %s\n" name;
   Printf.fprintf stderr "Dependencies: %s"
     (Common.format_to_string
        (function _ -> Pretty_print_cocci.dependency deps));
   Printf.fprintf stderr "Virtual rules: %s\n" (String.concat " " virt);
+  Printf.fprintf stderr "FailDep rules: %s\n" (String.concat " " fail_dep_rules);
   Printf.fprintf stderr "Res: %s\n\n"
     (Common.format_to_string
        (function _ -> Pretty_print_cocci.dependency depimage))
@@ -2527,14 +2531,16 @@ let parse file =
 		    Ast0.FinalScriptRule(name,language,deps,mvs,pos,data)
 		| _ -> failwith "new metavariables not allowed in finalize") in
 
+          let fail_dep_rules = ref [] in (* Register rules that result in FailDep*)
+
 	  let do_parse_script_rule fn name l old_metas deps =
             (* in generating mode, we want to keep all the dependencies *)
 	    let depimage =
 	      if !Flag_parsing_cocci.generating_mode
 	      then deps
-              else eval_depend true deps virt in
+              else eval_depend true deps virt !fail_dep_rules in
 	    (if !Flag_parsing_cocci.debug_parse_cocci
-	    then print_dep_image name deps virt depimage);
+	    then print_dep_image name deps virt !fail_dep_rules depimage);
 	    fn name l old_metas depimage in
 
           let parse_rule old_metas starts_with_name =
@@ -2547,9 +2553,9 @@ let parse file =
 		let depimage =
 		  if !Flag_parsing_cocci.generating_mode
 		  then dep
-		  else eval_depend false dep virt in
+		  else eval_depend false dep virt !fail_dep_rules in
 		(if !Flag_parsing_cocci.debug_parse_cocci
-		then print_dep_image s dep virt depimage);
+		then print_dep_image s dep virt !fail_dep_rules depimage);
 		(match depimage with
 		  Ast.FailDep ->
 		    (*parsing faildep code allows getting some warnings on it*)
@@ -2558,10 +2564,11 @@ let parse file =
 		      parse_cocci_rule Ast.Normal old_metas
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
+                    fail_dep_rules := s::!fail_dep_rules;
 		    res
 		| dep -> parse_cocci_rule Ast.Normal old_metas (s,dep,b,c,d,e))
             | Ast.GeneratedRulename (Some s, dep, b, c, d, e) ->
-		(match eval_depend true dep virt with
+		(match eval_depend true dep virt !fail_dep_rules with
 		  Ast.FailDep ->
 		    D.ignore_patch_or_match := true;
 		    D.in_generating := true;
@@ -2570,6 +2577,7 @@ let parse file =
 			(s, Ast.FailDep, b, c, d, e) in
 		    D.ignore_patch_or_match := false;
 		    D.in_generating := false;
+                    fail_dep_rules := s::!fail_dep_rules;
 		    res
 		| dep ->
 		    D.in_generating := true;
@@ -2577,6 +2585,7 @@ let parse file =
 		      parse_cocci_rule Ast.Generated old_metas
 			(s,dep,b,c,d,e) in
 		    D.in_generating := false;
+                    fail_dep_rules := s::!fail_dep_rules;
 		    res)
             | Ast.ScriptRulename(Some s,l,deps) ->
 		do_parse_script_rule parse_script_rule s l old_metas deps
