@@ -844,7 +844,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
    let (_,ok,rest) = loop 0 xs in
    (ok,rest)
   and not_context = function
-    | (T2(_,Ctx,_,_) as x) when not (is_minusable_comment x) -> false
+    | (T2(_,Ctx,_,_) as x) -> is_minusable_comment x
     | _ -> true
   and not_context_newline = function
     | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> false
