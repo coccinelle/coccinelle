@@ -233,6 +233,9 @@ let left_attribute attr =
   match Ast0.unwrap attr with
     Ast0.Attribute(a) ->
       call_right left_attr_arg a attr (function a -> Ast0.Attribute(a))
+  | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+      call_right left_mcode attr_ attr
+        (function attr_ -> Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

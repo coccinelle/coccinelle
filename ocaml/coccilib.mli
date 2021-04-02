@@ -118,7 +118,7 @@ module Ast_c :
       volatile : bool;
     }
     and attribute = attributebis wrap
-    and attributebis = Ast_c.attributebis = Attribute of attr_arg
+    and attributebis = Ast_c.attributebis = Attribute of attr_arg | GccAttribute of attr_arg
     and attr_arg = attr_arg_bis wrap
     and attr_arg_bis = Ast_c.attr_arg_bis = AttrName of string
     and expression = (expressionbis * exp_info ref) wrap3
@@ -554,7 +554,7 @@ module Ast_c :
     val s_of_inc_file : inc_file -> string
     val s_of_inc_file_bis : inc_file -> string
     val fieldname_of_fieldkind : fieldkind -> name option
-    val s_of_attr : (attributebis * 'a) list -> string
+    val s_of_attr : (attributebis * info list) list -> string
     val str_of_name : name -> string
     val get_s_and_ii_of_name : name -> string * il
     val get_s_and_info_of_name : name -> string * info
@@ -2934,6 +2934,8 @@ module Ast_cocci :
     and base_attr =
       Ast_cocci.base_attr =
         Attribute of Ast_cocci.attr_arg
+      | GccAttribute of string mcode * string mcode * string mcode *
+                        Ast_cocci.attr_arg * string mcode * string mcode
     and attr = base_attr wrap
     and base_attr_arg =
       Ast_cocci.base_attr_arg =
@@ -3573,6 +3575,8 @@ module Ast0_cocci :
     and base_attr =
       Ast0_cocci.base_attr =
         Attribute of Ast0_cocci.attr_arg
+      | GccAttribute of string mcode * string mcode * string mcode *
+                        Ast0_cocci.attr_arg * string mcode * string mcode
     and attr = base_attr wrap
     and base_attr_arg =
       Ast0_cocci.base_attr_arg =

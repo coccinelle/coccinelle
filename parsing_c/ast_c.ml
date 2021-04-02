@@ -299,6 +299,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 and attribute = attributebis wrap
   and attributebis =
     | Attribute of attr_arg
+    | GccAttribute of attr_arg
 
 and attr_arg = attr_arg_bis wrap
   and attr_arg_bis =
@@ -1331,9 +1332,16 @@ let fieldname_of_fieldkind fieldkind =
 
 
 let s_of_attr attr =
+  let get_attr_name = function
+    AttrName s -> s in
+  let get_attr = function
+    (Attribute a, ii) ->
+      get_attr_name (unwrap a)
+  | (GccAttribute a, ii) ->
+      let (attr_,_,_,_,_) = Common.tuple_of_list5 ii in
+      str_of_info attr_ ^ "((" ^ (get_attr_name (unwrap a)) ^ "))" in
   attr
-  +> List.map (function (Attribute a, ii) -> unwrap a)
-  +> List.map (function AttrName s -> s)
+  +> List.map get_attr
   +> String.concat ","
 
 

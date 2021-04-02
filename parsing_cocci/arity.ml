@@ -1284,6 +1284,15 @@ and attribute tgt attr =
     Ast0.Attribute(arg) ->
       let arg = attr_arg tgt arg in
       Ast0.rewrap attr (Ast0.Attribute(arg))
+  | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+      let arity = all_same false tgt (mcode2line lp1) [mcode2arity lp1;mcode2arity rp2] in
+      let attr_ = mcode attr_ in
+      let lp1 = mcode lp1 in
+      let lp2 = mcode lp2 in
+      let arg = attr_arg tgt arg in
+      let rp1 = mcode rp1 in
+      let rp2 = mcode rp2 in
+      make_attribute attr tgt arity (Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2))
 
 and make_attr_arg =
   make_opt

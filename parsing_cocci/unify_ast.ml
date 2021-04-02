@@ -721,8 +721,10 @@ and unify_fninfo patterninfo cinfo =
 
 and unify_attribute attr1 attr2 =
   match (Ast.unwrap attr1,Ast.unwrap attr2) with
-    (Ast.Attribute(arg1),Ast.Attribute(arg2)) ->
+    (Ast.Attribute(arg1),Ast.Attribute(arg2))
+  | (Ast.GccAttribute(_,_,_,arg1,_,_),Ast.GccAttribute(_,_,_,arg2,_,_)) ->
       unify_attr_arg arg1 arg2
+  | _ -> false
 
 and unify_attr_arg arg1 arg2 =
   match (Ast.unwrap arg1,Ast.unwrap arg2) with

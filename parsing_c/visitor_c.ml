@@ -528,6 +528,7 @@ and vk_attribute = fun bigf attr ->
   let iif ii = vk_ii bigf ii in
   match attr with
   | Attribute s, ii -> iif ii; vk_attr_arg bigf s
+  | GccAttribute s, ii -> iif ii; vk_attr_arg bigf s
 
 and vk_attr_arg = fun bigf name ->
   let iif ii = vk_ii bigf ii in
@@ -1458,6 +1459,8 @@ and vk_attribute_s = fun bigf attr ->
   match attr with
   | Attribute s, ii ->
       Attribute (vk_attr_arg_s bigf s), iif ii
+  | GccAttribute s, ii ->
+      GccAttribute (vk_attr_arg_s bigf s), iif ii
 
 and vk_attr_arg_s = fun bigf name ->
   let iif ii = vk_ii_s bigf ii in

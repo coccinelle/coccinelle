@@ -1154,7 +1154,16 @@ let visitor mode bind option_default
         (match Ast0.unwrap a with
           Ast0.Attribute(attr) ->
             let (attr_n,attr) = attr_arg attr in
-            (attr_n,Ast0.Attribute(attr))) in
+            (attr_n,Ast0.Attribute(attr))
+        | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+            let (attr_n,attr_) = string_mcode attr_ in
+            let (lp1_n,lp1) = string_mcode lp1 in
+            let (lp2_n,lp2) = string_mcode lp2 in
+            let (arg_n,arg) = attr_arg arg in
+            let (rp1_n,rp1) = string_mcode rp1 in
+            let (rp2_n,rp2) = string_mcode rp2 in
+            (multibind [attr_n;lp1_n;lp2_n;rp1_n;rp2_n],
+            Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2))) in
               attributefn all_functions k a
 
   and attr_arg a =

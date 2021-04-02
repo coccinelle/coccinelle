@@ -1200,7 +1200,9 @@ and fninfo = function
 and attribute a =
   rewrap a no_isos
     (match Ast0.unwrap a with
-      Ast0.Attribute(attr) -> Ast.Attribute(attr_arg attr))
+      Ast0.Attribute(attr) -> Ast.Attribute(attr_arg attr)
+    | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+	Ast.GccAttribute(mcode attr_,mcode lp1,mcode lp2,attr_arg arg,mcode rp1,mcode rp2))
 
 and attr_arg a =
   rewrap a no_isos

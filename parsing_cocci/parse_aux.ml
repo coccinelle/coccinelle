@@ -155,6 +155,11 @@ let make_cv cv ty =
 let make_attr attr =
   Ast0.wrap(Ast0.Attribute(attr))
 
+let make_gcc_attr attr_ lp1 lp2 arg rp1 rp2 =
+  Ast0.wrap(Ast0.GccAttribute(clt2mcode "__attribute__" attr_,
+    clt2mcode "(" lp1,clt2mcode "(" lp2, arg,
+    clt2mcode ")" rp1,clt2mcode ")" rp2))
+
 let top_dots l = Ast0.wrap l
 
 (* here the offset is that of the first in the sequence of *s, not that of

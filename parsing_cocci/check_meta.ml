@@ -528,7 +528,8 @@ and fninfo old_metas table minus = function
 
 and attribute old_metas table minus x =
   match Ast0.unwrap x with
-    Ast0.Attribute(arg) ->
+    Ast0.Attribute(arg)
+  | Ast0.GccAttribute(_,_,_,arg,_,_) ->
       attr_arg old_metas table minus arg
 
 and attr_arg old_metas table minus x =

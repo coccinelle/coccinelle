@@ -912,6 +912,16 @@ and attribute attr =
     Ast0.Attribute(a) ->
       let ln = attr_arg a in
       mkres attr (Ast0.Attribute(a)) ln ln
+  | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+      let attr_ = normal_mcode attr_ in
+      let lp1 = normal_mcode lp1 in
+      let lp2 = normal_mcode lp2 in
+      let arg = attr_arg arg in
+      let rp1 = normal_mcode rp1 in
+      let rp2 = normal_mcode rp2 in
+      let ln1 = promote_mcode attr_ in
+      let ln2 = promote_mcode rp2 in
+      mkres attr (Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2)) ln1 ln2
 
 and attr_arg arg =
   match Ast0.unwrap arg with

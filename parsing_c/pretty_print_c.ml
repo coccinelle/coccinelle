@@ -1151,6 +1151,10 @@ and pp_init (init, iinit) =
     match (e,ii) with
       Attribute(a), ii  ->
         pp_attr_arg a
+    | GccAttribute(a), ii ->
+        let (i1,i2,i3,i4,i5) = Common.tuple_of_list5 ii in
+        pr_elem i1; pr_elem i2; pr_elem i3;
+        pp_attr_arg a; pr_elem i4; pr_elem i5;
 
   and pp_attr_arg (e,ii) =
     match (e,ii) with

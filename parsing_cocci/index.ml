@@ -6,7 +6,7 @@
 
 (* create an index for each constructor *)
 (* current max is 192, also unused: 8-9, 15, 42, 46, 57, 65, 85-86,
- 113-115, 162 *)
+ 113-115 *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -232,6 +232,7 @@ let string_fragment f =
 let attribute a =
   match Ast0.unwrap a with
     Ast0.Attribute(attr) -> [39]
+  | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> [162]
 
 let attr_arg a =
   match Ast0.unwrap a with

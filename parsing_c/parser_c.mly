@@ -1329,12 +1329,18 @@ type_qualif:
 /*(*-----------------------------------------------------------------------*)*/
 
 attribute:
- | Tattribute TOPar /*stuff*/ TCPar { raise Todo }
+ | attribute_gcc { $1 }
  /*(* cppext: *)*/
  | attr_arg { Attribute $1, [] }
 
 attr_arg:
  | TMacroAttr { AttrName (fst $1), [snd $1] }
+
+attribute_gcc:
+ | Tattribute TOPar TOPar attr_arg_gcc TCPar TCPar { GccAttribute $4, [$1;$2;$3;$5;$6] }
+
+attr_arg_gcc:
+ | TIdent { AttrName (fst $1), [snd $1] }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
@@ -2498,7 +2504,9 @@ end_attr_arg:
  | TMacroEndAttr { AttrName (fst $1), [snd $1] }
 
 end_attribute_list:
+ | attribute_gcc { [$1] }
  | end_attr_arg { [Attribute $1, []] }
+ | end_attribute_list attribute_gcc { $1 @ [$2] }
  | end_attribute_list end_attr_arg { $1 @ [Attribute $2, []] }
 
 end_attributes: end_attribute_list { $1 }

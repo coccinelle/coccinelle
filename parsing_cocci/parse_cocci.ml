@@ -395,7 +395,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TPtrOp(clt)
 
   | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
-  | PC.TPtVirg(clt) ->
+  | PC.TPtVirg(clt) | PC.TAttr_(clt) ->
       if List.mem (line_type clt) [D.PLUS;D.PLUSPLUS]
       then PLUS
       else if only_plus then NOTPLUS
@@ -408,7 +408,6 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaAttribute(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
-  | PC.TAttr_(clt) -> NOTPLUS
 
   | _ -> SKIP
 
@@ -898,9 +897,10 @@ let split_token ((tok,_) as t) =
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
-  | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) -> split t clt
+  | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
+  | PC.TAttr_(clt) -> split t clt
 
-  | PC.TDirective(_,_) | PC.TAttr_(_) -> ([],[t]) (* only allowed in + *)
+  | PC.TDirective(_,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
   | PC.TIncludeL(s,clt) | PC.TIncludeNL(s,clt) | PC.TIncludeAny(s,clt) ->
       split t clt
@@ -1603,10 +1603,13 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
       (* This is a ..., in an argument list, field initializer list etc,
 	 which might go away, so nothing should be attached to the , *)
       process_pragmas bef (b::a::skips) xs
-  | (PC.TAttr_(i),x)::xs ->
-      let (attr,rest) = collect_attr xs in
-      process_pragmas bef skips
-	((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
+  | ((PC.TAttr_(i),x) as xx)::xs ->
+      (match line_type i with
+        D.PLUS | D.PLUSPLUS ->
+          let (attr,rest) = collect_attr xs in
+          process_pragmas bef skips
+          ((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
+      | _ -> (add_bef bef) @ List.rev skips @ (process_pragmas (Some xx) [] xs))
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in

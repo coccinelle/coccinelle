@@ -111,6 +111,7 @@ let attr_arg a =
 let attribute a =
   match Ast.unwrap a with
     Ast.Attribute(attr) -> attr_arg attr
+  | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> attr_arg arg
 
 let decl r k e =
   let e = k e in

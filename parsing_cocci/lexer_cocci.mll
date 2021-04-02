@@ -330,6 +330,8 @@ let id_tokens lexbuf =
   | "sizeof" ->     TSizeof   linetype
   | "typeof" ->     TTypeof   linetype
 
+  | "__attribute__" -> TAttr_ linetype
+
   | "Expression"       when !Data.in_iso -> TIsoExpression
   | "ArgExpression"    when !Data.in_iso -> TIsoArgExpression
   | "TestExpression"   when !Data.in_iso -> TIsoTestExpression
@@ -673,13 +675,6 @@ rule token = parse
   | [' ' '\t'  ]* ("#" [' ' '\t']* "spatch" [' ' '\t']* ([' ' '\t'] [^ '\n']+)? as spatch) {
      check_context_linetype spatch;
      start_line false; token lexbuf }
-
-  | "__attribute__"
-   { match !current_line_type with
-      (D.PLUS,_,_) | (D.PLUSPLUS,_,_) ->
-	start_line true;
-	TAttr_ (get_current_line_type lexbuf)
-    | _ -> failwith "attributes only allowed in + code" }
 
   | "@@" { start_line true; TArobArob }
   | "@"  { pass_zero();

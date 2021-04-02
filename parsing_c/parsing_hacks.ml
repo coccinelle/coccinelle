@@ -1116,7 +1116,14 @@ let rec find_macro_paren xs =
   | [] -> ()
 
   (* attribute *)
-  | PToken ({tok = Tattribute ii} as id)
+  (*
+   * Current coccinelle supports only __attribute__ or __attribute
+   * with one argument. Since the current implementation is
+   * incomplete, this code is commented out just in case.
+   * In the future, we will add support for gcc attribute with
+   * multiple arguments.
+   *)
+(*| PToken ({tok = Tattribute ii} as id)
     ::Parenthised (xxs,info_parens)
     ::xs
      ->
@@ -1126,7 +1133,7 @@ let rec find_macro_paren xs =
         iter_token_paren (TV.set_as_comment Token_c.CppAttr);
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
-
+*)
   | PToken ({tok = TattributeNoarg ii} as id)
     ::xs
      ->

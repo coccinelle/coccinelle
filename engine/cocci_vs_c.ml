@@ -1543,7 +1543,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             | A.MetaAttr((_,_,A.CONTEXT(_,_),_),_,_,_) -> false
             | _ -> true in
           match A.unwrap a with
-          | A.Attribute arg -> attr_arg_is_not_context arg in
+          | A.Attribute arg -> attr_arg_is_not_context arg
+          | A.GccAttribute(_,_,_,arg,_,_) -> attr_arg_is_not_context arg in
         check_allminus.Visitor_ast.combiner_fullType typa &&
         List.for_all attr_is_not_context attrsa in
 
@@ -2744,7 +2745,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        if stob = (B.NoSto, false)
        then
          fullType typa typb >>= (fun typa typb ->
-         attribute_list allminus attra endattrs >>= (fun attra endattrs ->
+         attribute_list allminus attra (attrs @ endattrs) >>= (fun attra endattrs ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
            return (
              (A.TyDecl (typa, attra, ptvirga)) +> A.rewrap decla,
@@ -2758,7 +2759,40 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
              }, iivirg), iiptvirgb, iistob)
            ))))
        else fail
-
+        (* (attrs @ endattrs) above is a workaround.
+         * Current Coccinelle is having a problem with attrs and endattrs in C parser.
+         * Here is an example of AST for C.
+         * #1
+         * ```
+         * struct { int i;} __attr;
+         * ```
+         * attrs = []
+         * endattrs = [ __attr]
+         *
+         * #2
+         * ```
+         * struct { int i;} __attribute__((pack));
+         * ```
+         * attrs = [__attribute__((pack))]
+         * endattrs = []
+         *
+         * __attribute__((pack)) in #2 should be interpreted as attrs.
+         *
+         * This problem results from the implementation of parsing_c/parser_c.mly
+         * and parsing_c/parsing_hacks.ml.
+         *
+         * The current implementation in parsing_hacks.ml only checks the next
+         * couple of tokens and whether it can match some regular expressions to
+         * replace a specific token type for another token type. (e.g. regarding
+         * endattrs, Coccinelle will check "^__.*$" and whether the next token is
+         * ";" or "=" etc..., and replace TIdent for TMacroEndAttr).
+         * And parser_c.mly attempt to create AST based on the token processed
+         * by parsing_hacks.ml.
+         *
+         * To solve this problem, the algorithm used in current parsing_hacks.ml
+         * needs to be revised totally. Maybe we can also solve it by changing
+         * parser_c.mly. But it requires more complex works and a lot of time.
+         *)
 
    | A.Typedef (stoa, typa, ida, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
@@ -4287,6 +4321,21 @@ and attribute = fun allminus ea eb ->
 	  A.rewrap ea (A.Attribute(attra)),
           (B.Attribute attrb,ib)
         )))
+  | A.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2), (B.GccAttribute attrb, ii) ->
+      let (ib1, ib2, ib3, ib4, ib5) = tuple_of_list5 ii in
+      tokenf attr_ ib1 >>= (fun attr_ ib1 ->
+      tokenf lp1 ib2 >>= (fun lp1 ib2 ->
+      tokenf lp2 ib3 >>= (fun lp2 ib3 ->
+      attr_arg allminus arg attrb >>= (fun arg attrb ->
+      tokenf rp1 ib4 >>= (fun rp1 ib4 ->
+      tokenf rp2 ib5 >>= (fun rp2 ib5 ->
+       (if allminus
+        then minusize_list [ib1;ib2;ib3;ib4;ib5]
+        else return ((), [ib1;ib2;ib3;ib4;ib5])) >>= (fun _ ib ->
+	return (
+	  A.rewrap ea (A.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2)),
+          (B.GccAttribute attrb,ib)
+        ))))))))
   | _ -> fail
 
 and attr_arg = fun allminus ea eb ->

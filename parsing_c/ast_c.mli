@@ -78,7 +78,7 @@ and parameterType = {
 and typeQualifier = typeQualifierbis wrap
 and typeQualifierbis = { const : bool; volatile : bool; }
 and attribute = attributebis wrap
-and attributebis = Attribute of attr_arg
+and attributebis = Attribute of attr_arg | GccAttribute of attr_arg
 and attr_arg = attr_arg_bis wrap
 and attr_arg_bis = AttrName of string
 and expression = (expressionbis * exp_info ref) wrap3
@@ -435,7 +435,7 @@ val unsplit_nocomma : ('a, il) Common.either list -> 'a list
 val s_of_inc_file : inc_file -> string
 val s_of_inc_file_bis : inc_file -> string
 val fieldname_of_fieldkind : fieldkind -> name option
-val s_of_attr : (attributebis * 'a) list -> string
+val s_of_attr : (attributebis * info list) list -> string
 val str_of_name : name -> string
 val get_s_and_ii_of_name : name -> string * il
 val get_s_and_info_of_name : name -> string * info
