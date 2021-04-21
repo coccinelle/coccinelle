@@ -298,7 +298,6 @@
 #define  fastcall
 #define  asmlinkage
 
-#define  far
 #define  SK_FAR
 
 // pb
