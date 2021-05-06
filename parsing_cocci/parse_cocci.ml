@@ -1562,6 +1562,63 @@ let rec collect_pass = function
 	  (x::pass,rest)
       |	_ -> ([],x::xs)
 
+(* This function basically enables Coccinelle to handle the arrays with
+ * __attribute__ in PLUS by regarding the arguments of __attribute__
+ * as an identifier (e.g. section(".shared") in __attribute__((section(".shared")))
+ * is an identifier).
+ * However, since the parser for SmPL does not support the infix-style __attribute__ like:
+ * char __attribute__ hello;
+ *
+ * this function treats these style occurences of __attribute__ specially as
+ * a comment, which is the same way as previously. *)
+let transform_attr toks =
+  let is_end_attr_pos = function
+    | (PC.TComma _,_)
+    | (PC.TPtVirg _,_) -> true
+    | _ -> false in
+  let extract_w_rest = function
+      (PC.TIdent(s,_),_) :: xs -> (s,xs)
+    | _ -> failwith "wrong __attribute__ arguments" in
+  let rec loop n ok = function
+      [] ->
+	if n > 0 || not ok
+	then failwith "missing )) on __attribute__"
+        else Some ([],[])
+    | ((PC.TOPar(clt),_) as x)::xs when n < 2 ->
+        let ok = if n+1 = 2 then true else ok in
+        (match loop (n+1) ok xs with
+          None -> None
+        | Some (attr,rest) -> Some (x::attr,rest))
+    | ((PC.TOPar(clt),q) as x)::xs when n >= 2 ->
+        (match loop (n+1) ok xs with
+          None -> None
+        | Some (attr,rest) ->
+            let (idstr,xs) = extract_w_rest attr in
+            Some ((PC.TIdent("("^idstr, get_clt x),q)::xs,rest))
+    | ((PC.TCPar(clt),_) as x)::xx::xs when n = 1 && is_end_attr_pos xx -> Some ([x],xs)
+    | ((PC.TCPar(clt),_))     ::xs when n = 1 -> None
+    | ((PC.TCPar(clt),q) as x)::xs when n = 2 ->
+        (match loop (n-1) ok xs with
+          None -> None
+        | Some (attr,rest) ->
+            Some ((PC.TIdent("", clt),q)::x::xs,rest))
+    | ((PC.TCPar(clt),q) as x)::xs when n > 2 ->
+        (match loop (n-1) ok xs with
+          None -> None
+        | Some (attr,rest) ->
+            let (idstr,xs) = extract_w_rest attr in
+            Some ((PC.TIdent(")"^idstr, get_clt x),q)::xs,rest))
+    | (x,c)::xs ->
+	if n >=2
+	then
+          (match loop n ok xs with
+            None -> None
+          | Some (attr,rest) ->
+              let (idstr,xs) = extract_w_rest attr in
+              Some ((PC.TIdent((token2c (x,c) false)^idstr, get_clt (x,c)),c)::xs,rest))
+	else failwith "attribute code must be in double parens" in
+  loop 0 false toks
+
 let collect_attr toks =
   let rec loop n ok = function
       [] ->
@@ -1606,9 +1663,13 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
   | ((PC.TAttr_(i),x) as xx)::xs ->
       (match line_type i with
         D.PLUS | D.PLUSPLUS ->
-          let (attr,rest) = collect_attr xs in
-          process_pragmas bef skips
-          ((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
+          (match transform_attr xs with
+            None ->
+              let (attr,rest) = collect_attr xs in
+              process_pragmas bef skips
+              ((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
+          | Some (attr,rest) ->
+              process_pragmas bef (xx::skips) (attr @ rest))
       | _ -> (add_bef bef) @ List.rev skips @ (process_pragmas (Some xx) [] xs))
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in

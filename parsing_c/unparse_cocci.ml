@@ -715,7 +715,7 @@ and print_attribute attr =
   match Ast.unwrap attr with
     Ast.Attribute(a) -> print_attr_arg a
   | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
-      mcode print_string attr_; pr_space();
+      mcode print_string attr_;
       mcode print_string_box lp1; mcode print_string_box lp2;
       print_attr_arg arg; close_box();
       mcode print_string_box rp1; close_box();
@@ -877,10 +877,36 @@ and print_named_type ty id =
 	    | _ -> typeC ty; ty_space ty; id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.MetaType(name,_,_,_) ->
-	  handle_metavar name  (function
+          (* MetaType with an array and a pointer have to be treated specially.
+           * Example(Coccinelle):
+           *  T
+           *  +__attribute__((attr))
+           *  p;
+           *
+           * Example(C):
+           *  int array[41];
+           *
+           * should be printed:
+           * int __attribute__((attr)) array[41];
+           *
+           * However, without this secial care, __attribute__((attr)) is put
+           * just after the last character of T (']' in this case) like:
+           * int array[41]__attribute__((attr));
+           *)
+          let (a,info,b,c) = name in
+          let (res,name_string,line,lcol,rcol) = lookup_metavar name in
+          let (info_new,straft) = match res with
+              Some (Ast_c.MetaTypeVal ty) ->
+                let (qu, iiqu), (tyy, iity) = ty in
+                (match tyy with
+                    Ast_c.Pointer _
+                  | Ast_c.Array _ -> {info with Ast.straft = [] },info.Ast.straft
+                  | _ -> info,[])
+            | _ -> error name ty "type value expected" in
+          handle_metavar (a,info_new,b,c) (function
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
-		  (function _ -> id())
+                  (function _ -> List.iter (function (s,ln,col) -> print_string (get_string_info s) ln col; pr_space()) straft;id())
             | _ -> error name ty "type value expected")
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
