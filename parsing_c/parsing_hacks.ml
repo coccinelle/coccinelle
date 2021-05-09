@@ -1134,6 +1134,15 @@ let rec find_macro_paren xs =
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 *)
+  | PToken ({tok = Tattribute ii} as id)
+    ::Parenthised (xxs,info_parens)
+    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _})
+    ::xs
+     ->
+      pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
+		 (Ast_c.str_of_info ii));
+      id.tok <- TMacroGccEndAttr ii;
+      find_macro_paren xs
   | PToken ({tok = TattributeNoarg ii} as id)
     ::xs
      ->

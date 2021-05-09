@@ -743,6 +743,7 @@ module Parser_c :
       | Trestrict of Ast_c.info
       | Tasm of Ast_c.info
       | Tattribute of Ast_c.info
+      | TMacroGccEndAttr of Ast_c.info
       | TattributeNoarg of Ast_c.info
       | Tinline of Ast_c.info
       | Ttypeof of Ast_c.info

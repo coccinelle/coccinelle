@@ -516,7 +516,7 @@ let postfakeInfo pii  =
 /*(* gccext: extra tokens *)*/
 /*(*-----------------------------------------*)*/
 %token <Ast_c.info> Tasm
-%token <Ast_c.info> Tattribute
+%token <Ast_c.info> Tattribute TMacroGccEndAttr
 %token <Ast_c.info> TattributeNoarg
 %token <Ast_c.info> Tinline
 %token <Ast_c.info> Ttypeof
@@ -2505,10 +2505,13 @@ attributes: attribute_list { $1 }
 end_attr_arg:
  | TMacroEndAttr { AttrName (fst $1), [snd $1] }
 
+end_attribute_gcc:
+ | TMacroGccEndAttr TOPar TOPar attr_arg_gcc TCPar TCPar { GccAttribute $4, [$1;$2;$3;$5;$6] }
+
 end_attribute_list:
- | attribute_gcc { [$1] }
+ | end_attribute_gcc { [$1] } // not iterable in practice
  | end_attr_arg { [Attribute $1, []] }
- | end_attribute_list attribute_gcc { $1 @ [$2] }
+ | end_attribute_list end_attribute_gcc { $1 @ [$2] }
  | end_attribute_list end_attr_arg { $1 @ [Attribute $2, []] }
 
 end_attributes: end_attribute_list { $1 }
