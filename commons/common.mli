@@ -1142,6 +1142,10 @@ val exn_to_real_unixexit : (unit -> 'a) -> 'a
 (* List *)
 (*****************************************************************************)
 
+(* `find_map f l` applies `f` to the elements of `l` in order, and returns the
+ * first result of the form `Some v`, or `None` if none exist.
+ * Available in OCaml >= 4.10.0 *)
+val find_map : ('a -> 'b option) -> 'a list -> 'b option
 
 (* tail recursive efficient map (but that also reverse the element!) *)
 val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list

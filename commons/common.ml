@@ -3551,6 +3551,13 @@ let uncat xs file =
 (* List *)
 (*****************************************************************************)
 
+let rec find_map f = function
+  | [] -> None
+  | v::l ->
+      match f v with
+      | None -> find_map f l
+      | res -> res
+
 (* pixel *)
 let uncons l = (List.hd l, List.tl l)
 
