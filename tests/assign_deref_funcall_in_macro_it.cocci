@@ -1,17 +1,6 @@
 @@
-statement S;
+expression E1, E2;
 @@
 
-* S
-
-@@
-type S;
-@@
-
-* S
-
-@@
-expression S;
-@@
-
-* S
+- E1 * E2
++ E2 * E1

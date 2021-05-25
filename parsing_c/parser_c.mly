@@ -783,8 +783,8 @@ expr:
 
 assign_expr:
  | cond_expr                     { $1 }
- | assign_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
- | assign_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
+ | unary_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
+ | unary_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
 
 /*(* gccext: allow optional then part hence gcc_opt_expr *)*/
 cond_expr:
