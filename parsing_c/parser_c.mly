@@ -663,7 +663,7 @@ let postfakeInfo pii  =
 /*(* Rules type declaration *)*/
 /*(*************************************************************************)*/
 
-%start main celem statement expr type_name cpp_directive
+%start main celem statement expr type_name cpp_directive iteration
 %type <Ast_c.program> main
 %type <Ast_c.toplevel> celem
 
@@ -672,6 +672,7 @@ let postfakeInfo pii  =
 %type <Ast_c.attribute list * Ast_c.fullType> type_name
 
 %type <Ast_c.cpp_directive> cpp_directive
+%type <Ast_c.iteration * Ast_c.info list> iteration
 
 %%
 /*(*************************************************************************)*/

@@ -625,16 +625,37 @@ let macro_body_to_maybe_hint body =
             tokens := toks;
             tok
       in
-      let macro_tokens =
-        TDefine (Ast_c.fakeInfo())::TIdentDefine ("Fake ident", Ast_c.fakeInfo())::body
+      (* get_macro_* functions all have type: unit -> parsinghack_hint option.
+       * The first to succeed in returning Some hint is the one that defines
+       * the hint to be associated with the macro. All other potential hints
+       * are ignored.
+       * If none of these functions succeeds then no hint will be associated
+       * with the macro.
+       * Currently, the get_macro_* functions rely on the parser to verify if
+       * the body belongs to certain primary constructs *)
+      let get_macro_iterator () =
+        let macro_tokens = body@[TPtVirg (Ast_c.fakeInfo())] in
+        try
+          match Parser_c.iteration (read_tokens (ref macro_tokens)) lexbuf_fake with
+          | (Ast_c.While _ | Ast_c.For _), _ ->
+              Some HintIterator
+          | _ -> None
+        with _ -> None
       in
-      try
-        match Parser_c.cpp_directive (read_tokens (ref macro_tokens)) lexbuf_fake with
-        | Ast_c.Define(_, (_, (Ast_c.DefineStmt _ | Ast_c.DefineMulti _))) ->
-            DefineHintBody (HintMacroStatement, body, ref false)
-        | _ -> DefineBody body
-      with _ ->
-        DefineBody body
+      let get_macro_stmt () =
+        let macro_tokens =
+          TDefine (Ast_c.fakeInfo())::TIdentDefine ("Fake ident", Ast_c.fakeInfo())::body
+        in
+        try
+          match Parser_c.cpp_directive (read_tokens (ref macro_tokens)) lexbuf_fake with
+          | Ast_c.Define(_, (_, (Ast_c.DefineStmt _ | Ast_c.DefineMulti _))) ->
+              Some HintMacroStatement
+          | _ -> None
+        with _ -> None
+      in
+      match Common.find_map (fun f -> f()) [get_macro_iterator; get_macro_stmt] with
+      | Some hint -> DefineHintBody (hint, body, ref false)
+      | None -> DefineBody body
 
 exception Bad_param
 
