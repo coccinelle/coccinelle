@@ -28,16 +28,15 @@ let rec realpath path =
 let path =
   try (Sys.getenv "COCCINELLE_HOME")
   with Not_found->
-    (* was "@libdir@/coccinelle": incorrect, since "@libdir@" expands into
-       "${exec_prefix}/lib" (litteraly, without further expansion, that is
-       unlikely to be a valid path! *)
     let exec_realpath = realpath Sys.executable_name in
     let exec_dir = Filename.dirname exec_realpath in
     if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
       exec_dir
     else
-      List.fold_left Filename.concat exec_dir
-	[Filename.parent_dir_name; "lib"; "coccinelle"]
+      let libdir =
+        Str.global_replace (Str.regexp "[$]{exec_prefix}") exec_dir "@libdir@"
+      in
+      Filename.concat libdir "coccinelle"
 
 
 let std_iso = ref (Filename.concat path "standard.iso")
