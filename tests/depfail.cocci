@@ -1,5 +1,3 @@
-#spatch --parse-cocci --debug-parse-cocci
-
 virtual df_first
 
 @df_second depends on df_first@
