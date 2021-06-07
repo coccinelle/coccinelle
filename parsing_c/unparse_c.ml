@@ -777,16 +777,26 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	      let (pre_minus_list,_) = span not_context_newline rest in
 	      List.exists is_plus pre_minus_list
 	    else cp in
+          let keep =
+            (* If we have a plus before and after a newline then they
+             * belong to different rule applications because plus tokens
+             * are always attached to the first item of the minus list.
+             * Thus, we want to keep the newline in between them *)
+            match xs with
+            | Cocci2 _ :: _ -> cp && List.for_all is_newline not_minus_list
+            | _ -> false
+          in
 
-        if common_adj adj1 adj2
-        || (not cp &&
-	    List.for_all is_whitespace_or_fake not_minus_list)
+
+        if not keep
+        && (common_adj adj1 adj2
+            || (not cp && List.for_all is_whitespace_or_fake not_minus_list))
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
           @ (adjust_within_minus (cp || newcp) (t2::xs))
         else
           not_minus_list
-	  @ (adjust_within_minus (cp || newcp) (t2::xs))
+	  @ (adjust_within_minus newcp (t2::xs))
       | _ ->
         if cp
         then xs
