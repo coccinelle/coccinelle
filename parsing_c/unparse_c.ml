@@ -777,16 +777,41 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	      let (pre_minus_list,_) = span not_context_newline rest in
 	      List.exists is_plus pre_minus_list
 	    else cp in
+          let different_blocks =
+            (* If the two minus tokens are not part of the same rule application
+             * then we want to keep the tokens in between them *)
+            match xs with
+            | Cocci2 _ :: _ ->
+              (* If we have a plus before (`cp`) and after (`Cocci2`) newlines
+               * then they belong to different rule applications because plus
+               * tokens are always attached to the first item of the minus
+               * list. Thus, we want to keep the newline in between them.
+               *
+               * Note: using `exists` instead of `for_all` accounts for
+               * cases where trailing spaces and comments exist in the input.
+               * I am unsure if we want to actually keep the potential comments
+               * and trailing spaces because they could be related to the
+               * deleted code. Something that could be done is to simply replace
+               * the not_minus_list with a single newline token if we choose to
+               * get rid of them *)
+                cp && List.exists is_newline not_minus_list
+            | _ ->
+              (* If the two tokens are not adjacent then they are not part of
+               * the same minus block. Adjacency is determined from the matched
+               * pattern (rule), making it unable to distinguish two contiguous
+               * applications of the same rule, hence the necessary above case *)
+                not (common_adj adj1 adj2)
+          in
 
-        if common_adj adj1 adj2
-        || (not cp &&
-	    List.for_all is_whitespace_or_fake not_minus_list)
+
+        if not different_blocks
+            || (not cp && List.for_all is_whitespace_or_fake not_minus_list)
         then
           (List.map (set_minus_comment_or_plus adj1) not_minus_list)
           @ (adjust_within_minus (cp || newcp) (t2::xs))
         else
           not_minus_list
-	  @ (adjust_within_minus (cp || newcp) (t2::xs))
+	  @ (adjust_within_minus newcp (t2::xs))
       | _ ->
         if cp
         then xs
