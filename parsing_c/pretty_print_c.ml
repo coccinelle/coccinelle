@@ -27,7 +27,8 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 (* Types *)
 (*****************************************************************************)
 
-type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
+type type_with_ident = Ast_c.fullType -> (unit -> unit) -> (unit -> unit) -> unit
+type type_with_ident_rest = Ast_c.fullType -> (unit -> unit) -> unit
 
 type 'a printer = 'a -> unit
 
@@ -50,7 +51,7 @@ type pretty_printers = {
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   base_type       : Ast_c.fullType printer;
-  type_with_ident_rest : type_with_ident;
+  type_with_ident_rest : type_with_ident_rest;
   toplevel        : Ast_c.toplevel printer;
   fragment        : Ast_c.string_fragment printer;
   fragment_list   : (Ast_c.string_fragment list) printer;
@@ -509,10 +510,11 @@ and pp_string_format (e,ii) =
 *)
   and (pp_type_with_ident:
 	 (unit -> unit) option -> (storage * il) option ->
-	   fullType -> attribute list -> attribute list ->
-	     unit) =
-    fun ident sto ft attrs endattrs ->
+	   fullType -> (unit -> unit) option -> attribute list ->
+	   attribute list ->  unit) =
+    fun ident sto ft midattr attrs endattrs ->
       pp_base_type ft  sto;
+      Common.do_option (fun f -> f()) midattr;
       (match (ident, Ast_c.unwrap_typeC ft) with
 	(Some _,_) | (_,Pointer _) -> pr_space()
       |	_ -> ());
@@ -692,8 +694,8 @@ and pp_string_format (e,ii) =
 		  | None -> None
                   | Some name -> Some (function _ -> pp_name name)
                 in
-		pp_type_with_ident identinfo None typ Ast_c.noattr
-		  Ast_c.noattr;
+		pp_type_with_ident identinfo None typ None
+		  Ast_c.noattr Ast_c.noattr;
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
@@ -703,7 +705,7 @@ and pp_string_format (e,ii) =
 		    pp_type typ;
 		| Some name ->
 		    pp_type_with_ident (Some (function _ -> pp_name name))
-		      None typ Ast_c.noattr Ast_c.noattr;
+		      None typ None Ast_c.noattr Ast_c.noattr;
 		    );
                 pr_elem iidot;
 		pp_expression expr
@@ -934,7 +936,7 @@ and pp_string_format (e,ii) =
         pp_type t
     | Some name ->
 	pp_type_with_ident (Some (function _ -> pp_name name))
-	  None t Ast_c.noattr Ast_c.noattr
+	  None t None Ast_c.noattr Ast_c.noattr
 
 
 
@@ -981,9 +983,9 @@ and pp_string_format (e,ii) =
     | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 111)
 
   and pp_type t =
-    pp_type_with_ident None None t Ast_c.noattr Ast_c.noattr
-  and pp_type_ident t i =
-    pp_type_with_ident (Some i) None t Ast_c.noattr Ast_c.noattr
+    pp_type_with_ident None None t None Ast_c.noattr Ast_c.noattr
+  and pp_type_ident t midattr i =
+    pp_type_with_ident (Some i) None t (Some midattr) Ast_c.noattr Ast_c.noattr
   and pp_type_ident_rest t i =
     pp_type_with_ident_rest (Some i) t Ast_c.noattr Ast_c.noattr
   and pp_base_type2 t =
@@ -995,6 +997,7 @@ and pp_string_format (e,ii) =
                    v_type = returnType;
                    v_storage = storage;
                    v_attr = attrs;
+                   v_midattr = midattrs;
                    v_endattr = endattrs;
                   },[])::xs),
 	       iivirg::ifakestart::iisto) ->
@@ -1009,7 +1012,7 @@ and pp_string_format (e,ii) =
 	| Some (name, iniopt) ->
 	    pp_type_with_ident
 	      (Some (function _ -> pp_name name)) (Some (storage, iisto))
-	      returnType attrs endattrs;
+	      returnType None  (attrs@midattrs) endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
 	    | Ast_c.ValInit(iini,init) ->
@@ -1026,6 +1029,7 @@ and pp_string_format (e,ii) =
 	    v_type = returnType;
 	    v_storage = storage2;
 	    v_attr = attrs;
+	    v_midattr = midattrs;
 	    v_endattr = endattrs;
 	  }, iivirg) ->
 
@@ -1173,7 +1177,7 @@ and pp_init (init, iinit) =
     pr_elem ifakestart;
 
     pp_type_with_ident None (Some (sto, isto))
-      returnt Ast_c.noattr Ast_c.noattr;
+      returnt None Ast_c.noattr Ast_c.noattr;
 
     pp_attributes pr_elem pr_space attrs;
     pr_space();

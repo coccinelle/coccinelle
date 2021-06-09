@@ -1472,7 +1472,7 @@ parameter_decl2:
  | decl_spec declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam (snd $1) in
-       let attrs = (fst $1) @ (fst $2) in
+       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
        let (name, ftyp) = snd $2 in
        { p_namei = Some (name);
          p_type = ftyp returnType;
@@ -1483,7 +1483,7 @@ parameter_decl2:
  | decl_spec abstract_declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
-       let attrs = (fst $1) @ (fst $2) in
+       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
        { p_namei = None;
          p_type = (snd $2) returnType;
          p_register = hasreg, iihasreg;
@@ -1495,7 +1495,7 @@ parameter_decl2:
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;
-         p_attr = fst $1;
+         p_attr = (fst (fst $1)) @ (snd (fst $1))
        }
      }
 
@@ -1512,7 +1512,7 @@ parameter_decl_arg: /* more tolerant */
  | decl_spec declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg),iihasreg) = fixDeclSpecForArg (snd $1) in
-       let attrs = (fst $1) @ (fst $2) in
+       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
        let (name, ftyp) = snd $2 in
        { p_namei = Some (name);
          p_type = ftyp returnType;
@@ -1523,7 +1523,7 @@ parameter_decl_arg: /* more tolerant */
  | decl_spec abstract_declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg), iihasreg) = fixDeclSpecForArg (snd $1) in
-       let attrs = (fst $1) @ (fst $2) in
+       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
        { p_namei = None;
          p_type = snd $2 returnType;
          p_register = hasreg, iihasreg;
@@ -1535,7 +1535,7 @@ parameter_decl_arg: /* more tolerant */
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;
-         p_attr = fst $1;
+         p_attr = (fst (fst $1)) @ (snd (fst $1))
        }
      }
 
@@ -1615,8 +1615,8 @@ decl2:
        let iistart = Ast_c.fakeInfo () in
        DeclList ([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
-                   v_attr = fst $1; v_endattr = $2;
-                   v_type_bis = ref None;
+                   v_attr = fst (fst $1); v_midattr = snd (fst $1);
+                   v_endattr = $2; v_type_bis = ref None;
                 },[]],
                 ($3::iistart::snd storage))
      }
@@ -1633,7 +1633,8 @@ decl2:
             v_type = f returnType;
             v_storage = unwrap storage;
             v_local = local;
-            v_attr = (fst $1)@attrs;
+            v_attr = (fst (fst $1));
+            v_midattr = (snd (fst $1))@attrs;
             v_endattr = endattrs;
             v_type_bis = ref None;
            },
@@ -1675,16 +1676,28 @@ storage_const_opt:
 
 /*(*-----------------------------------------------------------------------*)*/
 decl_spec2:
- | storage_class_spec { ([], {nullDecl with storageD = (fst $1, [snd $1]) }) }
- | type_spec          { ([], addTypeD ($1,nullDecl)) }
- | type_qualif        { ([], {nullDecl with qualifD  = (fst $1, [snd $1]) }) }
- | Tinline            { ([], {nullDecl with inlineD = (true, [$1]) }) }
- | attribute          { ([$1], nullDecl) }
+ | storage_class_spec { (([],[]), {nullDecl with storageD = (fst $1, [snd $1]) }) }
+ | type_spec          { (([],[]), addTypeD ($1,nullDecl)) }
+ | type_qualif        { (([],[]), {nullDecl with qualifD  = (fst $1, [snd $1]) }) }
+ | Tinline            { (([],[]), {nullDecl with inlineD = (true, [$1]) }) }
+ | attribute          { (([$1],[]), nullDecl) }
  | storage_class_spec decl_spec2 { (fst $2, addStorageD ($1, snd $2)) }
- | type_spec          decl_spec2 { (fst $2, addTypeD    ($1, snd $2)) }
  | type_qualif        decl_spec2 { (fst $2, addQualifD  ($1, snd $2)) }
  | Tinline            decl_spec2 { (fst $2, addInlineD ((true, $1), snd $2)) }
- | attribute          decl_spec2 { ($1::(fst $2), snd $2) }
+ | attribute          decl_spec2 { (($1::(fst (fst $2)),snd (fst $2)), snd $2) }
+ | type_spec          decl_spec2_after_type_spec { (fst $2, addTypeD    ($1, snd $2)) }
+
+decl_spec2_after_type_spec:
+ | storage_class_spec { (([],[]), {nullDecl with storageD = (fst $1, [snd $1]) }) }
+ | type_spec          { (([],[]), addTypeD ($1,nullDecl)) }
+ | type_qualif        { (([],[]), {nullDecl with qualifD  = (fst $1, [snd $1]) }) }
+ | Tinline            { (([],[]), {nullDecl with inlineD = (true, [$1]) }) }
+ | attribute          { (([],[$1]), nullDecl) }
+ | storage_class_spec decl_spec2_after_type_spec { (fst $2, addStorageD ($1, snd $2)) }
+ | type_qualif        decl_spec2_after_type_spec { (fst $2, addQualifD  ($1, snd $2)) }
+ | Tinline            decl_spec2_after_type_spec { (fst $2, addInlineD ((true, $1), snd $2)) }
+ | attribute          decl_spec2_after_type_spec { (((fst (fst $2)), $1::(snd (fst $2))), snd $2) }
+ | type_spec          decl_spec2_after_type_spec { (fst $2, addTypeD    ($1, snd $2)) }
 
 /*(* can simplify by putting all in _opt ? must have at least one otherwise
    *  decl_list is ambiguous ? (no cos have ';' between decl)
@@ -2023,7 +2036,7 @@ start_fun: start_fun2
 start_fun2: decl_spec declaratorfd
      { let (returnType,storage) = fixDeclSpecForFuncDef (snd $1) in
        let (id, attrs) = $2 in
-       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst $1)@attrs)
+       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst (fst $1))@(snd (fst $1))@attrs)
      }
    | ctor_dtor { $1 }
 
@@ -2266,12 +2279,13 @@ cpp_other:
 	 let ty =
 	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
 	 let attrs = Ast_c.noattr in
+	 let midattrs = Ast_c.noattr in
 	 let sto = (NoSto, false), [] in
 	 let iistart = Ast_c.fakeInfo () in
 	 Declaration(
 	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
                       v_storage = unwrap sto; v_local = NotLocalDecl;
-                      v_attr = attrs; v_endattr = $5;
+                      v_attr = attrs; v_midattr = midattrs; v_endattr = $5;
 		      v_type_bis = ref None;
                     },[]],
                    ($6::iistart::snd sto)))

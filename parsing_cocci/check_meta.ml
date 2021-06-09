@@ -264,10 +264,11 @@ and declaration context old_metas table minus d =
     Ast0.MetaDecl(name,_,_) ->
       check_table table minus name
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
-  | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
+  | Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
       typeC old_metas table minus ty;
+      List.iter (attribute old_metas table minus) midattr;
       ident context old_metas table minus id;
-      List.iter (attribute old_metas table minus) attr;
+      List.iter (attribute old_metas table minus) endattr;
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp ->
 	  expression ID old_metas table minus exp
@@ -278,9 +279,11 @@ and declaration context old_metas table minus d =
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
 	    initialiser old_metas table minus ini)
-  | Ast0.UnInit(stg,ty,id,attr,sem) ->
-      typeC old_metas table minus ty; ident context old_metas table minus id;
-      List.iter (attribute old_metas table minus) attr
+  | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+      typeC old_metas table minus ty;
+      List.iter (attribute old_metas table minus) midattr;
+      ident context old_metas table minus id;
+      List.iter (attribute old_metas table minus) endattr
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;

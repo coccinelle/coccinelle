@@ -380,7 +380,7 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and print_named_type ty id =
+and print_named_type ty midattr id =
   match Ast0.unwrap ty with
     Ast0.Array(ty,lb,size,rb) ->
       let rec loop ty k =
@@ -392,11 +392,12 @@ and print_named_type ty id =
 		mcode print_string lb;
 		print_option expression size;
 		mcode print_string rb)
-	| _ -> typeC ty; ident id; k () in
+        | _ -> typeC ty; print_attribute_list midattr ~befspace:false ~aftspace:true; ident id; k () in
       loop ty (function _ -> ())
   | Ast0.ParenType(lp,ty,rp) ->
       print_parentype (lp,ty,rp) (function _ -> ident id)
-  | _ -> typeC ty; ident id
+  | _ -> typeC ty; print_attribute_list midattr ~befspace:false ~aftspace:true; ident id
+
 
 and declaration d =
   print_context d
@@ -404,16 +405,16 @@ and declaration d =
       match Ast0.unwrap d with
 	Ast0.MetaDecl(name,_,_) ->
 	  mcode print_meta name
-      |	Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
+      |	Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
-	  print_named_type ty id;
-          print_attribute_list attr;
+	  print_named_type ty midattr id;
+          print_attribute_list endattr;
 	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
-      | Ast0.UnInit(stg,ty,id,attr,sem) ->
-	  print_option (mcode U.storage) stg; print_named_type ty id;
-          print_attribute_list attr;
+      | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+	  print_option (mcode U.storage) stg; print_named_type ty midattr id;
+          print_attribute_list endattr;
 	  mcode print_string sem
       | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
 	  List.iter print_fninfo fninfo;
@@ -467,7 +468,7 @@ and field d =
 	  begin
 	    match id with
 	      None -> typeC ty
-	    | Some id -> print_named_type ty id
+            | Some id -> print_named_type ty [] id
 	  end;
 	  let bitfield (c, e) =
 	    mcode print_string c;
@@ -554,7 +555,7 @@ and parameterTypeDef p =
           typeC ty;
           print_attribute_list attr;
       | Ast0.Param(ty,Some id,attr) ->
-          print_named_type ty id;
+          print_named_type ty [] id;
           print_attribute_list attr;
       | Ast0.Param(ty,None,attr) ->
           typeC ty;
@@ -761,9 +762,10 @@ and print_fninfo = function
   | Ast0.FInline(inline) -> mcode print_string inline
   | Ast0.FAttr(attr) -> print_attribute attr
 
-and print_attribute_list attrs =
-  if not (attrs = []) then print_string " ";
-  print_between (fun _ -> print_string " ") print_attribute attrs
+and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
+  if befspace && not (attrs = []) then print_string " ";
+  print_between (fun _ -> print_string " ") print_attribute attrs;
+  if aftspace && not (attrs = []) then print_string " "
 
 and print_attribute a =
   match Ast0.unwrap a with

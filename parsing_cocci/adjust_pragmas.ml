@@ -45,12 +45,12 @@ let rec right_decl d =
       call_right right_mcode name d
 	(function name -> Ast0.MetaDecl(name,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
-  | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
+  | Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
       call_right right_mcode sem d
-	(function sem -> Ast0.Init(stg,ty,id,attr,eq,ini,sem))
-  | Ast0.UnInit(stg,ty,id,attr,sem) ->
+	(function sem -> Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem))
+  | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
       call_right right_mcode sem d
-	(function sem -> Ast0.UnInit(stg,ty,id,attr,sem))
+	(function sem -> Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
   | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
       call_right right_mcode sem d
 	(function ty -> Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem))
@@ -262,18 +262,18 @@ let rec left_decl decl =
       call_right right_mcode name decl
 	(function name -> Ast0.MetaDecl(name,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
-  | Ast0.Init(Some stg,ty,id,attr,eq,ini,sem) ->
+  | Ast0.Init(Some stg,ty,midattr,id,endattr,eq,ini,sem) ->
       call_right left_mcode stg decl
-	(function stg -> Ast0.Init(Some stg,ty,id,attr,eq,ini,sem))
-  | Ast0.Init(None,ty,id,attr,eq,ini,sem) ->
+	(function stg -> Ast0.Init(Some stg,ty,midattr,id,endattr,eq,ini,sem))
+  | Ast0.Init(None,ty,midattr,id,endattr,eq,ini,sem) ->
       call_right left_ty ty decl
-	(function ty -> Ast0.Init(None,ty,id,attr,eq,ini,sem))
-  | Ast0.UnInit(Some stg,ty,id,attr,sem) ->
+	(function ty -> Ast0.Init(None,ty,midattr,id,endattr,eq,ini,sem))
+  | Ast0.UnInit(Some stg,ty,midattr,id,endattr,sem) ->
       call_right left_mcode stg decl
-	(function stg -> Ast0.UnInit(Some stg,ty,id,attr,sem))
-  | Ast0.UnInit(None,ty,id,attr,sem) ->
+	(function stg -> Ast0.UnInit(Some stg,ty,midattr,id,endattr,sem))
+  | Ast0.UnInit(None,ty,midattr,id,endattr,sem) ->
       call_right left_ty ty decl
-	(function ty -> Ast0.UnInit(None,ty,id,attr,sem))
+	(function ty -> Ast0.UnInit(None,ty,midattr,id,endattr,sem))
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       (match fi with
 	[] ->

@@ -374,10 +374,10 @@ let rec propagate_types env =
   and process_decl env decl =
     match Ast0.unwrap decl with
       Ast0.MetaDecl(_,_,_) -> []
-    | Ast0.Init(_,ty,id,_,_,exp,_) ->
+    | Ast0.Init(_,ty,_,id,_,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	List.map (function i -> (i,ty)) (strip id)
-    | Ast0.UnInit(_,ty,id,_,_) ->
+    | Ast0.UnInit(_,ty,_,id,_,_) ->
 	List.map (function i -> (i,ty)) (strip id)
     | Ast0.FunProto(fi,nm,lp,params,va,rp,sem) -> []
     | Ast0.MacroDecl(_,_,_,_,_,_,_) -> []

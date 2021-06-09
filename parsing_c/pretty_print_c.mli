@@ -1,4 +1,5 @@
-type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
+type type_with_ident = Ast_c.fullType -> (unit -> unit) -> (unit -> unit) -> unit
+type type_with_ident_rest = Ast_c.fullType -> (unit -> unit) -> unit
 
 type 'a printer = 'a -> unit
 
@@ -21,7 +22,7 @@ type pretty_printers = {
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
   base_type       : Ast_c.fullType printer;
-  type_with_ident_rest : type_with_ident;
+  type_with_ident_rest : type_with_ident_rest;
   toplevel        : Ast_c.toplevel printer;
   fragment        : Ast_c.string_fragment printer;
   fragment_list   : (Ast_c.string_fragment list) printer;

@@ -231,10 +231,10 @@ and typeC = base_typeC wrap
 and base_declaration =
     MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
   | AsDecl        of declaration * declaration
-  | Init       of Ast_cocci.storage mcode option * typeC * ident * attr list *
-	string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit     of Ast_cocci.storage mcode option * typeC * ident * attr list *
-	string mcode (* ; *)
+  | Init of Ast_cocci.storage mcode option * typeC * attr list * ident *
+        attr list * string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit of Ast_cocci.storage mcode option * typeC * attr list * ident *
+	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *

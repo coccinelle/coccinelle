@@ -632,20 +632,22 @@ and declaration d =
 	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
-    | Ast0.Init(stg,ty,id,attr,eq,ini,sem) ->
+    | Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let stg = get_option mcode stg in
 	let ty = typeC allminus ty in
 	let id = ident id in
-	let attr = List.map attribute attr in
+	let midattr = List.map attribute midattr in
+	let endattr = List.map attribute endattr in
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(stg,ty,id,attr,eq,ini,sem)
-    | Ast0.UnInit(stg,ty,id,attr,sem) ->
+	Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem)
+    | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	let attr = List.map attribute attr in
-	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,attr,
+	let midattr = List.map attribute midattr in
+	let endattr = List.map attribute endattr in
+	Ast.UnInit(get_option mcode stg,typeC allminus ty,midattr,ident id,endattr,
 		   mcode sem)
     | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in

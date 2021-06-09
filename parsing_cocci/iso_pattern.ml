@@ -946,25 +946,27 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
-	    (Ast0.Init(stga,tya,ida,attra,eq1,inia,sc1),
-	     Ast0.Init(stgb,tyb,idb,attrb,eq,inib,sc)) ->
+	    (Ast0.Init(stga,tya,midattra,ida,endattra,eq1,inia,sc1),
+	     Ast0.Init(stgb,tyb,midattrb,idb,endattrb,eq,inib,sc)) ->
 	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_many_bindings
 		   [check_mcode eq1 eq; check_mcode sc1 sc;
 		     match_option check_mcode stga stgb;
-		     match_typeC tya tyb; match_ident ida idb;
-                     match_attributes attra attrb;
+		     match_typeC tya tyb;
+                     match_attributes midattra midattrb;
+                     match_ident ida idb;
+                     match_attributes endattra endattrb;
 		     match_init inia inib]
 	       else return false
-	  | (Ast0.UnInit(stga,tya,ida,attra,sc1),
-	     Ast0.UnInit(stgb,tyb,idb,attrb,sc)) ->
+	  | (Ast0.UnInit(stga,tya,midattra,ida,endattra,sc1),
+	     Ast0.UnInit(stgb,tyb,midattrb,idb,endattrb,sc)) ->
 	      if bool_match_option mcode_equal stga stgb
 	      then
 		conjunct_many_bindings
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
-		    match_typeC tya tyb; match_ident ida idb;
-                    match_attributes attra attrb]
+                    match_typeC tya tyb; match_attributes midattra midattrb;
+                    match_ident ida idb; match_attributes endattra endattrb]
 	      else return false
 	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,va1a,rp1,sem1),
 	     Ast0.FunProto(fninfo,name,lp,params,va1b,rp,sem)) ->

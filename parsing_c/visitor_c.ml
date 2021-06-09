@@ -579,6 +579,7 @@ and vk_onedecl_opt process_type = fun bigf onedecl ->
       v_type_bis = tbis;
       v_storage = _sto;
       v_attr = attrs;
+      v_midattr = midattrs;
       v_endattr = endattrs})  ->
 
     (if process_type then vk_type bigf t);
@@ -1505,6 +1506,7 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
             v_storage = sto;
             v_local= local;
             v_attr = attrs;
+            v_midattr = midattrs;
             v_endattr = endattrs} =
   let iif ii = vk_ii_s bigf ii in
     {v_namei =
@@ -1525,6 +1527,7 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
      v_storage = sto;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
+     v_midattr = midattrs +> List.map (vk_attribute_s bigf);
      v_endattr = endattrs +> List.map (vk_attribute_s bigf);
     }
 

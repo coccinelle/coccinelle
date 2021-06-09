@@ -451,9 +451,10 @@ and print_fninfo = function
   | Ast.FInline(inline) -> mcode print_string inline; print_string " "
   | Ast.FAttr(attr) -> print_attribute attr; print_string " "
 
-and print_attribute_list attrs =
-  if not (attrs = []) then print_string " ";
-  print_between print_space print_attribute attrs
+and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
+  if befspace && not (attrs = []) then print_string " ";
+  print_between print_space print_attribute attrs;
+  if aftspace && not (attrs = []) then print_string " "
 
 and print_attribute attr =
   match Ast.unwrap attr with
@@ -533,7 +534,7 @@ and const_vol const_vol = print_string (Ast.string_of_const_vol const_vol ^ " ")
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and print_named_type ty id =
+and print_named_type ty midattr id =
   match Ast.unwrap ty with
     Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
@@ -553,12 +554,12 @@ and print_named_type ty id =
 			print_option expression size;
 			mcode print_string rb)
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; id(); k () in
+	    | _ -> typeC ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
-      | _ -> fullType ty; id())
-  | _ -> fullType ty; id()
+      | _ -> fullType ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id())
+  | _ -> fullType ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id()
 
 and declaration d =
   match Ast.unwrap d with
@@ -566,16 +567,16 @@ and declaration d =
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
-  | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
+  | Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
       print_option (mcode storage) stg;
-      print_named_type ty (fun _ -> ident id);
-      print_attribute_list attr;
+      print_named_type ty midattr (fun _ -> ident id);
+      print_attribute_list endattr;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,id,attr,sem) ->
+  | Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
       print_option (mcode storage) stg;
-      print_named_type ty (fun _ -> ident id);
-      print_attribute_list attr;
+      print_named_type ty midattr (fun _ -> ident id);
+      print_attribute_list endattr;
       mcode print_string sem
   | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;
@@ -601,7 +602,7 @@ and declaration d =
       mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; print_string " ";
-      print_named_type ty (fun _ -> typeC id);
+      print_named_type ty [] (fun _ -> typeC id);
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
@@ -626,7 +627,7 @@ and field d =
       begin
 	match id with
 	  None -> fullType ty
-	| Some id -> print_named_type ty (fun _ -> ident id);
+        | Some id -> print_named_type ty [] (fun _ -> ident id);
       end;
       let bitfield (c, e) =
 	mcode print_string c;
@@ -715,7 +716,7 @@ and parameterTypeDef p =
       fullType ty;
       print_attribute_list attr
   | Ast.Param(ty,Some id,attr) ->
-      print_named_type ty (fun _ -> ident id);
+      print_named_type ty [] (fun _ -> ident id);
       print_attribute_list attr
   | Ast.Param(ty,None,attr) ->
       fullType ty;

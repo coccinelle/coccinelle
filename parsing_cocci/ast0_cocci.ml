@@ -242,10 +242,10 @@ and base_declaration =
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
   | AsDecl        of declaration * declaration
-  | Init of Ast.storage mcode option * typeC * ident * attr list *
-	string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit of Ast.storage mcode option * typeC * ident * attr list *
-	string mcode (* ; *)
+  | Init of Ast.storage mcode option * typeC * attr list * ident *
+        attr list * string mcode (*=*) * initialiser * string mcode (*;*)
+  | UnInit of Ast.storage mcode option * typeC * attr list * ident *
+	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *

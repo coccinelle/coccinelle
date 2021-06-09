@@ -556,30 +556,32 @@ and declaration tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_decl decl tgt arity (Ast0.MetaDecl(name,cstr,pure))
-  | Ast0.Init(stg,ty,id,attr,eq,exp,sem) ->
+  | Ast0.Init(stg,ty,midattr,id,endattr,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   (List.map mcode2arity [eq;sem])) in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
+      let midattr = List.map (attribute arity) midattr in
       let id = ident false arity id in
-      let attr = List.map (attribute arity) attr in
+      let endattr = List.map (attribute arity) endattr in
       let eq = mcode eq in
       let exp = initialiser arity exp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.Init(stg,ty,id,attr,eq,exp,sem))
-  | Ast0.UnInit(stg,ty,id,attr,sem) ->
+      make_decl decl tgt arity (Ast0.Init(stg,ty,midattr,id,endattr,eq,exp,sem))
+  | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   [mcode2arity sem]) in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
+      let midattr = List.map (attribute arity) midattr in
       let id = ident false arity id in
-      let attr = List.map (attribute arity) attr in
+      let endattr = List.map (attribute arity) endattr in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,attr,sem))
+      make_decl decl tgt arity (Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
     let tokens = match va with
       | None -> [lp1;rp1;sem]

@@ -2480,6 +2480,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local;
      B.v_attr = attrs;
+     B.v_midattr = midattrs;
      B.v_endattr = endattrs;
      B.v_type_bis = typb0bis;
    }, iivirg) ->
@@ -2552,6 +2553,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 				  B.v_storage = (B.StoTypedef, inl);
 				  B.v_local = local;
 				  B.v_attr = attrs;
+				  B.v_midattr = midattrs;
 				  B.v_endattr = endattrs;
 				  B.v_type_bis = typb0bis;
 				},
@@ -2584,6 +2586,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
                         B.v_attr = attrs;
+                        B.v_midattr = midattrs;
                         B.v_endattr = endattrs;
                         B.v_type_bis = typb0bis;
                      },
@@ -2600,51 +2603,55 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | _ -> fail
    )
 
-   | A.UnInit (stoa, typa, ida, attra, ptvirga),
+   | A.UnInit (stoa, typa, midattra, ida, endattra, ptvirga),
      ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_);}, iivirg)
      -> fail
 
-   | A.Init (stoa, typa, ida, attra, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, midattra, ida, endattra, eqa, inia, ptvirga),
      ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_);}, iivirg)
        -> fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
-   | A.UnInit (stoa, typa, ida, attrsa, ptvirga),
+   | A.UnInit (stoa, typa, midattrsa, ida, endattrsa, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
-       attribute_list allminus attrsa endattrs >>= (fun attrsa endattrs ->
+       attribute_list allminus midattrsa midattrs >>= (fun midattrsa middattrs ->
+       attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
-           (A.UnInit (stoa, typa, ida, attrsa, ptvirga)) +>  A.rewrap decla,
+           (A.UnInit (stoa, typa, midattrsa, ida, endattrsa, ptvirga)) +>  A.rewrap decla,
            (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_midattr = midattrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
 	    iiptvirgb,iistob)
-         ))))))
+         )))))))
 
-   | A.Init (stoa, typa, ida, attrsa, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, midattrsa, ida, endattrsa, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
@@ -2652,29 +2659,32 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
-       attribute_list allminus attrsa endattrs >>= (fun attrsa endattrs ->
+       attribute_list allminus midattrsa midattrs >>= (fun midattrsa midattrs ->
+       attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
-           (A.Init (stoa,typa,ida,attrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
+           (A.Init (stoa,typa,midattrsa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
            (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_midattr = midattrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
-         ))))))))
+         )))))))))
 
-   | A.Init (stoa, typa, ida, attra, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, midattra, ida, endattra, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ConstrInit _);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg)
@@ -2688,6 +2698,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
@@ -2727,6 +2738,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_storage = stob;
 		  B.v_local = local;
 		  B.v_attr = attrs;
+		  B.v_midattr = midattrs;
 		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
@@ -2738,6 +2750,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg)  ->
@@ -2745,7 +2758,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        if stob = (B.NoSto, false)
        then
          fullType typa typb >>= (fun typa typb ->
-         attribute_list allminus attra (attrs @ endattrs) >>= (fun attra endattrs ->
+         attribute_list allminus attra (attrs @  midattrs @ endattrs) >>= (fun attra endattrs ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
            return (
              (A.TyDecl (typa, attra, ptvirga)) +> A.rewrap decla,
@@ -2754,6 +2767,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_storage = stob;
                 B.v_local = local;
                 B.v_attr = attrs;
+                B.v_midattr = midattrs;
                 B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
              }, iivirg), iiptvirgb, iistob)
@@ -2800,6 +2814,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
        B.v_attr = attrs;
+       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
@@ -2854,6 +2869,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
               B.v_attr = attrs;
+              B.v_midattr = midattrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },

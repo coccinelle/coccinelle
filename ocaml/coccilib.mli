@@ -303,6 +303,7 @@ module Ast_c :
       v_storage : storage;
       v_local : local_decl;
       v_attr : attribute list;
+      v_midattr : attribute list;
       v_endattr : attribute list;
     }
     and v_init =
@@ -831,7 +832,8 @@ module Lexer_c :
   end
 module Pretty_print_c :
   sig
-    type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
+    type type_with_ident = Ast_c.fullType -> (unit -> unit) -> (unit -> unit) -> unit
+    type type_with_ident_rest = Ast_c.fullType -> (unit -> unit) -> unit
     type 'a printer = 'a -> unit
     type pretty_printers =
       Pretty_print_c.pretty_printers = {
@@ -853,7 +855,7 @@ module Pretty_print_c :
       ty : Ast_c.fullType printer;
       type_with_ident : type_with_ident;
       base_type       : Ast_c.fullType printer;
-      type_with_ident_rest : type_with_ident;
+      type_with_ident_rest : type_with_ident_rest;
       toplevel : Ast_c.toplevel printer;
       fragment : Ast_c.string_fragment printer;
       fragment_list : Ast_c.string_fragment list printer;
@@ -2767,10 +2769,10 @@ module Ast_cocci :
     and const_vol = Ast_cocci.const_vol = Const | Volatile
     and base_declaration =
       Ast_cocci.base_declaration =
-        Init of storage mcode option * fullType * ident * attr list *
-          string mcode * initialiser * string mcode
-      | UnInit of storage mcode option * fullType * ident * attr list *
-          string mcode
+        Init of storage mcode option * fullType * attr list * ident *
+            attr list * string mcode * initialiser * string mcode
+      | UnInit of storage mcode option * fullType * attr list * ident *
+            attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
       | TyDecl of fullType * attr list * string mcode
@@ -3415,9 +3417,9 @@ module Ast0_cocci :
       Ast0_cocci.base_declaration =
         MetaDecl of Ast_cocci.meta_name mcode * constraints * pure
       | AsDecl of declaration * declaration
-      | Init of Ast_cocci.storage mcode option * typeC * ident * attr list *
-          string mcode * initialiser * string mcode
-      | UnInit of Ast_cocci.storage mcode option * typeC * ident *
+      | Init of Ast_cocci.storage mcode option * typeC * attr list * ident *
+          attr list * string mcode * initialiser * string mcode
+      | UnInit of Ast_cocci.storage mcode option * typeC * attr list * ident *
           attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode

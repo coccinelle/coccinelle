@@ -707,9 +707,10 @@ and print_fninfo = function
   | Ast.FInline(inline) -> mcode print_string inline; pr_space()
   | Ast.FAttr(attr) -> print_attribute attr; pr_space()
 
-and print_attribute_list attrs =
-  if not (attrs = []) then pr_space();
-  print_between pr_space print_attribute attrs
+and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
+  if befspace && not (attrs = []) then pr_space();
+  print_between pr_space print_attribute attrs;
+  if aftspace && not (attrs = []) then pr_space()
 
 and print_attribute attr =
   match Ast.unwrap attr with
@@ -856,7 +857,7 @@ and print_parentype (lp,ty,rp) fn =
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 
-and print_named_type ty id =
+and print_named_type ty midattr id =
   match Ast.unwrap ty with
     Ast.Type(_,None,ty1) ->
       (match Ast.unwrap ty1 with
@@ -874,7 +875,7 @@ and print_named_type ty id =
 			print_option expression size;
 			mcode print_string rb)
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; ty_space ty; id(); k () in
+	    | _ -> typeC ty; ty_space ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.MetaType(name,_,_,_) ->
           (* MetaType with an array and a pointer have to be treated specially.
@@ -906,11 +907,14 @@ and print_named_type ty id =
           handle_metavar (a,info_new,b,c) (function
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
-                  (function _ -> List.iter (function (s,ln,col) -> print_string (get_string_info s) ln col; pr_space()) straft;id())
+                  (function _ -> print_attribute_list midattr ~befspace:false ~aftspace:false)
+		  (function _ -> id())
             | _ -> error name ty "type value expected")
       | Ast.ParenType(lp,ty,rp) ->
+          assert (midattr = []);
           print_parentype (lp,ty,rp) (function _ -> id())
       | Ast.FunctionType(ty,lp,params,rp) ->
+          assert (midattr = []);
           fullType ty;
           id();
           mcode print_string lp;
@@ -919,8 +923,8 @@ and print_named_type ty id =
     (*| should have a case here for pointer to array or function type
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)
-      | _ -> fullType ty; ft_space ty; id())
-  | _ -> fullType ty; ft_space ty; id()
+      | _ -> fullType ty; ft_space ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id())
+  | _ -> fullType ty; ft_space ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id()
 
 and ty_space ty =
   match Ast.unwrap ty with
@@ -960,18 +964,18 @@ and declaration d =
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
-  | Ast.Init(stg,ty,id,attr,eq,ini,sem) ->
+  | Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
-      print_named_type ty (fun _ -> ident id);
-      print_attribute_list attr;
+      print_named_type ty midattr (fun _ -> ident id);
+      print_attribute_list endattr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,id,attr,sem) ->
+  | Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
-      print_named_type ty (fun _ -> ident id);
-      print_attribute_list attr;
+      print_named_type ty midattr (fun _ -> ident id);
+      print_attribute_list endattr;
       mcode print_string sem
   | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;
@@ -1007,7 +1011,7 @@ and declaration d =
       mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; pr_space();
-      print_named_type ty (fun _ -> typeC id);
+      print_named_type ty [] (fun _ -> typeC id);
       mcode print_string sem
   | Ast.DisjDecl(_) | Ast.ConjDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl) -> raise CantBeInPlus
@@ -1038,7 +1042,7 @@ and field d =
       begin
 	match id with
 	  None -> fullType ty
-	| Some id -> print_named_type ty (fun _ -> ident id)
+        | Some id -> print_named_type ty [] (fun _ -> ident id)
       end;
       let bitfield (c, e) =
 	mcode print_string c;
@@ -1147,7 +1151,7 @@ and parameterTypeDef p =
       fullType ty;
       print_attribute_list attr;
   | Ast.Param(ty,Some id,attr) ->
-      print_named_type ty (fun _ -> ident id);
+      print_named_type ty [] (fun _ -> ident id);
       print_attribute_list attr;
   | Ast.Param(ty,None,attr) ->
       fullType ty;
