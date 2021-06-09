@@ -697,11 +697,12 @@ and declaration d =
 	  let stg = Some (normal_mcode x) in
 	  mkres d (Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
 	    (promote_mcode x) (promote_mcode sem))
-  | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
+  | Ast0.FunProto(fninfo,attr,name,lp1,params,va1,rp1,sem) ->
       let fninfo =
 	List.map
 	  (function Ast0.FType(ty) -> Ast0.FType(typeC ty) | x -> x)
 	  fninfo in
+      let attr = List.map attribute attr in
       let name = ident name in
       let lp1 = normal_mcode lp1 in
       let params = parameter_list (Some(promote_mcode lp1)) params in
@@ -710,7 +711,7 @@ and declaration d =
         | Some (c1,e1) -> Some (normal_mcode c1, normal_mcode e1) in
       let rp1 = normal_mcode rp1 in
       let sem = normal_mcode sem in
-      let res = Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) in
+      let res = Ast0.FunProto(fninfo,attr,name,lp1,params,va1,rp1,sem) in
       let right = promote_mcode sem in
       (match fninfo with
 	  [] -> mkres d res name right

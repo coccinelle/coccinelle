@@ -1442,7 +1442,7 @@ reverse_separated_nonempty_llist(separator, X):
     { x :: Nothing :: (Separator s) :: xs }
 
 funproto:
-  s=ioption(storage) i=ioption(Tinline) t=ctype
+  s=ioption(storage) i=ioption(Tinline) t=ctype ar=attr_list
   TFunProto id=fn_ident
   lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = match s with None -> [] | Some s -> [Ast0_cocci.FStorage s] in
@@ -1454,10 +1454,10 @@ funproto:
         let (args,vararg) = arglist in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.FunProto
-	     (s @ i @ t, id,
+	     (s @ i @ t, ar, id,
 	      Parse_aux.clt2mcode "(" lp, args, vararg, Parse_aux.clt2mcode ")" rp,
 	      Parse_aux.clt2mcode ";" pt)) }
-| i=Tinline s=storage t=ctype
+| i=Tinline s=storage t=ctype ar=attr_list
   TFunProto id=fn_ident
   lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = [Ast0_cocci.FStorage s] in
@@ -1466,7 +1466,7 @@ funproto:
         let (args,vararg) = arglist in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.FunProto
-	     (s @ i @ t, id,
+	     (s @ i @ t, ar, id,
 	      Parse_aux.clt2mcode "(" lp, args, vararg, Parse_aux.clt2mcode ")" rp,
 	      Parse_aux.clt2mcode ";" pt)) }
 

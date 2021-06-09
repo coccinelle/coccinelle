@@ -649,8 +649,9 @@ and declaration d =
 	let endattr = List.map attribute endattr in
 	Ast.UnInit(get_option mcode stg,typeC allminus ty,midattr,ident id,endattr,
 		   mcode sem)
-    | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
+    | Ast0.FunProto(fi,attr,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in
+          let attr = List.map attribute attr in
 	  let name = ident name in
 	  let lp = mcode lp in
 	  let params = parameter_list params in
@@ -659,7 +660,7 @@ and declaration d =
             | Some (comma,ellipsis) -> Some(mcode comma,mcode ellipsis) in
 	  let rp = mcode rp in
 	  let sem = mcode sem in
-	  Ast.FunProto(fi,name,lp,params,va,rp,sem)
+	  Ast.FunProto(fi,attr,name,lp,params,va,rp,sem)
     | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	(* this would seem to need allminus... *)
 	let stg = get_option mcode stg in

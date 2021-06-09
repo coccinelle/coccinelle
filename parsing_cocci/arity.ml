@@ -582,7 +582,7 @@ and declaration tgt decl =
       let endattr = List.map (attribute arity) endattr in
       let sem = mcode sem in
       make_decl decl tgt arity (Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
-  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+  | Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
     let tokens = match va with
       | None -> [lp1;rp1;sem]
       | Some (c1,e1) -> [lp1;c1;e1;rp1;sem] in
@@ -590,6 +590,7 @@ and declaration tgt decl =
 	all_same true tgt (mcode2line lp1)
 	  (List.map mcode2arity tokens) in
       let fi = List.map (fninfo arity) fi in
+      let attr = List.map (attribute arity) attr in
       let name = ident false arity name in
       let lp1 = mcode lp1 in
       let params = parameter_list tgt params in
@@ -598,7 +599,7 @@ and declaration tgt decl =
         | Some (c1, e1) -> Some (mcode c1, mcode e1) in
       let rp1 = mcode rp1 in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
+      make_decl decl tgt arity (Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem))
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)

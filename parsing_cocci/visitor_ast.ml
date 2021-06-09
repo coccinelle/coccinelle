@@ -463,8 +463,9 @@ let combiner bind option_default
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let lsem = string_mcode sem in
           multibind [lstg; lid; lmidattr; lendattr; lsem]
-      | Ast.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+      | Ast.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
 	  let lfi = List.map fninfo fi in
+	  let lattr = multibind (List.map attribute attr) in
 	  let lname = ident name in
 	  let llp1 = string_mcode lp1 in
 	  let lparams = parameter_dots params in
@@ -474,7 +475,7 @@ let combiner bind option_default
 		([string_mcode comma],[string_mcode ellipsis]) in
 	  let lrp1 = string_mcode rp1 in
 	  multibind
-	    (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
+            (lfi @ [lattr; lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
       | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lname = ident name in
@@ -1451,8 +1452,9 @@ let rebuilder
 	    let lendattr = List.map attribute endattr in
 	    let lsem = string_mcode sem in
 	    Ast.UnInit(lstg, lty, lmidattr, lid, lendattr, lsem)
-	| Ast.FunProto(fi,name,lp,params,va,rp,sem) ->
+	| Ast.FunProto(fi,attr,name,lp,params,va,rp,sem) ->
 	    let lfi = List.map fninfo fi in
+	    let lattr = List.map attribute attr in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
 	    let lparams = parameter_dots params in
@@ -1462,7 +1464,7 @@ let rebuilder
 		  Some (string_mcode comma,string_mcode ellipsis) in
 	    let lrp = string_mcode rp in
 	    let lsem = string_mcode sem in
-	    Ast.FunProto(lfi,lname,llp,lparams,lva,lrp,lsem)
+	    Ast.FunProto(lfi,lattr,lname,llp,lparams,lva,lrp,lsem)
 	| Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lname = ident name in

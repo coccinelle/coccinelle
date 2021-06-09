@@ -50,7 +50,7 @@ let collect_function (stm : Ast0.statement) =
 	     (Ast0.Decl((new_bef_info,Ast0.context_befaft()),
 			Ast0.copywrap stm
 			  (Ast0.FunProto
-			     (fninfo,name,lp,params,None,rp,make_semi aft_info))))))
+                             (fninfo,[],name,lp,params,None,rp,make_semi aft_info))))))
 	(get_name name)
   | _ -> []
 
@@ -281,7 +281,7 @@ let drop_names dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
+	Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem) ->
 	  let params =
 	    Ast0.rewrap params
 	      (List.map drop_param_name (Ast0.unwrap params)) in
@@ -289,7 +289,7 @@ let drop_names dec =
 	    (Ast0.Decl
 	       (info,
 		Ast0.rewrap proto
-		  (Ast0.FunProto(fninfo,name,lp,params,va,rp,sem))))
+		  (Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem))))
       |	_ -> failwith "unexpected declaration")
   | _ -> failwith "unexpected term"
 
@@ -354,7 +354,7 @@ let fresh_names old_name mdef dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
+	Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem) ->
 	  let (metavars,newdec) =
 	    let (metavars,l) =
 	      let params = Ast0.unwrap params in
@@ -367,7 +367,7 @@ let fresh_names old_name mdef dec =
 		  (info,
 		   Ast0.rewrap proto
 		     (Ast0.FunProto
-			(fninfo,name,lp,Ast0.rewrap params l,va,rp,sem))))) in
+			(fninfo,attr,name,lp,Ast0.rewrap params l,va,rp,sem))))) in
 	  let (def_metavars,newdef) =
 	    match Ast0.unwrap mdef with
 	      Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lb,body,rb,y) ->
@@ -390,7 +390,7 @@ let no_names dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
+	Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem) ->
 	  let sem =
 	    (* convert semicolon to minus, since we are dropping the whole
 	       thing *)
@@ -402,7 +402,7 @@ let no_names dec =
 	       (info,
 		Ast0.rewrap proto
 		  (Ast0.FunProto
-		     (fninfo,name,lp,
+		     (fninfo,attr,name,lp,
 		      Ast0.rewrap params
 			(let info = Ast0.get_info params in
 			let mcodekind =

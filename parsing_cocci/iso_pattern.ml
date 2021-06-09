@@ -968,14 +968,15 @@ let match_maker checks_needed context_required whencode_allowed =
                     match_typeC tya tyb; match_attributes midattra midattrb;
                     match_ident ida idb; match_attributes endattra endattrb]
 	      else return false
-	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,va1a,rp1,sem1),
-	     Ast0.FunProto(fninfo,name,lp,params,va1b,rp,sem)) ->
+	  | (Ast0.FunProto(fninfo1,attr1,name1,lp1,params1,va1a,rp1,sem1),
+	     Ast0.FunProto(fninfo,attr,name,lp,params,va1b,rp,sem)) ->
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; check_mcode rp1 rp; check_mcode sem1 sem;
 		   match_fninfo fninfo1 fninfo; match_ident name1 name;
 		   match_dots match_param is_plist_matcher do_plist_match
 		     params1 params;
-                   match_option varargs_equal va1a va1b
+                   match_option varargs_equal va1a va1b;
+                   match_attributes attr1 attr
                  ]
 	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,attra,sc1),
 	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,attrb,sc)) ->

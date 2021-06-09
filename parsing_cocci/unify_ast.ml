@@ -404,8 +404,8 @@ and unify_declaration d1 d2 =
          List.for_all2 unify_attribute endattr1 endattr2
       then unify_fullType ft1 ft2 && unify_ident id1 id2
       else false
-  | (Ast.FunProto(fi1,nm1,lp1,params1,va1,rp1,sem1),
-     Ast.FunProto(fi2,nm2,lp2,params2,va2,rp2,sem2)) ->
+  | (Ast.FunProto(fi1,attr1,nm1,lp1,params1,va1,rp1,sem1),
+     Ast.FunProto(fi2,attr2,nm2,lp2,params2,va2,rp2,sem2)) ->
        let l1 = match va1 with
          | None -> [lp1;rp1]
          | Some (c1,e1) -> [lp1;c1;e1;rp1] in
@@ -415,6 +415,8 @@ and unify_declaration d1 d2 =
        if List.for_all2 unify_mcode l1 l2
        then
 	  unify_fninfo fi1 fi2 &&
+          List.for_all2 unify_attribute attr1 attr2 &&
+          (List.length attr1 = List.length attr2) &&
 	  unify_ident nm1 nm2 &&
 	  unify_dots unify_parameterTypeDef pdots params1 params2
        else false

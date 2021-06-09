@@ -2690,7 +2690,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      },iivirg)
        -> fail (* C++ constructor declaration not supported in SmPL *)
 
-   | A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema),
+   | A.FunProto(fninfoa,attra,ida,lpa,paramsa,va,rpa,sema),
      ({B.v_namei = Some (idb, B.NoInit);
        B.v_type =
 	((({B.const = false; B.volatile = false},[]) as q),
@@ -2723,13 +2723,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         storage_optional_allminus allminus
           stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
         attribute_list allminus attras attrs >>= (fun attras attrs ->
+        attribute_list allminus attra midattrs >>= (fun attra midattrs ->
         fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
 	let fninfoa = put_fninfo stoa tya inla attras in
         parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
           (fun paramsaunwrap paramsb ->
             let paramsa = A.rewrap paramsa paramsaunwrap in
             return (
-              (A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
+              (A.FunProto(fninfoa,attra,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
 	       (({B.v_namei = Some (idb, B.NoInit);
 		  B.v_type =
 		  (q,
@@ -2742,7 +2743,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
-	      )))))))))
+	      ))))))))))
 
    (* do iso-by-absence here ? allow typedecl and var ? *)
    | A.TyDecl (typa, attra, ptvirga),

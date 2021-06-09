@@ -416,8 +416,9 @@ and declaration d =
 	  print_option (mcode U.storage) stg; print_named_type ty midattr id;
           print_attribute_list endattr;
 	  mcode print_string sem
-      | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
+      | Ast0.FunProto(fninfo,attr,name,lp1,params,va,rp1,sem) ->
 	  List.iter print_fninfo fninfo;
+          print_attribute_list attr ~befspace:false ~aftspace:true;
 	  ident name; mcode print_string_box lp1;
 	  parameter_list params; varargs va;
 	  close_box(); mcode print_string rp1;

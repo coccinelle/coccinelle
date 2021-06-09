@@ -393,7 +393,7 @@ and base_declaration =
   | UnInit of storage mcode option * fullType * attr list * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
-	fninfo list * ident (* name *) *
+	fninfo list * attr list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
 	(string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) * string mcode (* ; *)

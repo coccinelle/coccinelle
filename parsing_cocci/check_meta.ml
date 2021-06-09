@@ -284,9 +284,10 @@ and declaration context old_metas table minus d =
       List.iter (attribute old_metas table minus) midattr;
       ident context old_metas table minus id;
       List.iter (attribute old_metas table minus) endattr
-  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+  | Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
+      List.iter (attribute old_metas table minus) attr;
       parameter_list old_metas table minus params
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       ident GLOBAL old_metas table minus name;

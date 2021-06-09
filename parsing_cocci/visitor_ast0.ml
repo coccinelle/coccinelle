@@ -628,8 +628,9 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
             (multibind [stg_n;ty_ma_id_n;endattr_n;sem_n],
 	     Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
-	| Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+	| Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (name_n,name) = ident name in
 	    let (lp1_n,lp1) = string_mcode lp1 in
 	    let (params_n,params) = parameter_dots params in
@@ -641,8 +642,8 @@ let visitor mode bind option_default
 	        (multibind [comma_n; ellipsis_n],Some(comma,ellipsis)) end in
 	    let (rp1_n,rp1) = string_mcode rp1 in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [fi_n;name_n;lp1_n;params_n;va_n;rp1_n;sem_n],
-	     Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
+            (multibind [fi_n;attr_n;name_n;lp1_n;params_n;va_n;rp1_n;sem_n],
+	     Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem))
 	| Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let (name_n,name) = ident name in

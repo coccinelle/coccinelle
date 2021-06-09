@@ -792,8 +792,8 @@ let equal_declaration d1 d2 =
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode sem1 sem2
-  | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
-     Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
+  | (Ast0.FunProto(fninfo1,attr1,name1,lp1,p1,va1,rp1,sem1),
+     Ast0.FunProto(fninfo2,attr2,name2,lp2,p2,va2,rp2,sem2)) ->
        let equal_varargs va1 va2 = match (va1,va2) with
          | None, None -> true
          | Some (c1, e1), Some (c2, e2) ->
@@ -801,6 +801,8 @@ let equal_declaration d1 d2 =
          | _ -> false in
        (List.length fninfo1) = (List.length fninfo2) &&
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
+      (List.length attr1) = (List.length attr2) &&
+      List.for_all2 equal_attribute attr1 attr2 &&
        equal_mcode lp1 lp2 && equal_varargs va1 va2 &&
        equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,attr1,sem1),

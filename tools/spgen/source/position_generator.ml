@@ -428,8 +428,8 @@ let rec declaration_pos decl snp
   | Ast0.OptDecl(dec) ->
       let constructor ~item = Ast0.OptDecl item in
       item_wrap ~item:dec ~item_posfn:declaration_pos ~constructor snp
-  | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
-      let constructor ~id = Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) in
+  | Ast0.FunProto(fninfo,attr,id,lp1,params,va,rp1,sem) ->
+      let constructor ~id = Ast0.FunProto(fninfo,attr,id,lp1,params,va,rp1,sem) in
       id_wrap ~id ~constructor snp
 
 let rec field_pos decl snp

@@ -51,9 +51,9 @@ let rec right_decl d =
   | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
-  | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
+  | Ast0.FunProto(fninfo,attr,id,lp1,params,va,rp1,sem) ->
       call_right right_mcode sem d
-	(function ty -> Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem))
+	(function ty -> Ast0.FunProto(fninfo,attr,id,lp1,params,va,rp1,sem))
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
@@ -274,27 +274,27 @@ let rec left_decl decl =
   | Ast0.UnInit(None,ty,midattr,id,endattr,sem) ->
       call_right left_ty ty decl
 	(function ty -> Ast0.UnInit(None,ty,midattr,id,endattr,sem))
-  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
+  | Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
       (match fi with
 	[] ->
           call_right left_ident name decl
-	    (function name -> Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
+	    (function name -> Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem))
       | (Ast0.FStorage sto)::x ->
 	  call_right left_mcode sto decl
 	    (function sto ->
-	      Ast0.FunProto((Ast0.FStorage sto)::x,name,lp1,params,va,rp1,sem))
+	      Ast0.FunProto((Ast0.FStorage sto)::x,attr,name,lp1,params,va,rp1,sem))
       |	(Ast0.FType ty)::x ->
 	  call_right left_ty ty decl
 	    (function ty ->
-	      Ast0.FunProto((Ast0.FType ty)::x,name,lp1,params,va,rp1,sem))
+	      Ast0.FunProto((Ast0.FType ty)::x,attr,name,lp1,params,va,rp1,sem))
       | (Ast0.FInline inl)::x ->
 	  call_right left_mcode inl decl
 	    (function inl ->
-	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,va,rp1,sem))
-      | (Ast0.FAttr attr)::x ->
-	  call_right left_attribute attr decl
-	    (function attr ->
-	      Ast0.FunProto((Ast0.FAttr attr)::x,name,lp1,params,va,rp1,sem)))
+	      Ast0.FunProto((Ast0.FInline inl)::x,attr,name,lp1,params,va,rp1,sem))
+      | (Ast0.FAttr attr0)::x ->
+	  call_right left_attribute attr0 decl
+	    (function attr0 ->
+	      Ast0.FunProto((Ast0.FAttr attr0)::x,attr,name,lp1,params,va,rp1,sem)))
   | Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem))
