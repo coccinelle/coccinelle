@@ -1,3 +1,7 @@
+int __attribute__((always_inline)) func (int a);
+
+int func(int a);
+
 int __attribute__((always_inline)) func (int a) {
   return 42;
 }
