@@ -1340,7 +1340,7 @@ attr_arg:
  | TMacroAttr { AttrName (fst $1), [snd $1] }
 
 attribute_gcc:
- | Tattribute TOPar TOPar attr_arg_gcc TCPar TCPar { GccAttribute $4, [$1;$2;$3;$5;$6] }
+ | Tattribute tdouble_opar_gcc_attr attr_arg_gcc tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
 
 attr_arg_gcc:
  | TIdent { AttrName (fst $1), [snd $1] }
@@ -2399,6 +2399,8 @@ tcpar: TCPar
      }
 
 
+tdouble_opar_gcc_attr: TOPar TOPar { LP.push_context LP.InGccAttribute; [$1;$2] }
+tdouble_cpar_gcc_attr: TCPar TCPar { LP.pop_context (); [$1;$2] }
 
 
 /*(*************************************************************************)*/
@@ -2521,7 +2523,7 @@ end_attr_arg:
  | TMacroEndAttr { AttrName (fst $1), [snd $1] }
 
 end_attribute_gcc:
- | TMacroGccEndAttr TOPar TOPar attr_arg_gcc TCPar TCPar { GccAttribute $4, [$1;$2;$3;$5;$6] }
+ | TMacroGccEndAttr tdouble_opar_gcc_attr attr_arg_gcc tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
 
 end_attribute_list:
  | end_attribute_gcc { [$1] } // not iterable in practice

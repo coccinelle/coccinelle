@@ -35,6 +35,7 @@ type context =
   | InParameter
   | InInitializer
   | InEnum
+  | InGccAttribute
 
 type lexer_hint = {
   mutable context_stack: context Common.stack;
