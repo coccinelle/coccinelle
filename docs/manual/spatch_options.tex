@@ -62,6 +62,9 @@ understanding the effect of a semantic patch.
   developers.
 \end{itemize}
 
+Options can also be included directly in a cocci file using
+{\tt\#spatch $\langle$option$\rangle$ ...} directives.
+
 \section{Selecting and parsing the semantic patch}
 
 \subsection{Standalone options}
@@ -470,10 +473,15 @@ other \#ifdef.}
   eg with the option {\bf -{}-testall}}
 
 \rare{-{}-c++}{Make an extremely minimal effort to parse C++ code.  Currently,
-  this is limited to allowing identifiers to contain ``::'', tilde, and
+  this is limited to allowing identifiers to contain ``::'', tilde, {\tt auto} and
   template invocations.  Consider testing your code first with spatch
   -{}-type-c to see if there are any type annotations in the code you are
   interested in processing.  If not, then it was probably not parsed.}
+
+\rare{-{}-c++=$\langle$version$\rangle$}{Is similar to the above {\tt-{}-c++}
+  option but allows to specify the C++ version used. It can be useful for
+  constructs such as {\tt auto} which changed semantics since C++11 to ensure
+  the expected semantic is selected.}
 
 \rare{-{}-ibm}{Make a effort to parse IBM C code.  Currently decimal
   declarations are supported.}
