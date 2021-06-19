@@ -1990,17 +1990,27 @@ let assign bop =
     ["=";"+=";"-=";"*=";"/=";"%=";"&=";"|=";"^=";">?=";"<?=";"<<=";">>=";
       "enum"]
 
-let token_effect tok dmin dplus inparens inassn inbrace instruct accumulator xs =
+type token_effect_state =
+    { dmin : int;
+      dplus : int;
+      inparens : int * int;
+      inassn : int * int;
+      inbrace : int * int;
+      instruct : int * int;
+      accumulator : int list * int list }
+
+let token_effect tok state xs =
   let info = parse_token tok in
   match info with
     (Tok ")",op)
-    when getval inparens op <= 1 && getval inassn op = 0 &&
-      getval inbrace op > 0 ->
+    when getval state.inparens op <= 1 && getval state.inassn op = 0 &&
+      getval state.inbrace op > 0 ->
       let nopen_brace a b = not (open_brace a b) in
       let do_nothing a b = b in
       let accumulator =
-	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,(0,0),(0,0),inbrace,instruct,accumulator)
+	adjust_by_function nopen_brace op accadd1 do_nothing state.accumulator xs in
+      (Other 1,
+       { state with inparens = (0,0); inassn = (0,0); accumulator = accumulator })
   | (Tok "else",op) ->
       (* is_nl is for the case where the next statement is on the same line
 	 as the else *)
@@ -2009,53 +2019,64 @@ let token_effect tok dmin dplus inparens inassn inbrace instruct accumulator xs 
 	res in
       let do_nothing a b = b in
       let accumulator =
-	adjust_by_function nopen_brace op accadd1 do_nothing accumulator xs in
-      (Other 1,dmin,dplus,(0,0),(0,0),inbrace,instruct,accumulator)
+	adjust_by_function nopen_brace op accadd1 do_nothing state.accumulator xs in
+      (Other 1,
+       { state with inparens = (0,0); inassn = (0,0); accumulator = accumulator })
   | (Tok "{",op) ->
-      let (dmin,dplus) = add1 op (dmin,dplus) in
-      let accumulator = add1top op accumulator in
+      let (dmin,dplus) = add1 op (state.dmin,state.dplus) in
+      let accumulator = add1top op state.accumulator in
       let instruct =
-	if getval inassn op > 0
-	then add1 op instruct
-	else instruct in
-      (Other 2,dmin,dplus,inparens,(0,0),add1 op inbrace,instruct,accumulator)
+	if getval state.inassn op > 0
+	then add1 op state.instruct
+	else state.instruct in
+      (Other 2,
+       { state with
+	 dmin = dmin;
+	 dplus = dplus;
+	 inassn = (0,0);
+	 inbrace = add1 op state.inbrace;
+	 instruct = instruct;
+	 accumulator = accumulator })
   | (Tok "}",op) ->
-      let (dmin,dplus) = sub1 op (dmin,dplus) in
-      let accumulator = sub1top op accumulator in
-      (Other 3,dmin,dplus,inparens,(0,0),sub1 op inbrace,sub1 op instruct,
-       drop_zeroes op accumulator xs)
+      let (dmin,dplus) = sub1 op (state.dmin,state.dplus) in
+      let accumulator = sub1top op state.accumulator in
+      (Other 3,
+       { state with
+	 dmin = dmin;
+	 dplus = dplus;
+	 inassn = (0,0);
+	 inbrace = sub1 op state.inbrace;
+	 instruct = sub1 op state.instruct;
+	 accumulator = drop_zeroes op accumulator xs })
   | (Tok(";"|"{}"),op) (* {} is generated when removing an if branch *)
-    when getval inparens op = 0 && getval inassn op <= 1 ->
-      (Other 4,dmin,dplus,inparens,(0,0),inbrace,instruct,
-       drop_zeroes op accumulator xs)
+    when getval state.inparens op = 0 && getval state.inassn op <= 1 ->
+      (Other 4,
+       { state with inassn = (0,0); accumulator = drop_zeroes op state.accumulator xs })
   | (Tok(","),op)
-    when getval inparens op = 0 && getval inassn op <= 1 && getval instruct op > 0 ->
+    when getval state.inparens op = 0 && getval state.inassn op <= 1 &&
+      getval state.instruct op > 0 ->
       (* in a structure initializer, so a comma is a terminator *)
-      (Other 10,dmin,dplus,inparens,(0,0),inbrace,instruct,
-       drop_zeroes op accumulator xs)
+      (Other 10,
+       { state with inassn = (0,0);
+	 accumulator = drop_zeroes op state.accumulator xs })
   | (Tok ";",op) ->
-      (Other 5,dmin,dplus,inparens,sub1 op inassn,inbrace,instruct,accumulator)
-  | (Tok bop,op) when assign bop && getval inparens op + getval inassn op = 0 ->
-      (Other 6,dmin,dplus,inparens,add1 op (0,0),inbrace,instruct,accumulator)
-  | (Tok "(",op) ->
-      (Other 7,dmin,dplus,add1 op inparens,inassn,inbrace,instruct,accumulator)
-  | (Tok ")",op) ->
-      (Other 8,dmin,dplus,sub1 op inparens,inassn,inbrace,instruct,accumulator)
-  | (Ind Indent_cocci2,op) ->
-      (Drop,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
-  | (Ind (Unindent_cocci2 true),op) ->
-      (Drop,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
-  | (Ind (Unindent_cocci2 false),op) ->
-      (Unindent,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
-  | (Tok "case",op) ->
-      (Unindent1,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
+      (Other 5,{ state with inassn = sub1 op state.inassn })
+  | (Tok bop,op)
+    when assign bop && getval state.inparens op + getval state.inassn op = 0 ->
+      (Other 6,{ state with inassn = add1 op (0,0) })
+  | (Tok "(",op) -> (Other 7,{ state with inparens = add1 op state.inparens })
+  | (Tok ")",op) -> (Other 8,{ state with inparens = sub1 op state.inparens })
+  | (Ind Indent_cocci2,op) -> (Drop,state)
+  | (Ind (Unindent_cocci2 true),op) -> (Drop,state)
+  | (Ind (Unindent_cocci2 false),op) -> (Unindent,state)
+  | (Tok "case",op) -> (Unindent1,state)
   | (NL after,op) ->
       if is_label Both xs
       then (* ignore indentation *)
-	(Label,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
+	(Label,state)
       else
-	let inp = getval inparens op in
-	let ina = getval inassn op in
+	let inp = getval state.inparens op in
+	let ina = getval state.inassn op in
 	let rebuilder min plus =
 	  match op with
 	    Both -> CtxNL(after,min,plus,inp+ina)
@@ -2063,15 +2084,14 @@ let token_effect tok dmin dplus inparens inassn inbrace instruct accumulator xs 
 	  | PlusOnly -> PlusNL(plus,inp+ina)
 	  | _ -> failwith "not possible" in
 	let numacc =
-	  (List.length (fst accumulator), List.length (snd accumulator)) in
+	  (List.length (fst state.accumulator), List.length (snd state.accumulator)) in
 	let (admin,adplus) =
 	  adjust_by_function close_brace op
 	    (fun op x -> add op (sub1 op x) numacc)
 	    (fun op x -> add op x numacc)
-	    (dmin,dplus) xs in
-	(rebuilder admin adplus,
-	 dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
-  | (_,op) -> (Other 9,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator)
+	    (state.dmin,state.dplus) xs in
+	(rebuilder admin adplus,state)
+  | (_,op) -> (Other 9,state)
 
 let parse_indentation xs =
   let xs =
@@ -2080,7 +2100,7 @@ let parse_indentation xs =
 	(* Drop unindent at the very beginning; no need for prior nl *)
 	xs
     | _ -> xs in
-  let rec loop n dmin dplus inparens inassn inbrace instruct accumulator = function
+  let rec loop n state = function
       [] -> []
     | (x::xs) as l ->
 	let (front,x,xs) =
@@ -2088,8 +2108,7 @@ let parse_indentation xs =
 	  match List.rev newlines with
 	    nl::whitespace -> (List.rev whitespace, nl, rest)
 	  | [] -> ([],x,xs) in
-	let (res,dmin,dplus,inparens,inassn,inbrace,instruct,accumulator) =
-	  token_effect x dmin dplus inparens inassn inbrace instruct accumulator xs in
+	let (res,state) = token_effect x state xs in
 	let front =
 	  let rec loop n = function
 	      [] -> []
@@ -2098,10 +2117,16 @@ let parse_indentation xs =
 		   as being like a newline *)
 		(n,Label,x) :: loop (n+1) xs in
 	  loop n front in
-	front @
-	((n+List.length front),res,x) ::
-	loop (n+1) dmin dplus inparens inassn inbrace instruct accumulator xs in
-  loop 1 0 0 (0,0) (0,0) (0,0) (0,0) ([],[]) xs
+	front @ ((n+List.length front),res,x) :: loop (n+1) state xs in
+  let state =
+    { dmin = 0;
+      dplus = 0;
+      inparens = (0,0);
+      inassn = (0,0);
+      inbrace = (0,0);
+      instruct = (0,0);
+      accumulator = ([],[]) } in
+  loop 1 state xs
 
 exception NoInfo
 
