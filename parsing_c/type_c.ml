@@ -305,6 +305,8 @@ let (fake_function_type:
                   p_register = false, Ast_c.noii;
                   p_type = ft;
                   p_attr = [];
+                  p_midattr = [];
+                  p_endattr = [];
                 }
               in
               Some (paramtype, ii)

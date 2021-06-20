@@ -288,6 +288,8 @@ and fullType = typeQualifier * typeC
           p_register: bool wrap;
           p_type: fullType;
           p_attr: attribute list;
+          p_midattr: attribute list;
+          p_endattr: attribute list;
         }
         (* => (bool (register) * fullType) list * bool *)
 

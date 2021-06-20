@@ -490,7 +490,7 @@ and initialiser = base_initialiser wrap
 
 and base_parameterTypeDef =
     VoidParam     of fullType * attr list
-  | Param         of fullType * ident option * attr list
+  | Param         of fullType * attr list * ident option * attr list
 
   | MetaParam     of meta_name mcode * constraints * keep_binding * inherited
   | MetaParamList of meta_name mcode * listlen * constraints * keep_binding *

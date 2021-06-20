@@ -1151,11 +1151,12 @@ and parameterTypeDef p =
     Ast.VoidParam(ty,attr) ->
       fullType ty;
       print_attribute_list attr;
-  | Ast.Param(ty,Some id,attr) ->
-      print_named_type ty [] (fun _ -> ident id);
+  | Ast.Param(ty,midattr,Some id,attr) ->
+      print_named_type ty midattr (fun _ -> ident id);
       print_attribute_list attr;
-  | Ast.Param(ty,None,attr) ->
+  | Ast.Param(ty,midattr,None,attr) ->
       fullType ty;
+      assert (midattr = []);
       print_attribute_list attr;
   | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name

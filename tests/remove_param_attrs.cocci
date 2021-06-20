@@ -11,3 +11,16 @@ T x(
     ,
     ...
   ) {...}
+
+@@
+type T,U;
+identifier x,y;
+@@
+
+T x(
+    ...,
+    U
+-	__attribute__((nocast))
+    y,
+    ...
+  ) {...}

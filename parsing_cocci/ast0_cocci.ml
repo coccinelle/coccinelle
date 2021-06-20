@@ -336,7 +336,7 @@ and initialiser_list = initialiser dots
 
 and base_parameterTypeDef =
     VoidParam     of typeC * attr list
-  | Param         of typeC * ident option * attr list
+  | Param         of typeC * attr list * ident option * attr list
   | MetaParam     of Ast.meta_name mcode * constraints * pure
   | MetaParamList of Ast.meta_name mcode * listlen * constraints * pure
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)

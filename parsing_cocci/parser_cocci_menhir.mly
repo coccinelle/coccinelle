@@ -1547,10 +1547,10 @@ storage:
        | s=Tregister    { Parse_aux.clt2mcode Ast_cocci.Register s }
        | s=Textern      { Parse_aux.clt2mcode Ast_cocci.Extern s }
 
-decl: t=ctype d=direct_declarator(disj_ident) ar=attr_list
-	{ let (i,fn) = d in Ast0_cocci.wrap(Ast0_cocci.Param(fn t, Some i, ar)) }
+decl: t=ctype midar=attr_list d=direct_declarator(disj_ident) endar=attr_list
+	{ let (i,fn) = d in Ast0_cocci.wrap(Ast0_cocci.Param(fn t, midar, Some i, endar)) }
     | t=ctype ar=attr_list
-        { (*verify in FunDecl*) Ast0_cocci.wrap(Ast0_cocci.Param(t, None, ar)) }
+        { (*verify in FunDecl*) Ast0_cocci.wrap(Ast0_cocci.Param(t, [], None, ar)) }
     | TMetaParam
 	{ let (nm,cstr,pure,clt) = $1 in
 	Ast0_cocci.wrap(Ast0_cocci.MetaParam(Parse_aux.clt2mcode nm clt,cstr,pure)) }

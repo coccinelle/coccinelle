@@ -158,7 +158,7 @@ let initialiser i =
 let parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.VoidParam(ty,attr) -> [59]
-  | Ast0.Param(ty,id,attr) -> [60]
+  | Ast0.Param(ty,midattr,id,attr) -> [60]
   | Ast0.MetaParam(name,_,_) -> [61]
   | Ast0.MetaParamList(name,_,_,_) -> [62]
   | Ast0.PComma(cm) -> [63]

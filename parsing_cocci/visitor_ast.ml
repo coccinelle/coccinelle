@@ -633,13 +633,15 @@ let combiner bind option_default
           let lty = fullType ty in
           let lattr = multibind (List.map attribute attr) in
           bind lty lattr
-      | Ast.Param(ty,Some id,attr) ->
+      | Ast.Param(ty,midattr,Some id,attr) ->
           let lid = named_type ty id in
+	  let lmidattr = multibind (List.map attribute midattr) in
           let lattr = multibind (List.map attribute attr) in
-          bind lid lattr
-      | Ast.Param(ty,None,attr) ->
+          multibind [lid;lmidattr;lattr]
+      | Ast.Param(ty,midattr,None,attr) ->
           let lty = fullType ty in
           let lattr = multibind (List.map attribute attr) in
+          assert (midattr = []);
           bind lty lattr
       | Ast.MetaParam(name,_,_,_) -> meta_mcode name
       | Ast.MetaParamList(name,_,_,_,_) -> meta_mcode name
@@ -1634,9 +1636,9 @@ let rebuilder
 	(match Ast.unwrap p with
 	  Ast.VoidParam(ty,attr) ->
             Ast.VoidParam(fullType ty,List.map attribute attr)
-	| Ast.Param(ty,id,attr) ->
+	| Ast.Param(ty,midattr,id,attr) ->
             Ast.Param
-              (fullType ty, get_option ident id,List.map attribute attr)
+              (fullType ty,List.map attribute midattr, get_option ident id,List.map attribute attr)
 	| Ast.MetaParam(name,constraints,keep,inherited) ->
 	    Ast.MetaParam(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaParamList(name,lenname_inh,constraints,keep,inherited) ->

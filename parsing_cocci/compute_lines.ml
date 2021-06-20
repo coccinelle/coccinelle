@@ -954,23 +954,25 @@ and parameterTypeDef p =
       | l ->
           let lattr = List.hd (List.rev l) in
           mkres p (Ast0.VoidParam(ty,attr)) ty lattr)
-  | Ast0.Param(ty,Some id,attr) ->
+  | Ast0.Param(ty,midattr,Some id,attr) ->
       let id = ident id in
+      let midattr = List.map attribute midattr in
       let ty = typeC ty in
       let attr = List.map attribute attr in
       (match attr with
-        [] -> mkres p (Ast0.Param(ty,Some id,attr)) ty id
+        [] -> mkres p (Ast0.Param(ty,midattr,Some id,attr)) ty id
       | l ->
           let lattr = List.hd (List.rev l) in
-          mkres p (Ast0.Param(ty,Some id,attr)) ty lattr)
-  | Ast0.Param(ty,None,attr) ->
+          mkres p (Ast0.Param(ty,midattr,Some id,attr)) ty lattr)
+  | Ast0.Param(ty,midattr,None,attr) ->
+      assert (midattr = []);
       let attr = List.map attribute attr in
       let ty = typeC ty in
       (match attr with
-        [] -> mkres p (Ast0.Param(ty,None,attr)) ty ty
+        [] -> mkres p (Ast0.Param(ty,[],None,attr)) ty ty
       | l ->
           let lattr = List.hd (List.rev l) in
-          mkres p (Ast0.Param(ty,None,attr)) ty lattr)
+          mkres p (Ast0.Param(ty,[],None,attr)) ty lattr)
   | Ast0.MetaParam(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

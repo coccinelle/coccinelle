@@ -483,13 +483,16 @@ let classify is_minus all_marked table code =
   let param r k e =
     compute_result Ast0.param e
       (match Ast0.unwrap e with
-	Ast0.Param(ty,Some id,attr) ->
+	Ast0.Param(ty,midattr,Some id,attr) ->
 	  (* needed for the same reason as in the Init and UnInit cases *)
 	  bind (r.VT0.combiner_rec_typeC ty)
-           (bind (r.VT0.combiner_rec_ident id)
-              (List.fold_right bind
-                 (List.map r.VT0.combiner_rec_attribute attr)
-                 option_default))
+            (bind (List.fold_right bind
+              (List.map r.VT0.combiner_rec_attribute midattr)
+              option_default)
+              (bind (r.VT0.combiner_rec_ident id)
+                (List.fold_right bind
+                   (List.map r.VT0.combiner_rec_attribute attr)
+                   option_default)))
       |	_ -> k e) in
 
   let typeC r k e =
@@ -899,9 +902,11 @@ let equal_parameterTypeDef p1 p2 =
     (Ast0.VoidParam(_,ar1),Ast0.VoidParam(_,ar2)) ->
       (List.length ar1) = (List.length ar2) &&
       List.for_all2 equal_attribute ar1 ar2
-  | (Ast0.Param(_,_,ar1),Ast0.Param(_,_,ar2)) ->
+  | (Ast0.Param(_,mar1,_,ar1),Ast0.Param(_,mar2,_,ar2)) ->
       (List.length ar1) = (List.length ar2) &&
-      List.for_all2 equal_attribute ar1 ar2
+      List.for_all2 equal_attribute ar1 ar2 &&
+      (List.length mar1) = (List.length mar2) &&
+      List.for_all2 equal_attribute mar1 mar2
   | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
   | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->
       equal_mcode name1 name2

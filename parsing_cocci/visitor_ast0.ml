@@ -839,14 +839,15 @@ let visitor mode bind option_default
 	    let (ty_n,ty) = typeC ty in
 	    let (attr_n,attr) = map_split_bind attribute attrs in
             (bind ty_n attr_n,Ast0.VoidParam(ty, attrs))
-	| Ast0.Param(ty,Some id,attrs) ->
-            let (((ty_mid_id_n,ty),_),id) = named_type ty [] id in
+	| Ast0.Param(ty,midattrs,Some id,attrs) ->
+            let (((ty_mid_id_n,ty),midattr),id) = named_type ty midattrs id in
 	    let (attr_n,attr) = map_split_bind attribute attrs in
-	    (bind ty_mid_id_n attr_n, Ast0.Param(ty,Some id,attr))
-	| Ast0.Param(ty,None,attrs) ->
+	    (bind ty_mid_id_n attr_n, Ast0.Param(ty,midattr,Some id,attr))
+	| Ast0.Param(ty,midattrs,None,attrs) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (attr_n,attr) = map_split_bind attribute attrs in
-	    (bind ty_n attr_n, Ast0.Param(ty,None,attr))
+            assert (midattrs = []);
+            (bind ty_n attr_n, Ast0.Param(ty,[],None,attr))
 	| Ast0.MetaParam(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaParam(name,constraints,pure))

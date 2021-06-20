@@ -865,9 +865,9 @@ and parameterTypeDef p =
     (match Ast0.unwrap p with
       Ast0.VoidParam(ty,attr) ->
         Ast.VoidParam(typeC false ty,List.map attribute attr)
-    | Ast0.Param(ty,id,attr) ->
+    | Ast0.Param(ty,midattr,id,attr) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
-	Ast.Param(typeC allminus ty,get_option ident id,List.map attribute attr)
+	Ast.Param(typeC allminus ty,List.map attribute midattr,get_option ident id,List.map attribute attr)
     | Ast0.MetaParam(name,cstr,_) ->
 	Ast.MetaParam(mcode name,constraints cstr,unitary,false)
     | Ast0.MetaParamList(name,lenname,cstr,_) ->

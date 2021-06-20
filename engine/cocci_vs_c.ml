@@ -2035,7 +2035,8 @@ and argument arga argb =
   match A.unwrap arga, argb with
   | A.TypeExp tya,
     Right (B.ArgType
-            {B.p_register=b,iib; p_namei=sopt;p_type=tyb;p_attr=attrs}) ->
+            {B.p_register=b,iib; p_namei=sopt;p_type=tyb;
+             p_attr=attrs;p_midattr=midattrs;p_endattr=endattrs}) ->
       if b || sopt <> None
       then
         (* failwith "the argument have a storage and ast_cocci does not have"*)
@@ -2048,7 +2049,9 @@ and argument arga argb =
             (Right (B.ArgType {B.p_register=(b,iib);
                                p_namei=sopt;
                                p_type=tyb;
-                               p_attr=attrs;}))
+                               p_attr=attrs;
+                               p_midattr=midattrs;
+                               p_endattr=endattrs;}))
         ))
 
   | A.TypeExp tya,  _                                  -> fail
@@ -2142,7 +2145,9 @@ and parameters_bis eas ebs =
               let {B.p_register=(hasreg,iihasreg);
                     p_namei = idbopt;
                     p_type=tb;
-                    p_attr=attrsb; } = eb in
+                    p_attr=attrsb;
+                    p_midattr=midattrsb;
+                    p_endattr=endattrsb; } = eb in
 
               let attr_allminus =
                 check_allminus.Visitor_ast.combiner_parameter ea in
@@ -2158,7 +2163,9 @@ and parameters_bis eas ebs =
                       [Left {B.p_register=(hasreg, iihasreg);
                               p_namei = idbopt;
                               p_type = tb;
-                              p_attr = attrsb;}]
+                              p_attr = attrsb;
+                              p_midattr = midattrsb;
+                              p_endattr = endattrsb;}]
 			)))
                 | _ -> fail
               else fail
@@ -2194,36 +2201,43 @@ and parameter = fun parama paramb ->
 	      return
 		(A.MetaParam(ida,constraints,keep,inherited)+>
 		 A.rewrap parama,eb)))
-  | A.Param (typa, idaopt, attrsa), eb ->
+  | A.Param (typa, midattrsa, idaopt, attrsa), eb ->
       let {B.p_register = (hasreg,iihasreg);
 	    p_namei = nameidbopt;
 	    p_type = typb;
-            p_attr = attrsb;} = paramb in
+            p_attr = attrsb;
+            p_midattr = midattrsb;
+            p_endattr = endattrsb;} = paramb in
 
       let attr_allminus =
         check_allminus.Visitor_ast.combiner_parameter parama in
 
       fullType typa typb >>= (fun typa typb ->
-      attribute_list attr_allminus attrsa attrsb >>= (fun attrsa attrsb ->
+      attribute_list attr_allminus midattrsa midattrsb >>= (fun midattrsa midattrsb ->
+      attribute_list attr_allminus attrsa endattrsb >>= (fun attrsa attrsb ->
 	match idaopt, nameidbopt with
 	| Some ida, Some nameidb ->
       (* todo: if minus on ida, should also minus the iihasreg ? *)
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
               return (
-              A.Param (typa, Some ida, attrsa)+> A.rewrap parama,
+              A.Param (typa, midattrsa, Some ida, attrsa)+> A.rewrap parama,
               {B.p_register = (hasreg, iihasreg);
 		p_namei = Some (nameidb);
                 p_type = typb;
-                p_attr = attrsb;}
+                p_attr = attrsb;
+                p_midattr = midattrsb;
+                p_endattr = endattrsb;}
 		))
 
 	| None, None ->
 	    return (
-            A.Param (typa, None, attrsa)+> A.rewrap parama,
+            A.Param (typa, midattrsa, None, attrsa)+> A.rewrap parama,
             {B.p_register=(hasreg,iihasreg);
               p_namei = None;
               p_type = typb;
-              p_attr = attrsb;}
+              p_attr = attrsb;
+              p_midattr = midattrsb;
+              p_endattr = endattrsb;}
 	      )
   (* why handle this case ? because of transform_proto ? we may not
    * have an ident in the proto.
@@ -2238,7 +2252,7 @@ and parameter = fun parama paramb ->
  *)
 
 	| Some _, None -> fail
-	| None, Some _ -> fail))
+	| None, Some _ -> fail)))
   | A.OptParam _, _ ->
       failwith "not handling Opt for Param"
   | _ -> fail

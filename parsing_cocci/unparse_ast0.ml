@@ -555,11 +555,12 @@ and parameterTypeDef p =
         Ast0.VoidParam(ty,attr) ->
           typeC ty;
           print_attribute_list attr;
-      | Ast0.Param(ty,Some id,attr) ->
-          print_named_type ty [] id;
+      | Ast0.Param(ty,midattr,Some id,attr) ->
+          print_named_type ty midattr id;
           print_attribute_list attr;
-      | Ast0.Param(ty,None,attr) ->
+      | Ast0.Param(ty,midattr,None,attr) ->
           typeC ty;
+          assert (midattr = []);
           print_attribute_list attr;
       | Ast0.MetaParam(name,_,_) -> mcode print_meta name
       | Ast0.MetaParamList(name,_,_,_) -> mcode print_meta name

@@ -864,6 +864,7 @@ new_argument:
        let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam ty in
        Right (ArgType { p_namei = None; p_type = returnType;
                         p_register = hasreg, iihasreg; p_attr = [];
+                        p_midattr = []; p_endattr = [];
 		      } )
      }
  | new_argument TOCro expr TCCro
@@ -1467,27 +1468,37 @@ parameter_decl2:
        p_type = mk_ty NoType [];
        p_register = (false, []);
        p_attr = [];
+       p_midattr = [];
+       p_endattr = [];
      }
    }
  | decl_spec declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg),iihasreg) = fixDeclSpecForParam (snd $1) in
-       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
+       let attrs = (fst (fst $1)) in
+       let midattrs = (snd (fst $1)) in
+       let endattrs = (fst $2) in
        let (name, ftyp) = snd $2 in
        { p_namei = Some (name);
          p_type = ftyp returnType;
          p_register = (hasreg, iihasreg);
          p_attr = attrs;
+         p_midattr = midattrs;
+         p_endattr = endattrs;
        }
      }
  | decl_spec abstract_declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam (snd $1) in
-       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
+       let attrs = (fst (fst $1)) in
+       let midattrs = (snd (fst $1)) in
+       let endattrs = (fst $2) in
        { p_namei = None;
          p_type = (snd $2) returnType;
          p_register = hasreg, iihasreg;
          p_attr = attrs;
+         p_midattr = midattrs;
+         p_endattr = endattrs;
        }
      }
  | decl_spec
@@ -1495,7 +1506,9 @@ parameter_decl2:
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;
-         p_attr = (fst (fst $1)) @ (snd (fst $1))
+         p_attr = (fst (fst $1));
+         p_midattr = [];
+         p_endattr = (snd (fst $1));
        }
      }
 
@@ -1507,27 +1520,37 @@ parameter_decl_arg: /* more tolerant */
        p_type = mk_ty NoType [];
        p_register = (false, []);
        p_attr = [];
+       p_midattr = [];
+       p_endattr = [];
      }
    }
  | decl_spec declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg),iihasreg) = fixDeclSpecForArg (snd $1) in
-       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
+       let attrs = (fst (fst $1)) in
+       let midattrs = (snd (fst $1)) in
+       let endattrs = (fst $2) in
        let (name, ftyp) = snd $2 in
        { p_namei = Some (name);
          p_type = ftyp returnType;
          p_register = (hasreg, iihasreg);
          p_attr = attrs;
+         p_midattr = midattrs;
+         p_endattr = endattrs;
        }
      }
  | decl_spec abstract_declaratorp
      { LP.kr_impossible();
        let ((returnType,hasreg), iihasreg) = fixDeclSpecForArg (snd $1) in
-       let attrs = (fst (fst $1)) @ (snd (fst $1)) @ (fst $2) in
+       let attrs = (fst (fst $1)) in
+       let midattrs = (snd (fst $1)) in
+       let endattrs = (fst $2) in
        { p_namei = None;
          p_type = snd $2 returnType;
          p_register = hasreg, iihasreg;
          p_attr = attrs;
+         p_midattr = midattrs;
+         p_endattr = endattrs;
        }
      }
  | decl_spec
@@ -1535,7 +1558,9 @@ parameter_decl_arg: /* more tolerant */
        { p_namei = None;
          p_type = returnType;
          p_register = hasreg, iihasreg;
-         p_attr = (fst (fst $1)) @ (snd (fst $1))
+         p_attr = (fst (fst $1));
+         p_midattr = [];
+         p_endattr = (snd (fst $1));
        }
      }
 

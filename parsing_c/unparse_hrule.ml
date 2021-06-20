@@ -209,6 +209,8 @@ let print_metavar pr = function
          p_namei = Some name';
          p_type = (({Ast_c.const = false; Ast_c.volatile = false},[]),ty);
          p_attr = [];
+         p_midattr = [];
+         p_endattr = [];
         }
   | _ -> failwith "function must have named parameters"
 

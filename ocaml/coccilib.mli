@@ -110,6 +110,8 @@ module Ast_c :
       p_register : bool wrap;
       p_type : fullType;
       p_attr : attribute list;
+      p_midattr : attribute list;
+      p_endattr : attribute list;
     }
     and typeQualifier = typeQualifierbis wrap
     and typeQualifierbis =
@@ -2839,7 +2841,7 @@ module Ast_cocci :
     and base_parameterTypeDef =
       Ast_cocci.base_parameterTypeDef =
         VoidParam of fullType * attr list
-      | Param of fullType * ident option * attr list
+      | Param of fullType * attr list * ident option * attr list
       | MetaParam of meta_name mcode * constraints * keep_binding * inherited
       | MetaParamList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
@@ -3482,7 +3484,7 @@ module Ast0_cocci :
     and base_parameterTypeDef =
       Ast0_cocci.base_parameterTypeDef =
         VoidParam of typeC * attr list
-      | Param of typeC * ident option * attr list
+      | Param of typeC * attr list * ident option * attr list
       | MetaParam of Ast_cocci.meta_name mcode * constraints * pure
       | MetaParamList of Ast_cocci.meta_name mcode * listlen * constraints *
           pure

@@ -136,10 +136,10 @@ and typeC tya tyb =
           acc >>= (fun xs ->
 
             let {p_register = (ba,iiba); p_namei = saopt; p_type = ta;
-                 p_attr = attrsa} =
+                 p_attr = attrsa; p_midattr = midattrsa; p_endattr = endattrsa} =
               parama in
             let {p_register = (bb,iibb); p_namei = sbopt; p_type = tb;
-                 p_attr = attrsb} =
+                 p_attr = attrsb; p_midattr = midattrsb; p_endattr = endattrsb} =
               paramb in
 
             let bx = ba in
@@ -148,14 +148,19 @@ and typeC tya tyb =
             let sxopt = saopt in
 
             let attrsx = attrsa in
+            let midattrsx = midattrsa in
+            let endattrsx = endattrsa in
 
             (* todo?  iso on name or argument ? *)
-            (ba = bb && same_s saopt sbopt && attrsa = attrsb) >&&>
+            (ba = bb && same_s saopt sbopt &&
+              attrsa = attrsb && midattrsa = midattrsb && endattrsa = endattrsb) >&&>
             fullType ta tb >>= (fun tx ->
               let paramx = { p_register = (bx, iibx);
                              p_namei = sxopt;
                              p_type = tx;
-                             p_attr = attrsx; } in
+                             p_attr = attrsx;
+                             p_midattr = midattrsx;
+                             p_endattr = endattrsx; } in
               return ((paramx,iix)::xs)
             )
           )

@@ -74,6 +74,8 @@ and parameterType = {
   p_register : bool wrap;
   p_type : fullType;
   p_attr : attribute list;
+  p_midattr : attribute list;
+  p_endattr : attribute list;
 }
 and typeQualifier = typeQualifierbis wrap
 and typeQualifierbis = { const : bool; volatile : bool; }
