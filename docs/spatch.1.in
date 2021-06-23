@@ -250,8 +250,8 @@ short option of \fB\-\-iso\-file\fR
 .HP
 \fB\-\-no\-show\-diff\fR
 .TP
-\fB\-\-force\-diffshow\fR
-diff even if only spacing changes
+\fB\-\-force\-diff\fR
+show diff even if only spacing changes
 .HP
 \fB\-\-show\-flow\fR
 .HP

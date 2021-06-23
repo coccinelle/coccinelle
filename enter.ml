@@ -441,7 +441,7 @@ let other_options = [
     "--show-diff"           , Arg.Set FC.show_diff, " ";
     "--no-show-diff"           , Arg.Clear FC.show_diff, " ";
     "--force-diff"           , Arg.Set FC.force_diff,
-       "show diff even if only spacing changes";
+       " show diff even if only spacing changes";
     "--show-flow"              , Arg.Set FC.show_flow,        " ";
     (* works in conjunction with -show_ctl_text *)
     "--ctl-inline-let",
