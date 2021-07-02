@@ -9,3 +9,7 @@ int __attribute__((always_inline)) func () {
 int func (int a) {
   return 42;
 }
+
+int __attribute__((always_inline)) *func (long a) {
+  return 42;
+}

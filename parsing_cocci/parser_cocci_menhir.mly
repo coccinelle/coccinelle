@@ -1495,7 +1495,7 @@ fninfo:
 	  List.find (function Ast0_cocci.FStorage(_) -> true | _ -> false) $2 in
 	raise (Semantic_cocci.Semantic "duplicate storage")
       with Not_found -> (Ast0_cocci.FStorage($1))::$2 }
-  | t=ctype r=fninfo_nt { (Ast0_cocci.FType(t))::r }
+  | t=ctype r=fninfo_nt { (Ast0_cocci.FType(List.fold_right (fun f x-> f x) (snd r) t))::(fst r) }
   | Tinline  fninfo
       { try
 	let _ = List.find (function Ast0_cocci.FInline(_) -> true | _ -> false) $2 in
@@ -1508,23 +1508,28 @@ fninfo:
       with Not_found -> (Ast0_cocci.FAttr(a))::$2 }
 
 fninfo_nt:
-    /* empty */ { [] }
+    /* empty */ { [], [] }
   | storage  fninfo_nt
       { try
 	let _ =
-	  List.find (function Ast0_cocci.FStorage(_) -> true | _ -> false) $2 in
+	  List.find (function Ast0_cocci.FStorage(_) -> true | _ -> false) (fst $2) in
 	raise (Semantic_cocci.Semantic "duplicate storage")
-      with Not_found -> (Ast0_cocci.FStorage($1))::$2 }
+      with Not_found -> (Ast0_cocci.FStorage($1))::(fst $2), snd $2 }
   | Tinline  fninfo_nt
       { try
-	let _ = List.find (function Ast0_cocci.FInline(_) -> true | _ -> false) $2 in
+	let _ = List.find (function Ast0_cocci.FInline(_) -> true | _ -> false) (fst $2) in
 	raise (Semantic_cocci.Semantic "duplicate inline")
-      with Not_found -> (Ast0_cocci.FInline(Parse_aux.clt2mcode "inline" $1))::$2 }
+      with Not_found -> (Ast0_cocci.FInline(Parse_aux.clt2mcode "inline" $1))::(fst $2), snd $2 }
   | a=attr    fninfo_nt
       { try
-	let _ = List.find (function Ast0_cocci.FAttr(_) -> true | _ -> false) $2 in
+	let _ = List.find (function Ast0_cocci.FAttr(_) -> true | _ -> false) (fst $2) in
 	raise (Semantic_cocci.Semantic "duplicate init")
-      with Not_found -> (Ast0_cocci.FAttr(a))::$2 }
+      with Not_found -> (Ast0_cocci.FAttr(a))::(fst $2), snd $2 }
+  | a=attr m1=TMul m2=list(TMul) fninfo_nt
+      { try
+	let _ = List.find (function Ast0_cocci.FAttr(_) -> true | _ -> false) (fst $4) in
+	raise (Semantic_cocci.Semantic "duplicate init")
+      with Not_found -> (Ast0_cocci.FAttr(a))::(fst $4), (fun x -> Parse_aux.pointerify x (m1::m2))::snd $4 }
 
 storage:
          s=Tstatic      { Parse_aux.clt2mcode Ast_cocci.Static s }
@@ -1549,6 +1554,8 @@ storage:
 
 decl: t=ctype midar=attr_list d=direct_declarator(disj_ident) endar=attr_list
 	{ let (i,fn) = d in Ast0_cocci.wrap(Ast0_cocci.Param(fn t, midar, Some i, endar)) }
+    | t=ctype midar1=attr midar2=attr_list m1=TMul m2=list(TMul) d=direct_declarator(disj_ident) endar=attr_list
+        { let (i,fn) = d in Ast0_cocci.wrap(Ast0_cocci.Param(Parse_aux.pointerify (fn t) (m1::m2), midar1::midar2, Some i, endar)) }
     | t=ctype ar=attr_list
         { (*verify in FunDecl*) Ast0_cocci.wrap(Ast0_cocci.Param(t, [], None, ar)) }
     | TMetaParam
