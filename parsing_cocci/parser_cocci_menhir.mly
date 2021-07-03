@@ -1084,12 +1084,12 @@ top_ctype:
 
 ctype:
   cv=ioption(const_vol) ty=all_basic_types m=list(mul)
+| cv=ioption(const_vol) ty=signed_or_unsigned m=list(mul)
     { List.fold_left
 	(function prev ->
 	  function (star,cv) ->
 	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
 	(Parse_aux.make_cv cv ty) m }
-| cv=ioption(const_vol) ty=signed_or_unsigned { Parse_aux.make_cv cv ty }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
