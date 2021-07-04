@@ -3,4 +3,7 @@ func (...) {
 - const int i;
 + float i;
   ...
+- char const *i;
++ double *i;
+  ...
 }

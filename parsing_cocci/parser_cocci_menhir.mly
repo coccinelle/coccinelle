@@ -1083,9 +1083,14 @@ top_ctype:
   ctype { Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1)))) }
 
 ctype:
-  cv=ioption(const_vol) ty=all_basic_types m=list(mul)
-| cv=ioption(const_vol) ty=signed_or_unsigned m=list(mul)
-    { List.fold_left
+  cv1=ioption(const_vol) ty=all_basic_types cv2=ioption(const_vol) m=list(mul)
+| cv1=ioption(const_vol) ty=signed_or_unsigned cv2=ioption(const_vol) m=list(mul)
+    { let cv = match cv1,cv2 with
+        None, None -> None
+      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
+      | Some x, None -> Some x
+      | None, Some x -> Some x in
+      List.fold_left
 	(function prev ->
 	  function (star,cv) ->
 	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
