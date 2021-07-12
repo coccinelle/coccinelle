@@ -913,8 +913,8 @@ and initialiser_dots x = dots is_init_dots None initialiser x
 and attribute attr =
   match Ast0.unwrap attr with
     Ast0.Attribute(a) ->
-      let ln = attr_arg a in
-      mkres attr (Ast0.Attribute(a)) ln ln
+      let a = attr_arg a in
+      mkres attr (Ast0.Attribute(a)) a a
   | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
       let attr_ = normal_mcode attr_ in
       let lp1 = normal_mcode lp1 in
