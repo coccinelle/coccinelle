@@ -4,7 +4,7 @@ val show_transinfo : bool ref
 val show_trying : bool ref
 val track_iso_usage : bool ref
 val worth_trying_opt : bool ref
-type scanner = IdUtils | Glimpse | CocciGrep | GitGrep | NoScanner
+type scanner = IdUtils | Glimpse | CocciGrep | GitGrep | PatchDiff | NoScanner
 val scanner : scanner ref
 val pyoutput : string ref
 val ocamlc : string ref

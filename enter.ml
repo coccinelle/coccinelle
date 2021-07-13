@@ -18,9 +18,7 @@ module Inc = Includes
  * globals/config.ml, mainly a standard.h and standard.iso file *)
 
 let cocci_file = ref ""
-
 let opt_c_files = ref []
-
 let output_file = ref "" (* resulting code *)
 let tmp_dir = ref "" (* temporary files for parallelism *)
 let aux_file_suffix =
@@ -370,6 +368,9 @@ let short_options = [
   "--use-coccigrep",
   Arg.Unit (function _ -> Flag.scanner := Flag.CocciGrep),
   "    find relevant files using cocci grep";
+  "--use-patch-diff",
+  Arg.Unit (function _ -> Flag.scanner := Flag.PatchDiff),
+  "    process files in the diff for a directory";
   "--patch",
     Arg.String (function s -> Flag.patch := Some (Cocci.normalize_path s)),
   ("    <dir> path name with respect to which a patch should be created\n"^
@@ -940,13 +941,18 @@ let idutils_filter (_,_,_,query) dir =
       Some
 	(files +>
 	 List.filter
-	   (fun file -> List.mem (Common.filesuffix file) suffixes))
+     (fun file -> List.mem (Common.filesuffix file) suffixes))
+
+let patchdiff_filter _ dir =
+  let struc = Patch_diff.getpatchdiff dir in
+  Some (List.map (function x -> x.Patch_diff.file_name) struc)
 
 let scanner_to_interpreter = function
     Flag.Glimpse -> glimpse_filter
   | Flag.IdUtils -> idutils_filter
   | Flag.CocciGrep -> coccigrep_filter
   | Flag.GitGrep -> gitgrep_filter
+  | Flag.PatchDiff -> patchdiff_filter
   | _ -> failwith "impossible"
 
 (*****************************************************************************)
@@ -1079,7 +1085,7 @@ let rec main_action xs =
 		     " or multiple files")
               | _, false, _, _, _ -> [List.map (fun x -> (x,None)) (x::xs)]
 	      |	_, true, "",
-		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep),
+		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep|Flag.PatchDiff),
 		  [] ->
 		    let interpreter = scanner_to_interpreter !Flag.scanner in
 		    let files =
@@ -1088,7 +1094,7 @@ let rec main_action xs =
 		      | Some files -> files in
                     files +> List.map (fun x -> [(x,None)])
               | _, true, s,
-		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep), _
+		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep|Flag.PatchDiff), _
 		when s <> "" ->
                   failwith "--use-xxx filters do not work with --kbuild"
                   (* normal *)

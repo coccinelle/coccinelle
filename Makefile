@@ -44,7 +44,7 @@ SOURCES_parsing_cocci := \
 	parse_printf.ml parse_aux.ml cleanup_rules.ml disjdistr.ml \
 	parser_cocci_menhir.mly lexer_cocci.mll \
 	lexer_cli.mll lexer_script.mll \
-	cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml git_grep.ml \
+	cocci_grep.ml dpll.ml get_constants2.ml id_utils.ml git_grep.ml patch_diff.ml \
 	adjacency.ml commas_on_lists.ml re_constraints.ml parse_cocci.ml \
 	command_line.ml cocci_args.ml
 SOURCES_parsing_c := \
