@@ -1212,7 +1212,7 @@ and attr_arg a =
     (match Ast0.unwrap a with
       Ast0.MetaAttr(name,cstr,_) ->
 	Ast.MetaAttr(mcode name,constraints cstr,unitary,false)
-    | Ast0.AttrName(arg) -> Ast.AttrName(mcode arg))
+    | Ast0.MacroAttr(arg) -> Ast.MacroAttr(mcode arg))
 
 and option_to_list = function
     Some x -> [x]

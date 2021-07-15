@@ -237,7 +237,7 @@ let attribute a =
 let attr_arg a =
   match Ast0.unwrap a with
     Ast0.MetaAttr(name,_,_) -> [40]
-  | Ast0.AttrName(attr) -> [140]
+  | Ast0.MacroAttr(attr) -> [140]
 
 let top_level t =
   match Ast0.unwrap t with

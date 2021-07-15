@@ -122,7 +122,7 @@ module Ast_c :
     and attribute = attributebis wrap
     and attributebis = Ast_c.attributebis = Attribute of attr_arg | GccAttribute of attr_arg
     and attr_arg = attr_arg_bis wrap
-    and attr_arg_bis = Ast_c.attr_arg_bis = AttrName of string
+    and attr_arg_bis = Ast_c.attr_arg_bis = MacroAttr of string
     and expression = (expressionbis * exp_info ref) wrap3
     and exp_info = exp_type option * test
     and exp_type = fullType * local
@@ -2944,7 +2944,7 @@ module Ast_cocci :
     and attr = base_attr wrap
     and base_attr_arg =
       Ast_cocci.base_attr_arg =
-        AttrName of string mcode
+        MacroAttr of string mcode
       | MetaAttr of meta_name mcode * constraints * keep_binding *
           inherited
     and attr_arg = base_attr_arg wrap
@@ -3585,7 +3585,7 @@ module Ast0_cocci :
     and attr = base_attr wrap
     and base_attr_arg =
       Ast0_cocci.base_attr_arg =
-        AttrName of string mcode
+        MacroAttr of string mcode
       | MetaAttr of Ast_cocci.meta_name mcode * constraints * pure
     and attr_arg = base_attr_arg wrap
     and ('a, 'b) whencode =

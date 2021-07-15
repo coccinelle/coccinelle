@@ -1539,7 +1539,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
         let attr_is_not_context a =
           let attr_arg_is_not_context a =
             match A.unwrap a with
-              A.AttrName(_,_,A.CONTEXT(_,_),_) -> false
+              A.MacroAttr(_,_,A.CONTEXT(_,_),_) -> false
             | A.MetaAttr((_,_,A.CONTEXT(_,_),_),_,_,_) -> false
             | _ -> true in
           match A.unwrap a with
@@ -4371,7 +4371,7 @@ and attribute = fun allminus ea eb ->
 
 and attr_arg = fun allminus ea eb ->
   match A.unwrap ea, eb with
-    A.AttrName(namea), (B.AttrName nameb, ii)
+    A.MacroAttr(namea), (B.MacroAttr nameb, ii)
       when (A.unwrap_mcode namea) = nameb ->
       let ib1 = tuple_of_list1 ii in
       tokenf namea ib1 >>= (fun namea ib1 ->
@@ -4379,8 +4379,8 @@ and attr_arg = fun allminus ea eb ->
         then minusize_list [ib1]
         else return ((), [ib1])) >>= (fun _ ib1 ->
 	return (
-	  A.rewrap ea (A.AttrName(namea)),
-          (B.AttrName nameb,ib1)
+	  A.rewrap ea (A.MacroAttr(namea)),
+          (B.MacroAttr nameb,ib1)
       )))
   | A.MetaAttr (ida,constraints,keep,inherited), _ ->
       (* todo: use quaopt, hasreg ? *)

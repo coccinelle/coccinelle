@@ -469,7 +469,7 @@ and base_attr =
 and attr = base_attr wrap
 
 and base_attr_arg =
-    AttrName of string mcode
+    MacroAttr of string mcode
   | MetaAttr of Ast.meta_name mcode * constraints * pure
 
 and attr_arg = base_attr_arg wrap

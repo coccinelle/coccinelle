@@ -941,7 +941,7 @@ let combiner bind option_default
   and attr_arg a =
     let k a =
       match Ast.unwrap a with
-        Ast.AttrName(arg) -> string_mcode arg
+        Ast.MacroAttr(arg) -> string_mcode arg
       | Ast.MetaAttr(name,_,_,_) -> meta_mcode name in
     attr_argfn all_functions k a
 
@@ -1960,7 +1960,7 @@ let rebuilder
     let k a =
       Ast.rewrap a
         (match Ast.unwrap a with
-          Ast.AttrName(arg) -> Ast.AttrName(string_mcode arg)
+          Ast.MacroAttr(arg) -> Ast.MacroAttr(string_mcode arg)
         | Ast.MetaAttr(name,constraints,keep,inherited) ->
             Ast.MetaAttr(meta_mcode name,constraints,keep,inherited)) in
               attr_argfn all_functions k a

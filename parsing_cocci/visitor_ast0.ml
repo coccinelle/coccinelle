@@ -1179,8 +1179,8 @@ let visitor mode bind option_default
           Ast0.MetaAttr(name,constraints,pure) ->
             let (n,name) = meta_mcode name in
             (n,Ast0.MetaAttr(name,constraints,pure))
-        | Ast0.AttrName (arg) ->
-            let (args_n,arg) = string_mcode arg in (args_n,Ast0.AttrName(arg))) in
+        | Ast0.MacroAttr (arg) ->
+            let (args_n,arg) = string_mcode arg in (args_n,Ast0.MacroAttr(arg))) in
               attr_argfn all_functions k a
 
   (* we only include the when string mcode w because the parameterised

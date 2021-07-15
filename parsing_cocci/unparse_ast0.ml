@@ -781,7 +781,7 @@ and print_attribute a =
 
 and print_attr_arg a =
   match Ast0.unwrap a with
-    Ast0.AttrName(arg) -> mcode print_string arg
+    Ast0.MacroAttr(arg) -> mcode print_string arg
   | Ast0.MetaAttr(name,_,_) -> mcode print_meta name
 
 and whencode notfn alwaysfn = function

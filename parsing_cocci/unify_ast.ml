@@ -736,7 +736,7 @@ and unify_attribute attr1 attr2 =
 
 and unify_attr_arg arg1 arg2 =
   match (Ast.unwrap arg1,Ast.unwrap arg2) with
-    (Ast.AttrName(arg_id1), Ast.AttrName(arg_id2)) ->
+    (Ast.MacroAttr(arg_id1), Ast.MacroAttr(arg_id2)) ->
       unify_mcode arg_id1 arg_id2
   | (Ast.MetaAttr(_,_,_,_),_)
   | (_,Ast.MetaAttr(_,_,_,_)) -> true

@@ -533,7 +533,7 @@ and vk_attribute = fun bigf attr ->
 and vk_attr_arg = fun bigf name ->
   let iif ii = vk_ii bigf ii in
   match name with
-  | AttrName s, ii -> iif ii
+  | MacroAttr s, ii -> iif ii
 
 and vk_exec_code = fun bigf e ->
   let iif ii = vk_ii bigf ii in
@@ -1466,7 +1466,7 @@ and vk_attribute_s = fun bigf attr ->
 and vk_attr_arg_s = fun bigf name ->
   let iif ii = vk_ii_s bigf ii in
   match name with
-  | AttrName s, ii -> AttrName s, iif ii
+  | MacroAttr s, ii -> MacroAttr s, iif ii
 
 and vk_exec_code_s = fun bigf e ->
   let iif ii = vk_ii_s bigf ii in

@@ -928,9 +928,9 @@ and attribute attr =
 
 and attr_arg arg =
   match Ast0.unwrap arg with
-    Ast0.AttrName(a) ->
+    Ast0.MacroAttr(a) ->
       let ln = promote_mcode a in
-      mkres arg (Ast0.AttrName(a)) ln ln
+      mkres arg (Ast0.MacroAttr(a)) ln ln
   | Ast0.MetaAttr(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

@@ -1338,13 +1338,13 @@ attribute:
  | attr_arg { Attribute $1, [] }
 
 attr_arg:
- | TMacroAttr { AttrName (fst $1), [snd $1] }
+ | TMacroAttr { MacroAttr (fst $1), [snd $1] }
 
 attribute_gcc:
  | Tattribute tdouble_opar_gcc_attr attr_arg_gcc tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
 
 attr_arg_gcc:
- | TIdent { AttrName (fst $1), [snd $1] }
+ | TIdent { MacroAttr (fst $1), [snd $1] }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
@@ -2545,7 +2545,7 @@ attribute_list:
 attributes: attribute_list { $1 }
 
 end_attr_arg:
- | TMacroEndAttr { AttrName (fst $1), [snd $1] }
+ | TMacroEndAttr { MacroAttr (fst $1), [snd $1] }
 
 end_attribute_gcc:
  | TMacroGccEndAttr tdouble_opar_gcc_attr attr_arg_gcc tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }

@@ -1305,7 +1305,7 @@ and make_attr_arg =
 
 and attr_arg tgt arg =
   match Ast0.unwrap arg with
-    Ast0.AttrName(name) -> Ast0.rewrap arg (Ast0.AttrName(mcode name))
+    Ast0.MacroAttr(name) -> Ast0.rewrap arg (Ast0.MacroAttr(mcode name))
   | Ast0.MetaAttr(name,cstr,pure) ->
       let arity = all_same false tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in

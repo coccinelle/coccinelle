@@ -105,7 +105,7 @@ let contains_modif =
 
 let attr_arg a =
   match Ast.unwrap a with
-    Ast.AttrName(attr) -> mcode () attr
+    Ast.MacroAttr(attr) -> mcode () attr
   | Ast.MetaAttr(name,b,c,d) -> mcode () name
 
 let attribute a =

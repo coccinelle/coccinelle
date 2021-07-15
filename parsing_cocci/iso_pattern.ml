@@ -1439,7 +1439,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context a
 	then
 	  match (up,Ast0.unwrap a) with
-	    (Ast0.AttrName(attra),Ast0.AttrName(attrb)) ->
+	    (Ast0.MacroAttr(attra),Ast0.MacroAttr(attrb)) ->
               if mcode_equal attra attrb
               then check_mcode attra attrb
               else return false

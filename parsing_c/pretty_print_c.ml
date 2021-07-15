@@ -1162,7 +1162,7 @@ and pp_init (init, iinit) =
 
   and pp_attr_arg (e,ii) =
     match (e,ii) with
-      AttrName(a), ii ->
+      MacroAttr(a), ii ->
         let (i) = Common.tuple_of_list1 ii in
         pr_elem i
 

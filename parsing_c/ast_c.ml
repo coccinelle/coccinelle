@@ -305,7 +305,7 @@ and attribute = attributebis wrap
 
 and attr_arg = attr_arg_bis wrap
   and attr_arg_bis =
-    | AttrName of string
+    | MacroAttr of string
 
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
@@ -1336,7 +1336,7 @@ let fieldname_of_fieldkind fieldkind =
 
 let s_of_attr attr =
   let get_attr_name = function
-    AttrName s -> s in
+    MacroAttr s -> s in
   let get_attr = function
     (Attribute a, ii) ->
       get_attr_name (unwrap a)

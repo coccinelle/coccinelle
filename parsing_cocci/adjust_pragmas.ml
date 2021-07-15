@@ -223,8 +223,8 @@ let rec left_ident i =
 
 let left_attr_arg arg =
   match Ast0.unwrap arg with
-    Ast0.AttrName(a) ->
-      call_right left_mcode a arg (function a -> Ast0.AttrName(a))
+    Ast0.MacroAttr(a) ->
+      call_right left_mcode a arg (function a -> Ast0.MacroAttr(a))
   | Ast0.MetaAttr(name,a,b) ->
       call_right left_mcode name arg
         (function name -> Ast0.MetaAttr(name,a,b))

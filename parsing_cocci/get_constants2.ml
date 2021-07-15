@@ -532,7 +532,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
   let attr_arg r k a =
     match Ast.unwrap a with
       Ast.MetaAttr(name,_,_,_) -> bind (k a) (minherited name)
-    | Ast.AttrName(name) -> constants (Ast.unwrap_mcode name) in
+    | Ast.MacroAttr(name) -> constants (Ast.unwrap_mcode name) in
 
   let attribute r k a =
     match Ast.unwrap a with

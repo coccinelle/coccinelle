@@ -468,7 +468,7 @@ and print_attribute attr =
 
 and print_attr_arg arg =
   match Ast.unwrap arg with
-    Ast.AttrName(arg) -> mcode print_string arg
+    Ast.MacroAttr(arg) -> mcode print_string arg
   | Ast.MetaAttr(name,_,_,_) -> mcode print_meta name
 
 and typeC ty =

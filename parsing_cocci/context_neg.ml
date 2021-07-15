@@ -609,7 +609,7 @@ let dots fn d1 d2 =
 
 let equal_attr_arg a1 a2 =
   match (Ast0.unwrap a1, Ast0.unwrap a2) with
-    (Ast0.AttrName(name1),Ast0.AttrName(name2)) ->
+    (Ast0.MacroAttr(name1),Ast0.MacroAttr(name2)) ->
       equal_mcode name1 name2
   | (Ast0.MetaAttr(name1,_,_),Ast0.MetaAttr(name2,_,_)) ->
       equal_mcode name1 name2
