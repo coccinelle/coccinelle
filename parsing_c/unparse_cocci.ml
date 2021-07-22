@@ -744,7 +744,7 @@ and typeC ty =
   | Ast.Pointer(ty,star) ->
       fullType ty; ft_space ty; mcode print_string star; eatspace()
   | Ast.ParenType(lp,ty,rp) ->
-      print_parentype (lp,ty,rp) (function _ -> ())
+      print_parentype (lp,[],ty,rp) (function _ -> ())
   | Ast.FunctionType(ty,lp,params,rp) ->
       fullType ty;
       mcode print_string lp;
@@ -818,7 +818,7 @@ and storage = function
 (* --------------------------------------------------------------------- *)
 (* ParenType *)
 
-and print_parentype (lp,ty,rp) fn =
+and print_parentype (lp,midattr,ty,rp) fn =
   let function_pointer ty1 array_dec =
     match Ast.unwrap ty1 with
      Ast.Type(_,_,fty1) ->
@@ -829,7 +829,7 @@ and print_parentype (lp,ty,rp) fn =
             (match Ast.unwrap fty3 with
               Ast.FunctionType(ty3,lp3,params,rp3) ->
                fullType ty3;
-               pr_space();
+               print_attribute_list midattr ~befspace:true ~aftspace:true;
                mcode print_string lp;
                mcode print_string star;
                fn();
@@ -915,8 +915,7 @@ and print_named_type ty midattr id =
 		  (function _ -> id())
             | _ -> error name ty "type value expected")
       | Ast.ParenType(lp,ty,rp) ->
-          assert (midattr = []);
-          print_parentype (lp,ty,rp) (function _ -> id())
+          print_parentype (lp,midattr,ty,rp) (function _ -> id())
       | Ast.FunctionType(ty,lp,params,rp) ->
           assert (midattr = []);
           fullType ty;

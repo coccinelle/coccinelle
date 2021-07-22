@@ -2824,8 +2824,8 @@ let lookahead2 ~pass next before =
       ->
 	  TMacroEndAttr (s1, i1)
 
-  | (TMacroAttr(s1,i1)::TOPar(ii2)::rest,_)
-      ->
+  | (TMacroAttr(s1,i1)::TOPar(ii2)::t::rest,_)
+      when match t with TMul(_) -> false | _ -> true ->
 	  TMacroAttrArgs (s1, i1)
 
 (*  (* christia: here insert support for macros on top level *)

@@ -342,7 +342,7 @@ let visitor mode bind option_default
 	    (bind ty_n star_n, Ast0.Pointer(ty,star))
         | Ast0.ParenType(lp,ty,rp) ->
 	    let (t,id) =
-              parentype_type (lp,ty,None,rp) in t
+              parentype_type (lp,ty,[],None,rp) in t
         | Ast0.FunctionType(ty,lp,params,rp) ->
 	    let (t,id) =
               functiontype_type (ty,None,lp,params,rp) in t
@@ -429,13 +429,14 @@ let visitor mode bind option_default
     (((multibind ([ty_n] @ [midattr_n] @ idl @ [lb_n;size_n;rb_n]),
      Ast0.Array(ty,lb,size,rb)),midattr), idu)
 
-  and parentype_type (lp,ty,(id : Ast0.ident option),rp) =
+  and parentype_type (lp,ty,midattr,(id : Ast0.ident option),rp) =
     let function_pointer ty1 array_decs =
       match Ast0.unwrap ty1 with
         Ast0.Pointer(ty2,star) ->
           (match Ast0.unwrap ty2 with
             Ast0.FunctionType(ty3,lp3,params,rp3) ->
               let (ty_n,typ) = typeC ty3 in
+              let (midattr_n,midattr) = map_split_bind attribute midattr in
               let (lp_n,lp) = string_mcode lp in
               let (star_n,star) = string_mcode star in
               let (idl,idu) =
@@ -456,7 +457,7 @@ let visitor mode bind option_default
               let (params_n,params) = parameter_dots params in
               let (rp3_n,rp3) = string_mcode rp3 in
               let bind_val =
-                multibind ([ty_n;lp_n;star_n]
+                multibind ([ty_n;midattr_n;lp_n;star_n]
                 @ idl @ array_n @ [rp_n;lp3_n;params_n;rp3_n]) in
               let inner_type =
                 let inner_type1 =
@@ -498,8 +499,7 @@ let visitor mode bind option_default
         let idn = match idn with Some i -> i | None -> failwith "Impossible" in
 	((rewrap ty tyres, midattr_n), idn)
     | Ast0.ParenType(lp,rty,rp) ->
-        assert (midattr = []); (* Impossible *)
-	let (tyres, idn) = parentype_type (lp,rty,Some id,rp) in
+	let (tyres, idn) = parentype_type (lp,rty,midattr,Some id,rp) in
 	let idn = match idn with Some i -> i | None -> failwith "Impossible" in
         ((rewrap ty tyres,[]), idn)
     | Ast0.FunctionType(rty,lp,params,rp) ->

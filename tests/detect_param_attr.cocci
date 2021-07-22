@@ -50,3 +50,15 @@ T1 x(
 	__attribute__((nocast)) *y,
 	...
    ) {...}
+
+@@
+type T1, T2;
+attribute name __attr;
+identifier x, y;
+@@
+
+T1 x(
+-	T2
++	short
+	__attr (*y) (int)
+   ) {...}
