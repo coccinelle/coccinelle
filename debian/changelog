@@ -1,3 +1,9 @@
+coccinelle (1.0.8~20.04npalix1) focal; urgency=medium
+
+  * New release 1.0.8
+
+ -- Nicolas Palix <nicolas.palix@imag.fr>  Thu, 18 Jun 2020 20:52:59 +0200
+
 coccinelle (1.0.8~19.04npalix1) disco; urgency=medium
 
   * New release 1.0.8
