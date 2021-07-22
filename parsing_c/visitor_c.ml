@@ -534,6 +534,8 @@ and vk_attr_arg = fun bigf name ->
   let iif ii = vk_ii bigf ii in
   match name with
   | MacroAttr s, ii -> iif ii
+  | MacroAttrArgs (attr, args), ii ->
+      vk_argument_list bigf args; iif ii
 
 and vk_exec_code = fun bigf e ->
   let iif ii = vk_ii bigf ii in
@@ -1467,6 +1469,11 @@ and vk_attr_arg_s = fun bigf name ->
   let iif ii = vk_ii_s bigf ii in
   match name with
   | MacroAttr s, ii -> MacroAttr s, iif ii
+  | MacroAttrArgs (attr, args), ii ->
+      MacroAttrArgs (attr,
+        args +> List.map (fun (e,ii) ->
+          vk_argument_s bigf e, iif ii
+        )), iif ii
 
 and vk_exec_code_s = fun bigf e ->
   let iif ii = vk_ii_s bigf ii in

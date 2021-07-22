@@ -4382,6 +4382,21 @@ and attr_arg = fun allminus ea eb ->
 	  A.rewrap ea (A.MacroAttr(namea)),
           (B.MacroAttr nameb,ib1)
       )))
+  | A.MacroAttrArgs(attra,lp,argsa,rp), (B.MacroAttrArgs(attrb,argsb), ii)
+      when (A.unwrap_mcode attra) = attrb ->
+      let (ib1,ib2,ib3) = tuple_of_list3 ii in
+      tokenf attra ib1 >>= (fun attra ib1 ->
+      tokenf lp ib2 >>= (fun lp ib2 ->
+      tokenf rp ib3 >>= (fun rp ib3 ->
+      arguments (seqstyle argsa) (A.unwrap argsa) argsb >>= (fun argsaunwrap argsb ->
+        let argsa = A.rewrap argsa argsaunwrap in
+       (if allminus
+        then minusize_list [ib1;ib2;ib3]
+        else return ((), [ib1;ib2;ib3])) >>= (fun _ ii ->
+	return (
+	  A.rewrap ea (A.MacroAttrArgs(attra,lp,argsa,rp)),
+          (B.MacroAttrArgs(attrb,argsb), ii)
+      ))))))
   | A.MetaAttr (ida,constraints,keep,inherited), _ ->
       (* todo: use quaopt, hasreg ? *)
       let max_min _ = Lib_parsing_c.ii_of_attr_arg eb in

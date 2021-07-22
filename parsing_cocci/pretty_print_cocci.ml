@@ -470,6 +470,10 @@ and print_attr_arg arg =
   match Ast.unwrap arg with
     Ast.MacroAttr(arg) -> mcode print_string arg
   | Ast.MetaAttr(name,_,_,_) -> mcode print_meta name
+  | Ast.MacroAttrArgs(attr,lp,args,rp) ->
+      mcode print_string attr; mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp
 
 and typeC ty =
   match Ast.unwrap ty with

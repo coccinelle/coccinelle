@@ -107,6 +107,7 @@ let attr_arg a =
   match Ast.unwrap a with
     Ast.MacroAttr(attr) -> mcode () attr
   | Ast.MetaAttr(name,b,c,d) -> mcode () name
+  | Ast.MacroAttrArgs(attr,lp,args,rp) -> mcode () attr
 
 let attribute a =
   match Ast.unwrap a with

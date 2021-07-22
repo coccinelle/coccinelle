@@ -611,6 +611,8 @@ let equal_attr_arg a1 a2 =
   match (Ast0.unwrap a1, Ast0.unwrap a2) with
     (Ast0.MacroAttr(name1),Ast0.MacroAttr(name2)) ->
       equal_mcode name1 name2
+  | (Ast0.MacroAttrArgs(attr1,lp1,args1,rp1),Ast0.MacroAttrArgs(attr2,lp2,args2,rp2)) ->
+      equal_mcode attr1 attr2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.MetaAttr(name1,_,_),Ast0.MetaAttr(name2,_,_)) ->
       equal_mcode name1 name2
   | _ -> false

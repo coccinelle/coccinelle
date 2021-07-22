@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 192, also unused: 8-9, 15, 42, 46, 57, 65, 85-86,
+(* current max is 193, also unused: 8-9, 15, 42, 46, 57, 65, 85-86,
  113-115 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -238,6 +238,7 @@ let attr_arg a =
   match Ast0.unwrap a with
     Ast0.MetaAttr(name,_,_) -> [40]
   | Ast0.MacroAttr(attr) -> [140]
+  | Ast0.MacroAttrArgs(_) -> [193]
 
 let top_level t =
   match Ast0.unwrap t with

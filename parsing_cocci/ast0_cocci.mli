@@ -455,6 +455,8 @@ and attr = base_attr wrap
 
 and base_attr_arg =
     MacroAttr of string mcode
+  | MacroAttrArgs of string mcode * string mcode (* ( *) *
+                      expression dots * string mcode (* ) *)
   | MetaAttr of Ast_cocci.meta_name mcode * constraints * pure
 
 and attr_arg = base_attr_arg wrap

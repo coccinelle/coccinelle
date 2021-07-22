@@ -1180,7 +1180,13 @@ let visitor mode bind option_default
             let (n,name) = meta_mcode name in
             (n,Ast0.MetaAttr(name,constraints,pure))
         | Ast0.MacroAttr (arg) ->
-            let (args_n,arg) = string_mcode arg in (args_n,Ast0.MacroAttr(arg))) in
+            let (args_n,arg) = string_mcode arg in (args_n,Ast0.MacroAttr(arg))
+        | Ast0.MacroAttrArgs (attr,lp,args,rp) ->
+            let (attr_n,attr) = string_mcode attr in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (args_n,args) = expression_dots args in
+	    let (rp_n,rp) = string_mcode rp in
+            (multibind [attr_n;lp_n;args_n;rp_n], Ast0.MacroAttrArgs (attr,lp,args,rp))) in
               attr_argfn all_functions k a
 
   (* we only include the when string mcode w because the parameterised

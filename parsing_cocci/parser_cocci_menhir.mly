@@ -236,7 +236,7 @@ let inline_id aft = function
 
 %token<Data.clt> Tstatic Tauto Tregister Textern Tinline Ttypedef
 %token<Data.clt> Tconst Tvolatile
-%token<string * Data.clt> Tattr
+%token<string * Data.clt> Tattr TAttrArg
 
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
@@ -3307,6 +3307,9 @@ attr:
 
 attr_arg:
    Tattr { Ast0_cocci.wrap (Ast0_cocci.MacroAttr(Parse_aux.clt2mcode (fst $1) (snd $1))) }
+ | TAttrArg TOPar eexpr_list_option TCPar
+    { Ast0_cocci.wrap (Ast0_cocci.MacroAttrArgs(Parse_aux.clt2mcode (fst $1) (snd $1),
+        Parse_aux.clt2mcode "(" $2, $3, Parse_aux.clt2mcode ")" $4)) }
  | TMetaAttribute
     { let (nm,cstr,pure,clt) = $1 in
       Ast0_cocci.wrap (Ast0_cocci.MetaAttr(Parse_aux.clt2mcode nm clt,cstr,pure)) }
@@ -3388,6 +3391,7 @@ anything: /* used for script code */
  | Tconst { "const" }
  | Tvolatile { "volatile" }
  | Tattr { fst $1 }
+ | TAttrArg { fst $1 }
 
  | TVAEllipsis { "......" }
  | TIf { "if" }

@@ -228,6 +228,8 @@ let left_attr_arg arg =
   | Ast0.MetaAttr(name,a,b) ->
       call_right left_mcode name arg
         (function name -> Ast0.MetaAttr(name,a,b))
+  | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+      call_right left_mcode attr arg (function attr -> Ast0.MacroAttrArgs(attr,lp,args,rp))
 
 let left_attribute attr =
   match Ast0.unwrap attr with

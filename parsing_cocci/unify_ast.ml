@@ -738,8 +738,12 @@ and unify_attr_arg arg1 arg2 =
   match (Ast.unwrap arg1,Ast.unwrap arg2) with
     (Ast.MacroAttr(arg_id1), Ast.MacroAttr(arg_id2)) ->
       unify_mcode arg_id1 arg_id2
+  | (Ast.MacroAttrArgs(at1,lp1,args1,rp1),Ast.MacroAttrArgs(at2,lp2,args2,rp2)) ->
+      unify_mcode at1 at2 &&
+      unify_dots unify_expression edots args1 args2
   | (Ast.MetaAttr(_,_,_,_),_)
   | (_,Ast.MetaAttr(_,_,_,_)) -> true
+  | _ -> false
 
 and unify_exec_code ec1 ec2 =
   match (Ast.unwrap ec1,Ast.unwrap ec2) with

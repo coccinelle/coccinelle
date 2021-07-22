@@ -2824,6 +2824,10 @@ let lookahead2 ~pass next before =
       ->
 	  TMacroEndAttr (s1, i1)
 
+  | (TMacroAttr(s1,i1)::TOPar(ii2)::rest,_)
+      ->
+	  TMacroAttrArgs (s1, i1)
+
 (*  (* christia: here insert support for macros on top level *)
   | TIdent (s, ii) :: tl :: _, _ when
     can_be_on_top_level tl && LP.current_context () = InTopLevel ->

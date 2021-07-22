@@ -725,6 +725,10 @@ and print_attribute attr =
 and print_attr_arg arg =
   match Ast.unwrap arg with
     Ast.MacroAttr(arg) -> mcode print_string arg
+  | Ast.MacroAttrArgs(attr,lp,args,rp) ->
+      mcode print_string attr; mcode (print_string_with_hint StartBox) lp;
+      dots (function _ -> ()) arg_expression args;
+      mcode (print_string_with_hint EndBox) rp
   | Ast.MetaAttr(name,_,_,_) ->
       handle_metavar name
 	(function

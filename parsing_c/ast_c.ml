@@ -306,6 +306,7 @@ and attribute = attributebis wrap
 and attr_arg = attr_arg_bis wrap
   and attr_arg_bis =
     | MacroAttr of string
+    | MacroAttrArgs of string * argument wrap2 (* , *) list
 
 (* ------------------------------------------------------------------------- *)
 (* C expression *)
@@ -1336,13 +1337,16 @@ let fieldname_of_fieldkind fieldkind =
 
 let s_of_attr attr =
   let get_attr_name = function
-    MacroAttr s -> s in
+    MacroAttr s, _ -> s
+  | MacroAttrArgs (attr,args), ii ->
+      let (_,lp,rp) = Common.tuple_of_list3 ii in
+      attr ^ (str_of_info lp) ^ "args... (not supported to show)" ^ (str_of_info rp) in
   let get_attr = function
     (Attribute a, ii) ->
-      get_attr_name (unwrap a)
+      get_attr_name a
   | (GccAttribute a, ii) ->
       let (attr_,_,_,_,_) = Common.tuple_of_list5 ii in
-      str_of_info attr_ ^ "((" ^ (get_attr_name (unwrap a)) ^ "))" in
+      str_of_info attr_ ^ "((" ^ (get_attr_name a) ^ "))" in
   attr
   +> List.map get_attr
   +> String.concat ","

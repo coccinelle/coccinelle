@@ -122,7 +122,10 @@ module Ast_c :
     and attribute = attributebis wrap
     and attributebis = Ast_c.attributebis = Attribute of attr_arg | GccAttribute of attr_arg
     and attr_arg = attr_arg_bis wrap
-    and attr_arg_bis = Ast_c.attr_arg_bis = MacroAttr of string
+    and attr_arg_bis =
+      Ast_c.attr_arg_bis =
+        MacroAttr of string
+      | MacroAttrArgs of string * argument wrap2 list
     and expression = (expressionbis * exp_info ref) wrap3
     and exp_info = exp_type option * test
     and exp_type = fullType * local
@@ -779,6 +782,7 @@ module Parser_c :
       | TPragmaString of (string*Ast_c.info)
       | TCppDirectiveOther of Ast_c.info
       | TMacroAttr of (string * Ast_c.info)
+      | TMacroAttrArgs of (string * Ast_c.info)
       | TMacroEndAttr of (string * Ast_c.info)
       | TMacroStmt of (string * Ast_c.info)
       | TMacroIdStmt of (string * Ast_c.info)
@@ -2945,6 +2949,7 @@ module Ast_cocci :
     and base_attr_arg =
       Ast_cocci.base_attr_arg =
         MacroAttr of string mcode
+      | MacroAttrArgs of string mcode * string mcode * expression dots * string mcode
       | MetaAttr of meta_name mcode * constraints * keep_binding *
           inherited
     and attr_arg = base_attr_arg wrap
@@ -3586,6 +3591,7 @@ module Ast0_cocci :
     and base_attr_arg =
       Ast0_cocci.base_attr_arg =
         MacroAttr of string mcode
+      | MacroAttrArgs of string mcode * string mcode * expression dots * string mcode
       | MetaAttr of Ast_cocci.meta_name mcode * constraints * pure
     and attr_arg = base_attr_arg wrap
     and ('a, 'b) whencode =

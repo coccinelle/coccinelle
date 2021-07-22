@@ -1310,6 +1310,13 @@ and attr_arg tgt arg =
       let arity = all_same false tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_attr_arg arg tgt arity (Ast0.MetaAttr(name,cstr,pure))
+  | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+      let arity = all_same false tgt (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
+      let attr = mcode attr in
+      let lp = mcode lp in
+      let args = dots (expression arity) args in
+      let rp = mcode rp in
+      make_attr_arg arg tgt arity (Ast0.MacroAttrArgs(attr,lp,args,rp))
 
 and whencode notfn alwaysfn expression = function
     Ast0.WhenNot (w,e,a) -> Ast0.WhenNot (w,e,notfn a)

@@ -128,6 +128,7 @@ let token2c (tok,_) add_clt =
   | PC.Tinline(clt) -> add_clt "inline" clt
   | PC.Ttypedef(clt) -> add_clt "typedef" clt
   | PC.Tattr(s,clt) -> add_clt s clt
+  | PC.TAttrArg(s,clt) -> add_clt s clt
   | PC.Tauto(clt) -> add_clt "auto" clt
   | PC.Tregister(clt) -> add_clt "register" clt
   | PC.Textern(clt) -> add_clt "extern" clt
@@ -334,7 +335,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TautoType(clt)
   | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
-  | PC.Tauto(clt) | PC.Tregister(clt)
+  | PC.Tauto(clt) | PC.Tregister(clt) | PC.TAttrArg(_,clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
@@ -423,7 +424,7 @@ let get_clt (tok,_) =
   | PC.TautoType(clt)
   | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt) | PC.Ttypedef(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
-  | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
+  | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) | PC.TAttrArg(_,clt)
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
@@ -592,6 +593,7 @@ let update_clt (tok,x) clt =
   | PC.Tinline(_) -> (PC.Tinline(clt),x)
   | PC.Ttypedef(_) -> (PC.Ttypedef(clt),x)
   | PC.Tattr(s,_) -> (PC.Tattr(s,clt),x)
+  | PC.TAttrArg(s,_) -> (PC.TAttrArg(s,clt),x)
   | PC.Tauto(_) -> (PC.Tauto(clt),x)
   | PC.Tregister(_) -> (PC.Tregister(clt),x)
   | PC.Textern(_) -> (PC.Textern(clt),x)
@@ -896,7 +898,7 @@ let split_token ((tok,_) as t) =
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
-  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
+  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.TAttrArg(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
   | PC.TAttr_(clt) -> split t clt
 
@@ -1078,7 +1080,7 @@ let find_function_names l =
     | ((PC.TCPar(_),_)::rest as l) ->
       let l = balanced_args 0 true l in
       let x = match l with
-        (PC.TAttr_(_),_)::rest -> is_permissible_proto rest
+        ((PC.TAttr_(_)|PC.Tattr(_)|PC.TAttrArg(_)),_)::rest -> is_permissible_proto rest
       | (PC.TTypeof(_),_)::_ -> true
       | _ -> false in x
     | _::((PC.TEq(_),_) | (PC.TNotEq(_),_))::(PC.TWhen(_),_)::_
@@ -1195,6 +1197,21 @@ let detect_attr l =
   loop l
 
 (* ----------------------------------------------------------------------- *)
+(* Distinguish between function pointers and attributes with arguments
+   int __attr \(\*p) (int);  vs   int __attr("arg") p;
+   We assume that functin pointers are "Tattr Space TOPar Mul". *)
+
+let detect_attr_with_arguments l =
+  let rec loop = function
+      [] -> []
+    | [x] -> [x]
+    | (PC.Tattr(nm,clt),info)::((PC.TOPar(_),_) as par)::t::rest
+          when (match t with TMul _, _ -> false | _ -> true) ->
+            (PC.TAttrArg(nm,clt),info)::par::t::(loop rest)
+    | x::xs -> x::(loop xs) in
+  loop l
+
+(* ----------------------------------------------------------------------- *)
 (* Look for variable declarations where the name is a typedef name.
 We assume that C code does not contain a multiplication as a top-level
 statement. *)
@@ -1210,7 +1227,8 @@ let detect_types in_meta_decls l =
     | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
-    | (PC.Tinline(_),_) | (PC.Ttypedef(_),_) | (PC.Tattr(_),_) -> true
+    | (PC.Tinline(_),_) | (PC.Ttypedef(_),_)
+    | (PC.Tattr(_),_) | (PC.TAttrArg(_),_) -> true
     | (PC.TComma(_),_) when infn > 0 || in_meta_decls -> true
     | (PC.TDotDot(_),_) when in_meta_decls -> true
     | _ -> false in
@@ -1315,7 +1333,7 @@ let token2line (tok,_) =
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
   | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
-  | PC.Tvolatile(clt)
+  | PC.Tvolatile(clt) | PC.TAttrArg(_,clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
 
@@ -1930,9 +1948,10 @@ let prepare_tokens plus tokens =
        (insert_line_end
 	  (detect_types false
 	     (find_function_names
-		(detect_attr
-		   (check_nests
-		      (check_parentheses plus tokens)))))))
+                (detect_attr_with_arguments
+                  (detect_attr
+                     (check_nests
+                        (check_parentheses plus tokens))))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)

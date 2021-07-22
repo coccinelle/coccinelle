@@ -935,6 +935,12 @@ and attr_arg arg =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres arg (Ast0.MetaAttr(name,a,b)) ln ln
+  | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+      let attr = normal_mcode attr in
+      let lp = normal_mcode lp in
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      mkres arg (Ast0.MacroAttrArgs(attr,lp,args,rp)) (promote_mcode attr) (promote_mcode rp)
 
 (* --------------------------------------------------------------------- *)
 (* Parameter *)

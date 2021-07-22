@@ -1443,6 +1443,10 @@ let match_maker checks_needed context_required whencode_allowed =
               if mcode_equal attra attrb
               then check_mcode attra attrb
               else return false
+	  | (Ast0.MacroAttrArgs(attra,lpa,argsa,rpa),Ast0.MacroAttrArgs(attrb,lpb,argsb,rpb)) ->
+	      conjunct_many_bindings
+		[check_mcode lpa lpb; check_mcode rpa rpb; check_mcode attra attrb;
+		  match_dots match_expr is_elist_matcher do_elist_match argsa argsb]
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.AttrArgTag a))
 

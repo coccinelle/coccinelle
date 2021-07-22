@@ -1165,6 +1165,11 @@ and pp_init (init, iinit) =
       MacroAttr(a), ii ->
         let (i) = Common.tuple_of_list1 ii in
         pr_elem i
+    | MacroAttrArgs(attr, args), ii ->
+        let (i1,i2,i3) = Common.tuple_of_list3 ii in
+        pr_elem i1; pr_elem i2;
+	pp_arg_list args;
+        pr_elem i3;
 
 (* ---------------------- *)
   and pp_def_start defbis iifunc1 iifunc2 ifakestart isto =

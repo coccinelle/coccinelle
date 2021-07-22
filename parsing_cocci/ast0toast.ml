@@ -1212,7 +1212,13 @@ and attr_arg a =
     (match Ast0.unwrap a with
       Ast0.MetaAttr(name,cstr,_) ->
 	Ast.MetaAttr(mcode name,constraints cstr,unitary,false)
-    | Ast0.MacroAttr(arg) -> Ast.MacroAttr(mcode arg))
+    | Ast0.MacroAttr(arg) -> Ast.MacroAttr(mcode arg)
+    | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+        let attr = mcode attr in
+	let lp = mcode lp in
+	let args = dots expression args in
+	let rp = mcode rp in
+        Ast.MacroAttrArgs(attr,lp,args,rp))
 
 and option_to_list = function
     Some x -> [x]

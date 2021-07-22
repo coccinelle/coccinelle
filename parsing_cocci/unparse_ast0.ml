@@ -783,6 +783,10 @@ and print_attr_arg a =
   match Ast0.unwrap a with
     Ast0.MacroAttr(arg) -> mcode print_string arg
   | Ast0.MetaAttr(name,_,_) -> mcode print_meta name
+  | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+      mcode print_string attr; mcode print_string_box lp;
+      let _ = dots (function _ -> ()) expression args in
+      close_box(); mcode print_string rp
 
 and whencode notfn alwaysfn = function
     Ast0.WhenNot (_,_,a) ->

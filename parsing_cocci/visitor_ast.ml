@@ -942,7 +942,13 @@ let combiner bind option_default
     let k a =
       match Ast.unwrap a with
         Ast.MacroAttr(arg) -> string_mcode arg
-      | Ast.MetaAttr(name,_,_,_) -> meta_mcode name in
+      | Ast.MetaAttr(name,_,_,_) -> meta_mcode name
+      | Ast.MacroAttrArgs(attr,lp,args,rp) ->
+          let lattr = string_mcode attr in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  multibind [lattr; llp; largs; lrp] in
     attr_argfn all_functions k a
 
   and whencode notfn alwaysfn = function
@@ -1962,8 +1968,14 @@ let rebuilder
         (match Ast.unwrap a with
           Ast.MacroAttr(arg) -> Ast.MacroAttr(string_mcode arg)
         | Ast.MetaAttr(name,constraints,keep,inherited) ->
-            Ast.MetaAttr(meta_mcode name,constraints,keep,inherited)) in
-              attr_argfn all_functions k a
+            Ast.MetaAttr(meta_mcode name,constraints,keep,inherited)
+        | Ast.MacroAttrArgs(attr,lp,args,rp) ->
+            let lattr = string_mcode attr in
+	    let llp = string_mcode lp in
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+            Ast.MacroAttrArgs(lattr,llp,largs,lrp)) in
+        attr_argfn all_functions k a
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> Ast.WhenNot (notfn a)
