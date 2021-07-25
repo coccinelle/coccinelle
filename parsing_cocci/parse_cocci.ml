@@ -1206,7 +1206,7 @@ let detect_attr_with_arguments l =
       [] -> []
     | [x] -> [x]
     | (PC.Tattr(nm,clt),info)::((PC.TOPar(_),_) as par)::t::rest
-          when (match t with TMul _, _ -> false | _ -> true) ->
+          when (match t with PC.TMul _, _ -> false | _ -> true) ->
             (PC.TAttrArg(nm,clt),info)::par::t::(loop rest)
     | x::xs -> x::(loop xs) in
   loop l
