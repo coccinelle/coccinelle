@@ -15,3 +15,11 @@ void bar(int j) {
   char *i;
   *i++;
 }
+
+void con_vol(int j) {
+  const volatile long i;
+}
+
+void vol_con(int j) {
+  volatile const long i;
+}

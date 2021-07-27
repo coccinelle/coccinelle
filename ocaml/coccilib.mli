@@ -2720,7 +2720,7 @@ module Ast_cocci :
     and isWchar = Ast_cocci.isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
     and base_fullType =
       Ast_cocci.base_fullType =
-        Type of bool * const_vol mcode option * typeC
+        Type of bool * const_vol mcode list * typeC
       | AsType of fullType * fullType
       | DisjType of fullType list
       | ConjType of fullType list
@@ -3179,7 +3179,7 @@ module Ast_cocci :
     val string_of_binaryOp : binaryOp -> string
     val string_of_sign : sign -> string
     val string_of_baseType : baseType -> string
-    val string_of_const_vol : const_vol -> string
+    val string_of_const_vol : const_vol list -> string
     val string_of_structUnion : structUnion -> string
     val string_of_typeC : typeC -> string
     val string_of_fullType : fullType -> string
@@ -3394,7 +3394,7 @@ module Ast0_cocci :
     and binaryOp = base_binaryOp wrap
     and base_typeC =
       Ast0_cocci.base_typeC =
-        ConstVol of Ast_cocci.const_vol mcode * typeC
+        ConstVol of Ast_cocci.const_vol mcode list * typeC
       | BaseType of Ast_cocci.baseType * string mcode list
       | Signed of Ast_cocci.sign mcode * typeC option
       | Pointer of typeC * string mcode

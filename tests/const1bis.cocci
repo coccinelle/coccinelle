@@ -7,3 +7,11 @@ func (...) {
 + double *i;
   ...
 }
+
+@disable add_signed@ identifier func;@@
+func (...) {
+  const volatile
+-int
++long
+  i;
+}

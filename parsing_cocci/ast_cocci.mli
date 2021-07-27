@@ -313,7 +313,7 @@ and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 and base_fullType =
     Type            of bool (* true if all minus *) *
-                       const_vol mcode option * typeC
+                       const_vol mcode list * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list
   | ConjType        of fullType list
@@ -878,7 +878,7 @@ val string_of_binaryOp : binaryOp -> string
 
 val string_of_sign : sign -> string
 val string_of_baseType : baseType -> string
-val string_of_const_vol : const_vol -> string
+val string_of_const_vol : const_vol list -> string
 val string_of_structUnion : structUnion -> string
 val string_of_typeC : typeC -> string
 val string_of_fullType : fullType -> string

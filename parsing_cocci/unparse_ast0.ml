@@ -322,7 +322,7 @@ and typeC t =
     (function _ ->
       match Ast0.unwrap t with
 	Ast0.ConstVol(cv,ty) ->
-	  mcode U.const_vol cv; print_string " "; typeC ty
+	  List.iter (function s -> mcode U.const_vol s) cv; print_string " "; typeC ty
       |	Ast0.BaseType(ty,strings) ->
 	  List.iter (function s -> mcode print_string s; print_string " ")
 	    strings

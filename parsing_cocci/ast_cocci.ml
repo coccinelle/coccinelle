@@ -331,7 +331,7 @@ and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 and base_fullType =
     Type            of bool (* true if all minus *) *
-	               const_vol mcode option * typeC
+	               const_vol mcode list * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list
   | ConjType        of fullType list
@@ -1104,9 +1104,8 @@ let string_of_baseType = function
   | BoolType -> "bool"
   | Unknown -> "unknown"
 
-let string_of_const_vol = function
-    Const -> "const"
-  | Volatile -> "volatile"
+let string_of_const_vol cv = String.concat " "
+  (List.map (function Const -> "const" | Volatile -> "volatile") cv)
 
 let string_of_meta_name (_, name) = name
 
@@ -1162,9 +1161,9 @@ let rec string_of_typeC ty =
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
-    Type (_, None, ty') -> string_of_typeC ty'
-  | Type (_, Some const_vol, ty') ->
-      string_of_const_vol (unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
+    Type (_, [], ty') -> string_of_typeC ty'
+  | Type (_, const_vol, ty') ->
+      string_of_const_vol (List.map unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
   | AsType (ty', _) -> string_of_fullType ty'
   | DisjType l -> String.concat "|" (List.map string_of_fullType l)
   | ConjType l -> String.concat "&" (List.map string_of_fullType l)
@@ -1172,7 +1171,7 @@ and string_of_fullType ty =
 
 let typeC_of_fullType_opt ty =
   match unwrap ty with
-    Type (_, None, ty') -> Some ty'
+    Type (_, [], ty') -> Some ty'
   | _ -> None
 
 let ident_of_expression_opt expression =

@@ -123,15 +123,15 @@ let addTypeD     = function
 
 
 let addQualif = function
-  | ({const=true},   ({const=true} as x)) ->   warning "duplicate 'const'" x
-  | ({volatile=true},({volatile=true} as x))-> warning "duplicate 'volatile'" x
-  | ({const=true},    v) -> {v with const=true}
-  | ({volatile=true}, v) -> {v with volatile=true}
+  | (({const=true},ii),   ({const=true},ii2 as x)) ->   warning "duplicate 'const'" x
+  | (({volatile=true},ii),({volatile=true},ii2 as x))-> warning "duplicate 'volatile'" x
+  | (({const=true},ii),   (v,ii2)) -> {v with const=true},ii::ii2
+  | (({volatile=true},ii),(v,ii2)) -> {v with volatile=true},ii2@[ii]
   | _ ->
       internal_error "there is no noconst or novolatile keyword"
 
-let addQualifD ((qu,ii), ({qualifD = (v,ii2)} as x)) =
-  { x with qualifD = (addQualif (qu, v),ii::ii2) }
+let addQualifD (qu, ({qualifD = v} as x)) =
+  { x with qualifD = (addQualif (qu, v)) }
 
 
 (*-------------------------------------------------------------------------- *)

@@ -545,9 +545,9 @@ and string_format e =
 and typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,ty) ->
-      let cv = normal_mcode cv in
+      let cv = List.map normal_mcode cv in
       let ty = typeC ty in
-      mkres t (Ast0.ConstVol(cv,ty)) (promote_mcode cv) ty
+      mkres t (Ast0.ConstVol(cv,ty)) (promote_mcode (List.hd cv)) ty
   | Ast0.BaseType(ty,strings) ->
       let strings = List.map normal_mcode strings in
       let first = List.hd strings in

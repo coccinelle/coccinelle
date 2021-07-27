@@ -293,9 +293,9 @@ let combiner bind option_default
     let k ft =
       match Ast.unwrap ft with
 	Ast.Type(_,cv,ty) ->
-	  let lcv = get_option cv_mcode cv in
+	  let lcv = List.map cv_mcode cv in
 	  let lty = typeC ty in
-	  bind lcv lty
+          multibind (lcv@[lty])
       |	Ast.AsType(ty,asty) ->
 	  let lty = fullType ty in
 	  let lasty = fullType asty in
@@ -427,7 +427,7 @@ let combiner bind option_default
 
   and named_type ty id =
     match Ast.unwrap ty with
-      Ast.Type(_,None,ty1) ->
+      Ast.Type(_,[],ty1) ->
 	(match Ast.unwrap ty1 with
 	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
         | Ast.ParenType(lp,ty,rp) -> parentype_type (lp, ty, Some id, rp)
@@ -1343,7 +1343,7 @@ let rebuilder
       Ast.rewrap ft
 	(match Ast.unwrap ft with
 	  Ast.Type(allminus,cv,ty) ->
-	    let lcv = get_option cv_mcode cv in
+	    let lcv = List.map cv_mcode cv in
 	    let lty = typeC ty in
 	    Ast.Type (allminus, lcv, lty)
 	| Ast.AsType(ty,asty) ->

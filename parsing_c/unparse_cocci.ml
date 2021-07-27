@@ -694,8 +694,12 @@ and fullType ft =
     Ast.Type(_,cv,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) ->
-	  typeC ty; print_option_prespace (mcode const_vol) cv
-      |	_ -> print_option_space (mcode const_vol) cv; typeC ty)
+          typeC ty;
+          param_print_between (function _ -> ()) (fun c -> pr_space();
+          mcode const_vol c) cv
+      | _ ->
+          param_print_between (function _ -> pr_space()) (mcode const_vol) cv;
+          typeC ty)
 
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ | Ast.ConjType _ -> raise CantBeInPlus
@@ -863,7 +867,7 @@ and print_parentype (lp,midattr,ty,rp) fn =
 
 and print_named_type ty midattr id =
   match Ast.unwrap ty with
-    Ast.Type(_,None,ty1) ->
+    Ast.Type(_,[],ty1) ->
       (match Ast.unwrap ty1 with
         Ast.Array(_,_,_,_) ->
 	  let rec loop ty k =
@@ -871,7 +875,7 @@ and print_named_type ty midattr id =
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
 		  Ast.Type(_,cv,ty) ->
-		    print_option_space (mcode const_vol) cv;
+		    param_print_between (function _ -> pr_space()) (mcode const_vol) cv;
 		    loop ty
 		      (function _ ->
 			k ();

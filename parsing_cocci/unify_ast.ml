@@ -300,7 +300,8 @@ and unify_string_format e1 e2 =
 and unify_fullType ft1 ft2 =
   match (Ast.unwrap ft1,Ast.unwrap ft2) with
     (Ast.Type(_,cv1,ty1),Ast.Type(_,cv2,ty2)) ->
-      if bool_unify_option unify_mcode cv1 cv2
+      if List.length cv1 = List.length cv2 &&
+         List.for_all2 unify_mcode cv1 cv2
       then unify_typeC ty1 ty2
       else false
   | (Ast.AsType(ty1,asty1),_) ->

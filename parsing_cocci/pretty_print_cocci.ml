@@ -389,9 +389,9 @@ and fullType ft =
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) ->
 	  typeC ty;
-	  print_option (function x -> print_string " "; mcode const_vol x) cv
+	  List.iter (function x -> print_string " "; mcode const_vol x) cv
       |	_ ->
-	  print_option (function x -> mcode const_vol x; print_string " ") cv;
+	  List.iter (function x -> mcode const_vol x; print_string " ") cv;
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
@@ -531,7 +531,7 @@ and structUnion ty = print_string (Ast.string_of_structUnion ty ^ " ")
 
 and sign s = print_string (Ast.string_of_sign s ^ " ")
 
-and const_vol const_vol = print_string (Ast.string_of_const_vol const_vol ^ " ")
+and const_vol const_vol = print_string (Ast.string_of_const_vol [const_vol] ^ " ")
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -540,7 +540,7 @@ and const_vol const_vol = print_string (Ast.string_of_const_vol const_vol ^ " ")
 
 and print_named_type ty midattr id =
   match Ast.unwrap ty with
-    Ast.Type(_,None,ty1) ->
+    Ast.Type(_,[],ty1) ->
       (match Ast.unwrap ty1 with
         Ast.Array(ty,lb,size,rb) ->
 	  let rec loop ty k =
@@ -548,7 +548,7 @@ and print_named_type ty midattr id =
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
 		  Ast.Type(_,cv,ty) ->
-		    print_option
+		    List.iter
 		      (function x -> mcode const_vol x; print_string " ")
 		      cv;
 		    loop ty

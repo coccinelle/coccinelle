@@ -390,9 +390,9 @@ and make_typeC =
 and top_typeC tgt opt_allowed typ =
   match Ast0.unwrap typ with
     Ast0.ConstVol(cv,ty) ->
-      let arity = all_same opt_allowed tgt (mcode2line cv)
-	  [mcode2arity cv] in
-      let cv = mcode cv in
+      let arity = all_same opt_allowed tgt (mcode2line (List.hd cv))
+	  (List.map mcode2arity cv) in
+      let cv = List.map mcode cv in
       let ty = typeC arity ty in
       make_typeC typ tgt arity (Ast0.ConstVol(cv,ty))
   | Ast0.BaseType(ty,strings) ->

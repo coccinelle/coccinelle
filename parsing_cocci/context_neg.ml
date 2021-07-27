@@ -721,7 +721,7 @@ and binaryOp_equal op1 op2 =
 
 let equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
-    (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> equal_mcode cv1 cv2
+    (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> List.for_all2 equal_mcode cv1 cv2
   | (Ast0.BaseType(ty1,stringsa),Ast0.BaseType(ty2,stringsb)) ->
       List.for_all2 equal_mcode stringsa stringsb
   | (Ast0.Signed(sign1,_),Ast0.Signed(sign2,_)) ->

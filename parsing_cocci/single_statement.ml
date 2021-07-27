@@ -161,7 +161,7 @@ let rec left_expression e =
 and left_typeC t =
   modif_before t ||
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,ty) -> modif_before_mcode cv
+    Ast0.ConstVol(cv,ty) -> modif_before_mcode (List.hd cv)
   | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty

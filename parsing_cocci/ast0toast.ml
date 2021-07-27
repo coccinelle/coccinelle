@@ -554,7 +554,7 @@ and typeC allminus t =
 	  List.map
 	    (function ty ->
 	      Ast.Type
-		(allminus, Some (mcode cv),
+		(allminus, List.map mcode cv,
 		 rewrap_iso ty (base_typeC allminus ty)))
 	    (collect_disjs ty) in
 	(* one could worry that isos are lost because we flatten the
@@ -570,7 +570,7 @@ and typeC allminus t =
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) ->
-	Ast.Type(allminus,None,rewrap t no_isos (base_typeC allminus t))
+        Ast.Type(allminus,[],rewrap t no_isos (base_typeC allminus t))
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
     | Ast0.ConjType(_,types,_,_) ->
@@ -690,7 +690,7 @@ and declaration d =
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let id = typeC allminus id in
 	(match Ast.unwrap id with
-	  Ast.Type(_,None,id) -> (* only MetaType or Id *)
+          Ast.Type(_,[],id) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)

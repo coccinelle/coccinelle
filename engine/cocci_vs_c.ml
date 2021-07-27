@@ -3478,23 +3478,12 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
    | A.Type(allminus,cv,ty1), ((qu,il),ty2) ->
-
-       if qu.B.const && qu.B.volatile
-       then
-	 pr2_once
-	   ("warning: the type is both const & volatile but cocci " ^
-            "does not handle that");
-
-	(* Drop out the const/volatile part that has been matched.
-         * This is because a SP can contain  const T v; in which case
-         * later in match_t_t when we encounter a T, we must not add in
-         * the environment the whole type.
+        (* todo: can be __const__ ? can be const & volatile so
+         * should filter instead ?
          *)
-
-
        (match cv with
        (* "iso-by-absence" *)
-       | None ->
+       | [] ->
            let do_stuff () =
              fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 ((qu,il), ty2) ->
              (if allminus
@@ -3502,7 +3491,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 	     else return ((), il)
 	     ) >>= (fun () il ->
 	       return (
-                 (A.Type(allminus, None, ty1)) +> A.rewrap typa,
+                 (A.Type(allminus, [], ty1)) +> A.rewrap typa,
                  ((qu,il), ty2)
                )))
            in
@@ -3516,31 +3505,42 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                do_stuff()
            )
 
-
-       | Some x ->
-          (* todo: can be __const__ ? can be const & volatile so
-           * should filter instead ?
-           *)
-           (match term x, il with
-           | A.Const, [i1] when qu.B.const ->
-
+       | [x] ->
+           (match term x, il, qu.B.const, qu.B.volatile with
+           | A.Const, [i1], true, _
+           | A.Volatile, [i1], _, true ->
                tokenf x i1 >>= (fun x i1 ->
                fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
                  return (
-                   (A.Type(allminus, Some x, ty1)) +> A.rewrap typa,
+                   (A.Type(allminus, [x], ty1)) +> A.rewrap typa,
                    ((qu, [i1]), ty2)
                  )))
-
-           | A.Volatile, [i1] when qu.B.volatile ->
-               tokenf x i1 >>= (fun x i1 ->
-               fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
-                 return (
-                   (A.Type(allminus, Some x, ty1)) +> A.rewrap typa,
-                   ((qu, [i1]), ty2)
-                 )))
-
            | _ -> fail
            )
+
+       | [x;y] ->
+           (* i1, i2 are const and volatile information respectively.
+            * These are in parsing_c/parser_c.mly *)
+           (match term x, term y, il with
+           | A.Const, A.Volatile, [i1;i2] when qu.B.volatile && qu.B.const ->
+             fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
+             tokenf x i1 >>= (fun x i1 ->
+             tokenf y i2 >>= (fun y i2 ->
+               return (
+                 (A.Type(allminus, [x;y], ty1)) +> A.rewrap typa,
+                 ((qu, [i1;i2]), ty2)
+               ))))
+           | A.Volatile, A.Const, [i1;i2] when qu.B.volatile && qu.B.const ->
+             fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
+             tokenf x i2 >>= (fun x i2 ->
+             tokenf y i1 >>= (fun y i1 ->
+               return (
+                 (A.Type(allminus, [x;y], ty1)) +> A.rewrap typa,
+                 ((qu, [i1;i2]), ty2)
+               ))))
+           | _ -> fail
+           )
+       | _ -> failwith "Duplicate const/volatile"
        )
 
   | A.AsType(ty,asty), tyb ->
@@ -3773,7 +3773,7 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
       let match_to_type rebaseb =
 	sign signaopt signbopt >>= (fun signaopt iisignbopt ->
-	let fta = A.rewrap basea (A.Type(false(*don't know*),None,basea)) in
+          let fta = A.rewrap basea (A.Type(false(*don't know*),[],basea)) in
 	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), iibaseb) in
 	fullType fta ftb >>= (fun fta (_,tb) ->
 	  (match A.unwrap fta,tb with
@@ -3955,7 +3955,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-		 A.Type(allminus,None,ty) ->
+                 A.Type(allminus,[],ty) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
 		       (match (term sua, sub) with
@@ -3965,7 +3965,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		       (fun _ _ ->
 			 tokenf sua iisub >>= (fun sua iisub ->
 			   let ty =
-			     A.Type(allminus,None,
+                             A.Type(allminus,[],
 				    A.StructUnionName(sua, None) +> A.rewrap ty)
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
@@ -4083,12 +4083,12 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-		 A.Type(allminus,None,ty) ->
+                 A.Type(allminus,[],ty) ->
 		   (match A.unwrap ty with
 		     A.EnumName(sua, None) ->
 		       tokenf sua iisub >>= (fun sua iisub ->
 			 let ty =
-			   A.Type(allminus,None,A.EnumName(sua, None) +>
+                           A.Type(allminus,[],A.EnumName(sua, None) +>
 				  A.rewrap ty)
 			     +> A.rewrap s in
 			 return (ty,[iisub]))
@@ -4476,20 +4476,16 @@ and compatible_base_type_meta a signa qua b ii local =
 
 and compatible_type a (b,local) =
   match A.unwrap a, b with
-    A.Type (false, None, a'), _ ->
+    A.Type (false, [], a'), _ ->
       compatible_typeC a' (b, local)
-  | A.Type (false, Some const_vol, a'), (qub, b') ->
-      if (fst qub).B.const && (fst qub).B.volatile
-      then
-        begin
-          pr2_once ("warning: the type is both const & volatile but cocci " ^
-                    "does not handle that");
-          fail
-        end
-      else if
-        (match A.unwrap_mcode const_vol with
-        | A.Const -> (fst qub).B.const
-        | A.Volatile -> (fst qub).B.volatile
+  | A.Type (false, const_vol, a'), (qub, b') ->
+      if
+        (match List.map  A.unwrap_mcode const_vol with
+        | [A.Const] -> (fst qub).B.const
+        | [A.Volatile] -> (fst qub).B.volatile
+        | [A.Const;A.Volatile] -> (fst qub).B.const && (fst qub).B.volatile
+        | [A.Volatile;A.Const] -> (fst qub).B.volatile && (fst qub).B.const
+        | _ -> failwith "Cocci_vs_c.compatible_type: Duplicate const/volatile"
         )
       then compatible_typeC a' ((Ast_c.nQ, b'), local)
       else fail

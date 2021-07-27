@@ -196,7 +196,7 @@ and binaryOp = base_binaryOp wrap
 (* Types *)
 
 and base_typeC =
-    ConstVol        of Ast.const_vol mcode * typeC
+    ConstVol        of Ast.const_vol mcode list * typeC
   | BaseType        of Ast.baseType * string mcode list
   | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)

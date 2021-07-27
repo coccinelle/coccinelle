@@ -1600,8 +1600,12 @@ name_opt_decl:
       decl  { $1 }
 
 const_vol:
-      Tconst       { Parse_aux.clt2mcode Ast_cocci.Const $1 }
-    | Tvolatile    { Parse_aux.clt2mcode Ast_cocci.Volatile $1 }
+  Tconst       { [Parse_aux.clt2mcode Ast_cocci.Const $1] }
+| Tvolatile    { [Parse_aux.clt2mcode Ast_cocci.Volatile $1] }
+| Tconst Tvolatile    { [Parse_aux.clt2mcode Ast_cocci.Const $1;
+                          Parse_aux.clt2mcode Ast_cocci.Volatile $2] }
+| Tvolatile Tconst    { [Parse_aux.clt2mcode Ast_cocci.Volatile $1;
+                          Parse_aux.clt2mcode Ast_cocci.Const $2] }
 
 /*****************************************************************************/
 

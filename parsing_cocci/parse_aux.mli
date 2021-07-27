@@ -150,7 +150,7 @@ val logic_op :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
   string -> Ast0_cocci.expression -> Ast0_cocci.base_expression Ast0_cocci.wrap
 val make_cv :
-  Ast_cocci.const_vol Ast0_cocci.mcode option -> Ast0_cocci.typeC -> Ast0_cocci.typeC
+  Ast_cocci.const_vol Ast0_cocci.mcode list option -> Ast0_cocci.typeC -> Ast0_cocci.typeC
 val make_attr:
   Ast0_cocci.attr_arg -> Ast0_cocci.attr
 val make_gcc_attr:
