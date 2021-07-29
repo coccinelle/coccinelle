@@ -858,7 +858,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	then
 	  match (up,Ast0.unwrap t) with
 	    (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
-	      if List.for_all Fun.id (List.map2 mcode_equal cva cvb)
+	      if List.for_all2 mcode_equal cva cvb
 	      then
 	        conjunct_many_bindings
                   [match_list check_mcode
