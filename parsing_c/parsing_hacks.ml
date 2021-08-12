@@ -2080,6 +2080,15 @@ let lookahead2 ~pass next before =
 
 	(* christia *)
 
+	(* xx xx *)
+  | (TypedefIdent (s1, i1) :: _ , TypedefIdent (s2, i2) :: _) ->
+      TIdent (s1, i1)
+
+	(* xx * xx *)
+  | (TypedefIdent (s1, i1) :: _ , ptr)
+    when pointer ~followed_by:(function TypedefIdent _ -> true | _ -> false)  ptr  ->
+      TIdent (s1, i1)
+
 	(* delete[] *)
   | (TOCro i1 :: _, Tdelete _ :: _)
     when !Flag.c_plus_plus <> Flag.Off ->

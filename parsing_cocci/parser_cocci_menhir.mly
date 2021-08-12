@@ -1142,11 +1142,11 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.ConjField(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
-    | t=ctype d=direct_decl_option(disj_ident) bf=struct_bitfield? pv=TPtVirg
+    | t=ctype d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,Parse_aux.clt2mcode ";" pv)) }
     | cv=ioption(const_vol) i=pure_ident_or_symbol
-      d=direct_decl_option(disj_ident)
+      d=direct_decl_option(type_ident)
 	 bf=struct_bitfield?
 	 pv=TPtVirg
 	 { let (id,fn) = d in
@@ -1577,11 +1577,11 @@ storage:
        | s=Tregister    { Parse_aux.clt2mcode Ast_cocci.Register s }
        | s=Textern      { Parse_aux.clt2mcode Ast_cocci.Extern s }
 
-decl: t=ctype midar=attr_list d=direct_declarator(disj_ident) endar=attr_list
+decl: t=ctype midar=attr_list d=direct_declarator(type_ident) endar=attr_list
 	{ let (i,fn) = d in
 	Ast0_cocci.wrap(Ast0_cocci.Param(fn t, midar, Some i, endar)) }
     | t=ctype midar1=attr midar2=attr_list m1=TMul m2=list(TMul)
-	d=direct_declarator(disj_ident) endar=attr_list
+	d=direct_declarator(type_ident) endar=attr_list
         { let (i,fn) = d in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.Param
@@ -1639,7 +1639,7 @@ statement:
 | TBreak TPtVirg { Parse_aux.break $1 $2 }
 | TContinue TPtVirg { Parse_aux.cont $1 $2 }
 | mident TDotDot { Parse_aux.label $1 $2 }
-| TGoto disj_ident TPtVirg { Parse_aux.goto $1 $2 $3 }
+| TGoto type_ident TPtVirg { Parse_aux.goto $1 $2 $3 }
 | TOBrace fun_start TCBrace
     { Parse_aux.seq $1 $2 $3 }
 | Texec TIdent exec_list TPtVirg
@@ -1732,14 +1732,14 @@ decl_var:
       { [Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,ar,Parse_aux.clt2mcode ";" pv))] }
   | TMetaDecl { [Parse_aux.meta_decl $1] }
   | s=ioption(storage) t=ctype midattrs=attr_list
-      d=comma_list_attr(direct_declarator(disj_ident)) pv=TPtVirg
+      d=comma_list_attr(direct_declarator(type_ident)) pv=TPtVirg
       { let (vars,endattrs) = d in
         List.map
 	  (function (id,fn) ->
 	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)))
 	  vars }
   | f=funproto { [f] }
-  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(disj_ident)
+  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(type_ident)
     endattrs=attr_list q=TEq e=initialize
       pv=TPtVirg
       {let (id,fn) = d in
@@ -1785,12 +1785,12 @@ one_decl_var:
     t=ctype ar=attr_list pv=TPtVirg
       { Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,ar,Parse_aux.clt2mcode ";" pv)) }
   | TMetaDecl { Parse_aux.meta_decl $1 }
-  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(disj_ident)
+  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(type_ident)
       endattrs=attr_list pv=TPtVirg
       { let (id,fn) = d in
         Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
   | f=funproto { f }
-  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(disj_ident)
+  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(type_ident)
       endattrs=attr_list q=TEq e=initialize
       pv=TPtVirg
       { let (id,fn) = d in
@@ -1919,7 +1919,7 @@ direct_decl_option(ident_type):
         (Some id, fn) }
 
 d_ident:
-    disj_ident list(array_dec)
+  type_ident list(array_dec)
       { ($1, function t -> Parse_aux.arrayify t $2) }
 
 array_dec: l=TOCro i=option(eexpr) r=TCCro { (l,i,r) }
@@ -1966,7 +1966,7 @@ initialize2:
     Ast0_cocci.wrap(Ast0_cocci.MetaInitList(nm,lenname,cstr,pure)) }
 
 designator:
- | TDot disj_ident
+ | TDot type_ident
      { Ast0_cocci.DesignatorField (Parse_aux.clt2mcode "." $1,$2) }
  | TOCro eexpr TCCro
      { Ast0_cocci.DesignatorIndex (Parse_aux.clt2mcode "[" $1,$2,Parse_aux.clt2mcode "]" $3) }
@@ -2276,9 +2276,9 @@ postfix_expr(r,pe):
  | postfix_expr(r,pe) TOCro eexpr TCCro
      { Ast0_cocci.wrap(Ast0_cocci.ArrayAccess ($1,Parse_aux.clt2mcode "[" $2,$3,
 				       Parse_aux.clt2mcode "]" $4)) }
- | postfix_expr(r,pe) TDot   disj_ident
+ | postfix_expr(r,pe) TDot   type_ident
      { Ast0_cocci.wrap(Ast0_cocci.RecordAccess($1, Parse_aux.clt2mcode "." $2, $3)) }
- | postfix_expr(r,pe) TPtrOp disj_ident
+ | postfix_expr(r,pe) TPtrOp type_ident
      { Ast0_cocci.wrap(Ast0_cocci.RecordPtAccess($1, Parse_aux.clt2mcode "->" $2,
 				     $3)) }
  | postfix_expr(r,pe) TInc
@@ -3076,10 +3076,10 @@ exec_front_ident:
 
 exec_ident:
      { function prev -> prev }
- | TDot   disj_ident exec_ident
+ | TDot   type_ident exec_ident
      { function prev ->
        $3 (Ast0_cocci.wrap(Ast0_cocci.RecordAccess(prev, Parse_aux.clt2mcode "." $1, $2))) }
- | TPtrOp disj_ident exec_ident
+ | TPtrOp type_ident exec_ident
      { function prev ->
        $3 (Ast0_cocci.wrap(Ast0_cocci.RecordPtAccess(prev, Parse_aux.clt2mcode "->" $1,
 				     $2))) }
