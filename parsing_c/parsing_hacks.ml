@@ -1150,6 +1150,30 @@ let rec find_macro_paren xs =
 		 (Ast_c.str_of_info ii));
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
+  | PToken ({tok = TIdent _})::PToken ({tok = TIdent _})
+    ::PToken ({tok = TIdent (s,ii)} as id)
+    ::Parenthised (xxs,info_parens)
+    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _})
+    ::xs when (LP.current_context () = LP.InTopLevel &&
+	      s ==~ regexp_annot) ->
+      msg_attribute s;
+      id.tok <- TMacroEndAttrArgs (s,ii);
+      find_macro_paren xs
+  | PToken ({tok = TCCro _})::PToken ({tok = TIdent (s,ii)} as id)
+    ::Parenthised (xxs,info_parens)
+    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _})
+    ::xs when (LP.current_context () = LP.InTopLevel &&
+	      s ==~ regexp_annot) ->
+      msg_attribute s;
+      id.tok <- TMacroEndAttrArgs (s,ii);
+      find_macro_paren xs
+  | PToken ({tok = TMacroAttr (s,ii)} as attr)
+    ::Parenthised (xxs,info_parens)
+    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _})
+    ::xs
+     ->
+      attr.tok <- TMacroEndAttrArgs (s,ii);
+      find_macro_paren xs
 
 (*
   (* attribute cpp, __xxx id *)

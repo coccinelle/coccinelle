@@ -1,4 +1,5 @@
 aarg(1,2) int func() {
+  int id aarg3(1,2);
   return 42;
 }
 

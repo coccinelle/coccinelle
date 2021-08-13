@@ -27,3 +27,10 @@ attribute name aarg2;
 +short
  func()
  { ... }
+
+@@
+attribute name aarg3;
+@@
+-int
++long
+ id aarg3(1,2);

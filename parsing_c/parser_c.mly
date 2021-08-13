@@ -603,7 +603,7 @@ let postfakeInfo pii  =
 /*(* appear  after fix_tokens_cpp, cf also parsing_hacks#hint *)*/
 
 %token <(string * Ast_c.info)>            TMacroAttr TMacroAttrArgs
-%token <(string * Ast_c.info)>            TMacroEndAttr
+%token <(string * Ast_c.info)>            TMacroEndAttr TMacroEndAttrArgs
 %token <(string * Ast_c.info)>            TMacroStmt TMacroIdStmt
 %token <(string * Ast_c.info)> TMacroIdentBuilder
 /*(* no need value for the moment *)*/
@@ -2548,6 +2548,8 @@ attributes: attribute_list { $1 }
 
 end_attr_arg:
  | TMacroEndAttr { MacroAttr (fst $1), [snd $1] }
+ | TMacroEndAttrArgs TOPar argument_list_ne TCPar
+     { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
 
 end_attribute_gcc:
  | TMacroGccEndAttr tdouble_opar_gcc_attr attr_arg_gcc tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }

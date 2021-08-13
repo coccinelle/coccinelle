@@ -1,4 +1,5 @@
 aarg(1,2) char func() {
+  long id aarg3(1,2);
   return 42;
 }
 

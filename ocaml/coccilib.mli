@@ -784,6 +784,7 @@ module Parser_c :
       | TMacroAttr of (string * Ast_c.info)
       | TMacroAttrArgs of (string * Ast_c.info)
       | TMacroEndAttr of (string * Ast_c.info)
+      | TMacroEndAttrArgs of (string * Ast_c.info)
       | TMacroStmt of (string * Ast_c.info)
       | TMacroIdStmt of (string * Ast_c.info)
       | TMacroIdentBuilder of (string * Ast_c.info)
