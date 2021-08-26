@@ -622,11 +622,13 @@ and unify_define_param p1 p2 =
 
 and unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
-    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,va1,rp1),
-     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,v2,rp2)) ->
+    (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,va1,rp1,attrs1),
+     Ast.FunHeader(_,_,fi2,nm2,lp2,params2,v2,rp2,attrs2)) ->
        unify_fninfo fi1 fi2 &&
        unify_ident nm1 nm2 &&
-       unify_dots unify_parameterTypeDef pdots params1 params2
+       unify_dots unify_parameterTypeDef pdots params1 params2 &&
+       (List.length attrs1 = List.length attrs2) &&
+       List.for_all2 unify_attribute attrs1 attrs2
   | (Ast.Decl d1,Ast.Decl d2) -> unify_annotated_decl d1 d2
 
   | (Ast.SeqStart(lb1),Ast.SeqStart(lb2)) -> true

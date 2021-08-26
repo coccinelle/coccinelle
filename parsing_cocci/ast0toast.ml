@@ -1039,7 +1039,7 @@ and statement s =
 		 (statement Ast.NotSequencible))
 	      whn in
 	  Ast.Dots(d,whn,[],[])
-      | Ast0.FunDecl((_,bef),fi,name,lp,params,va,rp,lbrace,body,rbrace,
+      | Ast0.FunDecl((_,bef),fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
 		     (_,aft)) ->
 	  let fi = List.map fninfo fi in
 	  let name = ident name in
@@ -1049,6 +1049,7 @@ and statement s =
             | None -> None
             | Some (comma, ellipsis) -> Some (mcode comma, mcode ellipsis) in
 	  let rp = mcode rp in
+          let attrs = List.map attribute attrs in
           let lbrace = mcode lbrace in
           let body = dots (statement seqible) body in
           let rbrace = mcode rbrace in
@@ -1056,7 +1057,7 @@ and statement s =
           Ast.FunDecl(rewrap_rule_elem s
                         (Ast.FunHeader
                            (convert_allminus_mcodekind allminus bef,
-                            allminus,fi,name,lp,params,newva,rp)),
+                            allminus,fi,name,lp,params,newva,rp,attrs)),
                       tokenwrap lbrace s (Ast.SeqStart(lbrace)),
                       body,
                       tokenwrap rbrace s (Ast.SeqEnd(rbrace)),

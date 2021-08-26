@@ -885,7 +885,7 @@ let visitor mode bind option_default
     let k s =
       rewrap s
 	(match Ast0.unwrap s with
-	  Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
+	  Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in
 	    let (lp_n,lp) = string_mcode lp in
@@ -897,12 +897,13 @@ let visitor mode bind option_default
                 let (ellipsis_n, ellipsis) = string_mcode ellipsis in
                 (multibind [comma_n;ellipsis_n],Some(comma,ellipsis)) in
 	    let (rp_n,rp) = string_mcode rp in
+	    let (attr_n,attr) = map_split_bind attribute attrs in
 	    let (lbrace_n,lbrace) = string_mcode lbrace in
 	    let (body_n,body) = statement_dots body in
 	    let (rbrace_n,rbrace) = string_mcode rbrace in
 	    (multibind
-	       [fi_n;name_n;lp_n;params_n;va_n;rp_n;lbrace_n;body_n;rbrace_n],
-	     Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft))
+               [fi_n;name_n;lp_n;params_n;va_n;rp_n;attr_n;lbrace_n;body_n;rbrace_n],
+	     Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attr,lbrace,body,rbrace,aft))
 	| Ast0.Decl(bef,decl) ->
 	    let (decl_n,decl) = declaration decl in
 	    (decl_n,Ast0.Decl(bef,decl))

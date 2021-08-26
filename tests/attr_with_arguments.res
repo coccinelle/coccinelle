@@ -18,3 +18,6 @@ aarg2(arguments) short func() {
 aarg2(1,"2") short func() {
   return 42;
 }
+
+long func() aarg4(1,2) {
+}

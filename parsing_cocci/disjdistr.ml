@@ -393,13 +393,13 @@ let orify_rule_elem_ini = generic_orify_rule_elem disjini
 
 let rec disj_rule_elem r k re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp,attrs) ->
       generic_orify_rule_elem
 	(disjtwoelems disjident (disjdots disjparam)) re
 	(name,params)
 	(fun (name,params) ->
 	  Ast.rewrap re
-	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp)))
+	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp,attrs)))
   | Ast.Decl decl ->
       orify_rule_elem_anndecl re decl
 	(function decl -> Ast.rewrap re (Ast.Decl decl))

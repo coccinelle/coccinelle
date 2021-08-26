@@ -1210,7 +1210,7 @@ and inc_elem = function
 
 and rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(_,_,fninfo,name,lp,params,va,rp) ->
+    Ast.FunHeader(_,_,fninfo,name,lp,params,va,rp,attrs) ->
       pr_arity arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
       parameter_list params;
@@ -1221,6 +1221,7 @@ and rule_elem arity re =
           mcode print_string ellipsis
       end;
       close_box(); mcode print_string rp;
+      print_attribute_list attrs;
       force_newline()
   | Ast.Decl decl -> pr_arity arity; annotated_decl decl
 

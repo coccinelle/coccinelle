@@ -1136,7 +1136,7 @@ let rec find_macro_paren xs =
 *)
   | PToken ({tok = Tattribute ii} as id)
     ::Parenthised (xxs,info_parens)
-    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _})
+    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _} | PToken {tok = TOBrace _})
     ::xs
      ->
       pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
@@ -1169,7 +1169,7 @@ let rec find_macro_paren xs =
       find_macro_paren xs
   | PToken ({tok = TMacroAttr (s,ii)} as attr)
     ::Parenthised (xxs,info_parens)
-    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _})
+    ::(PToken {tok = TPtVirg _} | PToken {tok = TEq _} | PToken {tok = TOBrace _})
     ::xs
      ->
       attr.tok <- TMacroEndAttrArgs (s,ii);
@@ -2851,9 +2851,9 @@ let lookahead2 ~pass next before =
       when LP.current_context () = LP.InTopLevel &&
 	s1 ==~ regexp_annot ->
 	  msg_attribute s1;
-	  TMacroAttr (s1, i1)
+	  TMacroEndAttr (s1, i1)
 
-  | (TMacroAttr(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,_)
+  | (TMacroAttr(s1,i1)::(TPtVirg(ii2)|TEq(ii2)|TOBrace(ii2))::rest,_)
       ->
 	  TMacroEndAttr (s1, i1)
 

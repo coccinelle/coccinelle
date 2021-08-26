@@ -1301,7 +1301,7 @@ let rec statement s =
 	let dots = bad_mcode dots in
 	let ln = promote_mcode dots in
 	mkres s (Ast0.Dots(dots,whencode)) ln ln
-    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
+    | Ast0.FunDecl((_,bef),fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
 		   (_,aft)) ->
 	let fninfo =
 	  List.map
@@ -1311,6 +1311,7 @@ let rec statement s =
 	let lp = normal_mcode lp in
 	let params = parameter_list (Some(promote_mcode lp)) params in
 	let rp = normal_mcode rp in
+	let attrs = List.map attribute attrs in
 	let lbrace = normal_mcode lbrace in
 	let body =
 	  dots is_stm_dots (Some(promote_mcode lbrace)) statement body in
@@ -1325,7 +1326,7 @@ let rec statement s =
 	 and other things to the node after, but that would complicate
 	 insert_plus, which doesn't distinguish between different mcodekinds *)
 	let res =
-	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,va,rp,lbrace,
+	  Ast0.FunDecl((leftinfo,bef),fninfo,name,lp,params,va,rp,attrs,lbrace,
 		       body,rbrace,(rightinfo,aft)) in
       (* have to do this test again, because of typing problems - can't save
 	 the result, only use it *)

@@ -247,6 +247,7 @@ and definitionbis = {
   f_storage : storage;
   f_body : compound;
   f_attr : attribute list;
+  f_endattr : attribute list;
   f_old_c_style : declaration list option;
 }
 and cpp_directive =

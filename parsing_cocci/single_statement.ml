@@ -591,12 +591,12 @@ let rec statement dots_before dots_after s =
     else s in
 
   match Ast0.unwrap s with
-    Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,y) ->
+    Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,y) ->
       (* true for close brace, because that represents any way we can
 	 exit the function, which is not necessarily followed by an explicit
 	 close brace. *)
       Ast0.rewrap s
-	(Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lbrace,
+	(Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,attrs,lbrace,
 		      statement_dots false true body,
 		      rbrace,y))
   | Ast0.Decl(_,_) -> s

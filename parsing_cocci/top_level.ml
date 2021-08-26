@@ -29,7 +29,7 @@ let isall f l = List.for_all (isonly f) l
 let rec is_toplevel s =
   match Ast0.unwrap s with
     Ast0.Decl(_,e) -> true
-  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_) -> true
+  | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) -> false
   | Ast0.Include(_,_) -> true

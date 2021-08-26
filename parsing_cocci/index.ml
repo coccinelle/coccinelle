@@ -168,7 +168,7 @@ let parameterTypeDef p =
 
 let statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,aft) -> [68]
+    Ast0.FunDecl(bef,fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) -> [68]
   | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]

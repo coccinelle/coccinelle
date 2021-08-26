@@ -582,7 +582,7 @@ let collect_in_plus_term =
 
   let astfvrule_elem recursor k re =
     match Ast.unwrap re with
-      Ast.FunHeader(bef,_,fi,nm,_,params,_,_) ->
+      Ast.FunHeader(bef,_,fi,nm,_,params,_,_,_) ->
 	bind (cip_mcodekind recursor bef) (k re)
 	  (* no clue why this code is here *) (*
 	let fi_metas =

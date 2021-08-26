@@ -1216,12 +1216,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context s
 	then
 	  match (up,Ast0.unwrap s) with
-	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,vaa,rp1,lb1,bodya,rb1,_),
-	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,vab,rp,lb,bodyb,rb,_)) ->
+	    (Ast0.FunDecl(_,fninfoa,namea,lp1,paramsa,vaa,rp1,attrs1,lb1,bodya,rb1,_),
+	     Ast0.FunDecl(_,fninfob,nameb,lp,paramsb,vab,rp,attrs,lb,bodyb,rb,_)) ->
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; match_option varargs_equal vaa vab;
                    check_mcode rp1 rp;
 		   check_mcode lb1 lb; check_mcode rb1 rb;
+                   match_attributes attrs1 attrs;
 		   match_fninfo fninfoa fninfob; match_ident namea nameb;
 		   match_dots match_param is_plist_matcher do_plist_match
 		     paramsa paramsb;
@@ -1711,11 +1712,11 @@ let rebuild_mcode start_line =
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl
-	       ((info,mc),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
+	       ((info,mc),fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
 		(aftinfo,aftmc)) ->
 		 Ast0.FunDecl
 		   ((info,copy_mcodekind mc),
-		    fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
+		    fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
 		    (aftinfo,copy_mcodekind aftmc))
 	   | s -> s)) in
     Ast0.set_dots_bef_aft res
@@ -2385,9 +2386,9 @@ let extra_copy_stmt_plus model e =
   (if not !Flag.sgrep_mode2 (* sgrep has no plus code, so nothing to do *)
   then
     (match Ast0.unwrap model with
-      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
+      Ast0.FunDecl((info,bef),_,_,_,_,_,_,_,_,_,_,(aftinfo,aft)) ->
 	(match Ast0.unwrap e with
-	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
+	  Ast0.FunDecl((info,bef1),_,_,_,_,_,_,_,_,_,_,(aftinfo,aft1)) ->
 	    merge_plus_before bef bef1; merge_plus_after aft aft1
 	| _ ->
 	    let mc = Ast0.get_mcodekind e in

@@ -701,7 +701,7 @@ let all_context =
 
   let rule_elem r k e =
     match Ast.unwrap e with
-      Ast.FunHeader(bef,_,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
+      Ast.FunHeader(bef,_,_,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
     | Ast.Decl decl ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->

@@ -18,3 +18,6 @@ aarg2(arguments) int func() {
 aarg2(1,"2") int func() {
   return 42;
 }
+
+void func() aarg4(1,2) {
+}

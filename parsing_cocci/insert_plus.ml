@@ -299,7 +299,7 @@ bind to that; not good for isomorphisms *)
     | Ast0.For(_,_,_,_,_,_,_,_,aft)
     | Ast0.Iterator(_,_,_,_,_,aft) ->
 	redo_branched (do_nothing r k s) aft*)
-    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
+    | Ast0.FunDecl((info,bef),fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
 		   (aftinfo,aft)) ->
 	(Toplevel,info,bef)::(k s)@[(Toplevel,aftinfo,aft)]
     | Ast0.Decl((info,bef),decl) ->
@@ -637,7 +637,7 @@ let collect_plus_nodes root =
     | Ast0.TopInit(init) -> r.VT0.combiner_rec_initialiser init
     | Ast0.Decl(bef,decl) ->
 	 do_nothing_extra (pre_info bef) [] mk_statement r k e
-    | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
+    | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) ->
 	do_nothing_extra (pre_info bef) (pre_info aft) mk_statement r k e
     | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
@@ -1227,7 +1227,7 @@ let reevaluate_contextness =
      match Ast0.unwrap e with
        Ast0.Decl(bef,decl) ->
 	 donothing_extra (pre_info bef) r k e
-     | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
+     | Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) ->
 	 donothing_extra ((pre_info bef) @ (pre_info aft)) r k e
      | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) ->
 	 donothing_extra (info aft) r k e

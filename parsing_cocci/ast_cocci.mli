@@ -533,7 +533,7 @@ and base_rule_elem =
 	             fninfo list * ident (* name *) *
 	             string mcode (* ( *) * parameter_list *
                      (string mcode (* , *) * string mcode (* ...... *) ) option *
-                     string mcode (* ) *)
+                     string mcode (* ) *) * attr list
   | Decl          of annotated_decl
 
   | SeqStart      of string mcode (* { *)

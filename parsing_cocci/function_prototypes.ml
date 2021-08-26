@@ -38,7 +38,7 @@ let make_semi info =
 let collect_function (stm : Ast0.statement) =
   match Ast0.unwrap stm with
     Ast0.FunDecl((bef_info,_),
-		 fninfo,name,lp,params,va,rp,lbrace,body,rbrace,
+		 fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
 		 (aft_info,_)) ->
       let new_bef_info =
 	{(Ast0.default_info()) with
@@ -370,7 +370,7 @@ let fresh_names old_name mdef dec =
 			(fninfo,attr,name,lp,Ast0.rewrap params l,va,rp,sem))))) in
 	  let (def_metavars,newdef) =
 	    match Ast0.unwrap mdef with
-	      Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,lb,body,rb,y) ->
+	      Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,attrs,lb,body,rb,y) ->
 		let (def_metavars,def_l) =
 		  let params = Ast0.unwrap params in
 		  List.split
@@ -379,7 +379,7 @@ let fresh_names old_name mdef dec =
 		(List.concat def_metavars,
 		 Ast0.rewrap mdef
 		   (Ast0.FunDecl(x,fninfo,name,lp,Ast0.rewrap params def_l,va,
-				 rp,lb,body,rb,y)))
+				 rp,attrs,lb,body,rb,y)))
 	    | _ -> failwith "unexpected function definition" in
 	  (metavars,def_metavars,newdec,newdef)
       |	_ -> res)
@@ -449,7 +449,7 @@ let reinsert mdefs minus =
     List.map
       (function x ->
 	match Ast0.unwrap x with
-	  Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
+	  Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,_) ->
 	    (name,x)
 	| _ -> failwith "bad mdef")
       mdefs in
@@ -458,7 +458,7 @@ let reinsert mdefs minus =
       match Ast0.unwrap x with
 	Ast0.NONDECL(stmt) ->
 	  (match Ast0.unwrap stmt with
-	    Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
+	    Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,_) ->
 	      (try Ast0.rewrap x (Ast0.NONDECL(List.assoc name table))
 	      with Not_found -> x)
 	  | _ -> x)
@@ -466,7 +466,7 @@ let reinsert mdefs minus =
 	  (match Ast0.unwrap rule_elem_dots with
 	    [f] ->
 	      (match Ast0.unwrap f with
-		Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,
+		Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,attrs,lbrace,body,
 			     rbrace,_) ->
 		  (try
 		    Ast0.rewrap x

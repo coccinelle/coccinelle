@@ -415,7 +415,7 @@ and base_statement =
 	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
 	(string mcode (* , *) * string mcode (* ...... *) ) option *
-	string mcode (* ) *) *
+	string mcode (* ) *) * attr list *
 	string mcode (* { *) * statement dots *
 	string mcode (* } *) *
 	(info * mcodekind) (* after the function decl *)

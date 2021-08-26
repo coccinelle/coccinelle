@@ -582,12 +582,12 @@ and statement arity s =
   print_context s
     (function _ ->
       match Ast0.unwrap s with
-	Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
+	Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,_) ->
 	  print_string arity;
 	  List.iter print_fninfo fninfo;
 	  ident name; mcode print_string_box lp;
 	  parameter_list params; varargs va; close_box(); mcode print_string rp;
-	  print_string " ";
+	  print_attribute_list attrs; print_string " ";
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace

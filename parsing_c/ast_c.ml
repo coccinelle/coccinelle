@@ -636,6 +636,7 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
     f_storage: storage;
     f_body: compound;
     f_attr: attribute list; (* gccext: *)
+    f_endattr: attribute list; (* gccext: *)
     f_old_c_style: declaration list option;
   }
   (* cppext: IfdefFunHeader TODO *)

@@ -485,10 +485,11 @@ and statement old_metas table minus s =
 	(whencode (dots (statement old_metas table minus))
 	   (statement old_metas table minus)
 	   (expression ID old_metas table minus)) x
-  | Ast0.FunDecl(_,fi,name,lp,params,va,rp,lbrace,body,rbrace,_) ->
+  | Ast0.FunDecl(_,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,_) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
       parameter_list old_metas table minus params;
+      List.iter (attribute old_metas table minus) attrs;
       dots (statement old_metas table minus) body
   | Ast0.Include(inc,s) -> () (* no metavariables possible *)
   | Ast0.MetaInclude(inc,s) -> expression ID old_metas table minus s

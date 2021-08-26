@@ -32,7 +32,7 @@ let contains_modif used_after x =
     let rule_elem r k re =
       let res = k re in
       match Ast.unwrap re with
-	Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp) ->
+	Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp,endattrs) ->
 	  bind (mcode r ((),(),bef,[])) res
       | Ast.Decl decl ->
 	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
@@ -120,9 +120,9 @@ let strip x =
     let res = do_nothing r k re in
     let no_mcode = Ast.CONTEXT(Ast.NoPos,Ast.NOTHING) in
     match Ast.unwrap res with
-      Ast.FunHeader(bef,b,fninfo,name,lp,params,va,rp) ->
+      Ast.FunHeader(bef,b,fninfo,name,lp,params,va,rp,endattrs) ->
 	Ast.rewrap res
-	  (Ast.FunHeader(no_mcode,b,fninfo,name,lp,params,va,rp))
+	  (Ast.FunHeader(no_mcode,b,fninfo,name,lp,params,va,rp,endattrs))
     | Ast.Decl decl -> Ast.rewrap res (Ast.Decl(annotated_decl no_mcode decl))
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
 	Ast.rewrap res

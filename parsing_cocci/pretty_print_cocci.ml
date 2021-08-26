@@ -742,7 +742,7 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
 and rule_elem arity re =
   match Ast.unwrap re with
-    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp) ->
+    Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp,attrs) ->
       mcode (function _ -> ()) ((),Ast.no_info,bef,[]);
       print_string arity; List.iter print_fninfo fninfo;
       ident name; mcode print_string_box lp;
@@ -753,6 +753,7 @@ and rule_elem arity re =
                mcode print_string comma;
               mcode print_string ellipsis
       end; close_box(); mcode print_string rp;
+      print_attribute_list attrs;
       print_string " "
   | Ast.Decl(ann_decl) -> annotated_decl arity ann_decl
   | Ast.SeqStart(brace) ->

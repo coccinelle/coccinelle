@@ -657,7 +657,7 @@ let combiner bind option_default
   and rule_elem re =
     let k re =
       match Ast.unwrap re with
-	Ast.FunHeader(_,_,fi,name,lp,params,va,rp) ->
+	Ast.FunHeader(_,_,fi,name,lp,params,va,rp,attrs) ->
 	  let lfi = List.map fninfo fi in
 	  let lname = ident name in
 	  let llp = string_mcode lp in
@@ -666,7 +666,8 @@ let combiner bind option_default
             | None -> ([],[])
             | Some (comma,ellipsis) -> ([string_mcode comma],[string_mcode ellipsis]) in
 	  let lrp = string_mcode rp in
-	  multibind (lfi @ [lname; llp; lparams] @ lcomma @ lellipsis @ [lrp])
+	  let lattrs = List.map attribute attrs in
+	  multibind (lfi @ [lname; llp; lparams] @ lcomma @ lellipsis @ [lrp] @ lattrs)
       | Ast.Decl decl -> annotated_decl decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
@@ -1663,7 +1664,7 @@ let rebuilder
     let k re =
       Ast.rewrap re
 	(match Ast.unwrap re with
-	  Ast.FunHeader(bef,allminus,fi,name,lp,params,va,rp) ->
+	  Ast.FunHeader(bef,allminus,fi,name,lp,params,va,rp,attrs) ->
 	    let lfi = List.map fninfo fi in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
@@ -1672,7 +1673,8 @@ let rebuilder
               | None -> None
               | Some (comma,ellipsis) -> Some(string_mcode comma,string_mcode ellipsis) in
 	    let lrp = string_mcode rp in
-	    Ast.FunHeader(bef,allminus, lfi, lname, llp, lparams, lva, lrp)
+	    let attrs = List.map attribute attrs in
+	    Ast.FunHeader(bef,allminus, lfi, lname, llp, lparams, lva, lrp, attrs)
 	| Ast.Decl decl -> Ast.Decl (annotated_decl decl)
 	| Ast.SeqStart(brace) -> Ast.SeqStart(string_mcode brace)
 	| Ast.SeqEnd(brace) -> Ast.SeqEnd(string_mcode brace)

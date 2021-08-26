@@ -1148,7 +1148,7 @@ let find_function_names l =
 		      let (_,info) as h = List.hd bef in
 		      let clt = get_clt h in
                       decl_or_proto clt info bef aft
-		  | (PC.TAttr_(_),_)::rest ->
+		  | ((PC.TAttr_(_)|PC.TAttrArg(_)),_)::rest ->
 		      (match balanced_args 0 false rest with
 			[] ->
 			  let (_,info) as h = List.hd bef in

@@ -575,6 +575,6 @@ let rec statement_pos s snp
   | Ast0.Return (retmc,sem) ->
       let constructor ~mc = Ast0.Return(mc, sem) in
       mcode_wrap ~mc:retmc ~constructor snp
-  | Ast0.FunDecl (b, f, id, lp, ps, op, rp, lb, sd, rb, a) ->
-      let constructor ~id = Ast0.FunDecl(b,f,id,lp,ps,op,rp,lb,sd,rb,a) in
+  | Ast0.FunDecl (b, f, id, lp, ps, op, rp, ea, lb, sd, rb, a) ->
+      let constructor ~id = Ast0.FunDecl(b,f,id,lp,ps,op,rp,ea,lb,sd,rb,a) in
       id_wrap ~id ~constructor snp

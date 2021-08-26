@@ -34,3 +34,11 @@ attribute name aarg3;
 -int
 +long
  id aarg3(1,2);
+
+@@
+attribute name aarg4;
+@@
+-void
++long
+ func() aarg4(1,2) {
+ }

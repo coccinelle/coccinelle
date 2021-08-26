@@ -282,7 +282,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 let fixFunc (typ, compound, old_style_opt) =
   let (cp,iicp) = compound in
 
-  let (name, ty,   (st,iist),  attrs) = typ in
+  let ((name, ty,   (st,iist),  attrs), endattrs) = typ in
 
   let (qu, tybis) = ty in
 
@@ -342,6 +342,7 @@ let fixFunc (typ, compound, old_style_opt) =
 	then []
 	else cp;
        f_attr = attrs;
+       f_endattr = endattrs;
        f_old_c_style = old_style_opt;
       },
       (iifunc @ iicp @ [iistart] @ iist)
@@ -2055,17 +2056,18 @@ function_def:
 
 start_fun: start_fun2
   { LP.new_scope();
-    fix_add_params_ident $1;
+    let (fn, endattrs) = $1 in
+    fix_add_params_ident fn;
     (* toreput? !LP._lexer_hint.toplevel <- false;  *)
-    $1
+    (fn,endattrs)
   }
 
 start_fun2: decl_spec declaratorfd
      { let (returnType,storage) = fixDeclSpecForFuncDef (snd $1) in
-       let (id, attrs) = $2 in
-       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst (fst $1))@(snd (fst $1))@attrs)
+       let (id, attrs, endattrs) = $2 in
+       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst (fst $1))@(snd (fst $1))@attrs), endattrs
      }
-   | ctor_dtor { $1 }
+  | ctor_dtor { $1, [] }
 
 ctor_dtor:
  | Tconstructorname topar tcpar {
@@ -2097,10 +2099,10 @@ introduce conflicts in the parser. */
 
 declaratorfd:
  | declarator
-   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr }
+   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr, [] }
  /*(* gccext: *)*/
 | declarator end_attributes
-   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr }
+   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr, $2 }
 
 
 /*(*************************************************************************)*/
@@ -2339,7 +2341,7 @@ cpp_other:
      let attrs = Ast_c.noattr in
      let sto = (NoSto, false), [] in
      (id, fixOldCDecl ty, sto, attrs) in
-   let fundef = fixFunc (fninfo, $5, None) in
+   let fundef = fixFunc ((fninfo, []), $5, None) in
    Definition fundef
  }
 

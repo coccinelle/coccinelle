@@ -1484,13 +1484,13 @@ fundecl:
 
 single_fundecl:
   f=fninfo
-  TFunDecl i=fn_ident lp=TOPar arglist=arg_list(decl) rp=TCPar
+  TFunDecl i=fn_ident lp=TOPar arglist=arg_list(decl) rp=TCPar endar=attr_list
   lb=TOBrace b=fun_start rb=TCBrace
       { let (args,vararg) = arglist in
         Ast0_cocci.wrap(Ast0_cocci.FunDecl((Ast0_cocci.default_info(),Ast0_cocci.context_befaft()),
 			       f, i,
 			       Parse_aux.clt2mcode "(" (lp), args, vararg,
-			       Parse_aux.clt2mcode ")" rp,
+			       Parse_aux.clt2mcode ")" rp, endar,
 			       Parse_aux.clt2mcode "{" lb, b,
 			       Parse_aux.clt2mcode "}" rb,
 			       (Ast0_cocci.default_info(),Ast0_cocci.context_befaft()))) }

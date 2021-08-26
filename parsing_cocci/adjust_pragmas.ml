@@ -73,7 +73,7 @@ let rec right_decl d =
 
 let rec right_statement s =
   match Ast0.unwrap s with
-    Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) -> None
+    Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) -> None
   | Ast0.Decl(bef,decl) ->
       call_right right_decl decl s
 	(function decl -> Ast0.Decl(bef,decl))
@@ -328,18 +328,18 @@ let process =
     let s = k s in
     Ast0.rewrap s
       (match Ast0.unwrap s with
-	Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft) ->
+	Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) ->
 	  let (rbrace,aft) =
 	    match right_mcode rbrace with
 	      None -> (rbrace,aft)
 	    | Some (pragmas,rbrace) -> (rbrace,update_after pragmas aft) in
 	  (match left_fundecl name fi with
 	      None ->
-		Ast0.FunDecl(bef,fi,name,lp,params,va,rp,lbrace,body,rbrace,aft)
+		Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft)
 	    | Some (pragmas,fi,name) ->
 		Ast0.FunDecl
 		  (update_before2 pragmas bef,
-		   fi,name,lp,params,va,rp,lbrace,body,rbrace,aft))
+		   fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft))
       | Ast0.Decl(bef,decl) ->
 	  (match left_decl decl with
 	    None -> Ast0.unwrap s

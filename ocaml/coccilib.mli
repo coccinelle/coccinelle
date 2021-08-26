@@ -346,6 +346,7 @@ module Ast_c :
       f_storage : storage;
       f_body : compound;
       f_attr : attribute list;
+      f_endattr : attribute list;
       f_old_c_style : declaration list option;
     }
     and cpp_directive =
@@ -2881,7 +2882,7 @@ module Ast_cocci :
       Ast_cocci.base_rule_elem =
         FunHeader of mcodekind * bool * fninfo list * ident * string mcode *
           parameter_list * (string mcode * string mcode) option *
-          string mcode
+          string mcode * attr list
       | Decl of annotated_decl
       | SeqStart of string mcode
       | SeqEnd of string mcode
@@ -3559,8 +3560,8 @@ module Ast0_cocci :
       | Dots of string mcode * (statement dots, statement) whencode list
       | FunDecl of (info * mcodekind) * fninfo list * ident * string mcode *
           parameter_list * (string mcode * string mcode) option *
-          string mcode * string mcode * statement dots * string mcode *
-          (info * mcodekind)
+          string mcode * attr list * string mcode * statement dots *
+          string mcode * (info * mcodekind)
       | Include of string mcode * Ast_cocci.inc_file mcode
       | MetaInclude of string mcode * expression
       | Undef of string mcode * ident

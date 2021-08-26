@@ -1301,6 +1301,7 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
         f_storage= sto;
         f_body= compound;
         f_attr= attrs;
+        f_endattr= endattrs;
         f_old_c_style = oldstyle;
         }, ii) = funcdef in
   let iifunheader, iicompound =
@@ -1320,6 +1321,7 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
       f_type = functype;
       f_storage = sto;
       f_attr = attrs;
+      f_endattr = endattrs;
       f_body = [] (* empty body *);
       f_old_c_style = oldstyle;
       }, iifunheader))

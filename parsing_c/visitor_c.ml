@@ -715,12 +715,14 @@ and vk_def = fun bigf d ->
        f_storage = sto;
        f_body = statxs;
        f_attr = attrs;
+       f_endattr = endattrs;
        f_old_c_style = oldstyle;
       }, ii
         ->
         iif ii;
         iif iib;
         attrs +> List.iter (vk_attribute bigf);
+        endattrs +> List.iter (vk_attribute bigf);
         vk_type bigf returnt;
         vk_name bigf name;
         paramst +> List.iter (fun (param,iicomma) ->
@@ -1646,6 +1648,7 @@ and vk_def_s = fun bigf d ->
        f_storage = sto;
        f_body = statxs;
        f_attr = attrs;
+       f_endattr = endattrs;
        f_old_c_style = oldstyle;
       }, ii
         ->
@@ -1660,6 +1663,8 @@ and vk_def_s = fun bigf d ->
             vk_statement_sequencable_list_s bigf statxs;
          f_attr =
             attrs +> List.map (vk_attribute_s bigf);
+         f_endattr =
+            endattrs +> List.map (vk_attribute_s bigf);
          f_old_c_style =
             oldstyle +> Common.map_option (fun decls ->
               decls +> List.map (vk_decl_s bigf)

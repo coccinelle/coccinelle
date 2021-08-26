@@ -5081,11 +5081,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       )
 
 
-  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, va, cparen),
+  | A.FunHeader (mckstart, allminus, fninfoa, ida, oparen, paramsa, va, cparen, endattras),
     F.FunHeader ({B.f_name = nameidb;
                   f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                   f_storage = stob;
                   f_attr = attrs;
+                  f_endattr = endattrs;
                   f_body = body;
                   f_old_c_style = oldstyle;
                   }, ii) ->
@@ -5116,6 +5117,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
           attribute_list allminus attras attrs >>= (fun attras attrs ->
+          attribute_list allminus endattras endattrs >>= (fun endattras endattrs ->
               (
                 if isvaargs
                 then
@@ -5133,17 +5135,18 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
-                          paramsa,va,cparen),
+                          paramsa,va,cparen,endattras),
                F.FunHeader ({B.f_name = nameidb;
                              f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                              f_storage = stob;
                              f_attr = attrs;
+                             f_endattr = endattrs;
                              f_body = body;
                              f_old_c_style = oldstyle; (* TODO *)
                            },
                            ioparenb::icparenb::iifakestart::iistob)
                 )
-              ))))))))))
+              )))))))))))
       | _ -> raise (Impossible 49)
       )
 
