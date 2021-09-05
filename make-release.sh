@@ -28,7 +28,7 @@ echo "  rm -rf $WORKING_DIRECTORY"
 echo
 echo The release script will _not_ push the updated repository.
 echo You may want to run the following command after the release:
-echo "  git push"
+echo "  git push --tags"
 echo
 if [ -d "$WEBSITE" ]; then
   echo For the website, you need to manually update those files:
