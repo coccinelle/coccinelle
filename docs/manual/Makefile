@@ -8,6 +8,9 @@ include ../../Makefile.config
 endif
 HEVEA = hevea
 HEVEA_XXDATE := $(shell ./find-xxdate)
+
+$(if $(HEVEA_XXDATE),,$(error Hevea: Unable to find xxdate.exe))
+
 HEVEA_CMD := $(HEVEA) -exec $(HEVEA_XXDATE)
 
 MAINSRC=main.tex
