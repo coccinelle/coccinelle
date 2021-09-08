@@ -82,5 +82,5 @@ rm -rf $WORKING_DIRECTORY/$PACKAGE
 if [ -d "$WEBSITE" ]; then
    cp $PACKAGE.tar.gz $WEBSITE
    cp $PACKAGE-bin-x86.tar.gz $WEBSITE
-   ( cd $WEBSITE; svn add $PACKAGE.tar.gz $PACKAGE-bin-x86.tar.gz )
+   ( cd $WEBSITE; git add $PACKAGE.tar.gz $PACKAGE-bin-x86.tar.gz )
 fi
