@@ -587,6 +587,7 @@ and vk_onedecl_opt process_type = fun bigf onedecl ->
     (if process_type then vk_type bigf t);
     (* don't go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
+    midattrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
       vk_name bigf name;
       (match iniopt with
