@@ -634,13 +634,16 @@ let macro_body_to_maybe_hint body =
        * Currently, the get_macro_* functions rely on the parser to verify if
        * the body belongs to certain primary constructs *)
       let get_macro_iterator () =
-        let macro_tokens = body@[TPtVirg (Ast_c.fakeInfo())] in
-        try
-          match Parser_c.iteration (read_tokens (ref macro_tokens)) lexbuf_fake with
-          | (Ast_c.While _ | Ast_c.For _), _ ->
-              Some HintIterator
-          | _ -> None
-        with _ -> None
+	match body with
+	  (Twhile _ | Tfor _)::_ -> (* need these tokns to have an iterator *)
+            let macro_tokens = body@[TPtVirg (Ast_c.fakeInfo())] in
+            (try
+              match Parser_c.iteration (read_tokens (ref macro_tokens)) lexbuf_fake with
+              | (Ast_c.While _ | Ast_c.For _), _ ->
+		  Some HintIterator
+              | _ -> None
+            with _ -> None)
+	| _ -> None
       in
       let get_macro_stmt () =
         let macro_tokens =
@@ -653,9 +656,14 @@ let macro_body_to_maybe_hint body =
           | _ -> None
         with _ -> None
       in
-      match Common.find_map (fun f -> f()) [get_macro_iterator; get_macro_stmt] with
-      | Some hint -> DefineHintBody (hint, body, ref false)
-      | None -> DefineBody body
+      let save_verbose_parsing = !Flag_parsing_c.verbose_parsing in
+      Flag_parsing_c.verbose_parsing := false;
+      let res =
+	match Common.find_map (fun f -> f()) [get_macro_iterator; get_macro_stmt] with
+	| Some hint -> DefineHintBody (hint, body, ref false)
+	| None -> DefineBody body in
+      Flag_parsing_c.verbose_parsing := save_verbose_parsing;
+      res
 
 exception Bad_param
 
