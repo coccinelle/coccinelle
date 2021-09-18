@@ -45,6 +45,21 @@ let check_table table minus (name,_,info,_,_,_) =
 	with Not_found -> ()))
   else (try (find_loop table name) := true with Not_found -> ())
 
+let ast_check_table table minus name =
+  if minus
+  then
+    (try (find_loop table name) := true
+    with
+      Not_found ->
+	(try
+	  Hashtbl.find fresh_table name;
+	  let (_,name) = name in
+	  failwith
+	    (Printf.sprintf
+	       "unexpected use of a fresh identifier %s" name)
+	with Not_found -> ()))
+  else (try (find_loop table name) := true with Not_found -> ())
+
 let get_opt fn = Common.do_option fn
 
 (* --------------------------------------------------------------------- *)
@@ -86,11 +101,16 @@ let rec ident context old_metas table minus i =
 	    warning
 	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
       | _ -> ())
-  | Ast0.MetaId(name,_,seedval,_) ->
+  | Ast0.MetaId(name,cstr,seedval,_) ->
       check_table table minus name;
+      constraints table minus cstr;
       seed table minus seedval
-  | Ast0.MetaFunc(name,_,_) -> check_table table minus name
-  | Ast0.MetaLocalFunc(name,_,_) -> check_table table minus name
+  | Ast0.MetaFunc(name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
+  | Ast0.MetaLocalFunc(name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
   | Ast0.AsIdent(id,asid) -> failwith "not generated yet"
   | Ast0.DisjId(_,id_list,_,_) | Ast0.ConjId(_,id_list,_,_) ->
       List.iter (ident context old_metas table minus) id_list
@@ -114,20 +134,24 @@ and seed table minus = function
 (* --------------------------------------------------------------------- *)
 (* Operators *)
 
-let assignOp context old_metas table minus op = match Ast0.unwrap op with
+and assignOp context old_metas table minus op = match Ast0.unwrap op with
   | Ast0.SimpleAssign _ -> ()
   | Ast0.OpAssign _ -> ()
-  | Ast0.MetaAssign (name,_,_) -> check_table table minus name
+  | Ast0.MetaAssign (name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
 
-let binaryOp context old_metas table minus op = match Ast0.unwrap op with
+and binaryOp context old_metas table minus op = match Ast0.unwrap op with
   | Ast0.Arith _ -> ()
   | Ast0.Logical _ -> ()
-  | Ast0.MetaBinary (name,_,_) -> check_table table minus name
+  | Ast0.MetaBinary (name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
 
 (* --------------------------------------------------------------------- *)
 (* Expression *)
 
-let rec expression context old_metas table minus e =
+and expression context old_metas table minus e =
   match Ast0.unwrap e with
     Ast0.Ident(id) ->
       ident context old_metas table minus id
@@ -181,7 +205,7 @@ let rec expression context old_metas table minus e =
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->
       typeC old_metas table minus ty; initialiser old_metas table minus init
-  | Ast0.MetaExpr(name,_,Some tys,_,_,bitfield) ->
+  | Ast0.MetaExpr(name,cstr,Some tys,_,_,bitfield) ->
       List.iter
 	(function x ->
 	  List.iter
@@ -189,12 +213,15 @@ let rec expression context old_metas table minus e =
 	    (Ast0.meta_names_of_typeC x))
 	tys;
       check_table table minus name;
+      constraints table minus cstr;
       Common.do_option (check_len table minus) bitfield
-  | Ast0.MetaExpr(name,_,_,_,_,_) | Ast0.MetaErr(name,_,_) ->
-      check_table table minus name
-  | Ast0.MetaExprList(name,len,_,_) ->
+  | Ast0.MetaExpr(name,cstr,_,_,_,_) | Ast0.MetaErr(name,cstr,_) ->
       check_table table minus name;
-      check_len table minus len
+      constraints table minus cstr
+  | Ast0.MetaExprList(name,len,cstr,_) ->
+      check_table table minus name;
+      check_len table minus len;
+      constraints table minus cstr
   | Ast0.AsExpr(exp,asexp) -> failwith "not generated yet"
   | Ast0.AsSExpr(exp,asstm) -> failwith "not generated yet"
   | Ast0.DisjExpr(_,exps,_,_)
@@ -211,7 +238,9 @@ let rec expression context old_metas table minus e =
 
 and check_len table minus len =
   match len with
-    Ast0.MetaListLen (lenname, _) -> check_table table minus lenname
+    Ast0.MetaListLen (lenname,cstr) ->
+      check_table table minus lenname;
+      constraints table minus cstr
   | _ -> ()
 
 (* --------------------------------------------------------------------- *)
@@ -236,8 +265,9 @@ and typeC old_metas table minus t =
       get_opt (expression ID old_metas table minus) precision_opt
   | Ast0.TypeOfExpr(_, _, exp, _) -> expression ID old_metas table minus exp
   | Ast0.TypeOfType(_, _, ty, _) -> typeC old_metas table minus ty
-  | Ast0.MetaType(name,_,_) ->
-      check_table table minus name
+  | Ast0.MetaType(name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
   | Ast0.AsType(ty,asty) -> failwith "not generated yet"
   | Ast0.DisjType(_,types,_,_)
   | Ast0.ConjType(_,types,_,_) ->
@@ -261,8 +291,9 @@ and typeC old_metas table minus t =
 
 and declaration context old_metas table minus d =
   match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_,_) ->
-      check_table table minus name
+    Ast0.MetaDecl(name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
   | Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
       typeC old_metas table minus ty;
@@ -316,11 +347,13 @@ and declaration context old_metas table minus d =
 
 and field context old_metas table minus d =
   match Ast0.unwrap d with
-    Ast0.MetaField(name,_,_) ->
-      check_table table minus name
-  | Ast0.MetaFieldList(name,len,_,_) ->
+    Ast0.MetaField(name,cstr,_) ->
       check_table table minus name;
-      check_len table minus len
+      constraints table minus cstr
+  | Ast0.MetaFieldList(name,len,cstr,_) ->
+      check_table table minus name;
+      check_len table minus len;
+      constraints table minus cstr
   | Ast0.Field(ty,id,bf,sem) ->
       typeC old_metas table minus ty;
       Common.do_option (ident context old_metas table minus) id;
@@ -348,11 +381,13 @@ and enum_decl context old_metas table minus d =
 
 and initialiser old_metas table minus ini =
   match Ast0.unwrap ini with
-    Ast0.MetaInit(name,_,_) ->
-      check_table table minus name
-  | Ast0.MetaInitList(name,len,_,_) ->
+    Ast0.MetaInit(name,cstr,_) ->
       check_table table minus name;
-      check_len table minus len
+      constraints table minus cstr
+  | Ast0.MetaInitList(name,len,cstr,_) ->
+      check_table table minus name;
+      check_len table minus len;
+      constraints table minus cstr
   | Ast0.AsInit(ini,asini) -> failwith "not generated yet"
   | Ast0.InitExpr(exp) -> expression ID old_metas table minus exp
   | Ast0.InitList(lb,initlist,rb,ordered) ->
@@ -390,11 +425,13 @@ and parameterTypeDef old_metas table minus param =
       List.iter (attribute old_metas table minus) midattr;
       typeC old_metas table minus ty;
       List.iter (attribute old_metas table minus) attr
-  | Ast0.MetaParam(name,_,_) ->
-      check_table table minus name
-  | Ast0.MetaParamList(name,len,_,_) ->
+  | Ast0.MetaParam(name,cstr,_) ->
       check_table table minus name;
-      check_len table minus len
+      constraints table minus cstr
+  | Ast0.MetaParamList(name,len,cstr,_) ->
+      check_table table minus name;
+      check_len table minus len;
+      constraints table minus cstr
   | _ -> () (* no metavariable subterms *)
 
 and parameter_list old_metas table minus =
@@ -409,15 +446,17 @@ and string_fragment old_metas table minus e =
   | Ast0.FormatFragment(pct,fmt) ->
       string_format old_metas table minus fmt
   | Ast0.Strdots dots -> ()
-  | Ast0.MetaFormatList(pct,name,_,len) ->
+  | Ast0.MetaFormatList(pct,name,cstr,len) ->
       check_table table minus name;
+      constraints table minus cstr;
       check_len table minus len
 
 and string_format old_metas table minus e =
   match Ast0.unwrap e with
     Ast0.ConstantFormat(str) -> ()
-  | Ast0.MetaFormat(name,_) ->
-      check_table table minus name
+  | Ast0.MetaFormat(name,cstr) ->
+      check_table table minus name;
+      constraints table minus cstr
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -461,10 +500,13 @@ and statement old_metas table minus s =
   | Ast0.ReturnExpr(ret,exp,sem) -> expression ID old_metas table minus exp
   | Ast0.Exec(exec,lang,code,sem) ->
       dots (exec_code ID old_metas table minus) code
-  | Ast0.MetaStmt(name,_,_) ->     check_table table minus name
-  | Ast0.MetaStmtList(name,len,_,_) ->
+  | Ast0.MetaStmt(name,cstr,_) ->
       check_table table minus name;
-      check_len table minus len
+      constraints table minus cstr
+  | Ast0.MetaStmtList(name,len,cstr,_) ->
+      check_table table minus name;
+      check_len table minus len;
+      constraints table minus cstr;
   | Ast0.AsStmt(stm,asstm) -> failwith "not generated yet"
   | Ast0.Exp(exp) -> expression ID old_metas table minus exp
   | Ast0.TopExp(exp) -> expression ID old_metas table minus exp
@@ -514,9 +556,10 @@ and pragmainfo old_metas table minus pi =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
-  | Ast0.MetaDParamList(name,len,_,_) ->
+  | Ast0.MetaDParamList(name,len,cstr,_) ->
       check_table table minus name;
-      check_len table minus len
+      check_len table minus len;
+      constraints table minus cstr
   | Ast0.DPComma(_) | Ast0.DPdots(_) ->
       () (* no metavariable subterms *)
   | Ast0.OptDParam(dp)    -> define_param old_metas table minus dp
@@ -540,8 +583,9 @@ and attribute old_metas table minus x =
 
 and attr_arg old_metas table minus x =
   match Ast0.unwrap x with
-    Ast0.MetaAttr(name,_,_) ->
-      check_table table minus name
+    Ast0.MetaAttr(name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
   | _ -> ()
 
 and whencode notfn alwaysfn expression = function
@@ -567,6 +611,23 @@ and exec_code context old_metas table minus e =
     Ast0.ExecEval(colon,id) -> expression context old_metas table minus id
   | Ast0.ExecToken(tok) -> ()
   | Ast0.ExecDots(dots) -> ()
+
+and constraints table minus = function
+    Ast.CstrFalse -> ()
+  | Ast.CstrTrue -> ()
+  | Ast.CstrAnd l -> List.iter (constraints table minus) l
+  | Ast.CstrOr l -> List.iter (constraints table minus) l
+  | Ast.CstrNot c -> constraints table minus c
+  | Ast.CstrConstant cst -> ()
+  | Ast.CstrOperator op -> ()
+  | Ast.CstrMeta_name name -> ()
+  | Ast.CstrRegexp (s,re) -> ()
+  | Ast.CstrScript(local,script) -> ()
+  | Ast.CstrExpr s -> ()
+  | Ast.CstrSub names -> ()
+  | Ast.CstrType t ->
+      List.iter (ast_check_table table minus)
+	(Free_vars.collect_all_refs.Visitor_ast.combiner_fullType t)
 
 (* --------------------------------------------------------------------- *)
 (* Rules *)

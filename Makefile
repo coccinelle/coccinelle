@@ -37,10 +37,10 @@ SOURCES_parsing_cocci := \
 	visitor_ast.ml visitor_ast0.ml ast0toast.ml unparse_ast0.ml \
 	unify_ast.ml compute_lines.ml iso_pattern.ml comm_assoc.ml \
 	iso_compile.ml single_statement.ml simple_assignments.ml \
-	get_metas.ml stmtlist.ml check_meta.ml top_level.ml \
+	get_metas.ml stmtlist.ml top_level.ml \
 	type_infer.ml test_exps.ml unitary_ast0.ml arity.ml index.ml \
 	context_neg.ml adjust_pragmas.ml insert_plus.ml function_prototypes.ml \
-	semantic_cocci.ml data.ml free_vars.ml safe_for_multi_decls.ml \
+	semantic_cocci.ml data.ml free_vars.ml check_meta.ml safe_for_multi_decls.ml \
 	parse_printf.ml parse_aux.ml cleanup_rules.ml disjdistr.ml \
 	parser_cocci_menhir.mly lexer_cocci.mll \
 	lexer_cli.mll lexer_script.mll \

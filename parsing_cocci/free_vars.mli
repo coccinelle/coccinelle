@@ -8,6 +8,8 @@
 bindings.  These are combined in ctlcocciintegration, ie after the CTL
 generation. *)
 
+val collect_all_refs : Ast_cocci.meta_name list Visitor_ast.combiner
+
 val free_vars : Ast_cocci.rule_with_metavars list ->
   string list (* dropped rules *) ->
   (Ast_cocci.metavar list list) * (Ast_cocci.rule list) *
