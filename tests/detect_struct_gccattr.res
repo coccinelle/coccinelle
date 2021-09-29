@@ -1,16 +1,15 @@
 struct abcd {
 	int a;
 	int c;
-} __attribute__((pack));
+} __attribute__((pack,aligned(16)));
 
 struct abcd {
 	int a;
 	int c;
-} __attribute__ ( ( pack ) );
+} __attribute__ ( ( pack , aligned(16) ) );
 
 struct abcd {
 	int a;
-	int b;
 	int c;
 } __attribute__((aligned (16)));
 
@@ -32,7 +31,6 @@ struct abcd {
 
 struct abcd {
 	int a;
-	int b;
 	int c;
 } __attribute__((aligned (16))) var3;
 

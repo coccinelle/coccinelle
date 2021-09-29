@@ -929,14 +929,14 @@ let combiner bind option_default
     let k a =
       match Ast.unwrap a with
         Ast.Attribute(arg) -> attr_arg arg
-      | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+      | Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2) ->
           let lattr_ = string_mcode attr_ in
           let llp1 = string_mcode lp1 in
           let llp2 = string_mcode lp2 in
-          let larg = attr_arg arg in
+	  let largs = expression_dots args in
           let lrp1 = string_mcode rp1 in
           let lrp2 = string_mcode rp2 in
-          multibind [lattr_;llp1;llp2;larg;lrp1;lrp2] in
+          multibind [lattr_;llp1;llp2;largs;lrp1;lrp2] in
     attributefn all_functions k a
 
   and attr_arg a =
@@ -1954,14 +1954,14 @@ let rebuilder
       Ast.rewrap a
         (match Ast.unwrap a with
           Ast.Attribute(arg) -> Ast.Attribute(attr_arg arg)
-        | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+        | Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2) ->
             let attr_ = string_mcode attr_ in
             let lp1 = string_mcode lp1 in
             let lp2 = string_mcode lp2 in
-            let arg = attr_arg arg in
+	    let largs = expression_dots args in
             let rp1 = string_mcode rp1 in
             let rp2 = string_mcode rp2 in
-            Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2)) in
+            Ast.GccAttribute(attr_,lp1,lp2,largs,rp1,rp2)) in
               attributefn all_functions k a
 
   and attr_arg a =

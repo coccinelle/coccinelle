@@ -2,13 +2,13 @@ struct abcd {
 	int a;
 	int b;
 	int c;
-} __attribute__((pack));
+} __attribute__((pack,aligned(16)));
 
 struct abcd {
 	int a;
 	int b;
 	int c;
-} __attribute__ ( ( pack ) );
+} __attribute__ ( ( pack , aligned(16) ) );
 
 struct abcd {
 	int a;

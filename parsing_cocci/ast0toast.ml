@@ -1205,8 +1205,14 @@ and attribute a =
   rewrap a no_isos
     (match Ast0.unwrap a with
       Ast0.Attribute(attr) -> Ast.Attribute(attr_arg attr)
-    | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
-	Ast.GccAttribute(mcode attr_,mcode lp1,mcode lp2,attr_arg arg,mcode rp1,mcode rp2))
+    | Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2) ->
+        let attr_ = mcode attr_ in
+	let lp1 = mcode lp1 in
+	let lp2 = mcode lp2 in
+	let args = dots expression args in
+	let rp1 = mcode rp1 in
+	let rp2 = mcode rp2 in
+	Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))
 
 and attr_arg a =
   rewrap a no_isos

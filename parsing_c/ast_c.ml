@@ -301,7 +301,7 @@ and typeQualifierbis = {const: bool; volatile: bool}
 and attribute = attributebis wrap
   and attributebis =
     | Attribute of attr_arg
-    | GccAttribute of attr_arg
+    | GccAttribute of argument wrap2 list
 
 and attr_arg = attr_arg_bis wrap
   and attr_arg_bis =
@@ -1347,7 +1347,7 @@ let s_of_attr attr =
       get_attr_name a
   | (GccAttribute a, ii) ->
       let (attr_,_,_,_,_) = Common.tuple_of_list5 ii in
-      str_of_info attr_ ^ "((" ^ (get_attr_name a) ^ "))" in
+      str_of_info attr_ ^ "((" ^ "args... (not supported to show)" ^ "))" in
   attr
   +> List.map get_attr
   +> String.concat ","

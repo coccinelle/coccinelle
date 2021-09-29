@@ -1457,12 +1457,12 @@ let match_maker checks_needed context_required whencode_allowed =
   and match_attribute a1 a2 =
     match (Ast0.unwrap a1,Ast0.unwrap a2) with
       (Ast0.Attribute(arga),Ast0.Attribute(argb)) -> match_attr_arg arga argb
-    | (Ast0.GccAttribute(attr_1,lp11,lp21,arg1,rp11,rp21),
-       Ast0.GccAttribute(attr_2,lp12,lp22,arg2,rp12,rp22)) ->
+    | (Ast0.GccAttribute(attr_1,lp11,lp21,args1,rp11,rp21),
+       Ast0.GccAttribute(attr_2,lp12,lp22,args2,rp12,rp22)) ->
 	       conjunct_many_bindings
 		 [check_mcode attr_1 attr_2; check_mcode lp11 lp21;
-		   check_mcode lp21 lp22; match_attr_arg arg1 arg2;
-       check_mcode rp11 rp21; check_mcode rp21 rp22;]
+		   check_mcode lp21 lp22; check_mcode rp11 rp21; check_mcode rp21 rp22;
+		   match_dots match_expr is_elist_matcher do_elist_match args1 args2]
 	  | _ -> return false
 
   and match_attributes a1 a2 =

@@ -449,7 +449,7 @@ and base_attr =
     Attribute of attr_arg
   | GccAttribute of string mcode (* __attribute__ *) *
                     string mcode (* ( *) * string mcode (* ( *) *
-                    attr_arg * string mcode (* ) *) * string mcode (* ) *)
+                    expression dots * string mcode (* ) *) * string mcode (* ) *)
 
 and attr = base_attr wrap
 

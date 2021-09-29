@@ -459,10 +459,10 @@ and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
 and print_attribute attr =
   match Ast.unwrap attr with
     Ast.Attribute(a) -> print_attr_arg a
-  | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+  | Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2) ->
       mcode print_string attr_; print_string " ";
       mcode print_string_box lp1; mcode print_string_box lp2;
-      print_attr_arg arg; close_box();
+      dots (function _ -> ()) expression args; close_box();
       mcode print_string_box rp1; close_box();
       mcode print_string_box rp2;
 

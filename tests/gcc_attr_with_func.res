@@ -17,3 +17,9 @@ int __attribute__((always_inline)) *func (long a) {
 int func (long a) __attribute__((attr)) {
   return 42;
 }
+
+void __attribute__((mult,"1",2)) func (long a) {
+}
+
+void __attribute__((mult,1,"2")) func (long a) {
+}

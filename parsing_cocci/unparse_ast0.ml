@@ -772,12 +772,12 @@ and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
 and print_attribute a =
   match Ast0.unwrap a with
     Ast0.Attribute(attr) -> print_attr_arg attr
-  | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
+  | Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2) ->
       mcode print_string attr_; print_string " ";
       mcode print_string_box lp1; mcode print_string_box lp2;
-      print_attr_arg arg; close_box();
-      mcode print_string_box rp1; close_box();
-      mcode print_string_box rp2;
+      let _ = dots (function _ -> ()) expression args in
+      close_box(); mcode print_string_box rp1;
+      close_box(); mcode print_string_box rp2
 
 and print_attr_arg a =
   match Ast0.unwrap a with

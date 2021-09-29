@@ -623,8 +623,8 @@ let equal_attribute a1 a2 =
       equal_attr_arg attr1 attr2
   | (Ast0.GccAttribute(attr_1,lp11,lp21,arg1,rp11,rp21),
      Ast0.GccAttribute(attr_2,lp12,lp22,arg2,rp12,rp22)) ->
-      equal_mcode attr_1 attr_2 && equal_mcode lp11 lp12 &&
-      equal_mcode lp21 lp22 && equal_attr_arg arg1 arg2 &&
+      equal_mcode attr_1 attr_2 &&
+      equal_mcode lp11 lp12 && equal_mcode lp21 lp22 &&
       equal_mcode rp11 rp12 && equal_mcode rp21 rp22
   | _ -> false
 
