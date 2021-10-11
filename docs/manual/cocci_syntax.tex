@@ -456,7 +456,7 @@ code.  Indeed, attributes in added code are not parsed, to allow them to be
 placed at places that go beyond what is supported by the SmPL parser.
 
 An {\bf attribute name} declaration indicates the given identifiers should be
-considered to be attributes.
+considered to be attributes, e.g., \texttt{noinline}.
 
 A {\bf declarer} is a macro call used at top level which generates a
 declaration. Such macros are used in the Linux kernel.
@@ -1455,7 +1455,7 @@ $^\dag$ The optional \texttt{when} construct ends at the end of the line.
   \RULE{\rt{funinfo}}
   \CASE{inline}
   \CASE{\NT{storage}}
-%   \CASE{\NT{attr}}
+  \CASE{\NT{attribute}}
 
   \RULE{\rt{storage}}
   \CASE{static}
@@ -1610,6 +1610,12 @@ the return type is obligatory.
   \RULE{\rt{decl\_ident}}
   \CASE{\T{DeclarerId}}
   \CASE{\mth{\T{metaid}^{\ssf{Declarer}}}}
+
+  \RULE{\rt{attribute}}
+  \CASE{\T{AttributeId}}
+  \CASE{\T{AttributeId}(\opt{\NT{PARAMSEQ}\mth{(}\NT{arg}, \NT{exp\_whencode}\mth{)}})}
+  \CASE{\mth{\T{metaid}^{\ssf{Attribute}}}}
+  \CASE{\_\_attribute\_\_((\opt{\NT{PARAMSEQ}\mth{(}\NT{arg}, \NT{exp\_whencode}\mth{)}}))}
 \end{grammar}
 
 An initializer for a structure can be ordered or unordered.  It is
@@ -1622,9 +1628,10 @@ that declares an int variable will match such a declaration.  On the other
 hand, the implicit int type has no position.  If the SmPL code tries to
 record the position of the type, the match will fail.
 
-An attribute begins with {\tt \_\_} or is declared as an {\tt attribute
-  name} in the semantic patch.  In practice, only one attribute is
-currently allowed after the variable name in a variable declaration.
+In practice, only one attribute is currently allowed in a variable
+declaration and a function declaration and definition.
+Note that an AttributeId begins with {\tt \_\_} or is declared as
+an {\tt attribute name} in the semantic patch.
 
 Coccinelle supports declaring multiple variables or structure fields in the
 C code, but not in the SmPL code.  It is possible to remove a variable from
