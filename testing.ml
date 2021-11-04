@@ -611,7 +611,8 @@ let test_parse_cocci file =
       Prepare_ocamlcocci.test ());
   flush stdout; flush stderr;
   match (!Flag.scanner,query) with
-    ((Flag.CocciGrep|Flag.NoScanner|Flag.GitGrep),(query,_,_,_)) ->
+    ((Flag.CocciGrep|Flag.NoScanner|Flag.GitGrep
+     |Flag.PatchDiff|Flag.PatchDiffRange _),(query,_,_,_)) ->
       (match query with
 	None -> pr "No grep query"
       | Some x ->

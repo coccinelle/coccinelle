@@ -220,10 +220,17 @@ intereted relative to the target directory.  If the filename is an absolute
 path name, beginning with /, it is used as is.
 }
 
-\normal{-{}-use-patch-diff}{ This option allows for applying a semantic patch
+\normal{-{}-use-diff}{ This option allows for applying a semantic patch
   to only the files that have been modified in a directory. The directory needs
   to be specified by the user. Note that an absolute path needs to be used if
   spatch is called from outside the target project directory. }
+
+\normal{-{}-use-patch-diff c1..c2}{ This option allows for applying a
+  semantic patch to only the files that have been modified between commit
+  c1 and commit c2 in the directory specified by the user. If only one
+  commit id is provided then only that commit id is considered. Note that
+  an absolute path needs to be used if spatch is called from outside the
+  target project directory. }
 
 \normal{-{}-use-coccigrep}{ Use a version of grep implemented in Coccinelle
   to check that selected files are relevant to the semantic patch.  This

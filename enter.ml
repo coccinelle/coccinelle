@@ -368,8 +368,14 @@ let short_options = [
   "--use-coccigrep",
   Arg.Unit (function _ -> Flag.scanner := Flag.CocciGrep),
   "    find relevant files using cocci grep";
-  "--use-patch-diff",
+  "--use-diff",
   Arg.Unit (function _ -> Flag.scanner := Flag.PatchDiff),
+  "    process files in the diff for a directory";
+  "--use-patch-diff",
+  Arg.String
+    (function s ->
+      let (startid,endid) = Patch_diff.split s in
+      Flag.scanner := Flag.PatchDiffRange(startid,endid)),
   "    process files in the diff for a directory";
   "--patch",
     Arg.String (function s -> Flag.patch := Some (Cocci.normalize_path s)),
@@ -943,8 +949,12 @@ let idutils_filter (_,_,_,query) dir =
 	 List.filter
      (fun file -> List.mem (Common.filesuffix file) suffixes))
 
-let patchdiff_filter _ dir =
-  let struc = Patch_diff.getpatchdiff dir in
+let diff_filter _ dir =
+  let struc = Patch_diff.getdiff dir in
+  Some (List.map (function x -> x.Patch_diff.file_name) struc)
+
+let patchdiff_filter startid endid _ dir =
+  let struc = Patch_diff.getpatchdiff dir startid endid in
   Some (List.map (function x -> x.Patch_diff.file_name) struc)
 
 let scanner_to_interpreter = function
@@ -952,7 +962,9 @@ let scanner_to_interpreter = function
   | Flag.IdUtils -> idutils_filter
   | Flag.CocciGrep -> coccigrep_filter
   | Flag.GitGrep -> gitgrep_filter
-  | Flag.PatchDiff -> patchdiff_filter
+  | Flag.PatchDiff -> diff_filter
+  | Flag.PatchDiffRange(startid,endid) ->
+      patchdiff_filter startid endid
   | _ -> failwith "impossible"
 
 (*****************************************************************************)
@@ -1085,7 +1097,8 @@ let rec main_action xs =
 		     " or multiple files")
               | _, false, _, _, _ -> [List.map (fun x -> (x,None)) (x::xs)]
 	      |	_, true, "",
-		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep|Flag.PatchDiff),
+		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep|
+		  Flag.PatchDiff|Flag.PatchDiffRange _),
 		  [] ->
 		    let interpreter = scanner_to_interpreter !Flag.scanner in
 		    let files =
@@ -1094,7 +1107,8 @@ let rec main_action xs =
 		      | Some files -> files in
                     files +> List.map (fun x -> [(x,None)])
               | _, true, s,
-		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep|Flag.PatchDiff), _
+		  (Flag.Glimpse|Flag.IdUtils|Flag.CocciGrep|Flag.GitGrep|
+		  Flag.PatchDiff|Flag.PatchDiffRange _), _
 		when s <> "" ->
                   failwith "--use-xxx filters do not work with --kbuild"
                   (* normal *)

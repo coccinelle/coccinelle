@@ -1385,6 +1385,7 @@ module Flag :
       | CocciGrep
       | GitGrep
       | PatchDiff
+      | PatchDiffRange of string * string
       | NoScanner
     val scanner : scanner ref
     val pyoutput : string ref

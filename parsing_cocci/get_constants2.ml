@@ -867,6 +867,7 @@ let get_constants rules neg_pos_vars virt =
     | Flag.IdUtils ->
 	(grep,None,coccigrep,interpret_idutils res)
     | Flag.CocciGrep | Flag.GitGrep -> (grep,None,coccigrep,None)
-    | Flag.PatchDiff -> (None, None, None, None)
+    | Flag.PatchDiff | Flag.PatchDiffRange _ ->
+	(None, None, None, None)
     end
   else (None,None,None,None)

@@ -6,4 +6,6 @@ type diff_info =
     line_no: (int * int) list;
 }
 
-val getpatchdiff : string -> diff_info list
+val getdiff : string -> diff_info list
+val getpatchdiff : string -> string -> string -> diff_info list
+val split : string -> string * string
