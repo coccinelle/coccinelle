@@ -15,8 +15,8 @@ let get_root fpath =
   ignore (Sys.command ("cd " ^ current_dir));
   root
 
-  let extract_numbers line =
-  let sep = String.split_on_char ',' line in
+let extract_numbers line =
+  let sep = Str.split_delim (Str.regexp ",") line in
   match sep with
   | [l] -> (int_of_string l, int_of_string l)
   | [f ; e] -> (int_of_string f, int_of_string e)
