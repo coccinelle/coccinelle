@@ -1,13 +1,6 @@
 open Printf
 open Str
 
-(*Read file contents*)
-let read_whole_file filename =
-  let ch = open_in filename in
-  let s = really_input_string ch (in_channel_length ch) in
-  close_in ch;
-  s
-
 (*Breakdown split_result_list type to primtive type*)
 let rec decompose_list (l: Str.split_result list)  =
   match l with
