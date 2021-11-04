@@ -71,10 +71,12 @@ mypkg_SCRIPTS = META $(MODULES_native) $(MODULES_native:.ml=.cmi) \
 
 if OCAML_SUPPORTS_BYTECODE
 mypkg_SCRIPTS += stdcompat.cma
+BEST_SUFFIX := .cmo
 endif
 
 if OCAML_SUPPORTS_NATIVE
 mypkg_SCRIPTS += stdcompat.cmxa stdcompat.a $(MODULES_native:.ml=.cmx)
+BEST_SUFFIX := .cmx
 endif
 
 if OCAML_SUPPORTS_SHARED
@@ -112,6 +114,8 @@ SUFFIXES = .ml .mli .cmi .cmo .cmx .cmxa .cmxs .cmt
 
 .ml.cmx :
 	$(OCAMLOPT) -c $(OCAMLCFLAGS) $< -o $@
+
+$(BEST_SUFFIX).cmt : ;
 
 stdcompat__stubs.$(OBJEXT) : stdcompat__stubs.c
 	$(OCAMLC) -c $<
