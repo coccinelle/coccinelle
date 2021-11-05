@@ -88,22 +88,22 @@ AC_DEFUN([AC_CHECK_COCCI_EXTPKG],
       AC_MSG_NOTICE([OCaml package $1 is not available])
       AC_SUBST(AS_TR_SH([enable_$1]),[no])
     ])
-  ])
 
-  dnl  check for a local package
-  AS_IF([test "x$AS_TR_SH([enable_$1])" = xno],
-  [dnl
-    AS_UNSET([pkgdir])
-    pkgdir="$COCCI_OCAML_EXTERNAL/$1"
-    AC_MSG_CHECKING([for a bundled substitute of $1])
-    AS_IF([test -d "$pkgdir"],
+    dnl  check for a local package
+    AS_IF([test "x$AS_TR_SH([enable_$1])" = xno],
     [dnl
-      AC_MSG_RESULT([yes])
-      AC_MSG_NOTICE([using bundled substitute for $1 in $pkgdir])
-      AC_SUBST(AS_TR_SH([enable_$1]), [local])
-      AC_SUBST(AS_TR_SH([PATH_$1]), ["$pkgdir"])
-    ],
-    [AC_MSG_RESULT([not available])])
+      AS_UNSET([pkgdir])
+      pkgdir="$COCCI_OCAML_EXTERNAL/$1"
+      AC_MSG_CHECKING([for a bundled substitute of $1])
+      AS_IF([test -d "$pkgdir"],
+      [dnl
+        AC_MSG_RESULT([yes])
+        AC_MSG_NOTICE([using bundled substitute for $1 in $pkgdir])
+        AC_SUBST(AS_TR_SH([enable_$1]), [local])
+        AC_SUBST(AS_TR_SH([PATH_$1]), ["$pkgdir"])
+      ],
+      [AC_MSG_RESULT([not available])])
+    ])
   ])
 
   dnl  additional handling
