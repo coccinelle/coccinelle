@@ -400,7 +400,12 @@ the entire format is matched as a single string.
 An {\bf assignment operator} (resp. {\bf binary operator}) metavariable matches
 any assignment (resp. binary) operator. The list of operators that can be
 matched can be restricted by adding an operator constraint, i.e. a list of
-accepted operators.
+accepted operators.  The matching process follows the parse tree.  Thus,
+for example, for expression metavariables {\tt e1} and {\tt e2}, and binary
+operator metavariable {\tt bop}, {\tt e1 bop b2} will match against {\tt 3
+  + 4 * 5} with {\tt e1} bound to {\tt 3}, {\tt e2} bound to {\tt 4 * 5},
+and {\tt bop} bound to {\tt +}, because {\tt +} has lower precedence than
+{\tt *}.
 
 A {\bf position} metavariable is used by attaching it using \texttt{@} to
 any token, including another metavariable. Its value is the position
