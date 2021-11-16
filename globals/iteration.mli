@@ -15,6 +15,7 @@ val initialization_stack : init_info list ref
 val base_file_list : string list ref
 val parsed_virtual_rules : string list ref
 val parsed_virtual_identifiers : string list ref
+val reset : unit -> unit (* for testing *)
 
 (* ----------------------------------------------------------------------- *)
 

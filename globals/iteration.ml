@@ -25,6 +25,14 @@ type pending_info = string list (* files to treat *) *
 let pending_instances_file = ref ([] : pending_info list)
 let pending_instances_dir = ref ([] : pending_info list)
 
+let reset _ =
+  initialization_stack := [];
+  base_file_list := [];
+  parsed_virtual_rules := [];
+  parsed_virtual_identifiers := [];
+  pending_instances_file := [];
+  pending_instances_dir := []
+
 let add_pending_instance (files,vrules,vids,extend_vids) =
   let vids =
     if extend_vids
