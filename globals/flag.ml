@@ -52,6 +52,10 @@ let set_defined_virtual_rules s =
       defined_virtual_env := (name,vl) :: !defined_virtual_env
   | _ -> failwith "nothing defined"
 
+let reset_virt _ =
+  defined_virtual_rules := [];
+  defined_virtual_env := []
+
 type c_plus_plus = Off | On of int option (* release year *)
 let c_plus_plus = ref Off
 

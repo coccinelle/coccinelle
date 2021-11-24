@@ -24,6 +24,7 @@ val dir : string ref
 val defined_virtual_rules : string list ref
 val defined_virtual_env : (string * string) list ref
 val set_defined_virtual_rules : string -> unit
+val reset_virt : unit -> unit (* for testing *)
 type c_plus_plus = Off | On of int option (* release year of the version *)
 val c_plus_plus : c_plus_plus ref
 val set_c_plus_plus : string option -> unit
