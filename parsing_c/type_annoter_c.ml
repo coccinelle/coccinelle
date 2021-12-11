@@ -980,10 +980,24 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           (* must generate an element so that '=' can be used
            * to compare type ?
            *)
-          let fake = Ast_c.fakeInfo Common.fake_parse_info in
-          let fake = Ast_c.rewrap_str "*" fake in
-
-          let ft = Ast_c.mk_ty (Pointer ((inherited e) t)) [fake] in
+	  let ft =
+	    let is_fn_ar = (* & has no impact for fn or array *)
+	      match Ast_c.unwrap_typeC t with
+		ParenType pt ->
+		  (match Ast_c.unwrap_typeC pt with
+		    Pointer t ->
+		      (match Ast_c.unwrap_typeC t with
+			FunctionType (returnt, paramst) -> true
+		      | _ -> false)
+		  | _ -> false)
+	      | Array _ -> true
+	      | _ -> false in
+	    if is_fn_ar
+	    then t
+	    else
+              let fake = Ast_c.fakeInfo Common.fake_parse_info in
+              let fake = Ast_c.rewrap_str "*" fake in
+              Ast_c.mk_ty (Pointer ((inherited e) t)) [fake] in
           make_info_def_fix ft
         )
 
