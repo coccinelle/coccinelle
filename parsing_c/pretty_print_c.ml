@@ -906,7 +906,7 @@ and pp_string_format (e,ii) =
       | (Array (eopt, t), [i1;i2]) -> pp_type_left t
       | (FunctionType (returnt, paramst), [i1;i2]) -> pp_type_left returnt
 
-      | (ParenType t, _) ->  failwith "parenType"
+      | (ParenType t, _) ->  failwith "pp_type_left: unexpected parenType"
 
 
       | (BaseType _, iis)    -> ()
