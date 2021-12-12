@@ -4571,6 +4571,9 @@ and compatible_typeC a (b,local) =
     | _, (_, (B.FieldType (typb, _, _), _)) ->
 	loop tya typb
 
+    | _, (_, (B.ParenType typb, _)) ->
+	loop tya typb
+
   (* subtil: must be after the MetaType case *)
     | a, (qub, (B.TypeName (_namesb, Some b), noii)) ->
       (* kind of typedef iso *)

@@ -414,6 +414,8 @@ let rec type_unfold_one_step ty env =
 
   | EnumName s       -> ty (* todo: look in env when will have EnumDef *)
 
+  | ParenType t      -> ty
+
   | StructUnionName (su, s) ->
       (try
           let ((su,fields),ii) = lookup_structunion (su, s) env in
@@ -447,7 +449,6 @@ let rec type_unfold_one_step ty env =
 
   | FieldType (t, _, _) -> type_unfold_one_step t env
 
-  | ParenType t -> type_unfold_one_step t env
   | TypeOfExpr e ->
       pr2_once ("Type_annoter: not handling typeof");
       ty
@@ -535,9 +536,9 @@ let rec typedef_fix ty env =
     | FieldType (t, a, b) ->
 	FieldType (typedef_fix t env, a, b) +> Ast_c.rewrap_typeC ty
 
-  (* remove paren for better matching with typed metavar. kind of iso again *)
     | ParenType t ->
-	typedef_fix t env
+	ParenType (typedef_fix t env) +> Ast_c.rewrap_typeC ty
+
     | TypeOfExpr e ->
 	pr2_once ("Type_annoter: not handling typeof");
 	ty
@@ -735,6 +736,15 @@ let make_info_def = Type_c.make_info_def
 (*****************************************************************************)
 
 let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
+  let ret_of_functinotype typ =
+    let rec loop = function
+    | FunctionType (ret, _) -> Some ret
+    (* can be function pointer, C have an iso for that,
+     * same pfn() syntax than regular function call. *)
+    | Pointer typ | ParenType typ -> loop (unwrap_unfold_env typ)
+    | _ -> None in
+    loop (unwrap_unfold_env typ) in
+
 
   let ty =
     match Ast_c.unwrap_expr expr with
@@ -804,18 +814,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
             let tyinfo = make_info_fix (typ, local) in
             Ast_c.set_type_expr e1 tyinfo;
 
-            (match unwrap_unfold_env typ  with
-            | FunctionType (ret, params) -> make_info_def ret
-
-            (* can be function pointer, C have an iso for that,
-             * same pfn() syntax than regular function call.
-             *)
-            | Pointer (typ2) ->
-                (match unwrap_unfold_env typ2 with
-                | FunctionType (ret, params) -> make_info_def ret
-                | _ -> Type_c.noTypeHere
-                )
-            | _ -> Type_c.noTypeHere
+            (match ret_of_functinotype typ with
+            | Some ret -> make_info_def ret
+            | None -> Type_c.noTypeHere
             )
         | None  ->
 
@@ -872,14 +873,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
         (Ast_c.get_type_expr e1) +> Type_c.do_with_type (fun typ ->
           (* copy paste of above *)
-          (match unwrap_unfold_env typ with
-          | FunctionType (ret, params) -> make_info_def ret
-          | Pointer (typ) ->
-              (match unwrap_unfold_env typ with
-              | FunctionType (ret, params) -> make_info_def ret
-              | _ -> Type_c.noTypeHere
-              )
-          | _ -> Type_c.noTypeHere
+          (match ret_of_functinotype typ with
+          | Some ret -> make_info_def ret
+          | None -> Type_c.noTypeHere
           )
         )
      )
@@ -1403,8 +1399,13 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
           (match oldstyle with
           | None ->
-              let typ' =
-                Lib.al_type (Ast_c.mk_ty (FunctionType ftyp) [i1;i2]) in
+              let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+              let fakea = Ast_c.rewrap_str "*" fake in
+              let fakeopar = Ast_c.rewrap_str "(" fake in
+              let fakecpar = Ast_c.rewrap_str ")" fake in
+
+              let typ' = Lib.al_type (Ast_c.mk_ty (ParenType (Ast_c.mk_ty
+                (Pointer ( Ast_c.mk_ty (FunctionType ftyp) [i1;i2])) [fakea])) [fakeopar;fakecpar]) in
 
               add_binding (VarOrFunc (funcs, (typ',islocal i1.Ast_c.pinfo)))
                 false;
