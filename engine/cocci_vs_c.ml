@@ -4585,7 +4585,7 @@ and compatible_typeC a (b,local) =
       (_,
       ((
        B.AutoType|
-       B.TypeOfType _|B.TypeOfExpr _|B.ParenType _|
+       B.TypeOfType _|B.TypeOfExpr _|
        B.EnumName _|B.StructUnion (_, _, _)|B.Enum (_, _)|
        B.StructUnionName (_, _)|
        B.FunctionType _|
