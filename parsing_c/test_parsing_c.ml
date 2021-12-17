@@ -57,6 +57,7 @@ let new_test_parse_gen xs =
   Flag_parsing_c.debug_cpp := true;
   Flag_parsing_c.debug_etdt := false;
   Flag_parsing_c.filter_msg := true;
+  (if !Flag.c_plus_plus = Flag.Off then Flag.set_c_plus_plus None);
 
   (*let dirname_opt =
     match xs with
