@@ -382,7 +382,7 @@ let plus_attachable only_plus (tok,_) =
 
 (* it would seem that this should all be skips
   | PC.TWhen(clt) |  PC.TWhenTrue(clt) |  PC.TWhenFalse(clt)
-  | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
+  | PC.TAny(clt) | PC.TStrict(clt)
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 *)
@@ -409,6 +409,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaAttribute(nm,_,_,_) -> NOTPLUS
   | PC.TSub(clt) -> NOTPLUS
   | PC.TDirective(_,clt) -> NOTPLUS
+
+  | PC.TEllipsis(clt) -> NOTPLUS
 
   | _ -> SKIP
 
