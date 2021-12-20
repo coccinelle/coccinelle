@@ -87,7 +87,7 @@ let process_tree inherited_env l =
 			     failwith
 			       ("fresh: no binding for meta "^(Dumper.dump id)))
 		   seed in
-	    string2val(String.concat "" strings))
+	       string2val(String.concat "" strings))
         | ((r, n) as fresh, Ast.ScriptSeed(name, lang, params, pos, body)) ->
             let make_fresh_id env =
               let args =
