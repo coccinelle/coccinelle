@@ -33,8 +33,9 @@ let path =
     if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
       exec_dir
     else
+      let exec_prefix = Filename.dirname exec_dir in
       let libdir =
-        Str.global_replace (Str.regexp "[$]{exec_prefix}") exec_dir "@libdir@"
+        Str.global_replace (Str.regexp "[$]{exec_prefix}") exec_prefix "@libdir@"
       in
       Filename.concat libdir "coccinelle"
 
