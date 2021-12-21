@@ -780,3 +780,12 @@ do {									\
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)
 
 #define KBUILD_MODNAME YACFE_STRING
+
+// Macros for automatic memory management from GLib
+// https://developer-old.gnome.org/glib/stable/glib-Miscellaneous-Macros.html#g-autoptr
+#define g_autoptr(TypeName) TypeName*
+#define g_autolist(TypeName) GList*
+#define g_autoslist(TypeName) GSList*
+#define g_autoqueue(TypeName) GQueue*
+#define g_auto(TypeName) TypeName
+#define g_autofree
