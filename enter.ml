@@ -155,6 +155,50 @@ let quiet_profile = (
 
   ])
 
+let testing_profile = (
+  [
+    Common.print_to_stderr;
+    FC.show_diff;
+  ],
+  [
+
+    Flag.show_misc;
+    Flag.show_trying;
+    Flag.show_transinfo;
+
+    FC.show_c;
+    FC.show_cocci;
+    FC.show_flow;
+    FC.show_before_fixed_flow;
+    FC.show_ctl_tex;
+    FC.show_ctl_text;
+    FC.show_binding_in_out;
+
+    FC.verbose_cocci;
+
+    Flag_parsing_c.show_parsing_error;
+
+    Flag_parsing_c.verbose_lexing;
+    Flag_parsing_c.verbose_parsing;
+    Flag_parsing_c.verbose_type;
+    Flag_parsing_c.verbose_cfg;
+    Flag_parsing_c.verbose_unparsing;
+    Flag_parsing_c.verbose_visit;
+    Flag_parsing_c.verbose_cpp_ast;
+    Flag_parsing_c.verbose_includes;
+
+    Flag_matcher.verbose_matcher;
+    Flag_matcher.debug_engine;
+
+    Flag_parsing_c.debug_unparsing;
+
+    Flag_parsing_cocci.show_SP;
+    Flag_parsing_cocci.show_iso_failures;
+
+    Flag_ctl.verbose_ctl_engine;
+    Flag_ctl.verbose_match;
+  ])
+
 (* some information that is useful in seeing why a semantic patch doesn't
 work properly *)
 let debug_profile = (
@@ -1662,7 +1706,8 @@ let main arglist =
         let score_file = if !expected_score_file <> ""
                          then !expected_score_file
                          else "tests/SCORE_expected.sexp" in
-        Testing.testall score_file !allow_update_score_file
+        Testing.testall (fun _ -> run_profile testing_profile)
+	  score_file !allow_update_score_file
 
     | []  when !test_spacing ->
         (if !Inc.include_path = []
@@ -1670,7 +1715,8 @@ let main arglist =
         let score_file = if !expected_spacing_score_file <> ""
                          then !expected_spacing_score_file
                          else "tests/SCORE_spacing_expected.sexp" in
-        Testing.test_spacing score_file !allow_update_score_file
+        Testing.test_spacing (fun _ -> run_profile testing_profile)
+	   score_file !allow_update_score_file
 
     | [] when !test_regression_okfailed ->
         Testing.test_regression_okfailed ()

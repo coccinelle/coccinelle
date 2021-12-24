@@ -186,7 +186,7 @@ let add_file_to_score score res correct diffxs =
 (* If extra test is provided, then all failing tests with the standard
    comparison are considered ok, and only the correct result are subjected to
    the extra test *)
-let testall_bis extra_test expected_score_file update_score_file =
+let testall_bis setup extra_test expected_score_file update_score_file =
 
   let score  = empty_score () in
 
@@ -199,6 +199,7 @@ let testall_bis extra_test expected_score_file update_score_file =
 
   begin
     expected_result_files +> List.iter (fun res ->
+      setup();
       let x =
         if res =~ "\\(.*\\).res"
 	then matched1 res
@@ -366,8 +367,8 @@ let testall_bis extra_test expected_score_file update_score_file =
 
   end
 
-let testall = testall_bis None
-let test_spacing = testall_bis (Some Compare_c.exact_compare)
+let testall setup = testall_bis setup None
+let test_spacing setup = testall_bis setup (Some Compare_c.exact_compare)
 
 (* ------------------------------------------------------------------------ *)
 
