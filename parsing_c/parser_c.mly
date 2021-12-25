@@ -793,6 +793,8 @@ cond_expr:
      { $1 }
  | arith_expr TWhy gcc_opt_expr TDotDot cond_expr
      { mk_e (CondExpr ($1,$3,$5)) [$2;$4] }
+ | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
+ | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
 
 
 arith_expr:
@@ -839,8 +841,6 @@ unary_expr:
        match (fst $3) with (* warn about dropped attributes *)
          [] -> ret
        | _ -> warning "attributes found in sizeof(...), dropping" ret }
- | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
- | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
  | Tdelete cast_expr               { mk_e(Delete(false, $2))  [$1] }
  | Tdelete TOCro TCCro cast_expr   { mk_e(Delete(true, $4))   [$1;$2;$3] }
  | Tdefined identifier_cpp         { mk_e(Defined $2)         [$1] }
@@ -860,9 +860,16 @@ new_argument:
  | TypedefIdent TOPar TCPar
      { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
        Left (mk_e(FunCall (fn, [])) [$2;$3]) }
- | type_spec
+ | type_spec muls
      { let ty = addTypeD ($1,nullDecl) in
        let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam ty in
+       let returnType =
+	 let rec loop = function
+	     [] -> returnType
+	   | mul::muls ->
+	       let res = loop muls in
+	       mk_ty (Pointer res) [mul] in
+	 loop (List.rev $2) in
        Right (ArgType { p_namei = None; p_type = returnType;
                         p_register = hasreg, iihasreg; p_attr = [];
                         p_midattr = []; p_endattr = [];
@@ -878,6 +885,10 @@ new_argument:
 	   Right(ArgType pty)
        | _ -> raise (Impossible 88)
      }
+
+muls:
+   {[]}
+ | muls TMul { $1@[$2] }
 
 unary_op:
  | TAnd   { GetRef,     $1 }
