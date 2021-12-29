@@ -398,7 +398,9 @@ let print_graph grp required_states res str = function
 	    let file =
 	      match !Flag.currentfile with
 		None -> "graphical_trace"
-	      | Some f -> f in
+	      | Some f ->
+		  (* : should not appear in the name of a pdf file *)
+		  String.concat "___" (Str.split (Str.regexp ":") f) in
 	    (if not (List.mem file !graph_stack)
 	    then graph_stack := file :: !graph_stack);
 	    let filename = Filename.temp_file (file^":") ".dot" in
