@@ -1102,7 +1102,10 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     if parse_strings
     then Parsing_hacks.fix_tokens_strings toks
     else toks in
-
+  let toks =
+    if !Flag.c_plus_plus <> Flag.Off
+    then Parsing_hacks.c_plus_plus_operator toks
+    else toks in
 
   let tr = mk_tokens_state toks in
 

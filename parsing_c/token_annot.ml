@@ -28,3 +28,5 @@ let get_annot anns key =
 
 let put_annot key value anns =
   (key, value) :: anns
+
+let append_annots a1 a2 = a1 @ a2
