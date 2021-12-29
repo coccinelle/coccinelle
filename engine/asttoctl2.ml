@@ -218,7 +218,7 @@ let elim_opt =
        d0::s::d1::rest) -> (* why no case for nest as u? *)
 	 let l = Ast.get_line stm in
 	 let new_rest1 = stm :: (dots_list (u::urest) (d1::rest)) in
-	 let new_rest2 = dots_list urest rest in
+	 let new_rest2 = dots_list (u::urest) (d1::rest) in
 	 let (fv_rest1,mfv_rest1,fresh_rest1,inherited_rest1,s1) =
 	   varlists new_rest1 in
 	 let (fv_rest2,mfv_rest2,fresh_rest2,inherited_rest2,s2) =
