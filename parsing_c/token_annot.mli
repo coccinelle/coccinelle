@@ -10,3 +10,4 @@ type annots
 val empty : annots
 val get_annot : annots -> annot_key -> annot_val option
 val put_annot : annot_key -> annot_val -> annots -> annots
+val append_annots : annots -> annots -> annots
