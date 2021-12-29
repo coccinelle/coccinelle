@@ -128,7 +128,7 @@ commands that are executed. Compilation can be turned verbose with
    - ocaml-native-compilers or ocaml-nox
    - ocaml-findlib
 
- - To generate a PDF of the control flow graph with '-graphical_trace'
+ - To generate a PDF of the control flow graph with '--graphical-trace'
    - pdftk and graphviz (with PDF support)
 
 If runtime tools are not in $PATH, paths to some
