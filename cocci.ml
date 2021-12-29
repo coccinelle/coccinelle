@@ -931,22 +931,32 @@ let for_unparser xs =
 
 let gen_pdf_graph () =
   (Ctl_engine.get_graph_files ()) +> List.iter (fun outfile ->
-  Printf.printf "Generation of %s%!" outfile;
-  let filename_stack = Ctl_engine.get_graph_comp_files outfile in
-  List.iter (fun filename ->
-    ignore (Unix.system ("dot " ^ filename ^ " -Tpdf  -o " ^ filename ^ ".pdf;"))
-	    ) filename_stack;
-  let (head,tail) = (List.hd filename_stack, List.tl filename_stack) in
+    Printf.printf "Generation of %s.pdf\n%!" outfile;
+    let filename_stack = Ctl_engine.get_graph_comp_files outfile in
+    List.iter
+      (fun filename ->
+	ignore
+	  (Unix.system
+	     (Printf.sprintf "dot %s -Tpdf  -o %s.pdf;" filename filename)))
+      filename_stack;
+    let (head,tail) = (List.hd filename_stack, List.tl filename_stack) in
     ignore(Unix.system ("cp " ^ head ^ ".pdf " ^ outfile ^ ".pdf;"));
-    tail +> List.iter (fun filename ->
-      ignore(Unix.system ("mv " ^ outfile ^ ".pdf /tmp/tmp.pdf;"));
-      ignore(Unix.system ("pdftk " ^ filename ^ ".pdf /tmp/tmp.pdf cat output " ^ outfile ^ ".pdf"));
-	      );
-    ignore(Unix.system ("rm /tmp/tmp.pdf;"));
-    List.iter (fun filename ->
-	ignore (Unix.system ("rm " ^ filename ^ " " ^ filename ^ ".pdf;"))
-	    ) filename_stack;
-  Printf.printf " - Done\n")
+    tail +>
+    List.iter
+      (fun filename ->
+	Sys.rename (outfile ^ ".pdf") "/tmp/tmp.pdf";
+	ignore
+	  (Unix.system
+	     (Printf.sprintf
+		"pdftk %s.pdf /tmp/tmp.pdf cat output %s.pdf"
+		filename outfile)));
+    Sys.remove "/tmp/tmp.pdf";
+    List.iter
+      (fun filename ->
+	Sys.remove filename;
+	Sys.remove (filename ^ ".pdf"))
+      filename_stack;
+    Printf.printf " - Done\n")
 
 let local_python_code = "\
 from coccinelle import *
