@@ -3074,3 +3074,17 @@ let drop_template toks =
     | [] -> failwith "template with no end" in
   loop tokens2;
   Common.acc_map (fun x -> x.tok) tokens2
+=======
+    | ((TIdent("operator",i1)) as a) :: op :: rest ->
+	(match opinfo (Ast_c.pos_of_info i1) op with
+	  Some (ops,i2) ->
+	    let news = Printf.sprintf "operator%s" ops in
+	    (match mergei i1 i2 with
+	      Some newi ->
+		loop true ((TIdent(news,newi)) :: acc) rest
+	    | None -> loop changed (a :: acc) (op::rest))
+	| _ -> loop changed (a :: acc) (op::rest))
+    | x :: xs -> loop changed (x :: acc) xs in
+  try loop false [] toks
+  with No_operator -> toks
+>>>>>>> support operator redefinition
