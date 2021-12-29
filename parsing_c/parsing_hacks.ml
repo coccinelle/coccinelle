@@ -2989,7 +2989,11 @@ let c_plus_plus_operator toks =
   let opinfo = function
       TPlus i | TMinus i | TMul i | TDiv i | TShl i | TShr i
     | TOrLog i | TAndLog i | TOr i | TXor i | TAnd i | TEqEq i | TNotEq i
-    | TInf i | TSup i | TInfEq i | TSupEq i -> Some (Ast_c.str_of_info i,i)
+    | TInf i | TSup i | TInfEq i | TSupEq i ->
+	let opstart = Ast_c.pos_of_info i in
+	if start + (String.length "operator") = opstart
+	then Some (Ast_c.str_of_info i,i) (* no space allowed *)
+	else None
     | _ -> None in
   let mergei i1 i2 =
     let pinfo1 = i1.pinfo in
