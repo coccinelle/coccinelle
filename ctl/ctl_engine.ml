@@ -379,12 +379,12 @@ let mkstates states = function
   | Some states -> states
 
 let print_graph grp required_states res str = function
-    A.Exists (keep,v,phi)     -> ()
+    A.Exists (keep,v,phi) -> ()
   | phi ->
       if !Flag_ctl.graphical_trace && not !Flag_ctl.checking_reachability
       then
 	 match phi with
-	| A.Exists (keep,v,phi)     -> ()
+	| A.Exists (keep,v,phi) -> ()
 	| _ ->
 	    let label =
 	      Printf.sprintf "%s%s"
@@ -395,12 +395,12 @@ let print_graph grp required_states res str = function
 			  (P.print_predicate, SUB.print_mvar)
 			  false phi)))
 		str in
-	    let file = (match !Flag.currentfile with
-	      None -> "graphical_trace"
-	    | Some f -> f
-		  ) in
-	      (if not (List.mem file !graph_stack) then
-		graph_stack := file :: !graph_stack);
+	    let file =
+	      match !Flag.currentfile with
+		None -> "graphical_trace"
+	      | Some f -> f in
+	    (if not (List.mem file !graph_stack)
+	    then graph_stack := file :: !graph_stack);
 	    let filename = Filename.temp_file (file^":") ".dot" in
 	    Hashtbl.add graph_hash file filename;
 	    G.print_graph grp
