@@ -2688,6 +2688,26 @@ and protect_top_level stmt_dots formula =
 	  (ctl_not(CTL.EX(CTL.BACKWARD,unsbrpred None)))
 	  formula
 
+(* Look for a rule that has a statement and a ..., which should not
+match a top-level term *)
+and force_inner_decl l formula =
+  let rec only_dots_stm s =
+    match Ast.unwrap s with
+      Ast.Dots _ | Ast.Nest _ -> true
+    | Ast.Disj l -> List.exists only_dots_stm_list l
+    | _ -> false
+  and only_dots_stm_list stmt_dots =
+    List.exists only_dots_stm (Ast.unwrap stmt_dots) in
+  if only_dots_stm_list l
+  then
+    (* Top level decl has start node, decl node, and then end node.
+       A function declaration has at least the function header, an open brance,
+       and a close brace before the end *)
+    ctl_and CTL.STRICT
+      (ctl_not(ctl_ex(ctl_ex(CTL.Pred (Lib_engine.Exit,CTL.Control)))))
+      formula
+  else formula
+
 and drop_minuses stmt_dots =
   let mcode (x,info,mc,pos) =
     let newmc =
@@ -2806,7 +2826,9 @@ let top_level name ((ua,pos),fua) (fuas,t) =
 	let formula =
 	  statement_list unopt Top VeryEnd quantified [] None None None
 	    false false in
-	let clean_formula = protect_top_level stmt_dots (cleanup formula) in
+	let clean_formula =
+	  force_inner_decl stmt_dots
+	    (protect_top_level stmt_dots (cleanup formula)) in
 	((function x -> CODE x), clean_formula)
     | Ast.ERRORWORDS(exps) -> failwith "not supported errorwords" in
   wrap (quantify false quantified formula)
