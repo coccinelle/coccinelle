@@ -2986,7 +2986,7 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
 (* Can't hack the lexer because we don't want "operator" to become unusable by C code *)
 exception No_operator
 let c_plus_plus_operator toks =
-  let opinfo = function
+  let opinfo start = function
       TPlus i | TMinus i | TMul i | TDiv i | TShl i | TShr i
     | TOrLog i | TAndLog i | TOr i | TXor i | TAnd i | TEqEq i | TNotEq i
     | TInf i | TSup i | TInfEq i | TSupEq i ->
@@ -3035,6 +3035,7 @@ let c_plus_plus_operator toks =
     else None in
   let rec loop changed acc = function
       [] -> if changed then List.rev acc else raise No_operator
+<<<<<<< HEAD
     | ((TIdent("operator",i1)) as a) :: rest ->
 	let fail _ = loop changed (a :: acc) rest in
 	let (spaces,rest) = span TH.is_just_comment_or_space rest in
@@ -3087,3 +3088,17 @@ let drop_template toks =
     | [] -> failwith "template with no end" in
   loop tokens2;
   Common.acc_map (fun x -> x.tok) tokens2
+=======
+    | ((TIdent("operator",i1)) as a) :: op :: rest ->
+	(match opinfo (Ast_c.pos_of_info i1) op with
+	  Some (ops,i2) ->
+	    let news = Printf.sprintf "operator%s" ops in
+	    (match mergei i1 i2 with
+	      Some newi ->
+		loop true ((TIdent(news,newi)) :: acc) rest
+	    | None -> loop changed (a :: acc) (op::rest))
+	| _ -> loop changed (a :: acc) (op::rest))
+    | x :: xs -> loop changed (x :: acc) xs in
+  try loop false [] toks
+  with No_operator -> toks
+>>>>>>> support operator redefinition
