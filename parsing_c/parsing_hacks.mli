@@ -92,3 +92,4 @@ val cpp_ifdef_statementize:
   Ast_c.program -> Ast_c.program
 
 val c_plus_plus_operator : Parser_c.token list -> Parser_c.token list
+val drop_template : Parser_c.token list -> Parser_c.token list

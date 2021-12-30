@@ -3047,3 +3047,30 @@ let c_plus_plus_operator toks =
     | x :: xs -> loop changed (x :: acc) xs in
   try loop false [] toks
   with No_operator -> toks
+
+(* Just ignore template declarations, but parse the declared thing *)
+let drop_template toks =
+  let tokens2 = toks +> Common.acc_map TV.mk_token_extended in
+  let rec loop = function
+      (({tok = TIdent("template",i1)}) as a) :: rest ->
+	let (_spaces,rest) = span (fun x -> TH.is_just_comment_or_space x.tok) rest in
+	(match rest with
+	  ({tok = (TInf _)} as b) :: rest ->
+	    let (inside,rest) = in_template 0 [] rest in
+	    (a :: b :: inside) +> List.iter
+	      (TV.set_as_comment Token_c.CppPassingCosWouldGetError);
+	    loop rest
+	| _ -> loop rest)
+    | x :: xs -> loop xs
+    | [] -> ()
+  and in_template n acc = function
+      ({tok = (TSup _)} as a) :: rest ->
+	if n = 0
+	then (List.rev(a::acc),rest)
+	else in_template (n-1) (a::acc) rest
+    | ({tok = (TInf _)} as a) :: rest ->
+	in_template (n+1) (a::acc) rest
+    | x ::xs -> in_template n (x::acc) xs
+    | [] -> failwith "template with no end" in
+  loop tokens2;
+  Common.acc_map (fun x -> x.tok) tokens2
