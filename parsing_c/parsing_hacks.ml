@@ -2986,14 +2986,10 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
 (* Can't hack the lexer because we don't want "operator" to become unusable by C code *)
 exception No_operator
 let c_plus_plus_operator toks =
-  let opinfo start = function
+  let opinfo = function
       TPlus i | TMinus i | TMul i | TDiv i | TShl i | TShr i
     | TOrLog i | TAndLog i | TOr i | TXor i | TAnd i | TEqEq i | TNotEq i
-    | TInf i | TSup i | TInfEq i | TSupEq i ->
-	let opstart = Ast_c.pos_of_info i in
-	if start + (String.length "operator") = opstart
-	then Some (Ast_c.str_of_info i,i) (* no space allowed *)
-	else None
+    | TInf i | TSup i | TInfEq i | TSupEq i -> Some (Ast_c.str_of_info i,i)
     | _ -> None in
   let mergei i1 i2 =
     let pinfo1 = i1.pinfo in
@@ -3035,15 +3031,28 @@ let c_plus_plus_operator toks =
     else None in
   let rec loop changed acc = function
       [] -> if changed then List.rev acc else raise No_operator
-    | ((TIdent("operator",i1)) as a) :: op :: rest ->
-	(match opinfo (Ast_c.pos_of_info i1) op with
-	  Some (ops,i2) ->
-	    let news = Printf.sprintf "operator%s" ops in
-	    (match mergei i1 i2 with
-	      Some newi ->
-		loop true ((TIdent(news,newi)) :: acc) rest
-	    | None -> loop changed (a :: acc) (op::rest))
-	| _ -> loop changed (a :: acc) (op::rest))
+    | ((TIdent("operator",i1)) as a) :: rest ->
+	let fail _ = loop changed (a :: acc) rest in
+	let (spaces,rest) = span TH.is_just_comment_or_space rest in
+	(match rest with
+	  op :: rest ->
+	    (match opinfo op with
+	      Some (_ops,i2) ->
+		let news =
+		  String.concat "" (List.map TH.str_of_tok (a::spaces@[op])) in
+		let ii =
+		  List.fold_left
+		    (fun prev cur ->
+		      match prev with
+			None -> None
+		      | Some i -> mergei i cur)
+		    (Some i1) ((List.map TH.info_of_tok spaces) @ [i2]) in
+		(match ii with
+		  Some newi ->
+		    loop true ((TIdent(news,newi)) :: acc) rest
+		| None -> fail())
+	    | _ -> fail())
+	| _ -> fail())
     | x :: xs -> loop changed (x :: acc) xs in
   try loop false [] toks
   with No_operator -> toks
