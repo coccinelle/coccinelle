@@ -239,7 +239,8 @@ let cpp_keyword_table = Common.hash_of_list [
   "namespace", (fun ii -> Tnamespace ii);
   "new",       (fun ii -> Tnew ii);
   "delete",    (fun ii -> Tdelete ii);
-  "using",     (fun ii -> TComment ii) ]
+  "using",     (fun ii -> TComment ii);
+  "constexpr", (fun ii -> Tconst ii) ]
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
