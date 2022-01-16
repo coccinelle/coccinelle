@@ -150,7 +150,7 @@ let mk_pretty_printers
     | SizeOfType  (t),     [i1;i2;i3] ->
         pr_elem i1; pr_elem i2; pp_type t; pr_elem i3
     | Cast    (t, a, e),   [i1;i2] ->
-        pr_elem i1; pp_type t; a +> pp_attributes pr_elem pr_space;
+        pr_elem i1; pp_type t; pp_attributes a;
         pr_elem i2; pp_expression e;
 
     | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] ->
@@ -784,8 +784,7 @@ and pp_string_format (e,ii) =
       let print_ident ident = Common.do_option (fun f ->
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
         f();
-	(if not(endattrs = []) then pr_space());
-        endattrs +> pp_attributes pr_elem pr_space
+        pp_attributes endattrs
 	) ident
       in
 
@@ -1062,6 +1061,7 @@ and pp_string_format (e,ii) =
           pp_argument e;
 	);
 	pr_elem rp;
+	pp_attributes attrs;
 	pr_elem iiend;
 
     | MacroDecl
@@ -1077,6 +1077,7 @@ and pp_string_format (e,ii) =
 	);
 
 	pr_elem rp;
+	pp_attributes attrs;
 
     | MacroDeclInit
 	((sto, s, es, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
@@ -1146,10 +1147,9 @@ and pp_init (init, iinit) =
 
 
 (* ---------------------- *)
-  and pp_attributes pr_elem pr_space attrs =
-    attrs +> List.iter (fun (attr, ii) ->
-      ii +> List.iter pr_elem;
-    );
+  and pp_attributes attrs =
+    if not (attrs = []) then pr_space();
+    Common.print_between pr_space pp_attribute attrs;
 
   and pp_attribute (e,ii) =
     match (e,ii) with
@@ -1184,7 +1184,7 @@ and pp_init (init, iinit) =
     pp_type_with_ident None (Some (sto, isto))
       returnt None Ast_c.noattr Ast_c.noattr;
 
-    pp_attributes pr_elem pr_space attrs;
+    pp_attributes attrs;
     pr_space();
     pp_name name;
 
