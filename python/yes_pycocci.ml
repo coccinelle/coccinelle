@@ -461,6 +461,7 @@ let run_constraint args pos body =
     run pos (Printf.sprintf "
 from coccinelle import *
 from coccilib.iteration import Iteration
+import coccinelle
 
 coccinelle.result = (%s)" body);
     Py.Bool.to_bool (get_variable "result")
@@ -476,6 +477,7 @@ let run_fresh_id args pos body =
     run pos (Printf.sprintf "
 from coccinelle import *
 from coccilib.iteration import Iteration
+import coccinelle
 
 coccinelle.result = (%s)" body);
     Py.String.to_string (get_variable "result")
