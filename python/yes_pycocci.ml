@@ -183,6 +183,16 @@ let initialize_python_path () =
 	Unix.putenv "PYTHONPATH"
 	  (Printf.sprintf "%s%s%s" paths sep python_libdir)
 
+let init_python_code = "\
+import coccinelle
+import coccilib
+import coccilib.org
+import coccilib.report
+import coccilib.xml_firehose
+from coccinelle import *
+from coccilib.iteration import Iteration
+cocci = Cocci()"
+
 let pycocci_init () =
   (* initialize *)
   if not !initialised then (
@@ -225,6 +235,7 @@ let pycocci_init () =
   let (wrap_ast, unwrap_ast) = Py.Capsule.make "metavar_binding_kind" in
   pywrap_ast := wrap_ast;
   pyunwrap_ast := unwrap_ast;
+  assert (Py.Run.simple_string init_python_code);
   initialised := true;
   ()) else
   ()
@@ -451,7 +462,7 @@ let py_isinitialized () =
 let py_finalize () =
   Py.finalize ()
 
-let run_constraint args pos body =
+let run_query converter args pos body =
   catch_python_error begin fun () ->
     build_classes [];
     let make_arg (name, value) =
@@ -460,28 +471,15 @@ let run_constraint args pos body =
     construct_variables mv args;
     run pos (Printf.sprintf "
 from coccinelle import *
-from coccilib.iteration import Iteration
-import coccinelle
-
 coccinelle.result = (%s)" body);
-    Py.Bool.to_bool (get_variable "result")
+    converter (get_variable "result")
   end
 
-let run_fresh_id args pos body =
-  catch_python_error begin fun () ->
-    build_classes [];
-    let make_arg (name, value) =
-      (snd name, name, value, Ast_cocci.NoMVInit) in
-    let mv = List.map make_arg args in
-    construct_variables mv args;
-    run pos (Printf.sprintf "
-from coccinelle import *
-from coccilib.iteration import Iteration
-import coccinelle
+let run_constraint args pos query =
+  run_query Py.Bool.to_bool args pos query
 
-coccinelle.result = (%s)" body);
-    Py.String.to_string (get_variable "result")
-  end
+let run_fresh_id args pos query =
+  run_query Py.String.to_string args pos query
 
 let flush_stdout_and_stderr () =
   if py_isinitialized () then

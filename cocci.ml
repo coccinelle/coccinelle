@@ -958,19 +958,7 @@ let gen_pdf_graph () =
       filename_stack;
     Printf.printf " - Done\n")
 
-let local_python_code = "\
-from coccinelle import *
-from coccilib.iteration import Iteration
-"
-
-let python_code =
-  "import coccinelle\n"^
-    "import coccilib\n"^
-    "import coccilib.org\n"^
-    "import coccilib.report\n" ^
-    "import coccilib.xml_firehose\n" ^
-    local_python_code ^
-    "cocci = Cocci()\n"
+let python_code = "from coccinelle import *\n"
 
 let make_init lang pos code rule_info mv =
   {
@@ -1442,7 +1430,7 @@ let python_application mv ve script_vars r =
     Pycocci.build_classes (List.map (function (x,y) -> x) ve);
     Pycocci.construct_variables mv ve;
     Pycocci.construct_script_variables script_vars;
-    let _ = Pycocci.run r.scr_pos (local_python_code ^r.script_code) in
+    let _ = Pycocci.run r.scr_pos (python_code ^r.script_code) in
     if !Pycocci.exited
     then raise Exited
     else if !Pycocci.inc_match
