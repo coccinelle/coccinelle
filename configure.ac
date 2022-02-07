@@ -282,7 +282,7 @@ AC_ARG_ENABLE([python], [AS_HELP_STRING([--enable-python], [enable python script
 
 AC_ARG_WITH([python], [AS_HELP_STRING([--with-python], [which python interpreter to use (default: python)])])
 
-AS_IF([test -n "$with_python"],
+AS_IF([test -n "$with_python" -a "$with_python" != "yes"],
 [dnl
   AC_SUBST([PYTHON], ["$with_python"])
 ],
