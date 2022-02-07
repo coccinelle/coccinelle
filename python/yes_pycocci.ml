@@ -460,6 +460,7 @@ let py_isinitialized () =
   Py.is_initialized ()
 
 let py_finalize () =
+  Gc.full_major ();
   Py.finalize ()
 
 let run_query converter args pos body =
