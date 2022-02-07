@@ -26,15 +26,29 @@ let rec realpath path =
     end
 
 let path =
+  (* COCCINELLE_HOME is the directory where standard.iso is looked for. *)
   try (Sys.getenv "COCCINELLE_HOME")
   with Not_found->
+    (* If COCCINELLE_HOME is not defined, we consider the directory $bindir
+       where the current executable is. *)
     let exec_realpath = realpath Sys.executable_name in
-    let exec_dir = Filename.dirname exec_realpath in
-    if Sys.file_exists (Filename.concat exec_dir "standard.iso") then
-      exec_dir
+    let bin_dir = Filename.dirname exec_realpath in
+    if Sys.file_exists (Filename.concat bin_dir "standard.iso") then
+       (* If $bindir/standard.iso exists,
+          we use COCCINELLE_HOME=$bindir (this is a usual case during
+          development, where we run spatch.opt from the working directory
+          of the repository). *)
+      bin_dir
     else
+      (* Otherwise, we suppose that coccinelle has been installed (make
+         install), and that standard.iso is installed in $libdir, where
+         $libdir is $exec_prefix/lib.
+         The default value for $bindir is $exec_prefix/bin.
+         Therefore, we should take for $exec_prefix the parent directory
+         of $bindir.*)
       let libdir =
-        Str.global_replace (Str.regexp "[$]{exec_prefix}") exec_dir "@libdir@"
+        Str.global_replace (Str.regexp "[$]{exec_prefix}")
+          (Filename.dirname bin_dir) "@libdir@"
       in
       Filename.concat libdir "coccinelle"
 
