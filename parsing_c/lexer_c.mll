@@ -244,8 +244,7 @@ let cpp_keyword_table = Common.hash_of_list [
   "class",     (fun ii -> Tclass ii);
   "private",   (fun ii -> Tprivate ii);
   "protected", (fun ii -> Tprotected ii);
-  "public",    (fun ii -> Tpublic ii);
-  "constexpr", (fun ii -> Tconst ii) ]
+  "public",    (fun ii -> Tpublic ii) ]
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
