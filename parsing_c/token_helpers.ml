@@ -462,6 +462,10 @@ let info_of_tok = function
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
   | Tdelete              (i) -> i
+  | Tclass               (i) -> i
+  | Tprivate             (i) -> i
+  | Tprotected           (i) -> i
+  | Tpublic              (i) -> i
   | Tdefined             (i) -> i
   | TOParCplusplusInit   (i) -> i
 
@@ -647,6 +651,10 @@ let visitor_info_of_tok f = function
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)
   | Tdelete              (i) -> Tdelete              (f i)
+  | Tclass               (i) -> Tclass               (f i)
+  | Tprivate             (i) -> Tprivate             (f i)
+  | Tprotected           (i) -> Tprotected           (f i)
+  | Tpublic              (i) -> Tpublic              (f i)
   | Tdefined             (i) -> Tdefined             (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | EOF                  (i) -> EOF                  (f i)
@@ -764,6 +772,10 @@ let string_of_token = function
   | Tsizeof _ -> "Tsizeof"
   | Tnew _ -> "Tnew"
   | Tdelete _ -> "Tdelete"
+  | Tclass _ -> "Tclass"
+  | Tprivate _ -> "Tprivate"
+  | Tprotected _ -> "Tprotected"
+  | Tpublic _ -> "Tpublic"
   | Tdefined _ -> "Tdefined"
   | TOParCplusplusInit _ -> "TOParCplusplusInit"
   | Tnamespace _ -> "Tnamespace"

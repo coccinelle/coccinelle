@@ -508,6 +508,7 @@ let postfakeInfo pii  =
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
+       Tclass Tprivate Tpublic Tprotected
 
 /*(* C99 *)*/
 %token <Ast_c.info>
