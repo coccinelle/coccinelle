@@ -2417,8 +2417,8 @@ base_class:
  | Tprivate TIdent     { failwith "TODO" }
 
 base_classes:
-   base_class { [$1] }
- | base_classes TComma base_class { $1 @ [$2] }
+   base_class { [$1,[]] }
+ | base_classes TComma base_class { ($3,  [$2])::$1 }
 
 cpp_class_decl:
    decl               { failwith "TODO" }
@@ -2433,8 +2433,20 @@ cpp_class_decl_list:
  | cpp_class_decl_list cpp_class_decl { $1 @ [$2] }
 
 classdef:
-   Tclass TIdent TOBrace cpp_class_decl_list TCBrace TPtVirg { failwith "TODO" }
- | Tclass TIdent TDotDot base_classes TOBrace cpp_class_decl_list TCBrace TPtVirg { failwith "TODO" }
+   Tclass identifier_cpp TOBrace cpp_class_decl_list TCBrace TPtVirg
+     {
+       {c_name = $2;
+	 c_base_class_list = [];
+	 c_decl_list = $4},
+       [$1;$3;$5;$6]
+     }
+ | Tclass identifier_cpp TDotDot base_classes TOBrace cpp_class_decl_list TCBrace TPtVirg
+     {
+       {c_name = $2;
+	 c_base_class_list = List.rev $4;
+	 c_decl_list = $6},
+       [$1;$3;$5;$7;$8]
+     }
 
 /*(*************************************************************************)*/
 /*(* some generic workarounds *)*/

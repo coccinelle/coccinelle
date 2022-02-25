@@ -661,7 +661,7 @@ and c_decl = c_decl_bis wrap
   | CProtectedLabel of name
   | CPrivateLabel of name
 
-and classdef = classdefbis wrap (* class :? { } *)
+and classdef = classdefbis wrap (* class :? { } ; *)
   and classdefbis =
     { c_name: name;
       c_base_class_list : base_class wrap2 list;
