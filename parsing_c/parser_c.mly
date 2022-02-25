@@ -1094,7 +1094,7 @@ stat_or_decl:
   /*(* gccext: *)*/
  | function_definition { StmtElem (mk_st (NestedFunc $1) Ast_c.noii) }
 
- | classdef { failwith "TODO" }
+ | classdef { StmtElem (mk_st (NestedClass $1) Ast_c.noii) }
 
  /* (* cppext: *)*/
  | cpp_directive
@@ -2356,6 +2356,8 @@ cpp_other:
    Definition fundef
  }
 
+ | classdef { Class $1 }
+
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
  | identifier TOPar argument_list TCParEOL
      { Declaration
@@ -2378,7 +2380,6 @@ external_declaration:
 
 
 celem:
- | classdef { failwith "TODO" }
  | Tnamespace TIdent TOBrace translation_unit TCBrace
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
@@ -2411,22 +2412,22 @@ celem:
 /*(*************************************************************************)*/
 
 base_class:
-   TIdent              { failwith "TODO" }
- | Tpublic TIdent      { failwith "TODO" }
- | Tprotected TIdent   { failwith "TODO" }
- | Tprivate TIdent     { failwith "TODO" }
+   identifier_cpp              { ClassName $1, [] }
+ | Tpublic identifier_cpp      { CPublic $2,   [$1] }
+ | Tprotected identifier_cpp   { CProtected $2,[$1] }
+ | Tprivate identifier_cpp     { CPrivate $2,  [$1] }
 
 base_classes:
    base_class { [$1,[]] }
  | base_classes TComma base_class { ($3,  [$2])::$1 }
 
 cpp_class_decl:
-   decl               { failwith "TODO" }
+   decl               { CDecl ($1 Ast_c.NotLocalDecl),[] }
  | function_definition TPtVirg
-                      { failwith "TODO" }
- | Tpublic TDotDot    { failwith "TODO" }
- | Tprotected TDotDot { failwith "TODO" }
- | Tprivate TDotDot   { failwith "TODO" }
+                      { CFunc $1,[$2] }
+ | Tpublic TDotDot    { CPublicLabel,[$1] }
+ | Tprotected TDotDot { CProtectedLabel,[$1] }
+ | Tprivate TDotDot   { CPrivateLabel,[$1] }
 
 cpp_class_decl_list:
    cpp_class_decl { [$1] }

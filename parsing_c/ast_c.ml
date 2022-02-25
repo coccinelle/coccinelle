@@ -657,9 +657,9 @@ and c_decl = c_decl_bis wrap
   and c_decl_bis =
     CDecl of declaration
   | CFunc of definition
-  | CPublicLabel of name
-  | CProtectedLabel of name
-  | CPrivateLabel of name
+  | CPublicLabel
+  | CProtectedLabel
+  | CPrivateLabel
 
 and classdef = classdefbis wrap (* class :? { } ; *)
   and classdefbis =
