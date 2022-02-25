@@ -2433,8 +2433,8 @@ cpp_class_decl_list:
  | cpp_class_decl_list cpp_class_decl { $1 @ [$2] }
 
 classdef:
-   Tclass TIdent TOBrace cpp_class_decl_list TCBrace { failwith "TODO" }
- | Tclass TIdent TDotDot base_classes TOBrace cpp_class_decl_list TCBrace { failwith "TODO" }
+   Tclass TIdent TOBrace cpp_class_decl_list TCBrace TPtVirg { failwith "TODO" }
+ | Tclass TIdent TDotDot base_classes TOBrace cpp_class_decl_list TCBrace TPtVirg { failwith "TODO" }
 
 /*(*************************************************************************)*/
 /*(* some generic workarounds *)*/
