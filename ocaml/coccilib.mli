@@ -748,6 +748,10 @@ module Parser_c :
       | Tdefined of Ast_c.info
       | TOParCplusplusInit of Ast_c.info
       | Tnamespace of Ast_c.info
+      | Tclass of Ast_c.info
+      | Tprivate of Ast_c.info
+      | Tpublic of Ast_c.info
+      | Tprotected of Ast_c.info
       | Trestrict of Ast_c.info
       | Tasm of Ast_c.info
       | Tattribute of Ast_c.info
