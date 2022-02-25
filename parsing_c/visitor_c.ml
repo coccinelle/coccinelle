@@ -746,8 +746,8 @@ and vk_toplevel = fun bigf p ->
   let iif ii =  vk_ii bigf ii in
   let k p =
     match p with
-    | Declaration decl -> (vk_decl bigf decl)
-    | Definition def -> (vk_def bigf def)
+    | Declaration decl -> vk_decl bigf decl
+    | Definition def -> vk_def bigf def
     | EmptyDef ii -> iif ii
     | MacroTop (s, xs, ii) ->
         vk_argument_list bigf xs;
