@@ -1487,6 +1487,7 @@ let string_of_toplevel = function
   | NotParsedCorrectly _ -> "NotParsedCorrectly"
   | FinalDef _ -> "FinalDef"
   | Namespace _ -> "Namespace"
+  | Class _ -> "Class"
 
 let string_of_inc_file = function
   | Local lst -> "local://" ^ (String.concat "/" lst)
