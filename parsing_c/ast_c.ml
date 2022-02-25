@@ -456,6 +456,7 @@ and statement = statementbis wrap3
   (* gccext: *)
   | Asm of asmbody
   | NestedFunc of definition
+  | NestedClass of classdef
 
   (* cppext: *)
   | MacroStmt
@@ -642,6 +643,32 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
   (* cppext: IfdefFunHeader TODO *)
 
 (* ------------------------------------------------------------------------- *)
+(* C++ classes *)
+(* ------------------------------------------------------------------------- *)
+
+and base_class = base_class_bis wrap
+  and base_class_bis =
+    ClassName of name
+  | CPublic of name
+  | CProtected of name
+  | CPrivate of name
+
+and c_decl = c_decl_bis wrap
+  and c_decl_bis =
+    CDecl of declaration
+  | CFunc of definition
+  | CPublicLabel of name
+  | CProtectedLabel of name
+  | CPrivateLabel of name
+
+and classdef = classdefbis wrap (* class :? { } *)
+  and classdefbis =
+    { c_name: name;
+      c_base_class_list : base_class wrap2 list;
+      c_decl_list : c_decl list;
+    }
+
+(* ------------------------------------------------------------------------- *)
 (* cppext: cpp directives, #ifdef, #define and #include body *)
 (* ------------------------------------------------------------------------- *)
 and cpp_directive =
@@ -782,6 +809,7 @@ and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
 and toplevel =
   | Declaration of declaration
   | Definition of definition
+  | Class of classdef
 
   (* cppext: *)
   | CppTop of cpp_directive

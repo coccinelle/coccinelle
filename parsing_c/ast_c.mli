@@ -164,6 +164,7 @@ and statementbis =
   | Decl of declaration
   | Asm of asmbody
   | NestedFunc of definition
+  | NestedClass of classdef
   | MacroStmt
   | Exec of exec_code list
   | IfdefStmt1 of ifdef_directive list * statement list
@@ -250,6 +251,29 @@ and definitionbis = {
   f_endattr : attribute list;
   f_old_c_style : declaration list option;
 }
+
+and base_class = base_class_bis wrap
+  and base_class_bis =
+    ClassName of name
+  | CPublic of name
+  | CProtected of name
+  | CPrivate of name
+
+and c_decl = c_decl_bis wrap
+  and c_decl_bis =
+    CDecl of declaration
+  | CFunc of definition
+  | CPublicLabel of name
+  | CProtectedLabel of name
+  | CPrivateLabel of name
+
+and classdef = classdefbis wrap (* class :? { } *)
+  and classdefbis =
+    { c_name: name;
+      c_base_class_list : base_class wrap2 list;
+      c_decl_list : c_decl list;
+    }
+
 and cpp_directive =
     Define of define
   | Include of includ
@@ -304,6 +328,7 @@ and matching_tag = IfdefTag of (int * int)
 and toplevel =
     Declaration of declaration
   | Definition of definition
+  | Class of classdef
   | CppTop of cpp_directive
   | IfdefTop of ifdef_directive
   | MacroTop of string * argument wrap2 list * il
