@@ -1094,6 +1094,8 @@ stat_or_decl:
   /*(* gccext: *)*/
  | function_definition { StmtElem (mk_st (NestedFunc $1) Ast_c.noii) }
 
+ | classdef { failwith "TODO" }
+
  /* (* cppext: *)*/
  | cpp_directive
      { CppDirectiveStmt $1 }
@@ -2376,6 +2378,7 @@ external_declaration:
 
 
 celem:
+ | classdef { failwith "TODO" }
  | Tnamespace TIdent TOBrace translation_unit TCBrace
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
@@ -2403,8 +2406,35 @@ celem:
 
  | EOF        { FinalDef $1 }
 
+/*(*************************************************************************)*/
+/*(* C++ classes *)*/
+/*(*************************************************************************)*/
 
+base_class:
+   TIdent              { failwith "TODO" }
+ | Tpublic TIdent      { failwith "TODO" }
+ | Tprotected TIdent   { failwith "TODO" }
+ | Tprivate TIdent     { failwith "TODO" }
 
+base_classes:
+   base_class { [$1] }
+ | base_classes TComma base_class { $1 @ [$2] }
+
+cpp_class_decl:
+   decl               { failwith "TODO" }
+ | function_definition TPtVirg
+                      { failwith "TODO" }
+ | Tpublic TDotDot    { failwith "TODO" }
+ | Tprotected TDotDot { failwith "TODO" }
+ | Tprivate TDotDot   { failwith "TODO" }
+
+cpp_class_decl_list:
+   cpp_class_decl { [$1] }
+ | cpp_class_decl_list cpp_class_decl { $1 @ [$2] }
+
+classdef:
+   Tclass TIdent TOBrace cpp_class_decl_list TCBrace { failwith "TODO" }
+ | Tclass TIdent TDotDot base_classes TOBrace cpp_class_decl_list TCBrace { failwith "TODO" }
 
 /*(*************************************************************************)*/
 /*(* some generic workarounds *)*/
