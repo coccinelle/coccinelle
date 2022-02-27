@@ -738,8 +738,45 @@ and vk_def = fun bigf d ->
 	vk_statement_sequencable_list bigf statxs
   in f (k, bigf) d
 
+and vk_base_class = fun bigf bc -> (* not parametrizable *)
+  let iif ii = vk_ii bigf ii in
+  let (unwrap_bc, ii) = bc in
+  iif ii;
+  match unwrap_bc with
+    ClassName name -> vk_name bigf name
+  | CPublic name -> vk_name bigf name
+  | CProtected name -> vk_name bigf name
+  | CPrivate name -> vk_name bigf name
 
+and vk_base_class_list = fun bigf ts ->
+  let iif ii = vk_ii bigf ii in
+  ts +> List.iter (fun (base_class,iicomma) ->
+    vk_base_class bigf base_class;
+    iif iicomma;
+  )
 
+and vk_class_decl = fun bigf cd -> (* not parametrizable *)
+  let iif ii = vk_ii bigf ii in
+  let (unwrap_cd, ii) = cd in
+  iif ii;
+  match unwrap_cd with
+    CDecl decl -> vk_decl bigf decl
+  | CFunc def -> vk_def bigf def
+  | CPublicLabel -> ()
+  | CProtectedLabel -> ()
+  | CPrivateLabel -> ()
+
+and vk_classdef = fun bigf cd -> (* not parametrizable *)
+  let iif ii = vk_ii bigf ii in
+  match cd with
+    { c_name = name;
+      c_base_class_list = base_classes;
+      c_decl_list = decls;
+    }, ii ->
+      iif ii;
+      vk_name bigf name;
+      vk_base_class_list bigf base_classes;
+      decls +> List.iter (vk_class_decl bigf)
 
 and vk_toplevel = fun bigf p ->
   let f = bigf.ktoplevel in
@@ -760,6 +797,7 @@ and vk_toplevel = fun bigf p ->
     | FinalDef info -> vk_info bigf info
 
     | Namespace (tls, ii) -> List.iter (vk_toplevel bigf) tls
+    | Class classdef -> vk_classdef bigf classdef
   in f (k, bigf) p
 
 and vk_program = fun bigf xs ->
