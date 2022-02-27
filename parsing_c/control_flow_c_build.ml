@@ -57,6 +57,7 @@ type error =
   | NoExit of Common.parse_info
   | DuplicatedLabel of string
   | NestedFunc
+  | NestedClass
   | ComputedGoto
   | Define of Common.parse_info
 
@@ -982,6 +983,10 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
   | Ast_c.NestedFunc def ->
       raise (Error NestedFunc)
 
+  (* ------------------------- *)
+  | Ast_c.NestedClass def ->
+      raise (Error NestedClass)
+
 and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
           (stmt :statement)
           : nodei (* first node of the else branch *)
@@ -1381,6 +1386,21 @@ let rec ast_to_control_flow e =
 
   let topi = !g +> add_node TopNode lbl_0 "[top]" in
 
+  let do_definition ((defbis,_) as def) =
+    let _funcs = defbis.f_name in
+    let _c = defbis.f_body in
+      (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
+    aux_definition topi def;
+    Some !g in
+
+  let do_decl elem str =
+    let ei =   !g +> add_node elem    lbl_0 str in
+    let endi = !g +> add_node EndNode lbl_0 "[end]" in
+
+    !g#add_arc ((topi, ei),Direct);
+    !g#add_arc ((ei, endi),Direct);
+    Some !g in
+
   match e with
   | Ast_c.Namespace (defs, _) ->
       (* todo: incorporate the other defs *)
@@ -1392,35 +1412,27 @@ let rec ast_to_control_flow e =
 	    | None -> loop defs
 	    | x -> x in
       loop defs
-  | Ast_c.Definition ((defbis,_) as def) ->
-      let _funcs = defbis.f_name in
-      let _c = defbis.f_body in
-      (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
-      aux_definition topi def;
-      Some !g
 
-  | Ast_c.Declaration _
-  | Ast_c.CppTop (Ast_c.Include _)
-  | Ast_c.MacroTop _
-    ->
-      let (elem, str) =
-        match e with
-        | Ast_c.Declaration decl ->
-            (Control_flow_c.Decl decl),  "decl"
-        | Ast_c.CppTop (Ast_c.Include inc) ->
-            (Control_flow_c.Include inc), "#include"
-        | Ast_c.MacroTop (s, args, ii) ->
-            let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
-            (Control_flow_c.ExprStatement (st, (Some e, ii))), "macrotoplevel"
-          (*(Control_flow_c.MacroTop (s, args,ii), "macrotoplevel") *)
-        | _ -> raise (Impossible 73)
-      in
-      let ei =   !g +> add_node elem    lbl_0 str in
-      let endi = !g +> add_node EndNode lbl_0 "[end]" in
+  | Ast_c.Class cls ->
+      let (cls,_) = cls in
+      let decls = cls.c_decl_list in
+      (* todo: incorporate the other defs *)
+      let rec loop = function
+	  [] -> None
+	| (CDecl decl,_) :: decls ->
+	    do_decl (Control_flow_c.Decl decl) "decl"
+	| (CFunc def,_) :: decls -> do_definition def
+	| ((CPublicLabel | CProtectedLabel | CPrivateLabel),_) :: decls ->
+	    loop decls in
+      loop decls
 
-      !g#add_arc ((topi, ei),Direct);
-      !g#add_arc ((ei, endi),Direct);
-      Some !g
+  | Ast_c.Definition def -> do_definition def
+
+  | Ast_c.Declaration decl -> do_decl (Control_flow_c.Decl decl) "decl"
+  | Ast_c.CppTop (Ast_c.Include inc) -> do_decl (Control_flow_c.Include inc) "#include"
+  | Ast_c.MacroTop (s, args, ii) ->
+      let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
+      do_decl (Control_flow_c.ExprStatement (st, (Some e, ii))) "macrotoplevel"
 
   | Ast_c.CppTop (Ast_c.Define ((id,ii), (defkind, defval)))  ->
       let s =
@@ -1687,6 +1699,8 @@ let report_error error =
 	pr2 ("FLOW: duplicate label " ^ s)
     | NestedFunc  ->
 	pr2 ("FLOW: not handling yet nested function")
+    | NestedClass  ->
+	pr2 ("FLOW: not handling yet nested class")
     | ComputedGoto ->
 	pr2 ("FLOW: not handling computed goto yet")
     | Define info ->
