@@ -391,6 +391,9 @@ and pp_string_format (e,ii) =
     | NestedFunc def, ii ->
         assert (ii = []);
         pp_def def
+    | NestedClass cls, ii ->
+        assert (ii = []);
+        pp_classdef cls
     | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
 
@@ -1314,7 +1317,41 @@ and pp_init (init, iinit) =
 	List.iter pr_elem ii
 
   and pp_define_param_list dparams =
-    pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams in
+    pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams
+
+  and pp_base_class (bc,ii) =
+    match bc with
+      ClassName name -> pp_name name
+    | CPublic name | CProtected name | CPrivate name ->
+	let tag = Common.tuple_of_list1 ii in
+	pr_elem tag; pr_space(); pp_name name
+
+  and pp_class_decl (cd,ii) =
+    match cd with
+      CDecl decl -> pp_decl decl
+    | CFunc def  -> pp_def def
+    | CPublicLabel | CProtectedLabel | CPrivateLabel ->
+	let (tag,dotdot) = Common.tuple_of_list2 ii in
+	pr_elem tag; pr_elem dotdot; pr_nl()
+
+  and pp_classdef (cls,ii) =
+    let {c_name = name;
+	 c_base_class_list = base_class_list;
+	 c_decl_list = class_decl_list} = cls in
+    let (c,dotdot,lb,rb,ptvirg) =
+      match ii with
+	[c;lb;rb;ptvirg] -> (c,c(*ignored*),lb,rb,ptvirg)
+      | [c;dotdot;lb;rb;ptvirg] -> (c,dotdot,lb,rb,ptvirg)
+      | _ -> failwith "unexpected class constants" in
+    pr_elem c; pr_space();
+    pp_name name; pr_space();
+    (match base_class_list with
+      [] -> ()
+    | _ -> pr_elem dotdot; pr_space());
+    pp_list pp_base_class base_class_list; pr_space();
+    pr_elem lb;
+    List.iter pp_class_decl class_decl_list;
+    pr_elem rb in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
@@ -1346,7 +1383,8 @@ and pp_init (init, iinit) =
     | Namespace (tls, [i1; i2; i3; i4]) ->
 	pr_elem i1; pr_elem i2; pr_elem i3;
 	List.iter pp_toplevel tls;
-	pr_elem i4;
+	pr_elem i4
+    | Class cls -> pp_classdef cls
     | (MacroTop _) | (Namespace _) -> raise (Impossible 120) in
 
 
