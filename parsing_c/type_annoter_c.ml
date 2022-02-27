@@ -1476,6 +1476,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
       | NotParsedCorrectly _
       | FinalDef _
       | Namespace _
+      | Class _
           ->
           k elem
     );
