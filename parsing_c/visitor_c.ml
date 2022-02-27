@@ -1715,6 +1715,48 @@ and vk_def_s = fun bigf d ->
 
   in f (k, bigf) d
 
+and vk_base_class_s = fun bigf bc -> (* not parametrizable *)
+  let iif ii = vk_ii_s bigf ii in
+  let (unwrap_bc, ii) = bc in
+  let bc' =
+    match unwrap_bc with
+      ClassName name -> ClassName(vk_name_s bigf name)
+    | CPublic name -> CPublic(vk_name_s bigf name)
+    | CProtected name -> CProtected(vk_name_s bigf name)
+    | CPrivate name -> CPrivate(vk_name_s bigf name) in
+  bc', iif ii
+
+and vk_base_class_list_s = fun bigf ts ->
+  let iif ii = vk_ii_s bigf ii in
+  ts +>
+  List.map
+    (fun (base_class,iicomma) ->
+      vk_base_class_s bigf base_class, iif iicomma)
+
+and vk_class_decl_s = fun bigf cd -> (* not parametrizable *)
+  let iif ii = vk_ii_s bigf ii in
+  let (unwrap_cd, ii) = cd in
+  let cd' =
+    match unwrap_cd with
+      CDecl decl -> CDecl (vk_decl_s bigf decl)
+    | CFunc def -> CFunc (vk_def_s bigf def)
+    | CPublicLabel -> CPublicLabel
+    | CProtectedLabel -> CProtectedLabel
+    | CPrivateLabel -> CPrivateLabel in
+  cd', iif ii
+
+and vk_classdef_s = fun bigf cd -> (* not parametrizable *)
+  let iif ii = vk_ii_s bigf ii in
+  match cd with
+    { c_name = name;
+      c_base_class_list = base_classes;
+      c_decl_list = decls;
+    }, ii ->
+      { c_name = vk_name_s bigf name;
+	c_base_class_list = vk_base_class_list_s bigf base_classes;
+	c_decl_list = decls +> List.map (vk_class_decl_s bigf);
+      }, iif ii
+
 and vk_toplevel_s = fun bigf p ->
   let f = bigf.ktoplevel_s in
   let iif ii = vk_ii_s bigf ii in
