@@ -441,6 +441,7 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
     | Decl decl -> vk_decl bigf decl
     | Asm asmbody -> vk_asmbody bigf asmbody
     | NestedFunc def -> vk_def bigf def
+    | NestedClass def -> vk_classdef bigf def
     | MacroStmt -> ()
 
     | Exec (code) -> List.iter (vk_exec_code bigf) code
@@ -1389,6 +1390,7 @@ and vk_statement_s = fun bigf st ->
       | Decl decl -> Decl (vk_decl_s bigf decl)
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
+      | NestedClass def -> NestedClass (vk_classdef_s bigf def)
       | MacroStmt -> MacroStmt
       | Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
       | IfdefStmt1 (ifdef, xs) ->
@@ -1779,6 +1781,7 @@ and vk_toplevel_s = fun bigf p ->
     | NotParsedCorrectly ii -> NotParsedCorrectly (iif ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
     | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
+    | Class classdef -> Class (vk_classdef_s bigf classdef)
   in f (k, bigf) p
 
 and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
