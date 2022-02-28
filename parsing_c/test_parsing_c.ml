@@ -248,8 +248,8 @@ let local_test_cfg launchgv file =
       None -> ()
     | Some fn -> (* old: Flow_to_ast.test !Flag.show_flow def *)
 	try
-          let flow = Ast_to_flow.ast_to_control_flow e in
-          flow +> do_option (fun flow ->
+          let (flow,subflows) = Ast_to_flow.ast_to_control_flow e in
+	  let do_flow mkstring flow =
             Ast_to_flow.deadcode_detection flow;
             let flow = Ast_to_flow.annotate_loop_nodes flow in
 
@@ -259,16 +259,17 @@ let local_test_cfg launchgv file =
               then flow
               else Ctlcocci_integration.fix_flow_ctl flow
 *)
-              flow
-            in
+              flow in
 	    let filename =
 	      if launchgv
-	      then Filename.temp_file "output" ".dot"
+	      then Filename.temp_file (mkstring "output") ".dot"
 	      else
 		let fl = Filename.chop_extension (Filename.basename file) in
-		fl^":"^fn^".dot" in
-            Control_flow_c.G.print_ograph_mutable flow' (filename) launchgv
-          )
+		(mkstring(fl^":"^fn))^".dot" in
+            Control_flow_c.G.print_ograph_mutable flow' (filename) launchgv in
+          flow +> do_option (do_flow (fun x -> x));
+	  List.iteri (fun i flow -> do_flow (fun x -> Printf.sprintf "%s_%d" x i) flow)
+	    subflows
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
       )
 
@@ -284,12 +285,13 @@ let test_cfg_ifdef file =
 
   ast +> List.iter (fun e ->
     (try
-        let flow = Ast_to_flow.ast_to_control_flow e in
-        flow +> do_option (fun flow ->
+        let (flow,subflows) = Ast_to_flow.ast_to_control_flow e in
+	let do_flow mkstring flow =
           Ast_to_flow.deadcode_detection flow;
           let flow = Ast_to_flow.annotate_loop_nodes flow in
-          Control_flow_c.G.print_ograph_mutable flow ("/tmp/output.dot") true
-        )
+          Control_flow_c.G.print_ograph_mutable flow ((mkstring "/tmp/output")^".dot") true in
+        flow +> do_option (do_flow (fun x -> x));
+	List.iteri (fun i flow -> do_flow (fun x -> Printf.sprintf "%s_%d" x i) flow) subflows
       with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
     )
   )

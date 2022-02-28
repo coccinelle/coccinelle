@@ -90,22 +90,22 @@ let print_flow flow =
 
 
 let ast_to_flow_with_error_messages2 x =
-  let flowopt =
+  let (flowopt,subflows) =
     try Ast_to_flow.ast_to_control_flow x
     with Ast_to_flow.Error x ->
       Ast_to_flow.report_error x;
-      None
-  in
-  flowopt +> do_option (fun flow ->
+      (None,[]) in
+  let do_flow flow =
     (* This time even if there is a deadcode, we still have a
      * flow graph, so I can try the transformation and hope the
      * deadcode will not bother us.
      *)
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) ->
-      Ast_to_flow.report_error (Ast_to_flow.DeadCode x);
-  );
-  flowopt
+      Ast_to_flow.report_error (Ast_to_flow.DeadCode x) in
+  flowopt +> do_option do_flow;
+  subflows +> List.iter do_flow;
+  (flowopt,subflows)
 let ast_to_flow_with_error_messages a =
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
@@ -570,15 +570,21 @@ let check_macro_in_sp_and_adjust = function
 	end)
 
 
-let contain_loop gopt =
-  match gopt with
-  | Some g ->
-      Control_flow_c.KeyMap.exists (fun xi node ->
-        Control_flow_c.extract_is_loop node
-      ) g#nodes
-  | None -> true (* means nothing, if no g then will not model check *)
-
-
+let contain_loop gopt subflows =
+  let gopt_case =
+    match gopt with
+    | Some g ->
+	g#nodes +>
+	Control_flow_c.KeyMap.exists (fun xi node ->
+          Control_flow_c.extract_is_loop node)
+    | None -> true in (* means nothing, if no g then will not model check *)
+  (gopt_case,
+   List.map
+     (function g ->
+       g#nodes +>
+       Control_flow_c.KeyMap.exists (fun xi node ->
+         Control_flow_c.extract_is_loop node))
+     subflows)
 
 let sp_contain_typed_metavar_z toplevel_list_list =
   let bind x y = x || y in
@@ -800,7 +806,8 @@ type toplevel_c_info = {
   fullstring: string;
 
   flow: Control_flow_c.cflow option; (* it's the "fixed" flow *)
-  contain_loop: bool;
+  subflows: Control_flow_c.cflow list; (* it's the "fixed" flow *)
+  contain_loop: (bool * bool list);
 
   env_typing_before: TAC.environment;
   env_typing_after:  TAC.environment;
@@ -1090,8 +1097,8 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
 	((start_line,start_offset),(end_line,end_offset))) in
 
     let flow _ =
-      ast_to_flow_with_error_messages c +>
-      Common.map_option (fun flow ->
+      let (flow,subflows) = ast_to_flow_with_error_messages c in
+      let fix_flow flow =
         let flow = Ast_to_flow.annotate_loop_nodes flow in
 
         (* remove the fake nodes for julia *)
@@ -1100,10 +1107,9 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
         if !Flag_cocci.show_flow then print_flow fixed_flow;
         if !Flag_cocci.show_before_fixed_flow then print_flow flow;
 
-        fixed_flow
-      )
-    in
-    let flow =
+        fixed_flow in
+      (flow +> Common.map_option fix_flow, subflows +> List.map fix_flow) in
+    let (flow,subflows) =
       match ranges with
 	None -> flow()
       | Some ranges ->
@@ -1124,7 +1130,7 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
 	      ranges in
 	  if included && not excluded
 	  then flow()
-	  else None in
+	  else (None,[]) in
     {
       ast_c = c; (* contain refs so can be modified *)
       start_end = start_end;
@@ -1132,8 +1138,9 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
       fullstring = fullstr;
 
       flow = flow;
+      subflows = subflows;
 
-      contain_loop = contain_loop flow;
+      contain_loop = contain_loop flow subflows;
 
       env_typing_before = enva;
       env_typing_after = envb;
@@ -1890,7 +1897,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
        let (trans_info, returned_any_states, inherited_bindings, newbindings) =
 	 Common.save_excursion Flag_ctl.loop_in_src_code (fun () ->
 	   Flag_ctl.loop_in_src_code :=
-	     !Flag_ctl.loop_in_src_code||c.contain_loop;
+	     !Flag_ctl.loop_in_src_code||fst c.contain_loop;
 
       (***************************************)
       (* !Main point! The call to the engine *)

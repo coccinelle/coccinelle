@@ -161,20 +161,22 @@ let initial_info = {
 }
 
 
+let rec do_ast_to_control_flow e = (* entry point! *)
+
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style. *)
 (*****************************************************************************)
 (* global graph *)
-let g = ref (new Control_flow_c.G.ograph_mutable)
+let g = ref (new Control_flow_c.G.ograph_mutable) in
 
-let counter_for_labels = ref 0
-let counter_for_braces = ref 0
+let counter_for_labels = ref 0 in
+let counter_for_braces = ref 0 in
 
 (* For switch we use compteur too (or pass int ref) cos need know order of the
  * case if then later want to go from CFG to (original) AST.
  * update: obsolete now I think
  *)
-let counter_for_switch = ref 0
+let counter_for_switch = ref 0 in
 
 
 (*****************************************************************************)
@@ -218,7 +220,7 @@ let compute_labels_and_create_them st =
 	| _ -> k exp)
     };
     !h;
-  end
+  end in
 
 
 (* ctl_braces: *)
@@ -236,7 +238,7 @@ let insert_all_braces xs starti nodety str =
     fn nodety str newi;
     !g#add_arc ((acc, newi), Direct);
     newi
-  ) starti
+  ) starti in
 
 (*****************************************************************************)
 (* Statement *)
@@ -1294,7 +1296,7 @@ and aux_statement_list starti (xi, newxi) statxs =
 
         Some taili
 
-  ) starti
+  ) starti in
 
 
 (*****************************************************************************)
@@ -1355,7 +1357,7 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
   in
 
   let lasti = aux_statement (Some enteri, info) topstatement in
-  !g +> add_arc_opt (lasti, exiti)
+  !g +> add_arc_opt (lasti, exiti) in
 
 (*****************************************************************************)
 (* Entry point *)
@@ -1376,11 +1378,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
   let identfinal = Ast_c.mk_e (Ast_c.Ident (ident)) Ast_c.noii in
   let f = Ast_c.mk_e (Ast_c.FunCall (identfinal, args)) [iiopar;iicpar] in
   let stmt = Ast_c.mk_st (Ast_c.ExprStatement (Some f)) [iiptvirg] in
-  stmt,  (f, [iiptvirg])
-
-
-
-let rec ast_to_control_flow e =
+  stmt,  (f, [iiptvirg]) in
 
   (* globals (re)initialialisation *)
   g := (new Control_flow_c.G.ograph_mutable);
@@ -1395,7 +1393,7 @@ let rec ast_to_control_flow e =
     let _c = defbis.f_body in
       (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
     aux_definition topi def;
-    Some !g in
+    [Some !g] in
 
   let do_decl elem str =
     let ei =   !g +> add_node elem    lbl_0 str in
@@ -1403,37 +1401,30 @@ let rec ast_to_control_flow e =
 
     !g#add_arc ((topi, ei),Direct);
     !g#add_arc ((ei, endi),Direct);
-    Some !g in
+    [Some !g] in
 
   match e with
   | Ast_c.Namespace (defs, _) ->
-      (* todo: incorporate the other defs *)
-      let rec loop defs =
-	match defs with
-	| [] -> None
-	| def :: defs ->
-	    match ast_to_control_flow def with
-	    | None -> loop defs
-	    | x -> x in
-      loop defs
+      None :: List.concat (List.map do_ast_to_control_flow defs)
 
   | Ast_c.Class cls ->
       let (cls,_) = cls in
-      let decls = cls.c_decl_list in
-      (* todo: incorporate the other defs *)
       let rec loop = function
-	  [] -> None
+	  [] -> []
 	| (CDecl decl,_) :: decls ->
-	    do_decl (Control_flow_c.Decl decl) "decl"
-	| (CFunc def,_) :: decls -> do_definition def
+	    (do_ast_to_control_flow (Ast_c.Declaration decl)) @ (loop decls)
+	| (CFunc def,_) :: decls ->
+	    (do_ast_to_control_flow (Ast_c.Definition def)) @ (loop decls)
 	| ((CPublicLabel | CProtectedLabel | CPrivateLabel),_) :: decls ->
 	    loop decls in
-      loop decls
+      None :: loop cls.c_decl_list
 
   | Ast_c.Definition def -> do_definition def
 
-  | Ast_c.Declaration decl -> do_decl (Control_flow_c.Decl decl) "decl"
-  | Ast_c.CppTop (Ast_c.Include inc) -> do_decl (Control_flow_c.Include inc) "#include"
+  | Ast_c.Declaration decl ->
+      do_decl (Control_flow_c.Decl decl) "decl"
+  | Ast_c.CppTop (Ast_c.Include inc) ->
+      do_decl (Control_flow_c.Include inc) "#include"
   | Ast_c.MacroTop (s, args, ii) ->
       let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
       do_decl (Control_flow_c.ExprStatement (st, (Some e, ii))) "macrotoplevel"
@@ -1525,7 +1516,7 @@ let rec ast_to_control_flow e =
 *)
       );
 
-      Some !g
+      [Some !g]
 
   | Ast_c.CppTop (Ast_c.Pragma ((id,rest),ii))  ->
       let elem = PragmaHeader ((id,rest),ii) in
@@ -1535,10 +1526,23 @@ let rec ast_to_control_flow e =
 
       !g#add_arc ((topi, ei),Direct);
       !g#add_arc ((ei, endi),Direct);
-      Some !g
+      [Some !g]
 
-  | _ -> None
+  | _ -> [None]
 
+let ast_to_control_flow e =
+  let res = do_ast_to_control_flow e in
+  match res with
+    (flow)::rest ->
+      (flow,
+       List.rev
+	 (List.fold_left
+	    (fun prev ->
+	      (function
+		  None -> prev
+		| Some g -> g::prev))
+	    [] rest))
+  | [] -> (None,[])
 
 (*****************************************************************************)
 (* CFG loop annotation *)

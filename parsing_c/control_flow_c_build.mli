@@ -1,5 +1,5 @@
 
-val ast_to_control_flow : Ast_c.toplevel -> Control_flow_c.cflow option
+val ast_to_control_flow : Ast_c.toplevel -> (Control_flow_c.cflow option * Control_flow_c.cflow list)
 
 val deadcode_detection : Control_flow_c.cflow -> unit
 val check_control_flow : Control_flow_c.cflow -> unit
