@@ -242,6 +242,8 @@ type node = node1 * string
 
   | Asm of fullstatement * asmbody wrap
   | MacroStmt of fullstatement * unit wrap
+  | NestedFunc of fullstatement * definition wrap
+  | NestedClass of fullstatement * classdef wrap
 
   | Exec of fullstatement * exec_code list wrap
 
@@ -409,6 +411,8 @@ let extract_fullstatement node =
   | Continue (st, _)
   | Break    (st, _, _)
   | Asm (st,_)
+  | NestedFunc (st,_)
+  | NestedClass (st,_)
   | Exec (st,_)
       -> Some st
 

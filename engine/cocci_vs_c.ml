@@ -5548,6 +5548,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
   (* todo?: print a warning at least ? *)
   | _, F.CaseRange _
   | _, F.Asm _
+  | _, F.NestedFunc _
+  | _, F.NestedClass _
     -> fail2()
   | _, F.MacroTop _
     -> fail2()

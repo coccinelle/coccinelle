@@ -981,11 +981,15 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
   (* ------------------------- *)
   | Ast_c.NestedFunc def ->
-      raise (Error NestedFunc)
+      let newi = !g +> add_node (NestedFunc (stmt, ((def,ii)))) lbl "asm;" in
+      !g +> add_arc_opt (starti, newi);
+      Some newi
 
   (* ------------------------- *)
-  | Ast_c.NestedClass def ->
-      raise (Error NestedClass)
+  | Ast_c.NestedClass defs ->
+      let newi = !g +> add_node (NestedClass (stmt, ((defs,ii)))) lbl "asm;" in
+      !g +> add_arc_opt (starti, newi);
+      Some newi
 
 and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
           (stmt :statement)

@@ -1022,6 +1022,12 @@ and vk_node = fun bigf node ->
     | F.Asm (st, (asmbody,ii)) ->
         iif ii;
         vk_asmbody bigf asmbody
+    | F.NestedFunc (st, (def,ii)) ->
+        iif ii;
+        vk_def bigf def
+    | F.NestedClass (st, (cls,ii)) ->
+        iif ii;
+        vk_classdef bigf cls
 
     | F.Exec (st,(code,ii)) ->
 	iif ii;
@@ -2010,6 +2016,8 @@ and vk_node_s = fun bigf node ->
 
     | F.MacroStmt (st, ((),ii)) -> F.MacroStmt (st, ((),iif ii))
     | F.Asm (st, (body,ii)) -> F.Asm (st, (vk_asmbody_s bigf body,iif ii))
+    | F.NestedFunc (st, (def,ii)) -> F.NestedFunc (st, (vk_def_s bigf def,iif ii))
+    | F.NestedClass (st, (cls,ii)) -> F.NestedClass (st, (vk_classdef_s bigf cls,iif ii))
     | F.Exec(st, (code,ii)) ->
 	F.Exec(st,((List.map (vk_exec_code_s bigf) code),ii))
 

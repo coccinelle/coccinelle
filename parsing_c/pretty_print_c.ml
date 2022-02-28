@@ -1534,6 +1534,10 @@ and pp_init (init, iinit) =
 	pp_statement (MacroStmt,ii)
     | F.Asm (st, (asmbody,ii)) ->
 	pp_statement (Asm asmbody, ii)
+    | F.NestedFunc (st, (def,ii)) ->
+	pp_statement (NestedFunc def, ii)
+    | F.NestedClass (st, (defs,ii)) ->
+	pp_statement (NestedClass defs, ii)
 
     | F.Exec(st,(code,ii)) ->
 	pp_statement (Exec code, ii)
