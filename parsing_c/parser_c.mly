@@ -2380,7 +2380,6 @@ external_declaration:
 
 
 celem:
- | classdef { failwith "TODO" }
  | Tnamespace TIdent TOBrace translation_unit TCBrace
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
