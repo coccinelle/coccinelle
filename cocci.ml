@@ -90,11 +90,11 @@ let print_flow flow =
 
 
 let ast_to_flow_with_error_messages2 x =
-  let (flowopt,subflows) =
+  let flows =
     try Ast_to_flow.ast_to_control_flow x
-    with Ast_to_flow.Error x ->
-      Ast_to_flow.report_error x;
-      (None,[]) in
+    with Ast_to_flow.Error msg ->
+      Ast_to_flow.report_error msg;
+      [(Ast_to_flow.Outer x,None)] in
   let do_flow flow =
     (* This time even if there is a deadcode, we still have a
      * flow graph, so I can try the transformation and hope the
@@ -103,9 +103,8 @@ let ast_to_flow_with_error_messages2 x =
     try Ast_to_flow.deadcode_detection flow
     with Ast_to_flow.Error (Ast_to_flow.DeadCode x) ->
       Ast_to_flow.report_error (Ast_to_flow.DeadCode x) in
-  flowopt +> do_option do_flow;
-  subflows +> List.iter do_flow;
-  (flowopt,subflows)
+  flows +> List.iter (fun (_,flow) -> flow +> do_option do_flow);
+  flows
 let ast_to_flow_with_error_messages a =
   Common.profile_code "flow" (fun () -> ast_to_flow_with_error_messages2 a)
 
@@ -569,22 +568,13 @@ let check_macro_in_sp_and_adjust = function
 	  Hashtbl.remove !Parse_c._defs s
 	end)
 
-
-let contain_loop gopt subflows =
-  let gopt_case =
+let contain_loop gopt =
     match gopt with
     | Some g ->
 	g#nodes +>
 	Control_flow_c.KeyMap.exists (fun xi node ->
           Control_flow_c.extract_is_loop node)
-    | None -> true in (* means nothing, if no g then will not model check *)
-  (gopt_case,
-   List.map
-     (function g ->
-       g#nodes +>
-       Control_flow_c.KeyMap.exists (fun xi node ->
-         Control_flow_c.extract_is_loop node))
-     subflows)
+    | None -> true (* means nothing, if no g then will not model check *)
 
 let sp_contain_typed_metavar_z toplevel_list_list =
   let bind x y = x || y in
@@ -800,14 +790,14 @@ and update_rel_pos_bis choose_ref xs =
 (*****************************************************************************)
 
 type toplevel_c_info = {
-  ast_c: Ast_c.toplevel; (* contain refs so can be modified *)
+  (* contain refs so can be modified *)
+  ast_c: Ast_c.toplevel Ast_to_flow.outer;
   start_end: (Ast_c.posl * Ast_c.posl) Lazy.t;
   tokens_c: Parser_c.token list;
   fullstring: string;
 
   flow: Control_flow_c.cflow option; (* it's the "fixed" flow *)
-  subflows: Control_flow_c.cflow list; (* it's the "fixed" flow *)
-  contain_loop: (bool * bool list);
+  contain_loop: bool;
 
   env_typing_before: TAC.environment;
   env_typing_after:  TAC.environment;
@@ -1097,7 +1087,7 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
 	((start_line,start_offset),(end_line,end_offset))) in
 
     let flow _ =
-      let (flow,subflows) = ast_to_flow_with_error_messages c in
+      let flows = ast_to_flow_with_error_messages c in
       let fix_flow flow =
         let flow = Ast_to_flow.annotate_loop_nodes flow in
 
@@ -1107,9 +1097,9 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
         if !Flag_cocci.show_flow then print_flow fixed_flow;
         if !Flag_cocci.show_before_fixed_flow then print_flow flow;
 
-        fixed_flow in
-      (flow +> Common.map_option fix_flow, subflows +> List.map fix_flow) in
-    let (flow,subflows) =
+	fixed_flow in
+      flows +> List.map (fun (c,flow) -> (c, flow +> fmap fix_flow)) in
+    let flows =
       match ranges with
 	None -> flow()
       | Some ranges ->
@@ -1130,51 +1120,68 @@ let build_info_program env ranges (cprogram,typedefs,macros) =
 	      ranges in
 	  if included && not excluded
 	  then flow()
-	  else (None,[]) in
-    {
-      ast_c = c; (* contain refs so can be modified *)
-      start_end = start_end;
-      tokens_c = tokens;
-      fullstring = fullstr;
+	  else [(Ast_to_flow.Outer c,None)] in
+    let was_modified = ref false in
+    List.map
+      (function (c,flow) ->
+	let start_end =
+	  match c with
+	    Ast_to_flow.Outer c | Ast_to_flow.Inner c ->
+	      lazy
+		(let (_,_,(start_line,start_offset),(end_line,end_offset)) =
+		  Lib_parsing_c.lin_col_by_pos
+		    (Lib_parsing_c.ii_of_toplevel c) in
+		((start_line,start_offset),(end_line,end_offset))) in
+	{
+	ast_c = c; (* contain refs so can be modified *)
+	start_end = start_end;
+	tokens_c = tokens;
+	fullstring = fullstr;
 
-      flow = flow;
-      subflows = subflows;
+	flow = flow;
 
-      contain_loop = contain_loop flow subflows;
+	contain_loop = contain_loop flow;
 
-      env_typing_before = enva;
-      env_typing_after = envb;
+	env_typing_before = enva;
+	env_typing_after = envb;
 
-      was_modified = ref false;
+	was_modified = was_modified;
 
-      all_typedefs = typedefs;
-      all_macros = macros;
-    })
-
+	all_typedefs = typedefs;
+	all_macros = macros;
+      })
+      flows) +> List.concat
 
 
 (* Optimization. Try not unparse/reparse the whole file when have modifs  *)
 let rebuild_info_program cs file short_file isexp parse_strings =
-  cs +> List.map (fun c ->
-    if !(c.was_modified)
-    then
-      let file = Common.new_temp_file "cocci_small_output" ("-" ^ short_file) in
-      cfile_of_program
-        [(c.ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal]
-        file;
+  cs +>
+  List.map
+    (fun c ->
+      if !(c.was_modified)
+      then
+	match c.ast_c with
+	  Ast_to_flow.Outer ast_c ->
+	    let file =
+	      Common.new_temp_file "cocci_small_output" ("-" ^ short_file) in
+	    cfile_of_program
+              [(ast_c, (c.fullstring, c.tokens_c)), Unparse_c.PPnormal]
+              file;
 
-      (* cat file; *)
-      let cprogram =
-	cprogram_of_file c.all_typedefs c.all_macros parse_strings false file in
-      let xs = build_info_program c.env_typing_before None cprogram in
+	    (* cat file; *)
+	    let cprogram =
+	      cprogram_of_file c.all_typedefs c.all_macros parse_strings
+		false file in
+	    let xs = build_info_program c.env_typing_before None cprogram in
 
-      (* TODO: assert env has not changed,
-      * if yes then must also reparse what follows even if not modified.
-      * Do that only if contain_typedmetavar of course, so good opti.
-      *)
-      (* Common.list_init xs *) (* get rid of the FinalDef *)
-      xs
-    else [c]
+	    (* TODO: assert env has not changed,
+	     * if yes then must also reparse what follows even if not modified.
+	     * Do that only if contain_typedmetavar of course, so good opti.
+             *)
+             (* Common.list_init xs *) (* get rid of the FinalDef *)
+	    xs
+	| _ -> []
+      else [c]
   ) +> List.concat
 
 

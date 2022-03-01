@@ -1,5 +1,6 @@
-
-val ast_to_control_flow : Ast_c.toplevel -> (Control_flow_c.cflow option * Control_flow_c.cflow list)
+type 'a outer = Outer of 'a | Inner of 'a
+val ast_to_control_flow :
+    Ast_c.toplevel -> (Ast_c.toplevel outer * Control_flow_c.cflow option) list
 
 val deadcode_detection : Control_flow_c.cflow -> unit
 val check_control_flow : Control_flow_c.cflow -> unit

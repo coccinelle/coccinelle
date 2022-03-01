@@ -160,8 +160,14 @@ let initial_info = {
   errorexiti = None;
 }
 
+type 'a outer = Outer of 'a | Inner of 'a
 
-let rec do_ast_to_control_flow e = (* entry point! *)
+let rec do_ast_to_control_flow isouter e = (* entry point! *)
+
+let outer_e =
+  if isouter
+  then Outer e
+  else Inner e in  
 
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style. *)
@@ -1393,7 +1399,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
     let _c = defbis.f_body in
       (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
     aux_definition topi def;
-    [Some !g] in
+    [(outer_e,Some !g)] in
 
   let do_decl elem str =
     let ei =   !g +> add_node elem    lbl_0 str in
@@ -1401,23 +1407,33 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
     !g#add_arc ((topi, ei),Direct);
     !g#add_arc ((ei, endi),Direct);
-    [Some !g] in
+    [(outer_e,Some !g)] in
 
   match e with
   | Ast_c.Namespace (defs, _) ->
-      None :: List.concat (List.map do_ast_to_control_flow defs)
+      let self =
+	if isouter
+	then [(outer_e,None)]
+	else [] in
+      self @ List.concat (List.map (do_ast_to_control_flow false) defs)
 
   | Ast_c.Class cls ->
       let (cls,_) = cls in
       let rec loop = function
 	  [] -> []
 	| (CDecl decl,_) :: decls ->
-	    (do_ast_to_control_flow (Ast_c.Declaration decl)) @ (loop decls)
+	    (do_ast_to_control_flow false (Ast_c.Declaration decl)) @
+	    (loop decls)
 	| (CFunc def,_) :: decls ->
-	    (do_ast_to_control_flow (Ast_c.Definition def)) @ (loop decls)
+	    (do_ast_to_control_flow false (Ast_c.Definition def)) @
+	    (loop decls)
 	| ((CPublicLabel | CProtectedLabel | CPrivateLabel),_) :: decls ->
 	    loop decls in
-      None :: loop cls.c_decl_list
+      let self =
+	if isouter
+	then [(outer_e,None)]
+	else [] in
+      self @ loop cls.c_decl_list
 
   | Ast_c.Definition def -> do_definition def
 
@@ -1516,7 +1532,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 *)
       );
 
-      [Some !g]
+      [(outer_e,Some !g)]
 
   | Ast_c.CppTop (Ast_c.Pragma ((id,rest),ii))  ->
       let elem = PragmaHeader ((id,rest),ii) in
@@ -1526,23 +1542,11 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
       !g#add_arc ((topi, ei),Direct);
       !g#add_arc ((ei, endi),Direct);
-      [Some !g]
+      [(outer_e,Some !g)]
 
-  | _ -> [None]
+  | _ -> if isouter then [(outer_e,None)] else []
 
-let ast_to_control_flow e =
-  let res = do_ast_to_control_flow e in
-  match res with
-    (flow)::rest ->
-      (flow,
-       List.rev
-	 (List.fold_left
-	    (fun prev ->
-	      (function
-		  None -> prev
-		| Some g -> g::prev))
-	    [] rest))
-  | [] -> (None,[])
+let ast_to_control_flow e = do_ast_to_control_flow true e
 
 (*****************************************************************************)
 (* CFG loop annotation *)
