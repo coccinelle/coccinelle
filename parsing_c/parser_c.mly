@@ -2425,9 +2425,9 @@ cpp_class_decl:
    decl               { CDecl ($1 Ast_c.NotLocalDecl),[] }
  | function_definition TPtVirg
                       { CFunc $1,[$2] }
- | Tpublic TDotDot    { CPublicLabel,[$1] }
- | Tprotected TDotDot { CProtectedLabel,[$1] }
- | Tprivate TDotDot   { CPrivateLabel,[$1] }
+ | Tpublic TDotDot    { CPublicLabel,[$1;$2] }
+ | Tprotected TDotDot { CProtectedLabel,[$1;$2] }
+ | Tprivate TDotDot   { CPrivateLabel,[$1;$2] }
 
 cpp_class_decl_list:
    cpp_class_decl { [$1] }
