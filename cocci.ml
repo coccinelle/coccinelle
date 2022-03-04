@@ -922,9 +922,12 @@ let concat_headers_and_c (ccs: file_info list)
 	(fun x -> x.asts +> List.map (fun x' -> (x', x.fname, x.full_fname)))))
 
 let for_unparser xs =
-  xs +> List.map (fun x ->
-    (x.ast_c, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr
-  )
+  xs +> List.fold_left (fun prev x ->
+    match x.ast_c with
+      Ast_to_flow.Outer ast ->
+	((ast, (x.fullstring, x.tokens_c)), Unparse_c.PPviastr) :: prev
+    | Ast_to_flow.Inner ast -> prev
+  ) [] +> List.rev
 
 let gen_pdf_graph () =
   (Ctl_engine.get_graph_files ()) +> List.iter (fun outfile ->
@@ -1282,8 +1285,15 @@ let prepare_c files choose_includes parse_strings has_changes
 	parse_info.Parse_c.parse_trees in
     (match kind with
       | Source ->
-        let f x = x.ast_c in
-        ignore(update_include_rel_pos (List.map f annotated_parse_trees))
+	let asts =
+	  List.rev
+	    (List.fold_left
+	       (fun prev x ->
+		 match x.ast_c with
+		   Ast_to_flow.Outer x -> x :: prev
+		 | _-> prev)
+	       [] annotated_parse_trees) in
+        ignore(update_include_rel_pos asts)
       | Header ->
         env :=
         if annotated_parse_trees = []
@@ -1894,9 +1904,12 @@ and process_a_generated_a_env_a_toplevel rule env ccs =
 (* does side effects on C ast and on Cocci info rule *)
 and process_a_ctl_a_env_a_toplevel2 r e c f =
  indent_do (fun () ->
-   show_or_not_celem "trying" c.ast_c c.start_end;
-   Flag.currentfile := Some (f ^ ":" ^get_celem c.ast_c);
-   match (r.ctl,c.ast_c) with
+   let ast =
+     match c.ast_c with
+       Ast_to_flow.Outer ast | Ast_to_flow.Inner ast -> ast in
+   show_or_not_celem "trying" ast c.start_end;
+   Flag.currentfile := Some (f ^ ":" ^get_celem ast);
+   match (r.ctl,ast) with
      ((Asttoctl2.NONDECL ctl,t),Ast_c.Declaration _) -> None
    | ((Asttoctl2.NONDECL ctl,t), _)
    | ((Asttoctl2.CODE ctl,t), _) ->
@@ -1904,7 +1917,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
        let (trans_info, returned_any_states, inherited_bindings, newbindings) =
 	 Common.save_excursion Flag_ctl.loop_in_src_code (fun () ->
 	   Flag_ctl.loop_in_src_code :=
-	     !Flag_ctl.loop_in_src_code||fst c.contain_loop;
+	     !Flag_ctl.loop_in_src_code||c.contain_loop;
 
       (***************************************)
       (* !Main point! The call to the engine *)
@@ -1918,7 +1931,7 @@ and process_a_ctl_a_env_a_toplevel2 r e c f =
        then None
        else
 	 begin
-	   show_or_not_celem "found match in" c.ast_c c.start_end;
+	   show_or_not_celem "found match in" ast c.start_end;
 	   show_or_not_trans_info trans_info;
 	   List.iter (show_or_not_binding "out") newbindings;
 
