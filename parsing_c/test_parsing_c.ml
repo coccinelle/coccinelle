@@ -271,7 +271,7 @@ let local_test_cfg launchgv file =
 	    if i > 0
 	    then Printf.sprintf "%s_%d" x i
 	    else x in
-	  List.iteri
+	  Stdcompat.List.iteri
 	    (fun i (_,flow) -> flow +> do_option (do_flow (mkstring i)))
 	    flows
         with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
@@ -299,7 +299,7 @@ let test_cfg_ifdef file =
 	  if i > 0
 	  then Printf.sprintf "%s_%d" x i
 	  else x in
-	List.iteri
+	Stdcompat.List.iteri
 	  (fun i (_,flow) -> flow +> do_option (do_flow (mkstring i)))
 	  flows
       with Ast_to_flow.Error (x) -> Ast_to_flow.report_error x
