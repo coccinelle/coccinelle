@@ -56,8 +56,6 @@ type error =
   | GotoCantFindLabel of string * Common.parse_info
   | NoExit of Common.parse_info
   | DuplicatedLabel of string
-  | NestedFunc
-  | NestedClass
   | ComputedGoto
   | Define of Common.parse_info
 
@@ -1709,10 +1707,6 @@ let report_error error =
 	pr2 ("FLOW: can't find exit or error exit: " ^ error_from_info info)
     | DuplicatedLabel s ->
 	pr2 ("FLOW: duplicate label " ^ s)
-    | NestedFunc  ->
-	pr2 ("FLOW: not handling yet nested function")
-    | NestedClass  ->
-	pr2 ("FLOW: not handling yet nested class")
     | ComputedGoto ->
 	pr2 ("FLOW: not handling computed goto yet")
     | Define info ->
