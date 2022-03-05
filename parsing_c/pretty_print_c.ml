@@ -1351,7 +1351,8 @@ and pp_init (init, iinit) =
     pp_list pp_base_class base_class_list; pr_space();
     pr_elem lb;
     List.iter pp_class_decl class_decl_list;
-    pr_elem rb in
+    pr_elem rb;
+    pr_elem ptvirg in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
