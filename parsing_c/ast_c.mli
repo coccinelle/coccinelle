@@ -32,7 +32,8 @@ and typeCbis =
   | Decimal of constExpression * constExpression option
   | FunctionType of functionType
   | Enum of string option * enumType
-  | StructUnion of structUnion * string option * structType
+  | StructUnion of
+      structUnion * string option * base_class wrap2 list (* C++ *) * structType
   | EnumName of string
   | StructUnionName of structUnion * string
   | TypeName of name * fullType option
@@ -54,11 +55,15 @@ and base = CChar2 | CShort | CInt | CLong | CLongLong
 and sign = Signed | UnSigned
 and floatType =
     CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex | CLongDoubleComplex
-and structUnion = Struct | Union
+and structUnion = Struct | Union | Class
 and structType = field list
 and field =
     DeclarationField of field_declaration
   | EmptyField of info
+  | FunctionField of definition (* C++ *)
+  | PublicLabel of info list (* C++ *)
+  | ProtectedLabel of info list (* C++ *)
+  | PrivateLabel of info list (* C++ *)
   | MacroDeclField of (string * argument wrap2 list) wrap
   | CppDirectiveStruct of cpp_directive
   | IfdefStruct of ifdef_directive
@@ -164,7 +169,6 @@ and statementbis =
   | Decl of declaration
   | Asm of asmbody
   | NestedFunc of definition
-  | NestedClass of classdef
   | MacroStmt
   | Exec of exec_code list
   | IfdefStmt1 of ifdef_directive list * statement list
@@ -259,21 +263,6 @@ and base_class = base_class_bis wrap
   | CProtected of name
   | CPrivate of name
 
-and c_decl = c_decl_bis wrap
-  and c_decl_bis =
-    CDecl of declaration
-  | CFunc of definition
-  | CPublicLabel
-  | CProtectedLabel
-  | CPrivateLabel
-
-and classdef = classdefbis wrap (* class :? { } *)
-  and classdefbis =
-    { c_name: name;
-      c_base_class_list : base_class wrap2 list;
-      c_decl_list : c_decl list;
-    }
-
 and cpp_directive =
     Define of define
   | Include of includ
@@ -328,7 +317,6 @@ and matching_tag = IfdefTag of (int * int)
 and toplevel =
     Declaration of declaration
   | Definition of definition
-  | Class of classdef
   | CppTop of cpp_directive
   | IfdefTop of ifdef_directive
   | MacroTop of string * argument wrap2 list * il

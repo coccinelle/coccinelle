@@ -79,7 +79,6 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | Asm of statement * asmbody wrap
   | MacroStmt of statement * unit wrap
   | NestedFunc of statement * definition wrap
-  | NestedClass of statement * classdef wrap
 
   | Exec of statement * exec_code list wrap
 

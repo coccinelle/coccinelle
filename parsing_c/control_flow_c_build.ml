@@ -991,12 +991,6 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g +> add_arc_opt (starti, newi);
       Some newi
 
-  (* ------------------------- *)
-  | Ast_c.NestedClass defs ->
-      let newi = !g +> add_node (NestedClass (stmt, ((defs,ii)))) lbl "asm;" in
-      !g +> add_arc_opt (starti, newi);
-      Some newi
-
 and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
           (stmt :statement)
           : nodei (* first node of the else branch *)
@@ -1415,24 +1409,6 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 	else [] in
       self @ List.concat (List.map (do_ast_to_control_flow false) defs)
 
-  | Ast_c.Class cls ->
-      let (cls,_) = cls in
-      let rec loop = function
-	  [] -> []
-	| (CDecl decl,_) :: decls ->
-	    (do_ast_to_control_flow false (Ast_c.Declaration decl)) @
-	    (loop decls)
-	| (CFunc def,_) :: decls ->
-	    (do_ast_to_control_flow false (Ast_c.Definition def)) @
-	    (loop decls)
-	| ((CPublicLabel | CProtectedLabel | CPrivateLabel),_) :: decls ->
-	    loop decls in
-      let self =
-	if isouter
-	then [(outer_e,None)]
-	else [] in
-      self @ loop cls.c_decl_list
-
   | Ast_c.Definition def -> do_definition def
 
   | Ast_c.Declaration decl ->
@@ -1544,7 +1520,30 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
   | _ -> if isouter then [(outer_e,None)] else []
 
-let ast_to_control_flow e = do_ast_to_control_flow true e
+let get_defs_in_structs e =
+  let defs = ref [] in
+  let bigf = { Visitor_c.default_visitor_c with
+	       Visitor_c.kstatement = (fun (k, bigf) stm ->
+		 (match Ast_c.unwrap_st stm with
+		 | Ast_c.NestedFunc def -> defs := def :: !defs
+		 | _ -> ());
+		 k stm);
+	       Visitor_c.kfield = (fun (k, bigf) fld ->
+		 (match fld with
+		   FunctionField def -> defs := def :: !defs
+		 | _ -> ());
+		 k fld) } in
+  Visitor_c.vk_toplevel bigf e;
+  !defs (* reversed *)
+
+let ast_to_control_flow e =
+  let idefs = get_defs_in_structs e in (* reversed *)
+  let igraphs =
+    List.fold_left
+      (fun prev e ->
+	(do_ast_to_control_flow false (Ast_c.Definition e)) @ prev)
+      [] idefs in
+  igraphs @ (do_ast_to_control_flow true e)
 
 (*****************************************************************************)
 (* CFG loop annotation *)

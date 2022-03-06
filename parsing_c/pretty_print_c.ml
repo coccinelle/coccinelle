@@ -391,9 +391,6 @@ and pp_string_format (e,ii) =
     | NestedFunc def, ii ->
         assert (ii = []);
         pp_def def
-    | NestedClass cls, ii ->
-        assert (ii = []);
-        pp_classdef cls
     | MacroStmt, ii ->
         ii +> List.iter pr_elem ;
 
@@ -558,17 +555,21 @@ and pp_string_format (e,ii) =
       | (ParenType t, _)                           -> pp_base_type t sto
       | (Array (eopt, t), [i1;i2])                 -> pp_base_type t sto
       | (FunctionType (returnt, paramst), [i1;i2]) ->
-          pp_base_type returnt sto;
+          pp_base_type returnt sto
 
-
-      | (StructUnion (su, sopt, fields),iis) ->
+      | (StructUnion (su, sopt, base_classes, fields),iis) ->
           print_sto_qu (sto, qu);
 
           (match sopt,iis with
-          | Some s , [i1;i2;i3;i4] ->
-              pr_elem i1; pr_space(); pr_elem i2; pr_space(); pr_elem i3;
-          | None, [i1;i2;i3] ->
-              pr_elem i1; pr_space(); pr_elem i2;
+          | Some s , [su;id;dotdot;lb;rb] ->
+              pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem dotdot;
+	      pp_list pp_base_class base_classes; pr_space(); pr_elem lb
+          | Some s , [su;id;lb;rb] ->
+              pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem lb;
+          | None , [su;dotdot;lb;rb] ->
+              pr_elem su; pr_space(); pr_elem dotdot; pr_space(); pr_elem lb;
+          | None, [su;lb;rb] ->
+              pr_elem su; pr_space(); pr_elem lb;
           | x -> raise (Impossible 101)
 	  );
 
@@ -576,12 +577,12 @@ and pp_string_format (e,ii) =
 	  pr_nl();
 
           (match sopt,iis with
-          | Some s , [i1;i2;i3;i4] -> pr_elem i4
-          | None, [i1;i2;i3] ->       pr_elem i3;
+          | Some s , [i1;i2;i3;i4;i5] -> pr_elem i5
+          | Some s , [i1;i2;i3;i4] ->    pr_elem i4
+          | None, [i1;i2;i3;i4] ->       pr_elem i4
+          | None, [i1;i2;i3] ->          pr_elem i3
           | x -> raise (Impossible 102)
-	  );
-
-
+	  )
 
       | (Enum  (sopt, enumt), iis) ->
           print_sto_qu (sto, qu);
@@ -777,6 +778,12 @@ and pp_string_format (e,ii) =
     | CppDirectiveStruct cpp -> pp_directive cpp
     | IfdefStruct ifdef -> pp_ifdef ifdef
 
+    (* C++ *)
+    | FunctionField def -> pp_def def
+    | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii ->
+	let (kwd,dotdot) = Common.tuple_of_list2 ii in
+	pr_elem kwd; pr_elem dotdot
+
 (* used because of DeclList, in    int i,*j[23];  we don't print anymore the
    int before *j *)
   and (pp_type_with_ident_rest: (unit -> unit) option ->
@@ -796,7 +803,7 @@ and pp_string_format (e,ii) =
       | (NoType, iis)                           -> ()
       | (BaseType _, iis)                       -> print_ident ident
       | (Enum  (sopt, enumt), iis)              -> print_ident ident
-      | (StructUnion (_, sopt, fields),iis)     -> print_ident ident
+      | (StructUnion (_, sopt, base_classes, fields),iis) -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  s, iis)                      -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
@@ -913,7 +920,7 @@ and pp_string_format (e,ii) =
 
       | (BaseType _, iis)    -> ()
       | (Enum  (sopt, enumt), iis) -> ()
-      | (StructUnion (_, sopt, fields),iis)  -> ()
+      | (StructUnion (_, sopt, _, fields),iis)  -> ()
       | (StructUnionName (s, structunion), iis) -> ()
       | (EnumName  s, iis) -> ()
       | (Decimal(l,p), iis) -> ()
@@ -971,7 +978,7 @@ and pp_string_format (e,ii) =
 
     | (BaseType _, iis)        -> ()
     | (Enum  (sopt, enumt), iis) -> ()
-    | (StructUnion (_, sopt, fields),iis)-> ()
+    | (StructUnion (_, sopt, _, fields),iis)-> ()
     | (StructUnionName (s, structunion), iis) -> ()
     | (EnumName  s, iis) -> ()
     | (Decimal(l,p), iis) -> ()
@@ -1324,42 +1331,13 @@ and pp_init (init, iinit) =
       ClassName name -> pp_name name
     | CPublic name | CProtected name | CPrivate name ->
 	let tag = Common.tuple_of_list1 ii in
-	pr_elem tag; pr_space(); pp_name name
-
-  and pp_class_decl (cd,ii) =
-    match cd with
-      CDecl decl -> pp_decl decl
-    | CFunc def  -> pp_def def
-    | CPublicLabel | CProtectedLabel | CPrivateLabel ->
-	let (tag,dotdot) = Common.tuple_of_list2 ii in
-	pr_elem tag; pr_elem dotdot; pr_nl()
-
-  and pp_classdef (cls,ii) =
-    let {c_name = name;
-	 c_base_class_list = base_class_list;
-	 c_decl_list = class_decl_list} = cls in
-    let (c,dotdot,lb,rb,ptvirg) =
-      match ii with
-	[c;lb;rb;ptvirg] -> (c,c(*ignored*),lb,rb,ptvirg)
-      | [c;dotdot;lb;rb;ptvirg] -> (c,dotdot,lb,rb,ptvirg)
-      | _ -> failwith "unexpected class constants" in
-    pr_elem c; pr_space();
-    pp_name name; pr_space();
-    (match base_class_list with
-      [] -> ()
-    | _ -> pr_elem dotdot; pr_space());
-    pp_list pp_base_class base_class_list; pr_space();
-    pr_elem lb;
-    List.iter pp_class_decl class_decl_list;
-    pr_elem rb;
-    pr_elem ptvirg in
+	pr_elem tag; pr_space(); pp_name name in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl
     | Definition def -> pp_def def
 
     | CppTop directive -> pp_directive directive
-
 
     | MacroTop (s, es,   [i1;i2;i3;i4]) ->
 	pr_elem i1;
@@ -1371,7 +1349,6 @@ and pp_init (init, iinit) =
 	);
 	pr_elem i3;
 	pr_elem i4;
-
 
     | EmptyDef ii -> ii +> List.iter pr_elem
     | NotParsedCorrectly ii ->
@@ -1385,7 +1362,6 @@ and pp_init (init, iinit) =
 	pr_elem i1; pr_elem i2; pr_elem i3;
 	List.iter pp_toplevel tls;
 	pr_elem i4
-    | Class cls -> pp_classdef cls
     | (MacroTop _) | (Namespace _) -> raise (Impossible 120) in
 
 
@@ -1537,8 +1513,6 @@ and pp_init (init, iinit) =
 	pp_statement (Asm asmbody, ii)
     | F.NestedFunc (st, (def,ii)) ->
 	pp_statement (NestedFunc def, ii)
-    | F.NestedClass (st, (defs,ii)) ->
-	pp_statement (NestedClass defs, ii)
 
     | F.Exec(st,(code,ii)) ->
 	pp_statement (Exec code, ii)

@@ -181,7 +181,7 @@ let is_start_of_something = function
   | Tauto _ | Tregister _ | Textern _ | Tstatic _
   | Tconst _ | Tvolatile _
   | Ttypedef _
-  | Tstruct _ | Tunion _ | Tenum _ | Tdecimal _
+  | Tstruct _ | Tunion _ | Tcpp_struct _ | Tcpp_union _ | Tclass _ | Tenum _ | Tdecimal _
     -> true
   | _ -> false
 
@@ -442,6 +442,9 @@ let info_of_tok = function
   | Texec                (i) -> i
   | Ttypedef             (i) -> i
   | Tunion               (i) -> i
+  | Tcpp_struct          (i) -> i
+  | Tcpp_union           (i) -> i
+  | Tclass               (i) -> i
   | Tbreak               (i) -> i
   | Telse                (i) -> i
   | Tswitch              (i) -> i
@@ -462,7 +465,6 @@ let info_of_tok = function
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
   | Tdelete              (i) -> i
-  | Tclass               (i) -> i
   | Tprivate             (i) -> i
   | Tprotected           (i) -> i
   | Tpublic              (i) -> i
@@ -631,6 +633,9 @@ let visitor_info_of_tok f = function
   | Texec                (i) -> Texec                (f i)
   | Ttypedef             (i) -> Ttypedef             (f i)
   | Tunion               (i) -> Tunion               (f i)
+  | Tcpp_struct          (i) -> Tcpp_struct          (f i)
+  | Tcpp_union           (i) -> Tcpp_union           (f i)
+  | Tclass               (i) -> Tclass               (f i)
   | Tbreak               (i) -> Tbreak               (f i)
   | Telse                (i) -> Telse                (f i)
   | Tswitch              (i) -> Tswitch              (f i)
@@ -651,7 +656,6 @@ let visitor_info_of_tok f = function
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)
   | Tdelete              (i) -> Tdelete              (f i)
-  | Tclass               (i) -> Tclass               (f i)
   | Tprivate             (i) -> Tprivate             (f i)
   | Tprotected           (i) -> Tprotected           (f i)
   | Tpublic              (i) -> Tpublic              (f i)
@@ -754,6 +758,9 @@ let string_of_token = function
   | Tvolatile _ -> "Tvolatile"
   | Tstruct _ -> "Tstruct"
   | Tunion _ -> "Tunion"
+  | Tcpp_struct _ -> "Tcpp_struct"
+  | Tcpp_union _ -> "Tcpp_union"
+  | Tclass _ -> "Tclass"
   | Tenum _ -> "Tenum"
   | Tdecimal _ -> "Tdecimal"
   | Texec _ -> "Texec"
@@ -772,7 +779,6 @@ let string_of_token = function
   | Tsizeof _ -> "Tsizeof"
   | Tnew _ -> "Tnew"
   | Tdelete _ -> "Tdelete"
-  | Tclass _ -> "Tclass"
   | Tprivate _ -> "Tprivate"
   | Tprotected _ -> "Tprotected"
   | Tpublic _ -> "Tpublic"

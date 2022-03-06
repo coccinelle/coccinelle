@@ -441,7 +441,6 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
     | Decl decl -> vk_decl bigf decl
     | Asm asmbody -> vk_asmbody bigf asmbody
     | NestedFunc def -> vk_def bigf def
-    | NestedClass def -> vk_classdef bigf def
     | MacroStmt -> ()
 
     | Exec (code) -> List.iter (vk_exec_code bigf) code
@@ -506,7 +505,8 @@ and vk_type = fun bigf t ->
     | Enum  (sopt, enumt) ->
         vk_enum_fields bigf enumt
 
-    | StructUnion (sopt, _su, fields) ->
+    | StructUnion (sopt, _su, base_classes, fields) ->
+	vk_base_class_list bigf base_classes;
         vk_struct_fields bigf fields
 
     | StructUnionName (s, structunion) -> ()
@@ -668,6 +668,11 @@ and vk_struct_field = fun bigf field ->
         vk_cpp_directive bigf directive
     | IfdefStruct ifdef ->
         vk_ifdef_directive bigf ifdef
+
+      (* C++ *)
+    | FunctionField def -> vk_def bigf def
+    | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii -> iif ii
+
   in
   f (k, bigf) field
 
@@ -756,29 +761,6 @@ and vk_base_class_list = fun bigf ts ->
     iif iicomma;
   )
 
-and vk_class_decl = fun bigf cd -> (* not parametrizable *)
-  let iif ii = vk_ii bigf ii in
-  let (unwrap_cd, ii) = cd in
-  iif ii;
-  match unwrap_cd with
-    CDecl decl -> vk_decl bigf decl
-  | CFunc def -> vk_def bigf def
-  | CPublicLabel -> ()
-  | CProtectedLabel -> ()
-  | CPrivateLabel -> ()
-
-and vk_classdef = fun bigf cd -> (* not parametrizable *)
-  let iif ii = vk_ii bigf ii in
-  match cd with
-    { c_name = name;
-      c_base_class_list = base_classes;
-      c_decl_list = decls;
-    }, ii ->
-      iif ii;
-      vk_name bigf name;
-      vk_base_class_list bigf base_classes;
-      decls +> List.iter (vk_class_decl bigf)
-
 and vk_toplevel = fun bigf p ->
   let f = bigf.ktoplevel in
   let iif ii =  vk_ii bigf ii in
@@ -798,7 +780,6 @@ and vk_toplevel = fun bigf p ->
     | FinalDef info -> vk_info bigf info
 
     | Namespace (tls, ii) -> List.iter (vk_toplevel bigf) tls
-    | Class classdef -> vk_classdef bigf classdef
   in f (k, bigf) p
 
 and vk_program = fun bigf xs ->
@@ -1025,10 +1006,6 @@ and vk_node = fun bigf node ->
     | F.NestedFunc (st, (def,ii)) ->
         iif ii;
         vk_def bigf def
-    | F.NestedClass (st, (cls,ii)) ->
-        iif ii;
-        vk_classdef bigf cls
-
     | F.Exec (st,(code,ii)) ->
 	iif ii;
 	List.iter (vk_exec_code bigf) code
@@ -1396,7 +1373,6 @@ and vk_statement_s = fun bigf st ->
       | Decl decl -> Decl (vk_decl_s bigf decl)
       | Asm asmbody -> Asm (vk_asmbody_s bigf asmbody)
       | NestedFunc def -> NestedFunc (vk_def_s bigf def)
-      | NestedClass def -> NestedClass (vk_classdef_s bigf def)
       | MacroStmt -> MacroStmt
       | Exec(code) -> Exec(List.map (vk_exec_code_s bigf) code)
       | IfdefStmt1 (ifdef, xs) ->
@@ -1487,8 +1463,10 @@ and vk_type_s = fun bigf t ->
 
       | Enum  (sopt, enumt) ->
           Enum (sopt, vk_enum_fields_s bigf enumt)
-      | StructUnion (sopt, su, fields) ->
-          StructUnion (sopt, su, vk_struct_fields_s bigf fields)
+      | StructUnion (sopt, su, base_classes, fields) ->
+          StructUnion (sopt, su,
+		       vk_base_class_list_s bigf base_classes,
+		       vk_struct_fields_s bigf fields)
 
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
@@ -1670,6 +1648,10 @@ and vk_struct_field_s = fun bigf field ->
       CppDirectiveStruct (vk_cpp_directive_s bigf directive)
   | IfdefStruct ifdef ->
       IfdefStruct (vk_ifdef_directive_s bigf ifdef)
+  | FunctionField def -> FunctionField (vk_def_s bigf def)
+  | PublicLabel ii -> PublicLabel(iif ii)
+  | ProtectedLabel ii -> ProtectedLabel(iif ii)
+  | PrivateLabel ii -> PrivateLabel(iif ii)
 
 and vk_struct_fields_s = fun bigf fields ->
   fields +> List.map (vk_struct_field_s bigf)
@@ -1741,30 +1723,6 @@ and vk_base_class_list_s = fun bigf ts ->
     (fun (base_class,iicomma) ->
       vk_base_class_s bigf base_class, iif iicomma)
 
-and vk_class_decl_s = fun bigf cd -> (* not parametrizable *)
-  let iif ii = vk_ii_s bigf ii in
-  let (unwrap_cd, ii) = cd in
-  let cd' =
-    match unwrap_cd with
-      CDecl decl -> CDecl (vk_decl_s bigf decl)
-    | CFunc def -> CFunc (vk_def_s bigf def)
-    | CPublicLabel -> CPublicLabel
-    | CProtectedLabel -> CProtectedLabel
-    | CPrivateLabel -> CPrivateLabel in
-  cd', iif ii
-
-and vk_classdef_s = fun bigf cd -> (* not parametrizable *)
-  let iif ii = vk_ii_s bigf ii in
-  match cd with
-    { c_name = name;
-      c_base_class_list = base_classes;
-      c_decl_list = decls;
-    }, ii ->
-      { c_name = vk_name_s bigf name;
-	c_base_class_list = vk_base_class_list_s bigf base_classes;
-	c_decl_list = decls +> List.map (vk_class_decl_s bigf);
-      }, iif ii
-
 and vk_toplevel_s = fun bigf p ->
   let f = bigf.ktoplevel_s in
   let iif ii = vk_ii_s bigf ii in
@@ -1787,7 +1745,6 @@ and vk_toplevel_s = fun bigf p ->
     | NotParsedCorrectly ii -> NotParsedCorrectly (iif ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
     | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
-    | Class classdef -> Class (vk_classdef_s bigf classdef)
   in f (k, bigf) p
 
 and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
@@ -2017,7 +1974,6 @@ and vk_node_s = fun bigf node ->
     | F.MacroStmt (st, ((),ii)) -> F.MacroStmt (st, ((),iif ii))
     | F.Asm (st, (body,ii)) -> F.Asm (st, (vk_asmbody_s bigf body,iif ii))
     | F.NestedFunc (st, (def,ii)) -> F.NestedFunc (st, (vk_def_s bigf def,iif ii))
-    | F.NestedClass (st, (cls,ii)) -> F.NestedClass (st, (vk_classdef_s bigf cls,iif ii))
     | F.Exec(st, (code,ii)) ->
 	F.Exec(st,((List.map (vk_exec_code_s bigf) code),ii))
 

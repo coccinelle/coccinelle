@@ -60,7 +60,7 @@ module Ast_c :
       | Decimal of constExpression * constExpression option
       | FunctionType of functionType
       | Enum of string option * enumType
-      | StructUnion of structUnion * string option * structType
+      | StructUnion of structUnion * string option * base_class wrap2 list * structType
       | EnumName of string
       | StructUnionName of structUnion * string
       | TypeName of name * fullType option
@@ -85,12 +85,16 @@ module Ast_c :
 	Ast_c.floatType =
 	CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex
       | CLongDoubleComplex
-    and structUnion = Ast_c.structUnion = Struct | Union
+    and structUnion = Ast_c.structUnion = Struct | Union | Class
     and structType = field list
     and field =
       Ast_c.field =
         DeclarationField of field_declaration
       | EmptyField of info
+      | FunctionField of definition
+      | PublicLabel of info list
+      | ProtectedLabel of info list
+      | PrivateLabel of info list
       | MacroDeclField of (string * argument wrap2 list) wrap
       | CppDirectiveStruct of cpp_directive
       | IfdefStruct of ifdef_directive
@@ -239,7 +243,6 @@ module Ast_c :
       | Decl of declaration
       | Asm of asmbody
       | NestedFunc of definition
-      | NestedClass of classdef
       | MacroStmt
       | Exec of exec_code list
       | IfdefStmt1 of ifdef_directive list * statement list
@@ -358,20 +361,6 @@ module Ast_c :
       | CPublic of name
       | CProtected of name
       | CPrivate of name
-    and c_decl = c_decl_bis wrap
-    and c_decl_bis =
-	Ast_c.c_decl_bis =
-	CDecl of declaration
-      | CFunc of definition
-      | CPublicLabel
-      | CProtectedLabel
-      | CPrivateLabel
-    and classdef = classdefbis wrap
-    and classdefbis =
-	Ast_c.classdefbis = { c_name: name;
-	  c_base_class_list : base_class wrap2 list;
-	  c_decl_list : c_decl list;
-	}
     and cpp_directive =
       Ast_c.cpp_directive =
         Define of define
@@ -437,7 +426,6 @@ module Ast_c :
       Ast_c.toplevel =
         Declaration of declaration
       | Definition of definition
-      | Class of classdef
       | CppTop of cpp_directive
       | IfdefTop of ifdef_directive
       | MacroTop of string * argument wrap2 list * il
@@ -771,6 +759,8 @@ module Parser_c :
       | Tdefined of Ast_c.info
       | TOParCplusplusInit of Ast_c.info
       | Tnamespace of Ast_c.info
+      | Tcpp_struct of Ast_c.info
+      | Tcpp_union of Ast_c.info
       | Tclass of Ast_c.info
       | Tprivate of Ast_c.info
       | Tpublic of Ast_c.info

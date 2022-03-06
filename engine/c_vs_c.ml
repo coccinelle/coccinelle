@@ -208,8 +208,10 @@ and typeC tya tyb =
   | AutoType, AutoType -> return (AutoType, iix)
 
 
-  | StructUnion (sua, saopt, sta), StructUnion (sub, sbopt, stb) ->
-      (sua = sub && saopt = sbopt && List.length sta = List.length stb)
+  | StructUnion (sua, saopt, base_classesa, sta),
+      StructUnion (sub, sbopt, base_classesb, stb) ->
+      (sua = sub && saopt = sbopt && base_classesa = base_classesb &&
+       List.length sta = List.length stb)
       >&&>
       (function tin ->
 	(* zip is only safe if the above succeeds *)
@@ -266,7 +268,7 @@ and typeC tya tyb =
 
         ) (return [])
         >>= (fun stx ->
-          return (StructUnion (sua, saopt, List.rev stx), iix)
+          return (StructUnion (sua, saopt, base_classesa, List.rev stx), iix)
         )) tin)
 
 

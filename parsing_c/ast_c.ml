@@ -190,7 +190,7 @@ and fullType = typeQualifier * typeC
   | FunctionType    of functionType
 
   | Enum            of string option * enumType
-  | StructUnion     of structUnion * string option * structType (* new scope *)
+  | StructUnion     of structUnion * string option * base_class wrap2 list (* C++ *) * structType (* new scope *)
 
   | EnumName        of string
   | StructUnionName of structUnion * string
@@ -243,12 +243,18 @@ and fullType = typeQualifier * typeC
 
 
      (* -------------------------------------- *)
-     and structUnion = Struct | Union
+     and structUnion = Struct | Union | Class
      and structType  = field list
          and field =
            | DeclarationField of field_declaration
            (* gccext: *)
            | EmptyField of info
+
+	   (* C++ *)
+	   | FunctionField of definition
+	   | PublicLabel of info list
+	   | ProtectedLabel of info list
+	   | PrivateLabel of info list
 
             (* cppext: *)
            | MacroDeclField of (string * argument wrap2 list)
@@ -456,7 +462,6 @@ and statement = statementbis wrap3
   (* gccext: *)
   | Asm of asmbody
   | NestedFunc of definition
-  | NestedClass of classdef
 
   (* cppext: *)
   | MacroStmt
@@ -643,7 +648,7 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
   (* cppext: IfdefFunHeader TODO *)
 
 (* ------------------------------------------------------------------------- *)
-(* C++ classes *)
+(* C++ base classes *)
 (* ------------------------------------------------------------------------- *)
 
 and base_class = base_class_bis wrap
@@ -652,21 +657,6 @@ and base_class = base_class_bis wrap
   | CPublic of name
   | CProtected of name
   | CPrivate of name
-
-and c_decl = c_decl_bis wrap
-  and c_decl_bis =
-    CDecl of declaration
-  | CFunc of definition
-  | CPublicLabel
-  | CProtectedLabel
-  | CPrivateLabel
-
-and classdef = classdefbis wrap (* class :? { } ; *)
-  and classdefbis =
-    { c_name: name;
-      c_base_class_list : base_class wrap2 list;
-      c_decl_list : c_decl list;
-    }
 
 (* ------------------------------------------------------------------------- *)
 (* cppext: cpp directives, #ifdef, #define and #include body *)
@@ -809,7 +799,6 @@ and ifdef_directive = (* or and 'a ifdefed = 'a list wrap *)
 and toplevel =
   | Declaration of declaration
   | Definition of definition
-  | Class of classdef
 
   (* cppext: *)
   | CppTop of cpp_directive
@@ -1487,7 +1476,6 @@ let string_of_toplevel = function
   | NotParsedCorrectly _ -> "NotParsedCorrectly"
   | FinalDef _ -> "FinalDef"
   | Namespace _ -> "Namespace"
-  | Class _ -> "Class"
 
 let string_of_inc_file = function
   | Local lst -> "local://" ^ (String.concat "/" lst)

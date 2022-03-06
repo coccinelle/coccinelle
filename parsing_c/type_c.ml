@@ -109,7 +109,7 @@ let rec is_completed_and_simplified ty =
   | Pointer t -> is_completed_and_simplified t
   | Array (e, t) -> is_completed_and_simplified t
   | Decimal (len, prec_opt) -> true
-  | StructUnion (su, sopt, fields) ->
+  | StructUnion (su, sopt, base_classes, fields) ->
       (* recurse fields ? Normally actually don't want,
        * prefer to have a StructUnionName when it's possible *)
       (match sopt with
@@ -205,7 +205,7 @@ let get_opt_type e =
 let structdef_to_struct_name ty =
   let (qu, tybis) = ty in
   match Ast_c.unwrap_typeC ty with
-  | (StructUnion (su, sopt, fields)) ->
+  | (StructUnion (su, sopt, base_classes, fields)) ->
       let iis = Ast_c.get_ii_typeC_take_care tybis in
       (match sopt, iis with
       (* todo? but what if correspond to a nested struct def ? *)
@@ -271,7 +271,7 @@ let structdef_of_decl decl =
                v_storage = (storage,inline)} = x in
 
           (match Ast_c.unwrap_typeC v_type with
-          | Ast_c.StructUnion (su, _must_be_some, fields) ->
+          | Ast_c.StructUnion (su, _must_be_some, base_classes, fields) ->
               (su, fields)
           | _ -> raise (Impossible 130)
           )
@@ -472,7 +472,7 @@ let (type_field:
                 (match Ast_c.unwrap_typeC t with
 
                 (* union *)
-                | StructUnion (Union, _, fields) ->
+                | StructUnion (Union, _, _, fields) ->
                     aux_fields fields
 
                 (* Special case of nested structure definition inside
@@ -481,7 +481,7 @@ let (type_field:
                  * cf sparse source, where can access subfields directly.
                  * It can also be used in conjunction with union.
                  *)
-                | StructUnion (Struct, _, fields) ->
+                | StructUnion ((Class|Struct), _, _, fields) ->
                     aux_fields fields
 
                 | _ -> ()
@@ -490,6 +490,8 @@ let (type_field:
           )
 
       | EmptyField info -> ()
+      | FunctionField def -> ()
+      | PublicLabel info | ProtectedLabel info | PrivateLabel info -> ()
       | MacroDeclField _ -> pr2_once "DeclTodo"; ()
 
       | CppDirectiveStruct _

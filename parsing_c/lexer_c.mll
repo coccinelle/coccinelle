@@ -167,8 +167,8 @@ let keyword_table = Common.hash_of_list [
   "const",    (fun ii -> Tconst ii);
   "volatile", (fun ii -> Tvolatile ii);
 
-  "struct",  (fun ii -> Tstruct ii);
-  "union",   (fun ii -> Tunion ii);
+  "struct",  (fun ii -> if !Flag.c_plus_plus = Flag.Off then Tstruct ii else Tcpp_struct ii);
+  "union",   (fun ii -> if !Flag.c_plus_plus = Flag.Off then Tunion ii  else Tcpp_union ii);
   "enum",    (fun ii -> Tenum ii);
   "typedef", (fun ii -> Ttypedef ii);
 
