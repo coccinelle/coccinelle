@@ -1277,7 +1277,9 @@ simple_type:
  | Tfloat               { Right3 (BaseType (FloatType CFloat)),  [$1]}
  | Tdouble              { Right3 (BaseType (FloatType CDouble)), [$1] }
  | Tfloat Tcomplex      { Right3 (BaseType (FloatType CFloatComplex)),  [$1;$2]}
+ | Tcomplex Tfloat      { Right3 (BaseType (FloatType CFloatComplex)),  [$1;$2]}
  | Tdouble Tcomplex     { Right3 (BaseType (FloatType CDoubleComplex)), [$1;$2] }
+ | Tcomplex Tdouble     { Right3 (BaseType (FloatType CDoubleComplex)), [$1;$2] }
  | Tsize_t              { Right3 (BaseType SizeType),            [$1] }
  | Tssize_t             { Right3 (BaseType SSizeType),           [$1] }
  | Tptrdiff_t           { Right3 (BaseType PtrDiffType),         [$1] }
