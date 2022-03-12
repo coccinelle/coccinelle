@@ -298,8 +298,7 @@ let id_tokens lexbuf =
         On None ->
           raise (
             Semantic_cocci.Semantic (
-              "auto has different meaning in different versions of
-              C++. Please specify a version using --c++=<version>"))
+              "auto has different meaning in different versions of C++. Please specify a version using --c++=<version>"))
       | On (Some i) ->
           if i >= 2011
           then TautoType linetype
