@@ -1297,16 +1297,22 @@ and string  = parse
   | ("\\x" (hex | hex hex)) as x              { x ^ string lexbuf }
   | ("\\" (_ as v)) as x
        {
-         (match v with
+        let others _ =
+          match v with
 	    | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
 	    | 'f' -> () | 'a' -> ()
 	    | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
 	    | 'e' -> ()
 	    | '\n' -> ()
 	    | '(' -> () | '|' -> () | ')' -> ()
-	    | _ -> lexerr "unrecognised symbol:" (tok lexbuf)
-	 );
-          x ^ string lexbuf
+	    | _ -> lexerr "unrecognised symbol:" (tok lexbuf) in
+	if !Data.in_meta
+	then
+	  (if List.mem v ['$';'^';'\\';'.';'*';'+';'?';'[';']'] (* for regexps *)
+	  then ()
+	  else others())
+	else others();
+        x ^ string lexbuf
        }
   | _ { lexerr "unrecognised symbol: " (tok lexbuf) }
 
