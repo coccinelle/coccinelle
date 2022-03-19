@@ -1976,7 +1976,7 @@ struct_decl2:
 
 /* hope for no bitfields in C++ - not using decl causes a conflict
 with function definitions because the rule for matching the type
-is different, so a decision has to be made a an awkward place */
+is different, so a decision has to be made in an awkward place */
 cpp_struct_decl2:
  | simple_field_declaration { DeclarationField $1 }
 /* | decl { DeclarationField $1 }*/
