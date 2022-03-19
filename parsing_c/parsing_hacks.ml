@@ -291,7 +291,7 @@ let count_open_close_stuff_ifdef_clause :TV.ifdef_grouped list -> (int * int) =
  fun xs ->
    let cnt_paren, cnt_brace = ref 0, ref 0 in
    xs +> TV.iter_token_ifdef (fun x ->
-     (match x.tok with
+     (match x.TV.tok with
      | x when TH.is_opar x  -> incr cnt_paren
      | TOBrace _ -> incr cnt_brace
      | x when TH.is_cpar x  -> decr cnt_paren
@@ -307,7 +307,7 @@ let sequencible xs =
   xs +> List.iter
     (TV.iter_token_ifdef
        (fun x ->
-	 (match x.tok with
+	 (match x.TV.tok with
 	   TDefine _ | TUndef _ | TOParDefine _ | TIdentDefine _ | TPrePragma _
 	 | TPragma _ | TInclude _ | TIncludeStart _ | TIncludeFilename _
 	 | TCppDirectiveOther _ (*occurs?*) -> cpp := true
@@ -316,7 +316,7 @@ let sequencible xs =
   !cpp ||
   (match !last with
     Some t ->
-      (match t.tok with
+      (match t.TV.tok with
 	TCBrace _ | TOBrace _ | TPtVirg _ -> true
       | TCPar i ->
 	  (match i.pinfo with
