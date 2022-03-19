@@ -879,11 +879,11 @@ let rec find_ifdef_funheaders = function
 
   (* ifdef-funheader if ifdef with 2 lines and a '{' in next line *)
   | TV.Ifdef
-      ([(TV.NotIfdefLine (({col = 0} as _xline1)::line1))::ifdefblock1;
-        (TV.NotIfdefLine (({col = 0} as xline2)::line2))::ifdefblock2
+      ([(TV.NotIfdefLine (({TV.col = 0} as _xline1)::line1))::ifdefblock1;
+        (TV.NotIfdefLine (({TV.col = 0} as xline2)::line2))::ifdefblock2
       ], info_ifdef_stmt
       )
-    ::TV.NotIfdefLine (({tok = TOBrace i; col = 0})::line3)
+    ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line3)
     ::xs
    when List.length ifdefblock1 <= thresholdFunheaderLimit &&
         List.length ifdefblock2 <= thresholdFunheaderLimit
@@ -899,16 +899,16 @@ let rec find_ifdef_funheaders = function
 
   (* ifdef with nested ifdef *)
   | TV.Ifdef
-      ([[TV.NotIfdefLine (({col = 0} as _xline1)::line1)];
+      ([[TV.NotIfdefLine (({TV.col = 0} as _xline1)::line1)];
         [TV.Ifdef
-            ([[TV.NotIfdefLine (({col = 0} as xline2)::line2)];
-              [TV.NotIfdefLine (({col = 0} as xline3)::line3)];
+            ([[TV.NotIfdefLine (({TV.col = 0} as xline2)::line2)];
+              [TV.NotIfdefLine (({TV.col = 0} as xline3)::line3)];
             ], info_ifdef_stmt2
             )
         ]
       ], info_ifdef_stmt
       )
-    ::TV.NotIfdefLine (({tok = TOBrace i; col = 0})::line4)
+    ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line4)
     ::xs
     ->
       find_ifdef_funheaders xs;
@@ -923,12 +923,12 @@ let rec find_ifdef_funheaders = function
 
  (* ifdef with elseif *)
   | TV.Ifdef
-      ([[TV.NotIfdefLine (({col = 0} as _xline1)::line1)];
-        [TV.NotIfdefLine (({col = 0} as xline2)::line2)];
-        [TV.NotIfdefLine (({col = 0} as xline3)::line3)];
+      ([[TV.NotIfdefLine (({TV.col = 0} as _xline1)::line1)];
+        [TV.NotIfdefLine (({TV.col = 0} as xline2)::line2)];
+        [TV.NotIfdefLine (({TV.col = 0} as xline3)::line3)];
       ], info_ifdef_stmt
       )
-    ::TV.NotIfdefLine (({tok = TOBrace i; col = 0})::line4)
+    ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line4)
     ::xs
     ->
       find_ifdef_funheaders xs;
@@ -1442,7 +1442,7 @@ let rec find_macro_lineparen prev_line_end xs =
    * the end-of-stream pb of ocamlyacc
    *)
   | (TV.Line
-        ([TV.PToken ({TV.tok = TIdent (s,ii); col = col1; where = ctx} as _macro);
+        ([TV.PToken ({TV.tok = TIdent (s,ii); TV.col = col1; where = ctx} as _macro);
           TV.Parenthised (xxs,info_parens);
         ] as _line1
         ))
@@ -1451,7 +1451,7 @@ let rec find_macro_lineparen prev_line_end xs =
       let condition =
         (* to reduce number of false positive *)
         (match xs with
-        | (TV.Line (TV.PToken ({col = col2 } as other)::restline2))::_ ->
+        | (TV.Line (TV.PToken ({TV.col = col2 } as other)::restline2))::_ ->
             TH.is_eof other.tok || (col2 = 0 &&
              (match other.tok with
              | TOBrace _ -> false (* otherwise would match funcdecl *)
@@ -1488,12 +1488,12 @@ let rec find_macro_lineparen prev_line_end xs =
    *     return x;
    *)
   | (TV.Line
-        ([TV.PToken ({TV.tok = TIdent (s,ii); col = col1; where = ctx} as macro);
+        ([TV.PToken ({TV.tok = TIdent (s,ii); TV.col = col1; where = ctx} as macro);
           (TV.Parenthised (xxs,info_parens) as args);
         ] as _line1
         ))
     ::(TV.Line
-          (TV.PToken ({col = col2 } as other)::restline2
+          (TV.PToken ({TV.col = col2 } as other)::restline2
           ) as line2)
     ::xs
     when
@@ -1579,11 +1579,11 @@ let rec find_macro_lineparen prev_line_end xs =
    * todo: factorize code with previous rule ?
    *)
   | (TV.Line
-        ([TV.PToken ({TV.tok = TIdent (s,ii); col = col1; where = ctx} as macro);
+        ([TV.PToken ({TV.tok = TIdent (s,ii); TV.col = col1; where = ctx} as macro);
         ] as _line1
         ))
     ::(TV.Line
-          (TV.PToken ({col = col2 } as other)::restline2
+          (TV.PToken ({TV.col = col2 } as other)::restline2
           ) as line2)
     ::xs when ctx = InFunction (* MacroStmt doesn't make sense otherwise *)
 	      && prev_line_end ->
