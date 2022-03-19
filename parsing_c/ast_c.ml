@@ -640,6 +640,7 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
   { f_name: name;
     f_type: functionType; (* less? a functionType2 ? *)
     f_storage: storage;
+    f_constr_inherited: expression wrap2 list;
     f_body: compound;
     f_attr: attribute list; (* gccext: *)
     f_endattr: attribute list; (* gccext: *)

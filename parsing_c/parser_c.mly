@@ -282,7 +282,7 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 let fixFunc (typ, compound, old_style_opt) =
   let (cp,iicp) = compound in
 
-  let ((name, ty,   (st,iist),  attrs), endattrs) = typ in
+  let ((name, ty, (st,iist), attrs, iidotdot, constr_inh), endattrs) = typ in
 
   let (qu, tybis) = ty in
 
@@ -337,6 +337,7 @@ let fixFunc (typ, compound, old_style_opt) =
       {f_name = name;
        f_type = (fullt, (params, abool));
        f_storage = st;
+       f_constr_inherited = constr_inh;
        f_body =
 	if !Flag_parsing_c.parsing_header_for_types
 	then []
@@ -345,7 +346,7 @@ let fixFunc (typ, compound, old_style_opt) =
        f_endattr = endattrs;
        f_old_c_style = old_style_opt;
       },
-      (iifunc @ iicp @ [iistart] @ iist)
+      (iifunc @ iicp @ [iistart] @ iidotdot @ iist)
   | _ ->
       raise
         (Semantic
@@ -367,7 +368,7 @@ let et s () =
 
 
 let fix_add_params_ident x =
-  let (s, ty, st, _attrs) = x in
+  let (s, ty, st, _attrs, _dotdot, _constr_inh) = x in
   match Ast_c.unwrap_typeC ty with
   | FunctionType (fullt, (params, bool)) ->
 
@@ -2201,7 +2202,7 @@ start_fun: start_fun2
 start_fun2: decl_spec declaratorfd
      { let (returnType,storage) = fixDeclSpecForFuncDef (snd $1) in
        let (id, attrs, endattrs) = $2 in
-       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst (fst $1))@(snd (fst $1))@attrs), endattrs
+       (fst id, fixOldCDecl ((snd id) returnType) , storage, (fst (fst $1))@(snd (fst $1))@attrs, [], []), endattrs
      }
   | ctor_dtor { $1, [] }
 
@@ -2212,14 +2213,43 @@ ctor_dtor:
      let ty = mk_ty (FunctionType (ret, (([], (false, []))))) [$2;$3] in
      let storage = ((NoSto,false),[]) in
      let attrs = [] in
-     (id, ty, storage, attrs) }
+     (id, ty, storage, attrs, [], []) }
+ | Tconstructorname topar tcpar TDotDot constr_extra_list {
+     let id = RegularName (mk_string_wrap $1) in
+     let ret = mk_ty NoType [] in
+     let ty = mk_ty (FunctionType (ret, (([], (false, []))))) [$2;$3] in
+     let storage = ((NoSto,false),[]) in
+     let attrs = [] in
+     (id, ty, storage, attrs, [$4], $5) }
  | Tconstructorname topar parameter_type_list tcpar {
      let id = RegularName (mk_string_wrap $1) in
      let ret = mk_ty NoType [] in
      let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
      let storage = ((NoSto,false),[]) in
      let attrs = [] in
-     (id, ty, storage, attrs) }
+     (id, ty, storage, attrs, [], []) }
+ | Tconstructorname topar parameter_type_list tcpar TDotDot constr_extra_list {
+     let id = RegularName (mk_string_wrap $1) in
+     let ret = mk_ty NoType [] in
+     let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
+     let storage = ((NoSto,false),[]) in
+     let attrs = [] in
+     (id, ty, storage, attrs, [$5], $6) }
+
+constr_extra:
+ | TIdent TOPar argument_list_ne TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       (mk_e(FunCall (fn, $3)) [$2;$4]) }
+ | TIdent TOPar TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       (mk_e(FunCall (fn, [])) [$2;$3]) }
+ | TypedefIdent TOPar argument_list_ne TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       (mk_e(FunCall (fn, $3)) [$2;$4]) }
+ | TypedefIdent TOPar TCPar
+     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
+       (mk_e(FunCall (fn, [])) [$2;$3]) }
+
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
@@ -2475,7 +2505,7 @@ cpp_other:
      let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
      let attrs = Ast_c.noattr in
      let sto = (NoSto, false), [] in
-     (id, fixOldCDecl ty, sto, attrs) in
+     (id, fixOldCDecl ty, sto, attrs, [], []) in
    let fundef = fixFunc ((fninfo, []), $5, None) in
    Definition fundef
  }
@@ -2619,6 +2649,10 @@ colon_asm_list:
 colon_option_list:
  | colon_option { [$1, []] }
  | colon_option_list TComma colon_option { $1 @ [$3, [$2]] }
+
+constr_extra_list:
+ | constr_extra                          { [$1, []] }
+ | constr_extra_list TComma constr_extra { $1 @ [$3,    [$2]] }
 
 
 argument_list_ne:

@@ -721,6 +721,7 @@ and vk_def = fun bigf d ->
     | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
        f_storage = sto;
+       f_constr_inherited = constr_inh;
        f_body = statxs;
        f_attr = attrs;
        f_endattr = endattrs;
@@ -740,9 +741,17 @@ and vk_def = fun bigf d ->
         oldstyle +> Common.do_option (fun decls ->
           decls +> List.iter (vk_decl bigf);
         );
+	vk_expression_list bigf constr_inh;
 
 	vk_statement_sequencable_list bigf statxs
   in f (k, bigf) d
+
+and vk_expression_list = fun bigf es ->
+  let iif ii = vk_ii bigf ii in
+  es +> List.iter (fun (e, ii) ->
+    iif ii;
+    vk_expr bigf e
+  )
 
 and vk_base_class = fun bigf bc -> (* not parametrizable *)
   let iif ii = vk_ii bigf ii in
@@ -1677,6 +1686,7 @@ and vk_def_s = fun bigf d ->
     | {f_name = name;
        f_type = (returnt, (paramst, (b, iib)));
        f_storage = sto;
+       f_constr_inherited = constr_inh;
        f_body = statxs;
        f_attr = attrs;
        f_endattr = endattrs;
@@ -1690,6 +1700,9 @@ and vk_def_s = fun bigf d ->
               (vk_param_s bigf param, iif iicomma)
             ), (b, iif iib)));
          f_storage = sto;
+	 f_constr_inherited =
+            constr_inh +> List.map (fun (elem, iicomma) ->
+              vk_expr_s bigf elem, iif iicomma);
          f_body =
             vk_statement_sequencable_list_s bigf statxs;
          f_attr =

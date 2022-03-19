@@ -5108,6 +5108,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
     F.FunHeader ({B.f_name = nameidb;
                   f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                   f_storage = stob;
+		  f_constr_inherited = constr_inh;
                   f_attr = attrs;
                   f_endattr = endattrs;
                   f_body = body;
@@ -5122,6 +5123,14 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
       (match ii with
       | ioparenb::icparenb::iifakestart::iistob ->
+
+	  let (iidotdotb,iistob) =
+	    if !Flag.c_plus_plus = Flag.Off
+	    then ([],iistob)
+	    else
+	      match constr_inh with
+		[] -> ([],iistob)
+	      | _ -> ([List.hd iistob],List.tl iistob) in
 
           (* maybe important to put ident as the first tokens to transform.
            * It's related to transform_proto. So don't change order
@@ -5162,12 +5171,13 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
                F.FunHeader ({B.f_name = nameidb;
                              f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                              f_storage = stob;
+			     f_constr_inherited = constr_inh;
                              f_attr = attrs;
                              f_endattr = endattrs;
                              f_body = body;
                              f_old_c_style = oldstyle; (* TODO *)
                            },
-                           ioparenb::icparenb::iifakestart::iistob)
+                           ioparenb::icparenb::iifakestart::iidotdotb@iistob)
                 )
               )))))))))))
       | _ -> raise (Impossible 49)

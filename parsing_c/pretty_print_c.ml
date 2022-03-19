@@ -1186,9 +1186,17 @@ and pp_init (init, iinit) =
     let {f_name = name;
           f_type = (returnt, (paramst, (b, iib)));
           f_storage = sto;
+	  f_constr_inherited = constr_inh;
           f_body = statxs;
           f_attr = attrs;
 	} = defbis in
+    let (idotdot,isto) =
+      if !Flag.c_plus_plus = Flag.Off
+      then ([],isto)
+      else
+	match constr_inh with
+	  [] -> ([],isto)
+	| _ -> ([List.hd isto],List.tl isto) in
     pr_elem ifakestart;
 
     pp_type_with_ident None (Some (sto, isto))
@@ -1200,8 +1208,8 @@ and pp_init (init, iinit) =
 
     pr_elem iifunc1;
 
-        (* not anymore, cf tests/optional_name_parameter and
-           macro_parameter_shortcut.c
+    (* not anymore, cf tests/optional_name_parameter and
+       macro_parameter_shortcut.c
            (match paramst with
            | [(((bool, None, t), ii_b_s), iicomma)] ->
                assert
@@ -1239,9 +1247,14 @@ and pp_init (init, iinit) =
         *)
     pp_param_list paramst;
     iib +> List.iter pr_elem;
+    pr_elem iifunc2;
 
-
-    pr_elem iifunc2
+    if !Flag.c_plus_plus = Flag.Off && constr_inh <> []
+    then
+      begin
+	pr_elem (List.hd idotdot);
+	pp_list pp_expression constr_inh
+      end
 
   and pp_def def =
     let defbis, ii = def in

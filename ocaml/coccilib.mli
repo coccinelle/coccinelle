@@ -349,6 +349,7 @@ module Ast_c :
       f_name : name;
       f_type : functionType;
       f_storage : storage;
+      f_constr_inherited: expression wrap2 list;
       f_body : compound;
       f_attr : attribute list;
       f_endattr : attribute list;
