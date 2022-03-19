@@ -1948,6 +1948,8 @@ s_or_u_spec2:
      { StructUnion (fst $1, None, [], $3), [snd $1;$2;$4] }
  | struct_or_union ident
      { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
+ | cpp_struct_or_union ident
+     { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
 
 struct_or_union2:
  | Tstruct   { Struct, $1 }
