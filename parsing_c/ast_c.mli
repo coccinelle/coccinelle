@@ -54,7 +54,8 @@ and signed = sign * base
 and base = CChar2 | CShort | CInt | CLong | CLongLong
 and sign = Signed | UnSigned
 and floatType =
-    CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex | CLongDoubleComplex
+    CFloat | CDouble | CLongDouble | CFloatComplex | CDoubleComplex
+  | CLongDoubleComplex | CUnknownComplex (* only for parsing *)
 and structUnion = Struct | Union | Class
 and structType = field list
 and field =

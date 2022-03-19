@@ -385,6 +385,9 @@ let lub op t1 t2 =
 	    | _,Ast_c.FloatType(Ast_c.CDoubleComplex) -> Some t2
 	    | Ast_c.FloatType(Ast_c.CFloatComplex),_ -> Some t1
 	    | _,Ast_c.FloatType(Ast_c.CFloatComplex) -> Some t2
+	    | Ast_c.FloatType(Ast_c.CUnknownComplex),_
+	    | _,Ast_c.FloatType(Ast_c.CUnknownComplex) ->
+		failwith "complex should be float or double"
 
 	    | Ast_c.PtrDiffType,_ -> Some t1
 	    | _,Ast_c.PtrDiffType -> Some t2

@@ -415,6 +415,9 @@ let split_signb_baseb_ii (baseb, ii) =
   | B.FloatType (B.CLongDoubleComplex),["long",i1;"double",i2;"complex",i3] ->
       None,[i1;i2;i3]
 
+  | B.FloatType (B.CUnknownComplex),["complex",i1] ->
+      error [i1] "complex should be double or float"
+
   | B.IntType (B.CChar), ["char",i1] -> None, [i1]
 
 
@@ -3674,6 +3677,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
                (rebuilda ([stringa1;stringa2], signaopt)) +> A.rewrap ta,
                (B.BaseType baseb, [ibaseb1;ibaseb2])
              )))
+
 
       | A.LongDoubleComplexType, B.FloatType (B.CLongDoubleComplex) ->
            assert (signaopt = None);

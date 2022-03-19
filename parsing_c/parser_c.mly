@@ -109,6 +109,22 @@ let addTypeD     = function
   | ((Middle3 x,ii),      ({typeD = ((a,None,c),ii2)} as v))  ->
       {v with typeD = (a, Some x,c),ii @ ii2}
 
+  | ((Right3 (BaseType (FloatType CUnknownComplex)),ii),
+     ({typeD = ((a,b,Some (BaseType (FloatType CFloat))),ii2)} as v)) ->
+       {v with typeD = (a,b, Some (BaseType (FloatType CFloatComplex))),ii @ ii2}
+
+  | ((Right3 (BaseType (FloatType CUnknownComplex)),ii),
+     ({typeD = ((a,b,Some (BaseType (FloatType CDouble))),ii2)} as v)) ->
+       {v with typeD = (a,b, Some (BaseType (FloatType CDoubleComplex))),ii @ ii2}
+
+  | ((Right3 (BaseType (FloatType CFloat)),ii),
+     ({typeD = ((a,b,Some (BaseType (FloatType CUnknownComplex))),ii2)} as v)) ->
+       {v with typeD = (a,b, Some (BaseType (FloatType CFloatComplex))),ii @ ii2}
+
+  | ((Right3 (BaseType (FloatType CDouble)),ii),
+     ({typeD = ((a,b,Some (BaseType (FloatType CUnknownComplex))),ii2)} as v)) ->
+       {v with typeD = (a,b, Some (BaseType (FloatType CDoubleComplex))),ii @ ii2}
+
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
       let mktype t ii = (({const=false;volatile=false;},[]),(t,ii)) in
       computed_warning
@@ -737,12 +753,10 @@ translation_unit:
 ident:
  | TIdent       { $1 }
  | TypedefIdent { $1 }
- | Tcomplex     { ("complex", $1) }
 
 
 identifier:
  | TIdent       { $1 }
- | Tcomplex     { ("complex", $1) }
 
 /*
 (* cppext: string concatenation of idents
@@ -760,7 +774,6 @@ ident_cpp:
  | TypedefIdent
      { RegularName (mk_string_wrap $1) }
  | ident_extra_cpp { $1 }
- | Tcomplex     { RegularName (mk_string_wrap ("complex", $1)) }
 
 ident_extra_cpp:
  | TIdent TCppConcatOp identifier_cpp_list
@@ -1277,10 +1290,7 @@ simple_type:
  | Tint                 { Right3 (BaseType (IntType (Si (Signed,CInt)))), [$1]}
  | Tfloat               { Right3 (BaseType (FloatType CFloat)),  [$1]}
  | Tdouble              { Right3 (BaseType (FloatType CDouble)), [$1] }
- | Tfloat Tcomplex      { Right3 (BaseType (FloatType CFloatComplex)),  [$1;$2]}
- | Tcomplex Tfloat      { Right3 (BaseType (FloatType CFloatComplex)),  [$1;$2]}
- | Tdouble Tcomplex     { Right3 (BaseType (FloatType CDoubleComplex)), [$1;$2] }
- | Tcomplex Tdouble     { Right3 (BaseType (FloatType CDoubleComplex)), [$1;$2] }
+ | Tcomplex             { Right3 (BaseType (FloatType CUnknownComplex)), [$1] }
  | Tsize_t              { Right3 (BaseType SizeType),            [$1] }
  | Tssize_t             { Right3 (BaseType SSizeType),           [$1] }
  | Tptrdiff_t           { Right3 (BaseType PtrDiffType),         [$1] }
