@@ -1044,14 +1044,14 @@ let rec find_string_macro_paren xs =
   | TV.Parenthised(xxs, info_parens)::xs ->
       xxs +> List.iter (fun xs ->
         if xs +> List.exists
-          (function TV.PToken({tok = (TString _| TMacroString _)}) -> true | _ -> false) &&
+          (function TV.PToken({TV.tok = (TString _| TMacroString _)}) -> true | _ -> false) &&
           xs +> List.for_all
-          (function TV.PToken({tok = (TString _| TMacroString _)}) | TV.PToken({tok = TIdent _}) ->
+          (function TV.PToken({TV.tok = (TString _| TMacroString _)}) | TV.PToken({TV.tok = TIdent _}) ->
             true | _ -> false)
         then
           xs +> List.iter (fun tok ->
             match tok with
-            | TV.PToken({tok = TIdent (s,_)} as id) ->
+            | TV.PToken({TV.tok = TIdent (s,_)} as id) ->
 
                 msg_stringification s;
                 id.TV.tok <- TMacroString (s, TH.info_of_tok id.TV.tok);
@@ -1135,7 +1135,7 @@ let rec find_macro_paren xs =
 *)
   | TV.PToken ({TV.tok = Tattribute ii} as id)
     ::Parenthised (xxs,info_parens)
-    ::(TV.PToken {tok = TPtVirg _} | TV.PToken {tok = TEq _} | TV.PToken {tok = TOBrace _})
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
     ::xs
      ->
       pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
@@ -1152,7 +1152,7 @@ let rec find_macro_paren xs =
   | TV.PToken ({TV.tok = TIdent _})::TV.PToken ({TV.tok = TIdent _})
     ::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
     ::Parenthised (xxs,info_parens)
-    ::(TV.PToken {tok = TPtVirg _} | TV.PToken {tok = TEq _})
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
     ::xs when (LP.current_context () = LP.InTopLevel &&
 	      s ==~ regexp_annot) ->
       msg_attribute s;
@@ -1160,7 +1160,7 @@ let rec find_macro_paren xs =
       find_macro_paren xs
   | TV.PToken ({TV.tok = TCCro _})::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
     ::Parenthised (xxs,info_parens)
-    ::(TV.PToken {tok = TPtVirg _} | TV.PToken {tok = TEq _})
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
     ::xs when (LP.current_context () = LP.InTopLevel &&
 	      s ==~ regexp_annot) ->
       msg_attribute s;
@@ -1168,7 +1168,7 @@ let rec find_macro_paren xs =
       find_macro_paren xs
   | TV.PToken ({TV.tok = TMacroAttr (s,ii)} as attr)
     ::Parenthised (xxs,info_parens)
-    ::(TV.PToken {tok = TPtVirg _} | TV.PToken {tok = TEq _} | TV.PToken {tok = TOBrace _})
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
     ::xs
      ->
       attr.TV.tok <- TMacroEndAttrArgs (s,ii);
@@ -1620,8 +1620,8 @@ let rec find_macro_lineparen prev_line_end xs =
   | (TV.Line line)::xs ->
       let prev_line_end =
 	match List.rev line with
-	  (TV.PToken {tok = TPtVirg _} | TV.PToken {tok = TOBrace _}
-	| TV.PToken {tok = TCBrace _} | TV.PToken {tok = TDotDot _}) :: _ ->
+	  (TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TOBrace _}
+	| TV.PToken {TV.tok = TCBrace _} | TV.PToken {TV.tok = TDotDot _}) :: _ ->
 	    true
 	| _ -> false in
       find_macro_lineparen prev_line_end xs
@@ -1638,8 +1638,8 @@ let find_define_init_brace_paren xs =
   | [] -> ()
 
   (* mainly for firefox *)
-  | (TV.PToken {tok = TDefine _})
-    ::(TV.PToken {tok = TIdentDefine (s,_)})
+  | (TV.PToken {TV.tok = TDefine _})
+    ::(TV.PToken {TV.tok = TIdentDefine (s,_)})
     ::(TV.PToken ({TV.tok = TOBrace i1} as tokbrace))
     ::(TV.PToken tok2)
     ::(TV.PToken tok3)
@@ -1661,8 +1661,8 @@ let find_define_init_brace_paren xs =
       aux xs
 
   (* mainly for linux, especially in sound/ *)
-  | (TV.PToken {tok = TDefine _})
-    ::(TV.PToken {tok = TIdentDefine (s,_)})
+  | (TV.PToken {TV.tok = TDefine _})
+    ::(TV.PToken {TV.tok = TIdentDefine (s,_)})
     ::(TV.Parenthised(xxx, info_parens))
     ::(TV.PToken ({TV.tok = TOBrace i1} as tokbrace))
     ::(TV.PToken tok2)
