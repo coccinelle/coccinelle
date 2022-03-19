@@ -963,10 +963,10 @@ let adjust_inifdef_include xs =
     | _ -> false in
   xs +> List.iter (function
   | TV.NotIfdefLine _ -> ()
-  | TV.Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt)
+  | TV.Ifdef (xxs, info_ifdef_stmt) | TV.Ifdefbool (_, xxs, info_ifdef_stmt)
       when is_ifndef_nop xxs info_ifdef_stmt
     -> () (* ifndef followed by define of same variable, often in .h *)
-  | TV.Ifdef (xxs, info_ifdef_stmt) | Ifdefbool (_, xxs, info_ifdef_stmt) ->
+  | TV.Ifdef (xxs, info_ifdef_stmt) | TV.Ifdefbool (_, xxs, info_ifdef_stmt) ->
       xxs +> List.iter (TV.iter_token_ifdef (fun tokext ->
         match tokext.TV.tok with
         | Parser_c.TInclude (s1, s2, inifdef_ref, ii) ->
