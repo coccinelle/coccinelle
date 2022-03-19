@@ -736,7 +736,7 @@ let rec find_ifdef_bool xs =
           end
       );
 
-  | Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_bool
+  | TV.Ifdef (xxs, info_ifdef_stmt) -> xxs +> List.iter find_ifdef_bool
   )
 
 (* Rules that fix input tokens. *)
@@ -863,7 +863,7 @@ let rec find_ifdef_mid xs =
       List.iter find_ifdef_mid xxs
 
   (* no need complex analysis for ifdefbool *)
-  | Ifdefbool (_, xxs, info_ifdef_stmt) ->
+  | TV.Ifdefbool (_, xxs, info_ifdef_stmt) ->
       List.iter find_ifdef_mid xxs
 
 
@@ -878,7 +878,7 @@ let rec find_ifdef_funheaders = function
   | TV.NotIfdefLine _::xs -> find_ifdef_funheaders xs
 
   (* ifdef-funheader if ifdef with 2 lines and a '{' in next line *)
-  | Ifdef
+  | TV.Ifdef
       ([(TV.NotIfdefLine (({col = 0} as _xline1)::line1))::ifdefblock1;
         (TV.NotIfdefLine (({col = 0} as xline2)::line2))::ifdefblock2
       ], info_ifdef_stmt
@@ -898,7 +898,7 @@ let rec find_ifdef_funheaders = function
       ifdefblock2 +> TV.iter_token_ifdef (TV.set_as_comment Token_c.CppPassingCosWouldGetError);
 
   (* ifdef with nested ifdef *)
-  | Ifdef
+  | TV.Ifdef
       ([[TV.NotIfdefLine (({col = 0} as _xline1)::line1)];
         [TV.Ifdef
             ([[TV.NotIfdefLine (({col = 0} as xline2)::line2)];
@@ -922,7 +922,7 @@ let rec find_ifdef_funheaders = function
       all_toks +> List.iter (TV.set_as_comment Token_c.CppPassingCosWouldGetError);
 
  (* ifdef with elseif *)
-  | Ifdef
+  | TV.Ifdef
       ([[TV.NotIfdefLine (({col = 0} as _xline1)::line1)];
         [TV.NotIfdefLine (({col = 0} as xline2)::line2)];
         [TV.NotIfdefLine (({col = 0} as xline3)::line3)];
@@ -940,8 +940,8 @@ let rec find_ifdef_funheaders = function
       all_toks +> List.iter (TV.set_as_comment Token_c.CppPassingCosWouldGetError)
 
   (* recurse *)
-  | Ifdef (xxs,info_ifdef_stmt)::xs
-  | Ifdefbool (_, xxs,info_ifdef_stmt)::xs ->
+  | TV.Ifdef (xxs,info_ifdef_stmt)::xs
+  | TV.Ifdefbool (_, xxs,info_ifdef_stmt)::xs ->
       List.iter find_ifdef_funheaders xxs;
       find_ifdef_funheaders xs
 
@@ -1022,7 +1022,7 @@ let find_ifdef_cparen_else xs =
       List.iter aux xxs
 
   (* no need complex analysis for ifdefbool *)
-  | Ifdefbool (_, xxs, info_ifdef_stmt) ->
+  | TV.Ifdefbool (_, xxs, info_ifdef_stmt) ->
       List.iter aux xxs
   )
   in aux xs
