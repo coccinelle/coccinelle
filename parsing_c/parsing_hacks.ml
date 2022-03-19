@@ -1134,7 +1134,7 @@ let rec find_macro_paren xs =
       find_macro_paren xs
 *)
   | TV.PToken ({TV.tok = Tattribute ii} as id)
-    ::Parenthised (xxs,info_parens)
+    ::TV.Parenthised (xxs,info_parens)
     ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
     ::xs
      ->
@@ -1151,7 +1151,7 @@ let rec find_macro_paren xs =
       find_macro_paren xs
   | TV.PToken ({TV.tok = TIdent _})::TV.PToken ({TV.tok = TIdent _})
     ::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
-    ::Parenthised (xxs,info_parens)
+    ::TV.Parenthised (xxs,info_parens)
     ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
     ::xs when (LP.current_context () = LP.InTopLevel &&
 	      s ==~ regexp_annot) ->
@@ -1159,7 +1159,7 @@ let rec find_macro_paren xs =
       id.TV.tok <- TMacroEndAttrArgs (s,ii);
       find_macro_paren xs
   | TV.PToken ({TV.tok = TCCro _})::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
-    ::Parenthised (xxs,info_parens)
+    ::TV.Parenthised (xxs,info_parens)
     ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
     ::xs when (LP.current_context () = LP.InTopLevel &&
 	      s ==~ regexp_annot) ->
@@ -1167,7 +1167,7 @@ let rec find_macro_paren xs =
       id.TV.tok <- TMacroEndAttrArgs (s,ii);
       find_macro_paren xs
   | TV.PToken ({TV.tok = TMacroAttr (s,ii)} as attr)
-    ::Parenthised (xxs,info_parens)
+    ::TV.Parenthised (xxs,info_parens)
     ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
     ::xs
      ->
@@ -1212,7 +1212,7 @@ let rec find_macro_paren xs =
 
   (* string macro with params, before case *)
   | TV.PToken ({TV.tok = (TString _| TMacroString _)})::TV.PToken ({TV.tok = TIdent (s,_)} as id)
-    ::Parenthised (xxs, info_parens)
+    ::TV.Parenthised (xxs, info_parens)
     ::xs ->
 
       msg_stringification_params s;
