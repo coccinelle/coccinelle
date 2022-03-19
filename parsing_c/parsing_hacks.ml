@@ -1455,7 +1455,7 @@ let rec find_macro_lineparen prev_line_end xs =
             TH.is_eof other.TV.tok || (col2 = 0 &&
              (match other.TV.tok with
              | TOBrace _ -> false (* otherwise would match funcdecl *)
-             | TCBrace _ when ctx <> InFunction -> false
+             | TCBrace _ when ctx <> TV.InFunction -> false
              | TPtVirg _
              | TDotDot _
                -> false
@@ -1498,9 +1498,9 @@ let rec find_macro_lineparen prev_line_end xs =
     ::xs
     when
       ((*Printf.eprintf "checking on %s: %b %b %b %b\n" s
-	 (ctx = InFunction) (ctx = InStruct) (ctx = NoContext)
-	 (ctx = InInitializer);*)
-      List.mem ctx [InFunction;InStruct;NoContext])
+	 (ctx = TV.InFunction) (ctx = TV.InStruct) (ctx = TV.NoContext)
+	 (ctx = TV.InInitializer);*)
+      List.mem ctx [TV.InFunction;TV.InStruct;TV.NoContext])
     (* when s ==~ regexp_macro *)
     ->
       (* This can give a false positive for K&R functions if the function
@@ -1509,7 +1509,7 @@ let rec find_macro_lineparen prev_line_end xs =
         (col1 = col2 &&
             (match other.TV.tok with
             | TOBrace _ -> false (* otherwise would match funcdecl *)
-            | TCBrace _ when ctx <> InFunction -> false
+            | TCBrace _ when ctx <> TV.InFunction -> false
             | TPtVirg _
             | TDotDot _
                 -> false
@@ -1521,7 +1521,7 @@ let rec find_macro_lineparen prev_line_end xs =
         ||
         (col2 <= col1 &&
               (match other.TV.tok, restline2 with
-              | TCBrace _, _ when ctx = InFunction -> true
+              | TCBrace _, _ when ctx = TV.InFunction -> true
               | Treturn _, _ -> true
               | Tif _, _ -> true
               | Telse _, _ -> true
@@ -1543,11 +1543,11 @@ let rec find_macro_lineparen prev_line_end xs =
         else begin
           msg_macro_noptvirg s;
 	  (match ctx with
-	    InStruct ->
+	    TV.InStruct ->
               macro.TV.tok <- TMacroDecl (s, TH.info_of_tok macro.TV.tok);
               [args] +>
               TV.iter_token_paren (TV.set_as_comment Token_c.CppMacro)
-	  | InFunction | NoContext ->
+	  | TV.InFunction | TV.NoContext ->
 	      let contains_semicolon data =
 		let res = ref false in
 		TV.iter_token_paren
@@ -1585,7 +1585,7 @@ let rec find_macro_lineparen prev_line_end xs =
     ::(TV.Line
           (TV.PToken ({TV.col = col2 } as other)::restline2
           ) as line2)
-    ::xs when ctx = InFunction (* MacroStmt doesn't make sense otherwise *)
+    ::xs when ctx = TV.InFunction (* MacroStmt doesn't make sense otherwise *)
 	      && prev_line_end ->
     (* when s ==~ regexp_macro *)
 
@@ -1595,14 +1595,14 @@ let rec find_macro_lineparen prev_line_end xs =
             (match other.TV.tok with
             | TPtVirg _ -> false
             | TOr _ -> false
-            | TCBrace _ when ctx <> InFunction -> false
+            | TCBrace _ when ctx <> TV.InFunction -> false
             | tok when TH.is_binary_operator tok -> false
 
             | _ -> true
             )) ||
           (col2 <= col1 &&
               (match other.TV.tok with
-              | TCBrace _ when ctx = InFunction -> true
+              | TCBrace _ when ctx = TV.InFunction -> true
               | Treturn _ -> true
               | Tif _ -> true
               | Telse _ -> true
