@@ -3084,22 +3084,48 @@ let drop_template toks =
       (({TV.tok = TIdent("template",i1)}) as a) :: rest ->
 	let (_spaces,rest) = span (fun x -> TH.is_just_comment_or_space x.TV.tok) rest in
 	(match rest with
-	  ({TV.tok = (TInf _)} as b) :: rest ->
-	    let (inside,rest) = in_template 0 [] rest in
+	  ({TV.tok = (TInf i)} as b) :: rest ->
+	    let (inside,rest) = in_template i 0 [] rest in
 	    (a :: b :: inside) +> List.iter
 	      (TV.set_as_comment Token_c.CppPassingCosWouldGetError);
 	    loop rest
 	| _ -> loop rest)
     | x :: xs -> loop xs
     | [] -> ()
-  and in_template n acc = function
+  and in_template starti n acc = function
       ({TV.tok = (TSup _)} as a) :: rest ->
 	if n = 0
 	then (List.rev(a::acc),rest)
-	else in_template (n-1) (a::acc) rest
+	else in_template starti (n-1) (a::acc) rest
     | ({TV.tok = (TInf _)} as a) :: rest ->
-	in_template (n+1) (a::acc) rest
-    | x ::xs -> in_template n (x::acc) xs
-    | [] -> failwith "template with no end" in
+	in_template starti (n+1) (a::acc) rest
+    | ({TV.tok = (TShr _)} as a) :: rest ->
+	if n = 0
+	then failwith "have to split >>..."
+	else if n = 1
+	then (List.rev(a::acc),rest)
+	else in_template starti (n-2) (a::acc) rest
+    | ({TV.tok = (TShl _)} as a) :: rest ->
+	in_template starti (n+2) (a::acc) rest
+    | ({TV.tok = (TOPar _)} as a) :: rest ->
+	let (acc,rest) = in_par starti 0 (a::acc) rest in
+	in_par starti n acc rest
+    | x::xs -> in_template starti n (x::acc) xs
+    | [] ->
+	failwith
+	  (Printf.sprintf "%s:%d: template with no end"
+	     (Ast_c.file_of_info starti) (Ast_c.line_of_info starti))
+  and in_par starti n acc = function (* skip (), which may contain < or > *)
+      ({TV.tok = (TOPar _)} as a) :: rest ->
+	in_par starti (n+1) (a::acc) rest
+    | ({TV.tok = (TCPar _)} as a) :: rest ->
+	if n = 0
+	then (acc,rest)
+	else in_par starti (n-1) (a::acc) rest
+    | x::xs -> in_par starti n (x::acc) xs
+    | [] ->
+	failwith
+	  (Printf.sprintf "%s:%d: template with no end"
+	     (Ast_c.file_of_info starti) (Ast_c.line_of_info starti)) in
   loop tokens2;
   Common.acc_map (fun x -> x.TV.tok) tokens2
