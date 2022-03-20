@@ -2121,9 +2121,14 @@ struct_declarator:
      { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
 
 declaratorsfd:
- declaratori
-   { let (dec,attr,endattr) = $1 in
-     (fun x -> Simple (Some (fst dec), (snd dec) x)) }
+ | declaratori
+     { let (dec,attr,endattr) = $1 in
+       (fun x -> Simple (Some (fst dec), (snd dec) x)) }
+ | declaratori dotdot TInt
+     { let (dec,attr,endattr) = $1 in
+       let (str,(sign,base)) = fst $3 in
+       let cst = mk_e(Constant (Int (str,Si(sign,base)))) [snd $3] in
+       (fun x -> BitField (Some (fst dec), ((snd dec) x), $2, cst)) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
