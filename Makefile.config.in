@@ -64,7 +64,7 @@ MKDIR_P=@MKDIR_P@
 # the default Make target
 # Can be overridden e.g. in Makefile.local
 TARGET_ALL=all-release
-EXTRA_OCAML_FLAGS=-unsafe
+EXTRA_OCAML_FLAGS=-unsafe -w @42
 TARGET_SPATCH=@MAKETARGET_SPATCH@
 
 PYTHON_CFLAGS=@PYTHON_CFLAGS@
