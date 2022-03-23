@@ -151,3 +151,7 @@ commandline parameters to spatch.
     To also remove the bash completion script, run
 
     make uninstall-bash
+
+ ** Enable ocaml debugging **
+
+    echo "EXTRA_OCAML_FLAGS+=-g" >>Makefile.local
