@@ -1398,28 +1398,88 @@ declarator:
  | direct_d         { (Ast_c.noattr, $1)  }
 
 /*(* so must do  int * const p; if the pointer is constant, not the pointee *)*/
+/* list from tmul is due to the parsing of && as AndLog */
 pointer:
- | tmul                   { (Ast_c.noattr,fun x -> mk_ty (Pointer x) [$1]) }
+ | tmul
+     { (Ast_c.noattr,
+	fun x ->
+	  List.fold_left
+	    (fun prev ptr ->
+	      mk_ty (Pointer prev) [ptr])
+	    x $1) }
  | tmul pointer
      { let (attr,ptr) = $2 in
-       (attr,fun x -> ptr (mk_ty (Pointer x) [$1])) }
+       (attr,
+	fun x ->
+	  let cur =
+	    List.fold_left
+	      (fun prev ptr ->
+		mk_ty (Pointer prev) [ptr])
+	      x $1 in
+	  ptr cur) }
  | tmul type_qualif_list
      { let (attr,tq) = $2 in
-       (attr,fun x -> (tq.qualifD, mk_tybis (Pointer x) [$1]))}
+       (attr,fun x ->
+	  let (_,cur) = (* not sure - which & does the qualified go with? *)
+	    List.fold_left
+	      (fun prev ptr ->
+		mk_ty (Pointer prev) [ptr])
+	      x $1 in
+	 (tq.qualifD, cur))}
  | tmul type_qualif_list pointer
      { let (attr1,tq) = $2 in
        let (attr2,ptr) = $3 in
-       (attr1@attr2,fun x -> ptr (tq.qualifD, mk_tybis (Pointer x) [$1])) }
+       (attr1@attr2,
+	fun x ->
+	  let (_,cur) =
+	    List.fold_left
+	      (fun prev ptr ->
+		mk_ty (Pointer prev) [ptr])
+	      x $1 in
+	  ptr (tq.qualifD, cur)) }
 
 tmul:
-   TMul { $1 }
+   TMul { [$1] }
  | TAnd
      { if !Flag.c_plus_plus <> Flag.Off
-     then $1
+     then [$1]
      else
        let i = Ast_c.parse_info_of_info $1 in
        raise (Semantic("& not allowed in C types, try -c++ option", i)) }
-
+ | TAndLog
+     { if !Flag.c_plus_plus <> Flag.Off
+     then
+       (* split the token *)
+       let copy_pinfo offset = function
+	   Ast_c.OriginTok {
+	   Common.charpos = cp;
+	   Common.str     = str;
+	   Common.line    = line;
+	   Common.column  = col;
+	   Common.file = fl } ->
+	     Ast_c.OriginTok {
+	     Common.charpos = cp+offset;
+	     Common.str     = "&";
+	     Common.line    = line;
+	     Common.column  = col+offset;
+	     Common.file = fl }
+	 | _ -> failwith "unexpected && tok" in
+       let t1 =
+	 { pinfo = copy_pinfo 0 $1.pinfo;
+	   cocci_tag = ref Ast_c.emptyAnnot;
+	   annots_tag = Token_annot.empty;
+	   comments_tag = ref Ast_c.emptyComments;
+	   danger = ref NoDanger } in
+       let t2 =
+	 { pinfo = copy_pinfo 1 $1.pinfo;
+	   cocci_tag = ref Ast_c.emptyAnnot;
+	   annots_tag = Token_annot.empty;
+	   comments_tag = ref Ast_c.emptyComments;
+	   danger = ref NoDanger } in
+       [t1;t2]
+     else
+       let i = Ast_c.parse_info_of_info $1 in
+       raise (Semantic("& not allowed in C types, try -c++ option", i)) }
 
 direct_d:
  | identifier_cpp

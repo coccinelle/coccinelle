@@ -1992,11 +1992,13 @@ let pointer ?(followed_by=fun _ -> true)
     match ts with
     | TMul _ :: rest -> loop rest
     | TAnd _ :: rest when !Flag.c_plus_plus <> Flag.Off -> loop rest
+    | TAndLog _ :: rest when !Flag.c_plus_plus <> Flag.Off -> loop rest
     | t :: ts' -> followed_by t && followed_by_more ts'
     | [] -> failwith "unexpected end of token stream" in
   match ts with
   | TMul _ :: rest -> loop rest
   | TAnd _ :: rest when !Flag.c_plus_plus <> Flag.Off -> loop rest
+  | TAndLog _ :: rest when !Flag.c_plus_plus <> Flag.Off -> loop rest
   | _ -> false
 
 let ident = function
@@ -2730,8 +2732,10 @@ let lookahead2 ~pass next before =
 
   (* (xx){ ... }  constructor *)
   | (TIdent (s, i1)::TCPar _::TOBrace _::_ , TOPar _::x::_)
-      when (*s ==~ regexp_typedef && *) not (TH.is_stuff_taking_parenthized x)
-      && ok_typedef s
+      when (*s ==~ regexp_typedef && *)
+	!Flag.c_plus_plus = Flag.Off (* in C++ can be an initializer list *)
+	&& not (TH.is_stuff_taking_parenthized x)
+        && ok_typedef s
         ->
 
       msg_typedef s i1 33; LP.add_typedef_root s i1;
