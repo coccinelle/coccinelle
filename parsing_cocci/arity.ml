@@ -276,6 +276,18 @@ let rec top_expression opt_allowed tgt expr =
       let ty = typeC arity ty in
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.SizeOfType(szf,lp,ty,rp))
+  | Ast0.Delete(dlt,exp) ->
+      let arity = exp_same (mcode2line dlt) [mcode2arity dlt] in
+      let dlt = mcode dlt in
+      let exp = expression arity exp in
+      make_exp expr tgt arity (Ast0.Delete(dlt,exp))
+  | Ast0.DeleteArr(dlt,lb,rb,exp) ->
+      let arity = exp_same (mcode2line dlt) (List.map mcode2arity [dlt;lb;rb]) in
+      let dlt = mcode dlt in
+      let lb = mcode lb in
+      let rb = mcode rb in
+      let exp = expression arity exp in
+      make_exp expr tgt arity (Ast0.DeleteArr(dlt,lb,rb,exp))
   | Ast0.TypeExp(ty) -> Ast0.rewrap expr (Ast0.TypeExp(typeC tgt ty))
   | Ast0.MetaErr(name,constraints,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in

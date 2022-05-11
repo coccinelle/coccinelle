@@ -202,6 +202,8 @@ and expression context old_metas table minus e =
       expression ID old_metas table minus exp
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
+  | Ast0.Delete(dlt, exp) -> expression ID old_metas table minus exp
+  | Ast0.DeleteArr(dlt,lb,rb,exp) -> expression ID old_metas table minus exp
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->
       typeC old_metas table minus ty; initialiser old_metas table minus init

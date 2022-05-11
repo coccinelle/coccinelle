@@ -259,6 +259,11 @@ let rec expression e =
       mcode print_string sizeof;
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
+  | Ast.Delete(dlt,exp) ->
+      mcode print_string dlt; print_string " "; expression exp
+  | Ast.DeleteArr(dlt,lb,rb,exp) ->
+      mcode print_string dlt; print_string " "; mcode print_string lb; mcode print_string rb; print_string " ";
+      expression exp
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();

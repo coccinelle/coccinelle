@@ -371,6 +371,12 @@ let rec expression_pos exp snp
       let _ = type_pos typec snp in (* sanity check for disj *)
       let constructor ~mc = Ast0.SizeOfType(mc, lp, typec, rp) in
       mcode_wrap ~mc:sizeofmc ~constructor snp
+  | Ast0.Delete(deletemc, exp) ->
+      let constructor ~mc = Ast0.Delete(mc, exp) in
+      mcode_wrap ~mc:deletemc ~constructor snp
+  | Ast0.DeleteArr(deletemc,lb,rb,exp) ->
+      let constructor ~mc = Ast0.DeleteArr(mc,lb,rb,exp) in
+      mcode_wrap ~mc:deletemc ~constructor snp
   | Ast0.TypeExp(typec) ->
       let constructor ~item = Ast0.TypeExp(item) in
       item_wrap ~item:typec ~item_posfn:type_pos ~constructor snp

@@ -231,6 +231,11 @@ let rec expression e =
           mcode print_string szf;
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp
+      | Ast0.Delete(dlt,exp) ->
+	  mcode print_string dlt; print_string " "; expression exp
+      | Ast0.DeleteArr(dlt,lb,rb,exp) ->
+	  mcode print_string dlt; print_string " "; mcode print_string lb; mcode print_string rb; print_string " ";
+	  expression exp
       | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.Constructor(lp,ty,rp,init) ->
 	  mcode print_string_box lp; typeC ty; close_box();

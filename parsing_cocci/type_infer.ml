@@ -294,6 +294,8 @@ let rec propagate_types env =
 	| Ast0.Cast(lp,ty,attr,rp,exp) -> Some ty
 	| Ast0.SizeOfExpr(szf,exp) -> Some (Ast0.wrap int_type)
 	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some (Ast0.wrap int_type)
+	| Ast0.Delete(dlt,exp) -> Some (Ast0.wrap void_type)
+	| Ast0.DeleteArr(dlr,lb,rb,exp) -> Some (Ast0.wrap void_type)
 	| Ast0.TypeExp(ty) -> None
 	| Ast0.Constructor(lp,ty,rp,init) -> Some ty
 	| Ast0.MetaErr(name,_,_) -> None

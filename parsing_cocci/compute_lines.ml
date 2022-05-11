@@ -441,6 +441,16 @@ let rec expression e =
       let rp = normal_mcode rp in
       mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp))
         (promote_mcode szf)  (promote_mcode rp)
+  | Ast0.Delete(dlt,exp) ->
+      let dlt = normal_mcode dlt in
+      let exp = expression exp in
+      mkres e (Ast0.Delete(dlt,exp)) (promote_mcode dlt) exp
+  | Ast0.DeleteArr(dlt,lb,rb,exp) ->
+      let dlt = normal_mcode dlt in
+      let lb = normal_mcode lb in
+      let rb = normal_mcode rb in
+      let exp = expression exp in
+      mkres e (Ast0.DeleteArr(dlt,lb,rb, exp)) (promote_mcode dlt) exp
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
   | Ast0.Constructor(lp,ty,rp,init) ->

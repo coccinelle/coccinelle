@@ -53,6 +53,8 @@ let get_minus_constants bind orbind =
 	  (r.V.combiner_expression exp)
     | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode sizeof]
+    | Ast.Delete(delete,_) | Ast.DeleteArr(delete,_,_,_) ->
+	bind (k e) [Ast.unwrap_mcode delete]
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []

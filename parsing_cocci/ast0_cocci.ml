@@ -127,7 +127,10 @@ and base_expression =
                       string mcode (* ) *) * expression
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
-                      typeC * string mcode (* ) *)
+                   typeC * string mcode (* ) *)
+  | Delete         of string mcode (* delete *) * expression
+  | DeleteArr      of string mcode (* delete *) * string mcode (* [ *) * string mcode (* ] *) *
+	           expression
   | TypeExp        of typeC (* type name used as an expression, only in args *)
   | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *
 	              initialiser

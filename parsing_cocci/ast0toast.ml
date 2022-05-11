@@ -448,6 +448,10 @@ and expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.SizeOfType(mcode szf, mcode lp,typeC allminus ty,mcode rp)
+    | Ast0.Delete(dlt,exp) ->
+	Ast.Delete(mcode dlt,expression exp)
+    | Ast0.DeleteArr(dlt,lb,rb,exp) ->
+	Ast.DeleteArr(mcode dlt, mcode lb, mcode rb, expression exp)
     | Ast0.TypeExp(ty) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.TypeExp(typeC allminus ty)

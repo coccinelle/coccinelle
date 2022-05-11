@@ -177,6 +177,7 @@ let token2c (tok,_) add_clt =
   | PC.TMetaIterator(_,_,_,clt) -> add_clt "itermeta" clt
 
   | PC.TSizeof(clt) -> add_clt "sizeof" clt
+  | PC.Tdelete(clt) -> add_clt "delete" clt
   | PC.TTypeof(clt) -> add_clt "typeof" clt
 
   | PC.TString(x,_,clt) -> add_clt (Printf.sprintf "\"%s\"" x) clt
@@ -352,7 +353,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TSymId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
-  | PC.TSizeof(clt) | PC.TTypeof(clt)
+  | PC.TSizeof(clt) | PC.Tdelete(clt) | PC.TTypeof(clt)
 
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
@@ -442,7 +443,7 @@ let get_clt (tok,_) =
   | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
-  | PC.TSizeof(clt) | PC.TTypeof(clt)
+  | PC.TSizeof(clt) | PC.Tdelete(clt) | PC.TTypeof(clt)
 
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
@@ -636,6 +637,7 @@ let update_clt (tok,x) clt =
   | PC.TSymId(a,_) -> (PC.TSymId(a,clt),x)
 
   | PC.TSizeof(_) -> (PC.TSizeof(clt),x)
+  | PC.Tdelete(_) -> (PC.Tdelete(clt),x)
   | PC.TTypeof(_) -> (PC.TTypeof(clt),x)
 
   | PC.TString(s,sz,_) -> (PC.TString(s,sz,clt),x)
@@ -919,7 +921,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
-  | PC.TSizeof(clt) | PC.TTypeof(clt)
+  | PC.TSizeof(clt) |PC.Tdelete(clt) | PC.TTypeof(clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
@@ -1345,7 +1347,7 @@ let token2line (tok,_) =
 
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt)
-  | PC.TSizeof (clt) | PC.TTypeof (clt)
+  | PC.TSizeof (clt) | PC.Tdelete(clt) | PC.TTypeof (clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)

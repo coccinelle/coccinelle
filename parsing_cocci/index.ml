@@ -5,8 +5,8 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 193, also unused: 8-9, 15, 42, 46, 57, 65, 85-86,
- 113-115 *)
+(* current max is 193, also unused: 8-9, 15, 42, 46, 57, 65,
+ *)
 
 (* doesn't really work - requires that identical terms with no token
 subterms (eg dots) not appear on the same line *)
@@ -64,6 +64,8 @@ let expression e =
   | Ast0.Cast(lp,ty,attr,rp,exp) -> [30]
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
+  | Ast0.Delete(dlt,exp) -> [85]
+  | Ast0.DeleteArr(dlt,lb,rb,exp) -> [86]
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.Constructor(lp,ty,rp,init) -> [155]
   | Ast0.MetaErr(name,_,_) -> [32]

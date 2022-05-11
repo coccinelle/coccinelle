@@ -229,6 +229,10 @@ and unify_expression e1 e2 =
       unify_expression e1 e2
   | (Ast.SizeOfType(szf1,lp1,ty1,rp1),Ast.SizeOfType(szf2,lp2,ty2,rp2)) ->
       unify_fullType ty1 ty2
+  | (Ast.Delete(dlt1,e1),Ast.Delete(dlt2,e2)) ->
+      unify_expression e1 e2
+  | (Ast.DeleteArr(dlt1,lb1,rb1,e1),Ast.DeleteArr(dlt2,lb2,rb2,e2))->
+      unify_expression e1 e2
   | (Ast.TypeExp(ty1),Ast.TypeExp(ty2)) -> unify_fullType ty1 ty2
   | (Ast.Constructor(lp1,ty1,rp1,i1),Ast.Constructor(lp2,ty2,rp2,i2)) ->
       unify_fullType ty1 ty2 && unify_initialiser i1 i2

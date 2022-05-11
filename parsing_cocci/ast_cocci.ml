@@ -200,6 +200,9 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       fullType * string mcode (* ) *)
+  | Delete         of string mcode (* delete *) * expression
+  | DeleteArr      of string mcode (* delete *) * string mcode (* [ *) * string mcode (* ] *) *
+	              expression
   | TypeExp        of fullType (*type name used as an expression, only in
 				  arg or #define*)
 

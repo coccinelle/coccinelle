@@ -217,6 +217,16 @@ let combiner bind option_default
 	  let lty = fullType ty in
 	  let lrp = string_mcode rp in
 	  multibind [lszf; llp; lty; lrp]
+      | Ast.Delete(dlt,exp) ->
+	  let ldlt = string_mcode dlt in
+	  let lexp = expression exp in
+	  bind ldlt lexp
+      | Ast.DeleteArr(dlt,lb,rb,exp) ->
+	  let ldlt = string_mcode dlt in
+	  let llb = string_mcode lb in
+	  let lrb = string_mcode rb in
+	  let lexp = expression exp in
+	  multibind [ldlt; llb; lrb; lexp]
       | Ast.TypeExp(ty) -> fullType ty
       | Ast.Constructor(lp,ty,rp,init) ->
 	  let llp = string_mcode lp in
@@ -1254,6 +1264,16 @@ let rebuilder
 	    let lty = fullType ty in
 	    let lrp = string_mcode rp in
 	    Ast.SizeOfType(lszf, llp, lty, lrp)
+	| Ast.Delete(dlt,exp) ->
+	    let ldlt = string_mcode dlt in
+	    let lexp = expression exp in
+	    Ast.Delete(ldlt, lexp)
+	| Ast.DeleteArr(dlt,lb,rb,exp) ->
+	    let ldlt = string_mcode dlt in
+	    let llb = string_mcode lb in
+	    let lrb = string_mcode rb in
+	    let lexp = expression exp in
+	    Ast.DeleteArr(ldlt, llb, lrb, lexp)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.Constructor(lp,ty,rp,init) ->
 	    let llp = string_mcode lp in

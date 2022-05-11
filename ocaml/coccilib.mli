@@ -2613,6 +2613,8 @@ module Ast_cocci :
       | Cast of string mcode * fullType * attr list * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * fullType * string mcode
+      | Delete of string mcode * expression
+      | DeleteArr of string mcode * string mcode * string mcode * expression
       | TypeExp of fullType
       | Paren of string mcode * expression * string mcode
       | Constructor of string mcode * fullType * string mcode * initialiser
@@ -3363,6 +3365,8 @@ module Ast0_cocci :
       | Cast of string mcode * typeC * attr list * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * typeC * string mcode
+      | Delete of string mcode * expression
+      | DeleteArr of string mcode * string mcode * string mcode * expression
       | TypeExp of typeC
       | Constructor of string mcode * typeC * string mcode * initialiser
       | MetaErr of Ast_cocci.meta_name mcode * constraints * pure

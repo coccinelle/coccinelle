@@ -590,6 +590,8 @@ let match_maker checks_needed context_required whencode_allowed =
 		| Ast0.Cast(lp,ty,attr,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true
+		| Ast0.Delete(dlt,exp) -> true
+		| Ast0.DeleteArr(dlt,lb,rb,exp) -> true
 		| Ast0.MetaExpr(nm,_,_,Ast.CONST,p,_bitfield) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
@@ -782,6 +784,13 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; check_mcode rp1 rp;
 		   check_mcode szf1 szf; match_typeC tya tyb]
+	  | (Ast0.Delete(dlt1,expa),Ast0.Delete(dlt,expb)) ->
+	      conjunct_bindings (check_mcode dlt1 dlt) (match_expr expa expb)
+	  | (Ast0.DeleteArr(dlt1,lb1,rb1,expa),
+	     Ast0.DeleteArr(dlt,lb,rb,expb)) ->
+	       conjunct_many_bindings
+		 [check_mcode lb1 lb; check_mcode rb1 rb;
+		   check_mcode dlt1 dlt; match_expr expa expb]
 	  | (Ast0.Constructor(lp1,tya,rp1,inita),
 	     Ast0.Constructor(lp,tyb,rp,initb)) ->
 	       conjunct_many_bindings

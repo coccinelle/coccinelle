@@ -141,6 +141,8 @@ let rec left_expression e =
   | Ast0.Cast(lp,ty,attr,rp,exp) -> modif_before_mcode lp
   | Ast0.SizeOfExpr(szf,exp) -> modif_before_mcode szf
   | Ast0.SizeOfType(szf,lp,ty,rp) -> modif_before_mcode szf
+  | Ast0.Delete(dlt,exp) -> modif_before_mcode dlt
+  | Ast0.DeleteArr(dlt,lb,rb,exp) -> modif_before_mcode dlt
   | Ast0.TypeExp(ty) -> left_typeC ty
   | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp
   | Ast0.MetaErr(name,_,_) -> modif_before_mcode name

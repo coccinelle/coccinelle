@@ -202,6 +202,16 @@ let visitor mode bind option_default
 	    let (ty_n,ty) = typeC ty in
             let (rp_n,rp) = string_mcode rp in
 	    (multibind [szf_n;lp_n;ty_n;rp_n], Ast0.SizeOfType(szf,lp,ty,rp))
+	| Ast0.Delete(dlt, exp) ->
+	    let (dlt_n,dlt) = string_mcode dlt in
+	    let (exp_n,exp) = expression exp in
+	    (multibind [dlt_n;exp_n],Ast0.Delete(dlt,exp))
+	| Ast0.DeleteArr(dlt,lb,rb,exp) ->
+	    let (dlt_n,dlt) = string_mcode dlt in
+	    let (lb_n,lb) = string_mcode lb in
+            let (rb_n,rb) = string_mcode rb in
+	    let (exp_n,exp) = expression exp in
+	    (multibind [dlt_n;lb_n;rb_n;exp_n], Ast0.DeleteArr(dlt,lb,rb,exp))
 	| Ast0.TypeExp(ty) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n,Ast0.TypeExp(ty))

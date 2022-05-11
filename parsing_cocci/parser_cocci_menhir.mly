@@ -240,7 +240,7 @@ let inline_id aft = function
 
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl TFunProto
+%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl TFunProto Tdelete
 %token <Data.clt> Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
@@ -2245,8 +2245,14 @@ unary_expr(r,pe):
       { Ast0_cocci.wrap(Ast0_cocci.SizeOfExpr (Parse_aux.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
       { Ast0_cocci.wrap(Ast0_cocci.SizeOfType (Parse_aux.clt2mcode "sizeof" s,
-                                   Parse_aux.clt2mcode "(" lp,t,
-                                   Parse_aux.clt2mcode ")" rp)) }
+					       Parse_aux.clt2mcode "(" lp,t,
+					       Parse_aux.clt2mcode ")" rp)) }
+  | Tdelete unary_expr_bis
+      { Ast0_cocci.wrap(Ast0_cocci.Delete     (Parse_aux.clt2mcode "delete" $1, $2)) }
+  | s=Tdelete lb=TOCro rb=TCCro exp=unary_expr_bis
+      { Ast0_cocci.wrap(Ast0_cocci.DeleteArr  (Parse_aux.clt2mcode "delete" s,
+					       Parse_aux.clt2mcode "[" lb,
+					       Parse_aux.clt2mcode "]" rb, exp)) }
 
 // version that allows dots
 unary_expr_bis:
@@ -2261,8 +2267,14 @@ unary_expr_bis:
       { Ast0_cocci.wrap(Ast0_cocci.SizeOfExpr (Parse_aux.clt2mcode "sizeof" $1, $2)) }
   | s=TSizeof lp=TOPar t=ctype rp=TCPar
       { Ast0_cocci.wrap(Ast0_cocci.SizeOfType (Parse_aux.clt2mcode "sizeof" s,
-                                   Parse_aux.clt2mcode "(" lp,t,
-                                   Parse_aux.clt2mcode ")" rp)) }
+					       Parse_aux.clt2mcode "(" lp,t,
+					       Parse_aux.clt2mcode ")" rp)) }
+  | Tdelete unary_expr_bis
+      { Ast0_cocci.wrap(Ast0_cocci.Delete     (Parse_aux.clt2mcode "delete" $1, $2)) }
+  | s=Tdelete lb=TOCro rb=TCCro t=unary_expr_bis
+      { Ast0_cocci.wrap(Ast0_cocci.DeleteArr  (Parse_aux.clt2mcode "delete" s,
+					       Parse_aux.clt2mcode "[" lb,
+					       Parse_aux.clt2mcode "]" rb, t)) }
 
 unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef $1 }
 	| TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef $1 }
@@ -3408,6 +3420,7 @@ anything: /* used for script code */
  | TContinue { "continue" }
  | TGoto { "goto" }
  | TSizeof { "sizeof" }
+ | Tdelete {"delete"}
  | Tdecimal { "decimal" }
  | Texec { "EXEC" }
  | TIdent { fst $1 }

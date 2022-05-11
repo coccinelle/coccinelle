@@ -682,6 +682,10 @@ let rec equal_expression e1 e2 =
       equal_mcode szf1 szf2
   | (Ast0.SizeOfType(szf1,lp1,_,rp1),Ast0.SizeOfType(szf2,lp2,_,rp2)) ->
       equal_mcode szf1 szf2 && equal_mcode lp1 lp2 && equal_mcode rp1 rp2
+  | (Ast0.Delete(dlt1,_),Ast0.Delete(dlt2,_)) ->
+      equal_mcode dlt1 dlt2
+  | (Ast0.DeleteArr(dlt1,lb1,rb1,_),Ast0.DeleteArr(dlt2,lb2,rb2,_)) ->
+      equal_mcode dlt1 dlt2 && equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.TypeExp(_),Ast0.TypeExp(_)) -> true
   | (Ast0.Constructor(lp1,_,rp1,_),Ast0.Constructor(lp2,_,rp2,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2

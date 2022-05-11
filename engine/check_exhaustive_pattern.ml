@@ -126,6 +126,8 @@ let dumb_astcocci_expr = function
  | A.Cast (_, typa, attra, _, ea) -> ()
  | A.SizeOfExpr (_, ea) -> ()
  | A.SizeOfType (_, _, typa, _) -> ()
+ | A.Delete (_, ea) -> ()
+ | A.DeleteArr (_,_,_,ea) -> ()
  | A.TypeExp (typa) -> ()
  | A.Constructor (_, typa, _, ia) -> ()
  | A.Paren (_, ea, _) -> ()
