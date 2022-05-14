@@ -264,6 +264,15 @@ let rec expression e =
   | Ast.DeleteArr(dlt,lb,rb,exp) ->
       mcode print_string dlt; print_string " "; mcode print_string lb; mcode print_string rb; print_string " ";
       expression exp
+  | Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+      mcode print_string nw;
+      print_string " ";
+      print_option print_args pp_opt;
+      print_option (function e -> mcode print_string e) lp_opt;
+      fullType ty;
+      print_option (function e -> mcode print_string e) rp_opt;
+      print_string " ";
+      print_option print_args args_opt;
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();
@@ -289,6 +298,12 @@ let rec expression e =
       mcode print_string dots; print_string "   when != "; expression whencode
   | Ast.Edots(dots,None) -> mcode print_string dots
   | Ast.OptExp(exp) -> print_string "?"; expression exp
+
+and print_args (lp,args,rp) =
+  mcode print_string lp;
+  dots (function _ -> ()) expression args;
+  mcode print_string rp;
+  print_string " ";
 
 and string_fragment e =
   match Ast.unwrap e with

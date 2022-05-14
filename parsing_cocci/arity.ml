@@ -90,6 +90,7 @@ let mcodebinaryOp2arity op = match Ast0.unwrap op with
 
 let mcode x = x (* nothing to do ... *)
 
+
 (* --------------------------------------------------------------------- *)
 (* Dots *)
 
@@ -179,13 +180,10 @@ let rec top_expression opt_allowed tgt expr =
       let str = dots (string_fragment arity) str in
       let rq = mcode rq in
       make_exp expr tgt arity (Ast0.StringConstant(lq,str,rq,isWchar))
-  | Ast0.FunCall(fn,lp,args,rp) ->
-      let arity = exp_same (mcode2line lp) [mcode2arity lp;mcode2arity rp] in
-      let fn = expression arity fn in
-      let lp = mcode lp in
-      let args = dots (expression arity) args in
-      let rp = mcode rp in
-      make_exp expr tgt arity (Ast0.FunCall(fn,lp,args,rp))
+  | Ast0.FunCall(fn,lp,args,rp) -> (* TODO FunCall(fn,args) *)
+      let fn = expression tgt fn in
+      let (lp,args,rp) = arg_list tgt (lp,args,rp) in
+      make_exp expr tgt tgt (Ast0.FunCall(fn,lp,args,rp))
   | Ast0.Assignment(left,op,right,simple) ->
       let arity = exp_same (mcodeassignOp2line op) [mcodeassignOp2arity op] in
       let left = expression arity left in
@@ -288,6 +286,19 @@ let rec top_expression opt_allowed tgt expr =
       let rb = mcode rb in
       let exp = expression arity exp in
       make_exp expr tgt arity (Ast0.DeleteArr(dlt,lb,rb,exp))
+  | Ast0.New(nw,pp_opt,lp2_opt,ty,rp2_opt,args_opt) ->
+      let arity =
+      match (lp2_opt,rp2_opt) with
+        | (Some lp, Some rp) -> exp_same (mcode2line nw) (List.map mcode2arity [nw;lp;rp])
+        | (None, None) -> exp_same (mcode2line nw) [mcode2arity nw]
+        | _ -> failwith "impossible" in
+      let nw = mcode nw in
+      let pp_opt = get_option (arg_list arity) pp_opt in
+      let lp2_opt = get_option mcode lp2_opt in
+      let ty = typeC arity ty in
+      let rp2_opt = get_option mcode rp2_opt in
+      let args_opt = get_option (arg_list arity) args_opt in
+      make_exp expr tgt arity (Ast0.New(nw,pp_opt,lp2_opt,ty,rp2_opt,args_opt))
   | Ast0.TypeExp(ty) -> Ast0.rewrap expr (Ast0.TypeExp(typeC tgt ty))
   | Ast0.MetaErr(name,constraints,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
@@ -349,6 +360,13 @@ let rec top_expression opt_allowed tgt expr =
       failwith "unexpected code"
 
 and expression tgt exp = top_expression false tgt exp
+
+and arg_list tgt (lp,exp,rp) =
+  let arity = all_same false tgt (mcode2line lp) [mcode2arity lp; mcode2arity rp] in
+  let lp = mcode lp in
+  let exp = dots (expression arity) exp in
+  let rp = mcode rp in
+  (lp,exp,rp)
 
 and make_fragment =
   make_opt

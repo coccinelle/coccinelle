@@ -452,6 +452,15 @@ and expression e =
 	Ast.Delete(mcode dlt,expression exp)
     | Ast0.DeleteArr(dlt,lb,rb,exp) ->
 	Ast.DeleteArr(mcode dlt, mcode lb, mcode rb, expression exp)
+    | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+	let allminus = check_allminus.VT0.combiner_rec_expression e in
+	let nw = mcode nw in
+	let pp_opt = get_option argslist pp_opt in
+	let lp2 = get_option mcode lp_opt in
+	let ty = typeC allminus ty in
+	let rp2 = get_option mcode rp_opt in
+	let args_opt = get_option argslist args_opt in
+	Ast.New(nw,pp_opt,lp2,ty,rp2,args_opt)
     | Ast0.TypeExp(ty) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.TypeExp(typeC allminus ty)
@@ -492,6 +501,12 @@ and expression e =
 	Ast.Edots(dots,whencode)
     | Ast0.OptExp(exp) -> Ast.OptExp(expression exp)) in
   if Ast0.get_test_exp e then Ast.set_test_exp e1 else e1
+
+and argslist (lp,args,rp) =
+  let lp = mcode lp in
+  let args = dots expression args in
+  let rp = mcode rp in
+  (lp,args,rp)
 
 and assignOp op =
   rewrap op no_isos

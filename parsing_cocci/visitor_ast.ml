@@ -227,6 +227,14 @@ let combiner bind option_default
 	  let lrb = string_mcode rb in
 	  let lexp = expression exp in
 	  multibind [ldlt; llb; lrb; lexp]
+      | Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+	  let lnw = string_mcode nw in
+	  let lpp_opt = get_option argslist pp_opt in
+	  let llp = get_option string_mcode lp_opt in
+	  let lty = fullType ty in
+	  let lrp = get_option string_mcode rp_opt in
+	  let largs_opt = get_option argslist args_opt in
+          multibind [lnw; lpp_opt; llp; lty; lrp; largs_opt]
       | Ast.TypeExp(ty) -> fullType ty
       | Ast.Constructor(lp,ty,rp,init) ->
 	  let llp = string_mcode lp in
@@ -260,6 +268,12 @@ let combiner bind option_default
 	  bind ldots lwhncode
       | Ast.OptExp(exp) -> expression exp in
     exprfn all_functions k e
+
+  and argslist (lp,args,rp) =
+    let lp = string_mcode lp in
+    let args = expression_dots args in
+    let rp = string_mcode rp in
+    multibind [lp; args; rp]
 
   and assignOp op =
     let k e =
@@ -1274,6 +1288,14 @@ let rebuilder
 	    let lrb = string_mcode rb in
 	    let lexp = expression exp in
 	    Ast.DeleteArr(ldlt, llb, lrb, lexp)
+	| Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+	  let lnw = string_mcode nw in
+	  let lpp_opt = get_option argslist pp_opt in
+	  let llp_opt = get_option string_mcode lp_opt in
+	  let lty = fullType ty in
+	  let lrp_opt = get_option string_mcode rp_opt in
+	  let largs_opt = get_option argslist args_opt in
+	  Ast.New(lnw,lpp_opt,llp_opt,lty,lrp_opt,largs_opt)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.Constructor(lp,ty,rp,init) ->
 	    let llp = string_mcode lp in
@@ -1312,6 +1334,12 @@ let rebuilder
 	    Ast.Edots(ldots, lwhncode)
 	| Ast.OptExp(exp) -> Ast.OptExp(expression exp)) in
     exprfn all_functions k e
+
+  and argslist (lp,args,rp) =
+    let lp = string_mcode lp in
+    let args = expression_dots args in
+    let rp = string_mcode rp in
+    (lp,args,rp)
 
   and string_fragment e =
     let k e =

@@ -814,9 +814,68 @@ cond_expr:
      { $1 }
  | arith_expr TWhy gcc_opt_expr TDotDot cond_expr
      { mk_e (CondExpr ($1,$3,$5)) [$2;$4] }
- | Tnew new_argument               { mk_e(New (None, $2))     [$1] }
- | Tnew TOPar argument_list_ne TCPar new_argument { mk_e(New (Some $3, $5))             [$1; $2; $4] }
+ | Tnew cpp_type /*ask about using a Tnull*/
+   /* does cpp_type support class names and nested-specifiers */
+     cpp_initialiser_opt
+     {
+      let (ty,par2) = $2 in
+      let (init,par3) = $3 in
+      mk_e (New (None, ty, init)) ($1 :: par2 @ par3) }
+ | Tnew placement_params
+     cpp_type
+     cpp_initialiser_opt
+     {
+      let (pp,par1) = $2 in
+      let (ty,par2) = $3 in
+      let (init,par3) = $4 in
+      mk_e (New (pp, ty, init)) ($1 :: par1 @ par2 @ par3)
+    }
 
+placement_params:
+   TOPar argument_list_ne_without_paramdecl TCPar { (Some $2, [$1;$3] ) }
+   
+cpp_initialiser_opt:
+ | TOPar argument_list_ne TCPar { (Some $2, [$1;$3] ) }
+ | TOBrace argument_list_ne TCBrace { (Some $2, [$1;$3] ) }
+ | TOBrace TCBrace { (Some [], [$1;$2]) }
+ | TOPar TCPar { (Some [], [$1;$2]) }
+ | /*(* empty *)*/              { (None, []) }
+
+cpp_type:
+   TOPar simple_type TCPar                  
+     { let tmp = 
+       (dt "spec_qualif" (); 
+	([],(addTypeD(
+	     (dt "type" (); $2),nullDecl)))) in
+     let (attrs, ds) = tmp in
+     let (returnType, _) = fixDeclSpecForDecl ds in 
+     let ret = (attrs, returnType) in
+     ((snd ret), [$1;$3])
+     }
+ | simple_type
+    { 
+      let tmp = 
+	(dt "spec_qualif" (); 
+	 ([],(addTypeD(
+	      (dt "type" (); $1),nullDecl)))) in
+      let (attrs, ds) = tmp in
+      let (returnType, _) = fixDeclSpecForDecl ds in 
+      let ret = (attrs, returnType) in
+      ((snd ret), [])
+    }
+
+ | TIdent {
+   let name = RegularName (mk_string_wrap $1) in
+   let st = (Right3 (TypeName (name, Ast_c.noTypedefDef())),[]) in
+   let tmp =
+       (dt "spec_qualif" (); 
+	([],(addTypeD(
+	     (dt "type" (); st),nullDecl)))) in
+     let (attrs, ds) = tmp in
+     let (returnType, _) = fixDeclSpecForDecl ds in 
+     let ret = (attrs, returnType) in
+     ((snd ret), [])
+}
 
 arith_expr:
  | cast_expr                     { $1 }
@@ -868,49 +927,6 @@ unary_expr:
  | Tdefined TOPar identifier_cpp TCPar
  { mk_e(Defined $3) [$1;$2;$4] }
 
-new_argument:
- | TIdent TOPar argument_list_ne TCPar
-     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-       Left (mk_e(FunCall (fn, $3)) [$2;$4]) }
- | TIdent TOPar TCPar
-     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-       Left(mk_e(FunCall (fn, [])) [$2;$3]) }
- | TypedefIdent TOPar argument_list_ne TCPar
-     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-       Left (mk_e(FunCall (fn, $3)) [$2;$4]) }
- | TypedefIdent TOPar TCPar
-     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-       Left (mk_e(FunCall (fn, [])) [$2;$3]) }
- | simple_type muls
-     { let ty = addTypeD ($1,nullDecl) in
-       let ((returnType,hasreg), iihasreg) = fixDeclSpecForParam ty in
-       let returnType =
-	 let rec loop = function
-	     [] -> returnType
-	   | mul::muls ->
-	       let res = loop muls in
-	       mk_ty (Pointer res) [mul] in
-	 loop (List.rev $2) in
-       Right (ArgType { p_namei = None; p_type = returnType;
-                        p_register = hasreg, iihasreg; p_attr = [];
-                        p_midattr = []; p_endattr = [];
-		      } )
-     }
- | new_argument TOCro expr TCCro
-     {
-       match $1 with
-	 Left(e) -> Left(mk_e(ArrayAccess (e, $3)) [$2;$4])
-       | Right(ArgType(ty)) -> (* lots of hacks to make the right type *)
-	   let fty = mk_ty (Array (Some $3, ty.Ast_c.p_type)) [$2;$4] in
-	   let pty = { ty with p_type = fty } in
-	   Right(ArgType pty)
-       | _ -> raise (Impossible 88)
-     }
-
-muls:
-   {[]}
- | muls TMul { $1@[$2] }
-
 unary_op:
  | TAnd   { GetRef,     $1 }
  | TMul   { DeRef,      $1 }
@@ -941,9 +957,8 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
      { mk_e(Constructor (snd $2, (InitList (List.rev $5),[$4;$7] @ $6))) [$1;$3] }
 
-
 primary_expr:
- | identifier_cpp  { mk_e(Ident  ($1)) [] }
+   identifier_cpp  { mk_e(Ident  ($1)) [] }
  | TInt
     { let (str,(sign,base)) = fst $1 in
       mk_e(Constant (Int (str,Si(sign,base)))) [snd $1] }
@@ -964,7 +979,8 @@ primary_expr:
      { mk_e(Constant (MultiString ["TODO: MultiString"])) ($1 @ $2) }
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
- | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }
+ | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
+
 
 string_fragments:
  | /* empty */ { [] }
@@ -988,6 +1004,9 @@ argument_ne:
  | parameter_decl_arg { Right (ArgType $1) }
  | action_higherordermacro_ne { Right (ArgAction $1) }
 
+argument_ne_without_paramdecl:
+ | assign_expr { Left $1 }
+ | action_higherordermacro_ne { Right (ArgAction $1) }
 
 argument:
  | assign_expr { Left $1 }
@@ -1341,8 +1360,9 @@ simple_type:
          [] -> ret
        | _ -> warning "attributes found in typeof(...), dropping" ret }
 
-type_spec2:
+type_spec2_without_braces:
    simple_type { $1 }
+type_spec2_with_braces:
  | struct_or_union_spec { Right3 (fst $1), snd $1 }
  | enum_spec            { Right3 (fst $1), snd $1 }
 
@@ -1350,7 +1370,9 @@ type_spec2:
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
 
-type_spec: type_spec2    { dt "type" (); $1   }
+type_spec: 
+     type_spec2_without_braces    { dt "type" (); $1   }
+ |   type_spec2_with_braces       { dt "type" (); $1   }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Qualifiers *)*/
@@ -1693,7 +1715,6 @@ spec_qualif_list2:
 
 spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }
 
-
 /*(* for pointers in direct_declarator and abstract_declarator *)*/
 type_qualif_list:
  | type_qualif { (Ast_c.noattr,{nullDecl with qualifD = (fst $1,[snd $1])}) }
@@ -1714,8 +1735,6 @@ type_name:
        let (attrs2, fn) = $2 in
        let (returnType, _) = fixDeclSpecForDecl ds in
        (attrs1@attrs2, fn returnType) }
-
-
 
 abstract_declaratort:
  | abstract_declarator { $1 }
@@ -2735,6 +2754,10 @@ constr_extra_list:
 argument_list_ne:
  | argument_ne                           { [$1, []] }
  | argument_list_ne TComma argument { $1 @ [$3,    [$2]] }
+
+argument_list_ne_without_paramdecl:
+ | argument_ne_without_paramdecl                         { [$1, []] }
+ | argument_list_ne TComma argument_ne_without_paramdecl { $1 @ [$3,    [$2]] }     
 
 argument_list:
  | argument                           { [$1, []] }

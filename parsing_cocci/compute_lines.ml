@@ -451,6 +451,18 @@ let rec expression e =
       let rb = normal_mcode rb in
       let exp = expression exp in
       mkres e (Ast0.DeleteArr(dlt,lb,rb, exp)) (promote_mcode dlt) exp
+  | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) -> (* HIGH doubts in this one *)
+      let nw = normal_mcode nw in
+      let pp_opt = get_option normal_args pp_opt in
+      let lp_opt = get_option normal_mcode lp_opt in
+      let ty = typeC ty in
+      let rp_opt = get_option normal_mcode rp_opt in
+      let args_opt = get_option normal_args args_opt in
+      let tmp = Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) in
+      (match (args_opt,rp_opt) with
+      | (None,None) -> mkres e tmp (promote_mcode nw) ty
+      | (None,Some x) -> mkres e tmp (promote_mcode nw) (promote_mcode x)
+      | (Some (lp,args,rp),_) -> mkres e tmp (promote_mcode nw) (promote_mcode rp))
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
   | Ast0.Constructor(lp,ty,rp,init) ->
@@ -509,6 +521,12 @@ let rec expression e =
   | Ast0.AsSExpr(exp,asexp) ->
       let exp = expression exp in
       mkres e (Ast0.AsSExpr(exp,asexp)) exp exp
+
+and normal_args (lp,args,rp) =
+  let lp = normal_mcode lp in
+  let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+  let rp = normal_mcode rp in
+  (lp,args,rp)
 
 and expression_dots x = dots is_exp_dots None expression x
 

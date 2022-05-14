@@ -1587,6 +1587,83 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.SizeOfType (typb),typ),[ib1;ib2;ib3])
       )))))
 
+  | A.New (ia1, pp_opta,ia4_opt,typa,ia5_opt,init_opta), ((B.New (pp_optb,typb,init_optb), typ), ib1::ii) ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+	(* for checking pp_opt *)
+	option (fun (ia2, x, ia3) (ib2,y,ib3,ii) ->
+	  arguments (seqstyle x) (A.unwrap x) y >>= (fun xunwrap y ->
+          let x = A.rewrap x xunwrap in
+	      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+	      tokenf ia3 ib3 >>= (fun ia3 ib3 ->
+		return ((ia2, x, ia3), (ib2, y, ib3, ii))
+	      ))
+	    ))
+	  pp_opta
+	  (match (pp_optb,ii) with
+	    (None,_) -> None
+	  | (Some pp_optb, ib2::ib3::ii) -> Some (ib2, pp_optb, ib3, ii)
+          | _ -> failwith "impossible 0")
+	  >>= (fun pp_opta pp_optb ->
+	       let (ib23,pp_optb,ii) =
+		 match pp_optb with
+		   None -> ([], None, ii)
+		 | Some (ib2, pp_optb, ib3, ii) -> ([ib2;ib3],Some pp_optb,ii) in
+	       (* next two options for matchings paranthesis around type *)
+	       option (fun ia4 _ ->
+		 match ii with
+		   ib4::ii ->
+	             tokenf ia4 ib4 >>= (fun ia4 ib4->
+	               return (ia4, (ib4, ii)))
+		 | _ -> fail)
+		 ia4_opt
+		 (fmap (function _ -> (ib1, ii)) ia4_opt)
+		 >>= (fun ia4_opt ib4_opt ->
+		     let (ib4, ii) =
+			match ib4_opt with
+			  None -> ([], ii)
+			| Some (ib4, ii) -> ([ib4], ii) in
+		     fullType typa typb >>= (fun typa typb ->
+		     option ( fun ia5 _ ->
+		       match ii with
+			 ib5::ii -> tokenf ia5 ib5 >>= (fun ia5 ib5 ->
+			   return (ia5, (ib5, ii)))
+		       | _ -> fail)
+		       ia5_opt
+		       (fmap (function _ -> (ib1, ii)) ia5_opt)
+			 >>= (fun ia5_opt ib5_opt ->
+			 let (ib5, ii) =
+			   match ib5_opt with
+			     None -> ([], ii)
+			   | Some (ib5, ii) -> ([ib5], ii) in
+			 (* for matching init_opt *)
+			 match (init_optb, ii) with
+			   (Some x, []) -> fail
+			 | _ ->
+			     option (fun (ia6, x, ia7) (ib6, y, ib7, ii) ->
+			       arguments (seqstyle x) (A.unwrap x) y >>= (fun xunwrap y ->
+				 let x = A.rewrap x xunwrap in
+				 tokenf ia6 ib6 >>= (fun ia6 ib6 ->
+				   tokenf ia7 ib7 >>= (fun ia7 ib7 ->
+				     return ((ia6, x, ia7), (ib6, y, ib7, ii))))
+									 )) 
+			       init_opta
+			       (match (init_optb, ii) with
+				 (None,_) -> None
+			       | (Some init_optb, ib6::ib7::ii) -> Some (ib6, init_optb, ib7, ii)
+			       | _ -> failwith "impossible1" )
+			       >>= (fun init_opta init_optb ->
+				 let (ib67, init_optb, ii) =
+				   match init_optb with
+			             None -> ([], None, ii)
+				   | Some (ib6, init_optb, ib7, ii) -> ([ib6;ib7], Some init_optb, ii) in
+				 if ii != [] (* ALL TOKENS SHOULD HAVE BEEN MATCHED *)
+				 then fail
+				 else
+				   return (
+				   ((A.New(ia1, pp_opta, ia4_opt, typa, ia5_opt ,init_opta))) +> wa,
+				   ((B.New(pp_optb, typb, init_optb), typ), ib1::ib23@ib4@ib5@ib67)
+				  )))))))
+		
 
   | A.Delete (dlta,expa), ((B.Delete (false,expb),typ),ii) ->
       let dltb = tuple_of_list1 ii in

@@ -167,9 +167,30 @@ let mk_pretty_printers
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
-    | New   (None, t),     [i1] -> pr_elem i1; pp_argument t
-    | New   (Some ts, t),     [i1; i2; i3] ->
-	pr_elem i1; pr_elem i2; pp_arg_list ts; pr_elem i3; pp_argument t
+    | New   (pp, t, init),    i1::rest ->
+	pr_elem i1; pr_space();
+	let rest =
+	  default rest
+	    (function x ->
+	      match rest with
+		i2::i3::rest -> 
+		  pr_arg_list_with_par (i2,x,i3);
+		  rest
+              | _ -> failwith "impossible")
+	    pp in
+	(match init with
+	  None ->
+	    (match rest with
+	      [i4;i5] -> pr_elem i4; pp_type t; pr_elem i5
+	    | [] -> pp_type t
+	    | _ -> failwith "impossible")
+	| Some init ->
+	    (match rest with
+	      [i4;i5;i6;i7] ->
+		pr_elem i4; pp_type t; pr_elem i5;
+		pr_arg_list_with_par (i6, init, i7)
+	    | [i6;i7] -> pp_type t; pr_arg_list_with_par (i6,init,i7)
+	    | _ -> failwith "impossible"))
     | Delete(false,t), [i1] -> pr_elem i1; pr_space(); pp_expression t
     | Delete(true,t), [i1;i2;i3] ->
 	pr_elem i1; pr_space(); pr_elem i2; pr_elem i3; pr_space();
@@ -211,6 +232,12 @@ let mk_pretty_printers
   and pr_assignOp (_,ii) =
     let i = Common.tuple_of_list1 ii in
     pr_elem i
+
+  and pr_arg_list_with_par (i1, args, i2) =
+    pr_elem i1;
+    pp_arg_list args;
+    pr_elem i2;
+    pr_space()
 
   and pr_binaryOp (_,ii) =
     let i = Common.tuple_of_list1 ii in

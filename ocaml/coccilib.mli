@@ -162,7 +162,7 @@ module Ast_c :
       | StatementExpr of compound wrap
       | Constructor of fullType * initialiser
       | ParenExpr of expression
-      | New of argument wrap2 list option * argument
+      | New of argument wrap2 list option * fullType * argument wrap2 list option
       | Delete of bool * expression
       | Defined of name
     and argument = (expression, weird_argument) Common.either
@@ -2615,6 +2615,8 @@ module Ast_cocci :
       | SizeOfType of string mcode * string mcode * fullType * string mcode
       | Delete of string mcode * expression
       | DeleteArr of string mcode * string mcode * string mcode * expression
+      | New of string mcode * arguments option * string mcode option * fullType * string mcode option *
+	    arguments option
       | TypeExp of fullType
       | Paren of string mcode * expression * string mcode
       | Constructor of string mcode * fullType * string mcode * initialiser
@@ -2632,6 +2634,7 @@ module Ast_cocci :
           expression option * multi
       | Edots of string mcode * expression option
       | OptExp of expression
+    and arguments = string mcode (* ( *) * expression dots * string mcode (* ) *)
     and 'a generic_constraints =
       'a Ast_cocci.generic_constraints =
         CstrFalse
@@ -3367,6 +3370,8 @@ module Ast0_cocci :
       | SizeOfType of string mcode * string mcode * typeC * string mcode
       | Delete of string mcode * expression
       | DeleteArr of string mcode * string mcode * string mcode * expression
+      | New of string mcode * arguments option * string mcode option * typeC * string mcode option *
+	    arguments option
       | TypeExp of typeC
       | Constructor of string mcode * typeC * string mcode * initialiser
       | MetaErr of Ast_cocci.meta_name mcode * constraints * pure
@@ -3387,6 +3392,7 @@ module Ast0_cocci :
           (string mcode * string mcode * expression) option
       | OptExp of expression
     and expression = base_expression wrap
+    and arguments = string mcode (* ( *) * expression dots * string mcode (* ) *)
     and constraints = expression Ast_cocci.generic_constraints
     and listlen =
       Ast0_cocci.listlen =

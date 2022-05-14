@@ -491,6 +491,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.SizeOfType(sizeof,lp,ty,rp) -> bind (keywords "sizeof") (k e)
     | Ast.Delete(delete,exp) -> bind (keywords "delete") (k e)
     | Ast.DeleteArr(delete,lb,rb,exp) -> bind (keywords "delete") (k e)
+    | Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) -> bind (keywords "new") (k e)
     | Ast.NestExpr(starter,expr_dots,ender,wc,false) -> option_default
     | Ast.NestExpr(starter,expr_dots,ender,wc,true) ->
 	r.V.combiner_expression_dots expr_dots

@@ -459,7 +459,7 @@ let rec expression e =
     | Ast_c.StatementExpr (statxs, _) -> top
     | Ast_c.Constructor (t, init) -> unary
     | Ast_c.ParenExpr (e) -> primary
-    | Ast_c.New (_, t) -> unary
+    | Ast_c.New (_, t, _) -> unary
     | Ast_c.Delete(_,t) -> unary
     | Ast_c.Defined _ -> primary
   in
@@ -513,6 +513,13 @@ let rec expression e =
       mcode print_string sizeof;
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
+  | Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+      mcode print_string nw;
+      print_option print_args pp_opt;
+      print_option (function e -> mcode print_string e) lp_opt;
+      fullType ty;
+      print_option (function e -> mcode print_string e) rp_opt;
+      print_option print_args args_opt;
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();
@@ -580,6 +587,11 @@ let rec expression e =
 
   | Ast.OptExp(exp) -> raise CantBeInPlus in
   loop e top
+
+and print_args (lp,args,rp) =
+  mcode print_string lp;
+  dots (function _ -> ()) expression args;
+  mcode print_string rp
 
 and arg_expression e =
   match Ast.unwrap e with

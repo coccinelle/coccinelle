@@ -118,7 +118,7 @@ and expressionbis =
   | StatementExpr of compound wrap
   | Constructor of fullType * initialiser
   | ParenExpr of expression
-  | New of argument wrap2 list option * argument
+  | New of (argument wrap2 list) option * fullType * (argument wrap2 list) option
   | Delete of bool (* true if [] *) * expression
   | Defined of name
 and argument = (expression, weird_argument) Common.either

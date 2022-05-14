@@ -236,6 +236,15 @@ let rec expression e =
       | Ast0.DeleteArr(dlt,lb,rb,exp) ->
 	  mcode print_string dlt; print_string " "; mcode print_string lb; mcode print_string rb; print_string " ";
 	  expression exp
+      | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+	  mcode print_string nw;
+	  print_string " ";
+	  print_option (print_args true) pp_opt;
+	  print_option (function e -> mcode print_string e) lp_opt;
+	  typeC ty;
+	  print_option (function e -> mcode print_string e) rp_opt;
+	  print_string " ";
+	  print_option (print_args false) args_opt;
       | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.Constructor(lp,ty,rp,init) ->
 	  mcode print_string_box lp; typeC ty; close_box();
@@ -273,6 +282,13 @@ let rec expression e =
 	  statement "" asstm)
 
 and expression_dots x = dots (function _ -> ()) expression x
+
+and print_args putspace (lp,args,rp) =
+  mcode print_string lp;
+  expression_dots args;
+  mcode print_string rp;
+  if putspace then
+    print_string " "
 
 and string_fragment e =
   match Ast0.unwrap e with

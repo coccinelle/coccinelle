@@ -341,10 +341,10 @@ let rec vk_expr = fun bigf expr ->
 
     | ParenExpr (e) -> exprf e
 
-    | New  (None, t)   -> vk_argument bigf t
-    | New  (Some ts, t)   ->
-        vk_argument_list bigf ts;
-	vk_argument bigf t
+    | New  (pp, t, init)   ->
+        do_option (vk_argument_list bigf) pp;
+	vk_type bigf t;
+	do_option (vk_argument_list bigf) init
     | Delete (_,e) -> vk_expr bigf e
     | Defined name -> vk_name bigf name
 
@@ -1248,10 +1248,13 @@ let rec vk_expr_s = fun bigf expr ->
 
       | ParenExpr (e)    -> ParenExpr (exprf e)
 
-      | New (None, t)    -> New (None, vk_argument_s bigf t)
-      | New (Some ts, t) ->
-	  New (Some (ts +> List.map (fun (e,ii) ->
-	    vk_argument_s bigf e, iif ii)), vk_argument_s bigf t)
+      | New (pp, t, init) ->
+	  New (
+	    fmap (function pp -> pp +> List.map (fun (e,ii) ->
+              vk_argument_s bigf e, iif ii)) pp,
+	    vk_type_s bigf t,
+	    fmap (function init -> init +> List.map (fun (e,ii) ->
+              vk_argument_s bigf e, iif ii)) init)
       | Delete (box,e) -> Delete (box,vk_expr_s bigf e)
       | Defined name  -> Defined (vk_name_s bigf name)
 

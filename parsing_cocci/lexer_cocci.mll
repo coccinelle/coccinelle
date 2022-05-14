@@ -297,17 +297,16 @@ let id_tokens lexbuf =
 	then check_var s linetype
 	else Tdelete linetype
   | "auto"  ->
-      let open Flag in
-      begin match !c_plus_plus with
-        On None ->
+      begin match !Flag.c_plus_plus with
+        Flag.On None ->
           raise (
             Semantic_cocci.Semantic (
               "auto has different meaning in different versions of C++. Please specify a version using --c++=<version>"))
-      | On (Some i) ->
+      | Flag.On (Some i) ->
           if i >= 2011
           then TautoType linetype
           else Tauto linetype
-      | Off -> Tauto linetype end
+      | Flag.Off -> Tauto linetype end
   | "register" ->   Tregister linetype
   | "extern" ->     Textern   linetype
   | "static" ->     Tstatic   linetype
@@ -332,6 +331,8 @@ let id_tokens lexbuf =
 
   | "sizeof" ->     TSizeof   linetype
   | "typeof" ->     TTypeof   linetype
+
+  | "new" when !Flag.c_plus_plus != Flag.Off -> TNew linetype
 
   | "__attribute__" -> TAttr_ linetype
 

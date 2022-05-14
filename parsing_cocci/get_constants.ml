@@ -55,6 +55,10 @@ let get_minus_constants bind orbind =
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.Delete(delete,_) | Ast.DeleteArr(delete,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode delete]
+    | Ast.NewPar(nw,_,_,_,_,_,_) ->
+	bind (k e) [Ast.unwrap_mcode new]
+    | Ast.NewNoPar(nw,_,_,_,_,_,_) ->
+	bind (k e) [Ast.unwrap_mcode new]
     | Ast.DisjExpr(exps) ->
 	disj_union_all (List.map r.V.combiner_expression exps)
     | Ast.Edots(_,_) | Ast.Ecircles(_,_) | Ast.Estars(_,_) -> []

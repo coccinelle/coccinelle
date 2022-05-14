@@ -240,7 +240,7 @@ let inline_id aft = function
 
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl TFunProto Tdelete
+%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl TFunProto TNew Tdelete
 %token <Data.clt> Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
@@ -967,7 +967,25 @@ signable_types:
     Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm (Parse_aux.id2clt p),Ast_cocci.CstrTrue,
 			    Ast0_cocci.Impure (*will be ignored*))) }
 
-non_signable_types_no_ident:
+non_signable_types_no_ident_with_braces:
+    s=Tenum i=ioption(ident) l=TOBrace ids=enum_decl_list r=TCBrace
+    { (if i = None && !Data.in_iso
+    then failwith "enums must be named in the iso file");
+      Ast0_cocci.wrap(Ast0_cocci.EnumDef(Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, i)),
+			     Parse_aux.clt2mcode "{" l, ids, Parse_aux.clt2mcode "}" r)) }
+    | s=struct_or_union i=ioption(type_ident)
+    l=TOBrace d=struct_decl_list r=TCBrace
+    { (if i = None && !Data.in_iso
+    then failwith "structures must be named in the iso file");
+      Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, i)),
+				    Parse_aux.clt2mcode "{" l,
+				    d, Parse_aux.clt2mcode "}" r)) }
+    | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
+    { let (nm,cstr,pure,clt) = s in
+    let ty = Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) in
+    Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(ty,Parse_aux.clt2mcode "{" l,d,Parse_aux.clt2mcode "}" r)) }
+
+non_signable_types_no_ident_without_braces:
   ty=Tvoid
     { Ast0_cocci.wrap(Ast0_cocci.BaseType(Ast_cocci.VoidType,[Parse_aux.clt2mcode "void" ty])) }
 | ty1=Tlong ty2=Tdouble
@@ -1003,24 +1021,8 @@ non_signable_types_no_ident:
     { Ast0_cocci.wrap(Ast0_cocci.BaseType(Ast_cocci.PtrDiffType,[Parse_aux.clt2mcode "ptrdiff_t" ty])) }
 | s=Tenum i=ident
     { Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, Some i)) }
-| s=Tenum i=ioption(ident) l=TOBrace ids=enum_decl_list r=TCBrace
-    { (if i = None && !Data.in_iso
-    then failwith "enums must be named in the iso file");
-      Ast0_cocci.wrap(Ast0_cocci.EnumDef(Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, i)),
-			     Parse_aux.clt2mcode "{" l, ids, Parse_aux.clt2mcode "}" r)) }
 | s=struct_or_union i=type_ident // allow typedef name
     { Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, Some i)) }
-| s=struct_or_union i=ioption(type_ident)
-    l=TOBrace d=struct_decl_list r=TCBrace
-    { (if i = None && !Data.in_iso
-    then failwith "structures must be named in the iso file");
-      Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, i)),
-				    Parse_aux.clt2mcode "{" l,
-				    d, Parse_aux.clt2mcode "}" r)) }
-| s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
-    { let (nm,cstr,pure,clt) = s in
-    let ty = Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) in
-    Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(ty,Parse_aux.clt2mcode "{" l,d,Parse_aux.clt2mcode "}" r)) }
 | Tdecimal TOPar enum_val TComma enum_val TCPar
     { Ast0_cocci.wrap(Ast0_cocci.Decimal(Parse_aux.clt2mcode "decimal" $1,
 			     Parse_aux.clt2mcode "(" $2,$3,
@@ -1054,8 +1056,14 @@ non_signable_types_no_ident:
          (Semantic_cocci.Semantic
            "auto is not a valid C type, try using the --c++ option") }
 
+non_signable_types_without_braces:
+  ty=non_signable_types_no_ident_without_braces { ty }
+| p=TTypeId
+    { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+
 non_signable_types:
-  ty=non_signable_types_no_ident { ty }
+  ty=non_signable_types_no_ident_without_braces { ty }
+| ty=non_signable_types_no_ident_with_braces { ty }
 | p=TTypeId
     { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
 
@@ -1064,6 +1072,11 @@ signed_basic_types:
     { Ast0_cocci.wrap(Ast0_cocci.Signed(Parse_aux.clt2mcode Ast_cocci.Signed r,Some ty)) }
 | r=Tunsigned ty=signable_types
     { Ast0_cocci.wrap(Ast0_cocci.Signed(Parse_aux.clt2mcode Ast_cocci.Unsigned r,Some ty)) }
+
+all_basic_types_without_braces:
+  ty=signed_basic_types { ty }
+| ty=signable_types { ty }
+| ty=non_signable_types_without_braces { ty }
 
 all_basic_types:
   ty=signed_basic_types { ty }
@@ -1081,6 +1094,28 @@ signed_or_unsigned:
 
 top_ctype:
   ctype { Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1)))) }
+
+ctype_without_braces:
+  cv1=ioption(const_vol) ty=all_basic_types_without_braces cv2=ioption(const_vol) m=list(mul)
+| cv1=ioption(const_vol) ty=signed_or_unsigned cv2=ioption(const_vol) m=list(mul)
+    { let cv = match cv1,cv2 with
+        None, None -> None
+      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
+      | Some x, None -> Some x
+      | None, Some x -> Some x in
+      List.fold_left
+	(function prev ->
+	  function (star,cv) ->
+	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cv ty) m }
+| lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0_cocci.wrap
+	(Ast0_cocci.DisjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
+| lp=TOPar0 t=andzero_list(ctype,ctype) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0_cocci.wrap
+	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype:
   cv1=ioption(const_vol) ty=all_basic_types cv2=ioption(const_vol) m=list(mul)
@@ -2153,6 +2188,7 @@ cond_expr(r,pe):
       dd=TDotDot r=cond_expr(r, pe)
       { Ast0_cocci.wrap(Ast0_cocci.CondExpr (l, Parse_aux.clt2mcode "?" w, t,
 				 Parse_aux.clt2mcode ":" dd, r)) }
+  | cppnew                                   { $1 }
 
 arith_expr(r,pe):
     cast_expr(r,pe)                         { $1 }
@@ -2253,6 +2289,40 @@ unary_expr(r,pe):
       { Ast0_cocci.wrap(Ast0_cocci.DeleteArr  (Parse_aux.clt2mcode "delete" s,
 					       Parse_aux.clt2mcode "[" lb,
 					       Parse_aux.clt2mcode "]" rb, exp)) }
+cppnew:
+  (* There are a total of 8 variations of New, because of three independant binary possibilities,
+   that is, new (placement params)|None (type)|type initilizer|None *)
+    n=TNew lp1=TOPar t=ctype rp1=TCPar args=cpp_initialiser 
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None,
+					 Some (Parse_aux.clt2mcode "(" lp1), t, Some (Parse_aux.clt2mcode ")" rp1), args )) }
+  | n=TNew t=ctype_without_braces args=cpp_initialiser
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None, None, t, None, args )) }
+  | n=TNew pp=placement_params t=ctype_without_braces
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+					   None, t, None, None )) }
+
+  | n=TNew lp1=TOPar t=ctype rp1=TCPar
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None,
+					 Some (Parse_aux.clt2mcode "(" lp1), t, Some (Parse_aux.clt2mcode ")" rp1),
+					 None )) }
+  | n=TNew t=ctype_without_braces
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None, None, t, None, None )) }
+  | n=TNew pp=placement_params lp2=TOPar t=ctype rp2=TCPar
+      {  Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+					  Some (Parse_aux.clt2mcode "(" lp2), t, Some (Parse_aux.clt2mcode ")" rp2), None )) }
+  | n=TNew pp=placement_params lp2=TOPar t=ctype rp2=TCPar args=cpp_initialiser
+      {  Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+                                          Some (Parse_aux.clt2mcode "(" lp2), t, Some (Parse_aux.clt2mcode ")" rp2),
+                                          args )) }
+  | n=TNew pp=placement_params t=ctype_without_braces args=cpp_initialiser
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp, None, t, None, args )) }
+
+cpp_initialiser:
+      lp=TOPar args=eexpr_list_option rp=TCPar { Some (Parse_aux.clt2mcode "(" lp, args, Parse_aux.clt2mcode ")" rp) }
+  |   lb=TOBrace args=eexpr_list_option rb=TCBrace { Some (Parse_aux.clt2mcode "{" lb, args, Parse_aux.clt2mcode "}" rb) }
+
+placement_params:
+      lp=TOPar args=eexpr_list_option_without_ctype rp=TCPar { Some (Parse_aux.clt2mcode "(" lp, args, Parse_aux.clt2mcode ")" rp) }
 
 // version that allows dots
 unary_expr_bis:
@@ -2276,6 +2346,35 @@ unary_expr_bis:
 					       Parse_aux.clt2mcode "[" lb,
 					       Parse_aux.clt2mcode "]" rb, t)) }
 
+/*  | n=TNew lp1=TOPar t=ctype rp1=TCPar args=cpp_initialiser
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None,
+					 Some (Parse_aux.clt2mcode "(" lp1), t, Some (Parse_aux.clt2mcode ")" rp1), args )) }
+  | n=TNew t=ctype_without_braces args=cpp_initialiser
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None,
+					 None, t, None, args )) }
+  | n=TNew pp=placement_params lp2=TOPar t=ctype rp2=TCPar args=cpp_initialiser
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+					 Some (Parse_aux.clt2mcode "(" lp2), t, Some (Parse_aux.clt2mcode ")" rp2),
+					 args )) }
+  | n=TNew pp=placement_params t=ctype_without_braces args=cpp_initialiser
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+					 None, t, None, args )) }
+
+
+  | n=TNew lp1=TOPar t=ctype rp1=TCPar
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None,
+					 Some (Parse_aux.clt2mcode "(" lp1), t, Some (Parse_aux.clt2mcode ")" rp1),
+					 None )) }
+  | n=TNew t=ctype_without_braces
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None, None, t, None, None )) }
+  | n=TNew pp=placement_params lp2=TOPar t=ctype rp2=TCPar
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+					 Some (Parse_aux.clt2mcode "(" lp2), t, Some (Parse_aux.clt2mcode ")" rp2),
+					 None )) }
+  | n=TNew pp=placement_params t=ctype_without_braces
+      { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
+					   None, t, None, None )) }
+*/
 unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef $1 }
 	| TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef $1 }
 	| TPlus   { Parse_aux.clt2mcode Ast_cocci.UnPlus $1 }
@@ -3043,14 +3142,17 @@ when_start:
 
 /* arg expr.  may contain a type or a explist metavariable */
 aexpr:
+    aexpr_without_ctype                                 { $1 }
+  | ctype
+      { Ast0_cocci.set_arg_exp(Ast0_cocci.wrap(Ast0_cocci.TypeExp($1))) }
+
+aexpr_without_ctype:
     dargexpr { Ast0_cocci.set_arg_exp $1 }
   | TMetaExpList
       { let (nm,lenname,constraints,pure,clt) = $1 in
       let nm = Parse_aux.clt2mcode nm clt in
       let lenname = Parse_aux.dolen clt lenname in
       Ast0_cocci.wrap(Ast0_cocci.MetaExprList(nm,lenname,constraints,pure)) }
-  | ctype
-      { Ast0_cocci.set_arg_exp(Ast0_cocci.wrap(Ast0_cocci.TypeExp($1))) }
 
 eexpr_list_option:
     empty_list_start(aexpr,TEllipsis)
@@ -3058,6 +3160,14 @@ eexpr_list_option:
 	  ($1
 	     (fun _ d -> Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." d,None)))
 	     (fun c -> Ast0_cocci.EComma c)) }
+
+eexpr_list_option_without_ctype:
+    empty_list_start(aexpr_without_ctype,TEllipsis)
+      { Ast0_cocci.wrap
+	  ($1
+	     (fun _ d -> Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." d,None)))
+	     (fun c -> Ast0_cocci.EComma c)) }
+
 
 /****************************************************************************/
 
@@ -3421,6 +3531,7 @@ anything: /* used for script code */
  | TGoto { "goto" }
  | TSizeof { "sizeof" }
  | Tdelete {"delete"}
+ | TNew { "new" }
  | Tdecimal { "decimal" }
  | Texec { "EXEC" }
  | TIdent { fst $1 }

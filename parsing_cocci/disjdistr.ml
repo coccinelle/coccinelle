@@ -236,6 +236,10 @@ and disjexp e =
   | Ast.DeleteArr(dlt,lb,rb,exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.DeleteArr(dlt,lb,rb,exp))) exp
+  | Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+      disjmult3 (disjoption disjargs pp_opt) (disjty ty) (disjoption disjargs args_opt)
+	(fun pp_opt ty args_opt ->
+	  Ast.rewrap e (Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt)))
   | Ast.TypeExp(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty
@@ -263,6 +267,10 @@ and disjexp e =
   | Ast.OptExp(exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.OptExp(exp))) exp
+
+and disjargs (lp,args,rp) =
+  let args = disjdots disjexp args in
+  List.map (function args -> (lp,args,rp)) args
 
 and disjparam p =
   match Ast.unwrap p with

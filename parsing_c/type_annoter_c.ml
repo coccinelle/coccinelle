@@ -1151,7 +1151,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
             | _ -> k expr; Type_c.noTypeHere
           *)
 
-    | New (_, ty) ->
+    | New (_, ty, _) ->
 	k expr;
 	pr2_once "Type annotater:not handling New";
 	Type_c.noTypeHere (* TODO *)

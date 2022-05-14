@@ -1,0 +1,1023 @@
+
+** Conflict (reduce/reduce) in state 999.
+** Tokens involved: TXor TWhy TShROp TShLOp TRightIso TPtVirg TPlus TPOEllipsis TPCEllipsis TOrLog TOr TOpAssign TOEllipsis TNotEq TMul TMinus TMid0 TMetaBinaryOp TMetaAssignOp TLogOp TLineEnd TIso TEqEq TEq TEllipsis TDotDot TDmOp TDefault TComma TCase TCPar0 TCPar TCEllipsis TCCro TCBrace TArobArob TArob TAndLog TAnd0 TAnd EOF
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TNew ctype_without_braces cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     cond_expr(eexpr,dot_expressions) 
+                     arith_expr(eexpr,dot_expressions) 
+                     arith_expr(eexpr,dot_expressions) TXor arith_expr_bis // lookahead token appears
+                     cast_expr(eexpr,dot_expressions) // lookahead token is inherited
+                     unary_expr(eexpr,dot_expressions) // lookahead token is inherited
+                     (?)
+
+** In state 999, looking ahead at TXor, reducing production
+** unary_expr(eexpr,dot_expressions) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** In state 999, looking ahead at TXor, reducing production
+** unary_expr(eexpr,dot_expressions) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** Conflict (reduce/reduce) in state 997.
+** Tokens involved: TXor TWhy TShROp TShLOp TRightIso TPtVirg TPlus TPOEllipsis TPCEllipsis TOrLog TOr TOpAssign TOEllipsis TNotEq TMul TMinus TMid0 TMetaBinaryOp TMetaAssignOp TLogOp TLineEnd TIso TEqEq TEq TEllipsis TDotDot TDmOp TDefault TComma TCase TCPar0 TCPar TCEllipsis TCCro TCBrace TArobArob TArob TAndLog TAnd0 TAnd EOF
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TNew placement_params ctype_without_braces
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     cond_expr(eexpr,dot_expressions) 
+                     arith_expr(eexpr,dot_expressions) 
+                     arith_expr(eexpr,dot_expressions) TXor arith_expr_bis // lookahead token appears
+                     cast_expr(eexpr,dot_expressions) // lookahead token is inherited
+                     unary_expr(eexpr,dot_expressions) // lookahead token is inherited
+                     (?)
+
+** In state 997, looking ahead at TXor, reducing production
+** unary_expr(eexpr,dot_expressions) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** In state 997, looking ahead at TXor, reducing production
+** unary_expr(eexpr,dot_expressions) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** Conflict (reduce/reduce) in state 996.
+** Tokens involved: TXor TWhy TShROp TShLOp TRightIso TPtVirg TPlus TPOEllipsis TPCEllipsis TOrLog TOr TOpAssign TOEllipsis TNotEq TMul TMinus TMid0 TMetaBinaryOp TMetaAssignOp TLogOp TLineEnd TIso TEqEq TEq TEllipsis TDotDot TDmOp TDefault TComma TCase TCPar0 TCPar TCEllipsis TCCro TCBrace TArobArob TArob TAndLog TAnd0 TAnd EOF
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TNew placement_params TOPar ctype TCPar cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     cond_expr(eexpr,dot_expressions) 
+                     arith_expr(eexpr,dot_expressions) 
+                     arith_expr(eexpr,dot_expressions) TXor arith_expr_bis // lookahead token appears
+                     cast_expr(eexpr,dot_expressions) // lookahead token is inherited
+                     unary_expr(eexpr,dot_expressions) // lookahead token is inherited
+                     (?)
+
+** In state 996, looking ahead at TXor, reducing production
+** unary_expr(eexpr,dot_expressions) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** In state 996, looking ahead at TXor, reducing production
+** unary_expr(eexpr,dot_expressions) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** Conflict (shift/reduce) in state 989.
+** Token involved: TCPar
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TNew TOPar ctype
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis 
+                     (?)
+
+** In state 989, looking ahead at TCPar, reducing production
+** aexpr -> ctype
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser 
+     TOPar eexpr_list_option TCPar // lookahead token appears
+           empty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           nonempty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           aexpr // lookahead token is inherited
+           ctype . 
+
+** In state 989, looking ahead at TCPar, shifting is permitted
+** because of the following sub-derivation:
+
+TNew TOPar ctype . TCPar cpp_initialiser 
+
+** Conflict (reduce/reduce) in state 835.
+** Tokens involved: TXor TWhy TShROp TShLOp TRightIso TPtVirg TPlus TPOEllipsis TPCEllipsis TOrLog TOr TOpAssign TOEllipsis TNotEq TMul TMinus TMid0 TMetaBinaryOp TMetaAssignOp TLogOp TLineEnd TIso TEqEq TEq TEllipsis TDmOp TDefault TComma TCase TCPar0 TCEllipsis TCBrace TArobArob TArob TAndLog TAnd0 TAnd EOF
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TNew ctype_without_braces cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             cond_expr(expr,invalid) 
+             arith_expr(expr,invalid) 
+             arith_expr(expr,invalid) TXor arith_expr_bis // lookahead token appears
+             cast_expr(expr,invalid) // lookahead token is inherited
+             unary_expr(expr,invalid) // lookahead token is inherited
+             (?)
+
+** In state 835, looking ahead at TXor, reducing production
+** unary_expr(expr,invalid) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** In state 835, looking ahead at TXor, reducing production
+** unary_expr(expr,invalid) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** Conflict (reduce/reduce) in state 833.
+** Tokens involved: TXor TWhy TShROp TShLOp TRightIso TPtVirg TPlus TPOEllipsis TPCEllipsis TOrLog TOr TOpAssign TOEllipsis TNotEq TMul TMinus TMid0 TMetaBinaryOp TMetaAssignOp TLogOp TLineEnd TIso TEqEq TEq TEllipsis TDmOp TDefault TComma TCase TCPar0 TCEllipsis TCBrace TArobArob TArob TAndLog TAnd0 TAnd EOF
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TNew placement_params ctype_without_braces
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             cond_expr(expr,invalid) 
+             arith_expr(expr,invalid) 
+             arith_expr(expr,invalid) TXor arith_expr_bis // lookahead token appears
+             cast_expr(expr,invalid) // lookahead token is inherited
+             unary_expr(expr,invalid) // lookahead token is inherited
+             (?)
+
+** In state 833, looking ahead at TXor, reducing production
+** unary_expr(expr,invalid) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** In state 833, looking ahead at TXor, reducing production
+** unary_expr(expr,invalid) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** Conflict (reduce/reduce) in state 832.
+** Tokens involved: TXor TWhy TShROp TShLOp TRightIso TPtVirg TPlus TPOEllipsis TPCEllipsis TOrLog TOr TOpAssign TOEllipsis TNotEq TMul TMinus TMid0 TMetaBinaryOp TMetaAssignOp TLogOp TLineEnd TIso TEqEq TEq TEllipsis TDmOp TDefault TComma TCase TCPar0 TCEllipsis TCBrace TArobArob TArob TAndLog TAnd0 TAnd EOF
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TNew placement_params TOPar ctype TCPar cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             cond_expr(expr,invalid) 
+             arith_expr(expr,invalid) 
+             arith_expr(expr,invalid) TXor arith_expr_bis // lookahead token appears
+             cast_expr(expr,invalid) // lookahead token is inherited
+             unary_expr(expr,invalid) // lookahead token is inherited
+             (?)
+
+** In state 832, looking ahead at TXor, reducing production
+** unary_expr(expr,invalid) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** In state 832, looking ahead at TXor, reducing production
+** unary_expr(expr,invalid) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** Conflict (shift/reduce) in state 825.
+** Token involved: TCPar
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TNew TOPar ctype
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+             (?)
+
+** In state 825, looking ahead at TCPar, reducing production
+** aexpr -> ctype
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser 
+     TOPar eexpr_list_option TCPar // lookahead token appears
+           empty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           nonempty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           aexpr // lookahead token is inherited
+           ctype . 
+
+** In state 825, looking ahead at TCPar, shifting is permitted
+** because of the following sub-derivation:
+
+TNew TOPar ctype . TCPar cpp_initialiser 
+
+** Conflict (shift/reduce) in state 737.
+** Token involved: TCPar
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew TOPar ctype
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+             TSizeof unary_expr_bis 
+                     (?)
+
+** In state 737, looking ahead at TCPar, reducing production
+** aexpr -> ctype
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser 
+     TOPar eexpr_list_option TCPar // lookahead token appears
+           empty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           nonempty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           aexpr // lookahead token is inherited
+           ctype . 
+
+** In state 737, looking ahead at TCPar, shifting is permitted
+** because of the following sub-derivation:
+
+TNew TOPar ctype . TCPar cpp_initialiser 
+
+** Conflict (reduce/reduce) in state 588.
+** Tokens involved: TXor TShROp TShLOp TPlus TOrLog TOr TNotEq TMul TMinus TMetaBinaryOp TLogOp TEqEq TDmOp TComma TCBrace TAndLog TAnd
+** The following explanations concentrate on token TXor.
+** This state is reached from minus_main after reading:
+
+loption(filespec) TOInit TNew ctype_without_braces cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+minus_main 
+minus_body EOF 
+loption(filespec) loption(minus_start) 
+                  minus_start 
+                  top_init 
+                  TOInit initialize_list TCBrace 
+                         empty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         nonempty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         initialize2 
+                         arith_expr(eexpr,invalid) 
+                         arith_expr(eexpr,invalid) TXor arith_expr_bis // lookahead token appears
+                         cast_expr(eexpr,invalid) // lookahead token is inherited
+                         unary_expr(eexpr,invalid) // lookahead token is inherited
+                         (?)
+
+** In state 588, looking ahead at TXor, reducing production
+** unary_expr(eexpr,invalid) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** In state 588, looking ahead at TXor, reducing production
+** unary_expr(eexpr,invalid) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** Conflict (reduce/reduce) in state 586.
+** Tokens involved: TXor TShROp TShLOp TPlus TOrLog TOr TNotEq TMul TMinus TMetaBinaryOp TLogOp TEqEq TDmOp TComma TCBrace TAndLog TAnd
+** The following explanations concentrate on token TXor.
+** This state is reached from minus_main after reading:
+
+loption(filespec) TOInit TNew placement_params ctype_without_braces
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+minus_main 
+minus_body EOF 
+loption(filespec) loption(minus_start) 
+                  minus_start 
+                  top_init 
+                  TOInit initialize_list TCBrace 
+                         empty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         nonempty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         initialize2 
+                         arith_expr(eexpr,invalid) 
+                         arith_expr(eexpr,invalid) TXor arith_expr_bis // lookahead token appears
+                         cast_expr(eexpr,invalid) // lookahead token is inherited
+                         unary_expr(eexpr,invalid) // lookahead token is inherited
+                         (?)
+
+** In state 586, looking ahead at TXor, reducing production
+** unary_expr(eexpr,invalid) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** In state 586, looking ahead at TXor, reducing production
+** unary_expr(eexpr,invalid) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** Conflict (reduce/reduce) in state 585.
+** Tokens involved: TXor TShROp TShLOp TPlus TOrLog TOr TNotEq TMul TMinus TMetaBinaryOp TLogOp TEqEq TDmOp TComma TCBrace TAndLog TAnd
+** The following explanations concentrate on token TXor.
+** This state is reached from minus_main after reading:
+
+loption(filespec) TOInit TNew placement_params TOPar ctype TCPar cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+minus_main 
+minus_body EOF 
+loption(filespec) loption(minus_start) 
+                  minus_start 
+                  top_init 
+                  TOInit initialize_list TCBrace 
+                         empty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         nonempty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         initialize2 
+                         arith_expr(eexpr,invalid) 
+                         arith_expr(eexpr,invalid) TXor arith_expr_bis // lookahead token appears
+                         cast_expr(eexpr,invalid) // lookahead token is inherited
+                         unary_expr(eexpr,invalid) // lookahead token is inherited
+                         (?)
+
+** In state 585, looking ahead at TXor, reducing production
+** unary_expr(eexpr,invalid) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** In state 585, looking ahead at TXor, reducing production
+** unary_expr(eexpr,invalid) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** Conflict (shift/reduce) in state 578.
+** Token involved: TCPar
+** This state is reached from minus_main after reading:
+
+loption(filespec) TOInit TNew TOPar ctype
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+minus_main 
+minus_body EOF 
+loption(filespec) loption(minus_start) 
+                  minus_start 
+                  top_init 
+                  TOInit initialize_list TCBrace 
+                         empty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         nonempty_list_start(initialize2,edots_when(TEllipsis,initialize)) 
+                         initialize2 
+                         arith_expr(eexpr,invalid) 
+                         cast_expr(eexpr,invalid) 
+                         unary_expr(eexpr,invalid) 
+                         (?)
+
+** In state 578, looking ahead at TCPar, reducing production
+** aexpr -> ctype
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser 
+     TOPar eexpr_list_option TCPar // lookahead token appears
+           empty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           nonempty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           aexpr // lookahead token is inherited
+           ctype . 
+
+** In state 578, looking ahead at TCPar, shifting is permitted
+** because of the following sub-derivation:
+
+TNew TOPar ctype . TCPar cpp_initialiser 
+
+** Conflict (reduce/reduce) in state 491.
+** Tokens involved: TXor TWhy TShROp TShLOp TPlus TPCEllipsis TOrLog TOr TOpAssign TNotEq TMul TMinus TMetaBinaryOp TMetaAssignOp TLogOp TEqEq TEq TEllipsis TDmOp TComma TCPar TCEllipsis TCBrace TAndLog TAnd
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TPOEllipsis TNew ctype_without_braces cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis 
+                     postfix_expr(eexpr,dot_expressions) 
+                     primary_expr(eexpr,dot_expressions) 
+                     dot_expressions 
+                     nest_expressions 
+                     TPOEllipsis expr_dots(TEllipsis) TPCEllipsis 
+                                 no_dot_start_end(dexpr,edots_when(TEllipsis,eexpr)) 
+                                 dexpr list(pair(edots_when(TEllipsis,eexpr),dexpr)) 
+                                 pre_basic_expr(eexpr,nest_expressions) 
+                                 basic_expr(eexpr,nest_expressions) 
+                                 assign_expr(eexpr,nest_expressions) 
+                                 cond_expr(eexpr,nest_expressions) 
+                                 arith_expr(eexpr,nest_expressions) 
+                                 arith_expr(eexpr,nest_expressions) TXor arith_expr_bis // lookahead token appears
+                                 cast_expr(eexpr,nest_expressions) // lookahead token is inherited
+                                 unary_expr(eexpr,nest_expressions) // lookahead token is inherited
+                                 (?)
+
+** In state 491, looking ahead at TXor, reducing production
+** unary_expr(eexpr,nest_expressions) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** In state 491, looking ahead at TXor, reducing production
+** unary_expr(eexpr,nest_expressions) -> TNew ctype_without_braces cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew ctype_without_braces cpp_initialiser . 
+
+** Conflict (shift/reduce) in state 488.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew all_basic_types_without_braces const_vol
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 488, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             all_basic_types_without_braces const_vol list(mul) // lookahead token is inherited
+                                                      . 
+
+** In state 488, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             all_basic_types_without_braces const_vol list(mul) 
+                                                      mul list(mul) 
+                                                      . TMul 
+
+** Conflict (shift/reduce) in state 486.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew all_basic_types_without_braces
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 486, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             all_basic_types_without_braces list(mul) // lookahead token is inherited
+                                            . 
+
+** In state 486, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             all_basic_types_without_braces list(mul) 
+                                            mul list(mul) 
+                                            . TMul 
+
+** Conflict (shift/reduce) in state 484.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew const_vol all_basic_types_without_braces const_vol
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 484, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             const_vol all_basic_types_without_braces const_vol list(mul) // lookahead token is inherited
+                                                                . 
+
+** In state 484, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             const_vol all_basic_types_without_braces const_vol list(mul) 
+                                                                mul list(mul) 
+                                                                . TMul 
+
+** Conflict (shift/reduce) in state 482.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew const_vol all_basic_types_without_braces
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 482, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             const_vol all_basic_types_without_braces list(mul) // lookahead token is inherited
+                                                      . 
+
+** In state 482, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             const_vol all_basic_types_without_braces list(mul) 
+                                                      mul list(mul) 
+                                                      . TMul 
+
+** Conflict (shift/reduce) in state 480.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew const_vol signed_or_unsigned const_vol
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 480, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             const_vol signed_or_unsigned const_vol list(mul) // lookahead token is inherited
+                                                    . 
+
+** In state 480, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             const_vol signed_or_unsigned const_vol list(mul) 
+                                                    mul list(mul) 
+                                                    . TMul 
+
+** Conflict (shift/reduce) in state 478.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew const_vol signed_or_unsigned
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 478, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             const_vol signed_or_unsigned list(mul) // lookahead token is inherited
+                                          . 
+
+** In state 478, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             const_vol signed_or_unsigned list(mul) 
+                                          mul list(mul) 
+                                          . TMul 
+
+** Conflict (reduce/reduce) in state 476.
+** Tokens involved: TXor TWhy TShROp TShLOp TPlus TPCEllipsis TOrLog TOr TOpAssign TNotEq TMul TMinus TMetaBinaryOp TMetaAssignOp TLogOp TEqEq TEq TEllipsis TDmOp TComma TCPar TCEllipsis TCBrace TAndLog TAnd
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TPOEllipsis TNew placement_params ctype_without_braces
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis 
+                     postfix_expr(eexpr,dot_expressions) 
+                     primary_expr(eexpr,dot_expressions) 
+                     dot_expressions 
+                     nest_expressions 
+                     TPOEllipsis expr_dots(TEllipsis) TPCEllipsis 
+                                 no_dot_start_end(dexpr,edots_when(TEllipsis,eexpr)) 
+                                 dexpr list(pair(edots_when(TEllipsis,eexpr),dexpr)) 
+                                 pre_basic_expr(eexpr,nest_expressions) 
+                                 basic_expr(eexpr,nest_expressions) 
+                                 assign_expr(eexpr,nest_expressions) 
+                                 cond_expr(eexpr,nest_expressions) 
+                                 arith_expr(eexpr,nest_expressions) 
+                                 arith_expr(eexpr,nest_expressions) TXor arith_expr_bis // lookahead token appears
+                                 cast_expr(eexpr,nest_expressions) // lookahead token is inherited
+                                 unary_expr(eexpr,nest_expressions) // lookahead token is inherited
+                                 (?)
+
+** In state 476, looking ahead at TXor, reducing production
+** unary_expr(eexpr,nest_expressions) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** In state 476, looking ahead at TXor, reducing production
+** unary_expr(eexpr,nest_expressions) -> TNew placement_params ctype_without_braces
+** is permitted because of the following sub-derivation:
+
+TNew placement_params ctype_without_braces . 
+
+** Conflict (reduce/reduce) in state 473.
+** Tokens involved: TXor TWhy TShROp TShLOp TPlus TPCEllipsis TOrLog TOr TOpAssign TNotEq TMul TMinus TMetaBinaryOp TMetaAssignOp TLogOp TEqEq TEq TEllipsis TDmOp TComma TCPar TCEllipsis TCBrace TAndLog TAnd
+** The following explanations concentrate on token TXor.
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TPOEllipsis TNew placement_params TOPar ctype TCPar cpp_initialiser
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis 
+                     postfix_expr(eexpr,dot_expressions) 
+                     primary_expr(eexpr,dot_expressions) 
+                     dot_expressions 
+                     nest_expressions 
+                     TPOEllipsis expr_dots(TEllipsis) TPCEllipsis 
+                                 no_dot_start_end(dexpr,edots_when(TEllipsis,eexpr)) 
+                                 dexpr list(pair(edots_when(TEllipsis,eexpr),dexpr)) 
+                                 pre_basic_expr(eexpr,nest_expressions) 
+                                 basic_expr(eexpr,nest_expressions) 
+                                 assign_expr(eexpr,nest_expressions) 
+                                 cond_expr(eexpr,nest_expressions) 
+                                 arith_expr(eexpr,nest_expressions) 
+                                 arith_expr(eexpr,nest_expressions) TXor arith_expr_bis // lookahead token appears
+                                 cast_expr(eexpr,nest_expressions) // lookahead token is inherited
+                                 unary_expr(eexpr,nest_expressions) // lookahead token is inherited
+                                 (?)
+
+** In state 473, looking ahead at TXor, reducing production
+** unary_expr(eexpr,nest_expressions) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** In state 473, looking ahead at TXor, reducing production
+** unary_expr(eexpr,nest_expressions) -> TNew placement_params TOPar ctype TCPar cpp_initialiser
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser . 
+
+** Conflict (shift/reduce) in state 465.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew signed_or_unsigned const_vol
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 465, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             signed_or_unsigned const_vol list(mul) // lookahead token is inherited
+                                          . 
+
+** In state 465, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             signed_or_unsigned const_vol list(mul) 
+                                          mul list(mul) 
+                                          . TMul 
+
+** Conflict (shift/reduce) in state 463.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew signed_or_unsigned
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 463, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             signed_or_unsigned list(mul) // lookahead token is inherited
+                                . 
+
+** In state 463, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             signed_or_unsigned list(mul) 
+                                mul list(mul) 
+                                . TMul 
+
+** Conflict (shift/reduce) in state 452.
+** Token involved: TCPar
+** This state is reached from iso_main after reading:
+
+TIsoToTestExpression TPOEllipsis TNew TOPar ctype
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoToTestExpression eexpr list(iso(eexpr)) EOF 
+                     pre_basic_expr(eexpr,dot_expressions) 
+                     basic_expr(eexpr,dot_expressions) 
+                     assign_expr(eexpr,dot_expressions) 
+                     unary_expr(eexpr,dot_expressions) TOpAssign assign_expr_bis 
+                     postfix_expr(eexpr,dot_expressions) 
+                     primary_expr(eexpr,dot_expressions) 
+                     dot_expressions 
+                     nest_expressions 
+                     TPOEllipsis expr_dots(TEllipsis) TPCEllipsis 
+                                 no_dot_start_end(dexpr,edots_when(TEllipsis,eexpr)) 
+                                 dexpr list(pair(edots_when(TEllipsis,eexpr),dexpr)) 
+                                 pre_basic_expr(eexpr,nest_expressions) 
+                                 basic_expr(eexpr,nest_expressions) 
+                                 assign_expr(eexpr,nest_expressions) 
+                                 unary_expr(eexpr,nest_expressions) TOpAssign assign_expr_bis 
+                                 (?)
+
+** In state 452, looking ahead at TCPar, reducing production
+** aexpr -> ctype
+** is permitted because of the following sub-derivation:
+
+TNew placement_params TOPar ctype TCPar cpp_initialiser 
+     TOPar eexpr_list_option TCPar // lookahead token appears
+           empty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           nonempty_list_start(aexpr,TEllipsis) // lookahead token is inherited
+           aexpr // lookahead token is inherited
+           ctype . 
+
+** In state 452, looking ahead at TCPar, shifting is permitted
+** because of the following sub-derivation:
+
+TNew TOPar ctype . TCPar cpp_initialiser 
+
+** Conflict (shift/reduce) in state 165.
+** Token involved: TMul
+** This state is reached from iso_main after reading:
+
+TIsoTopLevel TSizeof TNew signed_or_unsigned mul
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+iso_main 
+TIsoTopLevel nest_start list(iso(nest_start)) EOF 
+             nest_after_dots 
+             expr nest_after_exp 
+             pre_basic_expr(expr,invalid) 
+             basic_expr(expr,invalid) 
+             assign_expr(expr,invalid) 
+             (?)
+
+** In state 165, looking ahead at TMul, reducing production
+** list(mul) ->
+** is permitted because of the following sub-derivation:
+
+cond_expr(expr,invalid) 
+arith_expr(expr,invalid) 
+arith_expr(expr,invalid) TMul arith_expr_bis // lookahead token appears
+cast_expr(expr,invalid) // lookahead token is inherited
+unary_expr(expr,invalid) // lookahead token is inherited
+TSizeof unary_expr_bis // lookahead token is inherited
+        TNew ctype_without_braces // lookahead token is inherited
+             signed_or_unsigned list(mul) // lookahead token is inherited
+                                mul list(mul) // lookahead token is inherited
+                                    . 
+
+** In state 165, looking ahead at TMul, shifting is permitted
+** because of the following sub-derivation:
+
+unary_expr(expr,invalid) TOpAssign assign_expr_bis 
+TSizeof unary_expr_bis 
+        TNew ctype_without_braces cpp_initialiser 
+             signed_or_unsigned list(mul) 
+                                mul list(mul) 
+                                    mul list(mul) 
+                                    . TMul 

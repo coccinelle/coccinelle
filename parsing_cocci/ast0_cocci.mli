@@ -122,6 +122,9 @@ and base_expression =
   | Delete         of string mcode (* delete *) * expression
   | DeleteArr      of string mcode (* delete *) * string mcode (* [ *) * string mcode (* ] *) *
 	           expression
+  | New            of string mcode (* new *) * arguments option *
+	           string mcode (* ( *) option * typeC *
+	           string mcode (* ) *) option * arguments option
   | TypeExp        of typeC
   | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *
  	              initialiser
@@ -146,6 +149,8 @@ and base_expression =
   | OptExp         of expression
 
 and expression = base_expression wrap
+
+and arguments = string mcode (* ( *) * expression dots * string mcode (* ) *)
 
 and constraints = expression Ast_cocci.generic_constraints
 

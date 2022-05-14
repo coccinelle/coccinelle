@@ -233,6 +233,10 @@ and unify_expression e1 e2 =
       unify_expression e1 e2
   | (Ast.DeleteArr(dlt1,lb1,rb1,e1),Ast.DeleteArr(dlt2,lb2,rb2,e2))->
       unify_expression e1 e2
+  | (Ast.New(new1,pp1_opt,lp1_opt,ty1,rp1_opt,args1_opt), Ast.New(new2,pp2_opt,lp2_opt,ty2,rp2_opt,args2_opt)) ->
+      unify_fullType ty1 ty2 &&
+      unify_option unify_args pp1_opt pp2_opt &&
+      unify_option unify_args args1_opt args2_opt
   | (Ast.TypeExp(ty1),Ast.TypeExp(ty2)) -> unify_fullType ty1 ty2
   | (Ast.Constructor(lp1,ty1,rp1,i1),Ast.Constructor(lp2,ty2,rp2,i2)) ->
       unify_fullType ty1 ty2 && unify_initialiser i1 i2
@@ -276,6 +280,10 @@ and unify_expression e1 e2 =
   | (Ast.OptExp(_),_)
   | (_,Ast.OptExp(_)) -> failwith "unsupported expression"
   | _ -> false
+
+(* Used for the nonterminal arguments *)
+and unify_args (_,args1,_) (_,args2,_) =
+  unify_dots unify_expression edots args1 args2
 
 (* --------------------------------------------------------------------- *)
 (* Strings *)

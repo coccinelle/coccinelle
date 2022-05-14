@@ -791,6 +791,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode lb1 lb; check_mcode rb1 rb;
 		   check_mcode dlt1 dlt; match_expr expa expb]
+          | (Ast0.New(nw1,pp1_opt,lp1_opt,ty1,rp1_opt,args1_opt),
+	     Ast0.New(nw2,pp2_opt,lp2_opt,ty2,rp2_opt,args2_opt)) ->
+		 conjunct_many_bindings
+                 [check_mcode nw1 nw2; match_option check_args pp1_opt pp2_opt; match_option check_mcode lp1_opt lp2_opt;
+		  match_typeC ty1 ty2; match_option check_mcode rp1_opt rp2_opt; match_option check_args args1_opt args2_opt]
 	  | (Ast0.Constructor(lp1,tya,rp1,inita),
 	     Ast0.Constructor(lp,tyb,rp,initb)) ->
 	       conjunct_many_bindings
@@ -850,6 +855,14 @@ let match_maker checks_needed context_required whencode_allowed =
 (* the special case for function types prevents the eg T X; -> T X = E; iso
    from applying, which doesn't seem very relevant, but it also avoids a
    mysterious bug that is obtained with eg int attach(...); *)
+
+  (* For checking if arguments sorrounded by braces/brackets/paranthesis match *)
+  and check_args args1 args2 =
+    let (lp1,args1,rp1) = args1 in
+    let (lp2,args2,rp2) = args2 in
+    conjunct_many_bindings
+    [ check_mcode lp1 lp2; match_dots match_expr is_elist_matcher do_elist_match args1 args2; check_mcode rp1 rp2 ]
+
   and varargs_equal (comma1, ellipsis1) (comma2, ellipsis2) =
     let c1 = Ast0_cocci.unwrap_mcode comma1
     and e1 = Ast0_cocci.unwrap_mcode ellipsis1

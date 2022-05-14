@@ -212,6 +212,14 @@ let visitor mode bind option_default
             let (rb_n,rb) = string_mcode rb in
 	    let (exp_n,exp) = expression exp in
 	    (multibind [dlt_n;lb_n;rb_n;exp_n], Ast0.DeleteArr(dlt,lb,rb,exp))
+	| Ast0.New(nw,pp_opt,lp2_opt,ty,rp2_opt,args_opt) ->
+	    let (nw_n,nw) = string_mcode nw in
+	    let (pp_opt_n, pp_opt) = get_option argslist pp_opt in
+	    let (lp2_n,lp2) = get_option string_mcode lp2_opt in
+	    let (ty_n,ty) = typeC ty in
+	    let (rp2_n,rp2) = get_option string_mcode rp2_opt in
+	    let (args_n, args) = get_option argslist args_opt in
+	    (multibind [nw_n;pp_opt_n;lp2_n;ty_n;rp2_n;args_n], Ast0.New(nw,pp_opt,lp2,ty,rp2,args_opt))
 	| Ast0.TypeExp(ty) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n,Ast0.TypeExp(ty))
@@ -263,7 +271,11 @@ let visitor mode bind option_default
 	    let (asstm_n,asstm) = statement asstm in
 	    (bind exp_n asstm_n, Ast0.AsSExpr(exp,asstm))) in
     exprfn all_functions k e
-
+  and argslist (lp,args,rp) =
+    let (lp_n,lp) = string_mcode lp in
+    let (args_n, args) = expression_dots args in
+    let (rp_n,rp) = string_mcode rp in
+    (multibind [lp_n; args_n; rp_n], (lp,args,rp))
   and string_fragment e =
     let k e =
       rewrap e

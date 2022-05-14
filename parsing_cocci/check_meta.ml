@@ -204,6 +204,10 @@ and expression context old_metas table minus e =
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
   | Ast0.Delete(dlt, exp) -> expression ID old_metas table minus exp
   | Ast0.DeleteArr(dlt,lb,rb,exp) -> expression ID old_metas table minus exp
+  | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
+      typeC old_metas table minus ty;
+      get_opt (check_args (expression ID old_metas table minus)) pp_opt;
+      get_opt (check_args (expression ID old_metas table minus)) args_opt;
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->
       typeC old_metas table minus ty; initialiser old_metas table minus init
@@ -245,6 +249,8 @@ and check_len table minus len =
       constraints table minus cstr
   | _ -> ()
 
+and check_args fn (_,args,_) =
+    dots fn args
 (* --------------------------------------------------------------------- *)
 (* Types *)
 

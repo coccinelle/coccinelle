@@ -188,6 +188,9 @@ and base_expression =
   | Delete         of string mcode (* delete *) * expression
   | DeleteArr      of string mcode (* delete *) * string mcode (* [ *) * string mcode (* ] *) *
 	              expression
+  | New            of string mcode (* new *) * arguments option *
+	           string mcode (* ( *) option * fullType *
+                   string mcode (* ) *) option * arguments option
   | TypeExp        of fullType
 
   | Paren          of string mcode (* ( *) * expression *
@@ -261,6 +264,8 @@ and script_constraint =
 and form = ANY | ID | LocalID| GlobalID | CONST (* form for MetaExp *)
 
 and expression = base_expression wrap
+
+and arguments = string mcode (* ( *) * expression dots * string mcode (* ) *)
 
 and listlen =
     MetaListLen of meta_name mcode * constraints * keep_binding * inherited
