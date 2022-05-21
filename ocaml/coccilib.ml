@@ -226,9 +226,15 @@ let cocci_version () = Config.version
 (* org mode *)
 
 let build_link p msg color =
-  Printf.sprintf
-    "[[view:%s::face=%s::linb=%d::colb=%d::cole=%d][%s]]"
-    p.file color p.line p.col p.col_end msg
+  if p.line = p.line_end
+  then
+    Printf.sprintf
+      "[[view:%s::face=%s::linb=%d::colb=%d::cole=%d][%s]]"
+      p.file color p.line p.col p.col_end msg
+  else
+    Printf.sprintf
+      "[[view:%s::face=%s::linb=%d::line=%d::colb=%d::cole=%d][%s]]"
+      p.file color p.line p.line_end p.col p.col_end msg
 
 let print_todo ?color:(color="ovl-face1") ?msg:(msg="") p =
   let msg =
