@@ -549,10 +549,15 @@ let conj_subst theta theta' =
 	  | (ctheta,[]) ->
 	      List.concat (List.map (function (_,ths) -> ths) ctheta)
 	  | ((x,ths)::xs,(y,ths')::ys) ->
+	      let safe_append l1 l2 =
+		let l1 = List.rev l1 in
+		List.fold_left
+		  (fun prev cur -> cur :: prev)
+		  l2 l1 in
 	      (match compare x y with
-		0 -> (merge_all ths ths') @ loop (xs,ys)
-	      |	-1 -> ths @ loop (xs,((y,ths')::ys))
-	      |	1 -> ths' @ loop (((x,ths)::xs),ys)
+		0 -> safe_append (merge_all ths ths') (loop (xs,ys))
+	      |	-1 -> safe_append ths (loop (xs,((y,ths')::ys)))
+	      |	1 -> safe_append ths' (loop (((x,ths)::xs),ys))
 	      |	_ -> failwith "ctl_engine: not possible 2") in
 	try Some (clean_subst(loop (classify theta, classify theta')))
 	with SUBST_MISMATCH -> None
