@@ -200,11 +200,11 @@ let print_metavar pr = function
       print_typedef pr ty;
 
       Pretty_print_c.pp_param_gen
-	(function x ->
+	~pr_elem:(function x ->
 	  let str = Ast_c.str_of_info x in
 	  if not (List.mem str ["const";"volatile"])
 	  then pr str)
-	(function _ -> pr " ")
+	~pr_space:(function _ -> pr " ")
         {Ast_c.p_register = (false,[]);
          p_namei = Some name';
          p_type = (({Ast_c.const = false; Ast_c.volatile = false},[]),ty);
@@ -338,8 +338,8 @@ let print_one_type pr env ty =
 	match List.assoc name env with
 	  Ast_c.MetaTypeVal ty ->
 	    Pretty_print_c.pp_type_gen
-	      (function x -> pr (Ast_c.str_of_info x))
-	      (function _ -> pr " ")
+	      ~pr_elem:(function x -> pr (Ast_c.str_of_info x))
+	      ~pr_space:(function _ -> pr " ")
 	      ty
         | _ -> failwith "impossible"
       with Not_found -> pr (Ast_cocci.string_of_fullType ty))

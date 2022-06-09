@@ -272,7 +272,7 @@ let get_fakeInfo_and_tokens celem toks =
   let printed_toks = ref [] in
   let pr_get_elem tok = push2 tok printed_toks in
 
-  Pretty_print_c.pp_program_gen pr_get_elem pr_space celem;
+  Pretty_print_c.pp_program_gen ~pr_elem:pr_get_elem ~pr_space:pr_space celem;
 
   (* sort tokens when possible *)
   let is_origin info =

@@ -565,7 +565,7 @@ let metavar_combiner rn =
     | Ast0.FormatFragment(_, format) ->
       (match Ast0.unwrap format with
         | Ast0.MetaFormat(mc, idconstr) ->
-            let constr = constraints rn idconstr in
+            let constr = constraints ~rn:rn idconstr in
             meta_mc_format ~mc ~typ:"format " ~constr
         | _ -> fn v
        )

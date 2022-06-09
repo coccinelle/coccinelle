@@ -127,7 +127,7 @@ let set_rule_line l snp = { snp with rule_line = l }
 let inc_current_line snp = { snp with current_line = snp.current_line + 1 }
 
 (* New lines default to Context, they have to be explicitly set to Star. *)
-let inc_line snp = inc_current_line (set_mode_context Ast0.NONE snp)
+let inc_line snp = inc_current_line (set_mode_context ~arity:Ast0.NONE snp)
 let inc_star snp = if is_star snp.current_mode then inc_line snp else snp
 
 (* if input number exceeds the current rule line number, increase the internal

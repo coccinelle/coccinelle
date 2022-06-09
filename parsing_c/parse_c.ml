@@ -677,7 +677,7 @@ let get_one_elem ~pass tr =
       let current = tr.current in
       (*  error recovery, go to next synchro point *)
       let (passed', rest') =
-	Parsing_recovery_c.find_next_synchro tr.rest tr.passed in
+	Parsing_recovery_c.find_next_synchro ~next:tr.rest ~already_passed:tr.passed in
       tr.rest <- rest';
       tr.passed <- passed';
 
@@ -1435,7 +1435,7 @@ let no_format s =
 let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_stmt_of_s" "c" in
-  Common.write_file tmpfile ("void main() { \n" ^ s ^ "\n}");
+  Common.write_file ~file:tmpfile ("void main() { \n" ^ s ^ "\n}");
   let program = fst (parse_c_and_cpp false false tmpfile) in
   program +> Common.find_some (fun (e,_) ->
     match e with
@@ -1446,7 +1446,7 @@ let (cstatement_of_string: string -> Ast_c.statement) = fun s ->
 let (cexpression_of_string: string -> Ast_c.expression) = fun s ->
   assert (no_format s);
   let tmpfile = Common.new_temp_file "cocci_expr_of_s" "c" in
-  Common.write_file tmpfile ("void main() { \n" ^ s ^ ";\n}");
+  Common.write_file ~file:tmpfile ("void main() { \n" ^ s ^ ";\n}");
   let program = fst (parse_c_and_cpp false false tmpfile) in
   program +> Common.find_some (fun (e,_) ->
     match e with

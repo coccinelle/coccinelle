@@ -88,8 +88,8 @@ let rec param_print_before_and_after before fn = function
 let outdent _ = () (* should go to leftmost col, does nothing now *) in
 
 let pretty_print_c =
-  Pretty_print_c.mk_pretty_printers pr_celem pr_cspace
-    force_newline (fun _ -> ()) outdent (function _ -> ()) in
+  Pretty_print_c.mk_pretty_printers ~pr_elem:pr_celem ~pr_space:pr_cspace
+    ~pr_nl:force_newline ~pr_indent:(fun _ -> ()) ~pr_outdent:outdent ~pr_unindent:(function _ -> ()) in
 
 (* --------------------------------------------------------------------- *)
 (* Only for make_hrule, print plus code, unbound metavariables *)

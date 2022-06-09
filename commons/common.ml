@@ -5302,8 +5302,8 @@ let (diff: (int -> int -> diff -> unit)-> (string list * string list) -> unit)=
     let file1 = "/tmp/diff1-" ^ (string_of_int (Unix.getuid ())) in
     let file2 = "/tmp/diff2-" ^ (string_of_int (Unix.getuid ())) in
     let fileresult = "/tmp/diffresult-" ^ (string_of_int (Unix.getuid ())) in
-    write_file file1 (unwords xs);
-    write_file file2 (unwords ys);
+    write_file ~file:file1 (unwords xs);
+    write_file ~file:file2 (unwords ys);
     command2
       ("diff --side-by-side -W 1 " ^ file1 ^ " " ^ file2 ^ " > " ^ fileresult);
     let res = cat fileresult in
@@ -5330,8 +5330,8 @@ let _ =
 
 let (diff2: (int -> int -> diff -> unit) -> (string * string) -> unit) =
  fun f (xstr,ystr) ->
-    write_file "/tmp/diff1" xstr;
-    write_file "/tmp/diff2" ystr;
+    write_file ~file:"/tmp/diff1" xstr;
+    write_file ~file:"/tmp/diff2" ystr;
     command2
      ("diff --side-by-side --left-column -W 1 " ^
       "/tmp/diff1 /tmp/diff2 > /tmp/diffresult");

@@ -1,4 +1,4 @@
-(* Yoann Padioleau, Julia Lawall
+1(* Yoann Padioleau, Julia Lawall
  *
  * Copyright (C) 2010, University of Copenhagen DIKU and INRIA.
  * Copyright (C) 2006, 2007, 2008, 2009 Ecole des Mines de Nantes and DIKU
@@ -1653,70 +1653,70 @@ let pp_elem_sp ~pr_elem ~pr_space =
     ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
 let pp_expression_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).expression
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).expression
 
 let pp_assignOp_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).assignOp
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).assignOp
 
 let pp_binaryOp_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).binaryOp
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).binaryOp
 
 let pp_arg_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).arg_list
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).arg_list
 
 let pp_arg_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).arg
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).arg
 
 let pp_statement_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).statement
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).statement
 
 let pp_statement_seq_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).statement_seq_list
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).statement_seq_list
 
 let pp_decl_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).decl
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).decl
 
 let pp_field_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).field
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).field
 
 let pp_field_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).field_list
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).field_list
 
 let pp_init_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).init
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).init
 
 let pp_init_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).init_list
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).init_list
 
 let pp_param_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).param
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).param
 
 let pp_param_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).paramlist
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).paramlist
 
 let pp_define_param_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).dparamlist
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).dparamlist
 
 let pp_type_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).ty
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).ty
 
 let pp_type_with_ident_gen pr_elem pr_space =
-  (pp_elem_sp pr_elem pr_space).type_with_ident
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).type_with_ident
 
 let pp_string_fragment_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).fragment_list
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).fragment_list
 
 let pp_string_format_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).format
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).format
 
 let pp_attribute_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).attribute
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).attribute
 
 let pp_attr_arg_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).attr_arg
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).attr_arg
 
 let pp_program_gen ~pr_elem ~pr_space =
-  (pp_elem_sp pr_elem pr_space).toplevel
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).toplevel
 
 
 let string_of_expression e =
