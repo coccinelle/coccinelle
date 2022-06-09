@@ -67,9 +67,9 @@ let end_block = function [] -> () | _ -> (*unindent true;*) force_newline () in
 let print_string_box s = print_string s in
 
 let print_option = Common.do_option in
-let print_option_space fn = function
+(*let print_option_space fn = function
     None -> ()
-  | Some x -> fn x; pr_space() in
+  | Some x -> fn x; pr_space() in*)
 let print_option_prespace fn = function
     None -> ()
   | Some x -> pr_space(); fn x in
