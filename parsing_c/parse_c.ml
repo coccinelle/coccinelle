@@ -965,6 +965,8 @@ let tree_stack = ref []
 let seen_files = ref []
 
 let normalize file =
+  let file =
+    String.concat "/" (Str.split (Str.regexp_string "/./") file) in
   let pieces = Str.split_delim (Str.regexp "/") file in
   let rec loop prev = function
       [] -> String.concat "/" (List.rev prev)
