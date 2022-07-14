@@ -1103,6 +1103,10 @@ and initialiser nlcomma i =
   | Ast.ArInitList(lb,initlist,rb) ->
       (match Ast.unwrap initlist with
 	[] -> mcode print_string lb; mcode print_string rb
+      | ([_] as lst) -> (* { 0 } is a common idiom *)
+	  mcode print_string lb; pr_space();
+	  initialiser_list nlcomma lst;
+	  pr_space(); mcode print_string rb
       |	lst ->
 	  mcode print_string lb; start_block();
 	  initialiser_list nlcomma lst;
