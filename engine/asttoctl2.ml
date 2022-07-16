@@ -1231,6 +1231,49 @@ let forwhile header body ((afvs,_,_,_) as aft) after
       | _ -> process())
   | _ -> process()
 
+let dowhile doheader body whiletail after quantified
+      minus_quantified label recurse make_match guard =
+  let (dofvs,bfvs,whilefvs) =
+    match
+      seq_fvs quantified
+	[Ast.get_fvs doheader;Ast.get_fvs body;Ast.get_fvs whiletail]
+    with
+      [(dofvs,b1fvs);(_,b2fvs);(whilefvs,_)] ->
+	(dofvs,Common.union_set b1fvs b2fvs,whilefvs)
+    | _ -> failwith "asttoctl2: not possible 19" in
+  let (mdofvs,mbfvs,mwhilefvs) =
+    match
+      seq_fvs minus_quantified
+	[Ast.get_mfvs doheader;Ast.get_mfvs body;Ast.get_mfvs whiletail]
+    with
+      [(dofvs,b1fvs);(_,b2fvs);(whilefvs,_)] ->
+	(dofvs,Common.union_set b1fvs b2fvs,whilefvs)
+    | _ -> failwith "asttoctl2: not possible 20" in
+  let header = quantify guard dofvs (make_match doheader) in
+  let tailer = quantify guard whilefvs (make_match whiletail) in
+  let new_quantified = Common.union_set bfvs quantified in
+  let new_mquantified = Common.union_set mbfvs minus_quantified in
+  let aft = ([],[],[], Ast.CONTEXT(Ast.NoPos,Ast.NOTHING)) in
+  let lv = get_label_ctr() in
+  let tail_branch =
+    ctl_and CTL.NONSTRICT tailer
+      (ctl_and CTL.NONSTRICT (ctl_ex (inlooppred None)) (ctl_ex (fallpred None))) in
+  let used = ref false in
+  let body =
+    make_seq guard
+      [recurse body NotTop (After (tail_branch)) new_quantified new_mquantified (Some (lv, used))
+         (Some (lv, used)) None guard] in
+  let after_branch = aftpred None in
+  let or_cases after_branch = Common.Left [body; after_branch] in
+  let (header, wrapper) =
+    if !used
+    then
+      let label_pred = CTL.Pred (Lib_engine.Label(lv), CTL.Control) in
+      (ctl_and CTL.NONSTRICT header label_pred, (function body -> quantify true [lv] body))
+    else (header, function x -> x) in
+  wrapper (end_control_structure bfvs header or_cases after_branch
+             (Some(ctl_ex after_branch)) None aft after label guard)
+
 (* --------------------------------------------------------------------- *)
 (* statement metavariables *)
 
@@ -2068,6 +2111,11 @@ and statement stmt top after quantified minus_quantified
       forwhile header body aft after quantified minus_quantified
 	label statement make_match guard
 
+  | Ast.Do(doheader,body,whiletail) ->
+      dots_done := true;
+      dowhile doheader body whiletail after quantified minus_quantified
+         label statement make_match guard
+
   | Ast.Disj(stmt_dots_list) -> (* list shouldn't be empty *)
       (*ctl_and        seems pointless, disjuncts see label too
 	(label_pred_maker label)*)
@@ -2593,8 +2641,7 @@ and statement stmt top after quantified minus_quantified
 	(statement asstmt top after quantified minus_quantified
 	   label llabel slabel guard)
   | Ast.OptStm(stm) ->
-      failwith "OptStm should have been compiled away\n"
-  | _ -> failwith "not supported" in
+      failwith "OptStm should have been compiled away\n" in
   if guard || !dots_done
   then term
   else

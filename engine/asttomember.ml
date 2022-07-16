@@ -283,6 +283,11 @@ and statement testfn mcode tail stmt : 'a list list =
       then conj (rule_elem header) (statement testfn mcode tail branch)
       else statement testfn mcode tail branch
 
+  | Ast.Do(header,branch,whiletail) ->
+     if testfn header || testfn whiletail
+     then conj_wrapped [header;whiletail] (statement testfn mcode tail branch)
+     else statement testfn mcode tail branch
+
   | Ast.Switch(header,lb,decls,cases,rb) ->
       let body_info =
 	conj
@@ -337,8 +342,6 @@ and statement testfn mcode tail stmt : 'a list list =
 	(statement testfn mcode tail asstm)
 
   | Ast.OptStm(stm) -> []
-
-  | _ -> failwith "not supported"
 
 and case_lines testfn mcode tail cases =
   match cases with
