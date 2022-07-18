@@ -1588,6 +1588,26 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       )))))
 
 
+  | A.Delete (dlta,expa), ((B.Delete (false,expb),typ),ii) ->
+      let dltb = tuple_of_list1 ii in
+      expression expa expb >>= (fun expa expb ->
+      tokenf dlta dltb >>= (fun dlta dltb ->
+        return (
+          ((A.Delete (dlta, expa))) +> wa,
+          ((B.Delete (false, expb),typ),[dltb])
+      )))
+
+  | A.DeleteArr (dlta,lba,rba,expa), ((B.Delete (true,expb),typ),ii) ->
+      let (dltb,lbb,rbb) = tuple_of_list3 ii in
+      expression expa expb >>= (fun expa expb ->
+      tokenf dlta dltb >>= (fun dlta dltb ->
+      tokenf lba lbb >>= (fun lba lbb ->
+      tokenf rba rbb >>= (fun rba rbb ->
+        return (
+          ((A.DeleteArr (dlta, lba, rba, expa))) +> wa,
+          ((B.Delete (true, expb),typ),[dltb;lbb;rbb])
+      )))))
+
   (* todo? iso ? allow all the combinations ? *)
   | A.Paren (ia1, ea, ia2), ((B.ParenExpr (eb), typ),ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in

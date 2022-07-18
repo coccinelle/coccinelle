@@ -2144,15 +2144,6 @@ let lookahead2 ~pass next before =
     when pointer ~followed_by:(function TypedefIdent _ -> true | _ -> false)  ptr  ->
       TIdent (s1, i1)
 
-	(* delete[] *)
-  | (TOCro i1 :: _, Tdelete _ :: _)
-    when !Flag.c_plus_plus <> Flag.Off ->
-      TCommentCpp (Token_c.CppDirective, i1)
-	(* delete[] *)
-  | (TCCro i1 :: _, Tdelete _ :: _)
-    when !Flag.c_plus_plus <> Flag.Off ->
-      TCommentCpp (Token_c.CppDirective, i1)
-
 	(* extern "_" tt *)
   | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _)
     when !Flag.c_plus_plus <> Flag.Off ->

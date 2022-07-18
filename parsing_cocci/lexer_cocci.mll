@@ -292,6 +292,10 @@ let id_tokens lexbuf =
   | "decimal" when !Flag.ibm -> Tdecimal linetype
   | "EXEC" when !Flag.ibm -> Texec linetype
 
+  | "delete"  ->
+	if !Flag.c_plus_plus = Flag.Off
+	then check_var s linetype
+	else Tdelete linetype
   | "auto"  ->
       let open Flag in
       begin match !c_plus_plus with

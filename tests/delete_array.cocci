@@ -1,0 +1,4 @@
+@@
+expression e;
+@@
+- delete [] e;
