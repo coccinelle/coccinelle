@@ -1486,11 +1486,6 @@ direct_d:
      { (fst $1,fun x->(snd $1) (mk_ty (Array (None,x)) [$2;$3])) }
  | direct_d tocro const_expr tccro
      { (fst $1,fun x->(snd $1) (mk_ty (Array (Some $3,x)) [$2;$4])) }
- | direct_d topar            tcpar
-     { (fst $1,
-       fun x->(snd $1)
-         (mk_ty (FunctionType (x,(([],(false, []))))) [$2;$3]))
-     }
  | direct_d topar parameter_type_list tcpar
      { (fst $1,fun x->(snd $1)
        (mk_ty (FunctionType (x, $3)) [$2;$4]))
@@ -1548,8 +1543,6 @@ direct_abstract_declarator:
      { fun x -> $1 (mk_ty (Array (None, x))  [$2;$3]) }
  | direct_abstract_declarator TOCro const_expr TCCro
      { fun x -> $1 (mk_ty (Array (Some $3,x))  [$2;$4]) }
- | TOPar TCPar
-     { fun x -> mk_ty (FunctionType (x, ([], (false,  [])))) [$1;$2] }
  | topar parameter_type_list tcpar
      { fun x -> mk_ty (FunctionType (x, $2))  [$1;$3] }
 /*(* subtle: here must also use topar, not TOPar, otherwise if have for
@@ -1561,8 +1554,6 @@ direct_abstract_declarator:
    * a similar pb with xxx xxx; declaration, cf parsing_hack.ml and the
    * "disable typedef cos special case ..." message.
 *)*/
- | direct_abstract_declarator topar tcpar
-     { fun x -> $1 (mk_ty (FunctionType (x, (([], (false, []))))) [$2;$3]) }
  | direct_abstract_declarator topar parameter_type_list tcpar
      { fun x -> $1 (mk_ty (FunctionType (x, $3)) [$2;$4]) }
 
@@ -1570,6 +1561,7 @@ direct_abstract_declarator:
 /*(* Parameters (use decl_spec not type_spec just for 'register') *)*/
 /*(*-----------------------------------------------------------------------*)*/
 parameter_type_list:
+ | /* empty */                     { ([], (false, []))}
  | parameter_list                  { ($1, (false, []))}
  | parameter_list TComma TEllipsis { ($1, (true,  [$2;$3])) }
 
@@ -2353,20 +2345,6 @@ start_fun2: decl_spec declaratorfd
   | ctor_dtor { $1, [] }
 
 ctor_dtor:
- | Tconstructorname topar tcpar {
-     let id = RegularName (mk_string_wrap $1) in
-     let ret = mk_ty NoType [] in
-     let ty = mk_ty (FunctionType (ret, (([], (false, []))))) [$2;$3] in
-     let storage = ((NoSto,false),[]) in
-     let attrs = [] in
-     (id, ty, storage, attrs, [], []) }
- | Tconstructorname topar tcpar TDotDot constr_extra_list {
-     let id = RegularName (mk_string_wrap $1) in
-     let ret = mk_ty NoType [] in
-     let ty = mk_ty (FunctionType (ret, (([], (false, []))))) [$2;$3] in
-     let storage = ((NoSto,false),[]) in
-     let attrs = [] in
-     (id, ty, storage, attrs, [$4], $5) }
  | Tconstructorname topar parameter_type_list tcpar {
      let id = RegularName (mk_string_wrap $1) in
      let ret = mk_ty NoType [] in
