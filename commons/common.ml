@@ -39,7 +39,7 @@
 (*****************************************************************************)
 (*
  * modules:
- *   - Pervasives, of course
+ *   - Stdlib, of course
  *   - List
  *   - Str
  *   - Hashtbl
