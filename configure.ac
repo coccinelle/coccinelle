@@ -220,6 +220,18 @@ AC_SUBST([OPTFLAGS_menhirLib], [])
 AC_SUBST([MODULES_menhirLib], [])
 AC_SUBST([MODULESOPT_menhirLib], [])
 
+AC_MSG_CHECKING([if menhir supports -O 1])
+
+dnl lower menhir optimization level if menhir version allows it
+dnl (i.e. >=20211230)
+AS_IF([$MENHIR -O 1 --version >/dev/null 2>/dev/null],
+  [dnl
+    AC_MSG_RESULT([yes])
+    AC_SUBST([DEFAULT_MENHIR_FLAGS], [["-O 1"]])],
+  [dnl
+    AC_MSG_RESULT([no])
+    AC_SUBST([DEFAULT_MENHIR_FLAGS], [])])
+
 dnl  ocaml script handling
 dnl  variables:
 dnl    enable_ocaml: whether to enable ocaml scripts

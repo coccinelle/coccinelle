@@ -199,7 +199,7 @@ OCAMLDEP_CMD := $(OCAMLDEP) $(SEARCH_PATH_FLAGS) \
 
 MENHIR_DEP_CMD := $(MENHIR) --ocamldep "$(OCAMLDEP_CMD)" --depend
 
-MENHIR_CMD := $(MENHIR) --ocamlc "$(OCAMLC_CMD)" --explain --infer
+MENHIR_CMD := $(MENHIR) $(MENHIR_FLAGS) --ocamlc "$(OCAMLC_CMD)" --explain --infer
 
 MENHIR_LIB := \
 	$(addsuffix /menhirLib$(LIBSUFFIX),$(filter %/menhirLib,$(MAKELIBS)))
