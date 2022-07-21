@@ -780,14 +780,16 @@ and typeC ty =
       print_option (mcode print_string) comma;
       print_option expression precision_opt;
       mcode print_string rp
-  | Ast.EnumName(kind,name) ->
+  | Ast.EnumName(kind,key,name) ->
       mcode print_string kind;
-      print_option_prespace ident name
-  | Ast.EnumDef(ty,lb,ids,rb) ->
-      fullType ty; ft_space ty;
-      mcode print_string lb;
-      dots force_newline enum_decl ids;
-      mcode print_string rb
+      print_option (mcode structUnion) key;
+      print_option (function x -> ident x) name
+  | Ast.EnumDef(ty,base,lb,ids,rb) ->
+    fullType ty;
+    print_option enum_base base;
+    mcode print_string lb;
+    (dots (function _ -> ()) enum_decl) ids;
+    mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
       mcode structUnion kind; print_option_prespace ident name
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
@@ -813,9 +815,15 @@ and typeC ty =
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
+and enum_base (td, ty) =
+  mcode print_string td;
+  print_string " ";
+  fullType ty
+
 and structUnion = function
     Ast.Struct -> print_string "struct"
   | Ast.Union -> print_string "union"
+  | Ast.Class -> print_string "class"
 
 and sign = function
     Ast.Signed -> print_string "signed"

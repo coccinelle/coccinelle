@@ -118,7 +118,7 @@ type cache_exp =
 (* Not very elegant. Basically a copy-paste of namedef in type_annoter_c. *)
 type cache_return =
   | RetVarOrFunc of string * Ast_c.exp_type
-  | RetEnumConstant of string * string option
+  | RetEnumConstant of string * Ast_c.fullType
   | RetTypeDef   of string * Ast_c.fullType
   | RetStructUnionNameDef of string * (Ast_c.structUnion * Ast_c.structType)
                           Ast_c.wrap
@@ -183,7 +183,7 @@ let cache_name_visitor file =
                       Ast_c.StructUnion (_, Some n, _, def) ->
                         (* Cache field names *)
                         cache_struct_fields n def
-                    | Ast_c.Enum(_, def) ->
+                    | Ast_c.EnumDef(_, base, def) ->
                         (* Cache enumeration constants *)
                         cache_enum_constants def
                     | _ -> k p)) in
@@ -195,7 +195,7 @@ let cache_name_visitor file =
 let get_type_visitor file l =
   let add_to_ret ret =
     l := [ret] @ !l in
-  let get_enum_constants sopt def =
+  let get_enum_constants sopt base def =
     def +>
       List.iter
         (fun ec ->
@@ -233,8 +233,8 @@ let get_type_visitor file l =
                            add_to_ret
                              (RetStructUnionNameDef (s, ((su, def'),ii')))
                        | None -> k p)
-                   | Ast_c.Enum(sopt, def) ->
-                       get_enum_constants sopt def
+                   | Ast_c.EnumDef(sopt, base, def) ->
+                       get_enum_constants sopt base def
                    | _ -> k p)) in
              List.iter get_name defs
       | _ -> k p

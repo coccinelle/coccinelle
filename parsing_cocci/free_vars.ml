@@ -726,9 +726,9 @@ let classify_variables metavar_decls minirules used_after =
             Ast.Ident ident -> Ast.rewrap e (Ast.Ident (classify_ident ident))
           | _ -> e in
         Ast.Decimal (s0, s1, e2mv e1, s2, Common.map_option e2mv e2, s3));
-      enumName = Some (fun s0 ident ->
+      enumName = Some (fun s0 s1 ident ->
         let ident' = Common.map_option classify_ident ident in
-        Ast.EnumName (s0, ident'));
+        Ast.EnumName (s0, s1, ident'));
       structUnionName = Some (fun su ident ->
         let ident' = Common.map_option classify_ident ident in
         Ast.StructUnionName (su, ident'));

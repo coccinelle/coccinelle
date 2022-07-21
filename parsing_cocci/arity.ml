@@ -481,21 +481,26 @@ and top_typeC tgt opt_allowed typ =
       let rp = mcode rp in
       make_typeC typ tgt arity
 	(Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
-  | Ast0.EnumName(kind,name) ->
+  | Ast0.EnumName(kind,key,name) ->
       let arity =
-	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in
+	all_same opt_allowed tgt (mcode2line kind)
+	  ((mcode2arity kind)::(Common.default [] (function x -> [mcode2arity x]) key)) in
       let kind = mcode kind in
+      let key = get_option mcode key in
       let name = get_option (ident false arity) name in
-      make_typeC typ tgt arity (Ast0.EnumName(kind,name))
-  | Ast0.EnumDef(ty,lb,decls,rb) ->
+      make_typeC typ tgt arity (Ast0.EnumName(kind,key,name))
+  | Ast0.EnumDef(ty,base,lb,decls,rb) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line lb)
-	  (List.map mcode2arity [lb;rb]) in
+	  (List.map mcode2arity ((Common.default [] (function (td,ty) -> [td]) base)@[lb;rb])) in
       let ty = typeC arity ty in
+      let base = get_option
+	  (function (td, ty) -> (mcode td, typeC arity ty))
+	  base in
       let lb = mcode lb in
-      let ids = dots (enum_decl tgt) decls in
+      let ids = (dots (enum_decl tgt)) decls in
       let rb = mcode rb in
-      make_typeC typ tgt arity (Ast0.EnumDef(ty,lb,ids,rb))
+      make_typeC typ tgt arity (Ast0.EnumDef(ty,base,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line kind)

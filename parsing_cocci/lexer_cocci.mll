@@ -285,6 +285,7 @@ let id_tokens lexbuf =
   (* in_meta is only for the first keyword; drop it now to allow any type
      name *)
   | "struct" ->     Data.saw_struct := true; Tstruct   linetype
+  | "class" ->      Data.saw_struct := true; Tclass    linetype
   | "union" ->      Data.saw_struct := true; Tunion    linetype
   | "enum" ->       Data.saw_struct := true; Tenum     linetype
   | "unsigned" ->   Tunsigned linetype

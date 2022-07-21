@@ -180,11 +180,11 @@ let rec left_ty t =
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
       call_right left_mcode dec t
 	(function dec -> Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
-  | Ast0.EnumName(kind,name) ->
-      call_right left_mcode kind t (function kind -> Ast0.EnumName(kind,name))
-  | Ast0.EnumDef(ty,lb,ids,rb) ->
+  | Ast0.EnumName(kind,key,name) ->
+      call_right left_mcode kind t (function kind -> Ast0.EnumName(kind,key,name))
+  | Ast0.EnumDef(ty,base,lb,ids,rb) ->
       call_right left_ty ty t
-	(function ty -> Ast0.EnumDef(ty,lb,ids,rb))
+	(function ty -> Ast0.EnumDef(ty,base,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
       call_right left_mcode kind t
 	(function kind -> Ast0.StructUnionName(kind,name))

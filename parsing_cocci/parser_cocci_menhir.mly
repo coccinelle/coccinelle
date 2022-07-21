@@ -230,7 +230,7 @@ let inline_id aft = function
 
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
-%token<Data.clt> Tvoid Tstruct Tunion Tenum
+%token<Data.clt> Tvoid Tstruct Tunion Tenum Tclass
 %token<Data.clt> Tunsigned Tsigned
 %token<Data.clt> TautoType
 
@@ -506,14 +506,13 @@ metadec:
   ar=arity ispure=pure kindfn=metakind
   ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
     { Parse_aux.create_metadec_with_constraints ar ispure kindfn ids }
-| ar=arity ispure=pure kindfn=metakind_bitfield bf=ioption(bitfield)
+| ar=arity ispure=pure kindfn=metakind_bitfield_only_signed bf=bitfield
   ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
-    { match bf with
-      None ->
-	Parse_aux.create_metadec_with_constraints ar ispure (kindfn None) ids
-    | Some bf' ->
-    Parse_aux.create_len_metadec ar ispure (fun lenname -> kindfn (Some lenname))
-    bf' ids }
+    { Parse_aux.create_len_metadec ar ispure (fun lenname -> kindfn (Some lenname))
+       bf ids }
+| ar=arity ispure=pure kindfn=metakind_nobitfield
+  ids=comma_list(pure_ident_or_meta_ident_with_constraints) TMPtVirg
+    { Parse_aux.create_metadec_with_constraints ar ispure (kindfn None) ids }
 | ar=arity ispure=pure
   kind_ids=metakindnosym TMPtVirg
     { let (ids,kindfn) = kind_ids in Parse_aux.create_metadec ar ispure kindfn ids }
@@ -813,7 +812,7 @@ delimited_list_len:
       let ty' = Common.map_option (List.map (Ast0toast.typeC false)) ty in
       check_meta (Ast_cocci.MetaConstDecl(arity,name,ty'))) }
 
-%inline metakind_bitfield:
+%inline metakind_nobitfield:
 | TExpression ty=expression_type
     { (fun lenname arity name pure check_meta constraints ->
       !Data.add_exp_meta (Some [ty]) name constraints pure lenname;
@@ -824,6 +823,43 @@ delimited_list_len:
       let tok = check_meta(Ast_cocci.MetaExpDecl(arity,name,None,lenname)) in
       !Data.add_exp_meta None name constraints pure lenname; tok) }
 | vl=meta_exp_type // no error if use $1 but doesn't type check
+    { (fun lenname arity name pure check_meta constraints ->
+      let ty = Some vl in
+      let cstr_expr = Some begin function c ->
+	match Ast0_cocci.unwrap c with
+	  Ast0_cocci.Constant(_) ->
+	    if not
+		(List.exists
+		   (fun ty ->
+		     match Ast0_cocci.unwrap ty with
+		       Ast0_cocci.BaseType (Ast_cocci.IntType, _) -> true
+		     | Ast0_cocci.BaseType (Ast_cocci.ShortType, _) -> true
+		     | Ast0_cocci.BaseType (Ast_cocci.LongType, _) -> true
+			   | _ -> false)
+			 vl)
+		  then
+		    failwith "metavariable with int constraint must be an int"
+	      | _ -> ()
+	end in
+      Ast_cocci.cstr_iter { Ast_cocci.empty_cstr_transformer with Ast_cocci.cstr_expr }
+	constraints;
+      !Data.add_exp_meta ty name constraints pure lenname;
+      let ty' = Some (List.map (Ast0toast.typeC false) vl) in
+      let tok = check_meta (Ast_cocci.MetaExpDecl (arity,name,ty',lenname)) in
+      tok)
+    }
+
+%inline metakind_bitfield_only_signed:
+| TExpression ty=expression_type
+    { (fun lenname arity name pure check_meta constraints ->
+      !Data.add_exp_meta (Some [ty]) name constraints pure lenname;
+      let ty' = Some [Ast0toast.typeC false ty] in
+      check_meta (Ast_cocci.MetaExpDecl (arity, name, ty', lenname))) }
+| TExpression
+    { (fun lenname arity name pure check_meta constraints ->
+      let tok = check_meta(Ast_cocci.MetaExpDecl(arity,name,None,lenname)) in
+      !Data.add_exp_meta None name constraints pure lenname; tok) }
+| vl=meta_exp_type_only_signed // no error if use $1 but doesn't type check
     { (fun lenname arity name pure check_meta constraints ->
       let ty = Some vl in
       let cstr_expr = Some begin function c ->
@@ -898,7 +934,7 @@ delimited_list_len:
 expression_type:
   m=nonempty_list(TMul) { Parse_aux.ty_pointerify unknown_type m }
 | Tenum m=list(TMul)
-    { Parse_aux.ty_pointerify (Ast0_cocci.wrap (Ast0_cocci.EnumName (Ast0_cocci.make_mcode "", None))) m }
+    { Parse_aux.ty_pointerify (Ast0_cocci.wrap (Ast0_cocci.EnumName (Ast0_cocci.make_mcode "", None, None))) m }
 | Tstruct m=list(TMul)
     { Parse_aux.ty_pointerify
         (Ast0_cocci.wrap
@@ -918,6 +954,10 @@ meta_exp_type:
              Ast0_cocci.make_mcode "", None, Ast0_cocci.make_mcode ""))] }
 | TOBrace t=comma_list(ctype) TCBrace m=list(TMul)
     { List.map (fun x -> Parse_aux.ty_pointerify x m) t }
+
+meta_exp_type_only_signed:
+  t=typedef_ctype_only_signed
+    { [t] }
 
 arity: TWhy0  { Ast_cocci.OPT }
      | TPlus0 { Ast_cocci.MULTI }
@@ -968,22 +1008,22 @@ signable_types:
 			    Ast0_cocci.Impure (*will be ignored*))) }
 
 non_signable_types_no_ident_with_braces:
-    s=Tenum i=ioption(ident) l=TOBrace ids=enum_decl_list r=TCBrace
-    { (if i = None && !Data.in_iso
-    then failwith "enums must be named in the iso file");
-      Ast0_cocci.wrap(Ast0_cocci.EnumDef(Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, i)),
-			     Parse_aux.clt2mcode "{" l, ids, Parse_aux.clt2mcode "}" r)) }
+    | s=Tenum k=option(enum_key) i=option(type_ident) base=ioption(enum_base) l=TOBrace ids=enum_decl_list r=TCBrace
+	{ (if i = None && !Data.in_iso
+	then failwith "enums must be named in the iso file");
+	  Ast0_cocci.wrap(Ast0_cocci.EnumDef(Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, k, i)),
+					     base, Parse_aux.clt2mcode "{" l, ids, Parse_aux.clt2mcode "}" r)) }
     | s=struct_or_union i=ioption(type_ident)
-    l=TOBrace d=struct_decl_list r=TCBrace
-    { (if i = None && !Data.in_iso
-    then failwith "structures must be named in the iso file");
-      Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, i)),
-				    Parse_aux.clt2mcode "{" l,
+	l=TOBrace d=struct_decl_list r=TCBrace
+	{ (if i = None && !Data.in_iso
+	then failwith "structures must be named in the iso file");
+	  Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, i)),
+						Parse_aux.clt2mcode "{" l,
 				    d, Parse_aux.clt2mcode "}" r)) }
     | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
-    { let (nm,cstr,pure,clt) = s in
-    let ty = Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) in
-    Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(ty,Parse_aux.clt2mcode "{" l,d,Parse_aux.clt2mcode "}" r)) }
+	{ let (nm,cstr,pure,clt) = s in
+	let ty = Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) in
+	Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(ty,Parse_aux.clt2mcode "{" l,d,Parse_aux.clt2mcode "}" r)) }
 
 non_signable_types_no_ident_without_braces:
   ty=Tvoid
@@ -1019,8 +1059,8 @@ non_signable_types_no_ident_without_braces:
     { Ast0_cocci.wrap(Ast0_cocci.BaseType(Ast_cocci.SSizeType,[Parse_aux.clt2mcode "ssize_t" ty])) }
 | ty=Tptrdiff_t
     { Ast0_cocci.wrap(Ast0_cocci.BaseType(Ast_cocci.PtrDiffType,[Parse_aux.clt2mcode "ptrdiff_t" ty])) }
-| s=Tenum i=ident
-    { Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, Some i)) }
+| s=Tenum key=option(enum_key) i=type_ident
+    { Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, key, Some i)) }
 | s=struct_or_union i=type_ident // allow typedef name
     { Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, Some i)) }
 | Tdecimal TOPar enum_val TComma enum_val TCPar
@@ -1155,6 +1195,10 @@ typedef_ctype:
 	(Ast0_cocci.DisjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 | TMeta { tmeta_to_type $1 }
 
+typedef_ctype_only_signed:
+    ty=signable_types
+    { Parse_aux.pointerify (Parse_aux.make_cv None ty) [] }
+
 /* ---------------------------------------------------------------------- */
 
 struct_or_union:
@@ -1177,7 +1221,7 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.ConjField(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
-    | t=ctype d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
+    | t=signable_types d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,Parse_aux.clt2mcode ";" pv)) }
     | cv=ioption(const_vol) i=pure_ident_or_symbol
@@ -1236,8 +1280,18 @@ enum_val:
        (Ast0_cocci.MetaExpr(Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.ID,pure,None)) }
 
 enum_decl_list:
-   nonempty_list_start(enum_decl_one,edots_when(TEllipsis,enum_decl_one))
-     { Ast0_cocci.wrap($1 Parse_aux.mkenumdots (fun c -> Ast0_cocci.EnumComma c)) }
+   empty_list_start_if_cpp(enum_decl_one,edots_when(TEllipsis,enum_decl_one))
+     {
+      Ast0_cocci.wrap($1 Parse_aux.mkenumdots (fun c -> Ast0_cocci.EnumComma c))
+    }
+
+enum_key:
+     Tstruct { Parse_aux.clt2mcode Ast_cocci.Struct $1 }
+ |   Tclass { Parse_aux.clt2mcode Ast_cocci.Class $1 }
+
+enum_base:
+     c=TDotDot t=ctype_without_braces
+	{ (Parse_aux.clt2mcode ":" c, t) }
 
 /*****************************************************************************/
 
@@ -2903,6 +2957,17 @@ empty_list_start(elem,dotter):
   /* empty */ { fun build_dots build_comma -> [] }
 | list=nonempty_list_start(elem,dotter) { list }
 
+empty_list_start_if_cpp(elem,dotter):
+    /* empty */
+  {
+   if !Flag.c_plus_plus = Flag.Off
+   then
+     failwith "C does not allow empty enumerator lists!"
+   else
+     fun build_dots build_comma -> []
+  }
+| list=nonempty_list_start(elem,dotter) { list }
+
 nonempty_list_start(elem,dotter): /* dots allowed */
   element=elem { fun build_dots build_comma -> [element] }
 | element=elem comma=TComma
@@ -3499,6 +3564,7 @@ anything: /* used for script code */
  | Tptrdiff_t { "ptrdiff_t" }
  | Tvoid { "void" }
  | Tstruct { "struct" }
+ | Tclass { "class" }
  | Tunion { "union" }
  | Tenum { "enum" }
  | Tunsigned { "unsigned" }

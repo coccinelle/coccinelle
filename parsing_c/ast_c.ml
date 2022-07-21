@@ -189,10 +189,10 @@ and fullType = typeQualifier * typeC
   | Decimal         of constExpression * constExpression option
   | FunctionType    of functionType
 
-  | Enum            of string option * enumType
+  | EnumDef         of fullType * fullType (*enum_base*) option * enumType
   | StructUnion     of structUnion * string option * base_class wrap2 list (* C++ *) * structType (* new scope *)
 
-  | EnumName        of string
+  | EnumName        of structUnion option * string option
   | StructUnionName of structUnion * string
 
   | TypeName   of name * fullType option (* semantic: filled later *)
@@ -218,7 +218,6 @@ and fullType = typeQualifier * typeC
   | AutoType (* c++ >= 11 *)
 
   (* cppext: IfdefType TODO *)
-
 (* -------------------------------------- *)
      and  baseType = Void
                    | IntType   of intType

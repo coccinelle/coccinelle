@@ -155,7 +155,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_type
  *)
 type namedef =
   | VarOrFunc of string * Ast_c.exp_type
-  | EnumConstant of string * string option
+  | EnumConstant of string * fullType
 
   (* also used for macro type aliases *)
   | TypeDef   of string * fullType
@@ -179,7 +179,7 @@ type typedefs = { defs : (fullType * typedefs * int) StringMap.t }
 type nameenv = {
     level : int;
     var_or_func : Ast_c.exp_type StringMap.t;
-    enum_constant : string option StringMap.t;
+    enum_constant : Ast_c.fullType StringMap.t;
     typedef : typedefs;
     struct_union_name_def : ((structUnion * structType) wrap) StringMap.t;
     macro : (define_kind * define_val) StringMap.t
@@ -410,9 +410,9 @@ let rec type_unfold_one_step ty env =
   | StructUnion (sopt, su, base_classes, fields) -> ty
 
   | FunctionType t   -> ty
-  | Enum  (s, enumt) -> ty
+  | EnumDef  (ename, base, enumt) -> ty
 
-  | EnumName s       -> ty (* todo: look in env when will have EnumDef *)
+  | EnumName (key, id)       -> ty (* todo: look in env when will have EnumDef *)
 
   | ParenType t      -> ty
 
@@ -488,10 +488,10 @@ let rec typedef_fix ty env =
 	Type_c.structdef_to_struct_name ty
     | FunctionType ft ->
 	(FunctionType ft) (* todo ? *) +> Ast_c.rewrap_typeC ty
-    | Enum  (s, enumt) ->
-	(Enum  (s, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
-    | EnumName s ->
-	(EnumName s) (* todo? *) +> Ast_c.rewrap_typeC ty
+    | EnumDef  (ename, base, enumt) ->
+	(EnumDef  (ename, base, enumt)) (* todo? *) +> Ast_c.rewrap_typeC ty
+    | EnumName (key, id) ->
+	(EnumName (key, id)) (* todo? *) +> Ast_c.rewrap_typeC ty
     | Decimal(l,p) ->
 	(Decimal(l,p)) (* todo? *) +> Ast_c.rewrap_typeC ty
 
@@ -1364,7 +1364,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           if need_annotate_body
           then k typ (* todo: restrict ? new scope so use do_in_scope ? *)
 
-      | Enum (sopt, enums) ->
+      | EnumDef (sopt, base, enums) ->
 
           enums +> List.iter (fun ((name, eopt), iicomma) ->
 

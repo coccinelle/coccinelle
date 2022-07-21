@@ -619,21 +619,25 @@ and typeC t =
       let rp = normal_mcode rp in
       mkres t (Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
 	(promote_mcode dec) (promote_mcode rp)
-  | Ast0.EnumName(kind,Some name) ->
+  | Ast0.EnumName(kind, key, Some name) ->
       let kind = normal_mcode kind in
+      let key = get_option normal_mcode key in
       let name = ident name in
-      mkres t (Ast0.EnumName(kind,Some name)) (promote_mcode kind) name
-  | Ast0.EnumName(kind,None) ->
+      mkres t (Ast0.EnumName(kind,key,Some name)) (promote_mcode kind) name
+  | Ast0.EnumName(kind,key,None) ->(* Never needed, but removing will cause warnings *)
       let kind = normal_mcode kind in
       let mc = promote_mcode kind in
-      mkres t (Ast0.EnumName(kind,None)) mc mc
-  | Ast0.EnumDef(ty,lb,ids,rb) ->
+      mkres t (Ast0.EnumName(kind,key,None)) mc mc
+  | Ast0.EnumDef(ty,base,lb,ids,rb) ->
       let ty = typeC ty in
+      let base = get_option (function (td, ty) -> (normal_mcode td, typeC ty)) base in
       let lb = normal_mcode lb in
       let ids =
-        dots is_enum_decl_dots (Some(promote_mcode lb)) enum_decl ids in
+        (dots is_enum_decl_dots
+	  (Some (Common.default (promote_mcode lb) (function (td,ty) -> promote_mcode td) base))
+	  enum_decl) ids in
       let rb = normal_mcode rb in
-      mkres t (Ast0.EnumDef(ty,lb,ids,rb)) ty (promote_mcode rb)
+      mkres t (Ast0.EnumDef(ty,base,lb,ids,rb)) ty (promote_mcode rb)
   | Ast0.StructUnionName(kind,Some name) ->
       let kind = normal_mcode kind in
       let name = ident name in

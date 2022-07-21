@@ -204,14 +204,14 @@ let rec type_pos t snp
   | Ast0.Decimal(dec,lp,expr,comma,expr2,rp) ->
       let constructor ~mc = Ast0.Decimal(dec,lp,expr,comma,expr2,mc) in
       mcode_wrap ~mc:rp ~constructor snp
-  | Ast0.EnumName(enum,Some nm) ->
-      let constructor ~id = Ast0.EnumName(enum,Some id) in
+  | Ast0.EnumName(enum, key, Some nm) ->
+      let constructor ~id = Ast0.EnumName(enum, key, Some id) in
       id_wrap ~id:nm ~constructor snp
-  | Ast0.EnumName(enum,None) ->
-      let constructor ~mc = Ast0.EnumName(mc,None) in
+  | Ast0.EnumName(enum, key, None) ->
+      let constructor ~mc = Ast0.EnumName(mc, key, None) in
       mcode_wrap ~mc:enum ~constructor snp
-  | Ast0.EnumDef(t,lcb,exprdots,rcb) ->
-      let c ~item ~mc = Ast0.EnumDef(item,lcb,exprdots,mc) in
+  | Ast0.EnumDef(t,base,lcb,exprdots,rcb) ->
+      let c ~item ~mc = Ast0.EnumDef(item,base,lcb,exprdots,mc) in
       let alt() = mcode_wrap ~mc:rcb ~constructor:(c ~item:t) snp in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:rcb) ~alt snp
   | Ast0.StructUnionName(sumc,Some nm) ->

@@ -170,22 +170,21 @@ and typeC tya tyb =
         return (FunctionType (returnx, paramsx), iix)
       ))
 
-  | Enum (saopt, enuma), Enum (sbopt, enumb) ->
+  | EnumDef (saopt, basea, enuma), EnumDef (sbopt, baseb, enumb) ->
       (saopt = sbopt &&
-      List.length enuma = List.length enumb &&
-      Common.zip enuma enumb +> List.for_all (fun
-        (((namesa,eopta), iicommaa), ((namesb,eoptb),iicommab))
-          ->
-            let sa = str_of_name namesa in
-            let sb = str_of_name namesb in
-            sa = sb &&
-            (* todo ? eopta and b can have some info so ok to use = ?  *)
-            eopta = eoptb
-        )
-      ) >&&>
-        return (Enum (saopt, enuma), iix)
+       List.length enuma = List.length enumb &&
+       Common.zip enuma enumb +>
+       List.for_all
+	 (fun (((namesa,eopta), iicommaa), ((namesb,eoptb),iicommab)) ->
+           let sa = str_of_name namesa in
+           let sb = str_of_name namesb in
+           sa = sb &&
+           (* todo ? eopta and b can have some info so ok to use = ?  *)
+           eopta = eoptb)) >&&>
+      option fullType basea baseb >>= (fun x ->
+        return (EnumDef (saopt, x, enuma), iix))
 
-  | EnumName sa, EnumName sb -> sa = sb >&&> return (EnumName sa, iix)
+  | EnumName (sa, ia), EnumName (sb, ib) -> (sa = sb && ia = ib) >&&> return (EnumName (sa, ia), iix)
 
   | ParenType a, ParenType b ->
       (* iso here ? *)

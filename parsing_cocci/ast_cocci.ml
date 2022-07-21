@@ -358,8 +358,8 @@ and base_typeC =
 	               expression *
 	               string mcode option (* , *) * expression option *
 	               string mcode (* ) *) (* IBM C only *)
-  | EnumName        of string mcode (*enum*) * ident option (* name *)
-  | EnumDef  of fullType (* either EnumName or metavar *) *
+  | EnumName        of string mcode (*enum*) * structUnion mcode option(*struct/class/None*) * ident option (* name *)
+  | EnumDef  of fullType (* either EnumName or metavar *) * enum_base option *
 	string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
@@ -384,7 +384,7 @@ and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | SizeType | SSizeType | PtrDiffType
 | BoolType | Unknown
 
-and structUnion = Struct | Union
+and structUnion = Struct | Union | Class
 
 and sign = Signed | Unsigned
 
@@ -459,6 +459,7 @@ and base_enum_decl =
   | EnumComma of string mcode (* , *)
   | EnumDots of string mcode (* ... *) * enum_decl option (* whencode *)
 
+and enum_base = string mcode (* : *) * fullType
 and enum_decl = base_enum_decl wrap
 
 (* --------------------------------------------------------------------- *)
@@ -1136,6 +1137,7 @@ let string_of_expression e =
 let string_of_structUnion = function
     Struct -> "struct"
   | Union -> "union"
+  | Class -> "class"
 
 let rec string_of_typeC ty =
   match unwrap ty with
@@ -1155,12 +1157,17 @@ let rec string_of_typeC ty =
       let s0 = string_of_expression e0
       and s1 = Common.default "?" string_of_expression e1 in
       Printf.sprintf "decimal(%s,%s) " s0 s1
-  | EnumName (_, name) -> "enum " ^ (Common.default "?" string_of_ident name)
+  | EnumName (_, key, name) ->
+      "enum " ^
+      (Common.default ""
+	 (function x -> string_of_structUnion (unwrap_mcode x)) key) ^
+      (Common.default ""
+	 (function x -> " ") key) ^ (Common.default "" string_of_ident name)
   | StructUnionName (kind, name) ->
       Printf.sprintf "%s %s"
 	(string_of_structUnion (unwrap_mcode kind))
 	(Common.default "?" string_of_ident name)
-  | EnumDef (ty', _, _, _)
+  | EnumDef (ty', _ , _, _, _)
   | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
   | TypeOfExpr(_,_,e,_) -> "typeof("^string_of_expression e^")"
   | TypeOfType(_,_,t,_) -> "typeof("^string_of_fullType t^")"
@@ -1194,7 +1201,7 @@ type 'a transformer = {
     baseType: (baseType -> string mcode list -> 'a) option;
     decimal: (string mcode -> string mcode -> expression ->
       string mcode option -> expression option -> string mcode -> 'a) option;
-    enumName: (string mcode -> ident option -> 'a) option;
+    enumName: (string mcode -> structUnion mcode option -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
     metaType: (meta_name mcode -> constraints -> keep_binding ->
@@ -1235,11 +1242,11 @@ and typeC_map tr ty =
       rewrap ty (FunctionType (fullType_map tr ty', s0, s1, s2))
   | Array (ty', s0, s1, s2) ->
       rewrap ty (Array (fullType_map tr ty', s0, s1, s2))
-  | EnumName (s0, ident) ->
+  | EnumName (s0, key, ident) ->
       begin
         match tr.enumName with
           None -> ty
-        | Some f -> rewrap ty (f s0 ident)
+        | Some f -> rewrap ty (f s0 key ident)
       end
   | StructUnionName (su, ident) ->
       begin
@@ -1272,8 +1279,8 @@ and typeC_map tr ty =
   | SignedT (_, None) -> ty
   | SignedT (sgn, Some ty') ->
       rewrap ty (SignedT (sgn, Some (typeC_map tr ty')))
-  | EnumDef (ty', s0, e, s1) ->
-      rewrap ty (EnumDef (fullType_map tr ty', s0, e, s1))
+  | EnumDef (ty', base, s0, e, s1) ->
+      rewrap ty (EnumDef (fullType_map tr ty', base, s0, e, s1))
   | StructUnionDef (ty', s0, a, s1) ->
       rewrap ty (StructUnionDef (fullType_map tr ty', s0, a, s1))
 
@@ -1295,11 +1302,11 @@ and typeC_fold tr ty v =
   | ParenType (_, ty', _)
   | FunctionType (ty', _, _, _)
   | Array (ty', _, _, _)
-  | EnumDef (ty', _, _, _)
+  | EnumDef (ty', _, _, _, _)
   | StructUnionDef (ty', _, _, _) -> fullType_fold tr ty' v
   | Decimal (s0, s1, e0, s2, e1, s3) ->
       Common.default v (fun f -> f s0 s1 e0 s2 e1 s3 v) tr.decimal
-  | EnumName (s0, ident) -> Common.default v (fun f -> f s0 ident v) tr.enumName
+  | EnumName (s0, key, ident) -> Common.default v (fun f -> f s0 key ident v) tr.enumName (* Not sure about this *)
   | StructUnionName (su, ident) ->
       Common.default v (fun f -> f su ident v) tr.structUnionName
   | TypeOfExpr(_,_,e,_) -> v
@@ -1314,7 +1321,7 @@ let fullType_iter tr ty =
     baseType = Common.map_option (fun f ty' s0 () -> f ty' s0) tr.baseType;
     decimal = Common.map_option
       (fun f s0 s1 e0 s2 e1 s3 () -> f s0 s1 e0 s2 e1 s3) tr.decimal;
-    enumName = Common.map_option (fun f s0 ident () -> f s0 ident) tr.enumName;
+    enumName = Common.map_option (fun f s0 key ident () -> f s0 key ident) tr.enumName;
     structUnionName = Common.map_option
       (fun f su ident () -> f su ident) tr.structUnionName;
     typeName = Common.map_option (fun f name () -> f name) tr.typeName;
@@ -1339,15 +1346,17 @@ let rec ident_fold_meta_names f ident v =
 let expression_fold_ident f e v = f (Common.just (ident_of_expression_opt e)) v
 
 let fullType_fold_meta_names f ty v =
-  let enumOrStructUnionName _ ident v =
+  let structUnionName _ ident v =
+    Common.default v (fun ident' -> ident_fold_meta_names f ident' v) ident in
+  let enumName _ _ ident v =
     Common.default v (fun ident' -> ident_fold_meta_names f ident' v) ident in
   fullType_fold { empty_transformer with
     decimal = Some (fun _ _ e1 _ e2 _ v ->
       let v' = expression_fold_ident (ident_fold_meta_names f) e1 v in
       Common.default v'
 	(fun e -> expression_fold_ident (ident_fold_meta_names f) e v) e2);
-    enumName = Some enumOrStructUnionName;
-    structUnionName = Some enumOrStructUnionName;
+    enumName = Some enumName;
+    structUnionName = Some structUnionName;
     metaType = Some (fun tyname _ _ _ v -> f (unwrap_mcode tyname) v)
   } ty v
 

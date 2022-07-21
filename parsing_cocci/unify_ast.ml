@@ -363,13 +363,14 @@ and unify_typeC t1 t2 =
      Ast.Decimal(dec2,lp2,len2,comma2,prec_opt2,rp2)) ->
       unify_expression len1 len2 &&
       unify_option unify_expression prec_opt1 prec_opt2
-  | (Ast.EnumName(s1,Some ts1),Ast.EnumName(s2,Some ts2)) ->
-      if unify_mcode s1 s2 then unify_ident ts1 ts2 else false
-  | (Ast.EnumName(s1,None),Ast.EnumName(s2,None)) ->
-      true
-  | (Ast.EnumDef(ty1,lb1,ids1,rb1),Ast.EnumDef(ty2,lb2,ids2,rb2)) ->
+  | (Ast.EnumName(s1,key1,Some ts1),Ast.EnumName(s2,key2,Some ts2)) ->
+      if (unify_mcode s1 s2) && (unify_option unify_mcode key1 key2) then unify_ident ts1 ts2 else false
+  | (Ast.EnumName(s1,key1,None),Ast.EnumName(s2,key2,None)) ->
+      unify_option unify_mcode key1 key2
+  | (Ast.EnumDef(ty1,base1,lb1,ids1,rb1),Ast.EnumDef(ty2,base2,lb2,ids2,rb2)) ->
       unify_fullType ty1 ty2 &&
-      unify_dots unify_enum_decl enumdots ids1 ids2
+      unify_option (fun (_, ty1) (_,ty2) -> unify_fullType ty1 ty2) base1 base2 &&
+      (unify_dots unify_enum_decl enumdots) ids1 ids2
   | (Ast.StructUnionName(s1,Some ts1),Ast.StructUnionName(s2,Some ts2)) ->
       if unify_mcode s1 s2 then unify_ident ts1 ts2 else false
   | (Ast.StructUnionName(s1,None),Ast.StructUnionName(s2,None)) ->

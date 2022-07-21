@@ -208,9 +208,9 @@ and base_typeC =
 	               expression *
 	               string mcode option (* , *) * expression option *
 	               string mcode (* ) *) (* IBM C only *)
-  | EnumName        of string mcode (*enum*) * ident option (* name *)
-  | EnumDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * enum_decl dots * string mcode (* } *)
+  | EnumName        of string mcode (*enum*) * Ast_cocci.structUnion mcode option (* struct/class/None *) * ident option (* name *)
+  | EnumDef         of typeC (* EnumName *) *
+	            enum_base option * string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of Ast_cocci.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
@@ -230,6 +230,8 @@ and base_typeC =
   | OptType         of typeC
 
 and typeC = base_typeC wrap
+
+and enum_base = string mcode (* : *) * typeC
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)

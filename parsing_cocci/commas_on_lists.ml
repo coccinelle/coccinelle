@@ -50,9 +50,9 @@ trailing comma is allowed but not required *)
 let base_typeC r k t =
   let t = k t in
   match Ast0.unwrap t with
-    Ast0.EnumDef(ty,lb,ids,rb) ->
+    Ast0.EnumDef(ty,base,lb,ids,rb) ->
       let ids = add_enum_decl_comma ids in
-      Ast0.rewrap t (Ast0.EnumDef(ty,lb,ids,rb))
+      Ast0.rewrap t (Ast0.EnumDef(ty,base,lb,ids,rb))
   | _ -> t
 
 let initialiser r k i =

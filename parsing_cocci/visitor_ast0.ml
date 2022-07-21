@@ -380,16 +380,18 @@ let visitor mode bind option_default
 	    let (rp_n,rp) = string_mcode rp in
 	    (multibind [dec_n; lp_n; length_n; comma_n; precision_n; rp_n],
 	     Ast0.Decimal(dec,lp,length,comma,precision_opt,rp))
-	| Ast0.EnumName(kind,name) ->
+	| Ast0.EnumName(kind,key,name) ->
 	    let (kind_n,kind) = string_mcode kind in
+	    let (key_n, key) = get_option struct_mcode key in
 	    let (name_n,name) = get_option ident name in
-	    (bind kind_n name_n, Ast0.EnumName(kind,name))
-	| Ast0.EnumDef(ty,lb,ids,rb) ->
+	    (multibind [kind_n;key_n;name_n], Ast0.EnumName(kind,key,name))
+	| Ast0.EnumDef(ty,base,lb,ids,rb) ->
 	    let (ty_n,ty) = typeC ty in
+	    let (base_n, base) = get_option enum_base base in
 	    let (lb_n,lb) = string_mcode lb in
 	    let (ids_n,ids) = enum_decl_dots ids in
 	    let (rb_n,rb) = string_mcode rb in
-	    (multibind [ty_n;lb_n;ids_n;rb_n], Ast0.EnumDef(ty,lb,ids,rb))
+	    (multibind [ty_n;lb_n;ids_n;rb_n], Ast0.EnumDef(ty,base,lb,ids,rb))
 	| Ast0.StructUnionName(kind,name) ->
 	    let (kind_n,kind) = struct_mcode kind in
 	    let (name_n,name) = get_option ident name in
@@ -757,6 +759,12 @@ let visitor mode bind option_default
 	| Ast0.OptField(decl) ->
 	    let (n,decl) = field decl in (n,Ast0.OptField(decl))) in
     fieldfn all_functions k d
+
+  and enum_base base =
+    let (tdd, typ) = base in
+    let (tdd_n, tdd) = string_mcode tdd in
+    let (typ_n, typ) = typeC typ in
+    ((bind tdd_n typ_n), (tdd, typ))
 
   and enum_decl d =
     let k d =

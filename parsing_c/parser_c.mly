@@ -814,8 +814,7 @@ cond_expr:
      { $1 }
  | arith_expr TWhy gcc_opt_expr TDotDot cond_expr
      { mk_e (CondExpr ($1,$3,$5)) [$2;$4] }
- | Tnew cpp_type /*ask about using a Tnull*/
-   /* does cpp_type support class names and nested-specifiers */
+ | Tnew cpp_type
      cpp_initialiser_opt
      {
       let (ty,par2) = $2 in
@@ -957,8 +956,7 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
      { mk_e(Constructor (snd $2, (InitList (List.rev $5),[$4;$7] @ $6))) [$1;$3] }
 
-primary_expr:
-   identifier_cpp  { mk_e(Ident  ($1)) [] }
+primary_expr_without_ident:
  | TInt
     { let (str,(sign,base)) = fst $1 in
       mk_e(Constant (Int (str,Si(sign,base)))) [snd $1] }
@@ -981,6 +979,9 @@ primary_expr:
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
 
+primary_expr:
+   identifier_cpp  { mk_e(Ident  ($1)) [] }
+ | primary_expr_without_ident { $1 }
 
 string_fragments:
  | /* empty */ { [] }
@@ -1005,7 +1006,7 @@ argument_ne:
  | action_higherordermacro_ne { Right (ArgAction $1) }
 
 argument_ne_without_paramdecl:
- | assign_expr { Left $1 }
+ | primary_expr_without_ident { Left $1 }
  | action_higherordermacro_ne { Right (ArgAction $1) }
 
 argument:
@@ -1361,7 +1362,8 @@ simple_type:
        | _ -> warning "attributes found in typeof(...), dropping" ret }
 
 type_spec2_without_braces:
-   simple_type { $1 }
+     simple_type { $1 }
+ |   enum_ident_independant { Right3 (fst $1), snd $1 }
 type_spec2_with_braces:
  | struct_or_union_spec { Right3 (fst $1), snd $1 }
  | enum_spec            { Right3 (fst $1), snd $1 }
@@ -2244,12 +2246,64 @@ cpp_struct_decl_list_gcc:
 /*(* enum *)*/
 /*(*************************************************************************)*/
 enum_spec:
- | Tenum        tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
-     { Enum (None,    $3),           [$1;$2;$5] @ $4 }
- | Tenum ident  tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
-     { Enum (Some (fst $2), $4),     [$1; snd $2; $3;$6] @ $5 }
+ | enum_ident enum_base tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
+     {
+      let (ty, td) = Common.default (None, []) (function x -> x) $2 in
+      let (enumname, ii) = $1 in
+      let tmp =
+       (dt "spec_qualif" ();
+	(addTypeD(
+	     (dt "type" (); (Right3 enumname, ii)),nullDecl))) in
+      let (returnType, _) = fixDeclSpecForDecl tmp in
+      let comma_opt =
+	if List.length $4 = 0
+	then [] else $5 in
+      (EnumDef (returnType, ty, $4), td@[$3;$6] @ comma_opt)
+    }
+
+enum_ident_independant:
+ | Tenum enum_key ident
+     {
+      let rt = ((Some (fst $2), $3),       [$1; snd $2; snd $3]) in
+      let ((key, ident), ii) = rt in
+      (EnumName (key, Some (fst ident)), ii)
+    }
  | Tenum ident
-     { EnumName (fst $2),       [$1; snd $2] }
+     {
+      let rt = ((None, $2),       [$1; snd $2]) in
+      let ((key, ident), ii) = rt in
+      (EnumName (key, Some (fst ident)), ii)
+    }
+
+enum_ident_dependant:
+ | Tenum enum_key
+     {
+      (EnumName (Some (fst $2), None), [$1; snd $2])
+    }
+ | Tenum
+     {
+      (EnumName (None, None), [$1])
+    }
+
+enum_ident:
+    enum_ident_independant { $1 }
+|   enum_ident_dependant   { $1 }
+
+enum_base:
+ | TDotDot simple_type
+     { let tmp =
+       (dt "spec_qualif" ();
+	([],(addTypeD(
+	     (dt "type" (); $2),nullDecl)))) in
+     let (attrs, ds) = tmp in
+     let (returnType, _) = fixDeclSpecForDecl ds in
+     let ret = (attrs, returnType) in
+     Some (Some (snd ret), [$1]) }
+ | /* empty */ { None }
+
+enum_key:
+   Tcpp_struct { et "su" (); (Struct, $1) }
+ | Tclass { et "su" (); (Class, $1) }
 
 enumerator:
  | idente                 { $1, None     }
@@ -2791,6 +2845,7 @@ enumerator_list:
  | enumerator_list TComma cpp_directive_list enumerator
      { $1 @ [$4, [$2]] }
  | enumerator_list TComma enumerator { $1 @ [$3,    [$2]] }
+ | /* empty */                       { [] }
 
 
 init_declarator_list:

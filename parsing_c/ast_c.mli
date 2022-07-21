@@ -31,10 +31,10 @@ and typeCbis =
   | Array of constExpression option * fullType
   | Decimal of constExpression * constExpression option
   | FunctionType of functionType
-  | Enum of string option * enumType
+  | EnumDef of fullType * fullType option * enumType
   | StructUnion of
       structUnion * string option * base_class wrap2 list (* C++ *) * structType
-  | EnumName of string
+  | EnumName of structUnion option * string option
   | StructUnionName of structUnion * string
   | TypeName of name * fullType option
   | FieldType of fullType * name * constExpression option

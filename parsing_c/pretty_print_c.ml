@@ -611,39 +611,32 @@ and pp_string_format (e,ii) =
           | x -> raise (Impossible 102)
 	  )
 
-      | (Enum  (sopt, enumt), iis) ->
-          print_sto_qu (sto, qu);
+      | (EnumDef  (enident, base, enumt), iis) ->
+	  pp_base_type (qu, snd enident) sto;
 
-          (match sopt, iis with
-          | (Some s, ([i1;i2;i3;i4]|[i1;i2;i3;i4;_])) ->
-              pr_elem i1; pr_elem i2; pr_elem i3;
-          | (None, ([i1;i2;i3]|[i1;i2;i3;_])) ->
-              pr_elem i1; pr_elem i2
-          | x -> raise (Impossible 103)
-	  );
-
-          enumt +> List.iter (fun ((name, eopt), iicomma) ->
-            assert (List.length iicomma <= 1);
-            iicomma +> List.iter (function x -> pr_elem x; pr_space());
-            pp_name name;
-            eopt +> Common.do_option (fun (ieq, e) ->
-              pr_elem ieq;
-              pp_expression e;
-	  ));
-
-          (match sopt, iis with
-          | (Some s, [i1;i2;i3;i4]) ->    pr_elem i4
-          | (Some s, [i1;i2;i3;i4;i5]) ->
-              pr_elem i5; pr_elem i4 (* trailing comma *)
-          | (None, [i1;i2;i3]) ->         pr_elem i3
-          | (None, [i1;i2;i3;i4]) ->
-              pr_elem i4; pr_elem i3 (* trailing comma *)
-
-
-          | x -> raise (Impossible 104)
-	  );
-
-
+	  let rest = 
+	    match (base, iis) with
+	      (Some base, i4::ii) -> pr_elem i4; pp_base_type base sto; ii
+	    | (None, ii) -> ii
+	    | (Some _, []) -> raise (Impossible 1030) in
+	  
+	  (match rest with
+	    lb::rb::ii ->
+	      pr_elem lb;
+	      enumt +> List.iter (fun ((name, eopt), iicomma) ->
+		assert (List.length iicomma <= 1);
+		iicomma +> List.iter (function x -> pr_elem x; pr_space());
+		pp_name name;
+		eopt +> Common.do_option (fun (ieq, e) ->
+		  pr_elem ieq;
+		  pp_expression e;
+		));
+	      pr_elem rb;
+	      (match ii with
+		[co] -> pr_elem co
+	      | _ -> ())
+	  |  _ -> raise (Impossible 1031))
+	      
       | (BaseType _, iis) ->
           print_sto_qu_ty (sto, qu, iis);
 
@@ -651,10 +644,9 @@ and pp_string_format (e,ii) =
           assert (List.length iis = 2);
           print_sto_qu_ty (sto, qu, iis);
 
-      | (EnumName  s, iis) ->
-          assert (List.length iis = 2);
-          print_sto_qu_ty (sto, qu, iis);
-
+      | (EnumName  (key, s), ii) ->
+          print_sto_qu_ty (sto, qu, ii)
+  
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
 	  (* hope that sto before qu is right... cf print_sto_qu_ty *)
 	  let stoqulp = get_sto sto @ (snd qu) @ [dec] in
@@ -829,10 +821,10 @@ and pp_string_format (e,ii) =
       (* the work is to do in base_type !! *)
       | (NoType, iis)                           -> ()
       | (BaseType _, iis)                       -> print_ident ident
-      | (Enum  (sopt, enumt), iis)              -> print_ident ident
+      | (EnumDef  (sopt, base, enumt), iis)     -> print_ident ident
       | (StructUnion (_, sopt, base_classes, fields),iis) -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
-      | (EnumName  s, iis)                      -> print_ident ident
+      | (EnumName  (key, s), iis)               -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
       | (TypeName (_name,_typ), iis)            -> print_ident ident
       | (FieldType (_typ,_,_), iis)             -> print_ident ident
@@ -946,10 +938,10 @@ and pp_string_format (e,ii) =
 
 
       | (BaseType _, iis)    -> ()
-      | (Enum  (sopt, enumt), iis) -> ()
+      | (EnumDef  (sopt, base, enumt), iis) -> ()
       | (StructUnion (_, sopt, _, fields),iis)  -> ()
       | (StructUnionName (s, structunion), iis) -> ()
-      | (EnumName  s, iis) -> ()
+      | (EnumName  (key, s), iis) -> ()
       | (Decimal(l,p), iis) -> ()
       | (TypeName (_name,_typ), iis) -> ()
       | FieldType (_, _, _), _ -> ()
@@ -1004,10 +996,10 @@ and pp_string_format (e,ii) =
         pr_elem i2
 
     | (BaseType _, iis)        -> ()
-    | (Enum  (sopt, enumt), iis) -> ()
+    | (EnumDef  (sopt, base, enumt), iis) -> ()
     | (StructUnion (_, sopt, _, fields),iis)-> ()
     | (StructUnionName (s, structunion), iis) -> ()
-    | (EnumName  s, iis) -> ()
+    | (EnumName  (key, s), iis) -> ()
     | (Decimal(l,p), iis) -> ()
     | (TypeName (name,_typ), iis) -> ()
     | (FieldType (_, _, _), _) -> ()

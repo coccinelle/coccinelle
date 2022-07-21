@@ -269,7 +269,7 @@ let types ~rn = function
               get_meta_id_opt acc
                 (Common.default None Ast_cocci.ident_of_expression_opt nm2) in
             acc
-        | Ast.EnumName (_, Some n)
+        | Ast.EnumName (_, _, Some n)
         | Ast.StructUnionName(_, Some n) -> get_meta_id acc n
         | Ast.SignedT (_, Some t) -> get_meta_type acc t
         | Ast.Pointer (t, _)

@@ -85,18 +85,24 @@ and disjtypeC bty =
       disjmult2 (disjexp length) (disjoption disjexp precision_opt)
 	(function length -> function precision_opt ->
 	  Ast.rewrap bty (Ast.Decimal(dec,lp,length,comma,precision_opt,rp)))
-  | Ast.EnumName(enum,name) ->
+  | Ast.EnumName(enum,key,name) ->
       let name = disjoption disjident name in
-      List.map (function name -> Ast.rewrap bty (Ast.EnumName(enum,name))) name
+      List.map (function name -> Ast.rewrap bty (Ast.EnumName(enum,key,name))) name
   | Ast.StructUnionName(su,name) ->
       let name = disjoption disjident name in
       List.map
 	(function name -> Ast.rewrap bty (Ast.StructUnionName(su,name)))
 	name
-  | Ast.EnumDef(ty,lb,ids,rb) ->
-      disjmult2 (disjty ty) (disjdots disjenumdecl ids)
-	(function ty -> function ids ->
-	  Ast.rewrap bty (Ast.EnumDef(ty,lb,ids,rb)))
+  | Ast.EnumDef(ty,base,lb,ids,rb) ->
+      disjmult3 (disjty ty)
+	(disjoption
+	   (function (td, ty1) ->
+	      let ty1 = disjty ty1 in
+	      List.map (function ty1 -> (td, ty1)) ty1)
+	   base)
+	((disjdots disjenumdecl) ids)
+	(fun ty base ids ->
+	  Ast.rewrap bty (Ast.EnumDef(ty,base,lb,ids,rb)))
   | Ast.StructUnionDef(ty,lb,decls,rb) ->
       disjmult2 (disjty ty) (disjdots anndisjfield decls)
 	(function ty -> function decls ->

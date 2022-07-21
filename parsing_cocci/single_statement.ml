@@ -173,8 +173,8 @@ and left_typeC t =
   | Ast0.Array(ty,lb,size,rb) -> left_typeC ty
   | Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
       modif_before_mcode dec
-  | Ast0.EnumName(kind,name) -> modif_before_mcode kind
-  | Ast0.EnumDef(ty,lb,ids,rb) -> left_typeC ty
+  | Ast0.EnumName(kind,key,name) -> modif_before_mcode kind
+  | Ast0.EnumDef(ty,base,lb,ids,rb) -> left_typeC ty
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
   | Ast0.TypeOfExpr(tf,_,_,_) -> modif_before_mcode tf

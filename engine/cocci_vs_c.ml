@@ -114,8 +114,6 @@ let generalize_mcode ia =
   in
   (s1, i, new_mck, pos)
 
-
-
 (*---------------------------------------------------------------------------*)
 
 (* 0x0 is equivalent to 0,  value format isomorphism *)
@@ -185,6 +183,7 @@ let equal_structUnion a b =
   match a, b with
   | A.Struct, B.Struct -> true
   | A.Union,  B.Union -> true
+  | A.Class, B.Class -> true
   | _, (B.Struct|B.Union|B.Class) -> false
 
 let equal_sign a b =
@@ -784,6 +783,33 @@ module type PARAM =
 
   end
 
+
+let extract_one = function
+    a::ii -> (a, ii)
+  | _ -> failwith "impossible"
+
+let token_option y ii =
+  match y, ii with
+    None, _ -> None
+  | Some y, ib::ii -> Some (y, ib, ii)
+  | _ -> failwith "impossible"
+
+let token_option2 y ii =
+  match y, ii with
+    None, _ -> None
+  | Some y, ib1::ib2::ii -> Some (y, ib1, ib2, ii)
+  | _ -> failwith "impossible"
+
+let option_ret_unwrap y ii =
+  match y with
+    None -> (None, [], ii)
+  | Some (y, ib, ii) -> (Some y, [ib], ii)
+
+let option_ret_unwrap2 y ii =
+  match y with
+    None -> (None, [], ii)
+  | Some (y, ib1, ib2, ii) -> (Some y, [ib1;ib2], ii)
+
 let satisfies_script_constraint (name, lang, params, pos, body) ida idb env =
   let values =
     try Some ((ida, idb) :: List.map (fun (p,_) -> (p, env p)) params)
@@ -871,6 +897,7 @@ let (option: ('a,'b) matcher -> ('a option,'b option) matcher)= fun f t1 t2 ->
       )
   | (None, None) -> return (None, None)
   | _ -> fail
+
 
 (* Dots are sometimes used as metavariables, since like metavariables they
 can match other things.  But they no longer have the same type.  Perhaps these
@@ -1587,82 +1614,60 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
           ((B.SizeOfType (typb),typ),[ib1;ib2;ib3])
       )))))
 
-  | A.New (ia1, pp_opta,ia4_opt,typa,ia5_opt,init_opta), ((B.New (pp_optb,typb,init_optb), typ), ib1::ii) ->
+  | A.New (ia1,pp_opta,ia4_opt,typa,ia5_opt,init_opta), ((B.New (pp_optb,typb,init_optb), typ), ib1::ii) ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
 	(* for checking pp_opt *)
-	option (fun (ia2, x, ia3) (ib2,y,ib3,ii) ->
+	option (fun (ia2, x, ia3) (y,ib2,ib3,ii) ->
 	  arguments (seqstyle x) (A.unwrap x) y >>= (fun xunwrap y ->
           let x = A.rewrap x xunwrap in
 	      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
 	      tokenf ia3 ib3 >>= (fun ia3 ib3 ->
-		return ((ia2, x, ia3), (ib2, y, ib3, ii))
+		return ((ia2, x, ia3), (y, ib2, ib3, ii))
 	      ))
 	    ))
 	  pp_opta
-	  (match (pp_optb,ii) with
-	    (None,_) -> None
-	  | (Some pp_optb, ib2::ib3::ii) -> Some (ib2, pp_optb, ib3, ii)
-          | _ -> failwith "impossible 0")
+	  (token_option2 pp_optb ii)
 	  >>= (fun pp_opta pp_optb ->
-	       let (ib23,pp_optb,ii) =
-		 match pp_optb with
-		   None -> ([], None, ii)
-		 | Some (ib2, pp_optb, ib3, ii) -> ([ib2;ib3],Some pp_optb,ii) in
+	       let (pp_optb, ib23, ii) =
+		 option_ret_unwrap2 pp_optb ii in
 	       (* next two options for matchings paranthesis around type *)
-	       option (fun ia4 _ ->
-		 match ii with
-		   ib4::ii ->
-	             tokenf ia4 ib4 >>= (fun ia4 ib4->
-	               return (ia4, (ib4, ii)))
-		 | _ -> fail)
+	       option (fun ia4 (ignoredtoken,ib4,ii) -> 
+	         tokenf ia4 ib4 >>= (fun ia4 ib4->
+	           return (ia4, (ignoredtoken, ib4, ii))))
 		 ia4_opt
-		 (fmap (function _ -> (ib1, ii)) ia4_opt)
+		 (token_option ia4_opt ii)
 		 >>= (fun ia4_opt ib4_opt ->
-		     let (ib4, ii) =
-			match ib4_opt with
-			  None -> ([], ii)
-			| Some (ib4, ii) -> ([ib4], ii) in
+		     let (_, ib4, ii) =
+		       option_ret_unwrap ib4_opt ii in
 		     fullType typa typb >>= (fun typa typb ->
-		     option ( fun ia5 _ ->
-		       match ii with
-			 ib5::ii -> tokenf ia5 ib5 >>= (fun ia5 ib5 ->
-			   return (ia5, (ib5, ii)))
-		       | _ -> fail)
+		       option ( fun ia5 (ignoredtoken, ib5, ii) ->
+			 tokenf ia5 ib5 >>= (fun ia5 ib5 ->
+			   return (ia5, (ignoredtoken, ib5, ii))))
 		       ia5_opt
-		       (fmap (function _ -> (ib1, ii)) ia5_opt)
-			 >>= (fun ia5_opt ib5_opt ->
-			 let (ib5, ii) =
-			   match ib5_opt with
-			     None -> ([], ii)
-			   | Some (ib5, ii) -> ([ib5], ii) in
+		       (token_option ia5_opt ii)
+		       >>= (fun ia5_opt ib5_opt ->
+			 let (_, ib5, ii) =
+			   option_ret_unwrap ib5_opt ii in
 			 (* for matching init_opt *)
-			 match (init_optb, ii) with
-			   (Some x, []) -> fail
-			 | _ ->
-			     option (fun (ia6, x, ia7) (ib6, y, ib7, ii) ->
-			       arguments (seqstyle x) (A.unwrap x) y >>= (fun xunwrap y ->
-				 let x = A.rewrap x xunwrap in
+			 option (fun (ia6, x, ia7) (y, ib6, ib7, ii) ->
+			   arguments (seqstyle x) (A.unwrap x) y >>= (fun xunwrap y ->
+			     let x = A.rewrap x xunwrap in
 				 tokenf ia6 ib6 >>= (fun ia6 ib6 ->
-				   tokenf ia7 ib7 >>= (fun ia7 ib7 ->
-				     return ((ia6, x, ia7), (ib6, y, ib7, ii))))
-									 )) 
-			       init_opta
-			       (match (init_optb, ii) with
-				 (None,_) -> None
-			       | (Some init_optb, ib6::ib7::ii) -> Some (ib6, init_optb, ib7, ii)
-			       | _ -> failwith "impossible1" )
-			       >>= (fun init_opta init_optb ->
-				 let (ib67, init_optb, ii) =
-				   match init_optb with
-			             None -> ([], None, ii)
-				   | Some (ib6, init_optb, ib7, ii) -> ([ib6;ib7], Some init_optb, ii) in
-				 if ii != [] (* ALL TOKENS SHOULD HAVE BEEN MATCHED *)
-				 then fail
-				 else
-				   return (
-				   ((A.New(ia1, pp_opta, ia4_opt, typa, ia5_opt ,init_opta))) +> wa,
-				   ((B.New(pp_optb, typb, init_optb), typ), ib1::ib23@ib4@ib5@ib67)
-				  )))))))
+				 tokenf ia7 ib7 >>= (fun ia7 ib7 ->
+				   return ((ia6, x, ia7), (y, ib6, ib7, ii))))
+			     )) 
+			   init_opta
+			   (token_option2 init_optb ii)
+			   >>= (fun init_opta init_optb ->
+			     let (init_optb, ib67, ii) =
+			       option_ret_unwrap2 init_optb ii in
+			     if ii != [] (* ALL TOKENS SHOULD HAVE BEEN MATCHED *)
+			     then fail
+			     else
+			       return (
+			       ((A.New(ia1, pp_opta, ia4_opt, typa, ia5_opt ,init_opta))) +> wa,
+			       ((B.New(pp_optb, typb, init_optb), typ), ib1::ib23@ib4@ib5@ib67)
+                              )))))))
 		
 
   | A.Delete (dlta,expa), ((B.Delete (false,expb),typ),ii) ->
@@ -4175,87 +4180,67 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | _, (B.TypeOfType e, ii) -> fail
 
     | _, (B.ParenType e, ii) -> fail (* todo ?*)
-    | A.EnumName(en,Some namea), (B.EnumName nameb, ii) ->
-        let (ib1,ib2) = tuple_of_list2 ii in
-	ident DontKnow namea (nameb, ib2) >>= (fun namea (nameb, ib2) ->
-          tokenf en ib1 >>= (fun en ib1 ->
-          return (
-          (A.EnumName (en, Some namea)) +> A.rewrap ta,
-          (B.EnumName nameb, [ib1;ib2])
-          )))
+	  
+    | A.EnumName(ena, sta, idta),
+	(B.EnumName(stb, idtb), ii) ->
+	  let (enb, ii) = extract_one ii in
+	  tokenf ena enb >>= (fun ena enb ->
+	    option (fun x (y, ib, ii) ->
+	      if equal_structUnion (term x) y
+	      then
+		tokenf x ib >>= (fun x ib1 -> return (x, (y, ib1, ii)))
+	      else fail)
+	      sta
+	      (token_option stb ii) >>= (fun sta stb ->
+                   let (stb, ib1, ii) = option_ret_unwrap stb ii in
+		   option 
+		   (fun x (y, ib, ii) ->
+		     ident DontKnow x (y, ib) >>= (fun idta (idtb, ib) ->
+		       return (idta, (idtb, ib, ii))))
+		   idta
+		     (token_option idtb ii) >>= (fun idta idtb ->
+		       let (idtb, ib2, ii) = option_ret_unwrap idtb ii in
+		       return
+			 ((A.EnumName(ena, sta, idta)) +> A.rewrap ta,
+			  (B.EnumName(stb, idtb), enb::ib1@ib2)))))
+	    	  
+    | A.EnumDef(tya, basea, lba, idsa, rba),
+	(B.EnumDef (tyb, baseb, idsb), ii) ->
+	  fullType tya tyb >>= (fun tya tyb ->
+	      option
+	      (fun (td, basea) (baseb, ib1, ii) ->
+		tokenf td ib1 >>= (fun td ib1 ->
+		  fullType basea baseb >>= (fun basea baseb ->
+		    return ((td, basea), (baseb, ib1, ii)))))
+	      basea
+	      (token_option baseb ii) >>= (fun basea baseb ->
+		let (baseb, ib1, ii) =
+		  option_ret_unwrap baseb ii in
+		match ii with
+		  ib2::ib3::comma_opt ->
+		    tokenf lba ib2 >>= (fun lba lbb ->
+		      tokenf rba ib3 >>= (fun rba rbb ->
+			let idsb = resplit_initialiser idsb comma_opt in
+			let idsb =
+			  List.concat
+			    (List.map
+			       (function (elem,comma) -> [Left elem; Right [comma]])
+			       idsb) in
+			enum_fields (A.unwrap idsa) idsb >>= (fun unidsa idsb ->
+			  let idsa = A.rewrap idsa unidsa in
+			  let idsb,iicomma =
+			    match List.rev idsb with
+			      (Right comma)::rest ->
+				(Ast_c.unsplit_comma (List.rev rest),comma)
+			    | (Left _)::_ -> (Ast_c.unsplit_comma idsb,[]) (* possible *)
+			    | [] -> ([],[]) in
+			  return
+			    (
+			     (A.EnumDef(tya, basea, lba, idsa, rba)) +> A.rewrap ta,
+			     (B.EnumDef(tyb, baseb, idsb), ib1@[lbb;rbb]@iicomma)))))
+		| _ -> failwith "impossible"))
 
-    | A.EnumDef(ty, lba, idsa, rba),
-	(B.Enum (sbopt, idsb), ii) ->
-
-       let (ii_sub_sb, lbb, rbb, comma_opt) =
-	 match ii with
-	   [iisub; lbb; rbb; comma_opt] ->
-	     (Common.Left iisub,lbb,rbb,comma_opt)
-	 | [iisub; iisb; lbb; rbb; comma_opt] ->
-	     (Common.Right (iisub,iisb),lbb,rbb,comma_opt)
-	 | _ -> error ii "list of length 4 or 5 expected" in
-
-       let process_type =
-         match (sbopt,ii_sub_sb) with
-           (None,Common.Left iisub) ->
-	     (* the following doesn't reconstruct the complete SP code, just
-		the part that matched *)
-	     let rec loop s =
-	       match A.unwrap s with
-                 A.Type(allminus,[],ty) ->
-		   (match A.unwrap ty with
-		     A.EnumName(sua, None) ->
-		       tokenf sua iisub >>= (fun sua iisub ->
-			 let ty =
-                           A.Type(allminus,[],A.EnumName(sua, None) +>
-				  A.rewrap ty)
-			     +> A.rewrap s in
-			 return (ty,[iisub]))
-		   | _ -> fail)
-	       | A.DisjType(disjs) -> (* do we need a conj type case here? *)
-		   disjs +>
-		   List.fold_left (fun acc disj -> acc >|+|> (loop disj)) fail
-	       | _ -> fail in
-	     loop ty
-
-         | (Some sb,Common.Right (iisub,iisb)) ->
-
-             (* build an EnumName from an Enum *)
-             let fake_su = B.nQ, (B.EnumName sb, [iisub;iisb]) in
-
-             fullType ty fake_su >>= (fun ty fake_su ->
-               match fake_su with
-               | _nQ, (B.EnumName sb, [iisub;iisb]) ->
-                   return (ty,  [iisub; iisb])
-               | _ -> raise (Impossible 47))
-	 | _ -> fail in
-
-       process_type
-	 >>= (fun ty ii_sub_sb ->
-
-            tokenf lba lbb >>= (fun lba lbb ->
-            tokenf rba rbb >>= (fun rba rbb ->
-	      let idsb = resplit_initialiser idsb [comma_opt] in
-	      let idsb =
-		List.concat
-		  (List.map
-		     (function (elem,comma) -> [Left elem; Right [comma]])
-		     idsb) in
-            enum_fields (A.unwrap idsa) idsb >>= (fun unidsa idsb ->
-              let idsa = A.rewrap idsa unidsa in
-	      let idsb,iicomma =
-		match List.rev idsb with
-		  (Right comma)::rest ->
-		    (Ast_c.unsplit_comma (List.rev rest),comma)
-		| (Left _)::_ -> (Ast_c.unsplit_comma idsb,[]) (* possible *)
-		| [] -> ([],[]) in
-              return (
-                (A.EnumDef(ty, lba, idsa, rba)) +> A.rewrap ta,
-                (B.Enum (sbopt, idsb),ii_sub_sb@[lbb;rbb]@iicomma)
-              ))
-		)))
-
-    | _, (B.Enum _, _) -> fail (* todo cocci ?*)
+    | _, (B.EnumDef _, _) -> fail (* todo cocci ?*)
 
     | A.AutoType autoa, (B.AutoType, ii) ->
         let autob = tuple_of_list1 ii in
@@ -4669,8 +4654,18 @@ and compatible_typeC a (b,local) =
 	  if equal_structUnion_type_cocci sua sub
 	  then structure_type_name name sb ii
 	  else fail
-    | A.EnumName (_, name),
-	(qub, (B.EnumName (sb),ii)) -> structure_type_name name sb ii
+    | A.EnumName (_, sta, name),
+	(qub, (B.EnumName (stb, Some sb),ii)) ->
+	  let tmp =
+	    (match sta, stb with
+	    None, None -> true
+	  | Some x, Some y ->
+	      equal_structUnion_type_cocci x y
+	  | _ -> false) in
+	    if tmp then
+	      structure_type_name name sb ii
+	    else
+	      fail
     | A.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
 	if A.unwrap_mcode sa = sb
@@ -4704,7 +4699,7 @@ and compatible_typeC a (b,local) =
       ((
        B.AutoType|
        B.TypeOfType _|B.TypeOfExpr _|
-       B.EnumName _|B.StructUnion (_, _, _, _)|B.Enum (_, _)|
+       B.EnumName (_, _ )|B.StructUnion (_, _, _, _)|B.EnumDef (_, _, _)|
        B.StructUnionName (_, _)|
        B.FunctionType _|
        B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _|

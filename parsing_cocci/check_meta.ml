@@ -280,10 +280,11 @@ and typeC old_metas table minus t =
   | Ast0.DisjType(_,types,_,_)
   | Ast0.ConjType(_,types,_,_) ->
       List.iter (typeC old_metas table minus) types
-  | Ast0.EnumName(en,Some id) -> ident GLOBAL old_metas table minus id
-  | Ast0.EnumDef(ty,lb,ids,rb) ->
+  | Ast0.EnumName(en, key, Some id) -> ident GLOBAL old_metas table minus id
+  | Ast0.EnumDef(ty,base,lb,ids,rb) ->
       typeC old_metas table minus ty;
-      dots (enum_decl GLOBAL old_metas table minus) ids
+      Common.do_option (function (td,ty) -> typeC old_metas table minus ty) base;
+      (dots (enum_decl GLOBAL old_metas table minus)) ids
   | Ast0.StructUnionName(su,Some id) -> ident GLOBAL old_metas table minus id
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;

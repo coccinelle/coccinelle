@@ -59,9 +59,9 @@ module Ast_c :
       | Array of constExpression option * fullType
       | Decimal of constExpression * constExpression option
       | FunctionType of functionType
-      | Enum of string option * enumType
+      | EnumDef of fullType * fullType option * enumType
       | StructUnion of structUnion * string option * base_class wrap2 list * structType
-      | EnumName of string
+      | EnumName of structUnion option * string option
       | StructUnionName of structUnion * string
       | TypeName of name * fullType option
       | FieldType of fullType * name * constExpression option
@@ -2764,8 +2764,8 @@ module Ast_cocci :
       | Array of fullType * string mcode * expression option * string mcode
       | Decimal of string mcode * string mcode * expression *
           string mcode option * expression option * string mcode
-      | EnumName of string mcode * ident option
-      | EnumDef of fullType * string mcode * enum_decl dots * string mcode
+      | EnumName of string mcode * structUnion mcode option * ident option
+      | EnumDef of fullType * enum_base option * string mcode * enum_decl dots * string mcode
       | StructUnionName of structUnion mcode * ident option
       | StructUnionDef of fullType * string mcode * annotated_field dots *
           string mcode
@@ -2798,7 +2798,8 @@ module Ast_cocci :
       | PtrDiffType
       | BoolType
       | Unknown
-    and structUnion = Ast_cocci.structUnion = Struct | Union
+    and structUnion = Ast_cocci.structUnion = Struct | Union | Class
+    and enum_base = string mcode (* : *) * fullType
     and sign = Ast_cocci.sign = Signed | Unsigned
     and const_vol = Ast_cocci.const_vol = Const | Volatile
     and base_declaration =
@@ -3222,7 +3223,7 @@ module Ast_cocci :
          expression ->
          string mcode option -> expression option -> string mcode -> 'a)
         option;
-      enumName : (string mcode -> ident option -> 'a) option;
+      enumName : (string mcode -> structUnion mcode option -> ident option -> 'a) option;
       structUnionName : (structUnion mcode -> ident option -> 'a) option;
       typeName : (string mcode -> 'a) option;
       metaType :
@@ -3437,8 +3438,8 @@ module Ast0_cocci :
       | Array of typeC * string mcode * expression option * string mcode
       | Decimal of string mcode * string mcode * expression *
           string mcode option * expression option * string mcode
-      | EnumName of string mcode * ident option
-      | EnumDef of typeC * string mcode * enum_decl dots * string mcode
+      | EnumName of string mcode * Ast_cocci.structUnion mcode option * ident option
+      | EnumDef of typeC * enum_base option * string mcode * enum_decl dots * string mcode
       | StructUnionName of Ast_cocci.structUnion mcode * ident option
       | StructUnionDef of typeC * string mcode * field dots * string mcode
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
@@ -3453,6 +3454,7 @@ module Ast0_cocci :
           string mcode
       | OptType of typeC
     and typeC = base_typeC wrap
+    and enum_base = string mcode (* : *) * typeC
     and base_declaration =
       Ast0_cocci.base_declaration =
         MetaDecl of Ast_cocci.meta_name mcode * constraints * pure

@@ -412,16 +412,18 @@ let combiner bind option_default
 	  let lprecision_opt = get_option expression precision_opt in
 	  let lrp = string_mcode rp in
 	  multibind [ldec; llp; llength; lcomma; lprecision_opt; lrp]
-      | Ast.EnumName(kind,name) ->
+      | Ast.EnumName(kind,key,name) ->
 	  let lkind = string_mcode kind in
+	  let lkey = get_option struct_mcode key in
 	  let lname = get_option ident name in
-	  bind lkind lname
-      | Ast.EnumDef(ty,lb,ids,rb) ->
+	  multibind [lkind; lkey; lname]
+      | Ast.EnumDef(ty,base,lb,ids,rb) ->
 	  let lty = fullType ty in
+	  let lbase = get_option enum_base base in
 	  let llb = string_mcode lb in
 	  let lids = enum_decl_dots ids in
 	  let lrb = string_mcode rb in
-	  multibind [lty; llb; lids; lrb]
+	  multibind [lty; lbase; llb; lids; lrb]
       | Ast.StructUnionName(kind,name) ->
 	  let lkind = struct_mcode kind in
 	  let lname = get_option ident name in
@@ -592,6 +594,11 @@ let combiner bind option_default
         let lwhncode = get_option enum_decl whncode in
 	bind ldots lwhncode in
     enum_declfn all_functions k d
+
+  and enum_base (td,ty) =
+    let ltd = string_mcode td in
+    let lty = fullType ty in
+    bind ltd lty
 
   and initialiser i =
     let k i =
@@ -1443,16 +1450,18 @@ let rebuilder
 	    let lprecision_opt = get_option expression precision_opt in
 	    let lrp = string_mcode rp in
 	  Ast.Decimal(ldec, llp, llength, lcomma, lprecision_opt, lrp)
-	| Ast.EnumName(kind,name) ->
+	| Ast.EnumName(kind,key,name) ->
 	    let lkind = string_mcode kind in
+	    let lkey = get_option struct_mcode key in
 	    let lname = get_option ident name in
-	    Ast.EnumName(lkind, lname)
-	| Ast.EnumDef(ty,lb,ids,rb) ->
+	    Ast.EnumName(lkind, lkey, lname)
+	| Ast.EnumDef(ty,base,lb,ids,rb) ->
 	    let lty = fullType ty in
+	    let lbase = get_option enum_base base in
 	    let llb = string_mcode lb in
 	    let lids = enum_decl_dots ids in
 	    let lrb = string_mcode rb in
-	    Ast.EnumDef (lty, llb, lids, lrb)
+	    Ast.EnumDef (lty, lbase, llb, lids, lrb)
 	| Ast.StructUnionName(kind,name) ->
 	    let lkind = struct_mcode kind in
 	    let lname = get_option ident name in
@@ -1623,6 +1632,11 @@ let rebuilder
 	  let lwhncode = get_option enum_decl whncode in
 	  Ast.EnumDots(ldots, lwhncode)) in
     enum_declfn all_functions k d
+
+  and enum_base (td,ty) =
+    let ltd = string_mcode td in
+    let lty = fullType ty in
+    (ltd, lty)
 
   and initialiser i =
     let k i =

@@ -24,7 +24,7 @@ type cache_exp =
 
 type cache_return =
   | RetVarOrFunc of string * Ast_c.exp_type
-  | RetEnumConstant of string * string option
+  | RetEnumConstant of string * Ast_c.fullType
   | RetTypeDef   of string * Ast_c.fullType
   | RetStructUnionNameDef of string * (Ast_c.structUnion * Ast_c.structType)
                           Ast_c.wrap

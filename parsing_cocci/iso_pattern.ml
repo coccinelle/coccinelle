@@ -914,16 +914,22 @@ let match_maker checks_needed context_required whencode_allowed =
 		   match_option check_mcode comma1 comma2;
 		   match_option match_expr prec_opt1 prec_opt2;
 		   check_mcode rp1 rp2]
-	  | (Ast0.EnumName(kinda,Some namea),
-	     Ast0.EnumName(kindb,Some nameb)) ->
-	       conjunct_bindings (check_mcode kinda kindb)
-		 (match_ident namea nameb)
-	  | (Ast0.EnumDef(tya,lb1,idsa,rb1),
-	     Ast0.EnumDef(tyb,lb,idsb,rb)) ->
+	  | (Ast0.EnumName(kinda,keya,Some namea),
+	     Ast0.EnumName(kindb,keyb,Some nameb)) ->
+	       conjunct_many_bindings [check_mcode kinda kindb;
+				       match_option check_mcode keya keyb;
+				       match_ident namea nameb]
+	  | (Ast0.EnumDef(tya,base1,lb1,idsa,rb1),
+	     Ast0.EnumDef(tyb,base2,lb,idsb,rb)) ->
 	       conjunct_many_bindings
 		 [check_mcode lb1 lb; check_mcode rb1 rb;
+		   match_option
+		    (fun (td1, ty1) (td2, ty2) ->
+		      conjunct_bindings
+			(check_mcode td1 td2) (match_typeC ty1 ty2))
+		    base1 base2;
 		   match_typeC tya tyb;
-		   match_dots match_enum_decl no_list do_nolist_match idsa idsb]
+		   (match_dots match_enum_decl no_list do_nolist_match) idsa idsb]
 	  | (Ast0.StructUnionName(kinda,Some namea),
 	     Ast0.StructUnionName(kindb,Some nameb)) ->
 	       if mcode_equal kinda kindb
@@ -1936,8 +1942,8 @@ let instantiate bindings mv_bindings model =
                       | Ast0.Signed(s, ty') ->
                           let ty'' = Common.map_option renamer ty' in
                           Ast0.rewrap ty (Ast0.Signed (s, ty''))
-                      | Ast0.EnumDef(ty', s0, e, s1) ->
-                          Ast0.rewrap ty (Ast0.EnumDef (renamer ty', s0, e, s1))
+                      | Ast0.EnumDef(ty', base, s0, e, s1) -> (* do I need to unwrap base *)
+                          Ast0.rewrap ty (Ast0.EnumDef (renamer ty', base, s0, e, s1))
                       | Ast0.StructUnionDef(ty', s0, d, s1) ->
                           let ty'' = renamer ty' in
                           Ast0.rewrap ty (Ast0.StructUnionDef (ty'', s0, d, s1))
@@ -1956,7 +1962,7 @@ let instantiate bindings mv_bindings model =
                           Ast0.rewrap ty (Ast0.OptType (renamer ty'))
                       | Ast0.BaseType(_, _)
                       | Ast0.Decimal(_, _, _, _, _, _)
-                      | Ast0.EnumName(_, _)
+                      | Ast0.EnumName(_, _, _)
                       | Ast0.StructUnionName (_, _)
                       | Ast0.TypeOfExpr(_, _, _, _)
                       | Ast0.TypeName _

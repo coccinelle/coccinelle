@@ -119,9 +119,9 @@ let rec is_completed_and_simplified ty =
   | FunctionType ft ->
       (* todo? return type is completed ? params completed ? *)
       true
-  | Enum  (s, enumt) ->
+  | EnumDef  (ename, s, enumt) ->
       true
-  | EnumName s ->
+  | EnumName (key, id) ->
       true
 
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)

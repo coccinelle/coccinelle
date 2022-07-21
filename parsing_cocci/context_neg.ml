@@ -754,12 +754,16 @@ let equal_typeC t1 t2 =
      Ast0.Decimal(dec2,lp2,_,comma2,_,rp2)) ->
        equal_mcode dec1 dec2 && equal_mcode lp1 lp2 &&
        equal_option comma1 comma2 && equal_mcode rp1 rp2
-  | (Ast0.EnumName(kind1,_),Ast0.EnumName(kind2,_)) ->
-      equal_mcode kind1 kind2
-  | (Ast0.EnumDef(_,lb1,_,rb1),Ast0.EnumDef(_,lb2,_,rb2)) ->
+  | (Ast0.EnumName(kind1,key1,_),Ast0.EnumName(kind2,key2,_)) ->
+      equal_mcode kind1 kind2 && equal_option key1 key2
+  | (Ast0.EnumDef(_,base1,lb1,_,rb1),Ast0.EnumDef(_,base2,lb2,_,rb2)) ->
        let tru1 = equal_mcode lb1 lb2 in
-       let tru2 = equal_mcode rb1 rb2 in
-       tru1 && tru2
+       let tru2 = (match (base1,base2) with
+           (None, None) -> true
+         | (Some (td1, _), Some (td2, _)) -> equal_mcode td1 td2
+         | _ -> false) in
+       let tru3 = equal_mcode rb1 rb2 in
+       tru1 && tru2 && tru3
   | (Ast0.StructUnionName(kind1,_),Ast0.StructUnionName(kind2,_)) ->
       equal_mcode kind1 kind2
   | (Ast0.StructUnionDef(_,lb1,_,rb1),

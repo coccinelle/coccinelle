@@ -518,11 +518,15 @@ and typeC ty =
       print_option (mcode print_string) comma;
       print_option expression precision_opt;
       mcode print_string rp
-  | Ast.EnumName(kind,name) ->
+  | Ast.EnumName(kind,key,name) ->
       mcode print_string kind;
+      print_string " ";
+      print_option (mcode structUnion) key;
       print_option (function x -> ident x; print_string " ") name
-  | Ast.EnumDef(ty,lb,ids,rb) ->
-      fullType ty; mcode print_string lb;
+  | Ast.EnumDef(ty,base,lb,ids,rb) ->
+      fullType ty;
+      print_option enum_base base;
+      mcode print_string lb;
       dots force_newline enum_decl ids;
       mcode print_string rb
   | Ast.StructUnionName(kind,name) ->
@@ -687,6 +691,10 @@ and enum_decl d =
       mcode print_string dots; print_string "   when != "; enum_decl whencode
   | Ast.EnumDots(dots,None) -> mcode print_string dots
 
+and enum_base (td, ty) =
+  mcode print_string td;
+  print_string " ";
+  fullType ty
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
 

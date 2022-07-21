@@ -366,11 +366,20 @@ and typeC t =
 	  print_option (mcode print_string) comma;
 	  print_option expression precision_opt;
 	  mcode print_string rp
-      | Ast0.EnumName(kind,name) ->
+      | Ast0.EnumName(kind,key,name) ->
 	  mcode print_string kind;
+	  print_string " ";
+	  print_option (mcode U.structUnion) key;
 	  print_option (function x -> ident x; print_string " ") name
-      | Ast0.EnumDef(ty,lb,ids,rb) ->
-	  typeC ty; mcode print_string lb;
+      | Ast0.EnumDef(ty,base,lb,ids,rb) ->
+	  typeC ty;
+	  print_option
+	    (function (td, ty) ->
+	      mcode print_string td;
+	      print_string " ";
+	      typeC ty)
+	    base;
+	  mcode print_string lb;
 	  dots force_newline enum_decl ids;
 	  mcode print_string rb
       | Ast0.StructUnionName(kind,name) ->

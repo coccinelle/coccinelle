@@ -409,7 +409,9 @@ let do_get_constants constants keywords env (neg_pos,_) =
         Ast.Id name -> add (constants (Ast.unwrap_mcode name))
       | Ast.MetaId(name,_,_,_) -> add (minherited name)
       | _ -> Common.id in
-    let enumOrStructUnionName _ ident res =
+    let structUnionName _ ident res =
+      Common.default res (fun ident' -> add_ident ident' res) ident in
+    let enumName _ _ ident res =
       Common.default res (fun ident' -> add_ident ident' res) ident in
     let pieces ty res =
       Ast.fullType_fold
@@ -419,8 +421,8 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	  Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
 	  typeName =
 	  Some(fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
-	  enumName = Some enumOrStructUnionName;
-	  structUnionName = Some enumOrStructUnionName
+	  enumName = Some enumName;
+	  structUnionName = Some structUnionName
 	} ty res in
     let rec loop ty =
       match Ast.unwrap ty with

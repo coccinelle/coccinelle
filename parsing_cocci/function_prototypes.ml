@@ -243,12 +243,12 @@ let rec attach_right strings ty =
 	Ast0.Array(ty,lb,e,right_attach_mcode strings rb)
     | Ast0.Decimal(dec,lp,e1,comma,e2,rp) ->
 	Ast0.Decimal(dec,lp,e1,comma,e2,right_attach_mcode strings rp)
-    | Ast0.EnumName(enum,None) ->
-	Ast0.EnumName(right_attach_mcode strings enum, None)
-    | Ast0.EnumName(enum,Some id) ->
-	Ast0.EnumName(enum,Some (right_attach_ident strings id))
-    | Ast0.EnumDef(ty,lb,es,rb) ->
-	Ast0.EnumDef(ty,lb,es,right_attach_mcode strings rb)
+    | Ast0.EnumName(enum,key,None) ->
+	Ast0.EnumName(right_attach_mcode strings enum, key, None)
+    | Ast0.EnumName(enum,key,Some id) ->
+	Ast0.EnumName(enum, key, Some (right_attach_ident strings id))
+    | Ast0.EnumDef(ty,base,lb,es,rb) ->
+	Ast0.EnumDef(ty,base,lb,es,right_attach_mcode strings rb)
     | Ast0.StructUnionName(su,None) ->
 	Ast0.StructUnionName(right_attach_mcode strings su, None)
     | Ast0.StructUnionName(su,Some id) ->

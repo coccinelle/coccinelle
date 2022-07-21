@@ -340,8 +340,8 @@ and base_typeC =
 	               expression *
 	               string mcode option (* , *) * expression option *
 	               string mcode (* ) *) (* IBM C only *)
-  | EnumName        of string mcode (*enum*) * ident option (* name *)
-  | EnumDef  of fullType (* either EnumName or metavar *) *
+  | EnumName        of string mcode (*enum*) * structUnion mcode option * ident option (* name *)
+  | EnumDef  of fullType (* either EnumName or metavar *) * enum_base option *
 	string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of structUnion mcode * ident option (* name *)
   | StructUnionDef  of fullType (* either StructUnionName or metavar *) *
@@ -366,7 +366,7 @@ and baseType = VoidType | CharType | ShortType | ShortIntType | IntType
 | SizeType | SSizeType | PtrDiffType
 | BoolType | Unknown
 
-and structUnion = Struct | Union
+and structUnion = Struct | Union | Class
 
 and sign = Signed | Unsigned
 
@@ -441,7 +441,7 @@ and base_enum_decl =
   | EnumDots of string mcode (* ... *) * enum_decl option (* whencode *)
 
 and enum_decl = base_enum_decl wrap
-
+and enum_base = string mcode (* : *) * fullType
 
 (* --------------------------------------------------------------------- *)
 (* Initializers *)
@@ -908,7 +908,7 @@ type 'a transformer = {
     baseType: (baseType -> string mcode list -> 'a) option;
     decimal: (string mcode -> string mcode -> expression ->
       string mcode option -> expression option -> string mcode -> 'a) option;
-    enumName: (string mcode -> ident option -> 'a) option;
+    enumName: (string mcode -> structUnion mcode option -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
     typeName: (string mcode -> 'a) option;
     metaType: (meta_name mcode -> constraints -> keep_binding ->

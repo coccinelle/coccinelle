@@ -502,15 +502,17 @@ and vk_type = fun bigf t ->
             vk_param_list bigf ts
         )
 
-    | Enum  (sopt, enumt) ->
-        vk_enum_fields bigf enumt
+    | EnumDef  (sen, baset, enumt) ->
+	(vk_type bigf) sen;
+	do_option (vk_type bigf) baset;
+	vk_enum_fields bigf enumt
 
     | StructUnion (sopt, _su, base_classes, fields) ->
 	vk_base_class_list bigf base_classes;
         vk_struct_fields bigf fields
 
     | StructUnionName (s, structunion) -> ()
-    | EnumName  s -> ()
+    | EnumName  (s,structUnion) -> ()
 
     (* don't go in _typ *)
     | TypeName (name,_typ) ->
@@ -1473,8 +1475,10 @@ and vk_type_s = fun bigf t ->
                 (b, iif iihas3dots))
             ))
 
-      | Enum  (sopt, enumt) ->
-          Enum (sopt, vk_enum_fields_s bigf enumt)
+      | EnumDef  (sen, baset, enumt) ->
+          EnumDef (sen,
+		   fmap (function baset -> baset) baset,
+		   vk_enum_fields_s bigf enumt)
       | StructUnion (sopt, su, base_classes, fields) ->
           StructUnion (sopt, su,
 		       vk_base_class_list_s bigf base_classes,
@@ -1482,7 +1486,7 @@ and vk_type_s = fun bigf t ->
 
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
-      | EnumName  s -> EnumName  s
+      | EnumName  (s, key) -> EnumName  (s, key)
       | TypeName (name, typ) -> TypeName (vk_name_s bigf name, typ)
       | FieldType (t, a, b) -> FieldType (typef t, a, b)
 

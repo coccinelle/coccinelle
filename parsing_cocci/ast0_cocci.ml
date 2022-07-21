@@ -217,9 +217,9 @@ and base_typeC =
 	               expression *
 	               string mcode option (* , *) * expression option *
 	               string mcode (* ) *) (* IBM C only *)
-  | EnumName        of string mcode (*enum*) * ident option (* name *)
-  | EnumDef  of typeC (* either StructUnionName or metavar *) *
-	string mcode (* { *) * enum_decl dots * string mcode (* } *)
+  | EnumName        of string mcode (*enum*) * Ast.structUnion mcode option (* struct/class/None *) * ident option (* name *)
+  | EnumDef         of typeC (* EnumName *) * enum_base option (* base type *) *
+	               string mcode (* { *) * enum_decl dots * string mcode (* } *)
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
@@ -238,6 +238,8 @@ and base_typeC =
   | OptType         of typeC
 
 and typeC = base_typeC wrap
+
+and enum_base = string mcode (* : *) * typeC
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -776,7 +778,7 @@ let rec meta_names_of_typeC ty =
   | Signed (_, Some ty)
   | Pointer (ty, _)
   | Array (ty, _, _, _) -> meta_names_of_typeC ty
-  | EnumName (_, Some ident)
+  | EnumName (_, _, Some ident)
   | StructUnionName(_, Some ident) -> meta_names_of_ident ident
   | MetaType (tyname, _, _) -> [unwrap_mcode tyname]
   | Decimal (_, _, e1, _, e2, _) ->

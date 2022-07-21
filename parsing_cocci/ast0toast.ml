@@ -585,8 +585,8 @@ and typeC allminus t =
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.ParenType(_,_,_) | Ast0.FunctionType(_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
-    | Ast0.EnumName(_,_) | Ast0.StructUnionName(_,_)
-    | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_)
+    | Ast0.EnumName(_,_,_) | Ast0.StructUnionName(_,_)
+    | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) ->
         Ast.Type(allminus,[],rewrap t no_isos (base_typeC allminus t))
@@ -618,10 +618,11 @@ and base_typeC allminus t =
       Ast.Decimal(mcode dec,mcode lp,expression length,
 		  get_option mcode comma,get_option expression precision_opt,
 		  mcode rp)
-  | Ast0.EnumName(kind,name) ->
-      Ast.EnumName(mcode kind,get_option ident name)
-  | Ast0.EnumDef(ty,lb,ids,rb) ->
-      Ast.EnumDef(typeC allminus ty,mcode lb,enum_decl_dots ids,mcode rb)
+  | Ast0.EnumName(kind,key,name) ->
+      Ast.EnumName(mcode kind,get_option mcode key,get_option ident name)
+  | Ast0.EnumDef(ty,base,lb,ids,rb) ->
+      Ast.EnumDef(typeC allminus ty,get_option (enum_base allminus) base,
+		  mcode lb, enum_decl_dots ids, mcode rb)
   | Ast0.StructUnionName(kind,name) ->
       Ast.StructUnionName(mcode kind,get_option ident name)
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
@@ -776,6 +777,11 @@ and annotated_field bef d =
 		  field d))
 
 and field_dots l = dots (annotated_field None) l
+
+and enum_base allminus (tdd, typ) =
+  let tdd = mcode tdd in
+  let typ = typeC allminus typ in
+  (tdd, typ)
 
 and enum_decl d =
   rewrap d (do_isos (Ast0.get_iso d))
