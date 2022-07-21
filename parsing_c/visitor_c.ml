@@ -882,7 +882,7 @@ and vk_define_val bigf defval =
 
 and vk_string_fragment = fun bigf x ->
   let rec fragf x = bigf.kfragment (k, bigf) x
-  and k st =
+  and k x =
     let (unwrap_x, ii) = x in
     vk_ii bigf ii;
     match unwrap_x with
@@ -895,7 +895,7 @@ and vk_string_fragments = fun bigf ts ->
 
 and vk_string_format = fun bigf x ->
   let rec fmtf x = bigf.kformat (k, bigf) x
-  and k st =
+  and k x =
     let (unwrap_x, ii) = x in
     vk_ii bigf ii;
     match unwrap_x with (* probably not very useful... *)
@@ -1858,7 +1858,7 @@ and vk_define_val_s = fun bigf x ->
 
 and vk_string_fragment_s = fun bigf x ->
   let rec fragf x = bigf.kfragment_s (k, bigf) x
-  and k st =
+  and k x =
     let (unwrap_x, ii) = x in
     let x' =
       match unwrap_x with
@@ -1874,7 +1874,7 @@ and vk_string_fragments_s = fun bigf frags ->
 
 and vk_string_format_s = fun bigf x ->
   let rec fmtf x = bigf.kformat_s (k, bigf) x
-  and k st =
+  and k x =
     let (unwrap_x, ii) = x in
     let x' =
       match unwrap_x with
