@@ -14,6 +14,7 @@ scripts/spatch.byte
 *.pyc
 *.d
 *.d.opt
+*.conflicts
 
 *~
 *.swo
