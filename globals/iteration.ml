@@ -71,6 +71,10 @@ let get_pending_instance _ =
       pending_instances_file := xs;
       Some x
 
+let clear_pending_instance _ =
+  pending_instances_file := [];
+  pending_instances_dir := []
+
 (* ----------------------------------------------------------------------- *)
 
 let check_virtual_rule r =

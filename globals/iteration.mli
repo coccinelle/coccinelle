@@ -30,6 +30,9 @@ val add_pending_instance :
 
 val get_pending_instance : unit -> pending_info option
 
+(* for testing *)
+val clear_pending_instance : unit -> unit
+
 (* ----------------------------------------------------------------------- *)
 
 val check_virtual_rule : string -> unit

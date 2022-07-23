@@ -228,7 +228,6 @@ let testall_bis setup extra_test expected_score_file update_score_file =
 
       try (
         Common.timeout_function "testing" timeout_testall  (fun () ->
-
 	  pr2 res;
 
 	  let (xs, current_out) =
@@ -271,6 +270,10 @@ let testall_bis setup extra_test expected_score_file update_score_file =
       with exn ->
         Common.reset_pr_indent();
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
+	(* clean up state *)
+	Flag.defined_virtual_rules := [];
+	Flag.defined_virtual_env := [];
+	Iteration.clear_pending_instance();
         Hashtbl.add score res (Common.Pb s)
     );
 
