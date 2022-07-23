@@ -549,7 +549,7 @@ let args_to_params l pb =
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
-       TTemplateStart TTemplateEnd
+       TTemplateStart TTemplateEnd Tfinal
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -2068,8 +2068,8 @@ struct_decl2:
 with function definitions because the rule for matching the type
 is different, so a decision has to be made in an awkward place */
 cpp_struct_decl2:
- | simple_field_declaration { DeclarationField $1 }
-/* | decl { DeclarationField $1 }*/
+ | function_definition               { FunctionField $1 }
+ | decl                              { DeclField ($1 Ast_c.NotLocalDecl) }
  | TPtVirg { EmptyField $1  }
 
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
@@ -2077,6 +2077,16 @@ cpp_struct_decl2:
     *)*/
  | identifier TOPar macro_argument_list TCPar TPtVirg
      { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
+ | identifier TOPar argument_list_ne TCPar post_constructor TPtVirg
+     { ConstructorField ((fst $1, $3, fst $5), (snd $1)::$2::$4::(snd $5)@[$6;fakeInfo()]) }
+ | TTilde identifier TOPar argument_list_ne TCPar post_constructor TPtVirg
+     { DestructorField ((fst $2, $4, fst $6), $1::snd $2::$3::$5::(snd $6)@[$7;fakeInfo()]) }
+
+ /* should be removed!!! */
+ | identifier TOPar TCPar post_constructor TPtVirg
+     { ConstructorField ((fst $1, [], fst $4), (snd $1)::$2::$3::(snd $4)@[$5;fakeInfo()]) }
+ | TTilde identifier TOPar TCPar post_constructor TPtVirg
+     { DestructorField ((fst $2, [], fst $5), $1::snd $2::$3::$4::(snd $5)@[$6;fakeInfo()]) }
 
  /*(* cppext: *)*/
  | cpp_directive
@@ -2085,12 +2095,13 @@ cpp_struct_decl2:
      { IfdefStruct $1 }
 
  /* C++ */
- | function_definition
-                      { FunctionField $1 }
  | Tpublic TDotDot    { PublicLabel [$1;$2] }
  | Tprotected TDotDot { ProtectedLabel [$1;$2] }
  | Tprivate TDotDot   { PrivateLabel [$1;$2] }
 
+post_constructor:
+  Tfinal      { (true, [$1]) }
+| /* empty */ { (false, []) }
 
 field_declaration:
  | decl_spec2 struct_declarator_list end_attributes_opt TPtVirg

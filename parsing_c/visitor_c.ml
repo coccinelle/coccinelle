@@ -678,6 +678,11 @@ and vk_struct_field = fun bigf field ->
       (* C++ *)
     | FunctionField def -> vk_def bigf def
     | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii -> iif ii
+    | DeclField decl -> vk_decl bigf decl
+    | ConstructorField ((s, args, final),ii)
+    | DestructorField ((s, args, final),ii) ->
+        iif ii;
+        vk_argument_list bigf args
 
   in
   f (k, bigf) field
@@ -1698,6 +1703,22 @@ and vk_struct_field_s = fun bigf field ->
   | PublicLabel ii -> PublicLabel(iif ii)
   | ProtectedLabel ii -> ProtectedLabel(iif ii)
   | PrivateLabel ii -> PrivateLabel(iif ii)
+  | DeclField decl -> DeclField(vk_decl_s bigf decl)
+  | ConstructorField ((s, args, final),ii) ->
+      ConstructorField
+        ((s,
+          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+	  final
+         ),
+         iif ii)
+  | DestructorField ((s, args, final),ii) ->
+      DestructorField
+        ((s,
+          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+	  final
+         ),
+         iif ii)
+
 
 and vk_struct_fields_s = fun bigf fields ->
   fields +> List.map (vk_struct_field_s bigf)

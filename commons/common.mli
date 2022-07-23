@@ -710,6 +710,7 @@ val tuple_of_list3 : 'a list -> 'a * 'a * 'a
 val tuple_of_list4 : 'a list -> 'a * 'a * 'a * 'a
 val tuple_of_list5 : 'a list -> 'a * 'a * 'a * 'a * 'a
 val tuple_of_list6 : 'a list -> 'a * 'a * 'a * 'a * 'a * 'a
+val tuple_of_list7 : 'a list -> 'a * 'a * 'a * 'a * 'a * 'a * 'a
 
 (*****************************************************************************)
 (* Maybe *)

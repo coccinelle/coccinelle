@@ -822,6 +822,60 @@ and pp_string_format (e,ii) =
     | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii ->
 	let (kwd,dotdot) = Common.tuple_of_list2 ii in
 	pr_elem kwd; pr_elem dotdot
+    | DeclField decl -> pp_decl decl
+    | ConstructorField ((s, es, final), ii)  ->
+        let (iis, lp, rp, finali, iiend, ifakestart) =
+	  if final
+	  then
+	    let (iis, lp, rp, finali, iiend, ifakestart) =
+	      Common.tuple_of_list6 ii in
+	    (iis, lp, rp, [finali], iiend, ifakestart)
+          else
+	    let (iis, lp, rp, iiend, ifakestart) =
+	      Common.tuple_of_list5 ii in
+	    (iis, lp, rp, [], iiend, ifakestart) in
+                 (* iis::lp::rp::iiend::ifakestart::iisto
+	            iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	pr_elem ifakestart;
+	pr_elem iis;
+	pr_elem lp;
+	es +> List.iter (fun (e, opt) ->
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_argument e;
+	  );
+
+	pr_elem rp;
+	finali +> List.iter pr_elem;
+	pr_elem iiend
+    | DestructorField ((s, es, final), ii)  ->
+        let (itil, iis, lp, rp, finali, iiend, ifakestart) =
+	  if final
+	  then
+	    let (itil, iis, lp, rp, finali, iiend, ifakestart) =
+	      Common.tuple_of_list7 ii in
+	    (itil, iis, lp, rp, [finali], iiend, ifakestart)
+          else
+	    let (itil, iis, lp, rp, iiend, ifakestart) =
+	      Common.tuple_of_list6 ii in
+	    (itil, iis, lp, rp, [], iiend, ifakestart) in
+                 (* itil::iis::lp::rp::iiend::ifakestart::iisto
+	            iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	pr_elem ifakestart;
+	pr_elem itil;
+	pr_elem iis;
+	pr_elem lp;
+	es +> List.iter (fun (e, opt) ->
+          assert (List.length opt <= 1);
+          opt +> List.iter pr_elem;
+          pp_argument e;
+	  );
+
+	pr_elem rp;
+	finali +> List.iter pr_elem;
+	pr_elem iiend
 
 (* used because of DeclList, in    int i,*j[23];  we don't print anymore the
    int before *j *)

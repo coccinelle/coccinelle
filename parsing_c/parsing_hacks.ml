@@ -1807,34 +1807,6 @@ let insert_virtual_positions l =
 
 (* ------------------------------------------------------------------------- *)
 
-let detect_class_constructors toks =
-  let rec loop classes = function
-      TV.BToken ({TV.tok = (Tcpp_struct _|Tcpp_union _|Tclass _)})
-      :: TV.BToken ({TV.tok = TIdent(s,_)}) :: rest ->
-	let not_brace_or_ptvirg = function
-	    TV.Braceised _ -> false
-	  | TV.BToken ({TV.tok = TPtVirg _}) -> false
-	  | _-> true in
-	let rest = Common.drop_while not_brace_or_ptvirg rest in
-	(match rest with
-	  TV.Braceised(body, _start, _end)::rest ->
-	    List.iter (loop (s::classes)) body;
-	    loop classes rest
-	| [] -> ()
-	| rest -> loop classes rest)
-    | TV.BToken ({TV.tok = TIdent(s,i)} as x)
-      :: TV.BToken ({TV.tok = TOPar _}) :: rest when List.mem s classes ->
-	x.TV.tok <- Tconstructorname(s,i);
-	loop classes rest
-    | TV.BToken _ :: rest -> loop classes rest
-    | TV.Braceised(body, _start, _end)::rest ->
-	List.iter (loop classes) body;
-	loop classes rest
-    | [] -> () in
-  loop [] toks
-
-(* ------------------------------------------------------------------------- *)
-
 let fix_tokens_cpp2 ~macro_defs err_pos tokens =
   let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
 
@@ -1892,8 +1864,6 @@ let fix_tokens_cpp2 ~macro_defs err_pos tokens =
 
     let brace_grouped = TV.mk_braceised cleaner in
     TV.set_context_tag   brace_grouped;
-    (if !Flag.c_plus_plus <> Flag.Off
-    then detect_class_constructors brace_grouped);
 
     (* macro *)
     let cleaner = !tokens2 +> filter_cpp_stuff in

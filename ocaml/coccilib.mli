@@ -97,6 +97,9 @@ module Ast_c :
       | PublicLabel of info list
       | ProtectedLabel of info list
       | PrivateLabel of info list
+      | DeclField of declaration (* C++ *)
+      | ConstructorField of (string * argument wrap2 list * bool) wrap (* C++ *)
+      | DestructorField of (string * argument wrap2 list * bool) wrap (* C++ *)
       | MacroDeclField of (string * argument wrap2 list) wrap
       | CppDirectiveStruct of cpp_directive
       | IfdefStruct of ifdef_directive
@@ -785,6 +788,7 @@ module Parser_c :
       | Toperator of Ast_c.info
       | TTemplateStart of Ast_c.info
       | TTemplateEnd of Ast_c.info
+      | Tfinal of Ast_c.info
       | Trestrict of Ast_c.info
       | Tasm of Ast_c.info
       | Tattribute of Ast_c.info

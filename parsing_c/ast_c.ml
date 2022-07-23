@@ -257,6 +257,9 @@ and fullType = typeQualifier * typeC
 	   | PublicLabel of info list
 	   | ProtectedLabel of info list
 	   | PrivateLabel of info list
+           | DeclField of declaration
+           | ConstructorField of (string * argument wrap2 list * bool) wrap
+           | DestructorField of (string * argument wrap2 list * bool) wrap
 
             (* cppext: *)
            | MacroDeclField of (string * argument wrap2 list)

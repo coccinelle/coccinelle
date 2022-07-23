@@ -67,6 +67,9 @@ and field =
   | PublicLabel of info list (* C++ *)
   | ProtectedLabel of info list (* C++ *)
   | PrivateLabel of info list (* C++ *)
+  | DeclField of declaration (* C++ *)
+  | ConstructorField of (string * argument wrap2 list * bool) wrap (* C++ *)
+  | DestructorField of (string * argument wrap2 list * bool) wrap (* C++ *)
   | MacroDeclField of (string * argument wrap2 list) wrap
   | CppDirectiveStruct of cpp_directive
   | IfdefStruct of ifdef_directive
