@@ -834,11 +834,9 @@ placement_params:
    TOPar argument_list_ne_without_paramdecl TCPar { (Some $2, [$1;$3] ) }
    
 cpp_initialiser_opt:
- | TOPar argument_list_ne TCPar { (Some $2, [$1;$3] ) }
- | TOBrace argument_list_ne TCBrace { (Some $2, [$1;$3] ) }
- | TOBrace TCBrace { (Some [], [$1;$2]) }
- | TOPar TCPar { (Some [], [$1;$2]) }
- | /*(* empty *)*/              { (None, []) }
+ | TOPar argument_list TCPar     { (Some $2, [$1;$3] ) }
+ | TOBrace argument_list TCBrace { (Some $2, [$1;$3] ) }
+ | /*(* empty *)*/               { (None, []) }
 
 cpp_type:
    TOPar simple_type TCPar                  
@@ -942,9 +940,8 @@ postfix_expr:
  | primary_expr               { $1 }
  | postfix_expr TOCro expr TCCro
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
- | postfix_expr TOPar argument_list_ne TCPar
+ | postfix_expr TOPar argument_list TCPar
      { mk_e(FunCall ($1, $3)) [$2;$4] }
- | postfix_expr TOPar  TCPar  { mk_e(FunCall ($1, [])) [$2;$3] }
  | postfix_expr TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
  | postfix_expr TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
  | postfix_expr TInc          { mk_e(Postfix ($1, Inc)) [$2] }
@@ -1063,7 +1060,7 @@ statement2:
  | Tasm Tvolatile TOPar asmbody TCPar TPtVirg   { Asm $4, [$1;$2;$3;$5;$6] }
 
  /*(* cppext: *)*/
- | TMacroStmt TOPar argument_list TCPar {
+ | TMacroStmt TOPar macro_argument_list TCPar {
    let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
    ExprStatement (Some(mk_e (FunCall (fn, $3)) [$2;$4])), [Ast_c.fakeInfo ()] }
  | TMacroIdStmt { MacroStmt, [snd $1] }
@@ -1175,10 +1172,8 @@ iteration:
  | Tfor TOPar decl expr_statement expr TCPar cpp_ifdef_statement
      { For (ForDecl ($3 Ast_c.LocalDecl),$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* cppext: *)*/
- | TMacroIterator TOPar argument_list_ne TCPar cpp_ifdef_statement
+ | TMacroIterator TOPar argument_list TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
- | TMacroIterator TOPar TCPar cpp_ifdef_statement
-     { MacroIteration (fst $1, [], $4), [snd $1;$2;$3] }
 
 /*(* the ';' in the caller grammar rule will be appended to the infos *)*/
 jump:
@@ -1398,11 +1393,11 @@ attribute:
 
 attr_arg:
  | TMacroAttr { MacroAttr (fst $1), [snd $1] }
- | TMacroAttrArgs TOPar argument_list_ne TCPar
+ | TMacroAttrArgs TOPar argument_list TCPar
      { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
 
 attribute_gcc:
- | Tattribute tdouble_opar_gcc_attr argument_list_ne tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
+ | Tattribute tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
@@ -1783,7 +1778,7 @@ decl2:
      }
  /*(* cppext: *)*/
 
- | storage_const_opt TMacroDecl TOPar argument_list TCPar end_attributes_opt
+ | storage_const_opt TMacroDecl TOPar macro_argument_list TCPar end_attributes_opt
    TPtVirg
      { function _ ->
        match $1 with
@@ -1797,7 +1792,7 @@ decl2:
               [snd $2;$3;$5;$7;fakeInfo()]) }
 
  | storage_const_opt
-     TMacroDecl TOPar argument_list TCPar teq initialize TPtVirg
+     TMacroDecl TOPar macro_argument_list TCPar teq initialize TPtVirg
      { function _ ->
        match $1 with
 	 Some (sto,stoii) ->
@@ -1886,7 +1881,7 @@ init_declarator2:
  | declaratori                  { ($1, NoInit) }
  | declaratori teq initialize   { ($1, ValInit($2, $3)) }
  /* C++ only */
- | declaratori TOParCplusplusInit argument_list TCPar
+ | declaratori TOParCplusplusInit macro_argument_list TCPar
      { ($1, ConstrInit($3,[$2;$4])) }
 
 /*(*-----------------------------------------------------------------------*)*/
@@ -1902,9 +1897,9 @@ init_declarator_attrs2:
  | declaratori teq initialize   { ($1, ValInit($2, $3)) }
  | attributes declaratori teq initialize   { ($2, ValInit($3, $4)) }
  /* C++ only */
- | declaratori TOParCplusplusInit argument_list TCPar
+ | declaratori TOParCplusplusInit macro_argument_list TCPar
      { ($1, ConstrInit($3,[$2;$4])) }
- | attributes declaratori TOParCplusplusInit argument_list TCPar
+ | attributes declaratori TOParCplusplusInit macro_argument_list TCPar
      { ($2, ConstrInit($4,[$3;$5])) }
 
 /*(*----------------------------*)*/
@@ -2056,10 +2051,10 @@ struct_decl2:
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
     * the rule are slightly different.
     *)*/
- | identifier TOPar argument_list TCPar TPtVirg
+ | identifier TOPar macro_argument_list TCPar TPtVirg
      { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
 
- | TMacroDecl TOPar argument_list TCPar TPtVirg
+ | TMacroDecl TOPar macro_argument_list TCPar TPtVirg
      { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
 
  /*(* cppext: *)*/
@@ -2079,7 +2074,7 @@ cpp_struct_decl2:
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
     * the rule are slightly different.
     *)*/
- | identifier TOPar argument_list TCPar TPtVirg
+ | identifier TOPar macro_argument_list TCPar TPtVirg
      { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
 
  /*(* cppext: *)*/
@@ -2387,18 +2382,12 @@ ctor_dtor:
      (id, ty, storage, attrs, [$5], $6) }
 
 constr_extra:
- | TIdent TOPar argument_list_ne TCPar
+ | TIdent TOPar argument_list TCPar
      { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
        (mk_e(FunCall (fn, $3)) [$2;$4]) }
- | TIdent TOPar TCPar
-     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-       (mk_e(FunCall (fn, [])) [$2;$3]) }
- | TypedefIdent TOPar argument_list_ne TCPar
+ | TypedefIdent TOPar argument_list TCPar
      { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
        (mk_e(FunCall (fn, $3)) [$2;$4]) }
- | TypedefIdent TOPar TCPar
-     { let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-       (mk_e(FunCall (fn, [])) [$2;$3]) }
 
 
 /*(*----------------------------*)*/
@@ -2608,7 +2597,7 @@ cpp_other:
     * the rule are slightly different, they can't be statement and so expr
     * at the top, only decl or function definition.
     *)*/
- | identifier TOPar argument_list TCPar end_attributes_opt TPtVirg
+ | identifier TOPar macro_argument_list TCPar end_attributes_opt TPtVirg
      {
        if args_are_params $3
        then
@@ -2644,7 +2633,7 @@ cpp_other:
 
  /* cheap solution for functions with no return type.  Not really a
        cpp_other, but avoids conflicts */
- | identifier TOPar argument_list TCPar compound {
+ | identifier TOPar macro_argument_list TCPar compound {
    let parameters = args_to_params $3 (Some (snd $1)) in
    let paramlist = (parameters, (false, [])) in (* no varargs *)
    let fninfo =
@@ -2661,7 +2650,7 @@ cpp_other:
  }
 
  /*(* TCParEOL to fix the end-of-stream bug of ocamlyacc *)*/
- | identifier TOPar argument_list TCParEOL
+ | identifier TOPar macro_argument_list TCParEOL
      { Declaration
 	 (MacroDecl
            ((NoSto, fst $1, $3, Ast_c.noattr, false),
@@ -2804,6 +2793,9 @@ constr_extra_list:
  | constr_extra                          { [$1, []] }
  | constr_extra_list TComma constr_extra { $1 @ [$3,    [$2]] }
 
+argument_list:
+ | /* empty */ { [] }
+ | argument_list_ne { $1 }
 
 argument_list_ne:
  | argument_ne                           { [$1, []] }
@@ -2813,9 +2805,10 @@ argument_list_ne_without_paramdecl:
  | argument_ne_without_paramdecl                         { [$1, []] }
  | argument_list_ne TComma argument_ne_without_paramdecl { $1 @ [$3,    [$2]] }     
 
-argument_list:
+/* the following uses argument, which ends up at an action */
+macro_argument_list:
  | argument                           { [$1, []] }
- | argument_list TComma argument { $1 @ [$3,    [$2]] }
+ | macro_argument_list TComma argument { $1 @ [$3,    [$2]] }
 
 /*(*
 expression_list:
@@ -2893,11 +2886,11 @@ attributes: attribute_list { $1 }
 
 end_attr_arg:
  | TMacroEndAttr { MacroAttr (fst $1), [snd $1] }
- | TMacroEndAttrArgs TOPar argument_list_ne TCPar
+ | TMacroEndAttrArgs TOPar argument_list TCPar
      { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
 
 end_attribute_gcc:
- | TMacroGccEndAttr tdouble_opar_gcc_attr argument_list_ne tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
+ | TMacroGccEndAttr tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
 
 end_attribute_list:
  | end_attribute_gcc { [$1] } // not iterable in practice
