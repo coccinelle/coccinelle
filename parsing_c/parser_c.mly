@@ -979,7 +979,9 @@ primary_expr_without_ident:
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
- | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd { mk_e(Ident  ($1)) [] } // (* TODO *)
+ | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+     { let fn = mk_e(Ident  ($1)) [] in
+       mk_e(FunCall (fn, $3)) [$2;$4] }
  | primary_expr_without_ident { $1 }
 
 string_fragments:
