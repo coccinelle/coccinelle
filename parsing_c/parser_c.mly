@@ -527,7 +527,7 @@ let postfakeInfo pii  =
        Tauto Tregister Textern Tstatic
        Ttypedef
        Tconst Tvolatile
-       Tstruct Tunion Tenum Tdecimal Texec
+       Tstruct Tunion Tenum Tdecimal Texec Ttemplate
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace

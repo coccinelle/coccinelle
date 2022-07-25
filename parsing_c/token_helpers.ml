@@ -440,6 +440,7 @@ let info_of_tok = function
   | Tenum                (i) -> i
   | Tdecimal             (i) -> i
   | Texec                (i) -> i
+  | Ttemplate            (i) -> i
   | Ttypedef             (i) -> i
   | Tunion               (i) -> i
   | Tcpp_struct          (i) -> i
@@ -631,6 +632,7 @@ let visitor_info_of_tok f = function
   | Tenum                (i) -> Tenum                (f i)
   | Tdecimal             (i) -> Tdecimal             (f i)
   | Texec                (i) -> Texec                (f i)
+  | Ttemplate            (i) -> Ttemplate            (f i)
   | Ttypedef             (i) -> Ttypedef             (f i)
   | Tunion               (i) -> Tunion               (f i)
   | Tcpp_struct          (i) -> Tcpp_struct          (f i)
@@ -764,6 +766,7 @@ let string_of_token = function
   | Tenum _ -> "Tenum"
   | Tdecimal _ -> "Tdecimal"
   | Texec _ -> "Texec"
+  | Ttemplate _ -> "Ttemplate"
   | Tbreak _ -> "Tbreak"
   | Telse _ -> "Telse"
   | Tswitch _ -> "Tswitch"

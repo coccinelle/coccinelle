@@ -742,6 +742,7 @@ module Parser_c :
       | Tenum of Ast_c.info
       | Tdecimal of Ast_c.info
       | Texec of Ast_c.info
+      | Ttemplate of Ast_c.info
       | Tbreak of Ast_c.info
       | Telse of Ast_c.info
       | Tswitch of Ast_c.info
