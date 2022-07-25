@@ -3071,3 +3071,33 @@ let c_plus_plus_operator toks =
     | x :: xs -> loop changed (x :: acc) xs in
   try loop false [] toks
   with No_operator -> toks
+
+let convert_templates toks =
+  let tokens2 = toks +> Common.acc_map TV.mk_token_extended in
+  let rec loop = function
+      {TV.tok = (TIdent(_,i1)|TypedefIdent(_,i1))} :: (* no space *)
+      (({TV.tok = TInf i2}) as b) :: rest ->
+	let rec to_right depth = function
+	    (({TV.tok = TSup i3}) as c) :: xs when depth = 0 ->
+	      b.TV.tok <- TTemplateStart i2;
+	      c.TV.tok <- TTemplateEnd i2;
+	      loop xs
+	  | {TV.tok = TShr _} :: _ when depth = 0 ->
+	      loop rest
+	  | {TV.tok = TOPar _} :: xs
+	  | {TV.tok = TOCro _} :: xs
+	  | {TV.tok = TOBrace _} :: xs ->
+	      to_right (depth+1) xs
+	  | {TV.tok = TCPar _} :: xs
+	  | {TV.tok = TCCro _} :: xs
+	  | {TV.tok = TCBrace _} :: xs ->
+	      if depth = 0
+	      then loop rest
+	      else to_right (depth-1) xs
+	  | x :: xs -> to_right depth xs
+	  | [] -> loop rest in
+	to_right 0 rest
+    | x :: rest -> loop rest
+    | [] -> () in
+  loop tokens2;
+  Common.acc_map (fun x -> x.TV.tok) tokens2

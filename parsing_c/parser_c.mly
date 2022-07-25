@@ -532,6 +532,7 @@ let postfakeInfo pii  =
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected
+       TTemplateStart TTemplateEnd
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -978,6 +979,7 @@ primary_expr_without_ident:
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
+ | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd { mk_e(Ident  ($1)) [] } // (* TODO *)
  | primary_expr_without_ident { $1 }
 
 string_fragments:
@@ -2666,6 +2668,7 @@ cpp_other:
 /*(*************************************************************************)*/
 
 external_declaration:
+ | Ttemplate TInf parameter_type_list TSup external_declaration { $5 } // (* TODO *)
  | function_definition               { Definition $1 }
  | decl                              { Declaration ($1 Ast_c.NotLocalDecl) }
 
