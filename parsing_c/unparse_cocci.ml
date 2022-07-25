@@ -817,7 +817,7 @@ and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 
 and enum_base (td, ty) =
   mcode print_string td;
-  print_string " ";
+  pr_space();
   fullType ty
 
 and structUnion = function
