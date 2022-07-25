@@ -1118,6 +1118,13 @@ all_basic_types_without_braces:
 | ty=signable_types { ty }
 | ty=non_signable_types_without_braces { ty }
 
+all_basic_types_signable:
+  ty=signed_basic_types { ty }
+| ty=signable_types { ty }
+
+all_basic_types_non_signable:
+  ty=non_signable_types { ty }
+
 all_basic_types:
   ty=signed_basic_types { ty }
 | ty=signable_types { ty }
@@ -1179,6 +1186,34 @@ ctype:
       Ast0_cocci.wrap
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
+ctype_only_signable:
+  cv1=ioption(const_vol) ty=all_basic_types_signable cv2=ioption(const_vol) m=list(mul)
+    { let cv = match cv1,cv2 with
+        None, None -> None
+      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
+      | Some x, None -> Some x
+      | None, Some x -> Some x in
+      List.fold_left
+	(function prev ->
+	  function (star,cv) ->
+	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cv ty) m }
+
+
+ctype_only_non_signable:
+  cv1=ioption(const_vol) ty=all_basic_types_non_signable cv2=ioption(const_vol) m=list(mul)
+    { let cv = match cv1,cv2 with
+        None, None -> None
+      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
+      | Some x, None -> Some x
+      | None, Some x -> Some x in
+      List.fold_left
+	(function prev ->
+	  function (star,cv) ->
+	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cv ty) m }
+
+
 mul: a=TMul b=ioption(const_vol) { (a,b) }
 
 mctype:
@@ -1221,9 +1256,12 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.ConjField(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
-    | t=signable_types d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
+    | t=ctype_only_signable d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,Parse_aux.clt2mcode ";" pv)) }
+    | t=ctype_only_non_signable d=direct_decl_option(type_ident) pv=TPtVirg
+	 { let (id,fn) = d in
+	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,None,Parse_aux.clt2mcode ";" pv)) }
     | cv=ioption(const_vol) i=pure_ident_or_symbol
       d=direct_decl_option(type_ident)
 	 bf=struct_bitfield?
