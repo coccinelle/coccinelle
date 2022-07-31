@@ -1353,6 +1353,10 @@ simple_type:
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
 
+ | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd // TODO
+     { let name = RegularName (mk_string_wrap $1) in
+       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
+
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name   TCPar
      { let ret = Right3 (TypeOfType (snd $3)), [$1;$2;$4] in
@@ -2708,10 +2712,15 @@ celem:
 /*(*************************************************************************)*/
 
 base_class:
-   identifier_cpp              { ClassName $1, [] }
- | Tpublic identifier_cpp      { CPublic $2,   [$1] }
- | Tprotected identifier_cpp   { CProtected $2,[$1] }
- | Tprivate identifier_cpp     { CPrivate $2,  [$1] }
+   base_class_name              { ClassName $1, [] }
+ | Tpublic base_class_name      { CPublic $2,   [$1] }
+ | Tprotected base_class_name   { CProtected $2,[$1] }
+ | Tprivate base_class_name     { CPrivate $2,  [$1] }
+
+base_class_name:
+   identifier_cpp              { $1 }
+ | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+   { $1 } // TODO!!!
 
 base_classes:
    base_class { [$1,[]] }

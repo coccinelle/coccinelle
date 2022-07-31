@@ -3075,12 +3075,17 @@ let c_plus_plus_operator toks =
 let convert_templates toks =
   let tokens2 = toks +> Common.acc_map TV.mk_token_extended in
   let rec loop = function
-      {TV.tok = (TIdent(_,i1)|TypedefIdent(_,i1))} :: (* no space *)
+      (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: (* no space *)
       (({TV.tok = TInf i2}) as b) :: rest ->
 	let rec to_right depth = function
 	    (({TV.tok = TSup i3}) as c) :: xs when depth = 0 ->
 	      b.TV.tok <- TTemplateStart i2;
-	      c.TV.tok <- TTemplateEnd i2;
+	      c.TV.tok <- TTemplateEnd i3;
+	      let (_,tmp) = span (fun x -> TH.is_just_comment_or_space x.TV.tok) xs in
+	      (match tmp with
+		{TV.tok = TIdent(_,_)} :: xs ->
+		  a.TV.tok <- TypedefIdent(s,i1)
+	      | _ -> ());
 	      loop xs
 	  | {TV.tok = TShr _} :: _ when depth = 0 ->
 	      loop rest

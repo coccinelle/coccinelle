@@ -900,12 +900,7 @@ rule token = parse
         TIdent (s, info)
       }
 
-  | cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
-    ("::~" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) +
+  | cplusplus_ident ("::~" cplusplus_ident) +
 
       {
         let info = tokinfo lexbuf in
@@ -918,32 +913,10 @@ rule token = parse
             TIdent (s, info)
 	  end
       }
-  | cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>')
-
-      {
-        let info = tokinfo lexbuf in
-        let s = tok lexbuf in
-        if !Flag.c_plus_plus <> Flag.Off
-	then TypedefIdent (s, info)
-	else
-	  begin
-	    pr2_once "<> detected, try -c++ option";
-            TIdent (s, info)
-	  end
-      }
-
 
   | (cplusplus_ident as first)
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
     "::" (cplusplus_ident as second)
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
-    ("::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
+    ("::" cplusplus_ident) *
 
       {
         let info = tokinfo lexbuf in
@@ -962,12 +935,7 @@ rule token = parse
 	  end
       }
 
-   | "::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?
-    ("::" cplusplus_ident
-      ('<' "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'*
-      (", " "const "? cplusplus_ident_ext ("::" cplusplus_ident_ext) * '*'* ) * '>') ?) *
+   | "::" cplusplus_ident ("::" cplusplus_ident) *
 
       {
         let info = tokinfo lexbuf in
