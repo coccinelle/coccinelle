@@ -260,10 +260,15 @@ and definitionbis = {
 
 and base_class = base_class_bis wrap
   and base_class_bis =
-    ClassName of name
-  | CPublic of name
-  | CProtected of name
-  | CPrivate of name
+    ClassName of base_class_name
+  | CPublic of base_class_name
+  | CProtected of base_class_name
+  | CPrivate of base_class_name
+
+and base_class_name = base_class_name_bis wrap
+  and base_class_name_bis =
+    BaseClassName of name
+  | TemplateClassName of name * argument wrap2 (* , *) list
 
 and cpp_directive =
     Define of define

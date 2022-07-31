@@ -2718,9 +2718,9 @@ base_class:
  | Tprivate base_class_name     { CPrivate $2,  [$1] }
 
 base_class_name:
-   identifier_cpp              { $1 }
+   identifier_cpp              { BaseClassName $1, [] }
  | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
-   { $1 } // TODO!!!
+   { TemplateClassName($1,$3), [$2;$4] }
 
 base_classes:
    base_class { [$1,[]] }
