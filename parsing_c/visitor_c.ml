@@ -186,7 +186,7 @@ let (iter_expr:((expression -> unit) -> expression -> unit) -> expression -> uni
   let rec k e =
     match e with
     | Constant c -> ()
-    | FunCall  (e, es)         ->  f k e; List.iter (f k) es
+    | FunCall  (e, es)         -> f k e; List.iter (f k) es
     | CondExpr (e1, e2, e3)    -> f k e1; f k e2; f k e3
     | Sequence (e1, e2)        -> f k e1; f k e2;
     | Assignment (e1, op, e2)  -> f k e1; vk_asignOp k op; f k e2;
@@ -307,16 +307,16 @@ let rec vk_expr = fun bigf expr ->
     | StringConstant(s,os,w) -> vk_string_fragments bigf s
     | FunCall  (e, es)         ->
         exprf e;
-        vk_argument_list bigf es;
+        vk_argument_list bigf es
     | CondExpr (e1, e2, e3)    ->
         exprf e1; do_option (exprf) e2; exprf e3
-    | Sequence (e1, e2)        -> exprf e1; exprf e2;
-    | Assignment (e1, op, e2)  -> exprf e1; vk_assignOp bigf op; exprf e2;
+    | Sequence (e1, e2)        -> exprf e1; exprf e2
+    | Assignment (e1, op, e2)  -> exprf e1; vk_assignOp bigf op; exprf e2
 
     | Postfix  (e, op) -> exprf e
     | Infix    (e, op) -> exprf e
     | Unary    (e, op) -> exprf e
-    | Binary   (e1, op, e2) -> exprf e1; vk_binaryOp bigf op; exprf  e2;
+    | Binary   (e1, op, e2) -> exprf e1; vk_binaryOp bigf op; exprf  e2
 
     | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
     | RecordAccess   (e, name) -> exprf e; vk_name bigf name
@@ -523,6 +523,9 @@ and vk_type = fun bigf t ->
     | TypeOfExpr e -> vk_expr bigf e
     | TypeOfType t -> typef t
     | AutoType -> ()
+    | TemplateType(name,es) ->
+        vk_name bigf name;
+	vk_argument_list bigf es
 
   in typef t
 
@@ -1504,6 +1507,10 @@ and vk_type_s = fun bigf t ->
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)
       | TypeOfType t -> TypeOfType (typef t)
       | AutoType -> AutoType
+      | TemplateType(name,es) ->
+          TemplateType(vk_name_s bigf name,
+		       es +> List.map (fun (e,ii) ->
+			 vk_argument_s bigf e, iif ii))
     in
     (q', iif_iiq),
     (t', iif iit)

@@ -151,6 +151,7 @@ let rec is_completed_and_simplified ty =
       true (* well we don't handle it, so can't really say it's completed *)
   | AutoType -> true (* this version is the most complete until we have
                         inference over auto *)
+  | TemplateType _ -> true
 
 
 let is_completed_typedef_fullType x = raise Todo

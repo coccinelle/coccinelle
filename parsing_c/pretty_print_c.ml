@@ -117,7 +117,7 @@ let mk_pretty_printers
     | FunCall  (e, es),     [i1;i2] ->
         pp_expression e; pr_elem i1;
 	pp_arg_list es;
-        pr_elem i2;
+        pr_elem i2
 
     | CondExpr (e1, e2, e3),    [i1;i2]    ->
         pp_expression e1; pr_space(); pr_elem i1; pr_space();
@@ -692,6 +692,12 @@ and pp_string_format (e,ii) =
 	  )
       | (AutoType, iis) -> print_sto_qu_ty (sto, qu, iis)
 
+      | (TemplateType(name,es),ii) ->
+	  let (i1,i2) = Common.tuple_of_list2 ii in
+          pp_name name; pr_elem i1;
+	  pp_arg_list es;
+          pr_elem i2;
+
       | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ | Decimal _
             (* | StructUnion _ | Enum _ | BaseType _ *)
             (* | StructUnionName _ | EnumName _ | TypeName _  *)
@@ -831,6 +837,7 @@ and pp_string_format (e,ii) =
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
       | (AutoType, _)                           -> print_ident ident
+      | (TemplateType _, _)                     -> print_ident ident
 
 
 
@@ -948,6 +955,7 @@ and pp_string_format (e,ii) =
       | TypeOfType _, _ -> ()
       | TypeOfExpr _, _ -> ()
       | AutoType, _ -> ()
+      | TemplateType _, _ -> ()
 
       | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 110)
 
@@ -1007,6 +1015,7 @@ and pp_string_format (e,ii) =
     | TypeOfType _, _ -> ()
     | TypeOfExpr _, _ -> ()
     | AutoType, _ -> ()
+    | TemplateType _, _ -> ()
 
     | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 111)
 

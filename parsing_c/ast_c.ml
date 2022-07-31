@@ -216,6 +216,7 @@ and fullType = typeQualifier * typeC
   | TypeOfExpr of expression
   | TypeOfType of fullType
   | AutoType (* c++ >= 11 *)
+  | TemplateType of name * argument wrap2 (* , *) list
 
   (* cppext: IfdefType TODO *)
 (* -------------------------------------- *)

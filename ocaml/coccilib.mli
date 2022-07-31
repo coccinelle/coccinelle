@@ -69,6 +69,7 @@ module Ast_c :
       | TypeOfExpr of expression
       | TypeOfType of fullType
       | AutoType (* c++ >= 11 *)
+      | TemplateType of name * argument wrap2 (* , *) list (* C++ *)
     and baseType =
       Ast_c.baseType =
         Void

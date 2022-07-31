@@ -4251,8 +4251,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           ))
 
     | _,
-     ((B.AutoType | B.TypeName _ | B.StructUnionName (_, _) | B.EnumName _ |
-      B.StructUnion (_, _, _, _) |
+     ((B.AutoType | B.TemplateType _ | B.TypeName _ | B.StructUnionName (_, _) |
+      B.EnumName _ | B.StructUnion (_, _, _, _) |
       B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
       B.Pointer _ | B.BaseType _),
      _)
@@ -4697,7 +4697,7 @@ and compatible_typeC a (b,local) =
     | (_,
       (_,
       ((
-       B.AutoType|
+       B.AutoType| B.TemplateType _|
        B.TypeOfType _|B.TypeOfExpr _|
        B.EnumName (_, _ )|B.StructUnion (_, _, _, _)|B.EnumDef (_, _, _)|
        B.StructUnionName (_, _)|

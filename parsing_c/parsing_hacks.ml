@@ -2095,6 +2095,9 @@ let lookahead2 ~pass next before =
       t
 
   (* c++ hacks *)
+  | TIdent i1::TTemplateStart i2::_,_
+      when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context()) [LP.InParameter;LP.InStruct]) ->
+	TypedefIdent i1
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
       when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->

@@ -249,7 +249,6 @@ let fixDeclSpecForFuncDef x =
   | _ -> (returnType, storage)
   )
 
-
 (* parameter: (this is the context where we give parameter only when
  * in func DEFINITION not in funct DECLARATION) We must have a name.
  * This function ensure that we give only parameterTypeDecl with well
@@ -382,6 +381,12 @@ let et s () =
   if !Flag_parsing_c.debug_etdt then pr2 (">" ^ s);
   LP.enable_typedef ()
 
+let fixSimpleTypeForCPPType x =
+  let (attrs, ds) = (* ignore attributes for now *)
+    (dt "spec_qualif" ();
+     ([],(addTypeD((dt "type" (); x),nullDecl)))) in
+  let (returnType, _) = fixDeclSpecForDecl ds in
+  returnType
 
 let fix_add_params_ident x =
   let (s, ty, st, _attrs, _dotdot, _constr_inh) = x in
@@ -840,40 +845,14 @@ cpp_initialiser_opt:
  | /*(* empty *)*/               { (None, []) }
 
 cpp_type:
-   TOPar simple_type TCPar                  
-     { let tmp = 
-       (dt "spec_qualif" (); 
-	([],(addTypeD(
-	     (dt "type" (); $2),nullDecl)))) in
-     let (attrs, ds) = tmp in
-     let (returnType, _) = fixDeclSpecForDecl ds in 
-     let ret = (attrs, returnType) in
-     ((snd ret), [$1;$3])
-     }
- | simple_type
-    { 
-      let tmp = 
-	(dt "spec_qualif" (); 
-	 ([],(addTypeD(
-	      (dt "type" (); $1),nullDecl)))) in
-      let (attrs, ds) = tmp in
-      let (returnType, _) = fixDeclSpecForDecl ds in 
-      let ret = (attrs, returnType) in
-      ((snd ret), [])
-    }
-
- | TIdent {
-   let name = RegularName (mk_string_wrap $1) in
-   let st = (Right3 (TypeName (name, Ast_c.noTypedefDef())),[]) in
-   let tmp =
-       (dt "spec_qualif" (); 
-	([],(addTypeD(
-	     (dt "type" (); st),nullDecl)))) in
-     let (attrs, ds) = tmp in
-     let (returnType, _) = fixDeclSpecForDecl ds in 
-     let ret = (attrs, returnType) in
-     ((snd ret), [])
-}
+   TOPar simple_type TCPar { (fixSimpleTypeForCPPType $2, [$1;$3]) }
+ | simple_type { (fixSimpleTypeForCPPType $1, []) }
+ | identifier_cpp
+     { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
+       (fixSimpleTypeForCPPType st, []) }
+ | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+     { let st = (Right3 (TemplateType($1,$3)), [$2;$4]) in
+       (fixSimpleTypeForCPPType st, []) }
 
 arith_expr:
  | cast_expr                     { $1 }
@@ -1355,7 +1334,7 @@ simple_type:
 
  | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd // TODO
      { let name = RegularName (mk_string_wrap $1) in
-       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
+       Right3 (TemplateType (name, $3)),[$2;$4] }
 
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name   TCPar
