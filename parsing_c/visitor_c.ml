@@ -804,6 +804,12 @@ and vk_toplevel = fun bigf p ->
     | FinalDef info -> vk_info bigf info
 
     | Namespace (tls, ii) -> List.iter (vk_toplevel bigf) tls
+    | TemplateDefinition(params,defn,ii) ->
+	iif ii;
+	params +> List.iter (fun (param,iicomma) ->
+          vk_param bigf param;
+          iif iicomma);
+	vk_toplevel bigf defn
   in f (k, bigf) p
 
 and vk_program = fun bigf xs ->
@@ -1795,6 +1801,12 @@ and vk_toplevel_s = fun bigf p ->
     | NotParsedCorrectly ii -> NotParsedCorrectly (iif ii)
     | FinalDef info -> FinalDef (vk_info_s bigf info)
     | Namespace (tls, ii) -> Namespace (List.map (vk_toplevel_s bigf) tls, ii)
+    | TemplateDefinition(params,defn,ii) ->
+	TemplateDefinition
+	  (params +> List.map (fun (param, iicomma) ->
+            (vk_param_s bigf param, iif iicomma)),
+	   vk_toplevel_s bigf defn,
+	   iif ii)
   in f (k, bigf) p
 
 and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =

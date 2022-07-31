@@ -1412,6 +1412,11 @@ and pp_init (init, iinit) =
 	pr_elem i1; pr_elem i2; pr_elem i3;
 	List.iter pp_toplevel tls;
 	pr_elem i4
+    | TemplateDefinition(params,defn,ii) ->
+	let (i1,i2,i3) = Common.tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pr_elem i2;
+	pp_param_list params; pr_elem i3; pr_nl();
+	pp_toplevel defn
     | (MacroTop _) | (Namespace _) -> raise (Impossible 120) in
 
 

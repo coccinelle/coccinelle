@@ -332,6 +332,7 @@ and toplevel =
   | NotParsedCorrectly of il
   | FinalDef of info
   | Namespace of toplevel list * il
+  | TemplateDefinition of parameterType wrap2 list * toplevel * il
 and program = toplevel list
 and metavars_binding =
     (Ast_cocci.meta_name, metavar_binding_kind) Common.assoc

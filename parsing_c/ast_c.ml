@@ -820,6 +820,7 @@ and toplevel =
 
   (* c++ *)
   | Namespace of toplevel list * il
+  | TemplateDefinition of parameterType wrap2 list * toplevel * il
 
 (* ------------------------------------------------------------------------- *)
 and program = toplevel list
@@ -1482,6 +1483,7 @@ let string_of_toplevel = function
   | NotParsedCorrectly _ -> "NotParsedCorrectly"
   | FinalDef _ -> "FinalDef"
   | Namespace _ -> "Namespace"
+  | TemplateDefinition _ -> "TemplateDefinition"
 
 let string_of_inc_file = function
   | Local lst -> "local://" ^ (String.concat "/" lst)

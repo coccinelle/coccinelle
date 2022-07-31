@@ -1332,7 +1332,7 @@ simple_type:
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
 
- | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd // TODO
+ | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TemplateType (name, $3)),[$2;$4] }
 
@@ -2653,7 +2653,8 @@ cpp_other:
 /*(*************************************************************************)*/
 
 external_declaration:
- | Ttemplate TInf parameter_type_list TSup external_declaration { $5 } // (* TODO *)
+ | Ttemplate TInf parameter_list TSup external_declaration
+     { TemplateDefinition($3,$5,[$1;$2;$4]) }
  | function_definition               { Definition $1 }
  | decl                              { Declaration ($1 Ast_c.NotLocalDecl) }
 
