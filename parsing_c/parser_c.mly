@@ -2075,8 +2075,6 @@ cpp_struct_decl2:
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
     * the rule are slightly different.
     *)*/
- | identifier TOPar macro_argument_list TCPar TPtVirg
-     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
  | identifier TOPar argument_list_ne TCPar post_constructor TPtVirg
      { ConstructorField ((fst $1, $3, fst $5), (snd $1)::$2::$4::(snd $5)@[$6;fakeInfo()]) }
  | TTilde identifier TOPar argument_list_ne TCPar post_constructor TPtVirg
