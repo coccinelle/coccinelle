@@ -19,6 +19,7 @@ and 'a wrap2 = 'a * il
 and 'a wrap3 = 'a * il
 and name =
     RegularName of string wrap
+  | Operator of bool wrap
   | CppConcatenatedName of string wrap wrap2 list
   | CppVariadicName of string wrap
   | CppIdentBuilder of string wrap * string wrap wrap2 list

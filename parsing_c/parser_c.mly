@@ -536,7 +536,7 @@ let postfakeInfo pii  =
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
-       Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected
+       Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd
 
 /*(* C99 *)*/
@@ -1490,6 +1490,8 @@ tmul:
 direct_d:
  | identifier_cpp
      { ($1, fun x -> x) }
+ | operator_c_plus_plus
+     { ($1, fun x -> x) }
  | TOPar declarator TCPar      /*(* forunparser: old: $2 *)*/
      { let (attr,dec) = $2 in  (* attr gets ignored... *)
        (fst dec, fun x -> mk_ty (ParenType ((snd dec) x)) [$1;$3]) }
@@ -1506,6 +1508,31 @@ direct_d:
      { (fst $1,fun x->(snd $1)
        (mk_ty (FunctionType (x, $3)) [$2;$4]))
      }
+
+operator_c_plus_plus: // C++ only, bool is space needed for pretty printing
+ | Toperator unary_op { Operator (false, [$1;snd $2]) }
+ | Toperator TInc     { Operator (false, [$1;$2]) }
+ | Toperator TDec     { Operator (false, [$1;$2]) }
+ | Toperator Tdelete  { Operator (true,  [$1;$2]) }
+ | Toperator Tnew     { Operator (true,  [$1;$2]) }
+ | Toperator TDiv     { Operator (false, [$1;$2]) }
+ | Toperator TMin     { Operator (false, [$1;$2]) }
+ | Toperator TMax     { Operator (false, [$1;$2]) }
+ | Toperator TMod     { Operator (false, [$1;$2]) }
+ | Toperator TShl     { Operator (false, [$1;$2]) }
+ | Toperator TShr     { Operator (false, [$1;$2]) }
+ | Toperator TInf     { Operator (false, [$1;$2]) }
+ | Toperator TSup     { Operator (false, [$1;$2]) }
+ | Toperator TInfEq   { Operator (false, [$1;$2]) }
+ | Toperator TSupEq   { Operator (false, [$1;$2]) }
+ | Toperator TEqEq    { Operator (false, [$1;$2]) }
+ | Toperator TNotEq   { Operator (false, [$1;$2]) }
+ | Toperator TOr      { Operator (false, [$1;$2]) }
+ | Toperator TXor     { Operator (false, [$1;$2]) }
+ | Toperator TOrLog   { Operator (false, [$1;$2]) }
+ | Toperator TOCro TCCro { Operator (false, [$1;$2;$3]) }
+ | Toperator TAssign  { Operator (false, $1::snd $2) }
+ | Toperator TEq      { Operator (false, [$1;$2]) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/

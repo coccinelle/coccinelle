@@ -840,6 +840,9 @@ let string_of_expression exp =
     Ast_c.Ident (name) ->
       (match name with
 	Ast_c.RegularName     rname -> Ast_c.unwrap_st rname
+      | Ast_c.Operator _ ->
+	  warning
+	    "Unable to apply a constraint on an Operator identifier!"
       | Ast_c.CppConcatenatedName _ ->
 	  warning
 	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
@@ -1994,7 +1997,7 @@ and (ident_cpp: info_ident -> (A.ident, B.name) matcher) =
            ida,
            (B.RegularName (s, [iis]))
          ))
-   | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
+   | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _ |B.Operator _
        ->
 	 (* This should be moved to the Id case of ident.  Metavariables
 	 should be allowed to be bound to such variables.  But doing so
@@ -2980,6 +2983,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                    ))
                else fail
 
+	   | B.Operator _ -> failwith "unexpected type name"
            | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
                -> raise Todo
            )
@@ -4168,7 +4172,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                   (B.TypeName (B.RegularName (sb, [iidb1]), typb), noii)
                    ))
                else fail
-
+	   | B.Operator _ -> failwith "unexpected type name"
            | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
                -> raise Todo
         )

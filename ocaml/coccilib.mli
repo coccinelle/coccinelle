@@ -46,6 +46,7 @@ module Ast_c :
     and name =
       Ast_c.name =
         RegularName of string wrap
+      | Operator of bool wrap
       | CppConcatenatedName of string wrap wrap2 list
       | CppVariadicName of string wrap
       | CppIdentBuilder of string wrap * string wrap wrap2 list
@@ -777,6 +778,7 @@ module Parser_c :
       | Tprivate of Ast_c.info
       | Tpublic of Ast_c.info
       | Tprotected of Ast_c.info
+      | Toperator of Ast_c.info
       | TTemplateStart of Ast_c.info
       | TTemplateEnd of Ast_c.info
       | Trestrict of Ast_c.info

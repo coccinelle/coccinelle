@@ -259,6 +259,14 @@ let mk_pretty_printers
     | RegularName (s, ii) ->
         let (i1) = Common.tuple_of_list1 ii in
         pr_elem i1
+
+    | Operator(space_needed,op::ii) ->
+	pr_elem op;
+	(if space_needed then pr_space());
+	List.iter pr_elem ii
+    | Operator(space_needed,_) ->
+	failwith "pretty print: bad operator"
+
     | CppConcatenatedName xs ->
         xs +> List.iter (fun ((x,ii1), ii2) ->
           ii2 +> List.iter pr_elem;
