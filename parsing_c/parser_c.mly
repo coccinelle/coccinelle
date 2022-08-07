@@ -1531,6 +1531,7 @@ operator_c_plus_plus: // C++ only, bool is space needed for pretty printing
  | Toperator TXor     { Operator (false, [$1;$2]) }
  | Toperator TOrLog   { Operator (false, [$1;$2]) }
  | Toperator TOCro TCCro { Operator (false, [$1;$2;$3]) }
+ | Toperator TOPar TCPar { Operator (false, [$1;$2;$3]) }
  | Toperator TAssign  { Operator (false, $1::snd $2) }
  | Toperator TEq      { Operator (false, [$1;$2]) }
 
