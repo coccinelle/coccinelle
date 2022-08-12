@@ -362,9 +362,21 @@ module Ast_c :
       f_old_c_style : declaration list option;
     }
 
+    and c_plus_plus_constructor = c_plus_plus_constructorbis wrap
+    and c_plus_plus_constructorbis =
+      Ast_c.c_plus_plus_constructorbis =
+      | ConstructorDecl of
+	  string * (parameterType wrap2 list * bool wrap) * bool wrap
+      | DestructorDecl  of
+	  string * (parameterType wrap2 list * bool wrap) * bool wrap
+      | ConstructorDef  of
+	  string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+      | DestructorDef   of
+	  string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+
     and base_class = base_class_bis wrap
     and base_class_bis =
-	Ast_c.base_class_bis =
+      Ast_c.base_class_bis =
 	ClassName of base_class_name
       | CPublic of base_class_name
       | CProtected of base_class_name
@@ -372,7 +384,7 @@ module Ast_c :
 
     and base_class_name = base_class_name_bis wrap
     and base_class_name_bis =
-	Ast_c.base_class_name_bis =
+      Ast_c.base_class_name_bis =
 	BaseClassName of name
       | TemplateClassName of name * argument wrap2 (* , *) list
 
