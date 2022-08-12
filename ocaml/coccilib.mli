@@ -98,8 +98,7 @@ module Ast_c :
       | ProtectedLabel of info list
       | PrivateLabel of info list
       | DeclField of declaration (* C++ *)
-      | ConstructorField of (string * argument wrap2 list * bool) wrap (* C++ *)
-      | DestructorField of (string * argument wrap2 list * bool) wrap (* C++ *)
+      | ConstructDestructField of c_plus_plus_constructor
       | MacroDeclField of (string * argument wrap2 list) wrap
       | CppDirectiveStruct of cpp_directive
       | IfdefStruct of ifdef_directive
@@ -1184,6 +1183,8 @@ module Visitor_c :
         Ast_c.parameterType -> unit;
       kdef :
         (Ast_c.definition -> unit) * visitor_c -> Ast_c.definition -> unit;
+      kcondes :
+	(Ast_c.c_plus_plus_constructor -> unit) * visitor_c -> Ast_c.c_plus_plus_constructor -> unit;
       kname : (Ast_c.name -> unit) * visitor_c -> Ast_c.name -> unit;
       kini :
         (Ast_c.initialiser -> unit) * visitor_c -> Ast_c.initialiser -> unit;
@@ -1286,6 +1287,7 @@ module Visitor_c :
       kdecl_s :
         Ast_c.declaration inout * visitor_c_s -> Ast_c.declaration inout;
       kdef_s : Ast_c.definition inout * visitor_c_s -> Ast_c.definition inout;
+      kcondes_s: Ast_c.c_plus_plus_constructor inout * visitor_c_s -> Ast_c.c_plus_plus_constructor inout;
       kname_s : Ast_c.name inout * visitor_c_s -> Ast_c.name inout;
       kini_s :
         Ast_c.initialiser inout * visitor_c_s -> Ast_c.initialiser inout;

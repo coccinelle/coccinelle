@@ -258,8 +258,7 @@ and fullType = typeQualifier * typeC
 	   | ProtectedLabel of info list
 	   | PrivateLabel of info list
            | DeclField of declaration
-           | ConstructorField of (string * argument wrap2 list * bool) wrap
-           | DestructorField of (string * argument wrap2 list * bool) wrap
+           | ConstructDestructField of c_plus_plus_constructor
 
             (* cppext: *)
            | MacroDeclField of (string * argument wrap2 list)
@@ -651,6 +650,13 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
     f_old_c_style: declaration list option;
   }
   (* cppext: IfdefFunHeader TODO *)
+
+and c_plus_plus_constructor = c_plus_plus_constructorbis wrap
+and c_plus_plus_constructorbis =
+  | ConstructorDecl of string * (parameterType wrap2 list * bool wrap) * bool wrap
+  | DestructorDecl  of string * (parameterType wrap2 list * bool wrap) * bool wrap
+  | ConstructorDef  of string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+  | DestructorDef   of string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
 
 (* ------------------------------------------------------------------------- *)
 (* C++ base classes *)

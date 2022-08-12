@@ -3395,8 +3395,7 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
 	   | Ast_c.ProtectedLabel _ -> false
 	   | Ast_c.PrivateLabel _ -> false
 	   | Ast_c.DeclField _ -> false
-	   | Ast_c.ConstructorField _ -> false
-	   | Ast_c.DestructorField _ -> false)
+	   | Ast_c.ConstructDestructField _ -> false)
 	 l) in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
@@ -3440,8 +3439,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	| A.MetaField (ida,cstr,keep,inherited), B.ProtectedLabel _
 	| A.MetaField (ida,cstr,keep,inherited), B.PrivateLabel _
 	| A.MetaField (ida,cstr,keep,inherited), B.DeclField _
-	| A.MetaField (ida,cstr,keep,inherited), B.ConstructorField _
-	| A.MetaField (ida,cstr,keep,inherited), B.DestructorField _ ->
+	| A.MetaField (ida,cstr,keep,inherited), B.ConstructDestructField _ ->
 	    (* not really fields *) fail
 	| A.MetaField (ida,cstr,keep,inherited), _ ->
 	    let max_min _ = Lib_parsing_c.ii_of_field fb in
@@ -3527,8 +3525,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	| _,B.ProtectedLabel _ -> fail
 	| _,B.PrivateLabel _ -> fail
 	| _,B.DeclField _ -> fail
-	| _,B.ConstructorField _ -> fail
-	| _,B.DestructorField _ -> fail)
+	| _,B.ConstructDestructField _ -> fail)
 
 (* ---------------------------------------------------------------------- *)
 

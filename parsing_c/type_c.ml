@@ -497,8 +497,7 @@ let (type_field:
       | FunctionField def -> ()
       | DeclField decl -> ()
       | PublicLabel info | ProtectedLabel info | PrivateLabel info -> ()
-      | ConstructorField _ -> pr2_once "ConstructorTodo"; ()
-      | DestructorField _ -> pr2_once "DestructorTodo"; ()
+      | ConstructDestructField _ -> pr2_once "ConstructorDestructorTodo"; ()
       | MacroDeclField _ -> pr2_once "DeclTodo"; ()
 
       | CppDirectiveStruct _

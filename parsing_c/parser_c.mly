@@ -2073,16 +2073,8 @@ cpp_struct_decl2:
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
     * the rule are slightly different.
     *)*/
- | identifier TOPar argument_list_ne TCPar post_constructor TPtVirg
-     { ConstructorField ((fst $1, $3, fst $5), (snd $1)::$2::$4::(snd $5)@[$6;fakeInfo()]) }
- | TTilde identifier TOPar argument_list_ne TCPar post_constructor TPtVirg
-     { DestructorField ((fst $2, $4, fst $6), $1::snd $2::$3::$5::(snd $6)@[$7;fakeInfo()]) }
 
- /* should be removed!!! */
- | identifier TOPar TCPar post_constructor TPtVirg
-     { ConstructorField ((fst $1, [], fst $4), (snd $1)::$2::$3::(snd $4)@[$5;fakeInfo()]) }
- | TTilde identifier TOPar TCPar post_constructor TPtVirg
-     { DestructorField ((fst $2, [], fst $5), $1::snd $2::$3::$4::(snd $5)@[$6;fakeInfo()]) }
+ | c_plus_plus_constructor_decl { ConstructDestructField $1 }
 
  /*(* cppext: *)*/
  | cpp_directive
@@ -2094,6 +2086,19 @@ cpp_struct_decl2:
  | Tpublic TDotDot    { PublicLabel [$1;$2] }
  | Tprotected TDotDot { ProtectedLabel [$1;$2] }
  | Tprivate TDotDot   { PrivateLabel [$1;$2] }
+
+c_plus_plus_constructor_decl:
+ | identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
+     { (ConstructorDecl (fst $1, $3, $5)), [snd $1;$2;$4;$6;fakeInfo()] }
+ | TTilde identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
+     { (DestructorDecl (fst $2, $4, $6)), [$1;snd $2;$3;$5;$7;fakeInfo()] }
+
+ | identifier TOPar parameter_type_list TCPar post_constructor compound
+     { (ConstructorDef (fst $1, $3, $5, fst $6)),
+       (snd $1) :: $2 :: $4 :: snd $6 @[fakeInfo()] }
+ | TTilde identifier TOPar parameter_type_list TCPar post_constructor compound
+     { (DestructorDef (fst $2, $4, $6, fst $7)),
+       $1 :: snd $2 :: $3 :: $5 :: snd $7 @[fakeInfo()] }
 
 post_constructor:
   Tfinal      { (true, [$1]) }

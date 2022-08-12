@@ -12,6 +12,7 @@ type visitor_c = {
   konedecl_opt : bool -> (onedecl -> unit) * visitor_c -> onedecl     -> unit;
   kparam : (parameterType -> unit)      * visitor_c -> parameterType -> unit;
   kdef       : (definition  -> unit)  * visitor_c -> definition  -> unit;
+  kcondes    : (c_plus_plus_constructor -> unit) * visitor_c -> c_plus_plus_constructor -> unit;
   kname      : (name  -> unit)        * visitor_c -> name        -> unit;
 
   kini       : (initialiser -> unit)  * visitor_c -> initialiser -> unit;
@@ -103,6 +104,7 @@ type visitor_c_s = {
 
   kdecl_s      : declaration    inout * visitor_c_s -> declaration    inout;
   kdef_s       : definition     inout * visitor_c_s -> definition     inout;
+  kcondes_s    : c_plus_plus_constructor inout * visitor_c_s -> c_plus_plus_constructor inout;
   kname_s      : name           inout * visitor_c_s -> name           inout;
 
   kini_s       : initialiser    inout * visitor_c_s -> initialiser    inout;

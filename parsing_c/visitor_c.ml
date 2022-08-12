@@ -244,6 +244,7 @@ type visitor_c =
    konedecl_opt: bool -> (onedecl -> unit) * visitor_c -> onedecl -> unit;
    kparam:  (parameterType -> unit)      * visitor_c -> parameterType -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit;
+   kcondes:    (c_plus_plus_constructor -> unit) * visitor_c -> c_plus_plus_constructor -> unit;
    kname     : (name -> unit)        * visitor_c -> name       -> unit;
 
    kini:       (initialiser  -> unit) * visitor_c -> initialiser  -> unit;
@@ -276,6 +277,7 @@ let default_visitor_c =
     konedecl_opt    = (fun _ (k,_) d  -> k d);
     kparam          = (fun (k,_) d  -> k d);
     kdef            = (fun (k,_) d  -> k d);
+    kcondes         = (fun (k,_) d  -> k d);
     kini            = (fun (k,_) ie  -> k ie);
     kname           = (fun (k,_) x -> k x);
     kfragment       = (fun (k,_) f  -> k f);
@@ -679,11 +681,7 @@ and vk_struct_field = fun bigf field ->
     | FunctionField def -> vk_def bigf def
     | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii -> iif ii
     | DeclField decl -> vk_decl bigf decl
-    | ConstructorField ((s, args, final),ii)
-    | DestructorField ((s, args, final),ii) ->
-        iif ii;
-        vk_argument_list bigf args
-
+    | ConstructDestructField cd -> vk_constr_destr bigf cd
   in
   f (k, bigf) field
 
@@ -755,6 +753,29 @@ and vk_def = fun bigf d ->
 	vk_expression_list bigf constr_inh;
 
 	vk_statement_sequencable_list bigf statxs
+  in f (k, bigf) d
+
+and vk_constr_destr = fun bigf d ->
+  let iif ii = vk_ii bigf ii in
+
+  let f = bigf.kcondes in
+  let k (d,ii) =
+    let visit ii final paramst =
+        iif ii;
+	iif (snd final);
+	(match paramst with
+        | (ts, (b,iihas3dots)) ->
+            iif iihas3dots;
+            vk_param_list bigf ts
+        ) in
+    match d with
+    | ConstructorDecl (s, paramst, final)
+    | DestructorDecl (s, paramst, final) ->
+	visit ii final paramst
+    | ConstructorDef (s, paramst, final, body)
+    | DestructorDef (s, paramst, final, body) ->
+	visit ii final paramst;
+	vk_statement_sequencable_list bigf body
   in f (k, bigf) d
 
 and vk_expression_list = fun bigf es ->
@@ -1182,6 +1203,7 @@ type visitor_c_s = {
 
   kdecl_s: (declaration  inout * visitor_c_s) -> declaration inout;
   kdef_s:  (definition   inout * visitor_c_s) -> definition  inout;
+  kcondes_s: (c_plus_plus_constructor inout * visitor_c_s) -> c_plus_plus_constructor inout;
   kname_s: (name         inout * visitor_c_s) -> name        inout;
 
   kini_s:  (initialiser  inout * visitor_c_s) -> initialiser inout;
@@ -1209,6 +1231,7 @@ let default_visitor_c_s =
     ktype_s      = (fun (k,_) t  -> k t);
     kdecl_s      = (fun (k,_) d  -> k d);
     kdef_s       = (fun (k,_) d  -> k d);
+    kcondes_s    = (fun (k,_) d  -> k d);
     kname_s      = (fun (k,_) x ->  k x);
     kini_s       = (fun (k,_) d  -> k d);
     ktoplevel_s  = (fun (k,_) p  -> k p);
@@ -1497,14 +1520,7 @@ and vk_type_s = fun bigf t ->
       | Decimal (len,prec_opt) ->
 	  Decimal (vk_expr_s bigf len, fmap (vk_expr_s bigf) prec_opt)
       | FunctionType (returnt, paramst) ->
-          FunctionType
-            (typef returnt,
-            (match paramst with
-            | (ts, (b, iihas3dots)) ->
-                (ts +> List.map (fun (param,iicomma) ->
-                  (vk_param_s bigf param, iif iicomma)),
-                (b, iif iihas3dots))
-            ))
+          FunctionType(typef returnt,vk_paramst_s bigf paramst)
 
       | EnumDef  (sen, baset, enumt) ->
           EnumDef (sen,
@@ -1704,21 +1720,8 @@ and vk_struct_field_s = fun bigf field ->
   | ProtectedLabel ii -> ProtectedLabel(iif ii)
   | PrivateLabel ii -> PrivateLabel(iif ii)
   | DeclField decl -> DeclField(vk_decl_s bigf decl)
-  | ConstructorField ((s, args, final),ii) ->
-      ConstructorField
-        ((s,
-          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
-	  final
-         ),
-         iif ii)
-  | DestructorField ((s, args, final),ii) ->
-      DestructorField
-        ((s,
-          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
-	  final
-         ),
-         iif ii)
-
+  | ConstructDestructField cd ->
+      ConstructDestructField(vk_constr_destr_s bigf cd)
 
 and vk_struct_fields_s = fun bigf fields ->
   fields +> List.map (vk_struct_field_s bigf)
@@ -1742,7 +1745,7 @@ and vk_def_s = fun bigf d ->
   let k d =
     match d with
     | {f_name = name;
-       f_type = (returnt, (paramst, (b, iib)));
+       f_type = (returnt, paramst);
        f_storage = sto;
        f_constr_inherited = constr_inh;
        f_body = statxs;
@@ -1753,10 +1756,7 @@ and vk_def_s = fun bigf d ->
         ->
         {f_name = vk_name_s bigf name;
          f_type =
-            (vk_type_s bigf returnt,
-            (paramst +> List.map (fun (param, iicomma) ->
-              (vk_param_s bigf param, iif iicomma)
-            ), (b, iif iib)));
+            (vk_type_s bigf returnt,vk_paramst_s bigf paramst);
          f_storage = sto;
 	 f_constr_inherited =
             constr_inh +> List.map (fun (elem, iicomma) ->
@@ -1774,6 +1774,29 @@ and vk_def_s = fun bigf d ->
         },
         iif ii
 
+  in f (k, bigf) d
+
+and vk_constr_destr_s = fun bigf d ->
+  let iif ii = vk_ii_s bigf ii in
+
+  let f = bigf.kcondes_s in
+  let k (d,ii) =
+    let do_final (final,ii) = (final, iif ii) in
+    match d with
+    | ConstructorDecl (s, paramst, final) ->
+	(ConstructorDecl (s, vk_paramst_s bigf paramst, do_final final),iif ii)
+    | DestructorDecl (s, paramst, final) ->
+	(DestructorDecl (s, vk_paramst_s bigf paramst, do_final final),iif ii)
+    | ConstructorDef (s, paramst, final, body) ->
+	(ConstructorDef
+	   (s, vk_paramst_s bigf paramst, do_final final,
+	    vk_statement_sequencable_list_s bigf body),
+	   iif ii)
+    | DestructorDef (s, paramst, final, body) ->
+	(DestructorDef
+	   (s, vk_paramst_s bigf paramst, do_final final,
+	    vk_statement_sequencable_list_s bigf body),
+	   iif ii)
   in f (k, bigf) d
 
 and vk_base_class_s = fun bigf bc -> (* not parametrizable *)
@@ -2123,6 +2146,12 @@ and vk_param_s = fun bigf param ->
     p_midattr = midattrs +> List.map (vk_attribute_s bigf);
     p_endattr = endattrs +> List.map (vk_attribute_s bigf);
   }
+
+and vk_paramst_s bigf (ts, (b, iihas3dots)) =
+  let iif ii = vk_ii_s bigf ii in
+  (ts +> List.map (fun (param,iicomma) ->
+    (vk_param_s bigf param, iif iicomma)),
+   (b, iif iihas3dots))
 
 let vk_arguments_s = fun bigf args ->
   let iif ii = vk_ii_s bigf ii in

@@ -823,59 +823,7 @@ and pp_string_format (e,ii) =
 	let (kwd,dotdot) = Common.tuple_of_list2 ii in
 	pr_elem kwd; pr_elem dotdot
     | DeclField decl -> pp_decl decl
-    | ConstructorField ((s, es, final), ii)  ->
-        let (iis, lp, rp, finali, iiend, ifakestart) =
-	  if final
-	  then
-	    let (iis, lp, rp, finali, iiend, ifakestart) =
-	      Common.tuple_of_list6 ii in
-	    (iis, lp, rp, [finali], iiend, ifakestart)
-          else
-	    let (iis, lp, rp, iiend, ifakestart) =
-	      Common.tuple_of_list5 ii in
-	    (iis, lp, rp, [], iiend, ifakestart) in
-                 (* iis::lp::rp::iiend::ifakestart::iisto
-	            iisto +> List.iter pr_elem; (* static and const *)
-                 *)
-	pr_elem ifakestart;
-	pr_elem iis;
-	pr_elem lp;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	  );
-
-	pr_elem rp;
-	finali +> List.iter pr_elem;
-	pr_elem iiend
-    | DestructorField ((s, es, final), ii)  ->
-        let (itil, iis, lp, rp, finali, iiend, ifakestart) =
-	  if final
-	  then
-	    let (itil, iis, lp, rp, finali, iiend, ifakestart) =
-	      Common.tuple_of_list7 ii in
-	    (itil, iis, lp, rp, [finali], iiend, ifakestart)
-          else
-	    let (itil, iis, lp, rp, iiend, ifakestart) =
-	      Common.tuple_of_list6 ii in
-	    (itil, iis, lp, rp, [], iiend, ifakestart) in
-                 (* itil::iis::lp::rp::iiend::ifakestart::iisto
-	            iisto +> List.iter pr_elem; (* static and const *)
-                 *)
-	pr_elem ifakestart;
-	pr_elem itil;
-	pr_elem iis;
-	pr_elem lp;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	  );
-
-	pr_elem rp;
-	finali +> List.iter pr_elem;
-	pr_elem iiend
+    | ConstructDestructField cd -> pp_construct_destruct cd
 
 (* used because of DeclList, in    int i,*j[23];  we don't print anymore the
    int before *j *)
@@ -1042,8 +990,9 @@ and pp_string_format (e,ii) =
 	pp_type_with_ident (Some (function _ -> pp_name name))
 	  None t None Ast_c.noattr Ast_c.noattr
 
-
-
+  and pp_params (ts, (b, iib)) =
+    pp_param_list ts;
+    iib +> List.iter pr_elem
 
   and pp_type_right (((qu, iiqu), (ty, iity)) : fullType) =
     match ty, iity with
@@ -1058,17 +1007,7 @@ and pp_string_format (e,ii) =
 
     | (ParenType t, _) ->  failwith "parenType"
     | (FunctionType (returnt, paramst), [i1;i2]) ->
-        pr_elem i1;
-        (match paramst with
-        | (ts, (b, iib)) ->
-            ts +> List.iter (fun (param,iicomma) ->
-              assert ((List.length iicomma) <= 1);
-              iicomma +> List.iter (function x -> pr_elem x; pr_space());
-
-              pp_param param;
-	    );
-            iib +> List.iter pr_elem;
-        );
+        pr_elem i1; pp_params paramst;
         pr_elem i2
 
     | (BaseType _, iis)        -> ()
@@ -1375,6 +1314,43 @@ and pp_init (init, iinit) =
     | _ -> raise (Impossible 1180)
 
   and pp_param_list paramst = pp_list pp_param paramst
+
+  and pp_construct_destruct (cd,ii) =
+    let constructor_start iis lp paramst rp final =
+      pr_elem iis;
+      pr_elem lp; pp_params paramst; pr_elem rp;
+      snd final +> List.iter pr_elem in
+    match cd with
+    | ConstructorDecl (s, paramst, final)  ->
+	let (iis, lp, rp, iiend, ifakestart) = Common.tuple_of_list5 ii in
+                 (* iis::lp::rp::iiend::ifakestart::iisto
+	            iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	pr_elem ifakestart;
+	constructor_start iis lp paramst rp final;
+	pr_elem iiend
+    | DestructorDecl (s, paramst, final)  ->
+	let (itil, iis, lp, rp, iiend, ifakestart) = Common.tuple_of_list6 ii in
+                 (* itil::iis::lp::rp::iiend::ifakestart::iisto
+	            iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	pr_elem ifakestart;
+	pr_elem itil;
+	constructor_start iis lp paramst rp final;
+	pr_elem iiend
+    | ConstructorDef (s, paramst, final, body)  ->
+	let (iis, lp, rp, iilb, iirb, ifakestart) = Common.tuple_of_list6 ii in
+	pr_elem ifakestart;
+	constructor_start iis lp paramst rp final;
+	pr_elem iilb; start_block(); pp_statement_seq_list body;
+        end_block(); pr_elem iirb
+    | DestructorDef (s, paramst, final, body)  ->
+	let (itil, iis, lp, rp, iilb, iirb, ifakestart) = Common.tuple_of_list7 ii in
+	pr_elem ifakestart;
+	pr_elem itil;
+	constructor_start iis lp paramst rp final;
+	pr_elem iilb; start_block(); pp_statement_seq_list body;
+        end_block(); pr_elem iirb
 
 (* ---------------------- *)
 
