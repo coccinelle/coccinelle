@@ -1778,7 +1778,6 @@ decl2:
          ),  ($3::iistart::snd storage))
      }
  /*(* cppext: *)*/
-
  | storage_const_opt TMacroDecl TOPar macro_argument_list TCPar end_attributes_opt
    TPtVirg
      { function _ ->
@@ -1929,7 +1928,6 @@ declaratori:
  | declarator end_attributes
      { let (attr,dec) = $1 in
        LP.add_ident (str_of_name (fst dec)); dec, attr, $2 (* TODO *) }
-
 
 gcc_asm_decl:
  | Tasm TOPar asmbody TCPar              {  }
