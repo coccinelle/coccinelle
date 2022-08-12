@@ -862,7 +862,7 @@ cpp_type:
  | identifier_cpp
      { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
        (fixSimpleTypeForCPPType st, []) }
- | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+ | identifier_cpp TTemplateStart argument_list TTemplateEnd
      { let st = (Right3 (TemplateType($1,$3)), [$2;$4]) in
        (fixSimpleTypeForCPPType st, []) }
 
@@ -970,7 +970,7 @@ primary_expr_without_ident:
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
- | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+ | identifier_cpp TTemplateStart argument_list TTemplateEnd
      { let fn = mk_e(Ident  ($1)) [] in
        mk_e(FunCall (fn, $3)) [$2;$4] }
  | primary_expr_without_ident { $1 }
@@ -1344,7 +1344,7 @@ simple_type:
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
 
- | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd
+ | TypedefIdent TTemplateStart argument_list TTemplateEnd
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TemplateType (name, $3)),[$2;$4] }
 
@@ -2707,8 +2707,8 @@ base_class:
  | Tprivate base_class_name     { CPrivate $2,  [$1] }
 
 base_class_name:
-   identifier_cpp              { BaseClassName $1, [] }
- | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+   ident_cpp                    { BaseClassName $1, [] }
+ | ident_cpp TTemplateStart argument_list TTemplateEnd
    { TemplateClassName($1,$3), [$2;$4] }
 
 base_classes:
