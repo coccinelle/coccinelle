@@ -2990,35 +2990,96 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
 
 let convert_templates toks =
   let tokens2 = toks +> Common.acc_map TV.mk_token_extended in
-  let rec loop = function
-      (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: (* no space *)
-      (({TV.tok = TInf i2}) as b) :: rest ->
-	let rec to_right depth = function
-	    (({TV.tok = TSup i3}) as c) :: xs when depth = 0 ->
-	      b.TV.tok <- TTemplateStart i2;
-	      c.TV.tok <- TTemplateEnd i3;
-	      let (_,tmp) = span (fun x -> TH.is_just_comment_or_space x.TV.tok) xs in
-	      (match tmp with
-		{TV.tok = TIdent(_,_)} :: xs ->
-		  a.TV.tok <- TypedefIdent(s,i1)
-	      | _ -> ());
-	      loop xs
-	  | {TV.tok = TShr _} :: _ when depth = 0 ->
-	      loop rest
-	  | {TV.tok = TOPar _} :: xs
-	  | {TV.tok = TOCro _} :: xs
-	  | {TV.tok = TOBrace _} :: xs ->
-	      to_right (depth+1) xs
-	  | {TV.tok = TCPar _} :: xs
-	  | {TV.tok = TCCro _} :: xs
-	  | {TV.tok = TCBrace _} :: xs ->
-	      if depth = 0
-	      then loop rest
-	      else to_right (depth-1) xs
-	  | x :: xs -> to_right depth xs
-	  | [] -> loop rest in
-	to_right 0 rest
-    | x :: rest -> loop rest
-    | [] -> () in
-  loop tokens2;
-  Common.acc_map (fun x -> x.TV.tok) tokens2
+  let rebuild = ref false in
+  let top1 stack pdepth tdepth =
+    match stack with
+      (tok,tok_pdepth,tok_tdepth)::rest ->
+	pdepth = tok_pdepth && tdepth = tok_tdepth + 1
+    | _ -> false in
+  let top2 stack pdepth tdepth =
+    match stack with
+      (tok1,tok1_pdepth,tok1_tdepth)::(tok2,tok2_pdepth,tok2_tdepth)::rest ->
+	pdepth = tok1_pdepth && pdepth = tok2_pdepth &&
+	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2
+    | _ -> false in
+  let success a s i1 b i2 c i3 xs =
+    b.TV.tok <- TTemplateStart i2;
+    c.TV.tok <- i3;
+    let (_,tmp) = span (fun x -> TH.is_just_comment_or_space x.TV.tok) xs in
+    (match tmp with
+      {TV.tok = TIdent(_,_)} :: xs ->
+	a.TV.tok <- TypedefIdent(s,i1)
+    | _ -> ()) in
+  let rec loop stack pdepth tdepth = function
+    [] -> ()
+  | {TV.tok = TOPar _} :: xs
+  | {TV.tok = TOCro _} :: xs
+  | {TV.tok = TOBrace _} :: xs ->
+      loop stack (pdepth+1) tdepth xs
+  | {TV.tok = TCPar _} :: xs
+  | {TV.tok = TCCro _} :: xs
+  | {TV.tok = TCBrace _} :: xs ->
+      loop stack (max 0 (pdepth-1)) tdepth xs
+  (* start point *)
+  | (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: (* no space *)
+    (({TV.tok = TInf i2}) as b) :: rest ->
+      loop (((a,s,i1,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+  (* one possible end point *)
+  | (({TV.tok = TSup i3}) as c) :: rest when top1 stack pdepth tdepth ->
+      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
+      success ident s i1 inf i2 c (TTemplateEnd i3) rest;
+      loop (List.tl stack) pdepth (tdepth-1) rest
+  (* another possible end point *)
+  | (({TV.tok = TShr i3}) as c) :: rest when top1 stack pdepth tdepth ->
+      rebuild := true;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
+      success ident s i1 inf i2 c (TTemplateEndSup i3) rest;
+      loop (List.tl stack) pdepth (tdepth-1) rest
+  (* another possible end point *)
+  | (({TV.tok = TShr i3}) as c) :: rest when top2 stack pdepth tdepth ->
+      rebuild := true;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
+      success ident s i1 inf i2 c (TTemplateEndTemplateEnd i3) rest;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl stack) in
+      success ident s i1 inf i2 c (TTemplateEndTemplateEnd i3) rest;
+      loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
+  (* something else *)
+  | _::rest -> loop stack pdepth tdepth rest in
+  loop [] 0 0 tokens2;
+  if !rebuild
+  then
+    let copy_pi pi str offset =
+      { pi with Common.str = str;
+	Common.charpos = pi.Common.charpos + offset;
+	Common.column = pi.Common.column + offset } in
+    let copy_t tok str offset =
+      match tok with
+	Ast_c.OriginTok pi ->
+	  Ast_c.OriginTok(copy_pi pi str offset)
+      | Ast_c.FakeTok _ -> failwith "should not be a fake tok"
+      | Ast_c.ExpandedTok(pi,(vpi,voffset)) ->
+	  Ast_c.ExpandedTok(copy_pi pi str offset,
+			    (copy_pi vpi str offset,voffset+offset))
+      | Ast_c.AbstractLineTok pi ->
+	  Ast_c.AbstractLineTok(copy_pi pi str offset) in
+    let copy_tok t str offset =
+      { Ast_c.pinfo = copy_t t.Ast_c.pinfo str offset;
+	Ast_c.cocci_tag = ref !(t.Ast_c.cocci_tag);
+	Ast_c.comments_tag = ref !(t.Ast_c.comments_tag);
+	Ast_c.annots_tag = t.Ast_c.annots_tag;
+	Ast_c.danger = ref !(t.Ast_c.danger) } in
+    List.rev
+      (List.fold_left
+	 (fun prev tok ->
+	   match tok.TV.tok with
+	     TTemplateEndSup i3 ->
+	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = TSup (copy_tok i3 ">" 1) in
+	       t2 :: t1 :: prev
+	   | TTemplateEndTemplateEnd i3 ->
+	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
+	       t2 :: t1 :: prev
+	   | x -> x :: prev)
+	 [] tokens2)
+  else Common.acc_map (fun x -> x.TV.tok) tokens2

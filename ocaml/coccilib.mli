@@ -799,6 +799,8 @@ module Parser_c :
       | Toperator of Ast_c.info
       | TTemplateStart of Ast_c.info
       | TTemplateEnd of Ast_c.info
+      | TTemplateEndSup of Ast_c.info
+      | TTemplateEndTemplateEnd of Ast_c.info
       | Tfinal of Ast_c.info
       | Trestrict of Ast_c.info
       | Tasm of Ast_c.info
