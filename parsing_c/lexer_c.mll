@@ -321,11 +321,9 @@ let ulonglong = (UnSigned,CLongLong)
 
 (*****************************************************************************)
 let letter = ['A'-'Z' 'a'-'z' '_']
-let extended_letter = ['A'-'Z' 'a'-'z' '_' ':' '<' '>' '~'](*for c++, not used*)
 let digit  = ['0'-'9']
 
 let cplusplus_ident = (letter | '$') (letter | digit | '$') *
-let cplusplus_ident_ext = (letter | '~' | '$') (letter | digit | '~' | '$') *
 
 (* not used for the moment *)
 let punctuation = ['!' '\"' '#' '%' '&' '\'' '(' ')' '*' '+' ',' '-' '.' '/' ':'
