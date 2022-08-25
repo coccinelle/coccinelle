@@ -1107,6 +1107,10 @@ non_signable_types:
 | p=TTypeId
     { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
 
+non_signable_types_no_ident:
+  ty=non_signable_types_no_ident_without_braces { ty }
+| ty=non_signable_types_no_ident_with_braces { ty }
+
 signed_basic_types:
   r=Tsigned ty=signable_types
     { Ast0_cocci.wrap(Ast0_cocci.Signed(Parse_aux.clt2mcode Ast_cocci.Signed r,Some ty)) }
@@ -1118,12 +1122,15 @@ all_basic_types_without_braces:
 | ty=signable_types { ty }
 | ty=non_signable_types_without_braces { ty }
 
+// must include TTypeId to allow bitfield on u8, etc
 all_basic_types_signable:
   ty=signed_basic_types { ty }
 | ty=signable_types { ty }
+| p=TTypeId
+    { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
 
 all_basic_types_non_signable:
-  ty=non_signable_types { ty }
+  ty=non_signable_types_no_ident { ty }
 
 all_basic_types:
   ty=signed_basic_types { ty }
