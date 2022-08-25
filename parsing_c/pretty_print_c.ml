@@ -639,10 +639,10 @@ and pp_string_format (e,ii) =
 		  pr_elem ieq;
 		  pp_expression e;
 		));
-	      pr_elem rb;
 	      (match ii with
 		[co] -> pr_elem co
-	      | _ -> ())
+	      | _ -> ());
+	      pr_elem rb
 	  |  _ -> raise (Impossible 1031))
 
       | (BaseType _, iis) ->
