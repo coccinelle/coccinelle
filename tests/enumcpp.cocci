@@ -1,3 +1,5 @@
+#spatch --c++=11
+
 @@ identifier l1, l2, l3, l4, l11, l12, l13, l14, l21, l22, l33, l32, zl1, zl2, zl3, zl4, zl11, zl12, zl13, zl14, zl21, zl22, zl33, zl32; @@
 
 -  enum struct l1 {A, B};
