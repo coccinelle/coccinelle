@@ -303,7 +303,11 @@ bind to that; not good for isomorphisms *)
 		   (aftinfo,aft)) ->
 	(Toplevel,info,bef)::(k s)@[(Toplevel,aftinfo,aft)]
     | Ast0.Decl((info,bef),decl) ->
-	(Decl,info,bef)::(k s)
+	(match Ast0.unwrap decl with
+	  Ast0.MetaDecl _ ->
+	    (* drop bef, which will be ignored by cocci_vs_c *)
+	    k s
+	| _ -> (Decl,info,bef)::(k s))
     | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
 	mcode starter @ r.VT0.combiner_rec_statement_dots stmt_dots @
 	mcode ender
