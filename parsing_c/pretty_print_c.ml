@@ -627,7 +627,7 @@ and pp_string_format (e,ii) =
 	      (Some base, i4::ii) -> pr_elem i4; pp_base_type base sto; ii
 	    | (None, ii) -> ii
 	    | (Some _, []) -> raise (Impossible 1030) in
-	  
+
 	  (match rest with
 	    lb::rb::ii ->
 	      pr_elem lb;
@@ -644,7 +644,7 @@ and pp_string_format (e,ii) =
 		[co] -> pr_elem co
 	      | _ -> ())
 	  |  _ -> raise (Impossible 1031))
-	      
+
       | (BaseType _, iis) ->
           print_sto_qu_ty (sto, qu, iis);
 
