@@ -548,11 +548,13 @@ let is_comment_or_space = function
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
+let is_slash_slash t =
+  Str.string_match (Str.regexp_string "//") (str_of_token2 t) 0
+
 (* // is unsafe, because it captures what follows it *)
 let is_safe_comment_or_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
-  | (T2(Parser_c.TComment _,_b,_i,_h)) as t ->
-      not (Str.string_match (Str.regexp_string "//") (str_of_token2 t) 0)
+  | (T2(Parser_c.TComment _,_b,_i,_h)) as t -> not(is_slash_slash t)
   | _ -> false
 
 let is_added_space = function
@@ -1259,6 +1261,16 @@ let check_danger toks =
 	    | _ -> failwith "missing danger end")
 	| _ -> x :: search_danger xs in
   search_danger (drop_danger_commas toks)
+
+(* // should not be followed by a non-newline existing token *)
+let fix_slash_slash toks =
+  let rec loop acc = function
+      ((Cocci2 _) as t0)::((T2 _) as t1)::rest
+      when is_slash_slash t0 && not (is_newline t1) ->
+	loop (t1 :: (C2("\n",None)) :: t0 :: acc) rest
+    | x::xs -> loop (x::acc) xs
+    | [] -> List.rev acc in
+  loop [] toks
 
 (* this is for the case where braces are added around an if branch
 because of a change inside the branch *)
@@ -2624,6 +2636,7 @@ let pp_program2 xs outfile  =
             begin
               (* phase2: can now start to filter and adjust *)
 	      let toks = check_danger toks in
+	      let toks = fix_slash_slash toks in
               let toks = paren_then_brace toks in
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
