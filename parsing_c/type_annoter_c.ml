@@ -771,9 +771,17 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	  | Si(UnSigned,CLongLong) -> type_of_s "unsigned long long"
 	  | _ -> failwith "unexpected kind for constant")
     | Constant (Float (s,kind)) ->
+	let names =
+	  match kind with
+	    Ast_c.CFloat -> ["float"]
+	  | Ast_c.CDouble -> ["double"]
+	  | Ast_c.CFloatComplex -> ["float";"complex"]
+	  | Ast_c.CDoubleComplex -> ["double";"complex"]
+	  | Ast_c.CLongDouble -> ["long";"double"]
+	  | Ast_c.CLongDoubleComplex -> ["long";"double";"complex"]
+	  | Ast_c.CUnknownComplex -> ["complex"] in
         let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
-        let fake = Ast_c.rewrap_str "float" fake in
-        let iinull = [fake] in
+        let iinull = List.map (fun s -> Ast_c.rewrap_str s fake) names in
         make_info_def (Ast_c.mk_ty (BaseType (FloatType kind)) iinull)
     | Constant (DecimalConst(s,n,p)) ->
         let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
