@@ -1,11 +1,16 @@
-@BEGIN_FROM_4_07_0@
+@BEGIN_FROM_5_0_0@
 include Ephemeron
-@END_FROM_4_07_0@
-@BEGIN_BEFORE_4_07_0@
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
 module type S  =
   sig
     type key
+    @BEGIN_FROM_4_12_0@
+    type !'a t
+    @END_FROM_4_12_0@
+    @BEGIN_BEFORE_4_12_0@
     type 'a t
+    @END_BEFORE_4_12_0@
     val create : int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
@@ -17,14 +22,8 @@ module type S  =
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats : 'a t -> Stdcompat__hashtbl.statistics
-    val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-    val to_seq_keys : 'a t -> key Stdcompat__seq.t
-    val to_seq_values : 'a t -> 'a Stdcompat__seq.t
     val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
     val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
     val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
@@ -35,7 +34,12 @@ module type S  =
 module type SeededS  =
   sig
     type key
+    @BEGIN_FROM_4_12_0@
+    type !'a t
+    @END_FROM_4_12_0@
+    @BEGIN_BEFORE_4_12_0@
     type 'a t
+    @END_BEFORE_4_12_0@
     val create : ?random:bool -> int -> 'a t
     val clear : 'a t -> unit
     val reset : 'a t -> unit
@@ -47,14 +51,8 @@ module type SeededS  =
     val find_all : 'a t -> key -> 'a list
     val replace : 'a t -> key -> 'a -> unit
     val mem : 'a t -> key -> bool
-    val iter : (key -> 'a -> unit) -> 'a t -> unit
-    val filter_map_inplace : (key -> 'a -> 'a option) -> 'a t -> unit
-    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
     val stats : 'a t -> Stdcompat__hashtbl.statistics
-    val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-    val to_seq_keys : 'a t -> key Stdcompat__seq.t
-    val to_seq_values : 'a t -> 'a Stdcompat__seq.t
     val add_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
     val replace_seq : 'a t -> (key * 'a) Stdcompat__seq.t -> unit
     val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
@@ -62,347 +60,13 @@ module type SeededS  =
     val stats_alive : 'a t -> Stdcompat__hashtbl.statistics
   end
 
-@BEGIN_FROM_4_04_0@
-module K1 = struct
-  type ('k, 'd) t = ('k, 'd) Ephemeron.K1.t
-  let create = Ephemeron.K1.create
-  let get_key = Ephemeron.K1.get_key
-  let get_key_copy = Ephemeron.K1.get_key_copy
-  let set_key = Ephemeron.K1.set_key
-  let unset_key = Ephemeron.K1.unset_key
-  let check_key = Ephemeron.K1.check_key
-  let blit_key = Ephemeron.K1.blit_key
-  let get_data = Ephemeron.K1.get_data
-  let get_data_copy = Ephemeron.K1.get_data_copy
-  let set_data = Ephemeron.K1.set_data
-  let unset_data = Ephemeron.K1.unset_data
-  let check_data = Ephemeron.K1.check_data
-  let blit_data = Ephemeron.K1.blit_data
-
-  module Make (H : Hashtbl.HashedType) = struct
-    include Ephemeron.K1.Make (H)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-
-  module MakeSeeded (H : Hashtbl.SeededHashedType) = struct
-    include Ephemeron.K1.MakeSeeded (H)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-end
-
-module K2 = struct
-  type ('k1, 'k2, 'd) t = ('k1, 'k2, 'd) Ephemeron.K2.t
-  let create = Ephemeron.K2.create
-  let get_key1 = Ephemeron.K2.get_key1
-  let get_key1_copy = Ephemeron.K2.get_key1_copy
-  let set_key1 = Ephemeron.K2.set_key1
-  let unset_key1 = Ephemeron.K2.unset_key1
-  let check_key1 = Ephemeron.K2.check_key1
-  let get_key2 = Ephemeron.K2.get_key2
-  let get_key2_copy = Ephemeron.K2.get_key2_copy
-  let set_key2 = Ephemeron.K2.set_key2
-  let unset_key2 = Ephemeron.K2.unset_key2
-  let check_key2 = Ephemeron.K2.check_key2
-  let blit_key1 = Ephemeron.K2.blit_key1
-  let blit_key2 = Ephemeron.K2.blit_key2
-  let blit_key12 = Ephemeron.K2.blit_key12
-  let get_data = Ephemeron.K2.get_data
-  let get_data_copy = Ephemeron.K2.get_data_copy
-  let set_data = Ephemeron.K2.set_data
-  let unset_data = Ephemeron.K2.unset_data
-  let check_data = Ephemeron.K2.check_data
-  let blit_data = Ephemeron.K2.blit_data
-
-  module Make (H1 : Hashtbl.HashedType) (H2 : Hashtbl.HashedType) = struct
-    include Ephemeron.K2.Make (H1) (H2)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-
-  module MakeSeeded (H1 : Hashtbl.SeededHashedType)
-      (H2 : Hashtbl.SeededHashedType) = struct
-    include Ephemeron.K2.MakeSeeded (H1) (H2)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-end
-
-module Kn = struct
-  type ('k, 'd) t = ('k, 'd) Ephemeron.Kn.t
-  let create = Ephemeron.Kn.create
-  let get_key = Ephemeron.Kn.get_key
-  let get_key_copy = Ephemeron.Kn.get_key_copy
-  let set_key = Ephemeron.Kn.set_key
-  let unset_key = Ephemeron.Kn.unset_key
-  let check_key = Ephemeron.Kn.check_key
-  let blit_key = Ephemeron.Kn.blit_key
-  let get_data = Ephemeron.Kn.get_data
-  let get_data_copy = Ephemeron.Kn.get_data_copy
-  let set_data = Ephemeron.Kn.set_data
-  let unset_data = Ephemeron.Kn.unset_data
-  let check_data = Ephemeron.Kn.check_data
-  let blit_data = Ephemeron.Kn.blit_data
-
-  module Make (H : Hashtbl.HashedType) = struct
-    include Ephemeron.Kn.Make (H)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-
-  module MakeSeeded (H : Hashtbl.SeededHashedType) = struct
-    include Ephemeron.Kn.MakeSeeded (H)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-end
-
-module GenHashTable = struct
-  type equal = Ephemeron.GenHashTable.equal =
-      | ETrue
-      | EFalse
-      | EDead
-  module MakeSeeded (H :
-  sig
-    type t
-    (** keys *)
-
-    type 'a container
-    (** contains keys and the associated data *)
-
-    val hash: int -> t -> int
-    (** same as {!Hashtbl.SeededHashedType} *)
-
-    val equal: 'a container -> t -> equal
-    (** equality predicate used to compare a key with the one in a
-        container. Can return [EDead] if the keys in the container are
-        dead *)
-
-    val create: t -> 'a -> 'a container
-    (** [create key data] creates a container from
-        some initials keys and one data *)
-
-    val get_key: 'a container -> t option
-    (** [get_key cont] returns the keys if they are all alive *)
-
-    val get_data: 'a container -> 'a option
-    (** [get_data cont] returns the data if it is alive *)
-
-    val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modifies the key and data *)
-
-    val check_key: 'a container -> bool
-    (** [check_key cont] checks if all the keys contained in the data
-        are alive *)
-  end) = struct
-    include Ephemeron.GenHashTable.MakeSeeded (H)
-
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_MAGIC@
-    let to_seq = Stdcompat__hashtbl_ext.to_seq
-
-    let to_seq_keys = Stdcompat__hashtbl_ext.to_seq_keys
-
-    let to_seq_values = Stdcompat__hashtbl_ext.to_seq_values
-@END_WITH_MAGIC@
-@BEGIN_WITHOUT_MAGIC@
-    let to_seq tbl = Stdcompat__hashtbl_ext.to_seq fold tbl
-
-    let to_seq_keys tbl = Stdcompat__hashtbl_ext.to_seq_keys fold tbl
-
-    let to_seq_values tbl = Stdcompat__hashtbl_ext.to_seq_values fold tbl
-@END_WITHOUT_MAGIC@
-
-    let add_seq tbl g = Stdcompat__hashtbl_ext.add_seq add tbl g
-
-    let replace_seq tbl g = Stdcompat__hashtbl_ext.add_seq replace tbl g
-
-    let of_seq g = Stdcompat__hashtbl_ext.of_seq ~create ~replace g
-@END_BEFORE_4_07_0@
-
-@BEGIN_BEFORE_4_05_0@
-    let find_opt tbl key =
-      Stdcompat__tools.option_find (find tbl) key
-@END_BEFORE_4_05_0@
-  end
-end
-@END_FROM_4_04_0@
-@BEGIN_BEFORE_4_04_0@
 let not_implemented () =
   failwith "Stdcompat.Ephemeron is not implemented yet. Please fill an issue: https://github.com/thierry-martinez/stdcompat/issues ."
 
-module K1 =struct
+module K1 = struct
   type ('k, 'd) t
-  let create _ = not_implemented ()
-  let get_key _ = not_implemented ()
-  let get_key_copy _ = not_implemented ()
-  let set_key _ = not_implemented ()
-  let unset_key _ = not_implemented ()
-  let check_key _ = not_implemented ()
-  let blit_key _ = not_implemented ()
-  let get_data _ = not_implemented ()
-  let get_data_copy _ = not_implemented ()
-  let set_data _ = not_implemented ()
-  let unset_data _ = not_implemented ()
-  let check_data _ = not_implemented ()
-  let blit_data _ = not_implemented ()
+  let make _ = not_implemented ()
+  let query _ = not_implemented ()
   module Make (H : Hashtbl.HashedType) = struct
     include Stdcompat__hashtbl.Make (H)
     let clean _ = not_implemented ()
@@ -413,30 +77,22 @@ module K1 =struct
     let clean _ = not_implemented ()
     let stats_alive _ = not_implemented ()
   end
+  module Bucket = struct
+    type ('k, 'd) t
+
+    let make _ = not_implemented ()
+    let add _ = not_implemented ()
+    let remove _ = not_implemented ()
+    let find _ = not_implemented ()
+    let length _ = not_implemented ()
+    let clear _ = not_implemented ()
+  end
 end
 
 module K2 = struct
   type ('k1, 'k2, 'd) t
-  let create _ = not_implemented ()
-  let get_key1 _ = not_implemented ()
-  let get_key1_copy _ = not_implemented ()
-  let set_key1 _ = not_implemented ()
-  let unset_key1 _ = not_implemented ()
-  let check_key1 _ = not_implemented ()
-  let get_key2 _ = not_implemented ()
-  let get_key2_copy _ = not_implemented ()
-  let set_key2 _ = not_implemented ()
-  let unset_key2 _ = not_implemented ()
-  let check_key2 _ = not_implemented ()
-  let blit_key1 _ = not_implemented ()
-  let blit_key2 _ = not_implemented ()
-  let blit_key12 _ = not_implemented ()
-  let get_data _ = not_implemented ()
-  let get_data_copy _ = not_implemented ()
-  let set_data _ = not_implemented ()
-  let unset_data _ = not_implemented ()
-  let check_data _ = not_implemented ()
-  let blit_data _ = not_implemented ()
+  let make _ = not_implemented ()
+  let query _ = not_implemented ()
   module Make (H1 : Hashtbl.HashedType) (H2 : Hashtbl.HashedType) = struct
     include Stdcompat__hashtbl.Make (struct
       type t = H1.t * H2.t
@@ -455,28 +111,27 @@ module K2 = struct
 
       let equal (x1, x2) (y1, y2) = H1.equal x1 y1 && H2.equal x2 y2
 
-      let hash seed (x, y) = Hashtbl.hash (H1.hash seed x, H2.hash seed y)
+      let seeded_hash seed (x, y) = Stdcompat__hashtbl.seeded_hash seed (H1.seeded_hash seed x, H2.seeded_hash seed y)
     end)
     let clean _ = not_implemented ()
     let stats_alive _ = not_implemented ()
   end
+  module Bucket = struct
+    type ('k1, 'k2, 'd) t
+
+    let make _ = not_implemented ()
+    let add _ = not_implemented ()
+    let remove _ = not_implemented ()
+    let find _ = not_implemented ()
+    let length _ = not_implemented ()
+    let clear _ = not_implemented ()
+  end
 end
 
-module Kn  = struct
+module Kn = struct
   type ('k, 'd) t
-  let create _ = not_implemented ()
-  let get_key _ = not_implemented ()
-  let get_key_copy _ = not_implemented ()
-  let set_key _ = not_implemented ()
-  let unset_key _ = not_implemented ()
-  let check_key _ = not_implemented ()
-  let blit_key _ = not_implemented ()
-  let get_data _ = not_implemented ()
-  let get_data_copy _ = not_implemented ()
-  let set_data _ = not_implemented ()
-  let unset_data _ = not_implemented ()
-  let check_data _ = not_implemented ()
-  let blit_data _ = not_implemented ()
+  let make _ = not_implemented ()
+  let query _ = not_implemented ()
   module Make (H : Hashtbl.HashedType) = struct
     include Stdcompat__hashtbl.Make (struct
       type t = H.t array
@@ -502,61 +157,21 @@ module Kn  = struct
             H.equal x.(i) y.(i) && check (succ i) in
         Array.length x = Array.length y && check 0
 
-      let hash seed x = Hashtbl.hash (Array.map (H.hash seed) x)
+      let seeded_hash seed x =
+        Stdcompat__hashtbl.seeded_hash seed (Array.map (H.seeded_hash seed) x)
     end)
     let clean _ = not_implemented ()
     let stats_alive _ = not_implemented ()
   end
-end
+  module Bucket = struct
+    type ('k, 'd) t
 
-module GenHashTable  = struct
-  type equal =
-      | ETrue
-      | EFalse
-      | EDead
-  module MakeSeeded (H :
-  sig
-    type t
-    (** keys *)
-
-    type 'a container
-    (** contains keys and the associated data *)
-
-    val hash: int -> t -> int
-    (** same as {!Hashtbl.SeededHashedType} *)
-
-    val equal: 'a container -> t -> equal
-    (** equality predicate used to compare a key with the one in a
-        container. Can return [EDead] if the keys in the container are
-        dead *)
-
-    val create: t -> 'a -> 'a container
-    (** [create key data] creates a container from
-        some initials keys and one data *)
-
-    val get_key: 'a container -> t option
-    (** [get_key cont] returns the keys if they are all alive *)
-
-    val get_data: 'a container -> 'a option
-    (** [get_data cont] returns the data if it is alive *)
-
-    val set_key_data: 'a container -> t -> 'a -> unit
-    (** [set_key_data cont] modifies the key and data *)
-
-    val check_key: 'a container -> bool
-    (** [check_key cont] checks if all the keys contained in the data
-        are alive *)
-  end) = struct
-    include Stdcompat__hashtbl.MakeSeeded (struct
-      type t = H.t
-
-      let equal _ _ = false
-
-      let hash = H.hash
-    end)
-    let clean _ = not_implemented ()
-    let stats_alive _ = not_implemented ()
+    let make _ = not_implemented ()
+    let add _ = not_implemented ()
+    let remove _ = not_implemented ()
+    let find _ = not_implemented ()
+    let length _ = not_implemented ()
+    let clear _ = not_implemented ()
   end
 end
-@END_BEFORE_4_04_0@
-@END_BEFORE_4_07_0@
+@END_BEFORE_5_0_0@

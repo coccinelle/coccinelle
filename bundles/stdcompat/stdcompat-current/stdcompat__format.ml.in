@@ -272,3 +272,16 @@ let update_geometry _ =
 let pp_update_geometry _ =
   failwith "Not implemented."
 @END_BEFORE_4_11_0@
+
+@BEGIN_BEFORE_4_13_0@
+let pp_print_either ~left ~right fmt e =
+  match e with
+  | Stdcompat__either.Left l -> left fmt l
+  | Stdcompat__either.Right r -> right fmt r
+
+let pp_print_bytes fmt bytes =
+  pp_print_string fmt (Stdcompat__bytes.unsafe_to_string bytes)
+
+let print_bytes bytes =
+  pp_print_bytes std_formatter bytes
+@END_BEFORE_4_13_0@

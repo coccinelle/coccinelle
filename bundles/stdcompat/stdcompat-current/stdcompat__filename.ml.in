@@ -20,6 +20,13 @@ let chop_suffix_opt ~suffix filename =
     None
 @END_BEFORE_4_08_0@
 
+@BEGIN_BEFORE_4_14_0@
+let chop_suffix filename suffix =
+  match chop_suffix_opt ~suffix filename with
+  | Some base -> base
+  | None -> invalid_arg "Filename.chop_suffix"
+@END_BEFORE_4_14_0@
+
 @BEGIN_BEFORE_3_09_0@
 let temp_dir_name =
 @BEGIN_WITH_WIN32@

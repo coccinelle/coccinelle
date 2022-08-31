@@ -167,6 +167,9 @@ val clear : t -> unit
 val reset : t -> unit
 (** Alias for {!Buffer.reset} *)
 
+val output_buffer : out_channel -> t -> unit
+(** Alias for {!Buffer.output_buffer} *)
+
 val add_char : t -> char -> unit
 (** Alias for {!Buffer.add_char} *)
 
@@ -184,8 +187,5 @@ val add_buffer : t -> t -> unit
 
 val add_channel : t -> in_channel -> int -> unit
 (** Alias for {!Buffer.add_channel} *)
-
-val output_buffer : out_channel -> t -> unit
-(** Alias for {!Buffer.output_buffer} *)
 
 end

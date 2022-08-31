@@ -1,19 +1,26 @@
 module type SeededHashedType  =
-  sig type t val equal : t -> t -> bool val hash : int -> t -> int end
+  sig type t val equal : t -> t -> bool val seeded_hash : int -> t -> int end
 
-@BEGIN_BEFORE_4_00_0@
-module UnseedHashedType (H : SeededHashedType) : Hashtbl.HashedType
-with type t = H.t
-@END_BEFORE_4_00_0@
-
-module MakeSeeded (H : SeededHashedType) : sig
 @BEGIN_FROM_4_00_0@
-  type 'a t = 'a Hashtbl.MakeSeeded(H).t
+  module ToOCamlSeededHashedType (M : SeededHashedType) :
+    Hashtbl.SeededHashedType with type t = M.t
+  @BEGIN_FROM_5_0_0@
+    module MakeSeeded = Hashtbl.MakeSeeded
+  @END_FROM_5_0_0@
+  @BEGIN_BEFORE_5_0_0@
+    module MakeSeeded (M : SeededHashedType) : Hashtbl.SeededS
+      with type 'a t = 'a Hashtbl.MakeSeeded (ToOCamlSeededHashedType (M)).t
+      and type key = M.t
+  @END_BEFORE_5_0_0@
 @END_FROM_4_00_0@
 @BEGIN_BEFORE_4_00_0@
-  type 'a t = 'a Hashtbl.Make(UnseedHashedType(H)).t
+  module ToOCamlSeededHashedType (M : SeededHashedType) :
+    Hashtbl.HashedType with type t = M.t
+
+  module MakeSeeded (M : SeededHashedType) : Hashtbl.S
+    with type 'a t = 'a Hashtbl.Make (ToOCamlSeededHashedType (M)).t
+    and type key = M.t
 @END_BEFORE_4_00_0@
-end
 
 type statistics
 @BEGIN_FROM_4_00_0@

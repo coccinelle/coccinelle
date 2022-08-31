@@ -1,10 +1,26 @@
-@BEGIN_FROM_4_12_0@
+@BEGIN_FROM_5_0_0@
 include Stdlib
-@END_FROM_4_12_0@
-@BEGIN_BEFORE_4_12_0@
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
 module Pervasives = Stdcompat__pervasives
 
 include Pervasives
+
+let acosh x =
+  log (x +. sqrt (x *. x -. 1.0))
+
+let asinh x =
+  log (x +. sqrt (x *. x +. 1.0))
+
+let atanh x =
+  0.5 *. log ((1.0 +. x) /. (1.0 -. x))
+
+@BEGIN_FROM_4_12_0@
+external __FUNCTION__ : string = "%loc_FUNCTION"
+@END_FROM_4_12_0@
+@BEGIN_BEFORE_4_12_0@
+let __FUNCTION__ = "<unknown>"
+@END_BEFORE_4_12_0@
 
 module Arg = Stdcompat__arg
 
@@ -58,6 +74,8 @@ module Genlex = Genlex
 
 module Hashtbl = Stdcompat__hashtbl
 
+module In_channel = Stdcompat__in_channel
+
 module Int = Stdcompat__int
 
 module Int32 = Stdcompat__int32
@@ -86,6 +104,8 @@ module Oo = Oo
 
 module Option = Stdcompat__option
 
+module Out_channel = Stdcompat__out_channel
+
 module Parsing = Parsing
 
 module Printexc = Stdcompat__printexc
@@ -94,7 +114,7 @@ module Printf = Stdcompat__printf
 
 module Queue = Stdcompat__queue
 
-module Random = Random
+module Random = Stdcompat__random
 
 module Result = Stdcompat__result
 
@@ -116,8 +136,6 @@ module StdLabels = struct
   module String = Stdcompat__stringLabels
 end
 
-module Stream = Stdcompat__stream
-
 module String = Stdcompat__string
 
 module StringLabels = Stdcompat__stringLabels
@@ -126,5 +144,7 @@ module Sys = Stdcompat__sys
 
 module Uchar = Stdcompat__uchar
 
+module Unit = Stdcompat__unit
+
 module Weak = Stdcompat__weak
-@END_BEFORE_4_12_0@
+@END_BEFORE_5_0_0@

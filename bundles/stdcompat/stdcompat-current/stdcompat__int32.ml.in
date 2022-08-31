@@ -1,5 +1,15 @@
 include Int32
 
+@BEGIN_BEFORE_4_13_0@
+let min i j =
+  if compare i j >= 0 then j
+  else i
+
+let max i j =
+  if compare i j >= 0 then i
+  else j
+@END_BEFORE_4_13_0@
+
 @BEGIN_BEFORE_4_08_0@
 let unsigned_compare i j =
   compare (sub i min_int) (sub j min_int)

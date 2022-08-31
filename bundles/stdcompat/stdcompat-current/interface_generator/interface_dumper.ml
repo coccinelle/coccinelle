@@ -1,10 +1,10 @@
 let run_interpreter ?(buffer_size = 4096)
     ~command_line ~module_name commander =
   let channels = Unix.open_process_full command_line (Unix.environment ()) in
-  Interface_tools.try_close
-    ~close:(fun () ->
+  Fun.protect
+    ~finally:(fun () ->
       assert (channels |> Unix.close_process_full = Unix.WEXITED 0))
-    @@ fun () ->
+    (fun () ->
       let in_channel, out_channel, err_channel = channels in
       let buffer = Buffer.create buffer_size in
       let rec wait_for_prompt () =
@@ -34,12 +34,12 @@ let run_interpreter ?(buffer_size = 4096)
             not (Interface_tools.Buffer.has_suffix buffer "#   "));
         if Buffer.length buffer > 4 then
           Buffer.truncate buffer (Buffer.length buffer - 4);
-        Buffer.contents buffer)
+        Buffer.contents buffer))
 
 let module_type_of_string ~module_name s =
   match
     let lexbuf = s |> Lexing.from_string in
-    Interface_tools.Lexing.set_filename lexbuf module_name;
+    Lexing.set_filename lexbuf module_name;
     match Parse.interface lexbuf with
     | [{ psig_desc =
          Psig_module
@@ -51,9 +51,15 @@ let module_type_of_string ~module_name s =
              module_type
     | _ -> failwith "Unexpected result"
   with
-  | exception Syntaxerr.Error(err) ->
+  | s ->
+      s
+  | exception ((Syntaxerr.Error _) as exn) ->
       prerr_endline s;
-      Syntaxerr.report_error Format.err_formatter err;
+      (* Syntaxerr.report_error is deprecated *)
+      begin match Location.error_of_exn exn with
+      | Some (`Ok err) -> Location.print_report Format.err_formatter err
+      | _ -> ()
+      end;
       { pmty_desc = Pmty_signature []; pmty_loc = Location.none;
         pmty_attributes = [] }
   | exception e ->
@@ -61,8 +67,6 @@ let module_type_of_string ~module_name s =
       prerr_endline (Printexc.to_string e);
       { pmty_desc = Pmty_signature []; pmty_loc = Location.none;
         pmty_attributes = [] }
-  | s ->
-      s
 
 let refine_signature_item ~module_name
     (interpret : Parsetree.toplevel_phrase -> string)
@@ -70,13 +74,9 @@ let refine_signature_item ~module_name
   match signature_item.psig_desc with
   | Psig_value value_description ->
       let pstr_desc : Parsetree.structure_item_desc =
-        Pstr_eval ({
-          pexp_desc = Pexp_ident {
-            txt = Longident.Ldot (
-              Lident module_name, value_description.pval_name.txt);
-            loc = Location.none };
-          pexp_loc = Location.none;
-          pexp_attributes = [] }, []) in
+        Pstr_eval (Ast_helper.Exp.ident (Location.mkloc (Longident.Ldot (
+          Lident module_name, value_description.pval_name.txt))
+          !Ast_helper.default_loc), []) in
       let s = interpret (Ptop_def [{ pstr_desc; pstr_loc = Location.none }]) in
       let lines = String.split_on_char '\n' s in
       let rec chop_warning lines =
@@ -93,13 +93,10 @@ let refine_signature_item ~module_name
         | None -> signature_item
         | Some warning ->
             let value_description = { value_description with
-              pval_attributes =
-                ({ txt = "ocaml.deprecated"; loc = Location.none },
-                 PStr [{ pstr_loc = Location.none; pstr_desc = Pstr_eval ({
-                   pexp_desc = Pexp_constant (Pconst_string (warning, None));
-                   pexp_loc = Location.none;
-                   pexp_attributes = [];
-                 }, [])}])
+              pval_attributes = Ast_helper.Attr.mk
+                (Location.mkloc "ocaml.deprecated" !Ast_helper.default_loc)
+                (PStr [Ast_helper.Str.eval
+                   (Ast_helper.Exp.constant (Ast_helper.Const.string warning))])
                 :: value_description.pval_attributes } in
             { signature_item with psig_desc = Psig_value value_description } in
       signature_item
@@ -131,10 +128,11 @@ let rec remove_self_aliases_of_type_declaration ~module_name
 let rec remove_self_aliases_of_module_type ~module_name
     (module_type : Parsetree.module_type) =
   match module_type.pmty_desc with
-  | Pmty_functor (var, arg, body) ->
-      let module_name : Longident.t = Lapply (module_name, Lident var.txt) in
+  | Pmty_functor (Named (var, arg), body) ->
+      let module_name : Longident.t =
+        Lapply (module_name, Lident (Option.get var.txt)) in
       let body = remove_self_aliases_of_module_type ~module_name body in
-      { module_type with pmty_desc = Pmty_functor (var, arg, body) }
+      { module_type with pmty_desc = Pmty_functor (Named (var, arg), body) }
   | Pmty_signature s ->
       let s =
         s |> List.map @@ remove_self_aliases_of_signature_item ~module_name in
@@ -150,7 +148,7 @@ and remove_self_aliases_of_signature_item ~module_name
       { item with psig_desc = Psig_type (rec_flag, list) }
   | Psig_module module_declaration ->
       let module_name : Longident.t =
-        Ldot (module_name, module_declaration.pmd_name.txt) in
+        Ldot (module_name, Option.get module_declaration.pmd_name.txt) in
       let pmd_type = remove_self_aliases_of_module_type ~module_name
           module_declaration.pmd_type in
       { item with psig_desc = Psig_module { module_declaration with pmd_type }}
@@ -163,7 +161,11 @@ let module_type_of_name ~command_line ~module_name =
           if Interface_tools.Version.compare version
               { major = 4; minor = 7; patch = 0 } >= 0
               && module_name <> "Pervasives" && module_name <> "Stdlib" then
-            Printf.sprintf "Stdlib__%s" (String.uncapitalize_ascii module_name)
+            if Interface_tools.Version.compare version
+              { major = 4; minor = 13; patch = 0 } >= 0 then
+              Printf.sprintf "Stdlib__%s" module_name
+            else
+              Printf.sprintf "Stdlib__%s" (String.uncapitalize_ascii module_name)
           else
             module_name in
       let module_expr : Parsetree.module_expr = {
@@ -179,14 +181,15 @@ let module_type_of_name ~command_line ~module_name =
             pmty_desc = Pmty_typeof module_expr;
             pmty_loc = Location.none;
             pmty_attributes = [] });
-          pmtd_attributes = [
-            { Location.txt = "ocaml.warning"; loc = Location.none },
-            Parsetree.PStr [{Parsetree.pstr_desc = Pstr_eval ({ Parsetree.pexp_desc = Pexp_constant (Parsetree.Pconst_string ("-3", None)); pexp_attributes = []; pexp_loc = Location.none }, []); pstr_loc = Location.none }]
+          pmtd_attributes = [Ast_helper.Attr.mk
+            { Location.txt = "ocaml.warning"; loc = Location.none }
+            (Parsetree.PStr [Ast_helper.Str.eval (
+              Ast_helper.Exp.constant (Ast_helper.Const.string "-3"))])
       ];
           pmtd_loc = Location.none; }
       else
         Pstr_module {
-          pmb_name = { txt = module_name; loc = Location.none };
+          pmb_name = { txt = Some module_name; loc = Location.none };
           pmb_expr = module_expr;
           pmb_attributes = [];
           pmb_loc = Location.none; } in
@@ -200,19 +203,11 @@ let module_type_of_name ~command_line ~module_name =
         remove_self_aliases_of_module_type ~module_name:(Lident module_name)
           module_type in
     let module_type = refine_module_type ~module_name interpret module_type in
-    let _ : string = interpret (Ptop_def [{
-      pstr_loc = Location.none;
-      pstr_desc = Pstr_eval ({
-          pexp_desc = Pexp_apply ({
-             pexp_desc = Pexp_ident {
-               txt = Lident "exit"; loc = Location.none };
-             pexp_loc = Location.none;
-             pexp_attributes = [] }, [Nolabel, {
-               pexp_desc = Pexp_constant (Pconst_integer ("0", None));
-               pexp_loc = Location.none;
-               pexp_attributes = [] }]);
-          pexp_loc = Location.none;
-          pexp_attributes = [] }, [])}]) in
+    let _ : string = interpret (Ptop_def [Ast_helper.Str.eval (
+          Ast_helper.Exp.apply
+            (Ast_helper.Exp.ident
+              (Location.mkloc (Longident.Lident "exit") !Ast_helper.default_loc))
+            [Nolabel, Ast_helper.Exp.constant (Pconst_integer ("0", None))])]) in
     module_type)
 
 let main () =

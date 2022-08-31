@@ -37,6 +37,7 @@ else
 	OCAMLDEP := ocamldep
 endif
 
+OCAMLFLAGS += -g
 OCAMLCFLAGS += $(OCAMLFLAGS)
 OCAMLLDFLAGS += $(OCAMLFLAGS)
 

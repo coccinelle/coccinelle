@@ -45,26 +45,6 @@ val temp_file : ?temp_dir:string -> string -> string -> string
 (** @since 3.11.0:
     val temp_file : ?temp_dir:string -> string -> string -> string *)
 
-@BEGIN_FROM_4_08_0@
-val temp_dir_name : string
-@END_FROM_4_08_0@
-@BEGIN_BEFORE_4_08_0@
-@BEGIN_FROM_4_02_0@
-val temp_dir_name : string[@@ocaml.deprecated
-                            "Use Filename.get_temp_dir_name instead"]
-@END_FROM_4_02_0@
-@BEGIN_BEFORE_4_02_0@
-val temp_dir_name : string
-@END_BEFORE_4_02_0@
-
-@END_BEFORE_4_08_0@
-(** @since 4.08.0: val temp_dir_name : string
-@since 4.02.0:
-val temp_dir_name : string[@@ocaml.deprecated
-                            "Use Filename.get_temp_dir_name instead"]
-@since 3.09.0: val temp_dir_name : string
- *)
-
 val current_dir_name : string
 (** Alias for {!Filename.current_dir_name} *)
 

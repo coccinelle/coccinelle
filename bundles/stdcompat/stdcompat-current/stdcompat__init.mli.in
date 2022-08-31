@@ -41,6 +41,10 @@ type bytes = string
 @END_BEFORE_4_02_0@
 
 type ('a, 'b) result =
+@BEGIN_FROM_4_07_0@
+('a, 'b) Stdlib.result =
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
 @BEGIN_FROM_4_03_0@
 ('a, 'b) Pervasives.result =
 @END_FROM_4_03_0@
@@ -49,6 +53,7 @@ type ('a, 'b) result =
 ('a, 'b) Result.result =
 @END_WITH_RESULT_PKG@
 @END_BEFORE_4_03_0@
+@END_BEFORE_4_07_0@
   | Ok of 'a 
   | Error of 'b
 

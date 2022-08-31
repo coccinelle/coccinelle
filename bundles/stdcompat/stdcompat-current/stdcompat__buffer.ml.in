@@ -16,7 +16,7 @@ let add_uint16_be b v =
   add_uint8 b v
 
 let add_uint16_ne b v =
-  if Stdcompat__sys.big_endian then add_uint16_be b v
+  if @BIG_ENDIAN@ then add_uint16_be b v
   else add_uint16_le b v
 
 let add_int16_le = add_uint16_le
@@ -38,7 +38,7 @@ let add_int32_be b v =
   add_uint8 b (Int32.to_int v)
 
 let add_int32_ne b v =
-  if Stdcompat__sys.big_endian then add_int32_be b v
+  if @BIG_ENDIAN@ then add_int32_be b v
   else add_int32_le b v
 
 let add_int64_le b v =
@@ -62,9 +62,37 @@ let add_int64_be b v =
   add_uint8 b (Int64.to_int v)
 
 let add_int64_ne b v =
-  if Stdcompat__sys.big_endian then add_int64_be b v
+  if @BIG_ENDIAN@ then add_int64_be b v
   else add_int64_le b v
 @END_BEFORE_4_08_0@
+
+@BEGIN_BEFORE_4_03_0@
+@BEGIN_WITH_MAGIC@
+  type internal = {
+      mutable buffer : string;
+      mutable position : int;
+      mutable length : int;
+      initial_buffer : string
+    }
+@END_WITH_MAGIC@
+let add_channel b ic size =
+  @BEGIN_WITH_MAGIC@
+    let original_offset = pos_in ic in
+    try
+      add_channel b ic size
+    with End_of_file as exc ->
+      let read = pos_in ic - original_offset in
+      let b' = (Obj.magic b : internal) in
+      b'.position <- b'.position + read;
+      raise exc
+  @END_WITH_MAGIC@
+  @BEGIN_WITHOUT_MAGIC@
+    let max_size = in_channel_length ic - pos_in ic in
+    add_channel b ic (min size max_size);
+    if max_size < size then
+      raise End_of_file
+  @END_WITHOUT_MAGIC@
+@END_BEFORE_4_03_0@
 
 @BEGIN_BEFORE_4_02_0@
 let to_bytes = contents

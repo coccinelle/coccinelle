@@ -20,7 +20,7 @@ pipeline {
                 label 'linux'
             }
             steps {
-                sh 'docker build -t stdcompat .'
+                sh 'docker build -t stdcompat . --build-arg UID=$(id -u)'
             }
         }
         stage('Bootstrap') {
@@ -72,7 +72,7 @@ pipeline {
                             }
                         }
                     }
-                    def versions = [/*"4.03.0", "4.04.2", "4.05.0", "4.06.1", "4.07.1", "4.08.1", "4.09.0", "4.10.0"*/]
+                    def versions = ["4.03.0", "4.04.2", "4.05.0", "4.06.1", "4.07.1", "4.08.1", "4.09.1", "4.10.2", "4.11.2", "4.12.1", "4.13.1", "4.14.0"]
                     for (i in versions) {
                         def version = i
                         branches["OCaml " + version + " on Windows"] = {

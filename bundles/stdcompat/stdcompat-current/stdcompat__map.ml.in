@@ -190,6 +190,29 @@ module Make (Ord : OrderedType) = struct
           let x, d = min_binding (t_of_internal t2) in
           join t1 x d (remove_min_binding t2)
 
+    @BEGIN_BEFORE_3_08_0@
+      let rec iter f = function
+        | Empty -> ()
+        | Node (l, v, d, r, _) as t ->
+            iter f l;
+            f v d;
+            iter f r
+
+      let iter (f : key -> 'a -> unit) (s : 'a t) : unit =
+        iter f (internal_of_t s)
+
+      let rec fold f s a =
+        match s with
+        | Empty -> a
+        | Node (l, v, d, r, _) as t ->
+            let a = fold f l a in
+            let a = f v d a in
+            fold f r a
+
+      let fold (f : key -> 'a -> 'b -> 'b) (s : 'a t) (a : 'b) : 'b =
+        fold f (internal_of_t s) a
+    @END_BEFORE_3_08_0@
+
     @BEGIN_BEFORE_4_11_0@
     let rec filter_map f = function
       | Empty -> Empty
@@ -256,6 +279,21 @@ module Make (Ord : OrderedType) = struct
     @BEGIN_BEFORE_3_12_0@
       let singleton key value =
         add key value empty
+
+      let bindings map =
+        fold (fun v d accu -> (v, d) :: accu) map []
+
+      @BEGIN_FROM_3_08_0@
+        let bindings map =
+          List.rev (bindings map)
+      @END_FROM_3_08_0@
+      @BEGIN_BEFORE_3_08_0@
+        let iter f s =
+          List.iter (fun (k, d) -> f k d) (bindings s)
+
+        let fold f s a =
+          List.fold_left (fun a (k, d) -> f k d a) a (bindings s)
+      @END_BEFORE_3_08_0@
     @END_BEFORE_3_12_0@
 
     @BEGIN_BEFORE_4_11_0@
@@ -265,11 +303,6 @@ module Make (Ord : OrderedType) = struct
         | Some d' -> add x d' map'
         | None -> map') map empty
     @END_BEFORE_4_11_0@
-
-    @BEGIN_BEFORE_3_12_0@
-      let bindings map =
-        List.rev (fold (fun v d accu -> (v, d) :: accu) map [])
-    @END_BEFORE_3_12_0@
 
     @BEGIN_BEFORE_4_12_0@
       let to_rev_seq m =

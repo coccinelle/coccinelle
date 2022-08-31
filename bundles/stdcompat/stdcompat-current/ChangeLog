@@ -1,6 +1,75 @@
-* Next version
+* Version 19, 2022-07-08
+
+- Compatibility with OCaml 5.0
+
+- Add String.{hash, seeded_hash}
+
+- Restore compatibility with OCaml 3.07, and fix order execution for
+  Set and Map.{iter, fold, filter_map} on OCaml 3.07
+
+- Updated port to `dune`
+  (Marek Kubica, https://github.com/thierry-martinez/stdcompat/pull/16,
+   https://github.com/thierry-martinez/stdcompat/pull/19
+   with contribution from Kate,
+   https://github.com/thierry-martinez/stdcompat/pull/21)
+
+- Add support for `flambda2`
+  (Guillaume Bury, https://github.com/thierry-martinez/stdcompat/pull/14)
+
+- Prevent replacing `/dev/null/ by a regular file when `./configure` is
+  run as root
+  (reported by Marc Chevalier, https://github.com/ocaml/ocaml/issues/11302)
+
+* Version 18, 2022-02-09
+
+- Support for OCaml 4.14 with
+  - Lot of new functions in Seq
+  - Uchar.utf_decode and co
+  - In_channel and Out_channel modules
+  - Sys.{development_version, ocaml_release}
+
+- Add Stdlib.{acosh,asinh,atanh} missing from 4.13 and
+  Stdlib.__FUNCTION__ missing from 4.12
+
+- Add module Unit missing from 4.08
+
+- Add module Random, with new functions introduced from 4.13
+
+- Filename.chop_suffix checks that suffixes match and fails otherwise
+  (behavior introduced in 4.14)
+
+- Buffer.add_channel adds data read from the channel even if End_of_file has
+  been reached
+  (behavior introduced in 4.03)
+
+- Add dependency for generating .cmt files
+  (reported by Sabyrzhan Tasbolatov)
+
+* Version 17, 2021-09-28
+
+- Fix: missing prototype for caml_alloc_initialized_string in stdcompat.h
+
+- Fix: linking with stdcompat__stubs in bytecode
+
+* Version 16, 2021-07-09
+
+- Support for OCaml 4.13.0 with
+  - Seq.{concat, concat_map}
+  - {Int{32, 64}, Nativeint}.{min, max}
+  - Array.{fold_left_map, find_opt, find_map, split, combine}
+  - Bytes.{fold_left, fold_right, for_all, exists, starts_with, ends_with,
+      split_on_char}
+  - String.{fold_left, fold_right, for_all, exists, starts_with, ends_with,
+      get_{u,}int8, get_{{u,}int16,int32,int64}{_ne,_be,_le}}
+  - Format.{pp_print_either, pp_print_bytes, print_bytes}
 
 - Add module Atomic
+
+- Fix {Array,Bytes,List,More,String}Labels modules
+
+- Fix: equality between Stdcompat.Lexing.lexbuf and Lexing.lexbuf types
+  even for OCaml <4.02 (the equality was not preserved since the type of
+  lex_buffer was syntactically different, string instead of bytes)
 
 * Version 15, 2021-02-17
 

@@ -1,0 +1,80 @@
+@BEGIN_FROM_4_14_0@
+include Random
+@END_FROM_4_14_0@
+@BEGIN_BEFORE_4_14_0@
+module State = struct
+  include Random.State
+
+  let bits32 state =
+    let bits30 = Int32.of_int (bits state) in
+    let add_bit bits i =
+      if bool state then
+        Int32.add bits (Int32.shift_left 1l i)
+      else
+        bits in
+    let bits31 = add_bit bits30 30 in
+    let bits32 = add_bit bits31 31 in
+    bits32
+
+  let bits64 state =
+    let bits30 = Int64.of_int (bits state) in
+    let bits60 =
+      Int64.add bits30
+        (Int64.shift_left (Int64.of_int (bits state)) 30) in
+    let add_bit bits i =
+      if bool state then
+        Int64.add bits (Int64.shift_left 1L i)
+      else
+        bits in
+    let bits61 = add_bit bits60 60 in
+    let bits62 = add_bit bits61 61 in
+    let bits63 = add_bit bits62 62 in
+    let bits64 = add_bit bits63 63 in
+    bits64
+
+  let nativebits state =
+    Int64.to_nativeint (bits64 state)
+
+  @BEGIN_BEFORE_4_13_0@
+  let full_int state n =
+    Int64.to_int (bits64 state) mod n
+  @END_BEFORE_4_13_0@
+end
+
+let init = Random.init
+
+let full_init = Random.full_init
+
+let self_init = Random.self_init
+
+let bits = Random.bits
+
+let int = Random.int
+
+let int32 = Random.int32
+
+let nativeint = Random.nativeint
+
+let int64 = Random.int64
+
+let float = Random.float
+
+let bool = Random.bool
+
+let get_state = Random.get_state
+
+let set_state = Random.set_state
+
+let bits32 () = State.bits32 (get_state ())
+
+let bits64 () = State.bits64 (get_state ())
+
+let nativebits () = State.nativebits (get_state ())
+
+@BEGIN_FROM_4_13_0@
+let full_int = Random.full_int
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+let full_int n = State.full_int (get_state ()) n
+@END_BEFORE_4_13_0@
+@END_BEFORE_4_14_0@

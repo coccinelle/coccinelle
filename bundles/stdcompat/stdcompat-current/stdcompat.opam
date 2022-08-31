@@ -8,14 +8,14 @@ license: "BSD-2-Clause"
 homepage: "https://github.com/thierry-martinez/stdcompat"
 bug-reports: "https://github.com/thierry-martinez/stdcompat/issues"
 depends: [
-  "ocaml" {>= "3.07" & < "4.13.0"}
+  "ocaml" {>= "3.07"}
+  "dune" {>= "2.0"}
 ]
 depopts: [ "result" "seq" "uchar" "ocamlfind" ]
 build: [
-  [make "-f" "Makefile.bootstrap" "-j" jobs]
-  ["./configure" "--prefix=%{prefix}%"]
-  [make "all" "test" {with-test}]
+  ["dune" "subst"] {dev}
+  ["dune" "build" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
-install: [make "install"]
 dev-repo: "git+https://github.com/thierry-martinez/stdcompat.git"
-version: "15"
+version: "19"

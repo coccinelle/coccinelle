@@ -280,7 +280,7 @@ module type SeededHashedType = sig
 
   val equal : t -> t -> bool
 
-  val hash : int -> t -> int
+  val seeded_hash : int -> t -> int
 end
 
 module type SeededS = sig
@@ -315,17 +315,12 @@ module type SeededS = sig
   val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
 end
 
-@BEGIN_FROM_4_07_0@
+@BEGIN_FROM_5_0_0@
 module MakeSeeded = Hashtbl.MakeSeeded
-@END_FROM_4_07_0@
-@BEGIN_BEFORE_4_07_0@
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
 module MakeSeeded (H : SeededHashedType) = struct
-@BEGIN_FROM_4_00_0@
-  include Hashtbl.MakeSeeded(H)
-@END_FROM_4_00_0@
-@BEGIN_BEFORE_4_00_0@
-  include Hashtbl.Make(Stdcompat__hashtbl_ext.UnseedHashedType(H))
-@END_BEFORE_4_00_0@
+  include Stdcompat__hashtbl_ext.MakeSeeded (H)
 
 @BEGIN_WITH_MAGIC@
   let to_seq = Stdcompat__hashtbl_ext.to_seq
@@ -396,7 +391,7 @@ let length table =
     }
 @END_BEFORE_4_00_0@
 end
-@END_BEFORE_4_07_0@
+@END_BEFORE_5_0_0@
 
 @BEGIN_FROM_4_12_0@
 let rebuild = Hashtbl.rebuild
