@@ -1,4 +1,9 @@
+@BEGIN_FROM_4_07_0@
+include Stdlib
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
 include Pervasives
+@END_BEFORE_4_07_0@
 
 @BEGIN_BEFORE_4_03_0@
 type ('a, 'b) result

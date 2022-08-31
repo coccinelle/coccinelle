@@ -75,6 +75,9 @@ let rec expand spec =
   @BEGIN_FROM_4_05_0@
   | Arg.Expand f -> Expand f
   @END_FROM_4_05_0@
+  @BEGIN_FROM_4_12_0@
+  | Arg.Rest_all f -> Rest_all f
+  @END_FROM_4_12_0@
 
 let no_expand_list l =
   List.map (fun (k, s, d) -> k, no_expand s, d) l

@@ -7,11 +7,11 @@ type position = Lexing.position =
   pos_cnum: int }
 (** Alias for {!Lexing.position} *)
 
-(* Local fix for menhir with OCaml <4.02 *)
+@BEGIN_FROM_4_02_0@
 type lexbuf = Lexing.lexbuf =
   {
   refill_buff: lexbuf -> unit ;
-  mutable lex_buffer: Stdcompat__init.bytes ;
+  mutable lex_buffer: bytes ;
   mutable lex_buffer_len: int ;
   mutable lex_abs_pos: int ;
   mutable lex_start_pos: int ;
@@ -22,6 +22,54 @@ type lexbuf = Lexing.lexbuf =
   mutable lex_mem: int array ;
   mutable lex_start_p: position ;
   mutable lex_curr_p: position }
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+type lexbuf = Lexing.lexbuf =
+  {
+  refill_buff: lexbuf -> unit ;
+  mutable lex_buffer: string ;
+  mutable lex_buffer_len: int ;
+  mutable lex_abs_pos: int ;
+  mutable lex_start_pos: int ;
+  mutable lex_curr_pos: int ;
+  mutable lex_last_pos: int ;
+  mutable lex_last_action: int ;
+  mutable lex_eof_reached: bool ;
+  mutable lex_mem: int array ;
+  mutable lex_start_p: position ;
+  mutable lex_curr_p: position }
+@END_BEFORE_4_02_0@
+(** @since 4.02.0:
+    type lexbuf =
+      {
+      refill_buff: lexbuf -> unit ;
+      mutable lex_buffer: bytes ;
+      mutable lex_buffer_len: int ;
+      mutable lex_abs_pos: int ;
+      mutable lex_start_pos: int ;
+      mutable lex_curr_pos: int ;
+      mutable lex_last_pos: int ;
+      mutable lex_last_action: int ;
+      mutable lex_eof_reached: bool ;
+      mutable lex_mem: int array ;
+      mutable lex_start_p: position ;
+      mutable lex_curr_p: position }
+@since 3.07.0:
+type lexbuf =
+  {
+  refill_buff: lexbuf -> unit ;
+  mutable lex_buffer: string ;
+  mutable lex_buffer_len: int ;
+  mutable lex_abs_pos: int ;
+  mutable lex_start_pos: int ;
+  mutable lex_curr_pos: int ;
+  mutable lex_last_pos: int ;
+  mutable lex_last_action: int ;
+  mutable lex_eof_reached: bool ;
+  mutable lex_mem: int array ;
+  mutable lex_start_p: position ;
+  mutable lex_curr_p: position }
+ *)
 
 type lex_tables = Lexing.lex_tables =
   {

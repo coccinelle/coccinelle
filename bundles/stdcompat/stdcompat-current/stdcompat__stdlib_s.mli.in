@@ -1,13 +1,19 @@
 module type S = sig
-@BEGIN_FROM_4_12_0@
+@BEGIN_FROM_5_0_0@
   include module type of struct
     include Stdlib
   end
-@END_FROM_4_12_0@
-@BEGIN_BEFORE_4_12_0@
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
   module Pervasives : Stdcompat__pervasives_s.S
 
   include Stdcompat__pervasives_s.S
+
+  val acosh : float -> float
+
+  val asinh : float -> float
+
+  val atanh : float -> float
 
   module Arg : Stdcompat__arg_s.S
 
@@ -69,13 +75,11 @@ module type S = sig
   end)
   @END_FROM_3_12_0@
 
-  @BEGIN_FROM_3_12_0@
-  module Genlex : module type of (struct
-    include Genlex
-  end)
-  @END_FROM_3_12_0@
-
   module Hashtbl : Stdcompat__hashtbl_s.S
+
+  module In_channel : Stdcompat__in_channel_s.S
+
+  module Out_channel : Stdcompat__out_channel_s.S
 
   module Int : Stdcompat__int_s.S
 
@@ -121,11 +125,7 @@ module type S = sig
 
   module Queue : Stdcompat__queue_s.S
 
-  @BEGIN_FROM_3_12_0@
-  module Random : module type of (struct
-    include Random
-  end)
-  @END_FROM_3_12_0@
+  module Random : Stdcompat__random_s.S
 
   module Result : Stdcompat__result_s.S
 
@@ -151,8 +151,6 @@ module type S = sig
     module String : Stdcompat__stringLabels_s.S
   end
 
-  module Stream : Stdcompat__stream_s.S
-
   module String : Stdcompat__string_s.S
 
   module StringLabels : Stdcompat__stringLabels_s.S
@@ -161,6 +159,8 @@ module type S = sig
 
   module Uchar : Stdcompat__uchar_s.S
 
+  module Unit : Stdcompat__unit_s.S
+
   module Weak : Stdcompat__weak_s.S
-@END_BEFORE_4_12_0@
+@END_BEFORE_5_0_0@
 end

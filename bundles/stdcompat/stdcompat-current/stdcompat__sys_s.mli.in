@@ -26,6 +26,55 @@ type signal_behavior = Sys.signal_behavior =
 exception Break 
 (** Alias for {!Sys.Break} *)
 
+@BEGIN_FROM_4_14_0@
+type extra_prefix = Sys.extra_prefix =
+  | Plus 
+  | Tilde 
+@END_FROM_4_14_0@
+@BEGIN_BEFORE_4_14_0@
+type extra_prefix =
+  | Plus 
+  | Tilde 
+@END_BEFORE_4_14_0@
+(** @since 4.14.0: type extra_prefix =
+                     | Plus 
+                     | Tilde 
+ *)
+
+@BEGIN_FROM_4_14_0@
+type extra_info = (extra_prefix * string)
+@END_FROM_4_14_0@
+@BEGIN_BEFORE_4_14_0@
+type extra_info = (extra_prefix * string)
+@END_BEFORE_4_14_0@
+(** @since 4.14.0: type extra_info = (extra_prefix * string)
+ *)
+
+@BEGIN_FROM_4_14_0@
+type ocaml_release_info = Sys.ocaml_release_info =
+  {
+  major: int ;
+  minor: int ;
+  patchlevel: int ;
+  extra: extra_info option }
+@END_FROM_4_14_0@
+@BEGIN_BEFORE_4_14_0@
+type ocaml_release_info =
+  {
+  major: int ;
+  minor: int ;
+  patchlevel: int ;
+  extra: extra_info option }
+@END_BEFORE_4_14_0@
+(** @since 4.14.0:
+    type ocaml_release_info =
+      {
+      major: int ;
+      minor: int ;
+      patchlevel: int ;
+      extra: extra_info option }
+ *)
+
 @BEGIN_FROM_4_10_0@
 module Immediate64 = Sys.Immediate64
 @END_FROM_4_10_0@
@@ -67,6 +116,12 @@ val repr : t repr end end
 @END_BEFORE_4_10_0@
 (** @since 4.10.0: module Immediate64 = Sys.Immediate64
  *)
+
+val development_version : bool
+(** @since 4.14.0: val development_version : bool *)
+
+val ocaml_release : ocaml_release_info
+(** @since 4.14.0: val ocaml_release : ocaml_release_info *)
 
 @BEGIN_FROM_4_12_0@
 external mkdir : string -> int -> unit = "caml_sys_mkdir"

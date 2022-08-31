@@ -938,3 +938,45 @@ module ArrayLabels = struct
   let map_from_array ~f a = map_from_array f a
 end
 @END_BEFORE_4_08_0@
+
+@BEGIN_BEFORE_4_13_0@
+let cbrt x =
+  let res = exp ((1. /. 3.) *. log (abs x)) in
+  if x >= 0. then
+    res
+  else
+    -. res
+
+let log2e = log 2.
+
+let log2 x =
+  log x /. log2e
+
+let exp2 x =
+  pow 2. x
+
+let acosh x =
+  log (x +. sqrt (x *. x -. 1.))
+
+let asinh x =
+  log (x +. sqrt (x *. x +. 1.))
+
+let atanh x =
+  0.5 *. log ((1. +. x) /. (1. -. x))
+
+let erf x =
+  (* from ocaml source floats.c, based on formula 7.1.26
+     from the "Handbook of Mathematical Functions" by Abramowitz and Stegun. *)
+  let a1 =  0.254829592 and a2 = -0.284496736 and a3 = 1.421413741
+  and a4 = -1.453152027 and a5 = 1.061405429 and p = 0.3275911 in
+  let x' = abs x in
+  let t = 1. /. (1. +. p *. x') in
+  let y =
+    1. -. ((((a5 *. t +. a4) *. t +. a3) *. t +. a2) *. t +. a1) *.
+      t *. exp (-. x' *. x') in
+  if x >= 0. then y
+  else -. y
+
+let erfc x =
+  1. -. erf x
+@END_BEFORE_4_13_0@

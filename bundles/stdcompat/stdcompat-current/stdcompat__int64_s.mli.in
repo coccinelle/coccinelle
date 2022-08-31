@@ -2,6 +2,12 @@ module type S = sig
 type t = int64
 (** Alias for {!Int64.t} *)
 
+val min : t -> t -> t
+(** @since 4.13.0: val min : t -> t -> t *)
+
+val max : t -> t -> t
+(** @since 4.13.0: val max : t -> t -> t *)
+
 val unsigned_div : int64 -> int64 -> int64
 (** @since 4.08.0: val unsigned_div : int64 -> int64 -> int64 *)
 
@@ -209,16 +215,5 @@ external float_of_bits : int64 -> float = "int64_float_of_bits"
 
 val compare : t -> t -> int
 (** Alias for {!Int64.compare} *)
-
-@BEGIN_FROM_3_08_0@
-external format : string -> int64 -> string = "caml_int64_format"
-@END_FROM_3_08_0@
-@BEGIN_BEFORE_3_08_0@
-external format : string -> int64 -> string = "int64_format"
-@END_BEFORE_3_08_0@
-(** @since 3.08.0:
-    external format : string -> int64 -> string = "caml_int64_format"
-@since 3.07.0: external format : string -> int64 -> string = "int64_format"
- *)
 
 end

@@ -1,6 +1,6 @@
 module type S = sig
 @BEGIN_FROM_4_07_0@
-type fpclass = Pervasives.fpclass =
+type fpclass = Stdlib.fpclass =
   | FP_normal 
   | FP_subnormal 
   | FP_zero 
@@ -16,7 +16,7 @@ type fpclass =
   | FP_nan 
 @END_BEFORE_4_07_0@
 (** @since 4.07.0:
-    type fpclass = Pervasives.fpclass =
+    type fpclass = Stdlib.fpclass =
       | FP_normal 
       | FP_subnormal 
       | FP_zero 
@@ -179,6 +179,106 @@ end
 
 @END_BEFORE_4_08_0@
 (** @since 4.08.0: module ArrayLabels = Float.ArrayLabels
+ *)
+
+@BEGIN_FROM_4_13_0@
+external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val cbrt : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external cbrt : float -> float = "caml_cbrt_float" "caml_cbrt"[@@unboxed
+                                                                    ]
+    [@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external exp2 : float -> float = "caml_exp2_float" "caml_exp2"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val exp2 : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external exp2 : float -> float = "caml_exp2_float" "caml_exp2"[@@unboxed
+                                                                    ]
+    [@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external log2 : float -> float = "caml_log2_float" "caml_log2"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val log2 : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external log2 : float -> float = "caml_log2_float" "caml_log2"[@@unboxed
+                                                                    ]
+    [@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external acosh : float -> float = "caml_acosh_float" "caml_acosh"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val acosh : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external acosh : float -> float = "caml_acosh_float" "caml_acosh"
+    [@@unboxed ][@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external asinh : float -> float = "caml_asinh_float" "caml_asinh"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val asinh : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external asinh : float -> float = "caml_asinh_float" "caml_asinh"
+    [@@unboxed ][@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external atanh : float -> float = "caml_atanh_float" "caml_atanh"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val atanh : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external atanh : float -> float = "caml_atanh_float" "caml_atanh"
+    [@@unboxed ][@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external erf : float -> float = "caml_erf_float" "caml_erf"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val erf : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external erf : float -> float = "caml_erf_float" "caml_erf"[@@unboxed ]
+    [@@noalloc ]
+ *)
+
+@BEGIN_FROM_4_13_0@
+external erfc : float -> float = "caml_erfc_float" "caml_erfc"[@@unboxed ]
+[@@noalloc ]
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val erfc : float -> float
+@END_BEFORE_4_13_0@
+(** @since 4.13.0:
+    external erfc : float -> float = "caml_erfc_float" "caml_erfc"[@@unboxed
+                                                                    ]
+    [@@noalloc ]
  *)
 
 val zero : float

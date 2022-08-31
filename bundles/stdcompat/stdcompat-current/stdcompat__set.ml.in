@@ -169,6 +169,38 @@ module Make (Ord : OrderedType) = struct
     let of_list l = List.fold_left (fun s item -> add item s) empty l
   @END_BEFORE_4_02_0@
 
+  @BEGIN_BEFORE_3_08_0@
+    @BEGIN_WITH_MAGIC@
+      let rec iter f = function
+        | Empty -> ()
+        | Node (l, v, r, _) as t ->
+            iter f l;
+            f v;
+            iter f r
+
+      let iter (f : elt -> unit) (s : t) : unit =
+        iter f (internal_of_t s)
+
+      let rec fold f s a =
+        match s with
+        | Empty -> a
+        | Node (l, v, r, _) as t ->
+            let a = fold f l a in
+            let a = f v a in
+            fold f r a
+
+      let fold (f : elt -> 'a -> 'a) (s : t) (a : 'a) : 'a =
+        fold f (internal_of_t s) a
+    @END_WITH_MAGIC@
+    @BEGIN_WITHOUT_MAGIC@
+      let iter f s =
+        List.iter f (elements s)
+
+      let fold f s a =
+        List.fold_left (fun a item -> f item a) a (elements s)
+    @END_WITHOUT_MAGIC@
+  @END_BEFORE_3_08_0@
+
   @BEGIN_BEFORE_4_11_0@
     @BEGIN_WITH_MAGIC@
       let rec filter_map f = function

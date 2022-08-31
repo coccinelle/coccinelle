@@ -56,8 +56,9 @@ end
 
 type isomorphism_kind = Ignore_attributes | Attributes_equal
 
-let is_attribute_isomorphic kind (id, payload) (id', payload') =
-  Name.equal id id'
+let is_attribute_isomorphic kind (a : Parsetree.attribute)
+    (b : Parsetree.attribute) =
+  Name.equal a.attr_name b.attr_name
 
 let is_attributes_isomorphic kind (a : Parsetree.attributes)
     (a' : Parsetree.attributes) =
@@ -104,10 +105,10 @@ let rec is_core_type_isomorphic kind (t : Parsetree.core_type)
 
 and is_object_field_isomorphic kind (f : Parsetree.object_field)
     (f' : Parsetree.object_field) =
-  match f, f' with
-  | Otag (l, a, t), Otag (l', a', t') ->
+  is_attributes_isomorphic kind f.pof_attributes f'.pof_attributes &&
+  match f.pof_desc, f'.pof_desc with
+  | Otag (l, t), Otag (l', t') ->
       l.txt = l'.txt &&
-      is_attributes_isomorphic kind a a' &&
       is_core_type_isomorphic kind t t'
   | Oinherit t, Oinherit t' ->
       is_core_type_isomorphic kind t t'
@@ -144,10 +145,19 @@ let no_self_manifest (d : Parsetree.type_declaration) =
     when self = d.ptype_name.txt -> None
   | manifest -> manifest
 
+let is_type_param_isomorphic kind (ty, (v, i)) (ty', (v', i')) =
+  is_core_type_isomorphic kind ty ty' &&
+  v = v' (*&&
+  i = i'*)
+
+let is_type_params_isomorphic kind params params' =
+  List.equal (is_type_param_isomorphic kind) params params'
+
 let is_type_declaration_isomorphic kind (d : Parsetree.type_declaration)
     (d' : Parsetree.type_declaration) =
   Name.equal d.ptype_name d'.ptype_name &&
   is_attributes_isomorphic kind d.ptype_attributes d'.ptype_attributes &&
+  is_type_params_isomorphic kind d.ptype_params d'.ptype_params &&
   Interface_tools.Option.equal (is_core_type_isomorphic kind)
     (no_self_manifest d) (no_self_manifest d') &&
   match d.ptype_kind, d'.ptype_kind with
@@ -214,7 +224,8 @@ module Signature = struct
   let add_module_declaration (module_declaration : Parsetree.module_declaration)
       s =
     let modules =
-      String.Map.add module_declaration.pmd_name.txt module_declaration
+      String.Map.add (Option.get module_declaration.pmd_name.txt)
+        module_declaration
         s.modules in
     { s with modules }
 
@@ -235,12 +246,12 @@ end
 
 let lex_file filename parser =
   let in_channel = filename |> open_in in
-  Interface_tools.try_close
-    ~close:(fun () -> in_channel |> close_in)
-    @@ fun () ->
+  Fun.protect
+    ~finally:(fun () -> in_channel |> close_in)
+    (fun () ->
       let buf = in_channel |> Lexing.from_channel in
-      Interface_tools.Lexing.set_filename buf filename;
-      buf |> parser
+      Lexing.set_filename buf filename;
+      buf |> parser)
 
 module type Type = sig
   type t
@@ -255,7 +266,7 @@ let loc_of_txt txt : 'a Location.loc =
   { txt; loc = Location.none }
 
 let core_type_of_desc ptyp_desc : Parsetree.core_type =
-  { ptyp_desc; ptyp_loc = Location.none; ptyp_attributes = [] }
+  Ast_helper.Typ.mk ptyp_desc
 
 let module_type_of_desc pmty_desc : Parsetree.module_type =
   { pmty_desc; pmty_loc = Location.none; pmty_attributes = [] }
@@ -275,27 +286,40 @@ let module_type_of_name version module_name =
     | [] -> assert false in
   let root_signature =
     try
+      prerr_endline "in cache";
       SignaturesTable.find signatures (version, root_module)
     with Not_found ->
       let root_module_mli =
         Printf.sprintf "../interfaces/%s/%s.mli"
           (Interface_tools.Version.to_string ~include_patch:false version)
           (String.uncapitalize_ascii root_module) in
+      prerr_endline root_module_mli;
       let root_signature =
         match lex_file root_module_mli Parse.interface with
         | root_signature -> root_signature
         | exception (Sys_error _) -> [] in
+      if root_signature = [] then
+        prerr_endline "Parsed an empty signature!";
       SignaturesTable.add signatures (version, root_module) root_signature;
       root_signature in
   let rec lookup_submodule signature hd tl =
-    let module_type =
-      signature |> Interface_tools.List.find_map @@
+    Format.eprintf "Looking for submodule %s@." hd;
+    if signature = [] then
+      prerr_endline "Empty signature!";
+    let module_type = Option.get (
+      signature |> List.find_map (
       fun (signature_item : Parsetree.signature_item) ->
         match signature_item.psig_desc with
         | Psig_module module_declaration
-          when module_declaration.pmd_name.txt = hd ->
+          when Option.get module_declaration.pmd_name.txt = hd ->
             Some module_declaration.pmd_type
-        | _ -> None in
+        | Psig_module module_declaration ->
+            prerr_endline (Option.get module_declaration.pmd_name.txt);
+            None
+        | _ ->
+            Format.eprintf "%a@."
+              Pprintast.signature [signature_item];
+            None)) in
     match tl with
     | [] -> module_type
     | hd :: tl ->
@@ -303,7 +327,8 @@ let module_type_of_name version module_name =
         lookup_submodule signature hd tl in
   match submodule_path with
   | [] -> module_type_of_signature root_signature
-  | hd :: tl -> lookup_submodule root_signature hd tl
+  | hd :: tl ->
+      lookup_submodule root_signature hd tl
 
 module PolymorphicHash (T : Type) = struct
   type t = T.t
@@ -452,26 +477,37 @@ let string_of_longident longident =
   String.concat "." (Longident.flatten longident)
 
 let qualify_type_decl ~module_name (type_decl : Parsetree.type_declaration) =
-  let ptype_manifest =
-    type_decl.ptype_manifest |>
-    Interface_tools.Option.map @@ fun (ty : Parsetree.core_type) ->
-      match ty.ptyp_desc with
-      | Ptyp_constr ({ txt = Lident "fpclass"; loc }, []) ->
-          let txt = Longident.Ldot (Lident "Pervasives", "fpclass") in
-          let ptyp_desc = Parsetree.Ptyp_constr ({ Location.txt; loc }, []) in
-          { ty with ptyp_desc }
-      | Ptyp_constr ({ txt = Lident ident; loc }, args)
-        when ident <> "char" && ident <> "string" && ident <> "lazy_t"
-            && ident <> "nativeint" && ident <> "int32" && ident <> "int64"
-            && ident <> "format6" && ident <> "format4" && ident <> "bytes"
-            && ident <> "float" && ident <> "result" && ident <> "option"
-             && ident <> "list" && ident <> "bool" && ident <> "array"
-        && ident <> "exn" ->
-          let txt = Longident.Ldot (module_name, ident) in
-          let ptyp_desc = Parsetree.Ptyp_constr ({ Location.txt; loc }, args) in
-          { ty with ptyp_desc }
-      | _ -> ty in
-  { type_decl with ptype_manifest }
+  match type_decl.ptype_private with
+  | Private ->
+      { type_decl with ptype_private = Public; ptype_manifest =
+        Some (Ast_helper.Typ.constr
+          { txt = Longident.Ldot (module_name, type_decl.ptype_name.txt);
+            loc = type_decl.ptype_name.loc }
+          (List.map fst type_decl.ptype_params)) }
+  | Public ->
+      let ptype_manifest =
+        type_decl.ptype_manifest |>
+        Option.map @@ fun (ty : Parsetree.core_type) ->
+          match ty.ptyp_desc with
+          | Ptyp_constr ({ txt = Lident "fpclass"; loc }, []) ->
+              let txt = Longident.Ldot (Lident "Pervasives", "fpclass") in
+              let ptyp_desc =
+                Parsetree.Ptyp_constr ({ Location.txt; loc }, []) in
+              { ty with ptyp_desc }
+          | Ptyp_constr ({ txt = Lident ident; loc }, args)
+            when ident <> "char" && ident <> "string" && ident <> "lazy_t"
+                && ident <> "nativeint" && ident <> "int32" && ident <> "int64"
+                && ident <> "format6" && ident <> "format4" && ident <> "bytes"
+                && ident <> "float" && ident <> "result" && ident <> "option"
+                 && ident <> "list" && ident <> "bool" && ident <> "array"
+            && ident <> "exn" && ident <> "int" && ident <> "unit"
+            && ident <> "in_channel" && ident <> "out_channel" ->
+              let txt = Longident.Ldot (module_name, ident) in
+              let ptyp_desc =
+                Parsetree.Ptyp_constr ({ Location.txt; loc }, args) in
+              { ty with ptyp_desc }
+          | _ -> ty in
+      { type_decl with ptype_manifest }
 
 let format_signature_item ~module_name ~signatures formatter
     (item : Parsetree.signature_item) =
@@ -536,10 +572,10 @@ let rec compat_core_type ~module_name (core_type : Parsetree.core_type) =
           ({ loc; txt = Ldot (Lident "Stdcompat__stdlib", t) },
            args) in
       { core_type with ptyp_desc }
-  | Ptyp_constr ({ loc; txt = Ldot (Lident "Uchar", "t") }, []) ->
+  | Ptyp_constr ({ loc; txt = Ldot (Lident "Uchar", t) }, []) ->
       let ptyp_desc =
         Parsetree.Ptyp_constr
-          ({ loc; txt = Ldot (Lident "Stdcompat__uchar", "t") }, []) in
+          ({ loc; txt = Ldot (Lident "Stdcompat__uchar", t) }, []) in
       { core_type with ptyp_desc }
   | Ptyp_constr ({ loc; txt = Ldot (Lident "Hashtbl", "statistics") }, []) ->
       let ptyp_desc =
@@ -557,6 +593,11 @@ let rec compat_core_type ~module_name (core_type : Parsetree.core_type) =
              Ldot (Lapply (Ldot (Lident "Stdcompat__hashtbl_ext",
                "MakeSeeded"), Lident "H"), "t") },
            args) in
+      { core_type with ptyp_desc }
+  | Ptyp_constr ({ loc; txt = Ldot (Lident "Either", "t") }, [a; b]) ->
+      let ptyp_desc =
+        Parsetree.Ptyp_constr
+          ({ loc; txt = Ldot (Lident "Stdcompat__either", "t") }, [a; b]) in
       { core_type with ptyp_desc }
   | Ptyp_constr (constr, args) ->
       let rec remove_module_name (constr : Longident.t) : Longident.t =
@@ -610,6 +651,9 @@ let compat_type_kind ~module_name
       Ptype_record
         (label_declarations |> List.map (compat_label_declaration ~module_name))
   | _ -> type_kind
+
+let remove_injectivity ptype_params =
+  List.map (fun (ty, (v, _)) -> (ty, (v, Asttypes.NoInjectivity))) ptype_params
 
 let compat_type_declaration ~module_name
     (type_decl : Parsetree.type_declaration) =
@@ -665,6 +709,7 @@ let compat_type_declaration ~module_name
           let ptype_manifest = Some { core_type with ptyp_desc } in
           { type_decl with ptype_manifest }
     | _ ->*)
+    let ptype_params = remove_injectivity type_decl.ptype_params in
     let ptype_manifest =
       match type_decl.ptype_manifest with
       | None -> None
@@ -687,6 +732,7 @@ let compat_type_declaration ~module_name
       | Some ptype_manifest ->
           Some (compat_core_type ~module_name ptype_manifest) in
     { type_decl with
+      ptype_params;
       ptype_manifest;
       ptype_kind = compat_type_kind ~module_name type_decl.ptype_kind
     }
@@ -737,7 +783,7 @@ let rec compat_signature_item ~module_name ~reference_version ~version
       { item with psig_desc = Psig_value value_desc}
   | Psig_module module_declaration ->
       let module_name =
-        Longident.Ldot (module_name, module_declaration.pmd_name.txt) in
+        Longident.Ldot (module_name, Option.get module_declaration.pmd_name.txt) in
       let pmd_type =
         module_declaration.pmd_type |>
         compat_module_type ~module_name ~reference_version ~version in
@@ -770,16 +816,16 @@ and compat_module_type ~module_name ~reference_version ~version
           (compat_signature_item ~module_name ~reference_version ~version)
           signature in
       { module_type with pmty_desc = Pmty_signature signature }
-  | Pmty_functor (var, arg, body) ->
+  | Pmty_functor (Named (var, arg), body) ->
       let arg =
         Interface_tools.Option.map
           (compat_module_type ~module_name ~reference_version ~version)
-          arg in
+          (Some arg) in
       let module_name =
-        Longident.Lapply (module_name, Lident var.txt) in
+        Longident.Lapply (module_name, Lident (Option.get var.txt)) in
       let body =
         compat_module_type ~module_name ~reference_version ~version body in
-      { module_type with pmty_desc = Pmty_functor (var, arg, body) }
+      { module_type with pmty_desc = Pmty_functor (Named (var, Option.get arg), body) }
   | Pmty_alias ident ->
       compat_module_type ~module_name ~reference_version ~version
         (module_type_of_name reference_version ident.txt)
@@ -837,11 +883,11 @@ let rec is_module_type_desc_isomorphic kind
       is_module_type_isomorphic kind
         ~version (module_type_of_desc module_type_desc)
         ~version' (module_type_of_name version ident'.txt)
-  | Pmty_functor (x, arg, body), Pmty_functor (x', arg', body') ->
-      Name.equal x x' &&
+  | Pmty_functor (Named (x, arg), body), Pmty_functor (Named (x', arg'), body') ->
+      Option.get x.txt = Option.get x'.txt &&
       Interface_tools.Option.equal
         (is_module_type_isomorphic kind ~version ~version')
-        arg arg' &&
+        (Some arg) (Some arg') &&
       is_module_type_isomorphic kind ~version body ~version' body'
   | Pmty_with _, Pmty_with _ -> true
   | Pmty_typeof _, Pmty_typeof _ -> true
@@ -858,7 +904,8 @@ and is_module_type_isomorphic kind
 and is_module_declaration_isomorphic kind
     ~version (module_declaration : Parsetree.module_declaration)
     ~version' (module_declaration' : Parsetree.module_declaration) =
-  Name.equal module_declaration.pmd_name module_declaration'.pmd_name &&
+  Option.get module_declaration.pmd_name.txt =
+  Option.get module_declaration'.pmd_name.txt &&
   is_module_type_isomorphic kind ~version module_declaration.pmd_type
     ~version' module_declaration'.pmd_type &&
   is_attributes_isomorphic kind module_declaration.pmd_attributes
@@ -881,6 +928,13 @@ and is_extension_constructor_isomorphic kind ~version
     (extension_constructor : Parsetree.extension_constructor)
     ~version' (extension_constructor' : Parsetree.extension_constructor) =
   extension_constructor.pext_name.txt = extension_constructor'.pext_name.txt
+
+and is_type_exception_isomorphic kind ~version
+    (type_exception : Parsetree.type_exception)
+    ~version' (type_exception' : Parsetree.type_exception) =
+  is_extension_constructor_isomorphic kind ~version
+    type_exception.ptyexn_constructor
+    ~version' type_exception'.ptyexn_constructor
 
 and is_signature_item_isomorphic kind
     ~version (item : Parsetree.signature_item)
@@ -905,7 +959,7 @@ and is_signature_item_isomorphic kind
         ~version' module_type_declaration'
   | Psig_exception extension_constructor,
         Psig_exception extension_constructor' ->
-      is_extension_constructor_isomorphic kind ~version
+      is_type_exception_isomorphic kind ~version
             extension_constructor
             ~version' extension_constructor'
   | Psig_typext type_extension,
@@ -922,7 +976,7 @@ let find_prim_opt version pval_name prim =
       Ldot (Lident "Array", "Floatarray") :: modules
     else
       modules in
-  modules |> Interface_tools.List.find_map_opt @@
+  modules |> List.find_map @@
   fun module_name ->
     let externals = get_externals module_name version in
     match StringHashtbl.find_opt externals prim with
@@ -937,12 +991,12 @@ let rec fake_module_type ~module_name ~reference_version ~version
       let s = s |> List.map @@
         fake_signature_item ~module_name ~reference_version ~version in
       { module_type with pmty_desc = Pmty_signature s }
-  | Pmty_functor (var, arg, body) ->
-      let arg = arg |> Interface_tools.Option.map @@
-        fake_module_type ~module_name ~reference_version ~version in
+  | Pmty_functor (Named (var, arg), body) ->
+      let arg =
+        fake_module_type ~module_name ~reference_version ~version arg in
       let body =
         fake_module_type ~module_name ~reference_version ~version body in
-      { module_type with pmty_desc = Pmty_functor (var, arg, body) }
+      { module_type with pmty_desc = Pmty_functor (Named (var, arg), body) }
   | _ -> module_type
 
 and fake_signature_item ~module_name ~reference_version ~version
@@ -968,10 +1022,14 @@ let version_signature_item ~reference_version ~module_name ~signatures
       Some (signatures |>
         List.map (fun (version, (s : Signature.t)) ->
           let real, type_decl =
+            let block' = String.Map.find_opt first_type_name s.types in
             match
+              if first_type_name = "lexbuf" then
+                block'
+              else
               Interface_tools.Option.filter
                 (Type_declaration_block.is_isomorphic Ignore_attributes block)
-                (String.Map.find_opt first_type_name s.types)
+                block'
             with
             | None ->
                 false,
@@ -1016,7 +1074,7 @@ let version_signature_item ~reference_version ~module_name ~signatures
           let real, module_declaration' =
             match
               match
-                String.Map.find_opt module_declaration.pmd_name.txt s.modules
+                String.Map.find_opt (Option.get module_declaration.pmd_name.txt) s.modules
               with
               | None -> None
               | Some module_declaration' ->
@@ -1034,7 +1092,7 @@ let version_signature_item ~reference_version ~module_name ~signatures
                             { loc = Location.none; txt =
                               Ldot
                                 (module_name,
-                                 module_declaration.pmd_name.txt) };
+                                 (Option.get module_declaration.pmd_name.txt)) };
                           pmty_loc = Location.none;
                           pmty_attributes = [] }}
                       else
@@ -1129,7 +1187,7 @@ let rec gather_similar_versions versions =
       head' :: (gather_similar_versions tail')
 
 let type_of_desc ptyp_desc : Parsetree.core_type =
-  { ptyp_desc; ptyp_loc = Location.none; ptyp_attributes = [] }
+  Ast_helper.Typ.mk ptyp_desc
 
 let format_block block sub formatter item =
   Format.fprintf formatter "\
@@ -1159,7 +1217,86 @@ let format_with_without block sub formatter item_with item_without =
   format_with block sub formatter item_with;
   format_without block sub formatter item_without
 
-let format_default_item ~module_name formatter
+let format_from_before ver formatter sub_from item_from sub_before item_before =
+  format_from ver sub_from formatter item_from;
+  format_before ver sub_before formatter item_before
+
+let attributed_decl (decl : Parsetree.type_declaration) =
+  decl.ptype_attributes <> []
+
+let gadt_decl (decl : Parsetree.type_declaration) =
+  match decl.ptype_kind with
+  | Ptype_variant constructors ->
+      List.exists (fun (constructor : Parsetree.constructor_declaration) ->
+        constructor.pcd_res <> None) constructors
+  | _ -> false
+
+let remove_gadt (decl : Parsetree.type_declaration) =
+  match decl.ptype_kind with
+  | Ptype_variant constructors ->
+      let constructors =
+        List.map (fun (constructor : Parsetree.constructor_declaration) ->
+          { constructor with pcd_res = None }) constructors in
+      { decl with ptype_kind = Ptype_variant constructors }
+  | _ -> decl
+
+(*
+let make_rebind ~module_name (constructor : Parsetree.extension_constructor) =
+  { constructor with pext_kind =
+    Pext_rebind { loc = Location.none;
+      txt = Longident.Ldot (module_name, constructor.pext_name.txt)}}
+*)
+
+let has_injective_param (decl : Parsetree.type_declaration) =
+  List.exists (fun (_, (_, i)) -> i = Asttypes.Injective) decl.ptype_params
+
+let remove_injective_param (decl : Parsetree.type_declaration) =
+  { decl with ptype_params = remove_injectivity decl.ptype_params }
+
+let remove_attributes (decl : Parsetree.type_declaration) =
+  { decl with ptype_attributes = [] }
+
+let is_private (decl : Parsetree.type_declaration) =
+  decl.ptype_private = Private
+
+let make_public (decl : Parsetree.type_declaration) =
+  { decl with ptype_private = Public }
+
+let rec format_sig_type formatter
+      ((recursive : Asttypes.rec_flag),
+        (decls : Parsetree.type_declaration list)) =
+  if List.exists has_injective_param decls then
+    begin
+      let decls' = List.map remove_injective_param decls in
+      format_from_before (Interface_tools.Version.mk 4 12 0) formatter
+        Pprintast.signature [Ast_helper.Sig.type_ recursive decls]
+        format_sig_type (recursive, decls')
+    end
+  else if List.exists attributed_decl decls then
+    begin
+      let decls' = List.map remove_attributes decls in
+      format_from_before (Interface_tools.Version.mk 4 02 0) formatter
+        Pprintast.signature [Ast_helper.Sig.type_ recursive decls]
+        format_sig_type (recursive, decls')
+    end
+  else if List.exists gadt_decl decls then
+    begin
+      let decls' = List.map remove_gadt decls in
+      format_from_before (Interface_tools.Version.mk 4 00 0) formatter
+        Pprintast.signature [Ast_helper.Sig.type_ recursive decls]
+        format_sig_type (recursive, decls')
+    end
+  else if List.exists is_private decls then
+    begin
+      let decls' = List.map make_public decls in
+      format_from_before (Interface_tools.Version.mk 3 11 0) formatter
+        Pprintast.signature [Ast_helper.Sig.type_ recursive decls]
+        format_sig_type (recursive, decls')
+    end
+  else
+    Pprintast.signature formatter [Ast_helper.Sig.type_ recursive decls]
+
+let rec format_default_item ~module_name formatter
     (item : Parsetree.signature_item) =
   match item.psig_desc with
   | Psig_type (rec_flag, [{ ptype_name = { txt = "result" }} as type_decl]) ->
@@ -1167,22 +1304,28 @@ let format_default_item ~module_name formatter
         { txt = Ldot (Lident "Result", "result"); loc = Location.none },
         [type_of_desc (Ptyp_var "a"); type_of_desc (Ptyp_var "b")]) in
       let manifest = type_of_desc ptyp_desc in
-      let type_decl = { type_decl with ptype_manifest = Some manifest } in
-      let psig_desc = Parsetree.Psig_type (rec_flag, [type_decl]) in
-      let result_item = { item with psig_desc } in
-      format_with_without "RESULT_PKG"
-        Pprintast.signature formatter [result_item] [item]
+      let type_decl' = { type_decl with ptype_manifest = Some manifest } in
+      format_with_without "UCHAR_PKG" format_sig_type formatter
+        (rec_flag, [type_decl']) (rec_flag, [type_decl])
   | Psig_type (rec_flag, [{ ptype_name = { txt = "t" }} as type_decl])
       when module_name = Longident.Lident "Uchar" ->
       let ptyp_desc = Parsetree.Ptyp_constr (
         { txt = Ldot (Lident "Uchar", "t"); loc = Location.none },
         []) in
       let manifest = type_of_desc ptyp_desc in
+      let type_decl' = { type_decl with ptype_manifest = Some manifest } in
+      format_with_without "UCHAR_PKG" format_sig_type formatter
+        (rec_flag, [type_decl']) (rec_flag, [type_decl])
+  | Psig_type (rec_flag, [{ ptype_name = { txt = "t" }} as type_decl])
+      when module_name = Longident.Lident "Either" ->
+      let ptyp_desc = Parsetree.Ptyp_constr (
+        { txt = Ldot (Lident "Stdcompat__init", "either"); loc = Location.none },
+        List.map fst type_decl.ptype_params) in
+      let manifest = type_of_desc ptyp_desc in
       let type_decl = { type_decl with ptype_manifest = Some manifest } in
       let psig_desc = Parsetree.Psig_type (rec_flag, [type_decl]) in
       let result_item = { item with psig_desc } in
-      format_with_without "UCHAR_PKG"
-        Pprintast.signature formatter [result_item] [item]
+      Pprintast.signature formatter [result_item]
   | Psig_type (_, _)
       when module_name = Longident.Lident "List" || module_name = Longident.Lident "ListLabels" ->
       Format.fprintf formatter "\
@@ -1217,8 +1360,80 @@ type %s = ..
 @@BEGIN_BEFORE_4_02_0@@
 type %s
 @@END_BEFORE_4_02_0@@" txt txt
+  | Psig_type (recursive, decls) ->
+      format_sig_type formatter (recursive, decls)
+  | Psig_value { pval_name = { txt = "ifprintf"; _ }; _ } when module_name = Lident "Printf" ->
+      Format.fprintf formatter "\
+@@BEGIN_FROM_4_03_0@@
+val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a
+(** @@since 4.03.0: val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a *)
+@@END_FROM_4_03_0@@
+@@BEGIN_BEFORE_4_03_0@@
+@@BEGIN_FROM_3_10_0@@
+val ifprintf : 'b -> ('a, 'b, unit) format -> 'a
+@@END_FROM_3_10_0@@
+@@BEGIN_BEFORE_3_10_0@@
+val ifprintf : 'b -> ('a, 'b, 'c, unit) format4 -> 'a
+@@END_BEFORE_3_10_0@@
+@@END_BEFORE_4_03_0@@"
+  | Psig_value { pval_name = { txt = "ikfprintf"; _ }; _ } when module_name = Lident "Printf" ->
+      Format.fprintf formatter "\
+@@BEGIN_FROM_4_03_0@@
+val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
+(** @@since 4.03.0: val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a *)
+@@END_FROM_4_03_0@@
+@@BEGIN_BEFORE_4_03_0@@
+@@BEGIN_FROM_4_01_0@@
+val ikfprintf :
+    (out_channel -> 'a) ->
+      out_channel -> ('b, out_channel, unit, 'a) format4 -> 'b
+@@END_FROM_4_01_0@@
+@@BEGIN_BEFORE_4_01_0@@
+val ikfprintf : ('b -> 'd) -> 'b -> ('a, 'b, 'c, 'd) format4 -> 'a
+@@END_BEFORE_4_01_0@@
+@@END_BEFORE_4_03_0@@"
+  | Psig_module module_declaration when match module_declaration.pmd_type.pmty_desc with Pmty_alias _ -> false | _ -> true ->
+      Format.fprintf formatter "@[module %s :@ @[%a@]@]"
+        (Option.get module_declaration.pmd_name.txt)
+        (format_default_module_type ~module_name) module_declaration.pmd_type
+  | Psig_modtype module_type_declaration ->
+      Format.fprintf formatter "@[module type %s =@ @[%a@]@]"
+        module_type_declaration.pmtd_name.txt
+        (format_default_module_type ~module_name)
+        (Option.get module_type_declaration.pmtd_type)
+(*
+  | Psig_typext type_extension ->
+      let type_extension = { type_extension with
+        ptyext_constructors =
+          List.map (make_rebind ~module_name)
+            type_extension.ptyext_constructors } in
+      Format.fprintf formatter "%a" Pprintast.signature
+        [{ item with psig_desc = Psig_typext type_extension }]
+  | Psig_exception type_exception ->
+      let type_exception = { type_exception with
+        ptyexn_constructor = make_rebind ~module_name
+            type_exception.ptyexn_constructor } in
+      Format.fprintf formatter "%a" Pprintast.signature
+        [{ item with psig_desc = Psig_exception type_exception }]
+*)
   | _ ->
       Format.fprintf formatter "%a" Pprintast.signature [item]
+
+and format_default_module_type ~module_name formatter
+      (module_type : Parsetree.module_type) =
+  match module_type.pmty_desc with
+  | Pmty_ident ident ->
+      Format.fprintf formatter "%s" (string_of_longident ident.txt)
+  | Pmty_signature signature ->
+      Format.fprintf formatter "@[sig@ %a@ end@]"
+        (Format.pp_print_list ~pp_sep:Format.pp_print_space
+           (format_default_item ~module_name)) signature
+  | Pmty_functor (Named (var, arg), body) ->
+      Format.fprintf formatter "@[functor (%s : %a) ->@ %a@]"
+        (Option.get var.txt) (format_default_module_type ~module_name) arg
+        (format_default_module_type ~module_name) body
+  | _ ->
+      failwith "Not implemented"
 
 let item_name module_name (item : Parsetree.signature_item) =
   let name =
@@ -1228,11 +1443,11 @@ let item_name module_name (item : Parsetree.signature_item) =
     | Psig_value value_desc ->
         value_desc.pval_name.txt
     | Psig_module module_declaration ->
-        module_declaration.pmd_name.txt
+        Option.get module_declaration.pmd_name.txt
     | Psig_modtype module_type_declaration ->
         module_type_declaration.pmtd_name.txt
     | Psig_exception extension_constructor ->
-        extension_constructor.pext_name.txt
+        extension_constructor.ptyexn_constructor.pext_name.txt
     | _ -> assert false in
   Printf.sprintf "%s.%s" (string_of_longident module_name) name
 
@@ -1248,10 +1463,9 @@ let add_self_type_manifest_to_type_decl ~(module_name : Longident.t)
         | _ -> module_name in
       { type_decl with ptype_manifest =
         let params = type_decl.ptype_params |> List.map fst in
-        Some ({ ptyp_desc =
-          Ptyp_constr ({ loc = Location.none; txt =
-            Ldot (module_name, type_decl.ptype_name.txt) }, params);
-              ptyp_loc = Location.none; ptyp_attributes = [] })}
+        Some (Ast_helper.Typ.constr
+          ({ loc = Location.none; txt =
+            Ldot (module_name, type_decl.ptype_name.txt) }) params)}
   | Some manifest -> type_decl
 
 let rec add_self_type_manifest ~module_name (item : Parsetree.signature_item) =
@@ -1263,7 +1477,7 @@ let rec add_self_type_manifest ~module_name (item : Parsetree.signature_item) =
   | Psig_value _ | Psig_modtype _ | Psig_exception _ -> item
   | Psig_module module_declaration ->
       let module_name : Longident.t =
-        Ldot (module_name, module_declaration.pmd_name.txt) in
+        Ldot (module_name, Option.get module_declaration.pmd_name.txt) in
       { item with psig_desc = Psig_module { module_declaration with
         pmd_type = module_declaration.pmd_type |>
           (add_self_type_manifest_to_module_type ~module_name) }}
@@ -1280,15 +1494,15 @@ and add_self_type_manifest_to_module_type ~module_name
       let signature = signature |>
         List.map (add_self_type_manifest ~module_name) in
       { module_type with pmty_desc = Pmty_signature signature }
-  | Pmty_functor (var, arg, body) ->
+  | Pmty_functor (Named (var, arg), body) ->
 (*
       let arg = arg |> Option.map
         (add_self_type_manifest_to_module_type ~module_name) in
 *)
       let module_name : Longident.t =
-        Lapply (module_name, Lident var.txt) in
+        Lapply (module_name, Lident (Option.get var.txt)) in
       let body = body |> add_self_type_manifest_to_module_type ~module_name in
-      { module_type with pmty_desc = Pmty_functor (var, arg, body) }
+      { module_type with pmty_desc = Pmty_functor (Named (var, arg), body) }
   | Pmty_with (ty, cstr) ->
       { module_type with pmty_desc =
         Pmty_with
@@ -1302,7 +1516,7 @@ let print_signature_item ~(module_name : Longident.t) real formatter
    || module_name = Lident "Map"
    || module_name = Lident "Weak" then
     let self_item = add_self_type_manifest ~module_name item in
-    Pprintast.signature formatter [self_item]
+    format_default_item ~module_name formatter self_item
   else
     format_default_item ~module_name formatter item
 
@@ -1402,4 +1616,9 @@ let main argv =
 
 let () =
   if not !Sys.interactive then
-    Sys.argv |> main
+    try
+      Sys.argv |> main
+    with e ->
+      prerr_endline (Printexc.to_string e);
+      Printexc.print_backtrace stderr;
+      exit 1

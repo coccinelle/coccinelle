@@ -1,7 +1,13 @@
 module type S = sig
   exception Exit
 
-  type fpclass = Pervasives.fpclass =
+  type fpclass =
+  @BEGIN_FROM_4_07_0@
+    Stdlib.fpclass =
+  @END_FROM_4_07_0@
+  @BEGIN_BEFORE_4_07_0@
+    Pervasives.fpclass =
+  @END_BEFORE_4_07_0@
     | FP_normal 
     | FP_subnormal 
     | FP_zero 
@@ -12,7 +18,13 @@ module type S = sig
 
   type out_channel = Stdcompat__init.out_channel
 
-  type open_flag = Pervasives.open_flag =
+  type open_flag =
+  @BEGIN_FROM_4_07_0@
+    Stdlib.open_flag =
+  @END_FROM_4_07_0@
+  @BEGIN_BEFORE_4_07_0@
+    Pervasives.open_flag =
+  @END_BEFORE_4_07_0@
     | Open_rdonly 
     | Open_wronly 
     | Open_append 
@@ -24,7 +36,13 @@ module type S = sig
     | Open_nonblock 
 
   @BEGIN_FROM_4_02_0@
-  module LargeFile = Pervasives.LargeFile
+  module LargeFile =
+  @BEGIN_FROM_4_07_0@
+    Stdlib.LargeFile
+  @END_FROM_4_07_0@
+  @BEGIN_BEFORE_4_07_0@
+    Pervasives.LargeFile
+  @END_BEFORE_4_07_0@
   @END_FROM_4_02_0@
   @BEGIN_BEFORE_4_02_0@
   module LargeFile : sig
@@ -37,8 +55,14 @@ module type S = sig
   end
   @END_BEFORE_4_02_0@
   
-  type 'a ref = 'a Pervasives.ref = {
-    mutable contents: 'a }
+  type 'a ref =
+  @BEGIN_FROM_4_07_0@
+    'a Stdlib.ref =
+  @END_FROM_4_07_0@
+  @BEGIN_BEFORE_4_07_0@
+    'a Pervasives.ref =
+  @END_BEFORE_4_07_0@
+    { mutable contents: 'a }
   
   type ('a, 'b) result =
     ('a, 'b) Stdcompat__init.result =
@@ -358,59 +382,52 @@ module type S = sig
    *)
   
   external raise : exn -> 'a = "%raise"
-  (** Alias for {!Pervasives.raise} *)
+  (** Alias for {!Stdlib.raise} *)
   
   val invalid_arg : string -> 'a
-  (** Alias for {!Pervasives.invalid_arg} *)
+  (** Alias for {!Stdlib.invalid_arg} *)
   
   val failwith : string -> 'a
-  (** Alias for {!Pervasives.failwith} *)
+  (** Alias for {!Stdlib.failwith} *)
   
   external (=) : 'a -> 'a -> bool = "%equal"
-  (** Alias for {!Pervasives.=} *)
+  (** Alias for {!Stdlib.=} *)
   
   external (<>) : 'a -> 'a -> bool = "%notequal"
-  (** Alias for {!Pervasives.<>} *)
+  (** Alias for {!Stdlib.<>} *)
   
   external (<) : 'a -> 'a -> bool = "%lessthan"
-  (** Alias for {!Pervasives.<} *)
+  (** Alias for {!Stdlib.<} *)
   
   external (>) : 'a -> 'a -> bool = "%greaterthan"
-  (** Alias for {!Pervasives.>} *)
+  (** Alias for {!Stdlib.>} *)
   
   external (<=) : 'a -> 'a -> bool = "%lessequal"
-  (** Alias for {!Pervasives.<=} *)
+  (** Alias for {!Stdlib.<=} *)
   
   external (>=) : 'a -> 'a -> bool = "%greaterequal"
-  (** Alias for {!Pervasives.>=} *)
+  (** Alias for {!Stdlib.>=} *)
   
   external compare : 'a -> 'a -> int = "%compare"
-  (** Alias for {!Pervasives.compare} *)
+  (** Alias for {!Stdlib.compare} *)
   
   val min : 'a -> 'a -> 'a
-  (** Alias for {!Pervasives.min} *)
+  (** Alias for {!Stdlib.min} *)
   
   val max : 'a -> 'a -> 'a
-  (** Alias for {!Pervasives.max} *)
+  (** Alias for {!Stdlib.max} *)
   
   external (==) : 'a -> 'a -> bool = "%eq"
-  (** Alias for {!Pervasives.==} *)
+  (** Alias for {!Stdlib.==} *)
   
   external (!=) : 'a -> 'a -> bool = "%noteq"
-  (** Alias for {!Pervasives.!=} *)
+  (** Alias for {!Stdlib.!=} *)
   
   external not : bool -> bool = "%boolnot"
-  (** Alias for {!Pervasives.not} *)
+  (** Alias for {!Stdlib.not} *)
   
   external (&&) : bool -> bool -> bool = "%sequand"
-  (** Alias for {!Pervasives.&&} *)
-  @BEGIN_FROM_4_02_0@
-  external (&) : bool -> bool -> bool = "%sequand"[@@ocaml.deprecated
-                                                    "Use (&&) instead."]
-  @END_FROM_4_02_0@
-  @BEGIN_BEFORE_4_02_0@
-  external (&) : bool -> bool -> bool = "%sequand"
-  @END_BEFORE_4_02_0@
+  (** Alias for {!Stdlib.&&} *)
   
   (** 
   @since 4.02.0:
@@ -420,15 +437,7 @@ module type S = sig
    *)
   
   external (||) : bool -> bool -> bool = "%sequor"
-  (** Alias for {!Pervasives.||} *)
-  
-  @BEGIN_FROM_4_02_0@
-  external (or) : bool -> bool -> bool = "%sequor"[@@ocaml.deprecated
-                                                    "Use (||) instead."]
-  @END_FROM_4_02_0@
-  @BEGIN_BEFORE_4_02_0@
-  external (or) : bool -> bool -> bool = "%sequor"
-  @END_BEFORE_4_02_0@
+  (** Alias for {!Stdlib.||} *)
   
   (**
   @since 4.02.0:
@@ -438,73 +447,73 @@ module type S = sig
    *)
   
   external (~-) : int -> int = "%negint"
-  (** Alias for {!Pervasives.~-} *)
+  (** Alias for {!Stdlib.~-} *)
   
   external succ : int -> int = "%succint"
-  (** Alias for {!Pervasives.succ} *)
+  (** Alias for {!Stdlib.succ} *)
   
   external pred : int -> int = "%predint"
-  (** Alias for {!Pervasives.pred} *)
+  (** Alias for {!Stdlib.pred} *)
   
   external (+) : int -> int -> int = "%addint"
-  (** Alias for {!Pervasives.+} *)
+  (** Alias for {!Stdlib.+} *)
   
   external (-) : int -> int -> int = "%subint"
-  (** Alias for {!Pervasives.-} *)
+  (** Alias for {!Stdlib.-} *)
   
   external ( * ) : int -> int -> int = "%mulint"
-  (** Alias for {!Pervasives.*} *)
+  (** Alias for {!Stdlib.*} *)
   
   external (/) : int -> int -> int = "%divint"
-  (** Alias for {!Pervasives./} *)
+  (** Alias for {!Stdlib./} *)
   
   external (mod) : int -> int -> int = "%modint"
-  (** Alias for {!Pervasives.mod} *)
+  (** Alias for {!Stdlib.mod} *)
   
   val abs : int -> int
-  (** Alias for {!Pervasives.abs} *)
+  (** Alias for {!Stdlib.abs} *)
   
   val max_int : int
-  (** Alias for {!Pervasives.max_int} *)
+  (** Alias for {!Stdlib.max_int} *)
   
   val min_int : int
-  (** Alias for {!Pervasives.min_int} *)
+  (** Alias for {!Stdlib.min_int} *)
   
   external (land) : int -> int -> int = "%andint"
-  (** Alias for {!Pervasives.land} *)
+  (** Alias for {!Stdlib.land} *)
   
   external (lor) : int -> int -> int = "%orint"
-  (** Alias for {!Pervasives.lor} *)
+  (** Alias for {!Stdlib.lor} *)
   
   external (lxor) : int -> int -> int = "%xorint"
-  (** Alias for {!Pervasives.lxor} *)
+  (** Alias for {!Stdlib.lxor} *)
   
   val lnot : int -> int
-  (** Alias for {!Pervasives.lnot} *)
+  (** Alias for {!Stdlib.lnot} *)
   
   external (lsl) : int -> int -> int = "%lslint"
-  (** Alias for {!Pervasives.lsl} *)
+  (** Alias for {!Stdlib.lsl} *)
   
   external (lsr) : int -> int -> int = "%lsrint"
-  (** Alias for {!Pervasives.lsr} *)
+  (** Alias for {!Stdlib.lsr} *)
   
   external (asr) : int -> int -> int = "%asrint"
-  (** Alias for {!Pervasives.asr} *)
+  (** Alias for {!Stdlib.asr} *)
   
   external (~-.) : float -> float = "%negfloat"
-  (** Alias for {!Pervasives.~-.} *)
+  (** Alias for {!Stdlib.~-.} *)
   
   external (+.) : float -> float -> float = "%addfloat"
-  (** Alias for {!Pervasives.+.} *)
+  (** Alias for {!Stdlib.+.} *)
   
   external (-.) : float -> float -> float = "%subfloat"
-  (** Alias for {!Pervasives.-.} *)
+  (** Alias for {!Stdlib.-.} *)
   
   external ( *. ) : float -> float -> float = "%mulfloat"
-  (** Alias for {!Pervasives.*.} *)
+  (** Alias for {!Stdlib.*.} *)
   
   external (/.) : float -> float -> float = "%divfloat"
-  (** Alias for {!Pervasives./.} *)
+  (** Alias for {!Stdlib./.} *)
   
   @BEGIN_FROM_4_03_0@
   external ( ** ) : float -> float -> float = "caml_power_float" "pow"[@@unboxed
@@ -864,7 +873,7 @@ module type S = sig
    *)
   
   external abs_float : float -> float = "%absfloat"
-  (** Alias for {!Pervasives.abs_float} *)
+  (** Alias for {!Stdlib.abs_float} *)
   
   @BEGIN_FROM_4_03_0@
   external mod_float : float -> float -> float = "caml_fmod_float" "fmod"
@@ -935,34 +944,34 @@ module type S = sig
    *)
   
   external float : int -> float = "%floatofint"
-  (** Alias for {!Pervasives.float} *)
+  (** Alias for {!Stdlib.float} *)
   
   external float_of_int : int -> float = "%floatofint"
-  (** Alias for {!Pervasives.float_of_int} *)
+  (** Alias for {!Stdlib.float_of_int} *)
   
   external truncate : float -> int = "%intoffloat"
-  (** Alias for {!Pervasives.truncate} *)
+  (** Alias for {!Stdlib.truncate} *)
   
   external int_of_float : float -> int = "%intoffloat"
-  (** Alias for {!Pervasives.int_of_float} *)
+  (** Alias for {!Stdlib.int_of_float} *)
   
   val infinity : float
-  (** Alias for {!Pervasives.infinity} *)
+  (** Alias for {!Stdlib.infinity} *)
   
   val neg_infinity : float
-  (** Alias for {!Pervasives.neg_infinity} *)
+  (** Alias for {!Stdlib.neg_infinity} *)
   
   val nan : float
-  (** Alias for {!Pervasives.nan} *)
+  (** Alias for {!Stdlib.nan} *)
   
   val max_float : float
-  (** Alias for {!Pervasives.max_float} *)
+  (** Alias for {!Stdlib.max_float} *)
   
   val min_float : float
-  (** Alias for {!Pervasives.min_float} *)
+  (** Alias for {!Stdlib.min_float} *)
   
   val epsilon_float : float
-  (** Alias for {!Pervasives.epsilon_float} *)
+  (** Alias for {!Stdlib.epsilon_float} *)
   
   @BEGIN_FROM_4_03_0@
   external classify_float :
@@ -988,25 +997,25 @@ module type S = sig
    *)
   
   val (^) : string -> string -> string
-  (** Alias for {!Pervasives.^} *)
+  (** Alias for {!Stdlib.^} *)
   
   external int_of_char : char -> int = "%identity"
-  (** Alias for {!Pervasives.int_of_char} *)
+  (** Alias for {!Stdlib.int_of_char} *)
   
   val char_of_int : int -> char
-  (** Alias for {!Pervasives.char_of_int} *)
+  (** Alias for {!Stdlib.char_of_int} *)
   
   external ignore : 'a -> unit = "%ignore"
-  (** Alias for {!Pervasives.ignore} *)
+  (** Alias for {!Stdlib.ignore} *)
   
   val string_of_bool : bool -> string
-  (** Alias for {!Pervasives.string_of_bool} *)
+  (** Alias for {!Stdlib.string_of_bool} *)
   
   val bool_of_string : string -> bool
-  (** Alias for {!Pervasives.bool_of_string} *)
+  (** Alias for {!Stdlib.bool_of_string} *)
   
   val string_of_int : int -> string
-  (** Alias for {!Pervasives.string_of_int} *)
+  (** Alias for {!Stdlib.string_of_int} *)
   
   @BEGIN_FROM_3_08_0@
   external int_of_string : string -> int = "caml_int_of_string"
@@ -1020,7 +1029,7 @@ module type S = sig
    *)
   
   val string_of_float : float -> string
-  (** Alias for {!Pervasives.string_of_float} *)
+  (** Alias for {!Stdlib.string_of_float} *)
   
   @BEGIN_FROM_3_08_0@
   external float_of_string : string -> float = "caml_float_of_string"
@@ -1033,77 +1042,86 @@ module type S = sig
   @since 3.07.0: external float_of_string : string -> float = "float_of_string"
    *)
   
+  @BEGIN_WITH_FLAMBDA2@
+  external fst : ('a * 'b) -> 'a = "%field0_immut"
+  (** Alias for {!Stdlib.fst} *)
+  
+  external snd : ('a * 'b) -> 'b = "%field1_immut"
+  (** Alias for {!Stdlib.snd} *)
+  @END_WITH_FLAMBDA2@
+  @BEGIN_WITHOUT_FLAMBDA2@
   external fst : ('a * 'b) -> 'a = "%field0"
-  (** Alias for {!Pervasives.fst} *)
+  (** Alias for {!Stdlib.fst} *)
   
   external snd : ('a * 'b) -> 'b = "%field1"
-  (** Alias for {!Pervasives.snd} *)
+  (** Alias for {!Stdlib.snd} *)
+  @END_WITHOUT_FLAMBDA2@
   
   val (@) : 'a list -> 'a list -> 'a list
-  (** Alias for {!Pervasives.@} *)
+  (** Alias for {!Stdlib.@} *)
   
   val print_char : char -> unit
-  (** Alias for {!Pervasives.print_char} *)
+  (** Alias for {!Stdlib.print_char} *)
   
   val print_string : string -> unit
-  (** Alias for {!Pervasives.print_string} *)
+  (** Alias for {!Stdlib.print_string} *)
   
   val print_int : int -> unit
-  (** Alias for {!Pervasives.print_int} *)
+  (** Alias for {!Stdlib.print_int} *)
   
   val print_float : float -> unit
-  (** Alias for {!Pervasives.print_float} *)
+  (** Alias for {!Stdlib.print_float} *)
   
   val print_endline : string -> unit
-  (** Alias for {!Pervasives.print_endline} *)
+  (** Alias for {!Stdlib.print_endline} *)
   
   val print_newline : unit -> unit
-  (** Alias for {!Pervasives.print_newline} *)
+  (** Alias for {!Stdlib.print_newline} *)
   
   val prerr_char : char -> unit
-  (** Alias for {!Pervasives.prerr_char} *)
+  (** Alias for {!Stdlib.prerr_char} *)
   
   val prerr_string : string -> unit
-  (** Alias for {!Pervasives.prerr_string} *)
+  (** Alias for {!Stdlib.prerr_string} *)
   
   val prerr_int : int -> unit
-  (** Alias for {!Pervasives.prerr_int} *)
+  (** Alias for {!Stdlib.prerr_int} *)
   
   val prerr_float : float -> unit
-  (** Alias for {!Pervasives.prerr_float} *)
+  (** Alias for {!Stdlib.prerr_float} *)
   
   val prerr_endline : string -> unit
-  (** Alias for {!Pervasives.prerr_endline} *)
+  (** Alias for {!Stdlib.prerr_endline} *)
   
   val prerr_newline : unit -> unit
-  (** Alias for {!Pervasives.prerr_newline} *)
+  (** Alias for {!Stdlib.prerr_newline} *)
   
   val read_line : unit -> string
-  (** Alias for {!Pervasives.read_line} *)
+  (** Alias for {!Stdlib.read_line} *)
   
   val read_int : unit -> int
-  (** Alias for {!Pervasives.read_int} *)
+  (** Alias for {!Stdlib.read_int} *)
   
   val read_float : unit -> float
-  (** Alias for {!Pervasives.read_float} *)
+  (** Alias for {!Stdlib.read_float} *)
   
   val flush_all : unit -> unit
-  (** Alias for {!Pervasives.flush_all} *)
+  (** Alias for {!Stdlib.flush_all} *)
   
   external ref : 'a -> 'a ref = "%makemutable"
-  (** Alias for {!Pervasives.ref} *)
+  (** Alias for {!Stdlib.ref} *)
   
   external (!) : 'a ref -> 'a = "%field0"
-  (** Alias for {!Pervasives.!} *)
+  (** Alias for {!Stdlib.!} *)
   
   external (:=) : 'a ref -> 'a -> unit = "%setfield0"
-  (** Alias for {!Pervasives.:=} *)
+  (** Alias for {!Stdlib.:=} *)
   
   external incr : int ref -> unit = "%incr"
-  (** Alias for {!Pervasives.incr} *)
+  (** Alias for {!Stdlib.incr} *)
   
   external decr : int ref -> unit = "%decr"
-  (** Alias for {!Pervasives.decr} *)
+  (** Alias for {!Stdlib.decr} *)
   
   @BEGIN_FROM_3_10_0@
   external format_of_string :
@@ -1124,14 +1142,14 @@ module type S = sig
    *)
   
   val exit : int -> 'a
-  (** Alias for {!Pervasives.exit} *)
+  (** Alias for {!Stdlib.exit} *)
   
   val at_exit : (unit -> unit) -> unit
-  (** Alias for {!Pervasives.at_exit} *)
+  (** Alias for {!Stdlib.at_exit} *)
   
   val valid_float_lexem : string -> string
-  (** Alias for {!Pervasives.valid_float_lexem} *)
+  (** Alias for {!Stdlib.valid_float_lexem} *)
   
   val do_at_exit : unit -> unit
-  (** Alias for {!Pervasives.do_at_exit} *)
+  (** Alias for {!Stdlib>.do_at_exit} *)
 end

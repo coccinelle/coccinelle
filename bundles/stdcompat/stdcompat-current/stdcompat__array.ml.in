@@ -15,6 +15,61 @@ let create_float = Array.make_float
 @END_BEFORE_4_03_0@
 @END_FROM_4_02_0@
 
+@BEGIN_BEFORE_4_13_0@
+let fold_left_map f init array =
+  let r = ref init in
+  let array' = Array.map (fun item ->
+    let (accu, item') = f !r item in
+    r := accu;
+    item') array in
+  !r, array'
+
+let rec find_opt_rec f array i =
+  if i >= length array then
+    None
+  else
+    let item = unsafe_get array i in
+    if f item then
+      Some item
+    else
+      find_opt_rec f array (succ i)
+
+let find_opt f array =
+  find_opt_rec f array 0
+
+let rec find_map_rec f array i =
+  if i >= length array then
+    None
+  else
+    match f (unsafe_get array i) with
+    | None -> find_map_rec f array (succ i)
+    | Some _ as result -> result
+
+let find_map f array =
+  find_map_rec f array 0
+
+let split array =
+  let l = length array in
+  if l = 0 then
+    ([| |], [| |])
+  else
+    let (fst0, snd0) = unsafe_get array 0 in
+    let array_fst = Array.make l fst0 in
+    let array_snd = Array.make l snd0 in
+    for i = 1 to l - 1 do
+      let (fsti, sndi) = unsafe_get array i in
+      Array.unsafe_set array_fst i fsti;
+      Array.unsafe_set array_snd i sndi;
+    done;
+    (array_fst, array_snd)
+
+let combine array_fst array_snd =
+  if length array_fst <> length array_snd then
+    invalid_arg "Array.combine";
+  Array.init (length array_fst) (fun i ->
+    (unsafe_get array_fst i, unsafe_get array_snd i))
+@END_BEFORE_4_13_0@
+
 @BEGIN_BEFORE_4_11_0@
 exception Iter
 

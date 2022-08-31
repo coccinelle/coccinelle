@@ -31,26 +31,15 @@ module Option = struct
     | None | Some _ -> None
 end
 
-let try_close f ~close =
-  match f () with
-  | result ->
-      close ();
-      result
-  | exception e ->
-      begin
-        try
-          close ()
-        with _ ->
-          ()
-      end;
-      e |> raise
-
 module Version = struct
   type t = {
       major : int;
       minor : int;
       patch : int;
     }
+
+  let mk major minor patch =
+    { major; minor; patch }
 
   let compare (v : t) (v' : t) =
     compare v v'
@@ -66,8 +55,14 @@ module Version = struct
       match String.rindex version_line ' ' with
       | space_index -> space_index + 1
       | exception Not_found -> 0 in
-    { major = String.sub version_line index 1 |> int_of_string;
-      minor = String.sub version_line (index + 2) 2 |> int_of_string;
+    let version =
+      String.sub version_line index (String.length version_line - index) in
+    let major, minor =
+      match String.split_on_char '.' version with
+      | [major; minor; _patch] -> major, minor
+      | _ -> assert false in
+    { major = int_of_string major;
+      minor = int_of_string minor;
       patch = 0; }
 
 (*
@@ -87,13 +82,6 @@ module Version = struct
       Printf.sprintf "%d%s%.2d%s%d" major sep minor sep patch
     else
       Printf.sprintf "%d%s%.2d" major sep minor
-end
-
-module Lexing = struct
-  include Lexing
-
-  let set_filename lexbuf filename =
-    lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename }
 end
 
 let signature_of_in_channel ?filename in_channel =
@@ -157,24 +145,4 @@ module String = struct
 
   let suffix_from s pos =
     sub s pos (length s - pos)
-end
-
-module List = struct
-  include List
-
-  let rec find_map p l =
-    match l with
-    | [] -> raise Not_found
-    | hd :: tl ->
-        match p hd with
-        | None -> find_map p tl
-        | Some x -> x
-
-  let rec find_map_opt p l =
-    match l with
-    | [] -> None
-    | hd :: tl ->
-        match p hd with
-        | None -> find_map_opt p tl
-        | result -> result
 end

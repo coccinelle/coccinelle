@@ -14,14 +14,14 @@ module Option : sig
   val filter : ('a -> bool) -> 'a option -> 'a option
 end
 
-val try_close : (unit -> 'a) -> close:(unit -> unit) -> 'a
-
 module Version : sig
   type t = {
       major : int;
       minor : int;
       patch : int;
     }
+
+  val mk : int -> int -> int -> t
 
   val compare : t -> t -> int
 
@@ -36,12 +36,6 @@ module Version : sig
 *)
 
   val to_string : ?sep:string -> ?include_patch:bool -> t -> string
-end
-
-module Lexing : sig
-  include module type of (struct include Lexing end)
-
-  val set_filename : lexbuf -> string -> unit
 end
 
 val signature_of_in_channel :
@@ -83,12 +77,4 @@ module String : sig
   val has_prefix : string -> prefix:string -> bool
 
   val suffix_from : string -> int -> string
-end
-
-module List : sig
-  include module type of (struct include List end)
-
-  val find_map : ('a -> 'b option) -> 'a list -> 'b
-
-  val find_map_opt : ('a -> 'b option) -> 'a list -> 'b option
 end

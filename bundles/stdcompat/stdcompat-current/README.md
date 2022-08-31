@@ -59,10 +59,6 @@ the data structures when they are abstracted: it is the case for
 ``Set.find*``, ``Set.map``.
 Pure (but less efficient) implementations are available by configuring
 ``Stdcompat`` with ``./configure --disable-magic``.
-Note that redefinitions can still have bad time complexity:
-for instance, ``Set.map`` uses the function ``union`` to rebuild trees
-instead of the internal function ``try_join``, because using the
-latter would require to redefine too much internal functions.
 
 Redefinitions cannot even guarantee some security fixes: for instance,
 seeds and randomization are ignored with ``Hashtbl`` prior to 4.00.0.
@@ -76,7 +72,8 @@ Configure and install
 Execute `make -f Makefile.bootstrap` first, to generate the files
 `configure`, `Makefile.in` and others.
 
-Then execute `configure`.
+Then execute `./configure` (or `./configure --disable-magic` to use
+the pure and less efficient implementation).
 
 Then execute `make` and `make install`.
 

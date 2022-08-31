@@ -1,18 +1,9 @@
 include Sys
 
 @BEGIN_BEFORE_4_12_0@
-let wrap_command cmd args =
-  match command (Stdcompat__filename.quote_command cmd args ~stderr:"/dev/null")
-  with
-  | 0 -> ()
-  | error_code ->
-    raise (Sys_error (Printf.sprintf "error code: %d" error_code))
+external mkdir : string -> int -> unit = "caml_sys_mkdir"
 
-let rmdir path =
-  wrap_command "rmdir" [path]
-
-let mkdir path permissions =
-  wrap_command "mkdir" ["-m"; string_of_int permissions; path]
+external rmdir : string -> unit = "caml_sys_rmdir"
 @END_BEFORE_4_12_0@
 
 @BEGIN_BEFORE_4_10_0@
@@ -119,3 +110,25 @@ let is_directory path =
   with Sys_error _ when file_exists path ->
     false
 @END_BEFORE_3_10_0@
+
+@BEGIN_BEFORE_4_14_0@
+let development_version = @OCAML_DEVELOPMENT_VERSION@
+
+type extra_prefix = Plus | Tilde
+
+type extra_info = extra_prefix * string
+
+type ocaml_release_info = {
+  major : int;
+  minor : int;
+  patchlevel : int;
+  extra : extra_info option
+}
+
+let ocaml_release = {
+  major = @OCAML_VERSION_MAJOR@;
+  minor = @OCAML_VERSION_MINOR@;
+  patchlevel = @OCAML_VERSION_PATCHLEVEL@;
+  extra = @OCAML_RELEASE_EXTRA@
+}
+@END_BEFORE_4_14_0@
