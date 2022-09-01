@@ -74,6 +74,11 @@ and expression r k e =
 	       (Ast0.AsExpr(exp,Ast0.rewrap exp (Ast0.Ident(id_meta)))))
 	| Ast0.StmtTag(stm_meta) ->
 	    (other_metas, Ast0.rewrap exp (Ast0.AsSExpr(exp,stm_meta)))
+	| Ast0.DeclTag(decl_meta) ->
+	    let decl_meta =
+	      Ast0.rewrap exp
+		(Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),decl_meta)) in
+	    (other_metas, Ast0.rewrap exp (Ast0.AsSExpr(exp,decl_meta)))
 	| x -> (x::other_metas,exp))
     ([],e) metas
 
