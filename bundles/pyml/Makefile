@@ -63,7 +63,7 @@ distclean: clean
 $(SRC_DIR)/pywrappers.ml \
 $(SRC_DIR)/pyml_wrappers.inc: \
 		$(MARKER) $(SRC_DIR)/generate
-	cd $(SRC_DIR) && ./generate
+	cd $(SRC_DIR) && LD_LIBRARY_PATH=$(STDCOMPATDIR):$(LD_LIBRARY_PATH) ./generate
 
 $(SRC_DIR)/pyml_wrappers.inc: $(SRC_DIR)/pywrappers.ml
 
