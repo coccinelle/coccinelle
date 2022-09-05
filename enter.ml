@@ -28,6 +28,7 @@ let preprocess = ref false     (* run the C preprocessor before cocci *)
 let compat_mode = ref false
 let ignore_unknown_opt = ref false
 let profile_per_file = ref false
+let keep_going = ref false
 
 let dir = ref false
 let ignore = ref []
@@ -729,6 +730,8 @@ let other_options = [
     "   option to set if launch spatch in ocamldebug";
     "--disable-once",       Arg.Set Common.disable_pr2_once,
     "   to print more messages";
+    "--keep-going",         Arg.Set keep_going,
+    "     write transformations and exit with zero status, even if some files fail";
     "--show-trace-profile", Arg.Set Common.show_trace_profile,
     "   show trace";
     "--save-tmp-files",     Arg.Set Common.save_tmp_files,   " ";
@@ -1083,6 +1086,7 @@ let rec main_action xs =
   | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
   previous_merges := ([], []);
+  let patching_failed = ref false in
   let rec toploop = function
       [] -> failwith "no C files provided"
     | x::xs ->
@@ -1366,6 +1370,7 @@ singleton lists are then just appended to each other during the merge. *)
 					    (Printexc.to_string e)
 					    all_cfiles;
 					  flush stderr;
+					  patching_failed := true;
 					  prev (* *)
 					end
 					else raise e) in
@@ -1414,6 +1419,12 @@ singleton lists are then just appended to each other during the merge. *)
 		  (x,xs,cocci_infos,outfiles)
 		end) in
       let (x,xs,cocci_infos,outfiles) = toploop xs in
+      if !patching_failed && not !keep_going && !Flag_ctl.bench == 0 && !compare_with_expected == None
+      then
+        begin
+          Printf.fprintf stderr "An error occurred when attempting to transform some files.\n";
+          raise (UnixExit (-1))
+        end;
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
 	generate_outfiles outfiles x xs;
