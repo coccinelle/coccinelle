@@ -28,7 +28,6 @@ let preprocess = ref false     (* run the C preprocessor before cocci *)
 let compat_mode = ref false
 let ignore_unknown_opt = ref false
 let profile_per_file = ref false
-let keep_going = ref false
 
 let dir = ref false
 let ignore = ref []
@@ -730,8 +729,6 @@ let other_options = [
     "   option to set if launch spatch in ocamldebug";
     "--disable-once",       Arg.Set Common.disable_pr2_once,
     "   to print more messages";
-    "--keep-going",         Arg.Set keep_going,
-    "     write transformations and exit with zero status, even if some files fail";
     "--show-trace-profile", Arg.Set Common.show_trace_profile,
     "   show trace";
     "--save-tmp-files",     Arg.Set Common.save_tmp_files,   " ";
@@ -1086,8 +1083,7 @@ let rec main_action xs =
   | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
   previous_merges := ([], []);
-  let patching_failed = ref false in
-  let rec toploop = function
+  let rec toploop patching_failed = function
       [] -> failwith "no C files provided"
     | x::xs ->
       (* a more general solution would be to use
@@ -1306,14 +1302,14 @@ let rec main_action xs =
 	    then seq_fold
 	    else par_fold in
 
-          let (outfiles, merges) =
+          let (outfiles, merges, patching_failed) =
             Common.profile_code "Main.outfiles computation" (fun () ->
 	      let res =
 		match infiles with
 		  [] ->
 		    (* parmap case does a lot of work that is not needed
 		       if there is nothing to do *)
-		    [], []
+		    [], [], false
 		| _ ->
 (* merge_vars associates one merge variable assignment to each core.
 The following code relies on the fact that parfold never
@@ -1321,65 +1317,64 @@ passes the accumulator from one core to another before merging the
 results. Therefore, the fold operator may just keep the last value in a
 singleton list (forgetting the former accumulator value) and these
 singleton lists are then just appended to each other during the merge. *)
-		    let merge (outfiles, merge_vars) (outfiles', merge_vars') =
+		    let merge (outfiles, merge_vars, fld) (outfiles', merge_vars', fld') =
 		      let all_outfiles = List.rev_append outfiles outfiles' in
 		      let all_merge_vars =
 			List.rev_append merge_vars merge_vars' in
-		      all_outfiles, all_merge_vars in
+		      all_outfiles, all_merge_vars, fld || fld' in
 		    infiles +> actual_fold merge
-		      (fun (prev_files, _prev_merges as prev) cfiles ->
-		      if (not !Flag.worth_trying_opt) ||
-		      Cocci.worth_trying cfiles constants
-		      then
-			begin
-			  let all_cfiles =
-			    String.concat " " (List.map fst cfiles) in
-			  pr2 ("HANDLING: " ^ all_cfiles);
-			  flush stderr;
+		      (fun ((prev_files, prev_merges, fld) as prev) cfiles ->
+			if (not !Flag.worth_trying_opt) ||
+			Cocci.worth_trying cfiles constants
+			then
+			  begin
+			    let all_cfiles =
+			      String.concat " " (List.map fst cfiles) in
+			    pr2 ("HANDLING: " ^ all_cfiles);
+			    flush stderr;
 
-			  Common.timeout_function_opt all_cfiles !FC.timeout
-			    (fun () ->
-			      let res =
-				Common.report_if_take_time 10 all_cfiles
-				  (fun () ->
-				    try
-				      let optfile =
-					if !output_file <> "" && !compat_mode
-					then Some !output_file
-					else None in
-				      let files, merges =
-					adjust_stdin cfiles (fun () ->
-					  Common.redirect_stdout_opt optfile
-					    (fun () ->
+			    Common.timeout_function_opt all_cfiles !FC.timeout
+			      (fun () ->
+				let res =
+				  Common.report_if_take_time 10 all_cfiles
+				    (fun () ->
+				      try
+					let optfile =
+					  if !output_file <> "" && !compat_mode
+					  then Some !output_file
+					  else None in
+					let files, merges =
+					  adjust_stdin cfiles (fun () ->
+					    Common.redirect_stdout_opt optfile
+					      (fun () ->
 					      (* this is the main call *)
-					      Cocci.full_engine cocci_infos
-						cfiles
-					 )) in
-				      List.rev_append files prev_files,
-				      [merges]
-				    with
-				    | Common.UnixExit x ->
-					raise (Common.UnixExit x)
-				    | Pycocci.Pycocciexception ->
-					raise Pycocci.Pycocciexception
-				    | e ->
-					if !dir || !file_groups
-					then begin
+						Cocci.full_engine cocci_infos
+						  cfiles
+						  )) in
+					List.rev_append files prev_files,
+					[merges], fld
+				      with
+				      | Common.UnixExit x ->
+					  raise (Common.UnixExit x)
+				      | Pycocci.Pycocciexception ->
+					  raise Pycocci.Pycocciexception
+				      | e ->
+					  if !dir || !file_groups
+					  then begin
 					  (* not hidden by --very-quiet *)
-					  Printf.eprintf "EXN: %s in %s\n"
-					    (Printexc.to_string e)
-					    all_cfiles;
-					  flush stderr;
-					  patching_failed := true;
-					  prev (* *)
-					end
-					else raise e) in
-			      (if !dir && !profile_per_file
-			      then Common.reset_profile());
-			      res)
-			end
-		      else prev)
-		      ([], []) in res) in
+					    Printf.eprintf "EXN: %s in %s\n"
+					      (Printexc.to_string e)
+					      all_cfiles;
+					    flush stderr;
+					    (prev_files, prev_merges, true)
+					  end
+					  else raise e) in
+				(if !dir && !profile_per_file
+				then Common.reset_profile());
+				res)
+			  end
+			else prev)
+		      ([], [], patching_failed) in res) in
 	  let outfiles = List.rev outfiles in
 	  let merges =
             List.fold_left Cocci.union_merge_vars !previous_merges merges in
@@ -1390,14 +1385,14 @@ singleton lists are then just appended to each other during the merge. *)
 		Cocci.post_engine cocci_infos merges;
 		Iteration.get_pending_instance()
 	    | pending_instance ->
-               previous_merges := merges;
-               pending_instance in
+		previous_merges := merges;
+		pending_instance in
 	  (match pending_instance with
 	    None ->
-	      (x,xs,cocci_infos,outfiles)
+	      (x,xs,cocci_infos,outfiles,patching_failed)
 	  | Some (files,virt_rules,virt_ids) ->
-	      if outfiles = [] || outfiles = [] || not !FC.show_diff
-		  || !Flag_cocci.inplace_modif
+	      if outfiles = [] || outfiles = [] || not !FC.show_diff ||
+	      !Flag_cocci.inplace_modif
 	      then
 		begin
 		  (if !Flag_cocci.inplace_modif
@@ -1410,27 +1405,30 @@ singleton lists are then just appended to each other during the merge. *)
 		  distrib_index := None;
 		  distrib_max := None;
 		  dir := List.exists Sys.is_directory files;
-		  toploop files
+		  toploop patching_failed files
 		end
 	      else
 		begin
 		  Common.pr2
 		    "Out of place transformation not compatible with iteration. Aborting.\n consider using -no_show_diff or -in_place";
-		  (x,xs,cocci_infos,outfiles)
+		  (x,xs,cocci_infos,outfiles,true)
 		end) in
-      let (x,xs,cocci_infos,outfiles) = toploop xs in
-      if !patching_failed && not !keep_going && !Flag_ctl.bench == 0 && !compare_with_expected == None
-      then
-        begin
-          Printf.fprintf stderr "An error occurred when attempting to transform some files.\n";
-          raise (UnixExit (-1))
-        end;
+      let (x,xs,cocci_infos,outfiles,patching_failed) = toploop false xs in
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
-	generate_outfiles outfiles x xs;
+	(if patching_failed
+	then generate_outfiles outfiles x xs);
         match !compare_with_expected with
 	  None -> ()
-        | Some extension -> Testing.compare_with_expected outfiles extension)
+        | Some extension -> Testing.compare_with_expected outfiles extension);
+      if patching_failed
+      then
+        begin
+          Printf.fprintf stderr
+	    "An error occurred when attempting to transform some files.\n";
+          if !compare_with_expected == None
+	  then raise (UnixExit (-1))
+        end
 
 and debug_restart virt_rules virt_ids =
   if !Flag_parsing_cocci.debug_parse_cocci
