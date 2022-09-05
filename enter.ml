@@ -1416,7 +1416,7 @@ singleton lists are then just appended to each other during the merge. *)
       let (x,xs,cocci_infos,outfiles,patching_failed) = toploop false xs in
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
-	(if patching_failed
+	(if not patching_failed
 	then generate_outfiles outfiles x xs);
         match !compare_with_expected with
 	  None -> ()
