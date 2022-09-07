@@ -307,7 +307,9 @@ AS_IF([test -n "$with_python" -a "$with_python" != "yes"],
 
 AS_IF([test "x$enable_python" != xno],
 [dnl
-  AC_CHECK_COCCI_EXTPKG([pyml])  dnl  will set $enable_pyml to 'yes', 'no', or 'local'
+  dnl AC_CHECK_COCCI_EXTPKG([pyml])  dnl  will set $enable_pyml to 'yes', 'no', or 'local'
+  AC_SUBST([MAKE_pyml],[$COCCI_SRCDIR/bundles/pyml])
+  AC_SUBST([PATH_pyml],[$COCCI_SRCDIR/bundles/pyml])
 ])
 
 AS_IF([test -z "$enable_python"],
