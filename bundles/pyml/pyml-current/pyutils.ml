@@ -4,11 +4,6 @@ let option_find f x =
   try Some (f x)
   with Not_found -> None
 
-let option_unwrap option =
-  match option with
-    None -> raise Not_found
-  | Some result -> result
-
 let substring_between string before after =
   String.sub string before (after - before)
 
@@ -39,10 +34,6 @@ let trim_carriage_return line =
   else
     line
 
-let has_prefix prefix s =
-  let prefix_length = String.length prefix in
-  String.length s >= prefix_length && String.sub s 0 prefix_length = prefix
-
 let input_lines channel =
   let accu = ref [] in
   try
@@ -52,15 +43,6 @@ let input_lines channel =
     assert false
   with End_of_file ->
     List.rev !accu
-
-let read_and_close channel f arg =
-  try
-    let result = f arg in
-    close_in channel;
-    result
-  with e ->
-    close_in_noerr channel;
-    raise e
 
 let write_and_close channel f arg =
   try
@@ -75,8 +57,7 @@ let with_temp_file contents f =
   let (file, channel) = Filename.open_temp_file "pyml_tests" ".py" in
   Fun.protect begin fun () ->
     write_and_close channel (output_string channel) contents;
-    let channel = open_in file in
-    read_and_close channel (f file) channel
+    Stdcompat.In_channel.with_open_bin file (f file)
   end
   ~finally:(fun () -> Sys.remove file)
 

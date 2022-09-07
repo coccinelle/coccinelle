@@ -25,9 +25,6 @@ val trim_carriage_return: string -> string
 (** If the string ends with ['\r'], then returns the string without this
     character, else returns the whole string. *)
 
-val has_prefix: string -> string -> bool
-(** [has_prefix prefix s] returns [true] if [s] begins with [prefix]. *)
-
 val input_lines: in_channel -> string list
 (** Reads and returns all the lines from an input channel to the end of file.
     Carriage return characters are removed from the end of lines if any. *)
@@ -35,16 +32,6 @@ val input_lines: in_channel -> string list
 val option_find: ('a -> 'b) -> 'a -> 'b option
 (** [option_find f x] returns [Some (f x)], or [None] if [f x] raises
     [Not_found]. *)
-
-val option_unwrap: 'a option -> 'a
-(** [option_unwrap x] returns [x'] if [x] is [Some x'], and raises
-    [Not_found] if [x] is [None]. *)
-
-val read_and_close: in_channel -> ('a -> 'b) -> 'a -> 'b
-(** [read_and_close channel f arg] calls [f arg], and returns the result of
-    [f].
-    [channel] is always closed after [f] has been called, even if [f] raises
-    an exception. *)
 
 val write_and_close: out_channel -> ('a -> 'b) -> 'a -> 'b
 (** [write_and_close channel f arg] calls [f arg], and returns the result of

@@ -1,11 +1,22 @@
 #ifndef _PYML_STUBS_H_
 #define _PYML_STUBS_H_
 #include <stdbool.h>
-#include <unistd.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stddef.h>
 
 /* The following definitions are extracted and simplified from
 #include <Python.h>
 */
+
+/* ssize_t is POSIX and not defined with Visual Studio */
+/* See for instance https://github.com/vlm/asn1c/issues/159 */
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
+#include <unistd.h>
+#endif
 
 typedef ssize_t Py_ssize_t;
 
@@ -103,12 +114,6 @@ pyml_assert_ucs4();
 
 void
 pyml_assert_python3();
-
-value
-pyml_wrap(PyObject *object, bool steal);
-
-PyObject *
-pyml_unwrap(value v);
 
 /* Numpy */
 
@@ -222,9 +227,37 @@ typedef struct tagPyArrayObject_fields {
     PyObject *weakreflist;
 } PyArrayObject_fields;
 
-struct numpy_custom_operations {
-    struct custom_operations ops;
-    PyObject *obj;
-};
+typedef struct {
+    int cf_flags;
+    int cf_feature_version; /* Python >=3.8 */
+} PyCompilerFlags;
+
+#define Py_TPFLAGS_INT_SUBCLASS         (1L<<23)
+#define Py_TPFLAGS_LONG_SUBCLASS        (1UL << 24)
+#define Py_TPFLAGS_LIST_SUBCLASS        (1UL << 25)
+#define Py_TPFLAGS_TUPLE_SUBCLASS       (1UL << 26)
+#define Py_TPFLAGS_BYTES_SUBCLASS       (1UL << 27)
+#define Py_TPFLAGS_UNICODE_SUBCLASS     (1UL << 28)
+#define Py_TPFLAGS_DICT_SUBCLASS        (1UL << 29)
+#define Py_TPFLAGS_BASE_EXC_SUBCLASS    (1UL << 30)
+#define Py_TPFLAGS_TYPE_SUBCLASS        (1UL << 31)
+
+#define Py_LT 0
+#define Py_LE 1
+#define Py_EQ 2
+#define Py_NE 3
+#define Py_GT 4
+#define Py_GE 5
+
+typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
+
+typedef struct PyMethodDef {
+    const char *ml_name;
+    PyCFunction ml_meth;
+    int ml_flags;
+    const char	*ml_doc;
+} PyMethodDef;
+
+typedef void (*PyCapsule_Destructor)(PyObject *);
 
 #endif /* _PYML_STUBS_H_ */

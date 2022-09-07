@@ -11,7 +11,7 @@ The Python library is linked at runtime and the same executable can be
 run in a Python 2 or a Python 3 environment. ``py.ml`` does not
 require any Python library at compile time.
 The only compile time dependency is
-[https://github.com/thierry-martinez/stdcompat/](``Stdcompat``) to ensure compatibility
+[``Stdcompat``](https://github.com/thierry-martinez/stdcompat) to ensure compatibility
 with all OCaml compiler versions from 3.12.
 
 Bindings are split in three modules:
@@ -142,12 +142,15 @@ When an OCaml function ``f`` is called from Python
 where ``type`` belongs to the enumeration ``Py.Err.t``
 and ``msg`` is an OCaml string.
 If ``f`` raises an exception that is neither
-of the form ``Py.E`` nor ``Py.Err``, then the Python interpreter is interrupted,
-and the exception is raised back in OCaml.
+of the form ``Py.E`` nor ``Py.Err``, then
+this exception is encapsulated with its backtrace in a Python exception
+(of class `ocaml exception` derived from `BaseException` and not from
+`Exception`, so as not to be caught), leading the Python interpreter to
+be interrupted, and the exception is raised back in OCaml.
 
-``Py.Run.simple_string`` catches all Python exceptions and returns a single
-Boolean to indicate success. One can prefer ``Py.Run.eval`` to get proper
-error handling.
+``Py.Run.simple_string`` catches all Python exceptions (and OCaml
+exceptions as well) and returns a single Boolean to indicate
+success. One can prefer ``Py.Run.eval`` to get proper error handling.
 
 Data types
 ----------

@@ -5,25 +5,25 @@
 #include <caml/callback.h>
 #include <caml/custom.h>
 #include <caml/alloc.h>
-#include <sys/param.h>
+#include <caml/intext.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <stdcompat.h>
+#include <assert.h>
 #include "pyml_stubs.h"
 
 static FILE *(*Python__Py_fopen)(const char *pathname, const char *mode);
 
-static FILE *(*Python__Py_wfopen)(const wchar_t *pathname, const char *mode);
+static FILE *(*Python__Py_wfopen)(const wchar_t *pathname, const wchar_t *mode);
 
 static void *xmalloc(size_t size)
 {
     void *p = malloc(size);
     if (!p) {
-        failwith("Virtual memory exhausted\n");
+        caml_failwith("Virtual memory exhausted\n");
     }
     return p;
 }
@@ -39,7 +39,13 @@ open_library(const char *filename)
     return LoadLibrary(filename);
 }
 
-void
+static char *
+get_library_error()
+{
+    return "Unable to load library";
+}
+
+static void
 close_library(library_t library)
 {
     if (!FreeLibrary(library)) {
@@ -64,9 +70,12 @@ int
 unsetenv(const char *name)
 {
     size_t len = strlen(name);
-    char string[len + 2];
+    char *string = xmalloc(len + 2);
+    int result;
     snprintf(string, len + 2, "%s=", name);
-    return _putenv(string);
+    result = _putenv(string);
+    free(string);
+    return result;
 }
 
 extern int win_CRT_fd_of_filedescr(value handle);
@@ -76,7 +85,7 @@ file_of_file_descr(value file_descr, const char *mode)
 {
     CAMLparam1(file_descr);
     int fd = win_CRT_fd_of_filedescr(file_descr);
-    FILE *result = _fdopen(dup(fd), mode);
+    FILE *result = _fdopen(_dup(fd), mode);
     CAMLreturnT(FILE *, result);
 }
 #else
@@ -88,6 +97,12 @@ static library_t
 open_library(const char *filename)
 {
     return dlopen(filename, RTLD_LAZY | RTLD_GLOBAL);
+}
+
+static char *
+get_library_error()
+{
+    return dlerror();
 }
 
 void
@@ -121,42 +136,6 @@ file_of_file_descr(value file_descr, const char *mode)
 }
 #endif
 
-/* The following definitions are extracted and simplified from
-#include <Python.h>
-*/
-
-typedef struct {
-    int cf_flags;
-} PyCompilerFlags;
-
-#define Py_TPFLAGS_INT_SUBCLASS         (1L<<23)
-#define Py_TPFLAGS_LONG_SUBCLASS        (1UL << 24)
-#define Py_TPFLAGS_LIST_SUBCLASS        (1UL << 25)
-#define Py_TPFLAGS_TUPLE_SUBCLASS       (1UL << 26)
-#define Py_TPFLAGS_BYTES_SUBCLASS       (1UL << 27)
-#define Py_TPFLAGS_UNICODE_SUBCLASS     (1UL << 28)
-#define Py_TPFLAGS_DICT_SUBCLASS        (1UL << 29)
-#define Py_TPFLAGS_BASE_EXC_SUBCLASS    (1UL << 30)
-#define Py_TPFLAGS_TYPE_SUBCLASS        (1UL << 31)
-
-#define Py_LT 0
-#define Py_LE 1
-#define Py_EQ 2
-#define Py_NE 3
-#define Py_GT 4
-#define Py_GE 5
-
-typedef PyObject *(*PyCFunction)(PyObject *, PyObject *);
-
-typedef struct PyMethodDef {
-    const char *ml_name;
-    PyCFunction ml_meth;
-    int ml_flags;
-    const char	*ml_doc;
-} PyMethodDef;
-
-typedef void (*PyCapsule_Destructor)(PyObject *);
-
 static void *Python27__PyObject_NextNotImplemented;
 
 /* Global variables for the library */
@@ -188,6 +167,7 @@ static PyObject *(*Python_PyObject_CallMethodObjArgs)(
 
 /* Wrapped by PyErr_Fetch_wrapper */
 static void (*Python_PyErr_Fetch)(PyObject **, PyObject **, PyObject **);
+static void (*Python_PyErr_Restore)(PyObject *, PyObject *, PyObject *);
 static void (*Python_PyErr_NormalizeException)
 (PyObject **, PyObject **, PyObject **);
 
@@ -210,12 +190,18 @@ static PyObject *(*Python_PyLong_FromString)(const char *, const char **, int);
 /* Internal use only */
 static void (*Python_PyMem_Free)(void *);
 
+/* Generate traceback objects. */
+static PyObject *(*Python_PyThreadState_Get)();
+static PyObject *(*Python_PyFrame_New)(PyObject*, PyObject*, PyObject*, PyObject*);
+static PyObject *(*Python_PyCode_NewEmpty)(const char*, const char*, int);
+
 static enum UCS { UCS_NONE, UCS2, UCS4 } ucs;
 
 /* Single instance of () */
 static PyObject *tuple_empty;
 
 #include "pyml.h"
+#include <stdio.h>
 
 static void *getcustom( value v )
 {
@@ -283,10 +269,102 @@ pyhash( value v )
     }
 }
 
+void
+pyml_assert_initialized()
+{
+    if (!version_major) {
+        caml_failwith("Run 'Py.initialize ()' first");
+    }
+}
+
+/** Creates a Python tuple initialized with a single element given by the
+    argument. The reference to the argument is stolen. */
+static PyObject *
+singleton(PyObject *value)
+{
+    PyObject *result = Python_PyTuple_New(1);
+    if (!result) {
+      caml_failwith("PyTuple_New");
+    }
+    if (Python_PyTuple_SetItem(result, 0, value)) {
+      caml_failwith("PyTuple_SetItem");
+    }
+    return result;
+}
+
+static void
+pyserialize(value v, uintnat *bsize_32, uintnat *bsize_64)
+{
+    pyml_assert_initialized();
+    PyObject *value = getcustom(v);
+    PyObject *pickle = Python_PyImport_ImportModule("pickle");
+    if (pickle == NULL) {
+      caml_failwith("Cannot import pickle");
+    }
+    PyObject *dumps = Python_PyObject_GetAttrString(pickle, "dumps");
+    if (dumps == NULL) {
+      caml_failwith("pickle.dumps unavailable");
+    }
+    PyObject *args = singleton(value);
+    PyObject *bytes = Python_PyObject_Call(dumps, args, NULL);
+    if (bytes == NULL) {
+      caml_failwith("pickle.dumps failed");
+    }
+    Py_ssize_t size;
+    char *contents;
+    if (version_major >= 3) {
+      size = Python3_PyBytes_Size(bytes);
+      contents = (char *) Python3_PyBytes_AsString(bytes);
+    }
+    else {
+      size = Python2_PyString_Size(bytes);
+      contents = (char *) Python2_PyString_AsString(bytes);
+    }
+    caml_serialize_int_8(size);
+    caml_serialize_block_1(contents, size);
+    *bsize_32 = 4;
+    *bsize_64 = 8;
+    /*Py_DECREF(bytes);*/ /* reference stolen by args */
+    Py_DECREF(args);
+    Py_DECREF(dumps);
+    Py_DECREF(pickle);
+}
+
 static uintnat
 pydeserialize(void *dst)
 {
-    return 0L;
+    pyml_assert_initialized();
+    Py_ssize_t size = caml_deserialize_uint_8();
+    PyObject *bytes;
+    char *contents;
+    if (version_major >= 3) {
+      bytes = Python3_PyBytes_FromStringAndSize(NULL, size);
+      contents = (char *) Python3_PyBytes_AsString(bytes);
+    }
+    else {
+      bytes = Python2_PyString_FromStringAndSize(NULL, size);
+      contents = (char *) Python2_PyString_AsString(bytes);
+    }
+    caml_deserialize_block_1(contents, size);
+    PyObject *pickle = Python_PyImport_ImportModule("pickle");
+    if (pickle == NULL) {
+      caml_failwith("Cannot import pickle");
+    }
+    PyObject *loads = Python_PyObject_GetAttrString(pickle, "loads");
+    if (loads == NULL) {
+      caml_failwith("pickle.loads unavailable");
+    }
+    PyObject *args = singleton(bytes);
+    PyObject *value = Python_PyObject_Call(loads, args, NULL);
+    if (value == NULL) {
+      caml_failwith("pickle.loads failed");
+    }
+    *((PyObject **) dst) = value;
+    /*Py_DECREF(bytes);*/ /* reference stolen by args */
+    Py_DECREF(args);
+    Py_DECREF(loads);
+    Py_DECREF(pickle);
+    return sizeof(PyObject *);
 }
 
 struct custom_operations pyops =
@@ -295,7 +373,7 @@ struct custom_operations pyops =
     pydecref,
     pycompare,
     pyhash,
-    custom_serialize_default,
+    pyserialize,
     pydeserialize
 };
 
@@ -316,7 +394,7 @@ resolve(const char *symbol)
         ssize_t size = snprintf(NULL, 0, fmt, symbol);
         char *msg = xmalloc(size + 1);
         snprintf(msg, size + 1, fmt, symbol);
-        failwith(msg);
+        caml_failwith(msg);
     }
     return result;
 }
@@ -405,6 +483,10 @@ pyml_unwrap_compilerflags(value v)
     if (Is_block(v)) {
         PyCompilerFlags *flags = malloc(sizeof(PyCompilerFlags));
         flags->cf_flags = Int_val(Field(Field(v, 0), 0));
+
+        /* only useful for Python >= 3.8 */
+        flags->cf_feature_version = version_minor;
+
         CAMLreturnT(PyCompilerFlags *, flags);
     }
     else {
@@ -512,7 +594,7 @@ camlwrap_capsule(value val, void *aux_str, int size)
 {
     value *v = (value *) malloc(sizeof(value) + size);
     *v = val;
-    memcpy((void *)v + sizeof(value), aux_str, size);
+    memcpy((char *)v + sizeof(value), aux_str, size);
     caml_register_global_root(v);
     return wrap_capsule(v, "ocaml-capsule", camldestr_capsule);
 }
@@ -521,15 +603,7 @@ static void *
 caml_aux(PyObject *obj)
 {
     value *v = (value *) unwrap_capsule(obj, "ocaml-closure");
-    return (void *) v + sizeof(value);
-}
-
-void
-pyml_assert_initialized()
-{
-    if (!version_major) {
-        failwith("Run 'Py.initialize ()' first");
-    }
+    return (char *) v + sizeof(value);
 }
 
 void
@@ -537,7 +611,7 @@ pyml_assert_python2()
 {
     if (version_major != 2) {
         pyml_assert_initialized();
-        failwith("Python 2 needed");
+        caml_failwith("Python 2 needed");
     }
 }
 
@@ -546,7 +620,7 @@ pyml_assert_ucs2()
 {
     if (ucs != UCS2) {
         pyml_assert_initialized();
-        failwith("Python with UCS2 needed");
+        caml_failwith("Python with UCS2 needed");
     }
 }
 
@@ -555,7 +629,7 @@ pyml_assert_ucs4()
 {
     if (ucs != UCS4) {
         pyml_assert_initialized();
-        failwith("Python with UCS4 needed");
+        caml_failwith("Python with UCS4 needed");
     }
 }
 
@@ -564,7 +638,7 @@ pyml_assert_python3()
 {
     if (version_major != 3) {
         pyml_assert_initialized();
-        failwith("Python 3 needed");
+        caml_failwith("Python 3 needed");
     }
 }
 
@@ -575,16 +649,16 @@ pyml_check_symbol_available(void *symbol, char *symbol_name)
         char *fmt = "Symbol unavailable with this version of Python: %s.\n";
         ssize_t size = snprintf(NULL, 0, fmt, symbol_name);
         if (size < 0) {
-          failwith("Symbol unavailable with this version of Python.\n");
+          caml_failwith("Symbol unavailable with this version of Python.\n");
           return;
         }
         char *msg = xmalloc(size + 1);
         size = snprintf(msg, size + 1, fmt, symbol_name);
         if (size < 0) {
-          failwith("Symbol unavailable with this version of Python.\n");
+          caml_failwith("Symbol unavailable with this version of Python.\n");
           return;
         }
-        failwith(msg);
+        caml_failwith(msg);
     }
 }
 
@@ -652,6 +726,51 @@ pyml_wrap_closure(value name, value docstring, value closure)
 
 int debug_build;
 
+int trace_refs_build;
+
+static void
+guess_debug_build()
+{
+    PyObject *sysconfig = Python_PyImport_ImportModule("sysconfig");
+    if (!sysconfig) {
+        caml_failwith("Cannot import sysconfig");
+    }
+    PyObject *get_config_var =
+        Python_PyObject_GetAttrString(sysconfig, "get_config_var");
+    assert(get_config_var);
+    PyObject *args;
+    PyObject *py_debug;
+    PyObject *debug_build_py;
+    char *py_debug_str = "Py_DEBUG";
+    if (version_major >= 3) {
+        py_debug = Python3_PyUnicode_FromStringAndSize(py_debug_str, 8);
+    }
+    else {
+        py_debug = Python2_PyString_FromStringAndSize(py_debug_str, 8);
+    }
+    assert(py_debug);
+    args = singleton(py_debug);
+    debug_build_py = Python_PyObject_Call(get_config_var, args, NULL);
+    assert(debug_build_py);
+    if (debug_build_py == Python__Py_NoneStruct) {
+        debug_build = 0;
+    }
+    else {
+        if (version_major >= 3) {
+            debug_build = Python_PyLong_AsLong(debug_build_py);
+        }
+        else {
+            debug_build = Python2_PyInt_AsLong(debug_build_py);
+        }
+        if (debug_build ==  -1) {
+            caml_failwith("Cannot check for debug build");
+        }
+    }
+    Py_DECREF(args);
+    Py_DECREF(get_config_var);
+    Py_DECREF(sysconfig);
+}
+
 CAMLprim value
 py_load_library(value filename_ocaml, value debug_build_ocaml)
 {
@@ -660,7 +779,7 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
         const char *filename = String_val(Field(filename_ocaml, 0));
         library = open_library(filename);
         if (!library) {
-            failwith("Library not found");
+            caml_failwith(get_library_error());
         }
     }
     else {
@@ -668,7 +787,7 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
     }
     Python_Py_GetVersion = find_symbol(library, "Py_GetVersion");
     if (!Python_Py_GetVersion) {
-        failwith("No Python symbol");
+        caml_failwith("No Python symbol");
     }
     const char *version = Python_Py_GetVersion();
     version_major = version[0] - '0';
@@ -686,6 +805,7 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
     Python_PyObject_CallMethodObjArgs =
         resolve("PyObject_CallMethodObjArgs");
     Python_PyErr_Fetch = resolve("PyErr_Fetch");
+    Python_PyErr_Restore = resolve("PyErr_Restore");
     Python_PyErr_NormalizeException = resolve("PyErr_NormalizeException");
     Python_PyObject_AsCharBuffer = resolve_optional("PyObject_AsCharBuffer");
     Python_PyObject_AsReadBuffer = resolve_optional("PyObject_AsReadBuffer");
@@ -700,6 +820,9 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
     }
     Python_PyLong_FromString = resolve("PyLong_FromString");
     Python_PyMem_Free = resolve("PyMem_Free");
+    Python_PyThreadState_Get = resolve("PyThreadState_Get");
+    Python_PyFrame_New = resolve("PyFrame_New");
+    Python_PyCode_NewEmpty = resolve("PyCode_NewEmpty");
     if (version_major >= 3) {
         Python__Py_wfopen = resolve_optional("_Py_wfopen"); /* Python >=3.10 */
         Python__Py_fopen = resolve_optional("_Py_fopen");
@@ -719,49 +842,19 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
     }
 #include "pyml_dlsyms.inc"
     Python_Py_Initialize();
+    PyObject *sys = Python_PyImport_ImportModule("sys");
+    if (!sys) {
+      caml_failwith("cannot import module sys");
+    }
+    trace_refs_build = Python_PyObject_HasAttrString(sys, "getobjects");
     if (Is_block(debug_build_ocaml)) {
         debug_build = Int_val(Field(debug_build_ocaml, 0));
     }
     else {
-        PyObject *sysconfig = Python_PyImport_ImportModule("sysconfig");
-        PyObject *get_config_var =
-            Python_PyObject_GetAttrString(sysconfig, "get_config_var");
-        PyObject *args;
-        PyObject *py_debug;
-        PyObject *debug_build_py;
-        char *py_debug_str = "Py_DEBUG";
-        if (version_major >= 3) {
-            py_debug = Python3_PyUnicode_FromStringAndSize(py_debug_str, 8);
-        }
-        else {
-            py_debug = Python2_PyString_FromStringAndSize(py_debug_str, 8);
-        }
-        if (!py_debug) {
-            failwith("py_debug");
-        }
-        args = Python_PyTuple_New(1);
-        if (!args) {
-            failwith("PyTuple_New");
-        }
-        if (Python_PyTuple_SetItem(args, 0, py_debug)) {
-            failwith("PyTuple_SetItem");
-        }
-        debug_build_py =
-            Python_PyEval_CallObjectWithKeywords(get_config_var, args, NULL);
-        if (!debug_build_py) {
-            failwith("PyEval_CallObjectWithKeywords");
-        }
-        if (version_major >= 3) {
-            debug_build = Python_PyLong_AsLong(debug_build_py);
-        }
-        else {
-            debug_build = Python2_PyInt_AsLong(debug_build_py);
-        }
-        if (debug_build == -1) {
-            failwith("AsLong");
-        }
+        guess_debug_build();
     }
     tuple_empty = Python_PyTuple_New(0);
+    caml_register_custom_operations(&pyops);
     CAMLreturn(Val_unit);
 }
 
@@ -772,7 +865,7 @@ struct PyObjectDebug {
 };
 
 PyObjectDescr *pyobjectdescr(PyObject *obj) {
-    if (debug_build) {
+    if (trace_refs_build) {
         return &((struct PyObjectDebug *) obj)->descr;
     }
     else {
@@ -807,7 +900,7 @@ py_unsetenv(value name_ocaml)
     CAMLparam1(name_ocaml);
     const char *name = String_val(name_ocaml);
     if (unsetenv(name) == -1) {
-        failwith(strerror(errno));
+        caml_failwith(strerror(errno));
     }
     CAMLreturn(Val_unit);
 }
@@ -1084,7 +1177,7 @@ pyml_capsule_check(value v)
 {
     CAMLparam1(v);
     pyml_assert_initialized();
-    PyObject *o = getcustom(v);
+    PyObject *o = pyml_unwrap(v);
     PyObject *ob_type = pyobjectdescr(o)->ob_type;
     int check_result = ob_type == Python_PyCapsule_Type;
     CAMLreturn(Val_int(check_result));
@@ -1130,6 +1223,26 @@ PyErr_Fetch_wrapper(value unit)
     Store_field(result, 2, pyml_wrap(excTraceback, false));
     CAMLreturn(result);
 }
+
+// PyErr_Restore steals the references.
+// https://docs.python.org/3/c-api/exceptions.html#c.PyErr_Restore
+// However the objects can be null, so we do not want to run Py_INCREF if
+// this is the case as this would trigger some segfaults.
+CAMLprim value
+PyErr_Restore_wrapper(value arg0_ocaml, value arg1_ocaml, value arg2_ocaml)
+{
+    CAMLparam3(arg0_ocaml, arg1_ocaml, arg2_ocaml);
+    pyml_assert_initialized();
+    PyObject *arg0 = pyml_unwrap(arg0_ocaml);
+    if (arg0) Py_INCREF(arg0);
+    PyObject *arg1 = pyml_unwrap(arg1_ocaml);
+    if (arg1) Py_INCREF(arg1);
+    PyObject *arg2 = pyml_unwrap(arg2_ocaml);
+    if (arg2) Py_INCREF(arg2);
+    Python_PyErr_Restore(arg0, arg1, arg2);
+    CAMLreturn(Val_unit);
+}
+
 
 CAMLprim value
 pyml_wrap_string_option(const char *s)
@@ -1178,7 +1291,7 @@ wide_string_of_string(const char *s)
         exit(EXIT_FAILURE);
     }
     wchar_t *ws = xmalloc((n + 1) * sizeof (wchar_t));
-    mbstowcs(ws, s, n);
+    mbstowcs(ws, s, n + 1);
     return ws;
 }
 
@@ -1302,7 +1415,9 @@ open_file(value file, const char *mode)
         }
         else if (Python__Py_wfopen != NULL) {
             wchar_t *wide_filename = wide_string_of_string(filename);
-            result = Python__Py_wfopen(wide_filename, mode);
+            wchar_t *wide_mode = wide_string_of_string(mode);
+            result = Python__Py_wfopen(wide_filename, wide_mode);
+            free(wide_mode);
             free(wide_filename);
         }
         else {
@@ -1343,7 +1458,7 @@ get_pyarray_type(value numpy_api_ocaml)
     PyObject *c_api = pyml_unwrap(numpy_api_ocaml);
     void **PyArray_API = pyml_get_pyarray_api(c_api);
     PyObject *result = PyArray_API[2];
-    CAMLreturn(pyml_wrap(result, true));
+    CAMLreturn(pyml_wrap(result, false));
 }
 
 CAMLprim value
@@ -1358,6 +1473,9 @@ pyarray_of_floatarray_wrapper(
         (PyTypeObject *, int, npy_intp *, int, npy_intp *, void *, int, int,
          PyObject *) = PyArray_API[93];
     npy_intp length = Wosize_val(array_ocaml);
+    #ifndef ARCH_SIXTYFOUR
+      length /= 2;
+    #endif
     void *data = (double *) array_ocaml;
     PyTypeObject (*PyArray_SubType) =
         (PyTypeObject *) pyml_unwrap(array_type_ocaml);
@@ -1403,12 +1521,30 @@ Python27_PyCapsule_IsValid_wrapper(value arg0_ocaml, value arg1_ocaml)
 
     pyml_assert_initialized();
     if (!Python27_PyCapsule_IsValid) {
-        failwith("PyCapsule_IsValid is only available in Python >2.7");
+        caml_failwith("PyCapsule_IsValid is only available in Python >2.7");
     }
     PyObject *arg0 = pyml_unwrap(arg0_ocaml);
     const char *arg1 = String_val(arg1_ocaml);
     int result = Python27_PyCapsule_IsValid(arg0, arg1);
     CAMLreturn(Val_int(result));
+}
+
+CAMLprim value
+pyml_pyframe_new(value filename_ocaml, value funcname_ocaml, value lineno_ocaml) {
+    CAMLparam3(filename_ocaml, funcname_ocaml, lineno_ocaml);
+    const char *filename = String_val(filename_ocaml);
+    const char *funcname = String_val(funcname_ocaml);
+    int lineno = Int_val(lineno_ocaml);
+    PyObject *code = Python_PyCode_NewEmpty(filename, funcname, lineno);
+    PyObject *globals = Python_PyDict_New();
+    PyObject *result = Python_PyFrame_New(
+        Python_PyThreadState_Get(),
+        code,
+        globals,
+        NULL);
+    Py_DECREF(code);
+    Py_DECREF(globals);
+    CAMLreturn(pyml_wrap(result, true));
 }
 
 #include "pyml_wrappers.inc"

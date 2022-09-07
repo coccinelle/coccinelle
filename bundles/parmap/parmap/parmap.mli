@@ -213,7 +213,7 @@ val debugging : bool -> unit
 
 (** {6 Helper function for redirection of stdout and stderr} *)
 
-val redirect : ?path:string -> id:int -> unit
+val redirect : path:string -> id:int -> unit
 
   (** Helper function that redirects stdout and stderr to files
       located in the directory [path], carrying names of the shape

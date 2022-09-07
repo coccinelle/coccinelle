@@ -1,11 +1,5 @@
-val library_patterns: (int -> int -> string, unit, string) format list
+type t = Windows | Mac | Unix
 
-val library_suffix: string
-
-val ensure_executable_suffix: string -> string
-
-val which: string
+val os : t
 
 val fd_of_int: int -> Unix.file_descr
-
-val path_separator: string

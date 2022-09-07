@@ -4,6 +4,9 @@ INSTALL := install
 INSTALL_PROGRAM := $(INSTALL)
 bindir := $(PREFIX)/bin
 
+C_COMPILER := $(shell ocamlc -config | grep '^native_c_compiler:' | cut -d ' ' -f 2)
+EXT_LIB := $(shell ocamlc -config | grep '^ext_lib:' | cut -d ' ' -f 2)
+
 HAVE_OCAMLFIND := $(shell \
 	if $(OCAMLFIND) query -help >/dev/null 2>&1; then \
 		echo yes; \
@@ -33,12 +36,6 @@ ifneq ($(HAVE_OCAMLFIND),no)
 	OCAMLDEP := $(OCAMLFIND) ocamldep
 	OCAMLDOC := $(OCAMLFIND) ocamldoc
 	STDCOMPAT := $(shell $(OCAMLFIND) query stdcompat)
-        OCAMLCFLAGS := -package stdcompat
-        OCAMLLDFLAGS := -linkpkg
-	OCAMLBYTECODELIBS := -package unix,stdcompat
-	OCAMLBYTECODELIBSNUMPY := -package unix,stdcompat,bigarray
-	OCAMLNATIVELIBS := -package unix,stdcompat
-	OCAMLNATIVELIBSNUMPY := -package unix,stdcompat,bigarray
 else
 	OCAMLC := $(shell \
 		if ocamlc.opt -version >/dev/null 2>&1; then \
@@ -64,12 +61,41 @@ $(error There is no OCaml compiler available in path)
 	OCAMLDEP := ocamldep
 	OCAMLDOC := ocamldoc
 	STDCOMPAT := .
-        OCAMLCFLAGS :=
-        OCAMLLDFLAGS :=
-	OCAMLBYTECODELIBS := unix.cma stdcompat.cma
-	OCAMLBYTECODELIBSNUMPY := unix.cma stdcompat.cma bigarray.cma
-	OCAMLNATIVELIBS := unix.cmxa stdcompat.cmxa
-	OCAMLNATIVELIBSNUMPY := unix.cmxa stdcompat.cmxa bigarray.cmxa
+endif
+
+OCAMLVERSION := $(shell $(OCAMLC) -version)
+OCAMLVERSION_LIST := $(subst ., ,$(OCAMLVERSION))
+OCAMLVERSION_MAJOR := $(word 1,$(OCAMLVERSION_LIST))
+
+LIBRARIES := unix stdcompat
+
+ifeq ($(OCAMLVERSION_MAJOR),5)
+	LIBRARIES_NUMPY = $(LIBRARIES)
+	OCAMLCFLAGS = -I +unix
+else
+	LIBRARIES_NUMPY = $(LIBRARIES) bigarray
+endif
+
+null  :=
+space := $(null) #
+comma := ,
+
+ifneq ($(HAVE_OCAMLFIND),no)
+        OCAMLCFLAGS += -package stdcompat
+        OCAMLLDFLAGS += -linkpkg
+	PACKAGES := $(subst $(space),$(comma),$(LIBRARIES))
+	PACKAGES_NUMPY := $(subst $(space),$(comma),$(LIBRARIES_NUMPY))
+	OCAMLBYTECODELIBS := -package $(PACKAGES)
+	OCAMLBYTECODELIBSNUMPY := -package $(PACKAGES_NUMPY)
+	OCAMLNATIVELIBS := -package $(PACKAGES)
+	OCAMLNATIVELIBSNUMPY := -package $(PACKAGES_NUMPY)
+else
+        OCAMLCFLAGS += -I $(STDCOMPAT)
+        OCAMLLDFLAGS += -I $(STDCOMPAT)
+	OCAMLBYTECODELIBS := $(LIBRARIES:=.cma)
+	OCAMLBYTECODELIBSNUMPY := $(LIBRARIES_NUMPY:=.cma)
+	OCAMLNATIVELIBS := $(LIBRARIES:=.cmxa)
+	OCAMLNATIVELIBSNUMPY := $(LIBRARIES_NUMPY:=.cmxa)
 endif
 
 ifeq ($(wildcard $(STDCOMPAT)/stdcompat.cma),)
@@ -119,24 +145,14 @@ OCAMLLIBNUMPYFLAGS := -cclib "-L. -lnumpy_stubs"
 OCAMLLIBFLAGSNATIVE := $(OCAMLLIBFLAGS)
 OCAMLLIBFLAGSBYTECODE := -custom $(OCAMLLIBFLAGS)
 
-UNAME_ARCH := $(shell uname)
-
-ifeq ($(UNAME_ARCH),Darwin)
-	PYML_ARCH := pyml_arch_darwin.ml
-else ifeq ($(findstring CYGWIN,$(UNAME_ARCH)),CYGWIN)
-	PYML_ARCH := pyml_arch_cygwin.ml
-else
-	PYML_ARCH := pyml_arch_unix.ml
-endif
-
 INSTALL_FILES := \
 	py.mli numpy.mli $(MODULES:=.cmi) $(MODULES:=.cmx) \
 	numpy.cmi \
-	pyml.cma pyml.cmxa pyml.cmxs pyml.a \
-	numpy.cma numpy.cmxa numpy.cmxs numpy.a \
+	pyml.cma pyml.cmxa pyml.cmxs pyml$(EXT_LIB) \
+	numpy.cma numpy.cmxa numpy.cmxs numpy$(EXT_LIB) \
 	$(MODULES:=.cmx) numpy.cmx \
-	libpyml_stubs.a dllpyml_stubs.so \
-	libnumpy_stubs.a dllnumpy_stubs.so \
+	libpyml_stubs$(EXT_LIB) dllpyml_stubs.so \
+	libnumpy_stubs$(EXT_LIB) dllnumpy_stubs.so \
 	META
 
 .PHONY : all
@@ -218,15 +234,15 @@ uninstall :
 clean :
 	for module in $(MODULES) numpy generate pyml_tests_common pyml_tests \
 		numpy_tests; do \
-		rm -f $$module.cmi $$module.cmo $$module.cmx $$module.a \
+		rm -f $$module.cmi $$module.cmo $$module.cmx $$module$(EXT_LIB) \
 			$$module.o; \
 	done
-	rm -f pyml.cma pyml.cmxa pyml.cmxs pyml.a
-	rm -f numpy.cma numpy.cmxa numpy.cmxs numpy.a
+	rm -f pyml.cma pyml.cmxa pyml.cmxs pyml$(EXT_LIB)
+	rm -f numpy.cma numpy.cmxa numpy.cmxs numpy$(EXT_LIB)
 	rm -f pywrappers.mli pywrappers.ml pyml_dlsyms.inc pyml_wrappers.inc
 	rm -f pyml.h
-	rm -f pyml_stubs.o dllpyml_stubs.so libpyml_stubs.a
-	rm -f numpy_stubs.o dllnumpy_stubs.so libnumpy_stubs.a
+	rm -f pyml_stubs.o dllpyml_stubs.so libpyml_stubs$(EXT_LIB)
+	rm -f numpy_stubs.o dllnumpy_stubs.so libnumpy_stubs$(EXT_LIB)
 	rm -f pyml_arch.ml
 	rm -f generate pyml_tests.native pyml_tests.bytecode
 	rm -f numpy_tests.native numpy_tests.bytecode
@@ -234,6 +250,7 @@ clean :
 	rm -rf doc
 	rm -f pymltop pytop.cmo pymlutop pyutop.cmo
 	rm -f pymltop_libdir.ml pymltop_libdir.cmo
+	rm -f pyops.mli pyops.ml
 
 .PHONY : tarball
 tarball :
@@ -268,7 +285,7 @@ pywrappers.ml pyml_wrappers.inc : generate
 pyml_wrappers.inc : pywrappers.ml
 
 pywrappers.mli : pywrappers.ml pytypes.cmi pyml_arch.cmi
-	$(OCAMLC) -i $< >$@
+	$(OCAMLC) $(OCAMLCFLAGS) -i $< >$@
 
 pyml_tests.native : py.cmi pyml.cmxa pyml_tests_common.cmx pyml_tests.cmx
 	$(OCAMLOPT) $(OCAMLLDFLAGS) $(OCAMLNATIVELIBS) pyml.cmxa \
@@ -289,8 +306,8 @@ numpy_tests.bytecode : py.cmi pyml.cma numpy.cma \
 	$(OCAMLC) $(OCAMLLDFLAGS) $(OCAMLBYTECODELIBSNUMPY) pyml.cma \
 		numpy.cma pyml_tests_common.cmo numpy_tests.cmo -o $@
 
-pyml_arch.ml : $(PYML_ARCH)
-	cp $< $@
+pyml_arch.ml : pyml_arch.ml.c
+	$(C_COMPILER) -E $< | sed '/^#/d' >$@
 
 pyml_arch.cmo pyml_arch.cmx : pyml_arch.cmi
 
@@ -304,29 +321,29 @@ pyml_arch.cmo pyml_arch.cmx : pyml_arch.cmi
 	$(OCAMLOPT) $(OCAMLCFLAGS) -c $< -o $@
 
 %.o : %.c
-	$(OCAMLC) -package stdcompat -c $< -o $@
+	$(OCAMLC) $(OCAMLCFLAGS) -c $< -o $@
 
 pyml_stubs.o : pyml_wrappers.inc
 
-pyml.cma : $(MODULES:=.cmo) libpyml_stubs.a
+pyml.cma : $(MODULES:=.cmo) libpyml_stubs$(EXT_LIB)
 	$(OCAMLC) $(OCAMLLIBFLAGSBYTECODE) -a -dllib -lpyml_stubs $(MODULES:=.cmo) -o $@
 
-pyml.cmxa : $(MODULES:=.cmx) libpyml_stubs.a
+pyml.cmxa : $(MODULES:=.cmx) libpyml_stubs$(EXT_LIB)
 	$(OCAMLOPT) $(OCAMLLIBFLAGSNATIVE) -a $(MODULES:=.cmx) -o $@
 
-pyml.cmxs : $(MODULES:=.cmx) libpyml_stubs.a
+pyml.cmxs : $(MODULES:=.cmx) libpyml_stubs$(EXT_LIB)
 	$(OCAMLOPT) $(OCAMLLIBFLAGSNATIVE) -shared $(MODULES:=.cmx) -o $@
 
-lib%.a : %.o
+lib%$(EXT_LIB) : %.o
 	$(OCAMLMKLIB) -o $(basename $<) $<
 
-numpy.cma : numpy.cmo libnumpy_stubs.a
+numpy.cma : numpy.cmo libnumpy_stubs$(EXT_LIB)
 	$(OCAMLC) $(OCAMLLIBNUMPYFLAGS) -a -dllib -lnumpy_stubs numpy.cmo -o $@
 
-numpy.cmxa : numpy.cmx libnumpy_stubs.a
+numpy.cmxa : numpy.cmx libnumpy_stubs$(EXT_LIB)
 	$(OCAMLOPT) $(OCAMLLIBNUMPYFLAGS) -a numpy.cmx -o $@
 
-numpy.cmxs : numpy.cmx libnumpy_stubs.a
+numpy.cmxs : numpy.cmx libnumpy_stubs$(EXT_LIB)
 	$(OCAMLOPT) $(OCAMLLIBNUMPYFLAGS) -shared numpy.cmx -o $@
 
 pytop.cmo : pytop.ml pymltop_libdir.cmi
@@ -356,3 +373,9 @@ endif
 #	$(OCAMLMKTOP) -o $@ -thread -linkpkg -package utop -dontlink compiler-libs $^
 	ocamlfind ocamlc -thread -linkpkg -linkall -predicates create_toploop \
 		-package compiler-libs.toplevel,utop,stdcompat $^ -o $@
+
+pyops.ml: pyops.ml.new
+	cp $< $@
+
+pyops.mli: pyops.mli.new
+	cp $< $@

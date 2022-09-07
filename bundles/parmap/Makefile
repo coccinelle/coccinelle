@@ -11,8 +11,13 @@ LIBRARY=parmap
 SRC_DIR=$(PACKAGE_DIR)
 
 OCAMLCCFLAGS+=-ccopt -D_GNU_SOURCE
+OCAMLFLAGS+=-I $(STDCOMPATDIR)
 
 include ../Makefile.bundles
+
+ifneq ($(OCAMLATLEAST50),no)
+OCAMLFLAGS += -I +unix
+endif
 
 parmap/bytearray.cmo : parmap/bytearray.cmi
 

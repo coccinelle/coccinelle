@@ -69,13 +69,45 @@ let string_of_layout layout =
     "unknown layout"
 
 let to_bigarray kind layout t =
+  if not (Py.Object.is_instance t (Py.Array.pyarray_type ())) then
+    invalid_arg "Numpy.to_bigarray";
   let kind', layout', array = bigarray_of_pyarray (Py.Array.numpy_api ()) t in
   if kind <> kind' then
-    failwith (Printf.sprintf
-      "Numpy array has elements of kind %s, but to_bigarray expected %s"
+    invalid_arg (Printf.sprintf
+      "Numpy.to_bigarray: Numpy array has elements of kind %s, but to_bigarray expected %s"
       (string_of_kind kind') (string_of_kind kind));
   if layout <> layout' then
-    failwith (Printf.sprintf
-      "Numpy array has %s layout, but to_bigarray expected %s"
+    invalid_arg (Printf.sprintf
+      "Numpy.to_bigarray: Numpy array has %s layout, but to_bigarray expected %s"
       (string_of_layout layout') (string_of_layout layout));
   array
+
+type ('a, 'b, 'c) to_bigarray =
+  { kind : ('a, 'b) Bigarray.kind
+  ; layout : 'c Bigarray.layout
+  ; array : ('a, 'b, 'c) Bigarray.Genarray.t
+  }
+
+type 'r to_bigarray_k =
+  { f : 'a 'b 'c . ('a, 'b, 'c) to_bigarray -> 'r }
+
+let to_bigarray_k (k : 'r to_bigarray_k) t : 'r =
+  if not (Py.Object.is_instance t (Py.Array.pyarray_type ())) then
+    invalid_arg "Numpy.to_bigarray";
+  let kind, layout, array = bigarray_of_pyarray (Py.Array.numpy_api ()) t in
+  k.f { kind; layout; array }
+
+external compare_kind :
+  ('a, 'b) Bigarray.kind -> ('c, 'd) Bigarray.kind -> int = "%compare"
+
+external compare_layout :
+  'a Bigarray.layout -> 'b Bigarray.layout -> int = "%compare"
+
+let check_kind_and_layout (kind : ('a, 'b) Bigarray.kind)
+      (layout : 'c Bigarray.layout) t :
+      ('a, 'b, 'c) Bigarray.Genarray.t option =
+  if compare_kind kind (Bigarray.Genarray.kind t) = 0 &&
+       compare_layout layout (Bigarray.Genarray.layout t) = 0 then
+    Some (Obj.magic t)
+  else
+    None

@@ -143,14 +143,18 @@ let wrappers =
      arguments = Fun [];
      result = Unit;
      optional = false; };
-   { symbol = "PyErr_Restore";
-     arguments = Fun [PyObject false; PyObject false; PyObject false];
-     result = Unit;
-     optional = false; };
    { symbol = "PyErr_PrintEx";
      arguments = Fun [Int];
      result = Unit;
      optional = false; };
+   { symbol = "PyErr_SetInterrupt";
+     arguments = Fun [];
+     result = Unit;
+     optional = false; };
+   { symbol = "PyErr_SetInterruptEx";
+     arguments = Fun [Int];
+     result = Unit;
+     optional = true; }; (* since 3.10 *)
    { symbol = "PyErr_SetNone";
      arguments = Fun [PyObject false];
      result = Unit;
@@ -215,6 +219,10 @@ let wrappers =
      arguments = Deref;
      result = PyObject false;
      optional = false; };
+   { symbol = "PyExc_EncodingWarning";
+     arguments = Deref;
+     result = PyObject false;
+     optional = true; }; (* Added in python 3.10 *)
    { symbol = "PyExc_EOFError";
      arguments = Deref;
      result = PyObject false;
@@ -255,6 +263,10 @@ let wrappers =
      arguments = Deref;
      result = PyObject false;
      optional = false; };
+   { symbol = "PyExc_ResourceWarning";
+     arguments = Deref;
+     result = PyObject false;
+     optional = true; }; (* Added in python 3.2 *)
    { symbol = "PyExc_RuntimeError";
      arguments = Deref;
      result = PyObject false;
@@ -510,7 +522,7 @@ let wrappers =
      optional = false; };
    { symbol = "PyMarshal_WriteObjectToFile";
      arguments = Fun [PyObject false; FileOut true; Int];
-     result = Int;
+     result = Unit;
      optional = false; };
    { symbol = "PyMarshal_WriteObjectToString";
      arguments = Fun [PyObject false; Int];
@@ -695,6 +707,10 @@ let wrappers =
    { symbol = "PyObject_DelItemString";
      arguments = Fun [PyObject false; String];
      result = Int;
+     optional = false; };
+   { symbol = "PyObject_Dir";
+     arguments = Fun [PyObject false];
+     result = PyObject true;
      optional = false; };
    { symbol = "PyObject_GetAttr";
      arguments = Fun [PyObject false; PyObject false];
@@ -915,7 +931,7 @@ let wrappers =
      optional = false; };
    { symbol = "PySet_Clear";
      arguments = Fun [PyObject false];
-     result = Unit;
+     result = Int;
      optional = false; };
    { symbol = "PySet_Discard";
      arguments = Fun [PyObject false; PyObject false];
@@ -1576,7 +1592,7 @@ let coercion_of_c ty =
   | WideString -> Printf.sprintf "    CAMLreturn(pyml_wrap_wide_string(result));"
   | Int | Long | Size | Compare ->
       Printf.sprintf "    CAMLreturn(Val_int(result));"
-  | Int64 -> Printf.sprintf "    CAMLreturn(copy_int64(result));"
+  | Int64 -> Printf.sprintf "    CAMLreturn(caml_copy_int64(result));"
   | IntPtr -> Printf.sprintf "    CAMLreturn(pyml_wrap_intref(result));"
   | PyCompilerFlags ->
       Printf.sprintf "    CAMLreturn(pyml_wrap_compilerflags(result));"

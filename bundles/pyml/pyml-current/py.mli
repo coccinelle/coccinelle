@@ -3,7 +3,8 @@
 (** Call [initialize ()] first. *)
 
 val initialize: ?library_name:string -> ?interpreter:string -> ?version:int ->
-  ?minor:int -> ?verbose:bool -> ?debug_build:bool -> unit -> unit
+  ?minor:int -> ?verbose:bool -> ?debug_build:bool -> ?python_sigint:bool ->
+  unit -> unit
 (** [initialize ~interpreter ~version ~minor ~verbose ~debug_build ()] finds
     and loads the Python library.
     This function should be called before any other functions, except
@@ -23,11 +24,17 @@ val initialize: ?library_name:string -> ?interpreter:string -> ?version:int ->
     in the directory [../lib] relatively to the directory where the
     [python] executable is. If the library has been statically linked
     with the executable, it will be used.
-    When [verbose] is true (default: false), library filenames that are
+    When [verbose] is [true] (default: [false]), library filenames that are
     tried to be loaded are printed on standard error.
     [debug_build] specifies whether the Python library is a debug build:
     if the argument is left unspecified, debug build is detected
-    automatically. *)
+    automatically.
+    If [python_sigint] is [true] (default: [false]), the function let
+    [pythonlib] take handle on [sigint], preventing programs from
+    being interrupted by [Ctrl+C]. When [python_sigint] is [false]
+    (the default), the previous signal behavior of [sigint] is restored after
+    the library has been loaded (so, [Ctrl+C] will still interrupt the
+    program, unless this behavior was changed elsewhere). *)
 
 val finalize: unit -> unit
 (** [finalize ()] unloads the library. No other functions except
@@ -60,6 +67,10 @@ val version_major: unit -> int
 
 val version_minor: unit -> int
 (** [version_minor ()] returns the minor number (the second component) of the
+    version of the Python library. *)
+
+val version_pair: unit -> int * int
+(** [version_pair ()] returns the major and the minor numbers of the
     version of the Python library. *)
 
 type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
@@ -286,6 +297,10 @@ module Object: sig
   val size: t -> int
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Size} PyObject_Size} *)
+
+  val dir: t -> t
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/object.html#c.PyObject_Dir} PyObject_Dir} *)
 end
 
 exception E of Object.t * Object.t
@@ -414,6 +429,13 @@ module Callable: sig
       Wrapper for
       {{: https://docs.python.org/3/c-api/object.html#c.PyCallable_Check} PyCallable_Check}. *)
 
+  val handle_errors : ('a -> Object.t) -> 'a -> Object.t
+  (** [handle_errors f x] calls [f x] and returns its result if the call
+      succeeds. If [f x] raises a Python exception
+      ([Py.E (errtype, errvalue)] or [Py.Err (errtype, msg)]),
+      this exception is raised as a Python exception
+      (via {!Err.set_object} or {!Err.set_error} respectively). *)
+
   val of_function_as_tuple: ?name:string -> ?docstring:string -> (Object.t -> Object.t) ->
     Object.t
   (** [of_function_as_tuple f] returns a Python callable object that calls the
@@ -468,17 +490,25 @@ end
 
 (** Embedding of OCaml values in Python. *)
 module Capsule: sig
+  type 'a t = {
+    wrap : 'a -> Object.t;
+    unwrap : Object.t -> 'a;
+  }
+
   val check: Object.t -> bool
   (** [check v] returns [true] if [v] contains an OCaml value. *)
 
-  val make: string -> ('a -> Object.t) * (Object.t -> 'a)
-  (** For a given type ['a], [make s] returns a pair [(wrap, unwrap)].
+  val create: string -> 'a t
+  (** For a given type ['a], [create s] returns a pair [{ wrap; unwrap }].
       [wrap v] transforms the value [v] of type 'a to an opaque Python object.
       [unwrap w] transforms the opaque Python object [w] previously obtained
       with [wrap v] into the original OCaml value [v],
       such that [unwrap (wrap v) = v].
       [Failure _] is raised if a wrapper has already been generated for a type
       of the same name. *)
+
+  val make: string -> ('a -> Object.t) * (Object.t -> 'a)
+  (** Same as {!val:create}, but returns a plain pair instead of a record. *)
 
   val type_of: Object.t -> string
   (** [type_of w] returns the type string associated to the opaque Python
@@ -681,8 +711,8 @@ module Dict: sig
       [p key value]. *)
 
   val to_bindings: Object.t -> (Object.t * Object.t) list
-  (** [to_bindings o] returns all the pairs [(key, value)] in the Python dictionary
-      [o]. *)
+  (** [to_bindings o] returns all the pairs [(key, value)] in the Python
+      dictionary [o]. *)
 
   val to_bindings_map: (Object.t -> 'a) -> (Object.t -> 'b) -> Object.t ->
     ('a * 'b) list
@@ -692,6 +722,19 @@ module Dict: sig
   val to_bindings_string: Object.t -> (string * Object.t) list
   (** [to_bindings_string o] returns all the pairs [(key, value)] in the Python
       dictionary [o]. *)
+
+  val to_bindings_seq: Object.t -> (Object.t * Object.t) Stdcompat.Seq.t
+  (** [to_bindings_seq o] returns the ephemeral sequence of all the pairs
+      (key, value) in the Python dictionary [o]. *)
+
+  val to_bindings_seq_map: (Object.t -> 'a) -> (Object.t -> 'b) -> Object.t ->
+    ('a * 'b) Stdcompat.Seq.t
+  (** [to_bindings_seq_map fkey fvalue o] returns the ephemeral sequence of all
+      the pairs (fkey key, fvalue value) in the Python dictionary [o]. *)
+
+  val to_bindings_string_seq: Object.t -> (string * Object.t) Stdcompat.Seq.t
+  (** [to_bindings_string_seq o] returns the ephemeral sequence of all the pairs
+      (key, value) in the Python dictionary [o]. *)
 
   val of_bindings: (Object.t * Object.t) list -> Object.t
   (** [of_bindings b] returns then Python dictionary mapping all the pairs
@@ -859,10 +902,33 @@ module Err: sig
       {{:https://docs.python.org/3/c-api/exceptions.html#c.PyErr_SetObject} PyErr_SetObject}.
       In a closure/method/callback, it is recommended to raise a [Py.E _] exception
       instead. *)
+
+  val set_interrupt: unit -> unit
+  (** Wrapper for
+      {{:https://docs.python.org/3/c-api/exceptions.html#c.PyErr_SetInterrupt} PyErr_SetInterrupt} *)
+
+  val set_interrupt_ex: int -> unit
+  (** Since Python 3.10. Wrapper for
+      {{:https://docs.python.org/3/c-api/exceptions.html#c.PyErr_SetInterruptEx} PyErr_SetInterruptEx} *)
+end
+
+module Traceback : sig
+  type frame =
+    { filename : string
+    ; function_name : string
+    ; line_number : int
+    }
+
+  val create_frame : frame -> Object.t
+
+  type t = frame list
 end
 
 exception Err of Err.t * string
 (** Represents an exception to be set with {!Err.set_error} in a callback. *)
+
+exception Err_with_traceback of Err.t * string * Traceback.t
+(** Represents an exception with traceback information to be set with {!Err.restore}. *)
 
 module Eval: sig
   val call_object: Object.t -> Object.t -> Object.t
@@ -901,6 +967,9 @@ module Float: sig
       {{:https://docs.python.org/3/c-api/float.html#c.PyFloat_FromDouble} PyFloat_FromDouble}. *)
 end
 
+type optimize = Default | Debug | Normal | RemoveDocstrings
+
+val int_of_optimize : optimize -> int
 
 (** Importing Modules *)
 module Import: sig
@@ -916,14 +985,23 @@ module Import: sig
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_AddModule} PyImport_AddModule} *)
 
   val exec_code_module: string -> Object.t -> Object.t
-  (** [exec_code_module name bytecode] imports the module [name] compiled in [bytecode].
-      [bytecode] can be obtained with {!val:Py.compile}.
+  (** [exec_code_module name bytecode] imports the module [name] compiled in
+      [bytecode]. [bytecode] can be obtained with {!val:Py.Module.compile}
+      (you may also consider {!val:Py.Import.exec_code_module_from_string}.
       Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ExecCodeModule} PyImport_ExecCodeModule} *)
 
   val exec_code_module_ex: string -> Object.t -> string -> Object.t
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/import.html#c.PyImport_ExecCodeModuleEx} PyImport_ExecCodeModuleEx} *)
+
+  val exec_code_module_from_string : name:string -> ?filename:string ->
+      ?dont_inherit:bool -> ?optimize:optimize -> string -> Object.t
+  (** [exec_code_module ~name ?filename ?dont_inherit ?optimize source_code]
+      compiles [source_code] and imports the resulting bytecode as
+      module [name]. [filename] is equal to [name] by default and is used
+      in error messages. [dont_inherit] and [optimize] are passed to
+      {!val:Py.Module.compile} for compiling [source_code]. *)
 
   val get_magic_number: unit -> int64
   (** Wrapper for
@@ -1227,6 +1305,10 @@ module Method: sig
       {{:https://docs.python.org/3/c-api/method.html#c.PyMethod_Self} PyMethod_Self} *)
 end
 
+type input = Pytypes.input = Single | File | Eval
+
+val string_of_input : input -> string
+
 (** Interface for Python values of type [Module]. *)
 module Module: sig
   val check: Object.t -> bool
@@ -1305,6 +1387,14 @@ module Module: sig
   val set_docstring: Object.t -> string -> unit
   (** Wrapper for
       {{:https://docs.python.org/3/c-api/module.html#c.PyModule_SetDocString} PyModule_SetDocString} *)
+
+  val compile : source:string -> filename:string -> ?dont_inherit:bool ->
+      ?optimize:optimize -> input -> Object.t
+  (** [compile ~source ~filename ?dont_inherit ?optimize mode] returns
+    the bytecode obtained by compiling ~source. It is a wrapper for
+    the built-in function
+    {{:https://docs.python.org/3/library/functions.html#compile} compile()}.
+ {{:https://github.com/thierry-martinez/pyml/issues/25} GitHub issue #25}*)
 end
 
 (** Interface for Python values of type [Number]. *)
@@ -1480,8 +1570,6 @@ module Number: sig
   val ( lsr ): Object.t -> Object.t -> Object.t
   (** Synomym of {!rshift} *)
 end
-
-type input = Pytypes.input = Single | File | Eval
 
 (** Interface for Python values of type [Run]. *)
 module Run: sig
@@ -1802,7 +1890,7 @@ module Tuple: sig
   (** The empty tuple [()].
       This value is guaranteed to be the unique value associated to [()]. *)
 
-    val is_empty: Object.t -> bool
+  val is_empty: Object.t -> bool
   (** [Py.is_empty v] is true if and only if [v] is [()].
       Since [Py.Tuple.empty] is guaranteed to be the unique value associated to
       [()], [Py.is_empty v] is equivalent to [v == Py.empty]. *)
@@ -2129,8 +2217,4 @@ val exception_printer: exn -> string option
 val compile: source:string -> filename:string -> ?dont_inherit:bool ->
   ?optimize:[`Default | `Debug | `Normal | `RemoveDocstrings ] ->
   [`Exec | `Eval | `Single] -> Object.t
-(** [compile ~source ~filename ?dont_inherit ?optimize mode] returns
-    the bytecode obtained by compiling ~source. It is a wrapper for
-    the built-in function
-    {{:https://docs.python.org/3/library/functions.html#compile} compile()}.
- {{:https://github.com/thierry-martinez/pyml/issues/25} GitHub issue #25}*)
+(** Old interface for {!val:Py.Module.compile}. *)

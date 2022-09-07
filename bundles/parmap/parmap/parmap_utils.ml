@@ -1,6 +1,6 @@
 
 let log_error fmt =
-  Printf.kprintf (fun s -> Format.eprintf "[Parmap]: %s@.%!" s) fmt
+  Printf.ksprintf (fun s -> Format.eprintf "[Parmap]: %s@.%!" s) fmt
 
 (* tail recursive version of List.append *)
 let append_tr l1 l2 =

@@ -11,6 +11,8 @@
 (*  library, see the LICENSE file for more information.                   *)
 (**************************************************************************)
 
+open Stdcompat
+
 module Utils = Parmap_utils
 
 (* OS related constants *)
@@ -80,7 +82,7 @@ let can_redirect path =
   else true
 
 let log_debug fmt =
-  Printf.kprintf (
+  Printf.ksprintf (
     if !debug_enabled then begin
       (fun s -> Format.eprintf "[Parmap]: %s@." s)
     end else ignore
@@ -102,7 +104,8 @@ let reopen_out outchan path fname =
 
 (* send stdout and stderr to a file to avoid mixing output from different
    cores, if enabled *)
-let redirect ?(path = (Printf.sprintf "/tmp/.parmap.%d" (Unix.getpid ()))) ~id =
+let redirect ~(path (* = (Printf.sprintf "/tmp/.parmap.%d" (Unix.getpid ())) *))
+      ~id =
       reopen_out stdout path (Printf.sprintf "stdout.%d" id);
       reopen_out stderr path (Printf.sprintf "stderr.%d" id);;
 
@@ -204,7 +207,7 @@ let simplemapper (init:int -> unit) (finalize: unit -> unit) ncores' compute opi
   (* run children *)
   run_many !ncores ~in_subprocess:(fun i ->
     init i;  (* call initialization function *)
-    Pervasives.at_exit finalize; (* register finalization function *)
+    Stdlib.at_exit finalize; (* register finalization function *)
     let lo=i*chunksize in
     let hi=if i = !ncores - 1 then ln - 1 else (i + 1) * chunksize - 1 in
     let exc_handler e j = (* handle an exception at index j *)
@@ -240,7 +243,7 @@ let simpleiter init finalize ncores' compute al =
   (* run children *)
   run_many !ncores ~in_subprocess:(fun i ->
     init i;  (* call initialization function *)
-    Pervasives.at_exit finalize; (* register finalization function *)
+    Stdlib.at_exit finalize; (* register finalization function *)
     let lo=i*chunksize in
     let hi=if i= !ncores - 1 then ln-1 else (i+1)*chunksize-1 in
     let exc_handler e j = (* handle an exception at index j *)
@@ -316,7 +319,7 @@ let mapper (init:int -> unit) (finalize:unit -> unit) ncores' ~chunksize compute
        let pids =
          spawn_many !ncores ~in_subprocess:(fun i ->
 	   init i; (* call initialization function *)
-	   Pervasives.at_exit finalize; (* register finalization function *)
+	   Stdlib.at_exit finalize; (* register finalization function *)
            let d=Unix.gettimeofday()  in
            (* primitives for communication *)
            Unix.close pipeup_rd;
@@ -417,7 +420,7 @@ let geniter init finalize ncores' ~chunksize compute al =
        let pids =
          spawn_many !ncores ~in_subprocess:(fun i ->
 	   init i; (* call initialization function *)
-	   Pervasives.at_exit finalize; (* register finalization function *)
+	   Stdlib.at_exit finalize; (* register finalization function *)
            let d=Unix.gettimeofday()  in
            (* primitives for communication *)
            Unix.close pipeup_rd;
@@ -568,7 +571,7 @@ let parfold
 let mapi_range lo hi (f:int -> 'a -> 'b) a =
   let l = hi-lo in
   if l < 0 then [||] else begin
-    let r = Array.create (l+1) (f lo (Array.unsafe_get a lo)) in
+    let r = Array.make (l+1) (f lo (Array.unsafe_get a lo)) in
     for i = 1 to l do
       let idx = lo+i in
       Array.unsafe_set r i (f idx (Array.unsafe_get a idx))

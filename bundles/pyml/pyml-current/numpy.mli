@@ -31,4 +31,41 @@ val to_bigarray:
   ('a, 'b) Bigarray.kind -> 'c Bigarray.layout -> Py.Object.t ->
     ('a, 'b, 'c) Bigarray.Genarray.t
 (** [to_bigarray kind layout a] returns a bigarray that shares the same
-    contents than the Numpy array [a]. *)
+    contents than the Numpy array [a].
+    If `kind` and/or `layout` are unknown, you may use {!val:to_bigarray_k}. *)
+
+type ('a, 'b, 'c) to_bigarray =
+  { kind : ('a, 'b) Bigarray.kind
+  ; layout : 'c Bigarray.layout
+  ; array : ('a, 'b, 'c) Bigarray.Genarray.t
+  }
+
+type 'r to_bigarray_k =
+  { f : 'a 'b 'c . ('a, 'b, 'c) to_bigarray -> 'r }
+
+val to_bigarray_k : 'r to_bigarray_k -> Py.Object.t -> 'r
+(** [to_bigarray_k k a] calls [k.f] with the contents of the Numpy array [a].
+    [k.f] has to be polymorphic in the kind and the layout of the bigarray:
+    functions {!val:compare_kind}, {!val:compare_layout} and
+    {!val:check_kind_and_layout} can be used to introspect the bigarray
+    polymorphically. *)
+
+val compare_kind : ('a, 'b) Bigarray.kind -> ('c, 'd) Bigarray.kind -> int
+(** [compare_kind] provides a total order on {!val:Bigarray.kind}.
+    As opposed to generic [compare] of OCaml standard libary,
+    [compare_kind] is polymorphic in the kind of the bigarray. *)
+
+val compare_layout : 'a Bigarray.layout -> 'b Bigarray.layout -> int
+(** [compare_layout] provides a total order on {!val:Bigarray.layout}.
+    As opposed to generic [compare] of OCaml standard libary,
+    [compare_kind] is polymorphic in the layout of the bigarray. *)
+
+val check_kind_and_layout :
+  ('a, 'b) Bigarray.kind -> 'c Bigarray.layout ->
+    ('d, 'e, 'f) Bigarray.Genarray.t ->
+    ('a, 'b, 'c) Bigarray.Genarray.t option
+(** [check_kind_and_layout kind layout a] returns [Some a] if [a] has the given
+    [kind] and [layout] (that is to say, if we have the following type
+    equalities, ['a = 'd], ['b = 'e] and ['c = 'f]).
+    This function allows the callback of {!val:to_bigarray_k} to be polymorphic
+    in the kind of the array. *)

@@ -86,6 +86,7 @@ AC_CHECK_OCAMLVERSION([OCAMLATLEAST312],[3.12])
 AS_IF([test "x$OCAMLATLEAST312" = xno],[AC_MSG_ERROR([OCaml >= 3.12 is required to compile Coccinelle])])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4030],[4.03])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST50],[5.0])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
 AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
@@ -147,14 +148,16 @@ AC_COCCI_INIT_PKG_EMPTY([parmap])
 dnl  required ocaml packages
 AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml installation])
 AC_REQ_COCCI_STDPKG([unix])
-AC_REQ_COCCI_STDPKG([bigarray])
+AS_IF([test "x$OCAMLATLEAST50" = xno],[AC_REQ_COCCI_STDPKG([bigarray])])
 AC_REQ_COCCI_STDPKG([str])
 
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
 AC_REQ_COCCI_EXTPKG([parmap])
-AC_REQ_COCCI_EXTPKG([stdcompat])
+dnl AC_REQ_COCCI_EXTPKG([stdcompat])
 
+AC_SUBST([MAKE_stdcompat],[$COCCI_SRCDIR/bundles/stdcompat])
+AC_SUBST([PATH_stdcompat],[$COCCI_SRCDIR/bundles/stdcompat])
 
 dnl  AC_CACHE_SAVE
 

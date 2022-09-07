@@ -24,15 +24,7 @@ CLEANOTHERS=pyml-current/generate pyml-current/generate.cmi \
 GENERATED_SOURCE_FILES := $(SRC_DIR)/pywrappers.ml $(SRC_DIR)/pywrappers.mli
 OCAMLCCFLAGS+=-ccopt -I$(STDCOMPATDIR)
 
-UNAME_ARCH := $(shell uname)
-
-ifeq ($(UNAME_ARCH),Darwin)
-	PYML_ARCH := pyml_arch_darwin.ml
-else ifeq ($(findstring CYGWIN,$(UNAME_ARCH)),CYGWIN)
-	PYML_ARCH := pyml_arch_cygwin.ml
-else
-	PYML_ARCH := pyml_arch_unix.ml
-endif
+C_COMPILER := $(shell ocamlc -config | grep '^native_c_compiler:' | cut -d ' ' -f 2)
 
 include ../Makefile.bundles
 
@@ -56,6 +48,9 @@ else
 	LINK_BEST := $(LINK_BYTECODE)
 endif
 
+ifneq ($(OCAMLATLEAST50),no)
+OCAMLFLAGS += -I +unix
+endif
 
 distclean: clean
 	rm -f .prepare
@@ -87,7 +82,7 @@ $(SRC_DIR)/pyml_arch.cmo: $(SRC_DIR)/pyml_arch.ml $(SRC_DIR)/pyml_arch.cmi
 $(SRC_DIR)/pyutils.cmo $(SRC_DIR)/pyutils.cmx : $(SRC_DIR)/pyutils.cmi
 
 $(SRC_DIR)/generate : $(SRC_DIR)/pyutils.$(CMOX) $(SRC_DIR)/generate.$(CMOX)
-	$(OCAMLCOPT) $(OCAMLLDFLAGS) $(LINK_BEST) stdcompat.$(CMAX) unix.$(CMAX) $^ -o $@
+	$(OCAMLC_CMD) $(OCAMLLDFLAGS) $(LINK_BEST) stdcompat.$(CMAX) unix.$(CMAX) $^ -o $@
 
 $(SRC_DIR)/generate.cmx: $(SRC_DIR)/generate.ml
 	$(OCAMLOPT_CMD) -c $< -o $@
@@ -95,5 +90,5 @@ $(SRC_DIR)/generate.cmx: $(SRC_DIR)/generate.ml
 $(SRC_DIR)/generate.cmo: $(SRC_DIR)/generate.ml
 	$(OCAMLC_CMD) -c $< -o $@
 
-$(SRC_DIR)/pyml_arch.ml: $(SRC_DIR)/$(PYML_ARCH)
-	cp $< $@
+$(SRC_DIR)/pyml_arch.ml : $(SRC_DIR)/pyml_arch.ml.c
+	$(C_COMPILER) -E $< | sed '/^#/d' >$@

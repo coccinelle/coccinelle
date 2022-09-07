@@ -7,6 +7,12 @@ type pyobject = Pytypes.pyobject
 
 type input = Pytypes.input = Single | File | Eval
 
+let string_of_input input =
+  match input with
+  | File -> "exec"
+  | Eval -> "eval"
+  | Single -> "single"
+
 type 'a file = 'a Pytypes.file = Filename of string | Channel of 'a
 
 type compare = Pytypes.compare = LT | LE | EQ | NE | GT | GE
@@ -34,6 +40,8 @@ external pyobject_callmethodobjargs: pyobject -> pyobject -> pyobject array
   -> pyobject = "PyObject_CallMethodObjArgs_wrapper"
 external pyerr_fetch_internal: unit -> pyobject * pyobject * pyobject
     = "PyErr_Fetch_wrapper"
+external pyerr_restore_internal: pyobject -> pyobject -> pyobject -> unit
+    = "PyErr_Restore_wrapper"
 external pystring_asstringandsize: pyobject -> string option
     = "PyString_AsStringAndSize_wrapper"
 external pyobject_ascharbuffer: pyobject -> string option
@@ -48,6 +56,8 @@ external pycapsule_isvalid: Pytypes.pyobject -> string -> int
       = "Python27_PyCapsule_IsValid_wrapper"
 external pycapsule_check: Pytypes.pyobject -> int
       = "pyml_capsule_check"
+external pyframe_new : string -> string -> int -> Pytypes.pyobject
+      = "pyml_pyframe_new"
 
 external ucs: unit -> ucs = "py_get_UCS"
 (* Avoid warning 32. *)
@@ -104,9 +114,15 @@ let extract_version version_line =
 
 let extract_version_major_minor version =
   try
-    if String.length version >= 3 && (version.[1] = '.') then
+    if String.length version >= 3 && version.[1] = '.' then
       let major = int_of_string (String.sub version 0 1) in
-      let minor = int_of_string (String.sub version 2 1) in
+      let minor =
+        if String.length version = 3 || version.[3] = '.' then
+          int_of_string (String.sub version 2 1)
+        else if String.length version >= 5 && version.[4] = '.' then
+          int_of_string (String.sub version 2 2)
+        else
+          raise Exit in
       (major, minor)
     else
       raise Exit
@@ -213,7 +229,7 @@ let libpython_from_interpreter python_full_path =
   let lines = ldd python_full_path in
   let is_libpython line =
     let basename = Filename.basename line in
-    Pyutils.has_prefix "libpython" basename in
+    Stdcompat.String.starts_with ~prefix:"libpython" basename in
   List.find_opt is_libpython lines
 
 let libpython_from_ldconfig major minor =
@@ -226,7 +242,7 @@ let libpython_from_ldconfig major minor =
         Printf.sprintf "libpython%d.%d" major' minor' in
   let is_libpython line =
     let basename = Filename.basename line in
-    Pyutils.has_prefix prefix basename in
+    Stdcompat.String.starts_with ~prefix:prefix basename in
   List.find_opt is_libpython lines
 
 let parse_python_list list =
@@ -350,6 +366,11 @@ let concat_library_filenames library_paths library_filenames =
     List.map (fun path -> Filename.concat path filename) library_paths in
   List.concat (List.map expand_filepaths library_filenames)
 
+let library_suffix =
+  match Pyml_arch.os with
+  | Pyml_arch.Mac -> ".dylib"
+  | _ -> ".so"
+
 let libpython_from_pkg_config version_major version_minor =
   let command =
     Printf.sprintf "pkg-config --libs python-%d.%d" version_major
@@ -375,7 +396,7 @@ let libpython_from_pkg_config version_major version_minor =
               if library_filename <> None then
                 unable_to_parse ();
               let library_filename =
-                Printf.sprintf "lib%s%s" word' Pyml_arch.library_suffix in
+                Printf.sprintf "lib%s%s" word' library_suffix in
               (library_paths, Some library_filename)
           | _ -> (library_paths, library_filename)
         else (library_paths, library_filename) in
@@ -386,6 +407,41 @@ let libpython_from_pkg_config version_major version_minor =
           None -> unable_to_parse ()
         | Some library_filename -> library_filename in
       Some (concat_library_filenames library_paths [library_filename])
+  | _ -> None
+
+let library_patterns : (int -> int -> string) list =
+  match Pyml_arch.os with
+  | Pyml_arch.Windows ->
+      [Printf.sprintf "python%d%dm.dll"; Printf.sprintf "python%d%d.dll"]
+  | Pyml_arch.Mac ->
+      [Printf.sprintf "libpython%d.%dm.dylib";
+        Printf.sprintf "libpython%d.%d.dylib"]
+  | Pyml_arch.Unix ->
+      [Printf.sprintf "libpython%d.%dm.so";
+        Printf.sprintf "libpython%d.%d.so"]
+
+let libpython_from_python_config version_major version_minor =
+  let command =
+    Printf.sprintf "python%d.%d-config --ldflags" version_major version_minor in
+  match run_command_opt command false with
+  | Some (words :: _) ->
+      let word_list = String.split_on_char ' ' words in
+      let parse_word library_paths word =
+        if String.length word > 2 then
+          match String.sub word 0 2 with
+            "-L" ->
+              let word' =
+                Pyutils.substring_between word 2 (String.length word) in
+              word' :: library_paths
+          | _ -> library_paths
+        else library_paths in
+      let library_paths =
+        List.fold_left parse_word [] word_list in
+      let library_filenames =
+        List.map
+          (fun format -> format version_major version_minor)
+          library_patterns in
+      Some (concat_library_filenames library_paths library_filenames)
   | _ -> None
 
 let libpython_from_pythonhome version_major version_minor python_full_path =
@@ -403,27 +459,35 @@ let libpython_from_pythonhome version_major version_minor python_full_path =
         [Filename.concat prefix "lib"] in
   let library_filenames =
     List.map
-      (fun format -> Printf.sprintf format version_major version_minor)
-      Pyml_arch.library_patterns in
+      (fun format -> format version_major version_minor)
+      library_patterns in
   concat_library_filenames library_paths library_filenames
 
 let find_library_path version_major version_minor python_full_path =
-  match Option.bind python_full_path libpython_from_interpreter with
-    Some path -> [path]
-  | None ->
-      match libpython_from_ldconfig version_major version_minor with
-        Some path -> [path]
-      | None ->
-          match version_major, version_minor with
-            Some version_major, Some version_minor ->
-              begin
-                match libpython_from_pkg_config version_major version_minor with
-                  Some paths -> paths
-                | None ->
-                    libpython_from_pythonhome version_major version_minor
-                      python_full_path
-              end
-          | _ -> failwith "Cannot infer Python version"
+  let heuristics = [
+    (fun () ->
+      Option.bind python_full_path (fun path ->
+        Option.map (fun path -> [path]) (libpython_from_interpreter path)));
+    (fun () ->
+      Option.map (fun path -> [path])
+        (libpython_from_ldconfig version_major version_minor));
+    (fun () ->
+      Option.bind version_major (fun version_major ->
+        Option.bind version_minor (fun version_minor ->
+          libpython_from_pkg_config version_major version_minor)));
+    (fun () ->
+      Option.bind version_major (fun version_major ->
+        Option.bind version_minor (fun version_minor ->
+          libpython_from_python_config version_major version_minor)));
+    (fun () ->
+      Option.bind version_major (fun version_major ->
+        Option.bind version_minor (fun version_minor ->
+          Some (libpython_from_pythonhome version_major version_minor
+            python_full_path))));
+  ] in
+  match List.find_map (fun f -> f ()) heuristics with
+  | None -> failwith "Cannot find Python library"
+  | Some paths -> paths
 
 let python_version_from_interpreter interpreter =
   let version_line =
@@ -436,14 +500,14 @@ let library_filename = ref None
 
 let load_library filename =
   library_filename := filename;
-  load_library filename
+  load_library filename None
 
 let get_library_filename () = !library_filename
 
-let find_library ~verbose ~version_major ~version_minor ~debug_build
+let find_library ~verbose ~version_major ~version_minor ~debug_build:_
     python_full_path =
   try
-    load_library None debug_build
+    load_library None
   with Failure _ ->
     let library_filenames =
       find_library_path version_major version_minor python_full_path in
@@ -469,7 +533,7 @@ let find_library ~verbose ~version_major ~version_minor ~debug_build
                   Printf.eprintf "Trying to load \"%s\".\n" filename;
                   flush stderr;
                 end;
-              load_library (Some filename) debug_build;
+              load_library (Some filename);
             with Failure msg ->
 (*
               if pythonhome_set then
@@ -517,9 +581,21 @@ let initialize_library ~verbose ~version_major ~version_minor
 
 let get_version = Pywrappers.py_getversion
 
+let which_command =
+  match Pyml_arch.os with
+  | Pyml_arch.Windows -> "where"
+  | _ -> "command -v"
+
 let which program =
-  let exe = Pyml_arch.ensure_executable_suffix program in
-  let command = Printf.sprintf "%s \"%s\"" Pyml_arch.which exe in
+  let exe =
+    match Pyml_arch.os with
+    | Pyml_arch.Windows ->
+        if Filename.check_suffix program ".exe" then
+          program
+        else
+          program ^ ".exe"
+    | _ -> program in
+  let command = Printf.sprintf "%s \"%s\"" which_command exe in
   match run_command_opt command false with
     Some (path :: _) -> Some path
   | _ -> None
@@ -560,79 +636,102 @@ let version_mismatch interpreter found expected =
 let build_version_string major minor =
   Printf.sprintf "%d.%d" major minor
 
-let initialize ?library_name ?interpreter ?version ?minor ?(verbose = false)
-    ?debug_build () =
+let path_separator =
+  match Pyml_arch.os with
+  | Pyml_arch.Windows -> ";"
+  | _ -> ":"
+
+(* Preserve signal behavior for sigint (Ctrl+C)
+   (Reported by Arulselvan Madhavan,
+    see https://github.com/thierry-martinez/pyml/issues/83)
+
+   pythonlib changes the handling of sigint, making programs
+   uninterruptible when the library is loaded.
+
+   The following function restores sigint handling and `initialize`
+   uses it except if ~python_sigint:true is passed.
+ *)
+
+let keep_sigint f =
+  let previous_signal_behavior = Sys.signal Sys.sigint Sys.Signal_ignore in
+  Sys.set_signal Sys.sigint previous_signal_behavior;
+  Stdcompat.Fun.protect f
+    ~finally:(fun () -> Sys.set_signal Sys.sigint previous_signal_behavior)
+
+let initialize ?library_name ?interpreter ?version
+    ?minor ?(verbose = false) ?debug_build ?(python_sigint = false) () =
   if !initialized then
     failwith "Py.initialize: already initialized";
-  begin
+  let do_initialize () =
     match library_name with
     | Some library_name ->
-        load_library (Some library_name) debug_build;
+        load_library (Some library_name);
     | None ->
-  begin
-    try
-      let python_full_path = find_interpreter interpreter version minor in
-      let interpreter_pythonpaths =
-        match python_full_path with
-          None -> []
-        | Some python_full_path' ->
-            pythonpaths_from_interpreter python_full_path' in
-      let new_pythonpaths =
-        List.rev_append !pythonpaths interpreter_pythonpaths in
-      if new_pythonpaths <> [] then
-        begin
-          let former_pythonpath = Sys.getenv_opt "PYTHONPATH" in
-          has_set_pythonpath := Some former_pythonpath;
-          let all_paths =
-            match former_pythonpath with
-              None -> new_pythonpaths
-            | Some former_pythonpath' ->
-                former_pythonpath' :: new_pythonpaths in
-          let pythonpath = String.concat Pyml_arch.path_separator all_paths in
-          if verbose then
+        try
+          let python_full_path = find_interpreter interpreter version minor in
+          let interpreter_pythonpaths =
+            match python_full_path with
+              None -> []
+            | Some python_full_path' ->
+                pythonpaths_from_interpreter python_full_path' in
+          let new_pythonpaths =
+            List.rev_append !pythonpaths interpreter_pythonpaths in
+          if new_pythonpaths <> [] then
             begin
-              Printf.eprintf "Temporary set PYTHONPATH=\"%s\".\n" pythonpath;
-              flush stderr;
-            end;
-          Unix.putenv "PYTHONPATH" pythonpath
-      end;
-      let (version_major, version_minor) =
-        match python_full_path with
-          Some python_full_path' ->
-            let version_string =
-              python_version_from_interpreter python_full_path' in
-            let (version_major, version_minor) =
-              extract_version_major_minor version_string in
-            begin
-              match version with
-                None -> ()
-              | Some version_major' ->
-                  if version_major <> version_major' then
-                    failwith
-                      (version_mismatch
-                         python_full_path' (string_of_int version_major)
-                         (string_of_int version_major'));
-                  match minor with
+              let former_pythonpath = Sys.getenv_opt "PYTHONPATH" in
+              has_set_pythonpath := Some former_pythonpath;
+              let all_paths =
+                match former_pythonpath with
+                  None -> new_pythonpaths
+                | Some former_pythonpath' ->
+                    former_pythonpath' :: new_pythonpaths in
+              let pythonpath = String.concat path_separator all_paths in
+              if verbose then
+                begin
+                  Printf.eprintf "Temporary set PYTHONPATH=\"%s\".\n" pythonpath;
+                  flush stderr;
+                end;
+              Unix.putenv "PYTHONPATH" pythonpath
+          end;
+          let (version_major, version_minor) =
+            match python_full_path with
+              Some python_full_path' ->
+                let version_string =
+                  python_version_from_interpreter python_full_path' in
+                let (version_major, version_minor) =
+                  extract_version_major_minor version_string in
+                begin
+                  match version with
                     None -> ()
-                  | Some version_minor' ->
-                      if version_minor <> version_minor' then
-                        let expected =
-                          build_version_string version_major version_minor in
-                        let got =
-                          build_version_string version_major' version_minor' in
+                  | Some version_major' ->
+                      if version_major <> version_major' then
                         failwith
-                          (version_mismatch python_full_path' expected got);
-            end;
-            (Some version_major, Some version_minor)
-        | _ -> version, minor in
-      initialize_library ~verbose ~version_major ~version_minor ~debug_build
-        python_full_path;
-    with e ->
-      uninit_pythonhome ();
-      uninit_pythonpath ();
-      raise e
-  end;
-  end;
+                          (version_mismatch
+                             python_full_path' (string_of_int version_major)
+                             (string_of_int version_major'));
+                      match minor with
+                        None -> ()
+                      | Some version_minor' ->
+                          if version_minor <> version_minor' then
+                            let expected =
+                              build_version_string version_major version_minor in
+                            let got =
+                              build_version_string version_major' version_minor' in
+                            failwith
+                              (version_mismatch python_full_path' expected got);
+                end;
+                (Some version_major, Some version_minor)
+            | _ -> version, minor in
+          initialize_library ~verbose ~version_major ~version_minor ~debug_build
+            python_full_path;
+        with e ->
+          uninit_pythonhome ();
+          uninit_pythonpath ();
+          raise e in
+  if python_sigint then
+    do_initialize ()
+  else
+    keep_sigint do_initialize;
   let version = get_version () in
   let (version_major, version_minor) =
     extract_version_major_minor version in
@@ -648,6 +747,7 @@ let on_finalize f = on_finalize_list := f :: !on_finalize_list
 let finalize () =
   assert_initialized ();
   List.iter (fun f -> f ()) !on_finalize_list;
+  Gc.full_major ();
   finalize_library ();
   uninit_pythonhome ();
   uninit_pythonpath ();
@@ -665,6 +765,10 @@ let version_minor () =
   assert_initialized ();
   !version_minor_value
 
+let version_pair () =
+  assert_initialized ();
+  (!version_major_value, !version_minor_value)
+
 let null =
   pynull ()
 
@@ -681,10 +785,32 @@ exception E of pyobject * pyobject
 
 let fetched_exception = ref None
 
+let ocaml_exception_class = ref None
+
+let ocaml_exception_capsule = ref None
+
 let python_exception () =
   let ptype, pvalue, ptraceback = pyerr_fetch_internal () in
-  fetched_exception := Some (ptype, pvalue, ptraceback);
-  raise (E (ptype, pvalue))
+  if
+    match !ocaml_exception_class with
+    | None -> false
+    | Some ocaml_exception_class ->
+        Lazy.is_val ocaml_exception_class &&
+        Lazy.force ocaml_exception_class = ptype
+  then
+    begin
+      let args = Pywrappers.pyobject_getattrstring pvalue "args" in
+      assert (args <> null);
+      let capsule = Pywrappers.pysequence_getitem args 0 in
+      assert (capsule <> null);
+      let exc, bt = snd (Option.get !ocaml_exception_capsule) capsule in
+      Printexc.raise_with_backtrace exc bt
+    end
+  else
+    begin
+      fetched_exception := Some (ptype, pvalue, ptraceback);
+      raise (E (ptype, pvalue))
+    end
 
 let check_not_null result =
   if result = null then
@@ -779,8 +905,14 @@ let option result =
   else
     Some result
 
+let assert_not_null function_name obj =
+  if is_null obj then
+    invalid_arg (function_name ^ ": unallowed null argument")
+
 module Eval = struct
   let call_object_with_keywords func arg keyword =
+    assert_not_null "call_object_with_keywords(!, _, _)" func;
+    assert_not_null "call_object_with_keywords(_, !, _)" arg;
     check_not_null (Pywrappers.pyeval_callobjectwithkeywords func arg keyword)
 
   let call_object func arg =
@@ -797,6 +929,7 @@ let object_repr obj = check_not_null (Pywrappers.pyobject_repr obj)
 
 module String_ = struct
   let as_UTF8_string s =
+    assert_not_null "as_UTF8_string" s;
     let f =
       match ucs () with
         UCS2 -> Pywrappers.UCS2.pyunicodeucs2_asutf8string
@@ -831,7 +964,9 @@ module Tuple_ = struct
   let init size f =
     let result = create size in
     for index = 0 to size - 1 do
-      set_item result index (f index)
+      let v = f index in
+      assert_not_null "init" v;
+      set_item result index v
     done;
     result
 
@@ -847,6 +982,8 @@ module Dict_ = struct
     check_not_null (Pywrappers.pydict_new ())
 
   let set_item dict key value =
+    assert_not_null "set_item(!, _)" dict;
+    assert_not_null "set_item(_, !)" key;
     assert_int_success (Pywrappers.pydict_setitem dict key value)
 
   let of_bindings_map fkey fvalue list =
@@ -859,6 +996,10 @@ module Dict_ = struct
   let of_bindings = of_bindings_map id id
 
   let of_bindings_string = of_bindings_map String_.of_string id
+
+  let set_item_string dict name value =
+    assert_not_null "set_item_string" dict;
+    assert_int_success (Pywrappers.pydict_setitemstring dict name value)
 end
 
 module Object_ = struct
@@ -898,6 +1039,8 @@ module Type = struct
   external get: pyobject -> t = "pytype"
 
   let is_subtype a b =
+    assert_not_null "of_tuple5(!, _)" a;
+    assert_not_null "of_tuple5(_, !)" b;
     bool_of_int (Pywrappers.pytype_issubtype a b)
 
   let name t =
@@ -947,6 +1090,11 @@ module Type = struct
 end
 
 module Capsule = struct
+  type 'a t = {
+    wrap : 'a -> pyobject;
+    unwrap : pyobject -> 'a;
+  }
+
   let is_valid v name  = pycapsule_isvalid v name <> 0
 
   let check v = is_valid v "ocaml-capsule"
@@ -980,7 +1128,14 @@ module Capsule = struct
         v in
       (wrap, unwrap)
 
-  let type_of x = fst (unsafe_unwrap_value x)
+  let create name =
+    let wrap, unwrap = make name in
+    { wrap; unwrap }
+
+  let type_of x =
+    if pycapsule_check x = 0 then
+      Type.mismatch "capsule" x;
+    fst (unsafe_unwrap_value x)
 end
 
 module Mapping = struct
@@ -990,7 +1145,7 @@ module Mapping = struct
     option (Pywrappers.pymapping_getitemstring mapping key)
 
   let find_string mapping key =
-    Pyutils.option_unwrap (get_item_string mapping key)
+    Stdcompat.Option.get (get_item_string mapping key)
 
   let find_string_opt = get_item_string
 
@@ -1009,11 +1164,18 @@ end
 
 module Method = struct
   let create func self cl =
+    assert_not_null "create(!, _, _)" func;
+    assert_not_null "create(_, !, _)" self;
+    assert_not_null "create(_, _, !)" cl;
     check_not_null (Pywrappers.pymethod_new func self cl)
 
-  let get_function m = check_not_null (Pywrappers.pymethod_function m)
+  let get_function m =
+    assert_not_null "get_function" m;
+    check_not_null (Pywrappers.pymethod_function m)
 
-  let self m = option (Pywrappers.pymethod_self m)
+  let self m =
+    assert_not_null "self" m;
+    option (Pywrappers.pymethod_self m)
 end
 
 module Bool = struct
@@ -1141,6 +1303,7 @@ module String__ = struct
     check_not_null (f int_array size')
 
   let to_unicode s =
+    assert_not_null "to_unicode" s;
     let f =
       match ucs () with
         UCS2 -> Pywrappers.UCS2.pyunicodeucs2_asunicode
@@ -1275,7 +1438,7 @@ module Err = struct
   let print_ex i =
     Pywrappers.pyerr_printex i
 
-  let restore = Pywrappers.pyerr_restore
+  let restore = pyerr_restore_internal
 
   let restore_tuple (ptype, pvalue, ptraceback) =
     restore ptype pvalue ptraceback
@@ -1296,41 +1459,49 @@ module Err = struct
 
   let set_object = Pywrappers.pyerr_setobject
 
+  let of_error = function
+      Exception -> Pywrappers.pyexc_exception ()
+    | StandardError ->
+        if !version_major_value <= 2 then
+          Pywrappers.Python2.pyexc_standarderror ()
+        else
+          Pywrappers.pyexc_exception ()
+    | ArithmeticError -> Pywrappers.pyexc_arithmeticerror ()
+    | LookupError -> Pywrappers.pyexc_lookuperror ()
+    | AssertionError -> Pywrappers.pyexc_assertionerror ()
+    | AttributeError -> Pywrappers.pyexc_attributeerror ()
+    | EOFError -> Pywrappers.pyexc_eoferror ()
+    | EnvironmentError -> Pywrappers.pyexc_environmenterror ()
+    | FloatingPointError -> Pywrappers.pyexc_floatingpointerror ()
+    | IOError -> Pywrappers.pyexc_ioerror ()
+    | ImportError -> Pywrappers.pyexc_importerror ()
+    | IndexError -> Pywrappers.pyexc_indexerror ()
+    | KeyError -> Pywrappers.pyexc_keyerror ()
+    | KeyboardInterrupt -> Pywrappers.pyexc_keyboardinterrupt ()
+    | MemoryError -> Pywrappers.pyexc_memoryerror ()
+    | NameError -> Pywrappers.pyexc_nameerror ()
+    | NotImplementedError -> Pywrappers.pyexc_notimplementederror ()
+    | OSError -> Pywrappers.pyexc_oserror ()
+    | OverflowError -> Pywrappers.pyexc_overflowerror ()
+    | ReferenceError -> Pywrappers.pyexc_referenceerror ()
+    | RuntimeError -> Pywrappers.pyexc_runtimeerror ()
+    | SyntaxError -> Pywrappers.pyexc_syntaxerror ()
+    | SystemExit -> Pywrappers.pyexc_systemerror ()
+    | TypeError -> Pywrappers.pyexc_typeerror ()
+    | ValueError -> Pywrappers.pyexc_valueerror ()
+    | ZeroDivisionError -> Pywrappers.pyexc_zerodivisionerror ()
+    | StopIteration -> Pywrappers.pyexc_stopiteration ()
+
   let set_error error msg =
-    let exc =
-      match error with
-        Exception -> Pywrappers.pyexc_exception ()
-      | StandardError ->
-          if !version_major_value <= 2 then
-            Pywrappers.Python2.pyexc_standarderror ()
-          else
-            Pywrappers.pyexc_exception ()
-      | ArithmeticError -> Pywrappers.pyexc_arithmeticerror ()
-      | LookupError -> Pywrappers.pyexc_lookuperror ()
-      | AssertionError -> Pywrappers.pyexc_assertionerror ()
-      | AttributeError -> Pywrappers.pyexc_attributeerror ()
-      | EOFError -> Pywrappers.pyexc_eoferror ()
-      | EnvironmentError -> Pywrappers.pyexc_environmenterror ()
-      | FloatingPointError -> Pywrappers.pyexc_floatingpointerror ()
-      | IOError -> Pywrappers.pyexc_ioerror ()
-      | ImportError -> Pywrappers.pyexc_importerror ()
-      | IndexError -> Pywrappers.pyexc_indexerror ()
-      | KeyError -> Pywrappers.pyexc_keyerror ()
-      | KeyboardInterrupt -> Pywrappers.pyexc_keyboardinterrupt ()
-      | MemoryError -> Pywrappers.pyexc_memoryerror ()
-      | NameError -> Pywrappers.pyexc_nameerror ()
-      | NotImplementedError -> Pywrappers.pyexc_notimplementederror ()
-      | OSError -> Pywrappers.pyexc_oserror ()
-      | OverflowError -> Pywrappers.pyexc_overflowerror ()
-      | ReferenceError -> Pywrappers.pyexc_referenceerror ()
-      | RuntimeError -> Pywrappers.pyexc_runtimeerror ()
-      | SyntaxError -> Pywrappers.pyexc_syntaxerror ()
-      | SystemExit -> Pywrappers.pyexc_systemerror ()
-      | TypeError -> Pywrappers.pyexc_typeerror ()
-      | ValueError -> Pywrappers.pyexc_valueerror ()
-      | ZeroDivisionError -> Pywrappers.pyexc_zerodivisionerror ()
-      | StopIteration -> Pywrappers.pyexc_stopiteration () in
-    set_object exc (String.of_string msg)
+    set_object (of_error error) (String.of_string msg)
+
+  let set_interrupt () =
+    Pywrappers.pyerr_setinterrupt ()
+
+  let set_interrupt_ex signal =
+    if version_pair () < (3, 10) then
+      failwith "set_interrupt_ex: only available with Python >= 3.10";
+    Pywrappers.pyerr_setinterruptex signal
 end
 
 exception Err of Err.t * string
@@ -1341,60 +1512,80 @@ module Object = struct
   type t = Pytypes.pyobject
 
   let del_item obj item =
+    assert_not_null "del_item(!, _)" obj;
+    assert_not_null "del_item(_, !)" item;
     assert_int_success (Pywrappers.pyobject_delitem obj item)
 
   let del_item_string obj item =
     assert_int_success (Pywrappers.pyobject_delitemstring obj item)
 
   let get_attr obj attr =
+    assert_not_null "get_attr(!, _)" obj;
+    assert_not_null "get_attr(_, !)" attr;
     option (Pywrappers.pyobject_getattr obj attr)
 
   let get_attr_string obj attr =
+    assert_not_null "get_attr_string" obj;
     option (Pywrappers.pyobject_getattrstring obj attr)
 
-  let find_attr obj attr = Pyutils.option_unwrap (get_attr obj attr)
+  let find_attr obj attr = Stdcompat.Option.get (get_attr obj attr)
 
   let find_attr_opt = get_attr
 
   let find_attr_string obj attr =
-    Pyutils.option_unwrap (get_attr_string obj attr)
+    Stdcompat.Option.get (get_attr_string obj attr)
 
   let find_attr_string_opt = get_attr_string
 
   let get_item obj key =
     option (Pywrappers.pyobject_getitem obj key)
 
-  let find obj attr = Pyutils.option_unwrap (get_item obj attr)
+  let find obj attr = Stdcompat.Option.get (get_item obj attr)
 
   let find_opt = get_item
 
   let get_item_string obj key = get_item obj (String.of_string key)
 
-  let find_string obj attr = Pyutils.option_unwrap (get_item_string obj attr)
+  let find_string obj attr = Stdcompat.Option.get (get_item_string obj attr)
 
   let find_string_opt = get_item_string
 
   let get_iter obj =
+    assert_not_null "get_iter" obj;
     check_not_null (Pywrappers.pyobject_getiter obj)
 
   let get_type obj =
+    assert_not_null "get_type" obj;
     check_not_null (Pywrappers.pyobject_type obj)
 
   let has_attr obj attr =
+    assert_not_null "has_attr(!, _)" obj;
+    assert_not_null "has_attr(_, !)" attr;
     bool_of_int (Pywrappers.pyobject_hasattr obj attr)
 
   let has_attr_string obj attr =
+    assert_not_null "has_attr_string" obj;
     bool_of_int (Pywrappers.pyobject_hasattrstring obj attr)
 
-  let hash obj = check_int64 (Pywrappers.pyobject_hash obj)
+  let hash obj =
+    assert_not_null "hash" obj;
+    check_int64 (Pywrappers.pyobject_hash obj)
 
-  let is_true obj = bool_of_int (Pywrappers.pyobject_istrue obj)
+  let is_true obj =
+    assert_not_null "is_true" obj;
+    bool_of_int (Pywrappers.pyobject_istrue obj)
 
-  let not obj = bool_of_int (Pywrappers.pyobject_istrue obj)
+  let not obj =
+    assert_not_null "not" obj;
+    bool_of_int (Pywrappers.pyobject_istrue obj)
 
-  let is_instance obj cls = bool_of_int (Pywrappers.pyobject_isinstance obj cls)
+  let is_instance obj cls =
+    assert_not_null "is_instance" obj;
+    bool_of_int (Pywrappers.pyobject_isinstance obj cls)
 
   let is_subclass cls1 cls2 =
+    assert_not_null "is_subclass(!, _)" cls1;
+    assert_not_null "is_subclass(_, !)" cls2;
     bool_of_int (Pywrappers.pyobject_issubclass cls1 cls2)
 
   let print obj out_channel =
@@ -1411,9 +1602,12 @@ module Object = struct
     bool_of_int (Pywrappers.pyobject_richcomparebool a b cmp)
 
   let set_attr obj attr value =
+    assert_not_null "set_attr(!, _, _)" obj;
+    assert_not_null "set_attr(_, !, _)" attr;
     assert_int_success (Pywrappers.pyobject_setattr obj attr value)
 
   let set_attr_string obj attr value =
+    assert_not_null "set_attr_string" obj;
     assert_int_success (Pywrappers.pyobject_setattrstring obj attr value)
 
   let del_attr obj attr = set_attr obj attr null
@@ -1462,16 +1656,25 @@ module Object = struct
     Format.pp_print_string fmt (robust_to_string true v)
 
   let call_method_obj_args obj name args =
+    assert_not_null "call_method_obj_args(!, _, _)" obj;
+    assert_not_null "call_method_obj_args(_, !, _)" name;
     check_not_null (pyobject_callmethodobjargs obj name args)
 
   let call_method obj name args =
     call_method_obj_args obj (String.of_string name) args
 
   let call callable args kw =
+    assert_not_null "call(!, _, _)" callable;
+    assert_not_null "call(_, !, _)" args;
     check_not_null (Pywrappers.pyobject_call callable args kw)
 
   let size obj =
+    assert_not_null "size" obj;
     check_int (Pywrappers.pyobject_size obj)
+
+  let dir obj =
+    assert_not_null "dir" obj;
+    check_not_null (Pywrappers.pyobject_dir obj)
 end
 
 let exception_printer exn =
@@ -1542,87 +1745,147 @@ end
 module Number = struct
   let absolute v = check_not_null (Pywrappers.pynumber_absolute v)
 
-  let add v0 v1 = check_not_null (Pywrappers.pynumber_add v0 v1)
+  let add v0 v1 =
+    assert_not_null "add(!, _)" v0;
+    assert_not_null "add(_, !)" v1;
+    check_not_null (Pywrappers.pynumber_add v0 v1)
 
-  let number_and v0 v1 = check_not_null (Pywrappers.pynumber_and v0 v1)
+  let number_and v0 v1 =
+    assert_not_null "number_and(!, _)" v0;
+    assert_not_null "number_and(_, !)" v1;
+    check_not_null (Pywrappers.pynumber_and v0 v1)
 
   let _check v = Pywrappers.pynumber_check v <> 0
 
-  let divmod v0 v1 = check_not_null (Pywrappers.pynumber_divmod v0 v1)
+  let divmod v0 v1 =
+    assert_not_null "divmod(!, _)" v0;
+    assert_not_null "divmod(_, !)" v1;
+    check_not_null (Pywrappers.pynumber_divmod v0 v1)
 
   let float v = check_not_null (Pywrappers.pynumber_float v)
 
   let floor_divide v0 v1 =
+    assert_not_null "floor_divide(!, _)" v0;
+    assert_not_null "floor_divide(_, !)" v1;
     check_not_null (Pywrappers.pynumber_floordivide v0 v1)
 
-  let in_place_add v0 v1 = check_not_null (Pywrappers.pynumber_inplaceadd v0 v1)
+  let in_place_add v0 v1 =
+    assert_not_null "in_place_add(!, _)" v0;
+    assert_not_null "in_place_add(_, !)" v1;
+    check_not_null (Pywrappers.pynumber_inplaceadd v0 v1)
 
-  let in_place_and v0 v1 = check_not_null (Pywrappers.pynumber_inplaceand v0 v1)
+  let in_place_and v0 v1 =
+    assert_not_null "in_place_and(!, _)" v0;
+    assert_not_null "in_place_and(_, !)" v1;
+    check_not_null (Pywrappers.pynumber_inplaceand v0 v1)
 
   let in_place_floor_divide v0 v1 =
+    assert_not_null "in_place_floor_divide(!, _)" v0;
+    assert_not_null "in_place_floor_divide(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacefloordivide v0 v1)
 
   let in_place_lshift v0 v1 =
+    assert_not_null "in_place_lshift(!, _)" v0;
+    assert_not_null "in_place_lshift(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacelshift v0 v1)
 
   let in_place_multiply v0 v1 =
+    assert_not_null "in_place_multiply(!, _)" v0;
+    assert_not_null "in_place_multiply(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacemultiply v0 v1)
 
   let in_place_or v0 v1 =
+    assert_not_null "in_place_or(!, _)" v0;
+    assert_not_null "in_place_or(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplaceor v0 v1)
 
   let in_place_power ?(modulo = none) v0 v1 =
+    assert_not_null "in_place_power(?modulo:!, _, _)" modulo;
+    assert_not_null "in_place_power(?modulo:_, !, _)" v0;
+    assert_not_null "in_place_power(?modulo:_, _, _)" v1;
     check_not_null (Pywrappers.pynumber_inplacepower v0 v1 modulo)
 
   let in_place_remainder v0 v1 =
+    assert_not_null "in_place_remainder(!, _)" v0;
+    assert_not_null "in_place_remainder(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplaceremainder v0 v1)
 
   let in_place_rshift v0 v1 =
+    assert_not_null "in_place_rshift(!, _)" v0;
+    assert_not_null "in_place_rshift(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacershift v0 v1)
 
   let in_place_subtract v0 v1 =
+    assert_not_null "in_place_substract(!, _)" v0;
+    assert_not_null "in_place_substract(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacesubtract v0 v1)
 
   let in_place_true_divide v0 v1 =
+    assert_not_null "in_place_true_divide(!, _)" v0;
+    assert_not_null "in_place_true_divide(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacetruedivide v0 v1)
 
   let in_place_xor v0 v1 =
+    assert_not_null "in_place_xor(!, _)" v0;
+    assert_not_null "in_place_xor(_, !)" v1;
     check_not_null (Pywrappers.pynumber_inplacexor v0 v1)
 
   let invert v =
+    assert_not_null "invert" v;
     check_not_null (Pywrappers.pynumber_invert v)
 
   let lshift v0 v1 =
+    assert_not_null "in_place_xor(!, _)" v0;
+    assert_not_null "in_place_xor(_, !)" v1;
     check_not_null (Pywrappers.pynumber_lshift v0 v1)
 
   let multiply v0 v1 =
+    assert_not_null "in_place_xor(!, _)" v0;
+    assert_not_null "in_place_xor(_, !)" v1;
     check_not_null (Pywrappers.pynumber_multiply v0 v1)
 
   let negative v =
+    assert_not_null "negative" v;
     check_not_null (Pywrappers.pynumber_negative v)
 
   let number_or v0 v1 =
+    assert_not_null "in_place_xor(!, _)" v0;
+    assert_not_null "in_place_xor(_, !)" v1;
     check_not_null (Pywrappers.pynumber_or v0 v1)
 
   let positive v =
+    assert_not_null "positive" v;
     check_not_null (Pywrappers.pynumber_positive v)
 
   let power ?(modulo = none) v0 v1 =
+    assert_not_null "in_place_power(?modulo:!, _, _)" modulo;
+    assert_not_null "in_place_power(?modulo:_, !, _)" v0;
+    assert_not_null "in_place_power(?modulo:_, _, _)" v1;
     check_not_null (Pywrappers.pynumber_power v0 v1 modulo)
 
   let remainder v0 v1 =
+    assert_not_null "remainder(!, _)" v0;
+    assert_not_null "remainder(_, !)" v1;
     check_not_null (Pywrappers.pynumber_remainder v0 v1)
 
   let rshift v0 v1 =
+    assert_not_null "rshift(!, _)" v0;
+    assert_not_null "rshift(_, !)" v1;
     check_not_null (Pywrappers.pynumber_rshift v0 v1)
 
   let subtract v0 v1 =
+    assert_not_null "substract(!, _)" v0;
+    assert_not_null "substract(_, !)" v1;
     check_not_null (Pywrappers.pynumber_subtract v0 v1)
 
   let true_divide v0 v1 =
+    assert_not_null "true_divide_xor(!, _)" v0;
+    assert_not_null "true_divide_xor(_, !)" v1;
     check_not_null (Pywrappers.pynumber_truedivide v0 v1)
 
   let number_xor v0 v1 =
+    assert_not_null "number_xor(!, _)" v0;
+    assert_not_null "number_xor(_, !)" v1;
     check_not_null (Pywrappers.pynumber_xor v0 v1)
 
   let check v =
@@ -1669,7 +1932,9 @@ end
 module Iter_ = struct
   let check o = Type.get o = Type.Iter
 
-  let next i = option (Pywrappers.pyiter_next i)
+  let next i =
+    assert_not_null "next" i;
+    option (Pywrappers.pyiter_next i)
 
   let rec iter f i =
     match next i with
@@ -1702,6 +1967,14 @@ module Iter_ = struct
     match next i with
       None -> false
     | Some item -> p item || exists p i
+
+  let unsafe_to_seq_map f i =
+    let rec seq () =
+      match next i with
+      | None -> Seq.Nil
+      | Some item ->
+          Seq.Cons (f item, seq) in
+    seq
 end
 
 (* From stdcompat *)
@@ -1728,11 +2001,15 @@ module Sequence = struct
 
   let concat s s' = check_not_null (Pywrappers.pysequence_concat s s')
 
-  let contains s value = bool_of_int (Pywrappers.pysequence_contains s value)
+  let contains s value =
+    assert_not_null "contains(!, _)" s;
+    assert_not_null "contains(_, !)" value;
+    bool_of_int (Pywrappers.pysequence_contains s value)
 
   let count s value = check_int (Pywrappers.pysequence_count s value)
 
   let del_item s index =
+    assert_not_null "del_item" s;
     assert_int_success (Pywrappers.pysequence_delitem s index)
 
   let fast s msg = check_not_null (Pywrappers.pysequence_fast s msg)
@@ -1767,7 +2044,9 @@ module Sequence = struct
   let set_slice s i0 i1 value =
     assert_int_success (Pywrappers.pysequence_setslice s i0 i1 value)
 
-  let size s = check_int (Pywrappers.pysequence_size s)
+  let size s =
+    assert_not_null "size" s;
+    check_int (Pywrappers.pysequence_size s)
 
   let tuple sequence = check_not_null (Pywrappers.pysequence_tuple sequence)
 
@@ -1832,11 +2111,14 @@ module Tuple = struct
 
   let of_seq s = of_array (Array.of_seq s)
 
-  let of_tuple1 v0 = init 1 (function _ -> v0)
+  let of_tuple1 v0 =
+    init 1 (function _ -> v0)
 
-  let of_tuple2 (v0, v1) = init 2 (function 0 -> v0 | _ -> v1)
+  let of_tuple2 (v0, v1) =
+    init 2 (function 0 -> v0 | _ -> v1)
 
-  let of_tuple3 (v0, v1, v2) = init 3 (function 0 -> v0 | 1 -> v1 | _ -> v2)
+  let of_tuple3 (v0, v1, v2) =
+    init 3 (function 0 -> v0 | 1 -> v1 | _ -> v2)
 
   let of_tuple4 (v0, v1, v2, v3) =
     init 4 (function 0 -> v0 | 1 -> v1 | 2 -> v2 | _ -> v3)
@@ -1869,36 +2151,41 @@ module Dict = struct
 
   let check o = Type.get o = Type.Dict
 
-  let clear = Pywrappers.pydict_clear
+  let clear o =
+    assert_not_null "clear" o;
+    Pywrappers.pydict_clear o
 
   let copy v = check_not_null (Pywrappers.pydict_copy v)
 
   let del_item dict item =
+    assert_not_null "del_item(!, _)" dict;
+    assert_not_null "del_item(_, !)" item;
     assert_int_success (Pywrappers.pydict_delitem dict item)
 
   let del_item_string dict name =
+    assert_not_null "del_item_string" dict;
     assert_int_success (Pywrappers.pydict_delitemstring dict name)
 
   let get_item dict key =
+    assert_not_null "get_item(!, _)" dict;
+    assert_not_null "get_item(_, !)" key;
     option (Pywrappers.pydict_getitem dict key)
 
-  let find dict key = Pyutils.option_unwrap (get_item dict key)
+  let find dict key = Stdcompat.Option.get (get_item dict key)
 
   let find_opt = get_item
 
   let get_item_string dict name =
+    assert_not_null "get_item_string" dict;
     option (Pywrappers.pydict_getitemstring dict name)
 
-  let find_string dict key = Pyutils.option_unwrap (get_item_string dict key)
+  let find_string dict key = Stdcompat.Option.get (get_item_string dict key)
 
   let find_string_opt = get_item_string
 
   let keys dict = check_not_null (Pywrappers.pydict_keys dict)
 
   let items dict = check_not_null (Pywrappers.pydict_items dict)
-
-  let set_item_string dict name value =
-    assert_int_success (Pywrappers.pydict_setitemstring dict name value)
 
   let size dict =
     let sz = Pywrappers.pydict_size dict in
@@ -1932,6 +2219,17 @@ module Dict = struct
       p key value
     end (Object.get_iter (items dict))
 
+  let to_bindings_seq_map fkey fvalue dict =
+    Iter_.unsafe_to_seq_map
+      (fun pair ->
+        let (key, value) = Tuple.to_pair pair in
+        (fkey key, fvalue value))
+      (Object.get_iter (items dict))
+
+  let to_bindings_seq = to_bindings_seq_map id id
+
+  let to_bindings_string_seq = to_bindings_seq_map String.to_string id
+
   let to_bindings_map fkey fvalue dict =
     Iter_.to_list_map begin fun pair ->
       let (key, value) = Tuple.to_pair pair in
@@ -1942,35 +2240,50 @@ module Dict = struct
 
   let to_bindings_string = to_bindings_map String.to_string id
 
-  let singleton key value = of_bindings [(key, value)]
+  let singleton key value =
+    assert_not_null "singleton(!, _)" key;
+    assert_not_null "singleton(_, !)" value;
+    of_bindings [(key, value)]
 
-  let singleton_string key value = of_bindings_string [(key, value)]
+  let singleton_string key value =
+    assert_not_null "singleton_string" value;
+    of_bindings_string [(key, value)]
 end
 
 module Set = struct
   let check o = Type.get o = Type.Set
 
-  let clear = Pywrappers.pyset_clear
+  let clear o =
+    assert_not_null "clear" o;
+    assert_int_success (Pywrappers.pyset_clear o)
 
   let copy v = check_not_null (Pywrappers.pyset_new v)
 
   let create () = check_not_null (Pywrappers.pyset_new null)
 
   let size set =
+    assert_not_null "size" set;
     let sz = Pywrappers.pyset_size set in
     assert_int_success sz;
     sz
 
   let add set value =
+    assert_not_null "add(!, _)" set;
+    assert_not_null "add(_, !)" value;
     assert_int_success (Pywrappers.pyset_add set value)
 
   let contains set value =
+    assert_not_null "contains(!, _)" set;
+    assert_not_null "contains(_, !)" value;
     bool_of_int (Pywrappers.pyset_contains set value)
 
   let discard set value =
+    assert_not_null "discard(!, _)" set;
+    assert_not_null "discard(_, !)" value;
     assert_int_success (Pywrappers.pyset_discard set value)
 
   let to_list_map f set =
+    assert_not_null "to_list_map" set;
     Iter_.to_list_map f (Object.get_iter set)
 
   let to_list = to_list_map id
@@ -1985,6 +2298,61 @@ module Set = struct
   let of_list = of_list_map id
 end
 
+module Traceback = struct
+  type frame =
+    { filename : string
+    ; function_name : string
+    ; line_number : int
+    }
+
+  let create_frame { filename; function_name; line_number } =
+    check_not_null (pyframe_new filename function_name line_number)
+
+  type t = frame list
+
+  let create t =
+    let types_module = check_not_null (Pywrappers.pyimport_importmodule "types") in
+    let tb_type = Object.find_attr_string types_module "TracebackType" in
+    List.fold_left
+      (fun acc frame ->
+        let args =
+          Tuple.of_array [| acc; create_frame frame; Int.of_int 0; Int.of_int frame.line_number |]
+        in
+        Object.call tb_type args null)
+      none
+      t
+end
+
+exception Err_with_traceback of Err.t * string * Traceback.t
+
+module Class = struct
+  let init ?(parents = []) ?(fields = []) ?(methods = []) classname =
+    if version_major () >= 3 then
+      let methods = List.rev_map (fun (name, closure) ->
+        (name, Pywrappers.Python3.pyinstancemethod_new closure)) methods in
+      Type.create classname parents (List.rev_append methods fields)
+    else
+      let classname = String.of_string classname in
+      let dict = Dict_.of_bindings_string fields in
+      let c =
+        check_not_null (Pywrappers.Python2.pyclass_new (Tuple_.of_list parents)
+          dict classname) in
+      let add_method (name, closure) =
+        let m = check_not_null (Pywrappers.pymethod_new closure null c) in
+        Dict_.set_item_string dict name m in
+      List.iter add_method methods;
+      c
+end
+
+let () =
+  ocaml_exception_class :=
+    Some (lazy (Class.init ~parents:[Pywrappers.pyexc_baseexception ()]
+      "ocaml exception"))
+
+let () =
+  ocaml_exception_capsule :=
+    Some (Capsule.make "ocaml_exception_capsule")
+
 module Callable = struct
   let check v = Pywrappers.pycallable_check v <> 0
 
@@ -1993,8 +2361,26 @@ module Callable = struct
       E (errtype, errvalue) ->
         Err.set_object errtype errvalue;
         null
-    | Err (errtype, msg) ->
+    | Err (errtype, msg)
+    | Err_with_traceback (errtype, msg, []) ->
         Err.set_error errtype msg;
+        null
+    | Err_with_traceback (errtype, msg, traceback) ->
+        let () =
+          (* Traceback objects can only be created since Python 3.7. *)
+          if !version_major_value <= 2 || (!version_major_value == 3 && !version_minor_value < 7)
+          then
+            Err.set_error errtype msg
+          else
+            let traceback = Traceback.create traceback in
+            Err.restore (Err.of_error errtype) (String.of_string msg) traceback;
+        in
+        null
+    | e ->
+        let err =
+          fst (Option.get !ocaml_exception_capsule)
+            (e, Printexc.get_raw_backtrace ()) in
+        Err.set_object (Lazy.force (Option.get !ocaml_exception_class)) err;
         null
 
   let of_function_as_tuple ?name ?(docstring = "Anonymous closure") f =
@@ -2016,13 +2402,13 @@ module Callable = struct
     if not (check c) then
       Type.mismatch "Callable" c;
     function args ->
-      Eval.call_object c args
+      Object.call c args null
 
   let to_function_as_tuple_and_dict c =
     if not (check c) then
       Type.mismatch "Callable" c;
     fun args keywords ->
-      Eval.call_object_with_keywords c args keywords
+      Object.call c args keywords
 
   let to_function c =
     let f = to_function_as_tuple c in
@@ -2034,6 +2420,15 @@ module Callable = struct
       f (Tuple.of_array args) (Dict.of_bindings_string keywords)
 end
 
+type optimize = Default | Debug | Normal | RemoveDocstrings
+
+let int_of_optimize opt =
+  match opt with
+  | Default -> -1
+  | Debug -> 0
+  | Normal -> 1
+  | RemoveDocstrings -> 2
+
 module Import = struct
 (* This function has been removed from Python 3.9, and was marked
   "for internal use only" before.
@@ -2042,11 +2437,42 @@ module Import = struct
 
   let add_module name = check_not_null (Pywrappers.pyimport_addmodule name)
 
+  let main () = add_module "__main__"
+
+  let builtins () = Object.find_attr_string (main ()) "__builtins__"
+
+  let compile ~source ~filename ?(dont_inherit = false)
+      ?(optimize = Default) mode =
+    let compile =
+      Callable.to_function_with_keywords
+        (Object.find_attr_string (builtins ()) "compile") in
+    let source = String.of_string source in
+    let filename = String.of_string filename in
+    let mode = String.of_string (string_of_input mode) in
+    let dont_inherit = Bool.of_bool dont_inherit in
+    let args = ["dont_inherit", dont_inherit] in
+    let args =
+      if !version_minor_value <= 2 then
+        args
+      else
+        begin
+          let optimize = Int.of_int (int_of_optimize optimize) in
+          ["optimize", optimize]
+        end in
+    compile [| source; filename; mode |] args
+
   let exec_code_module name obj =
+    assert_not_null "exec_code_module" obj;
     check_not_null (Pywrappers.pyimport_execcodemodule name obj)
 
   let exec_code_module_ex name obj pathname =
+    assert_not_null "exec_code_module_ex" obj;
     check_not_null (Pywrappers.pyimport_execcodemoduleex name obj pathname)
+
+  let exec_code_module_from_string ~name ?(filename = name)
+        ?dont_inherit ?optimize source =
+    let obj = compile ~source ~filename ?dont_inherit ?optimize File in
+    exec_code_module name obj
 
   let get_magic_number = Pywrappers.pyimport_getmagicnumber
 
@@ -2065,8 +2491,9 @@ module Import = struct
     with E (e, _msg)
         when
           let ty = Object.to_string e in
-          ty = "<class 'ModuleNotFoundError'>" ||
-            ty = "<type 'exceptions.ImportError'>" ->
+          ty = "<class 'ModuleNotFoundError'>" || (* Python >=3.6*)
+          ty = "<class 'ImportError'>" || (* Python <3.6 *)
+          ty = "<type 'exceptions.ImportError'>" (* Python 2 *) ->
       None
 
   let try_import_module = import_module_opt
@@ -2086,11 +2513,6 @@ let import = Import.import_module
 
 let import_opt = Import.import_module_opt
 
-let option_map f o =
-  match o with
-  | None -> None
-  | Some x -> Some (f x)
-
 module Module = struct
   let check o = Type.get o = Type.Module
 
@@ -2098,12 +2520,15 @@ module Module = struct
     check_not_null (Pywrappers.pymodule_new name)
 
   let get_dict m =
+    assert_not_null "get_dict" m;
     check_not_null (Pywrappers.pymodule_getdict m)
 
   let get_filename m =
+    assert_not_null "get_filename" m;
     check_some (Pywrappers.pymodule_getfilename m)
 
   let get_name m =
+    assert_not_null "get_name" m;
     check_some (Pywrappers.pymodule_getname m)
 
   let get = Object.find_attr_string
@@ -2114,13 +2539,13 @@ module Module = struct
 
   let get_function m name = Callable.to_function (get m name)
 
-  let get_function_opt m name = option_map Callable.to_function (get_opt m name)
+  let get_function_opt m name = Option.map Callable.to_function (get_opt m name)
 
   let get_function_with_keywords m name =
     Callable.to_function_with_keywords (get m name)
 
   let get_function_with_keywords_opt m name =
-    option_map Callable.to_function_with_keywords (get_opt m name)
+    Option.map Callable.to_function_with_keywords (get_opt m name)
 
   let set_function m name f = set m name (Callable.of_function f)
 
@@ -2129,34 +2554,17 @@ module Module = struct
 
   let remove = Object.del_attr_string
 
-  let main () = Import.add_module "__main__"
+  let main = Import.main
 
   let sys () = Import.import_module "sys"
 
   let builtins () = get (main ()) "__builtins__"
 
+  let compile = Import.compile
+
   let set_docstring m doc =
     Pywrappers.pymodule_setdocstring m doc
     |> assert_int_success
-end
-
-module Class = struct
-  let init ?(parents = []) ?(fields = []) ?(methods = []) classname =
-    if version_major () >= 3 then
-      let methods = List.rev_map (fun (name, closure) ->
-        (name, Pywrappers.Python3.pyinstancemethod_new closure)) methods in
-      Type.create classname parents (List.rev_append methods fields)
-    else
-      let classname = String.of_string classname in
-      let dict = Dict.of_bindings_string fields in
-      let c =
-        check_not_null (Pywrappers.Python2.pyclass_new (Tuple.of_list parents)
-          dict classname) in
-      let add_method (name, closure) =
-        let m = check_not_null (Pywrappers.pymethod_new closure null c) in
-        Dict.set_item_string dict name m in
-      List.iter add_method methods;
-      c
 end
 
 module Iter = struct
@@ -2173,7 +2581,8 @@ module Iter = struct
     let iter_fn = Callable.of_function (function
       | [||] -> failwith "__iter__ expects at least one argument"
       | array -> array.(0)) in
-    let methods = [next_name, Callable.of_function next'; "__iter__", iter_fn] in
+    let methods =
+      [next_name, Callable.of_function next'; "__iter__", iter_fn] in
     Object.call_function_obj_args
       (Class.init ~methods "iterator") [| |]
 
@@ -2221,14 +2630,6 @@ module Iter = struct
           Seq.Cons (item, seq) in
     seq
 
-  let unsafe_to_seq_map f i =
-    let rec seq () =
-      match next i with
-      | None -> Seq.Nil
-      | Some item ->
-          Seq.Cons (f item, seq) in
-    seq
-
   let of_list l =
     let l = ref l in
     let next () =
@@ -2253,6 +2654,8 @@ module Iter = struct
     check_not_null (Pywrappers.pyseqiter_new seq)
 
   let call_iter call sentinel =
+    assert_not_null "call_iter(!, _)" call;
+    assert_not_null "call_iter(_, !)" sentinel;
     check_not_null (Pywrappers.pycalliter_new call sentinel)
 
   (* As a sentinel we use a function so that there is no collision risk.
@@ -2278,7 +2681,9 @@ module List = struct
 
   let create size = check_not_null (Pywrappers.pylist_new size)
 
-  let size list = check_int (Pywrappers.pylist_size list)
+  let size list =
+    assert_not_null "size" list;
+    check_int (Pywrappers.pylist_size list)
 
   let length = size
 
@@ -2305,7 +2710,9 @@ module List = struct
 
   let of_sequence = Sequence.list
 
-  let singleton v = init 1 (fun _ -> v)
+  let singleton v =
+    assert_not_null "singleton" v;
+    init 1 (fun _ -> v)
 
   let of_seq s = of_array (Array.of_seq s)
 end
@@ -2332,7 +2739,7 @@ module Marshal = struct
 
   let write_object_to_file v file version =
     let fd = Pytypes.file_map Unix.descr_of_out_channel file in
-    assert_int_success (Pywrappers.pymarshal_writeobjecttofile v fd version)
+    Pywrappers.pymarshal_writeobjecttofile v fd version
 
   let dump ?(version = version ()) v file =
     write_object_to_file v file version
@@ -2553,23 +2960,17 @@ let set_argv argv =
 
 let last_value () = Module.get (Module.builtins ()) "_"
 
-let compile ~source ~filename ?(dont_inherit = false)
-    ?(optimize = `Default) mode =
-  let compile =
-    Module.get_function_with_keywords (Module.builtins ()) "compile" in
-  let source = String.of_string source in
-  let filename = String.of_string filename in
+let compile ~source ~filename ?dont_inherit ?optimize mode =
   let mode =
-    String.of_string @@ match mode with
-    | `Exec -> "exec"
-    | `Eval -> "eval"
-    | `Single -> "single" in
+    match mode with
+    | `Exec -> File
+    | `Eval -> Eval
+    | `Single -> Single in
   let optimize =
-    Int.of_int @@ match optimize with
-    | `Default -> -1
-    | `Debug -> 0
-    | `Normal -> 1
-    | `RemoveDocstrings -> 2 in
-  let dont_inherit = Bool.of_bool dont_inherit in
-  compile [| source; filename; mode |]
-    ["dont_inherit", dont_inherit; "optimize", optimize]
+    Stdcompat.Option.map (function
+        | `Default -> Default
+        | `Debug -> Debug
+        | `Normal -> Normal
+        | `RemoveDocstrings -> RemoveDocstrings)
+      optimize in
+  Module.compile ~source ~filename ?dont_inherit ?optimize mode

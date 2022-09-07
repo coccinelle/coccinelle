@@ -1,4 +1,4 @@
-AC_INIT(parmap, 1.0-rc7, roberto@dicosmo.org)
+AC_INIT([parmap],[1.0-rc7],[roberto@dicosmo.org])
 AC_CONFIG_MACRO_DIR([m4])
 AC_PROG_OCAML
 if test "$OCAMLC" = "no"; then
@@ -11,12 +11,11 @@ if test "$OCAMLFIND" = "no"; then
  AC_MSG_ERROR([You must install OCaml findlib (the ocamlfind command)])
 fi
 
-AC_HEADER_STDC
-AC_CHECK_HEADERS([sched.h])
-AC_CHECK_DECLS([sched_setaffinity], [], [], [[
-#define _GNU_SOURCE 1
-#include <sched.h>
-]])
+dnl AC_CHECK_HEADERS([sched.h])
+dnl AC_CHECK_DECLS([sched_setaffinity], [], [], [[
+dnl #define _GNU_SOURCE 1
+dnl #include <sched.h>
+dnl ]])
 
 AC_CHECK_HEADERS([mach/thread_policy.h])
 AC_CHECK_DECLS([thread_policy_set], [], [], [[
@@ -44,6 +43,8 @@ AC_DEFUN([AC_WITH_OCAML_VERSION],
      AC_DISABLE_BLOCK([BEFORE_$1])],
     [AC_DISABLE_BLOCK([FROM_$1])
      AC_ENABLE_BLOCK([BEFORE_$1])])])
+
+AC_WITH_OCAML_VERSION([4_02_0], [4.02.0])
 
 AC_WITH_OCAML_VERSION([4_06_0], [4.06.0])
 

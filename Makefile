@@ -98,10 +98,14 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-CORE_LIBS := unix bigarray str \
+CORE_LIBS := unix str \
 	$(STDCOMPATDIR)/stdcompat \
 	$(patsubst %,bytes,$(BYTESDIR)) \
 	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
+
+ifeq ($(OCAMLATLEAST50),no)
+CORE_LIBS += bigarray
+endif
 
 ifeq ($(FEATURE_OCAML),1)
 CORE_LIBS += dynlink
@@ -183,6 +187,10 @@ COMPILED_EXPOSED_MODULES := \
 SEARCH_PATHS := \
 	commons/ocamlextra $(LIBRARIES) $(PREFIX_spgen) $(PCREDIR) $(PYMLDIR) \
 	$(PARMAPDIR) $(BYTESDIR) $(STDCOMPATDIR)
+
+ifneq ($(OCAMLATLEAST50),no)
+SEARCH_PATHS += +str +unix +dynlink
+endif
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
@@ -466,11 +474,11 @@ endif
 
 ifneq ($(PARMAP_LIB),)
 ifeq ($(NATIVE),yes)
-$(PARMAP_LIB):
+$(PARMAP_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/parmap all
 	$(MAKE) -C bundles/parmap all.opt
 else
-$(PARMAP_LIB):
+$(PARMAP_LIB): $(STDCOMPAT_LIB)
 	$(MAKE) -C bundles/parmap all
 endif
 endif

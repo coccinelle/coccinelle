@@ -61,10 +61,11 @@ let main () =
        begin
          match  String.length version with
            1 -> None, Some (int_of_string version), None
-         | 3 when version.[1] = '.' ->
+         | (3 | 4) when version.[1] = '.' ->
              None,
              Some (int_of_string (String.sub version 0 1)),
-             Some (int_of_string (String.sub version 2 1))
+             Some
+               (int_of_string (String.sub version 2 (String.length version - 2)))
          | _ -> Some version, None, None
        end
     | _ -> failwith "Argument should be a version number" in
@@ -75,12 +76,14 @@ let main () =
   show_environment_variable "DYLD_LIBRARY_PATH";
   show_environment_variable "DYLD_FALLBACK_LIBRARY_PATH";
   prerr_endline "Initializing library...";
-  Py.initialize ?library_name ~verbose:true ?version ?minor ();
+  Py.initialize ?library_name ~verbose:true ?version ?minor ~debug_build:true ();
   begin
     match Py.get_library_filename () with
       None -> prerr_endline "No library has been loaded.\n"
     | Some filename -> Printf.eprintf "Library \"%s\" has been loaded.\n" filename
   end;
+  Format.eprintf "platform: %s@." (Pywrappers.py_getplatform ());
+  Format.eprintf "build info: %s@." (Pywrappers.py_getbuildinfo ());
   if Py.is_debug_build () then
     prerr_endline "Debug build."
   else

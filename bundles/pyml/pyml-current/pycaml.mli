@@ -707,7 +707,6 @@ val pyerr_setstring : pyobject * string -> unit
 val pyerr_occurred : unit -> pyobject
 val pyerr_clear : unit -> unit
 val pyerr_fetch : pyobject * pyobject * pyobject -> pyobject * pyobject * pyobject
-val pyerr_restore : pyobject * pyobject * pyobject -> unit
 val pyerr_givenexceptionmatches : pyobject * pyobject -> int
 val pyerr_exceptionmatches : pyobject -> int
 val pyerr_normalizeexception : pyobject * pyobject * pyobject -> pyobject * pyobject * pyobject
