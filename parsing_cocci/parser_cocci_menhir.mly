@@ -1227,7 +1227,18 @@ ctype_only_non_signable:
 	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
 	(Parse_aux.make_cv cv ty) m }
 
-mul: a=TMul b=ioption(const_vol) { (a,b) }
+const_vol_attr_list:
+  /* empty */ { ([],[]) }
+| Tconst const_vol_attr_list
+  { let (cv,attrs) = $2 in
+    ((Parse_aux.clt2mcode Ast_cocci.Const $1)::cv,attrs) }
+| Tvolatile const_vol_attr_list
+  { let (cv,attrs) = $2 in
+    ((Parse_aux.clt2mcode Ast_cocci.Volatile $1)::cv,attrs) }
+| attr const_vol_attr_list
+  { let (cv,attrs) = $2 in (cv,$1::attrs) }
+
+mul: a=TMul b=const_vol_attr_list { (a,b) }
 
 mctype:
 | TMeta { tmeta_to_type $1 }
@@ -1588,7 +1599,7 @@ reverse_separated_nonempty_llist(separator, X):
     { x :: Nothing :: (Separator s) :: xs }
 
 funproto:
-  s=ioption(storage) i=ioption(Tinline) t=ctype ar=attr_list
+  s=ioption(storage) i=ioption(Tinline) t=ctype
   TFunProto id=fn_ident
   lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = match s with None -> [] | Some s -> [Ast0_cocci.FStorage s] in
@@ -1604,7 +1615,7 @@ funproto:
 	      Parse_aux.clt2mcode "(" lp, args, vararg,
 	      Parse_aux.clt2mcode ")" rp,
 	      Parse_aux.clt2mcode ";" pt)) }
-| i=Tinline s=storage t=ctype ar=attr_list
+| i=Tinline s=storage t=ctype
   TFunProto id=fn_ident
   lp=TOPar arglist=arg_list(name_opt_decl) rp=TCPar pt=TPtVirg
       { let s = [Ast0_cocci.FStorage s] in
@@ -1679,22 +1690,6 @@ fninfo_nt:
       with Not_found ->
 	(Ast0_cocci.FInline(Parse_aux.clt2mcode "inline" $1))::
 	(fst $2), snd $2 }
-  | a=attr    fninfo_nt
-      { try
-	let _ =
-	  List.find (function Ast0_cocci.FAttr(_) -> true | _ -> false)
-	    (fst $2) in
-	raise (Semantic_cocci.Semantic "duplicate init")
-      with Not_found -> (Ast0_cocci.FAttr(a))::(fst $2), snd $2 }
-  | a=attr m1=TMul m2=list(TMul) fninfo_nt
-      { try
-	let _ =
-	  List.find (function Ast0_cocci.FAttr(_) -> true | _ -> false)
-	    (fst $4) in
-	raise (Semantic_cocci.Semantic "duplicate init")
-      with Not_found ->
-	(Ast0_cocci.FAttr(a))::
-	(fst $4), (fun x -> Parse_aux.pointerify x (m1::m2))::snd $4 }
 
 storage:
          s=Tstatic      { Parse_aux.clt2mcode Ast_cocci.Static s }
@@ -1717,17 +1712,10 @@ storage:
        | s=Tregister    { Parse_aux.clt2mcode Ast_cocci.Register s }
        | s=Textern      { Parse_aux.clt2mcode Ast_cocci.Extern s }
 
-decl: t=ctype midar=attr_list d=direct_declarator(type_ident) endar=attr_list
+decl: t=ctype d=direct_declarator(type_ident) endar=attr_list
 	{ let (i,fn) = d in
 	Ast0_cocci.wrap(Ast0_cocci.Param(fn t, midar, Some i, endar)) }
-    | t=ctype midar1=attr midar2=attr_list m1=TMul m2=list(TMul)
-	d=direct_declarator(type_ident) endar=attr_list
-        { let (i,fn) = d in
-	Ast0_cocci.wrap
-	  (Ast0_cocci.Param
-	     (Parse_aux.pointerify (fn t) (m1::m2), midar1::midar2,
-	      Some i, endar)) }
-    | t=ctype ar=attr_list
+    | t=ctype
         { (*verify in FunDecl*)
           Ast0_cocci.wrap(Ast0_cocci.Param(t, [], None, ar)) }
     | TMetaParam
@@ -1870,10 +1858,10 @@ the language is ambiguous: what is foo * bar; */
 /* The AST DisjDecl cannot be generated because it would be ambiguous with
 a disjunction on a statement with a declaration in each branch */
 decl_var:
-    t=ctype ar=attr_list pv=TPtVirg
+    t=ctype pv=TPtVirg
       { [Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,ar,Parse_aux.clt2mcode ";" pv))] }
   | TMetaDecl { [Parse_aux.meta_decl $1] }
-  | s=ioption(storage) t=ctype midattrs=attr_list
+  | s=ioption(storage) t=ctype
       d=comma_list_attr(direct_declarator(type_ident)) pv=TPtVirg
       { let (vars,endattrs) = d in
         List.map
@@ -1881,7 +1869,7 @@ decl_var:
 	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)))
 	  vars }
   | f=funproto { [f] }
-  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(type_ident)
+  | s=ioption(storage) t=ctype d=direct_declarator(type_ident)
     endattrs=attr_list q=TEq e=initialize
       pv=TPtVirg
       {let (id,fn) = d in
@@ -1937,7 +1925,7 @@ one_decl_var(ender):
 	(Ast0_cocci.UnInit
 	   (s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
   | f=funproto { f }
-  | s=ioption(storage) t=ctype midattrs=attr_list d=direct_declarator(type_ident)
+  | s=ioption(storage) t=ctype d=direct_declarator(type_ident)
       endattrs=attr_list q=TEq e=initialize
       pv=ender
       { let (id,fn) = d in
@@ -2385,7 +2373,7 @@ arith_expr_bis:
 
 cast_expr(r,pe):
     unary_expr(r,pe)                      { $1 }
-  | lp=TOPar t=ctype ar=attr_list rp=TCPar e=cast_expr(r,pe)
+  | lp=TOPar t=ctype rp=TCPar e=cast_expr(r,pe)
       { Ast0_cocci.wrap(Ast0_cocci.Cast (Parse_aux.clt2mcode "(" lp, t, ar,
                              Parse_aux.clt2mcode ")" rp, e)) }
   | lp=TOPar t=ctype d=direct_abstract_d ar=attr_list rp=TCPar
