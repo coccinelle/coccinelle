@@ -1181,6 +1181,12 @@ cv1=const_vol t=ty cv2=const_vol_attr_list m=list(mul)
      let attrs = (snd cv1) @ (snd cv2) in
      (cvs, attrs, t, m) }
 
+full_ctype_and_ptr(ty):
+cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul)
+   { let cvs = (fst cv1) @ (fst cv2) in
+     let attrs = (snd cv1) @ (snd cv2) in
+     (cvs, attrs, t, m) }
+
 ctype:
   ctype_and_ptr(all_basic_types)
 | ctype_and_ptr(signed_or_unsigned)
@@ -1200,7 +1206,7 @@ ctype:
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype_only_signable:
-  ctype_and_ptr(all_basic_types_signable)
+  full_ctype_and_ptr(all_basic_types_signable)
     { let (cvs,attrs,ty,m) = $1 in
       List.fold_left
 	(function prev ->
@@ -1209,7 +1215,7 @@ ctype_only_signable:
 	(Parse_aux.make_cv cvs attrs ty) m }
 
 ctype_only_non_signable:
-  ctype_and_ptr(all_basic_types_non_signable)
+  full_ctype_and_ptr(all_basic_types_non_signable)
     { let (cvs,attrs,ty,m) = $1 in
       List.fold_left
 	(function prev ->
@@ -2828,9 +2834,10 @@ cstr_ident:
 | op=operator_constraint { Ast_cocci.CstrOperator op }
 
 ctype_or_ident:
-| cv=const_vol c=all_basic_types_or_ident m=list(mul)
-    { match cv, c, m with
-	[], Common.Right ident, [] -> Common.Right ident
+| ctype_and_ptr(all_basic_types_or_ident)
+    { let (cvs,attrs,ty,m) = $1 in
+      match cvs, attrs, ty, m with
+	[], [], Common.Right ident, [] -> Common.Right ident
       | _ ->
 	  let ty =
 	    match c with
@@ -2843,8 +2850,8 @@ ctype_or_ident:
 		Ast0_cocci.wrap(
 		  Ast0_cocci.MetaType(Ast0_cocci.make_mcode nm,Ast_cocci.CstrTrue,
 				Ast0_cocci.Impure (*will be ignored*))) in
-	  let f prev (star,(cv,attrs)) = Parse_aux.make_cv cv attrs (Parse_aux.pointerify prev [star]) in
-	  Common.Left (List.fold_left f (Parse_aux.make_cv cv [] ty) m) }
+	  let f prev (star,(cvs,attrs)) = Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]) in
+	  Common.Left (List.fold_left f (Parse_aux.make_cv cvs attrs ty) m) }
 | ty=signed_or_unsigned { Common.Left ty }
 
 all_basic_types_or_ident:
