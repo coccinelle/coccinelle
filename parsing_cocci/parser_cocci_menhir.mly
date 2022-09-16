@@ -1179,8 +1179,8 @@ ctype_without_braces:
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype:
-  cv1=ioption(const_vol) ty=all_basic_types cv2=ioption(const_vol) m=list(mul)
-| cv1=ioption(const_vol) ty=signed_or_unsigned cv2=ioption(const_vol) m=list(mul)
+  cv1=ioption(const_vol) ty=all_basic_types cv2=const_vol_attr_list m=list(mul)
+| cv1=ioption(const_vol) ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
     { let cv = match cv1,cv2 with
         None, None -> None
       | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
