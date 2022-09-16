@@ -1175,19 +1175,21 @@ ctype_without_braces:
       Ast0_cocci.wrap
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
+ctype_and_ptr(ty):
+cv1=const_vol t=ty cv2=const_vol_attr_list m=list(mul)
+   { let cvs = (fst cv1) @ (fst cv2) in
+     let attrs = (snd cv1) @ (snd cv2) in
+     (cvs, attrs, t, m) }
+
 ctype:
-  cv1=const_vol ty=all_basic_types cv2=const_vol_attr_list m=list(mul)
-| cv1=const_vol ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
-    { let cv = match cv1,cv2 with
-        None, None -> None
-      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
-      | Some x, None -> Some x
-      | None, Some x -> Some x in
+  ctype_and_ptr(all_basic_types)
+| ctype_and_ptr(signed_or_unsigned)
+    { let (cvs,attrs,ty,m) = $1 in
       List.fold_left
 	(function prev ->
-	  function (star,cv) ->
-	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cv ty) m }
+	  function (star,(cvs,attrs)) ->
+	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cvs attrs ty) m }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
@@ -1198,31 +1200,22 @@ ctype:
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype_only_signable:
-  cv1=const_vol_attr_list ty=all_basic_types_signable cv2=const_vol_attr_list m=list(mul)
-    { let cv = match cv1,cv2 with
-        None, None -> None
-      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
-      | Some x, None -> Some x
-      | None, Some x -> Some x in
+  ctype_and_ptr(all_basic_types_signable)
+    { let (cvs,attrs,ty,m) = $1 in
       List.fold_left
 	(function prev ->
-	  function (star,cv) ->
-	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cv ty) m }
-
+	  function (star,(cvs,attrs)) ->
+	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cvs attrs ty) m }
 
 ctype_only_non_signable:
-  cv1=const_vol_attr_list ty=all_basic_types_non_signable cv2=const_vol_attr_list m=list(mul)
-    { let cv = match cv1,cv2 with
-        None, None -> None
-      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
-      | Some x, None -> Some x
-      | None, Some x -> Some x in
+  ctype_and_ptr(all_basic_types_non_signable)
+    { let (cvs,attrs,ty,m) = $1 in
       List.fold_left
 	(function prev ->
-	  function (star,cv) ->
-	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cv ty) m }
+	  function (star,(cvs,attrs)) ->
+	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cvs attrs ty) m }
 
 const_vol_attr_list:
   /* empty */ { ([],[]) }
