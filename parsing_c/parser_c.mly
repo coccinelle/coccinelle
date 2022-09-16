@@ -1406,23 +1406,6 @@ declarator:
 /*(* so must do  int * const p; if the pointer is constant, not the pointee *)*/
 /* list from tmul is due to the parsing of && as AndLog */
 pointer:
- | tmul
-     { (Ast_c.noattr,
-	fun x ->
-	  List.fold_left
-	    (fun prev ptr ->
-	      mk_ty (Pointer prev) [ptr])
-	    x $1) }
- | tmul pointer
-     { let (attr,ptr) = $2 in
-       (attr,
-	fun x ->
-	  let cur =
-	    List.fold_left
-	      (fun prev ptr ->
-		mk_ty (Pointer prev) [ptr])
-	      x $1 in
-	  ptr cur) }
  | tmul type_qualif_list
      { let (attr,tq) = $2 in
        (attr,fun x ->
@@ -1729,8 +1712,7 @@ spec_qualif_list: spec_qualif_list2            {  dt "spec_qualif" (); $1 }
 
 /*(* for pointers in direct_declarator and abstract_declarator *)*/
 type_qualif_list:
- | type_qualif { (Ast_c.noattr,{nullDecl with qualifD = (fst $1,[snd $1])}) }
- | attribute                    { ([$1],nullDecl) }
+   /* empty */ { (Ast_c.noattr,nullDecl) }
  | type_qualif_list type_qualif { (fst $1,addQualifD ($2,snd $1)) }
  | type_qualif_list attribute   { ((fst $1)@[$2],snd $1) }
 
