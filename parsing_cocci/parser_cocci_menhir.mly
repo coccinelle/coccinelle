@@ -1159,15 +1159,12 @@ top_ctype:
 ctype_without_braces:
   cv1=const_vol_attr_list ty=all_basic_types_without_braces cv2=const_vol_attr_list m=list(mul)
 | cv1=const_vol_attr_list ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
-    { let cv = match cv1,cv2 with
-        None, None -> None
-      | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
-      | Some x, None -> Some x
-      | None, Some x -> Some x in
+    { let cv = (fst cv1) @ (fst cv2) in
+      let attrs = (snd cv1) @ (snd cv2) in
       List.fold_left
 	(function prev ->
 	  function (star,cv) ->
-	    Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]))
+	    Parse_aux.make_cv cv attrs (Parse_aux.pointerify prev [star]))
 	(Parse_aux.make_cv cv ty) m }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
@@ -1179,8 +1176,8 @@ ctype_without_braces:
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype:
-  cv1=ioption(const_vol) ty=all_basic_types cv2=const_vol_attr_list m=list(mul)
-| cv1=ioption(const_vol) ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
+  cv1=const_vol ty=all_basic_types cv2=const_vol_attr_list m=list(mul)
+| cv1=const_vol ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
     { let cv = match cv1,cv2 with
         None, None -> None
       | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
@@ -1246,8 +1243,8 @@ mctype:
 
 /* signed, unsigned alone not allowed */
 typedef_ctype:
-  cv=ioption(const_vol) ty=all_basic_types m=list(TMul)
-    { Parse_aux.pointerify (Parse_aux.make_cv cv ty) m }
+  cv=const_vol ty=all_basic_types m=list(TMul)
+    { Parse_aux.pointerify (Parse_aux.make_cv cv [] ty) m }
 | lp=TOPar0 t=midzero_list(mctype,mctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
@@ -1727,8 +1724,10 @@ decl: t=ctype d=direct_declarator(type_ident) endar=attr_list
 name_opt_decl:
       decl  { $1 }
 
+%inline
 const_vol:
-  Tconst       { [Parse_aux.clt2mcode Ast_cocci.Const $1] }
+  /* empty */  { [] }
+| Tconst       { [Parse_aux.clt2mcode Ast_cocci.Const $1] }
 | Tvolatile    { [Parse_aux.clt2mcode Ast_cocci.Volatile $1] }
 | Tconst Tvolatile    { [Parse_aux.clt2mcode Ast_cocci.Const $1;
                           Parse_aux.clt2mcode Ast_cocci.Volatile $2] }
@@ -1876,7 +1875,7 @@ decl_var:
       [Ast0_cocci.wrap
 	  (Ast0_cocci.Init(s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode "=" q,e,Parse_aux.clt2mcode ";" pv))]}
   /* type is a typedef name */
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
+  | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
@@ -1884,7 +1883,7 @@ decl_var:
 	      Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
 	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,midattrs,id,[],Parse_aux.clt2mcode ";" pv)))
 	  d }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
+  | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (Parse_aux.id2name i);
@@ -1934,21 +1933,18 @@ one_decl_var(ender):
 	   (s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode "=" q,e,
 	    Parse_aux.clt2mcode ";" pv)) }
   /* type is a typedef name */
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
+  | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list pv=TPtVirg
       { let (id,fn) = d in
         let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
-	Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
+	Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
+  | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident a=attr_list q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (Parse_aux.id2name i);
-      let idtype =
-	Parse_aux.make_cv cv
-	  (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
-      Ast0_cocci.wrap
-	(Ast0_cocci.Init(s,fn idtype,midattrs,id,a,Parse_aux.clt2mcode "=" q,e,
-			 Parse_aux.clt2mcode ";" pv)) }
+      let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+      Ast0_cocci.wrap(Ast0_cocci.Init(s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,
+			   Parse_aux.clt2mcode ";" pv)) }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       ar=attr_list p=ender
       { Ast0_cocci.wrap
@@ -2840,9 +2836,9 @@ cstr_ident:
 | op=operator_constraint { Ast_cocci.CstrOperator op }
 
 ctype_or_ident:
-| cv=ioption(const_vol) c=all_basic_types_or_ident m=list(mul)
+| cv=const_vol c=all_basic_types_or_ident m=list(mul)
     { match cv, c, m with
-	None, Common.Right ident, [] -> Common.Right ident
+	[], Common.Right ident, [] -> Common.Right ident
       | _ ->
 	  let ty =
 	    match c with
