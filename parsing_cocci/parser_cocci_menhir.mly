@@ -1245,8 +1245,7 @@ typedef_ctype:
 | TMeta { tmeta_to_type $1 }
 
 typedef_ctype_only_signed:
-    ty=signable_types
-    { Parse_aux.pointerify (Parse_aux.make_cv None ty) [] }
+    ty=signable_types { ty }
 
 /* ---------------------------------------------------------------------- */
 
@@ -2844,8 +2843,8 @@ ctype_or_ident:
 		Ast0_cocci.wrap(
 		  Ast0_cocci.MetaType(Ast0_cocci.make_mcode nm,Ast_cocci.CstrTrue,
 				Ast0_cocci.Impure (*will be ignored*))) in
-	  let f prev (star,cv) = Parse_aux.make_cv cv (Parse_aux.pointerify prev [star]) in
-	  Common.Left (List.fold_left f (Parse_aux.make_cv cv ty) m) }
+	  let f prev (star,(cv,attrs)) = Parse_aux.make_cv cv attrs (Parse_aux.pointerify prev [star]) in
+	  Common.Left (List.fold_left f (Parse_aux.make_cv cv [] ty) m) }
 | ty=signed_or_unsigned { Common.Left ty }
 
 all_basic_types_or_ident:
