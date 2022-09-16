@@ -1876,7 +1876,7 @@ decl_var:
       [Ast0_cocci.wrap
 	  (Ast0_cocci.Init(s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode "=" q,e,Parse_aux.clt2mcode ";" pv))]}
   /* type is a typedef name */
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=attr_list
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=comma_list(d_ident) pv=TPtVirg
       { List.map
 	  (function (id,fn) ->
@@ -1884,7 +1884,7 @@ decl_var:
 	      Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
 	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,midattrs,id,[],Parse_aux.clt2mcode ";" pv)))
 	  d }
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=attr_list
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (Parse_aux.id2name i);
@@ -1934,18 +1934,13 @@ one_decl_var(ender):
 	   (s,fn t,midattrs,id,endattrs,Parse_aux.clt2mcode "=" q,e,
 	    Parse_aux.clt2mcode ";" pv)) }
   /* type is a typedef name */
-  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=attr_list
-      d=d_ident endattrs=attr_list pv=ender
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
+      d=d_ident endattrs=attr_list pv=TPtVirg
       { let (id,fn) = d in
-        let idtype =
-	  Parse_aux.make_cv cv
-	    (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
-	Ast0_cocci.wrap
-	  (Ast0_cocci.UnInit
-	     (s,fn idtype,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
-  | s=ioption(storage) cv=ioption(const_vol)
-      i=pure_ident_or_symbol midattrs=attr_list
-      d=d_ident a=attr_list q=TEq e=initialize pv=ender
+        let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+	Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,midattrs,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
+  | s=ioption(storage) cv=ioption(const_vol) i=pure_ident_or_symbol midattrs=const_vol_attr_list
+      d=d_ident a=attr_list q=TEq e=initialize pv=TPtVirg
       { let (id,fn) = d in
       !Data.add_type_name (Parse_aux.id2name i);
       let idtype =
