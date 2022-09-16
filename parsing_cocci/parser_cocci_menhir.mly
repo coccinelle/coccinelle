@@ -1157,8 +1157,8 @@ top_ctype:
   ctype { Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1)))) }
 
 ctype_without_braces:
-  cv1=ioption(const_vol) ty=all_basic_types_without_braces cv2=const_vol_attr_list m=list(mul)
-| cv1=ioption(const_vol) ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
+  cv1=const_vol_attr_list ty=all_basic_types_without_braces cv2=const_vol_attr_list m=list(mul)
+| cv1=const_vol_attr_list ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
     { let cv = match cv1,cv2 with
         None, None -> None
       | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
@@ -1201,7 +1201,7 @@ ctype:
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype_only_signable:
-  cv1=ioption(const_vol) ty=all_basic_types_signable cv2=const_vol_attr_list m=list(mul)
+  cv1=const_vol_attr_list ty=all_basic_types_signable cv2=const_vol_attr_list m=list(mul)
     { let cv = match cv1,cv2 with
         None, None -> None
       | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
@@ -1215,7 +1215,7 @@ ctype_only_signable:
 
 
 ctype_only_non_signable:
-  cv1=ioption(const_vol) ty=all_basic_types_non_signable cv2=const_vol_attr_list m=list(mul)
+  cv1=const_vol_attr_list ty=all_basic_types_non_signable cv2=const_vol_attr_list m=list(mul)
     { let cv = match cv1,cv2 with
         None, None -> None
       | Some _, Some _ -> raise (Semantic_cocci.Semantic "duplicate const/volatile")
@@ -1286,7 +1286,7 @@ struct_decl_one:
     | t=ctype_only_non_signable d=direct_decl_option(type_ident) pv=TPtVirg
 	 { let (id,fn) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,None,Parse_aux.clt2mcode ";" pv)) }
-    | cv=ioption(const_vol) i=pure_ident_or_symbol
+    | cv=const_vol_attr_list i=pure_ident_or_symbol
       d=direct_decl_option(type_ident)
 	 bf=struct_bitfield?
 	 pv=TPtVirg
