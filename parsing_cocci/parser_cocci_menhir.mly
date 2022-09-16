@@ -1157,15 +1157,14 @@ top_ctype:
   ctype { Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1)))) }
 
 ctype_without_braces:
-  cv1=const_vol_attr_list ty=all_basic_types_without_braces cv2=const_vol_attr_list m=list(mul)
-| cv1=const_vol_attr_list ty=signed_or_unsigned cv2=const_vol_attr_list m=list(mul)
-    { let cv = (fst cv1) @ (fst cv2) in
-      let attrs = (snd cv1) @ (snd cv2) in
+  full_ctype_and_ptr(all_basic_types_without_braces)
+| full_ctype_and_ptr(signed_or_unsigned)
+    { let (cvs,attrs,ty,m) = $1 in
       List.fold_left
 	(function prev ->
-	  function (star,cv) ->
-	    Parse_aux.make_cv cv attrs (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cv ty) m }
+	  function (star,(cvs,attrs)) ->
+	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
+	(Parse_aux.make_cv cvs attrs ty) m }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
@@ -3725,3 +3724,4 @@ anything: /* used for script code */
  | TRightIso { "=>" }
 
  | TUnderscore { "_" }
+
