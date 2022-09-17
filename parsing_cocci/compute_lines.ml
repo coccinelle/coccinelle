@@ -984,15 +984,7 @@ and is_param_dots p =
 
 and parameterTypeDef p =
   match Ast0.unwrap p with
-    Ast0.VoidParam(ty,attr) ->
-      let attr = List.map attribute attr in
-      let ty = typeC ty in
-      (match attr with
-        [] -> mkres p (Ast0.VoidParam(ty,attr)) ty ty
-      | l ->
-          let lattr = List.hd (List.rev l) in
-          mkres p (Ast0.VoidParam(ty,attr)) ty lattr)
-  | Ast0.Param(ty,midattr,Some id,attr) ->
+    Ast0.Param(ty,midattr,Some id,attr) ->
       let id = ident id in
       let midattr = List.map attribute midattr in
       let ty = typeC ty in

@@ -660,11 +660,7 @@ let combiner bind option_default
   and parameterTypeDef p =
     let k p =
       match Ast.unwrap p with
-        Ast.VoidParam(ty,attr) ->
-          let lty = fullType ty in
-          let lattr = multibind (List.map attribute attr) in
-          bind lty lattr
-      | Ast.Param(ty,midattr,Some id,attr) ->
+        Ast.Param(ty,midattr,Some id,attr) ->
           let lid = named_type ty id in
 	  let lmidattr = multibind (List.map attribute midattr) in
           let lattr = multibind (List.map attribute attr) in
@@ -1703,9 +1699,7 @@ let rebuilder
     let k p =
       Ast.rewrap p
 	(match Ast.unwrap p with
-	  Ast.VoidParam(ty,attr) ->
-            Ast.VoidParam(fullType ty,List.map attribute attr)
-	| Ast.Param(ty,midattr,id,attr) ->
+	  Ast.Param(ty,midattr,id,attr) ->
             Ast.Param
               (fullType ty,List.map attribute midattr, get_option ident id,List.map attribute attr)
 	| Ast.MetaParam(name,constraints,keep,inherited) ->

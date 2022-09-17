@@ -582,10 +582,7 @@ and parameterTypeDef p =
   print_context p
     (function _ ->
       match Ast0.unwrap p with
-        Ast0.VoidParam(ty,attr) ->
-          typeC ty;
-          print_attribute_list attr;
-      | Ast0.Param(ty,midattr,Some id,attr) ->
+        Ast0.Param(ty,midattr,Some id,attr) ->
           print_named_type ty midattr id;
           print_attribute_list attr;
       | Ast0.Param(ty,midattr,None,attr) ->

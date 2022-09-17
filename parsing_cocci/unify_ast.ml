@@ -573,12 +573,7 @@ and unify_designator d1 d2 =
 
 and unify_parameterTypeDef p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
-    (Ast.VoidParam(ft1,attr1),Ast.VoidParam(ft2,attr2)) ->
-      if (List.length attr1 = List.length attr2) &&
-         List.for_all2 unify_attribute attr1 attr2
-      then unify_fullType ft1 ft2
-      else false
-  | (Ast.Param(ft1,mattr1,i1,attr1),Ast.Param(ft2,mattr2,i2,attr2)) ->
+    (Ast.Param(ft1,mattr1,i1,attr1),Ast.Param(ft2,mattr2,i2,attr2)) ->
       if (List.length mattr1 = List.length mattr2) &&
          List.for_all2 unify_attribute mattr1 mattr2 &&
          (List.length attr1 = List.length attr2) &&

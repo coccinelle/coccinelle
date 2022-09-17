@@ -745,10 +745,7 @@ and designator = function
 
 and parameterTypeDef p =
   match Ast.unwrap p with
-    Ast.VoidParam(ty,attr) ->
-      fullType ty;
-      print_attribute_list attr
-  | Ast.Param(ty,midattr,Some id,attr) ->
+    Ast.Param(ty,midattr,Some id,attr) ->
       print_named_type ty midattr (fun _ -> ident id);
       print_attribute_list attr
   | Ast.Param(ty,midattr,None,attr) ->

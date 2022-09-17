@@ -855,10 +855,7 @@ and make_param =
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
   match Ast0.unwrap param with
-    Ast0.VoidParam(ty,attr) ->
-      Ast0.rewrap param
-        (Ast0.VoidParam(typeC tgt ty,List.map (attribute tgt) attr))
-  | Ast0.Param(ty,midattr,Some id,attr) ->
+    Ast0.Param(ty,midattr,Some id,attr) ->
       let ty = top_typeC tgt true ty in
       let midattr = List.map (attribute tgt) midattr in
       let id = ident true tgt id in

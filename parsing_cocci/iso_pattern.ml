@@ -1213,10 +1213,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context p
 	then
 	  match (up,Ast0.unwrap p) with
-	    (Ast0.VoidParam(tya,attra),Ast0.VoidParam(tyb,attrb)) ->
-               conjunct_bindings (match_typeC tya tyb)
-                   (match_attributes attra attrb)
-	  | (Ast0.Param(tya,midattra,ida,attra),Ast0.Param(tyb,midattrb,idb,attrb)) ->
+	    (Ast0.Param(tya,midattra,ida,attra),Ast0.Param(tyb,midattrb,idb,attrb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
 		  (match_option match_ident ida idb)
 	  | (Ast0.PComma(c1),Ast0.PComma(c)) -> check_mcode c1 c

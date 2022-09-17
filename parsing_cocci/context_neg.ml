@@ -921,10 +921,7 @@ let equal_initialiser i1 i2 =
 
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
-    (Ast0.VoidParam(_,ar1),Ast0.VoidParam(_,ar2)) ->
-      (List.length ar1) = (List.length ar2) &&
-      List.for_all2 equal_attribute ar1 ar2
-  | (Ast0.Param(_,mar1,_,ar1),Ast0.Param(_,mar2,_,ar2)) ->
+    (Ast0.Param(_,mar1,_,ar1),Ast0.Param(_,mar2,_,ar2)) ->
       (List.length ar1) = (List.length ar2) &&
       List.for_all2 equal_attribute ar1 ar2 &&
       (List.length mar1) = (List.length mar2) &&

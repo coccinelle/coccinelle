@@ -280,8 +280,7 @@ and disjargs (lp,args,rp) =
 
 and disjparam p =
   match Ast.unwrap p with
-    Ast.VoidParam(ty,attr) -> [p] (* void is the only possible value *)
-  | Ast.Param(ty,midattr,id,attr) ->
+    Ast.Param(ty,midattr,id,attr) ->
       disjmult2 (disjty ty) (disjoption disjident id)
 	(fun ty id -> Ast.rewrap p (Ast.Param(ty,midattr,id,attr)))
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)

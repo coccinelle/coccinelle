@@ -2248,42 +2248,7 @@ and parameters_bis eas ebs =
 		  e)
     | _ -> failwith "parameters: build metalist: not possible" in
   let mktermval v = Ast_c.MetaParamListVal v in
-  let special_cases ea eas ebs =
-    (* a case where one smpl parameter matches a list of C parameters *)
-    match A.unwrap ea,ebs with
-      A.VoidParam (ta, attrsa), ys ->
-	Some
-          (match eas, ebs with
-          | [], [Left eb] ->
-              let {B.p_register=(hasreg,iihasreg);
-                    p_namei = idbopt;
-                    p_type=tb;
-                    p_attr=attrsb;
-                    p_midattr=midattrsb;
-                    p_endattr=endattrsb; } = eb in
-
-              let attr_allminus =
-                check_allminus.Visitor_ast.combiner_parameter ea in
-              if idbopt = None && not hasreg
-              then
-                match tb with
-                | (qub, (B.BaseType B.Void,_)) ->
-                    fullType ta tb >>= (fun ta tb ->
-                    attribute_list attr_allminus attrsa attrsb >>=
-                    (fun attrsa attrsb ->
-                      return (
-                      [(A.VoidParam (ta, attrsa)) +> A.rewrap ea],
-                      [Left {B.p_register=(hasreg, iihasreg);
-                              p_namei = idbopt;
-                              p_type = tb;
-                              p_attr = attrsb;
-                              p_midattr = midattrsb;
-                              p_endattr = endattrsb;}]
-			)))
-                | _ -> fail
-              else fail
-          | _ -> fail)
-    | _ -> None in
+  let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
     special_cases parameter X.distrf_params

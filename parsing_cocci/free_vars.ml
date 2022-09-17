@@ -598,7 +598,7 @@ let collect_in_plus_term =
 	    (List.map
 	       (function p ->
 	          match Ast.unwrap p with
-	            Ast.VoidParam(t) | Ast.Param(t,_) ->
+	            Ast.Param(t,_) ->
 	              collect_all_refs.V.combiner_fullType t
 		  | _ -> [])
 	       (Ast.unwrap params)) in
