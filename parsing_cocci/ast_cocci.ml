@@ -195,7 +195,7 @@ and base_expression =
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident
-  | Cast           of string mcode (* ( *) * fullType * attr list *
+  | Cast           of string mcode (* ( *) * fullType *
                       string mcode (* ) *) * expression
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
@@ -340,7 +340,7 @@ and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 and base_fullType =
     Type            of bool (* true if all minus *) *
-	               const_vol mcode list * typeC
+	               const_vol mcode list * attr list * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list
   | ConjType        of fullType list
@@ -402,11 +402,11 @@ and base_declaration =
   | UnInit of storage mcode option * fullType * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
-	fninfo list * attr list * ident (* name *) *
+	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
 	(string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) * string mcode (* ; *)
-  | TyDecl of fullType * attr list * string mcode (* ; *)
+  | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *
@@ -1178,9 +1178,16 @@ let rec string_of_typeC ty =
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
-    Type (_, [], ty') -> string_of_typeC ty'
-  | Type (_, const_vol, ty') ->
-      string_of_const_vol (List.map unwrap_mcode const_vol) ^ " " ^ string_of_typeC ty'
+    Type (_, const_vol, attrs, ty') ->
+      let cvs =
+	match const_vol with
+	  [] -> ""
+	| _ -> string_of_const_vol (List.map unwrap_mcode const_vol) ^ " " in
+      let attrs =
+	match attrs with
+	  [] -> ""
+	| _ -> "TODO: attrs " in
+      cvs ^ attrs ^ string_of_typeC ty'
   | AsType (ty', _) -> string_of_fullType ty'
   | DisjType l -> String.concat "|" (List.map string_of_fullType l)
   | ConjType l -> String.concat "&" (List.map string_of_fullType l)
@@ -1188,7 +1195,7 @@ and string_of_fullType ty =
 
 let typeC_of_fullType_opt ty =
   match unwrap ty with
-    Type (_, [], ty') -> Some ty'
+    Type (_, [], [], ty') -> Some ty'
   | _ -> None
 
 let ident_of_expression_opt expression =
@@ -1222,7 +1229,7 @@ let empty_transformer = {
 let rec fullType_map tr ty =
   rewrap ty begin
     match unwrap ty with
-      Type (a, b, ty') -> Type (a, b, typeC_map tr ty')
+      Type (a, b, c, ty') -> Type (a, b, c, typeC_map tr ty')
     | AsType (ty0, ty1) ->
         AsType (fullType_map tr ty0, fullType_map tr ty1)
     | DisjType l -> DisjType (List.map (fullType_map tr) l)
@@ -1288,7 +1295,7 @@ and typeC_map tr ty =
 
 let rec fullType_fold tr ty v =
   match unwrap ty with
-    Type (_, _, ty') -> typeC_fold tr ty' v
+    Type (_, _, _, ty') -> typeC_fold tr ty' v
   | AsType (ty0, ty1) ->
       let v' = fullType_fold tr ty0 v in
       fullType_fold tr ty1 v'

@@ -47,9 +47,9 @@ let disjdots f d =
 
 let rec disjty ft =
   match Ast.unwrap ft with
-    Ast.Type(allminus,cv,ty) ->
+    Ast.Type(allminus,cv,attr,ty) ->
       let ty = disjtypeC ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.Type(allminus,cv,ty))) ty
+      List.map (function ty -> Ast.rewrap ft (Ast.Type(allminus,cv,attr,ty))) ty
   | Ast.AsType(ty,asty) -> (* as ty doesn't contain disj *)
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.AsType(ty,asty))) ty
@@ -225,10 +225,10 @@ and disjexp e =
   | Ast.RecordPtAccess(exp,ar,field) ->
       disjmult2 (disjexp exp) (disjident field)
 	(fun exp field -> Ast.rewrap e (Ast.RecordPtAccess(exp,ar,field)))
-  | Ast.Cast(lp,ty,attr,rp,exp) ->
+  | Ast.Cast(lp,ty,rp,exp) ->
       disjmult2 (disjty ty) (disjexp exp)
 	(function ty -> function exp ->
-          Ast.rewrap e (Ast.Cast(lp,ty,attr,rp,exp)))
+          Ast.rewrap e (Ast.Cast(lp,ty,rp,exp)))
   | Ast.SizeOfExpr(szf,exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.SizeOfExpr(szf,exp))) exp
@@ -280,9 +280,9 @@ and disjargs (lp,args,rp) =
 
 and disjparam p =
   match Ast.unwrap p with
-    Ast.Param(ty,midattr,id,attr) ->
+    Ast.Param(ty,id,attr) ->
       disjmult2 (disjty ty) (disjoption disjident id)
-	(fun ty id -> Ast.rewrap p (Ast.Param(ty,midattr,id,attr)))
+	(fun ty id -> Ast.rewrap p (Ast.Param(ty,id,attr)))
   | Ast.AsParam(pm,asexp) -> (* as exp doesn't contain disj *)
       let pm = disjparam pm in
       List.map (function pm -> Ast.rewrap p (Ast.AsParam(pm,asexp))) pm
@@ -350,18 +350,18 @@ and disjdecl d =
   | Ast.AsDecl(decl,asdecl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
-  | Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+  | Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
       disjmult3 (disjty ty) (disjident id) (disjini ini)
 	(fun ty id ini ->
-	  Ast.rewrap d (Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem)))
-  | Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
+	  Ast.rewrap d (Ast.Init(stg,ty,id,endattr,eq,ini,sem)))
+  | Ast.UnInit(stg,ty,id,endattr,sem) ->
       disjmult2 (disjty ty) (disjident id)
 	(fun ty id ->
-	  Ast.rewrap d (Ast.UnInit(stg,ty,midattr,id,endattr,sem)))
-  | Ast.FunProto(fninfo,attr,name,lp1,params,va,rp1,sem) ->
+	  Ast.rewrap d (Ast.UnInit(stg,ty,id,endattr,sem)))
+  | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       disjmult2 (disjmult disjfninfo fninfo) (disjident name)
 	(fun fninfo name ->
-	  Ast.rewrap d (Ast.FunProto(fninfo,attr,name,lp1,params,va,rp1,sem)))
+	  Ast.rewrap d (Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem)))
   | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       disjmult2 (disjident name) (disjdots disjexp args)
 	(fun name args ->
@@ -370,9 +370,9 @@ and disjdecl d =
       disjmult3 (disjident name) (disjdots disjexp args) (disjini ini)
 	(fun name args ini ->
 	  Ast.rewrap d (Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)))
-  | Ast.TyDecl(ty,attr,sem) ->
+  | Ast.TyDecl(ty,sem) ->
       let ty = disjty ty in
-      List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,attr,sem))) ty
+      List.map (function ty -> Ast.rewrap d (Ast.TyDecl(ty,sem))) ty
   | Ast.Typedef(stg,ty,id,sem) ->
       let ty = disjty ty in (* disj not allowed in id *)
       List.map (function ty -> Ast.rewrap d (Ast.Typedef(stg,ty,id,sem))) ty

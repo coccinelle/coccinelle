@@ -138,7 +138,7 @@ let rec left_expression e =
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) -> left_expression exp1
   | Ast0.RecordAccess(exp,pt,field) -> left_expression exp
   | Ast0.RecordPtAccess(exp,ar,field) -> left_expression exp
-  | Ast0.Cast(lp,ty,attr,rp,exp) -> modif_before_mcode lp
+  | Ast0.Cast(lp,ty,rp,exp) -> modif_before_mcode lp
   | Ast0.SizeOfExpr(szf,exp) -> modif_before_mcode szf
   | Ast0.SizeOfType(szf,lp,ty,rp) -> modif_before_mcode szf
   | Ast0.Delete(dlt,exp) -> modif_before_mcode dlt
@@ -164,7 +164,7 @@ let rec left_expression e =
 and left_typeC t =
   modif_before t ||
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,ty) -> modif_before_mcode (List.hd cv)
+    Ast0.ConstVol(cv,attrs,ty) -> modif_before_mcode (List.hd cv)
   | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty
@@ -196,11 +196,11 @@ and left_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
-  | Ast0.Init(Some stg,ty,midattr,id,endattr,eq,ini,sem) -> modif_before_mcode stg
-  | Ast0.Init(None,ty,midattr,id,endattr,eq,ini,sem) -> left_typeC ty
-  | Ast0.UnInit(Some stg,ty,midattr,id,endattr,sem) -> modif_before_mcode stg
-  | Ast0.UnInit(None,ty,midattr,id,endattr,sem) -> left_typeC ty
-  | Ast0.FunProto(fninfo,attr,name,lp1,params,va,rp1,sem) ->
+  | Ast0.Init(Some stg,ty,id,endattr,eq,ini,sem) -> modif_before_mcode stg
+  | Ast0.Init(None,ty,id,endattr,eq,ini,sem) -> left_typeC ty
+  | Ast0.UnInit(Some stg,ty,id,endattr,sem) -> modif_before_mcode stg
+  | Ast0.UnInit(None,ty,id,endattr,sem) -> left_typeC ty
+  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       (* should not be nested in anything anyway *)
       false
   | Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem) -> modif_before_mcode stg
@@ -208,7 +208,7 @@ and left_declaration d =
   | Ast0.MacroDeclInit(Some stg,name,lp,args,rp,eq,ini,sem) ->
       modif_before_mcode stg
   | Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem) -> left_ident name
-  | Ast0.TyDecl(ty,attr,sem) -> left_typeC ty
+  | Ast0.TyDecl(ty,sem) -> left_typeC ty
   | Ast0.Typedef(stg,ty,id,sem) -> modif_before_mcode stg
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists left_declaration decls
   | Ast0.ConjDecl(_,decls,_,_) -> List.exists left_declaration decls
@@ -219,12 +219,12 @@ and right_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
-  | Ast0.Init(_,ty,midattr,id,eq,ini,endattr,sem) -> modif_after_mcode sem
-  | Ast0.UnInit(_,ty,midattr,id,endattr,sem) -> modif_after_mcode sem
-  | Ast0.FunProto(fninfo,attr,name,lp1,params,va,rp1,sem) -> modif_after_mcode sem
+  | Ast0.Init(_,ty,id,eq,ini,endattr,sem) -> modif_after_mcode sem
+  | Ast0.UnInit(_,ty,id,endattr,sem) -> modif_after_mcode sem
+  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) -> modif_after_mcode sem
   | Ast0.MacroDecl(_,name,lp,args,rp,attr,sem) -> modif_after_mcode sem
   | Ast0.MacroDeclInit(_,name,lp,args,rp,eq,ini,sem) -> modif_after_mcode sem
-  | Ast0.TyDecl(ty,attr,sem) -> modif_after_mcode sem
+  | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem
   | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
   | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
   | Ast0.ConjDecl(_,decls,_,_) -> List.exists right_declaration decls

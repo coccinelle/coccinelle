@@ -252,15 +252,14 @@ let rec top_expression opt_allowed tgt expr =
       let ar = mcode ar in
       let field = ident false arity field in
       make_exp expr tgt arity (Ast0.RecordPtAccess(exp,ar,field))
-  | Ast0.Cast(lp,ty,attr,rp,exp) ->
+  | Ast0.Cast(lp,ty,rp,exp) ->
       let arity =
 	exp_same (mcode2line lp) (List.map mcode2arity ([lp;rp])) in
       let lp = mcode lp in
       let ty = typeC arity ty in
-      let attr = List.map (attribute arity) attr in
       let rp = mcode rp in
       let exp = expression arity exp in
-      make_exp expr tgt arity (Ast0.Cast(lp,ty,attr,rp,exp))
+      make_exp expr tgt arity (Ast0.Cast(lp,ty,rp,exp))
   | Ast0.SizeOfExpr(szf,exp) ->
       let arity = exp_same (mcode2line szf) [mcode2arity szf] in
       let szf = mcode szf in
@@ -419,12 +418,13 @@ and make_typeC =
 
 and top_typeC tgt opt_allowed typ =
   match Ast0.unwrap typ with
-    Ast0.ConstVol(cv,ty) ->
+    Ast0.ConstVol(cv,attrs,ty) ->
       let arity = all_same opt_allowed tgt (mcode2line (List.hd cv))
 	  (List.map mcode2arity cv) in
       let cv = List.map mcode cv in
+      let attrs = List.map (attribute arity) attrs in
       let ty = typeC arity ty in
-      make_typeC typ tgt arity (Ast0.ConstVol(cv,ty))
+      make_typeC typ tgt arity (Ast0.ConstVol(cv,attrs,ty))
   | Ast0.BaseType(ty,strings) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line (List.hd strings))
@@ -591,33 +591,31 @@ and declaration tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_decl decl tgt arity (Ast0.MetaDecl(name,cstr,pure))
-  | Ast0.Init(stg,ty,midattr,id,endattr,eq,exp,sem) ->
+  | Ast0.Init(stg,ty,id,endattr,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   (List.map mcode2arity [eq;sem])) in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
-      let midattr = List.map (attribute arity) midattr in
       let id = ident false arity id in
       let endattr = List.map (attribute arity) endattr in
       let eq = mcode eq in
       let exp = initialiser arity exp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.Init(stg,ty,midattr,id,endattr,eq,exp,sem))
-  | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+      make_decl decl tgt arity (Ast0.Init(stg,ty,id,endattr,eq,exp,sem))
+  | Ast0.UnInit(stg,ty,id,endattr,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   [mcode2arity sem]) in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
-      let midattr = List.map (attribute arity) midattr in
       let id = ident false arity id in
       let endattr = List.map (attribute arity) endattr in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
-  | Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
+      make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,endattr,sem))
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
     let tokens = match va with
       | None -> [lp1;rp1;sem]
       | Some (c1,e1) -> [lp1;c1;e1;rp1;sem] in
@@ -625,7 +623,6 @@ and declaration tgt decl =
 	all_same true tgt (mcode2line lp1)
 	  (List.map mcode2arity tokens) in
       let fi = List.map (fninfo arity) fi in
-      let attr = List.map (attribute arity) attr in
       let name = ident false arity name in
       let lp1 = mcode lp1 in
       let params = parameter_list tgt params in
@@ -634,7 +631,7 @@ and declaration tgt decl =
         | Some (c1, e1) -> Some (mcode c1, mcode e1) in
       let rp1 = mcode rp1 in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem))
+      make_decl decl tgt arity (Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       let arity =
 	all_same true tgt (mcode2line lp)
@@ -662,14 +659,13 @@ and declaration tgt decl =
       let sem = mcode sem in
       make_decl decl tgt arity
 	(Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
-  | Ast0.TyDecl(ty,attr,sem) ->
+  | Ast0.TyDecl(ty,sem) ->
       let arity =
 	all_same true tgt
 	  (mcode2line sem) [mcode2arity sem] in
       let ty = typeC arity ty in
-      let attr = List.map (attribute arity) attr in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.TyDecl(ty,attr,sem))
+      make_decl decl tgt arity (Ast0.TyDecl(ty,sem))
   | Ast0.Typedef(stg,ty,id,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)
@@ -855,29 +851,27 @@ and make_param =
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
   match Ast0.unwrap param with
-    Ast0.Param(ty,midattr,Some id,attr) ->
+    Ast0.Param(ty,Some id,attr) ->
       let ty = top_typeC tgt true ty in
-      let midattr = List.map (attribute tgt) midattr in
       let id = ident true tgt id in
       let attr = List.map (attribute tgt) attr in
       Ast0.rewrap param
 	(match (Ast0.unwrap ty,Ast0.unwrap id) with
 	  (Ast0.OptType(ty),Ast0.OptIdent(id)) ->
-	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,midattr,Some id,attr)))
+	    Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,Some id,attr)))
 	| (Ast0.OptType(ty),_) ->
 	    fail param "arity mismatch in param declaration"
 	| (_,Ast0.OptIdent(id)) ->
 	    fail param "arity mismatch in param declaration"
-	| _ -> Ast0.Param(ty,midattr,Some id,attr))
-  | Ast0.Param(ty,midattr,None,attr) ->
+	| _ -> Ast0.Param(ty,Some id,attr))
+  | Ast0.Param(ty,None,attr) ->
       let ty = top_typeC tgt true ty in
       let attr = List.map (attribute tgt) attr in
-      assert (midattr = []);
       Ast0.rewrap param
 	(match Ast0.unwrap ty with
 	  Ast0.OptType(ty) ->
-            Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,[],None,attr)))
-        | _ -> Ast0.Param(ty,[],None,attr))
+            Ast0.OptParam(Ast0.rewrap param (Ast0.Param(ty,None,attr)))
+        | _ -> Ast0.Param(ty,None,attr))
   | Ast0.MetaParam(name,cstr,pure) ->
       let arity = param_same (mcode2line name) [mcode2arity name] in
       let name = mcode name in

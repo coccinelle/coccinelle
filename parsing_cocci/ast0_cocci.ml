@@ -123,7 +123,7 @@ and base_expression =
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident
-  | Cast           of string mcode (* ( *) * typeC * attr list *
+  | Cast           of string mcode (* ( *) * typeC *
                       string mcode (* ) *) * expression
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
@@ -257,12 +257,12 @@ and base_declaration =
   | UnInit of Ast.storage mcode option * typeC * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
-	fninfo list * attr list * ident (* name *) *
+	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
         (string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) *
 	string mcode (* ; *)
-  | TyDecl of typeC * attr list * string mcode (* ; *)
+  | TyDecl of typeC * string mcode (* ; *)
   | MacroDecl of Ast.storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *

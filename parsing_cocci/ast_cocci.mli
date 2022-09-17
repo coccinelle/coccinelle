@@ -179,7 +179,7 @@ and base_expression =
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident
-  | Cast           of string mcode (* ( *) * fullType * attr list *
+  | Cast           of string mcode (* ( *) * fullType *
                       string mcode (* ) *) * expression
 
   | SizeOfExpr     of string mcode (* sizeof *) * expression
@@ -322,7 +322,7 @@ and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 and base_fullType =
     Type            of bool (* true if all minus *) *
-                       const_vol mcode list * typeC
+                       const_vol mcode list * attr list * typeC
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list
   | ConjType        of fullType list
@@ -384,11 +384,11 @@ and base_declaration =
   | UnInit of storage mcode option * fullType * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
-	fninfo list * attr list * ident (* name *) *
+	fninfo list * ident (* name *) *
 	string mcode (* ( *) * parameter_list *
 	(string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) * string mcode (* ; *)
-  | TyDecl of fullType * attr list * string mcode (* ; *)
+  | TyDecl of fullType * string mcode (* ; *)
   | MacroDecl of storage mcode option *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *

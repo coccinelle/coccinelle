@@ -184,14 +184,13 @@ let visitor mode bind option_default
 	    let (ar_n,ar) = string_mcode ar in
 	    let (field_n,field) = ident field in
 	    (multibind [exp_n;ar_n;field_n], Ast0.RecordPtAccess(exp,ar,field))
-	| Ast0.Cast(lp,ty,attr,rp,exp) ->
+	| Ast0.Cast(lp,ty,rp,exp) ->
 	    let (lp_n,lp) = string_mcode lp in
 	    let (ty_n,ty) = typeC ty in
-	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (exp_n,exp) = expression exp in
-            (multibind [lp_n;ty_n;attr_n;rp_n;exp_n],
-             Ast0.Cast(lp,ty,attr,rp,exp))
+            (multibind [lp_n;ty_n;rp_n;exp_n],
+             Ast0.Cast(lp,ty,rp,exp))
 	| Ast0.SizeOfExpr(szf,exp) ->
 	    let (szf_n,szf) = string_mcode szf in
 	    let (exp_n,exp) = expression exp in
@@ -649,9 +648,8 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
             (multibind [stg_n;ty_ma_id_n;endattr_n;sem_n],
 	     Ast0.UnInit(stg,ty,id,endattr,sem))
-	| Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
+	| Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
-	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (name_n,name) = ident name in
 	    let (lp1_n,lp1) = string_mcode lp1 in
 	    let (params_n,params) = parameter_dots params in
@@ -663,8 +661,8 @@ let visitor mode bind option_default
 	        (multibind [comma_n; ellipsis_n],Some(comma,ellipsis)) end in
 	    let (rp1_n,rp1) = string_mcode rp1 in
 	    let (sem_n,sem) = string_mcode sem in
-            (multibind [fi_n;attr_n;name_n;lp1_n;params_n;va_n;rp1_n;sem_n],
-	     Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem))
+            (multibind [fi_n;name_n;lp1_n;params_n;va_n;rp1_n;sem_n],
+	     Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
 	| Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let (name_n,name) = ident name in
@@ -686,11 +684,10 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;name_n;lp_n;args_n;rp_n;eq_n;ini_n;sem_n],
 	     Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
-	| Ast0.TyDecl(ty,attr,sem) ->
+	| Ast0.TyDecl(ty,sem) ->
 	    let (ty_n,ty) = typeC ty in
-	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (sem_n,sem) = string_mcode sem in
-            (multibind [ty_n; attr_n; sem_n], Ast0.TyDecl(ty,attr,sem))
+            (multibind [ty_n; sem_n], Ast0.TyDecl(ty,sem))
 	| Ast0.Typedef(stg,ty,id,sem) ->
 	    let (stg_n,stg) = string_mcode stg in
 	    let ((ty_id_n,ty),id) = named_type_typedef ty id in

@@ -200,13 +200,12 @@ let combiner bind option_default
 	  let lar = string_mcode ar in
 	  let lfield = ident field in
 	  multibind [lexp; lar; lfield]
-      | Ast.Cast(lp,ty,attr,rp,exp) ->
+      | Ast.Cast(lp,ty,rp,exp) ->
 	  let llp = string_mcode lp in
 	  let lty = fullType ty in
-	  let lattr = multibind (List.map attribute attr) in
 	  let lrp = string_mcode rp in
 	  let lexp = expression exp in
-          multibind [llp; lty; lattr; lrp; lexp]
+          multibind [llp; lty; lrp; lexp]
       | Ast.SizeOfExpr(szf,exp) ->
 	  let lszf = string_mcode szf in
 	  let lexp = expression exp in
@@ -341,11 +340,11 @@ let combiner bind option_default
   and parentype_type (lp,ty,(id : Ast.ident option),rp) =
     let function_pointer ty1 array_dec =
       match Ast.unwrap ty1 with
-       Ast.Type(_,_,fty1) ->
+       Ast.Type(_,_,_,fty1) ->
         (match Ast.unwrap fty1 with
           Ast.Pointer(ty2,star) ->
            (match Ast.unwrap ty2 with
-             Ast.Type(_,_,fty3) ->
+             Ast.Type(_,_,_,fty3) ->
               (match Ast.unwrap fty3 with
                 Ast.FunctionType(ty3,lp3,params,rp3) ->
                  let ltyp = fullType ty3 in
@@ -375,7 +374,7 @@ let combiner bind option_default
          | _ -> failwith "ParenType Visitor_ast")
        | _ -> failwith "ParenType Visitor_ast" in
     match Ast.unwrap ty with
-      Ast.Type(_,_,fty1) ->
+      Ast.Type(_,_,_,fty1) ->
         (match Ast.unwrap fty1 with
           Ast.Array(ty1,lb1,size,rb1) ->
             function_pointer ty1 (Some(lb1,size,rb1))
@@ -454,7 +453,7 @@ let combiner bind option_default
 
   and named_type ty id =
     match Ast.unwrap ty with
-      Ast.Type(_,[],ty1) ->
+      Ast.Type(_,[],[],ty1) ->
 	(match Ast.unwrap ty1 with
 	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
         | Ast.ParenType(lp,ty,rp) -> parentype_type (lp, ty, Some id, rp)
@@ -488,9 +487,8 @@ let combiner bind option_default
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let lsem = string_mcode sem in
           multibind [lstg; lid; lendattr; lsem]
-      | Ast.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
+      | Ast.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	  let lfi = List.map fninfo fi in
-	  let lattr = multibind (List.map attribute attr) in
 	  let lname = ident name in
 	  let llp1 = string_mcode lp1 in
 	  let lparams = parameter_dots params in
@@ -500,7 +498,7 @@ let combiner bind option_default
 		([string_mcode comma],[string_mcode ellipsis]) in
 	  let lrp1 = string_mcode rp1 in
 	  multibind
-            (lfi @ [lattr; lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
+            (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
       | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lname = ident name in
@@ -520,11 +518,10 @@ let combiner bind option_default
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
 	  multibind [lstg; lname; llp; largs; lrp; leq; lini; lsem]
-      | Ast.TyDecl(ty,attr,sem) ->
+      | Ast.TyDecl(ty,sem) ->
 	  let lty = fullType ty in
-	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
-	  multibind [lty; lattr; lsem]
+	  multibind [lty; lsem]
       | Ast.Typedef(stg,ty,id,sem) ->
 	  let lstg = string_mcode stg in
 	  let lty = fullType ty in
@@ -1270,13 +1267,12 @@ let rebuilder
 	    let lar = string_mcode ar in
 	    let lfield = ident field in
 	    Ast.RecordPtAccess(lexp, lar, lfield)
-	| Ast.Cast(lp,ty,attr,rp,exp) ->
+	| Ast.Cast(lp,ty,rp,exp) ->
 	    let llp = string_mcode lp in
 	    let lty = fullType ty in
-	    let lattr = List.map attribute attr in
 	    let lrp = string_mcode rp in
 	    let lexp = expression exp in
-	    Ast.Cast(llp, lty, lattr, lrp, lexp)
+	    Ast.Cast(llp, lty, lrp, lexp)
 	| Ast.SizeOfExpr(szf,exp) ->
 	    let lszf = string_mcode szf in
 	    let lexp = expression exp in
@@ -1400,10 +1396,11 @@ let rebuilder
     let k ft =
       Ast.rewrap ft
 	(match Ast.unwrap ft with
-	  Ast.Type(allminus,cv,ty) ->
+	  Ast.Type(allminus,cv,attr,ty) ->
 	    let lcv = List.map cv_mcode cv in
+	    let lattr = List.map attribute attr in
 	    let lty = typeC ty in
-	    Ast.Type (allminus, lcv, lty)
+	    Ast.Type (allminus, lcv, lattr, lty)
 	| Ast.AsType(ty,asty) ->
 	    let lty = fullType ty in
 	    let lasty = fullType asty in
@@ -1518,9 +1515,8 @@ let rebuilder
 	    let lendattr = List.map attribute endattr in
 	    let lsem = string_mcode sem in
 	    Ast.UnInit(lstg, lty, lid, lendattr, lsem)
-	| Ast.FunProto(fi,attr,name,lp,params,va,rp,sem) ->
+	| Ast.FunProto(fi,name,lp,params,va,rp,sem) ->
 	    let lfi = List.map fninfo fi in
-	    let lattr = List.map attribute attr in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
 	    let lparams = parameter_dots params in
@@ -1530,7 +1526,7 @@ let rebuilder
 		  Some (string_mcode comma,string_mcode ellipsis) in
 	    let lrp = string_mcode rp in
 	    let lsem = string_mcode sem in
-	    Ast.FunProto(lfi,lattr,lname,llp,lparams,lva,lrp,lsem)
+	    Ast.FunProto(lfi,lname,llp,lparams,lva,lrp,lsem)
 	| Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lname = ident name in
@@ -1550,11 +1546,10 @@ let rebuilder
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
 	    Ast.MacroDeclInit(lstg, lname, llp, largs, lrp, leq, lini, lsem)
-	| Ast.TyDecl(ty,attr,sem) ->
+	| Ast.TyDecl(ty,sem) ->
 	    let lty = fullType ty in
-	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
-	    Ast.TyDecl(lty, lattr, lsem)
+	    Ast.TyDecl(lty, lsem)
 	| Ast.Typedef(stg,ty,id,sem) ->
 	    let lstg = string_mcode stg in
 	    let lty = fullType ty in

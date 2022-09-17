@@ -61,7 +61,7 @@ let expression e =
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) -> [27]
   | Ast0.RecordAccess(exp,pt,field) -> [28]
   | Ast0.RecordPtAccess(exp,ar,field) -> [29]
-  | Ast0.Cast(lp,ty,attr,rp,exp) -> [30]
+  | Ast0.Cast(lp,ty,rp,exp) -> [30]
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
   | Ast0.Delete(dlt,exp) -> [85]
@@ -92,7 +92,7 @@ let binaryOp op = match Ast0.unwrap op with
 
 let typeC t =
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,ty) -> [44]
+    Ast0.ConstVol(cv,attrs,ty) -> [44]
   | Ast0.BaseType(ty,strings) -> [48]
   | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]
@@ -117,12 +117,12 @@ let typeC t =
 let declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> [148]
-  | Ast0.Init(stg,ty,midattr,id,endattr,eq,exp,sem) -> [54]
-  | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) -> [55]
-  | Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) -> [132]
+  | Ast0.Init(stg,ty,id,endattr,eq,exp,sem) -> [54]
+  | Ast0.UnInit(stg,ty,id,endattr,sem) -> [55]
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) -> [137]
   | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) -> [157]
-  | Ast0.TyDecl(ty,attr,sem) -> [116]
+  | Ast0.TyDecl(ty,sem) -> [116]
   | Ast0.Typedef(stg,ty,id,sem) -> [143]
   | Ast0.DisjDecl(_,decls,_,_) -> [97] (* added after *)
   | Ast0.ConjDecl(_,decls,_,_) -> [88] (* added after *)
@@ -160,7 +160,7 @@ let initialiser i =
 
 let parameterTypeDef p =
   match Ast0.unwrap p with
-    Ast0.Param(ty,midattr,id,attr) -> [60]
+    Ast0.Param(ty,id,attr) -> [60]
   | Ast0.MetaParam(name,_,_) -> [61]
   | Ast0.MetaParamList(name,_,_,_) -> [62]
   | Ast0.PComma(cm) -> [63]

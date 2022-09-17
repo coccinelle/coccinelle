@@ -249,9 +249,8 @@ let rec expression e =
       expression exp; mcode print_string pt; ident field
   | Ast.RecordPtAccess(exp,ar,field) ->
       expression exp; mcode print_string ar; ident field
-  | Ast.Cast(lp,ty,attr,rp,exp) ->
+  | Ast.Cast(lp,ty,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
-      print_attribute_list attr;
       mcode print_string rp; expression exp
   | Ast.SizeOfExpr(sizeof,exp) ->
       mcode print_string sizeof; expression exp
@@ -405,13 +404,15 @@ and storage = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(_,cv,ty) ->
+    Ast.Type(_,cv,attrs,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) ->
 	  typeC ty;
-	  List.iter (function x -> print_string " "; mcode const_vol x) cv
+	  List.iter (function x -> print_string " "; mcode const_vol x) cv;
+	  print_attribute_list attrs ~befspace:true ~aftspace:false
       |	_ ->
 	  List.iter (function x -> mcode const_vol x; print_string " ") cv;
+	  print_attribute_list attrs ~befspace:false ~aftspace:true;
 	  typeC ty)
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
@@ -421,11 +422,11 @@ and fullType ft =
 and print_parentype (lp,ty,rp) fn =
   let function_pointer ty1 array_dec =
     match Ast.unwrap ty1 with
-     Ast.Type(_,_,fty1) ->
+     Ast.Type(_,_,_,fty1) ->
       (match Ast.unwrap fty1 with
         Ast.Pointer(ty2,star) ->
          (match Ast.unwrap ty2 with
-           Ast.Type(_,_,fty3) ->
+           Ast.Type(_,_,_,fty3) ->
             (match Ast.unwrap fty3 with
               Ast.FunctionType(ty3,lp3,params,rp3) ->
                fullType ty3;
@@ -449,7 +450,7 @@ and print_parentype (lp,ty,rp) fn =
        | _ -> failwith "ParenType Pretty_print_cocci")
      | _ -> failwith "ParenType Pretty_print_cocci" in
   match Ast.unwrap ty with
-    Ast.Type(_,_,fty1) ->
+    Ast.Type(_,_,_,fty1) ->
       (match Ast.unwrap fty1 with
         Ast.Array(ty1,lb1,size,rb1) ->
           function_pointer ty1 (Some(lb1,size,rb1))
@@ -562,19 +563,20 @@ and const_vol const_vol = print_string (Ast.string_of_const_vol [const_vol] ^ " 
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and print_named_type ty midattr id =
+and print_named_type ty id =
   match Ast.unwrap ty with
-    Ast.Type(_,[],ty1) ->
+    Ast.Type(_,[],midattr,ty1) ->
       (match Ast.unwrap ty1 with
         Ast.Array(ty,lb,size,rb) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(_,cv,ty) ->
+		  Ast.Type(_,cvs,attrs,ty) ->
 		    List.iter
 		      (function x -> mcode const_vol x; print_string " ")
-		      cv;
+		      cvs;
+		    print_attribute_list attrs;
 		    loop ty
 		      (function _ ->
 			k ();
@@ -586,8 +588,8 @@ and print_named_type ty midattr id =
 	  loop ty1 (function _ -> ())
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
-      | _ -> fullType ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id())
-  | _ -> fullType ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id()
+      | _ -> fullType ty; id())
+  | _ -> fullType ty; id()
 
 and declaration d =
   match Ast.unwrap d with
@@ -595,20 +597,19 @@ and declaration d =
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
-  | Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+  | Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
       print_option (mcode storage) stg;
-      print_named_type ty midattr (fun _ -> ident id);
+      print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
+  | Ast.UnInit(stg,ty,id,endattr,sem) ->
       print_option (mcode storage) stg;
-      print_named_type ty midattr (fun _ -> ident id);
+      print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       mcode print_string sem
-  | Ast.FunProto (fninfo,attr,name,lp1,params,va,rp1,sem) ->
+  | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;
-      print_attribute_list attr;
       ident name; mcode print_string_box lp1;
       parameter_list params; varargs va;
       close_box(); mcode print_string rp1;
@@ -625,13 +626,12 @@ and declaration d =
       close_box(); mcode print_string rp;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.TyDecl(ty,attr,sem) ->
+  | Ast.TyDecl(ty,sem) ->
       fullType ty;
-      print_attribute_list attr;
       mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; print_string " ";
-      print_named_type ty [] (fun _ -> typeC id);
+      print_named_type ty (fun _ -> typeC id);
       mcode print_string sem
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
@@ -656,7 +656,7 @@ and field d =
       begin
 	match id with
 	  None -> fullType ty
-        | Some id -> print_named_type ty [] (fun _ -> ident id);
+        | Some id -> print_named_type ty (fun _ -> ident id);
       end;
       let bitfield (c, e) =
 	mcode print_string c;
@@ -745,12 +745,11 @@ and designator = function
 
 and parameterTypeDef p =
   match Ast.unwrap p with
-    Ast.Param(ty,midattr,Some id,attr) ->
-      print_named_type ty midattr (fun _ -> ident id);
+    Ast.Param(ty,Some id,attr) ->
+      print_named_type ty (fun _ -> ident id);
       print_attribute_list attr
-  | Ast.Param(ty,midattr,None,attr) ->
+  | Ast.Param(ty,None,attr) ->
       fullType ty;
-      assert (midattr = []);
       print_attribute_list attr
   | Ast.MetaParam(name,_,_,_) -> mcode print_meta name
   | Ast.MetaParamList(name,_,_,_,_) -> mcode print_meta name

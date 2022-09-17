@@ -425,34 +425,26 @@ let classify is_minus all_marked table code =
 	   term structure.  In (all?) other such cases, we visit the terms
 	   using rebuilder, which just visits the subterms, rather than
 	   reordering their components. *)
-      |	Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+      |	Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
 	    (bind (r.VT0.combiner_rec_typeC ty)
-              (bind
-                 (List.fold_right bind
-                   (List.map r.VT0.combiner_rec_attribute midattr)
-                    option_default)
-                 (bind (r.VT0.combiner_rec_ident id)
-                    (bind
-                       (List.fold_right bind
-                         (List.map r.VT0.combiner_rec_attribute endattr)
-                          option_default)
-                       (bind (mcode eq)
-                          (bind (r.VT0.combiner_rec_initialiser ini)
-                             (mcode sem)))))))
-      | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+               (bind (r.VT0.combiner_rec_ident id)
+                  (bind
+                     (List.fold_right bind
+                        (List.map r.VT0.combiner_rec_attribute endattr)
+                        option_default)
+                     (bind (mcode eq)
+                        (bind (r.VT0.combiner_rec_initialiser ini)
+                           (mcode sem))))))
+      | Ast0.UnInit(stg,ty,id,endattr,sem) ->
 	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
 	    (bind (r.VT0.combiner_rec_typeC ty)
-              (bind
-                 (List.fold_right bind
-                   (List.map r.VT0.combiner_rec_attribute midattr)
-                    option_default)
-                 (bind (r.VT0.combiner_rec_ident id)
-                    (bind
-                       (List.fold_right bind
-                         (List.map r.VT0.combiner_rec_attribute endattr)
-                          option_default)
-                       (mcode sem)))))
+               (bind (r.VT0.combiner_rec_ident id)
+                  (bind
+                     (List.fold_right bind
+                        (List.map r.VT0.combiner_rec_attribute endattr)
+                        option_default)
+                     (mcode sem))))
       |	_ -> k e) in
 
   let field r k e =
@@ -483,16 +475,13 @@ let classify is_minus all_marked table code =
   let param r k e =
     compute_result Ast0.param e
       (match Ast0.unwrap e with
-	Ast0.Param(ty,midattr,Some id,attr) ->
+	Ast0.Param(ty,Some id,attr) ->
 	  (* needed for the same reason as in the Init and UnInit cases *)
 	  bind (r.VT0.combiner_rec_typeC ty)
-            (bind (List.fold_right bind
-              (List.map r.VT0.combiner_rec_attribute midattr)
-              option_default)
-              (bind (r.VT0.combiner_rec_ident id)
-                (List.fold_right bind
-                   (List.map r.VT0.combiner_rec_attribute attr)
-                   option_default)))
+            (bind (r.VT0.combiner_rec_ident id)
+               (List.fold_right bind
+                  (List.map r.VT0.combiner_rec_attribute attr)
+                  option_default))
       |	_ -> k e) in
 
   let typeC r k e =
@@ -682,11 +671,8 @@ let rec equal_expression e1 e2 =
       equal_mcode pt1 pt2
   | (Ast0.RecordPtAccess(_,ar1,_),Ast0.RecordPtAccess(_,ar2,_)) ->
       equal_mcode ar1 ar2
-  | (Ast0.Cast(lp1,_,ar1,rp1,_),Ast0.Cast(lp2,_,ar2,rp2,_)) ->
-      equal_mcode lp1 lp2 &&
-      (List.length ar1) = (List.length ar2) &&
-      List.for_all2 equal_attribute ar1 ar2 &&
-      equal_mcode rp1 rp2
+  | (Ast0.Cast(lp1,_,rp1,_),Ast0.Cast(lp2,_,rp2,_)) ->
+      equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.SizeOfExpr(szf1,_),Ast0.SizeOfExpr(szf2,_)) ->
       equal_mcode szf1 szf2
   | (Ast0.SizeOfType(szf1,lp1,_,rp1),Ast0.SizeOfType(szf2,lp2,_,rp2)) ->
@@ -737,7 +723,9 @@ and binaryOp_equal op1 op2 =
 
 let equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
-    (Ast0.ConstVol(cv1,_),Ast0.ConstVol(cv2,_)) -> List.for_all2 equal_mcode cv1 cv2
+    (Ast0.ConstVol(cv1,attr1,_),Ast0.ConstVol(cv2,attr2,_)) ->
+      List.for_all2 equal_mcode (List.sort compare cv1) (List.sort compare cv2) &&
+      List.for_all2 equal_attribute (List.sort compare attr1) (List.sort compare attr2)
   | (Ast0.BaseType(ty1,stringsa),Ast0.BaseType(ty2,stringsb)) ->
       List.for_all2 equal_mcode stringsa stringsb
   | (Ast0.Signed(sign1,_),Ast0.Signed(sign2,_)) ->
@@ -802,23 +790,19 @@ let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaDecl(name1,_,_),Ast0.MetaDecl(name2,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Init(stg1,_,midattr1,_,endattr1,eq1,_,sem1),
-     Ast0.Init(stg2,_,midattr2,_,endattr2,eq2,_,sem2)) ->
+  | (Ast0.Init(stg1,_,_,endattr1,eq1,_,sem1),
+     Ast0.Init(stg2,_,_,endattr2,eq2,_,sem2)) ->
       equal_option stg1 stg2 &&
-      (List.length midattr1) = (List.length midattr2) &&
-      List.for_all2 equal_attribute midattr1 midattr2 &&
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode eq1 eq2 && equal_mcode sem1 sem2
-  | (Ast0.UnInit(stg1,_,midattr1,_,endattr1,sem1),Ast0.UnInit(stg2,_,midattr2,_,endattr2,sem2)) ->
+  | (Ast0.UnInit(stg1,_,_,endattr1,sem1),Ast0.UnInit(stg2,_,_,endattr2,sem2)) ->
       equal_option stg1 stg2 &&
-      (List.length midattr1) = (List.length midattr2) &&
-      List.for_all2 equal_attribute midattr1 midattr2 &&
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode sem1 sem2
-  | (Ast0.FunProto(fninfo1,attr1,name1,lp1,p1,va1,rp1,sem1),
-     Ast0.FunProto(fninfo2,attr2,name2,lp2,p2,va2,rp2,sem2)) ->
+  | (Ast0.FunProto(fninfo1,name1,lp1,p1,va1,rp1,sem1),
+     Ast0.FunProto(fninfo2,name2,lp2,p2,va2,rp2,sem2)) ->
        let equal_varargs va1 va2 = match (va1,va2) with
          | None, None -> true
          | Some (c1, e1), Some (c2, e2) ->
@@ -826,8 +810,6 @@ let equal_declaration d1 d2 =
          | _ -> false in
        (List.length fninfo1) = (List.length fninfo2) &&
        List.for_all2 equal_fninfo fninfo1 fninfo2 &&
-      (List.length attr1) = (List.length attr2) &&
-      List.for_all2 equal_attribute attr1 attr2 &&
        equal_mcode lp1 lp2 && equal_varargs va1 va2 &&
        equal_mcode rp1 rp2 && equal_mcode sem1 sem2
   | (Ast0.MacroDecl(stg1,nm1,lp1,_,rp1,attr1,sem1),
@@ -841,9 +823,7 @@ let equal_declaration d1 d2 =
        equal_option stg1 stg2 &&
        equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode eq1 eq2
 	 && equal_mcode sem1 sem2
-  | (Ast0.TyDecl(_,attr1,sem1),Ast0.TyDecl(_,attr2,sem2)) ->
-       (List.length attr1) = (List.length attr2) &&
-       List.for_all2 equal_attribute attr1 attr2 && equal_mcode sem1 sem2
+  | (Ast0.TyDecl(_,sem1),Ast0.TyDecl(_,sem2)) -> equal_mcode sem1 sem2
   | (Ast0.OptDecl(_),Ast0.OptDecl(_)) -> true
   | (Ast0.DisjDecl(starter1,_,mids1,ender1),
      Ast0.DisjDecl(starter2,_,mids2,ender2))
@@ -921,11 +901,9 @@ let equal_initialiser i1 i2 =
 
 let equal_parameterTypeDef p1 p2 =
   match (Ast0.unwrap p1,Ast0.unwrap p2) with
-    (Ast0.Param(_,mar1,_,ar1),Ast0.Param(_,mar2,_,ar2)) ->
+    (Ast0.Param(_,_,ar1),Ast0.Param(_,_,ar2)) ->
       (List.length ar1) = (List.length ar2) &&
-      List.for_all2 equal_attribute ar1 ar2 &&
-      (List.length mar1) = (List.length mar2) &&
-      List.for_all2 equal_attribute mar1 mar2
+      List.for_all2 equal_attribute ar1 ar2
   | (Ast0.MetaParam(name1,_,_),Ast0.MetaParam(name2,_,_))
   | (Ast0.MetaParamList(name1,_,_,_),Ast0.MetaParamList(name2,_,_,_)) ->
       equal_mcode name1 name2

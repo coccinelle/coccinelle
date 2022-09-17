@@ -50,7 +50,7 @@ let collect_function (stm : Ast0.statement) =
 	     (Ast0.Decl((new_bef_info,Ast0.context_befaft()),
 			Ast0.copywrap stm
 			  (Ast0.FunProto
-                             (fninfo,[],name,lp,params,None,rp,make_semi aft_info))))))
+                             (fninfo,name,lp,params,None,rp,make_semi aft_info))))))
 	(get_name name)
   | _ -> []
 
@@ -227,7 +227,7 @@ let rec right_attach_ident strings id =
 let rec attach_right strings ty =
   Ast0.rewrap ty
     (match Ast0.unwrap ty with
-      Ast0.ConstVol(cv,ty) -> Ast0.ConstVol(cv,attach_right strings ty)
+      Ast0.ConstVol(cv,attr,ty) -> Ast0.ConstVol(cv,attr,attach_right strings ty)
     | Ast0.BaseType(bt,sl) ->
 	let slhd = right_attach_mcode strings (List.hd(List.rev sl)) in
 	Ast0.BaseType(bt,List.rev (slhd :: (List.tl (List.rev sl))))
@@ -269,10 +269,10 @@ let rec attach_right strings ty =
 let rec drop_param_name p =
   Ast0.rewrap p
     (match Ast0.unwrap p with
-      Ast0.Param(p,midattr,Some id,attr) ->
+      Ast0.Param(p,Some id,attr) ->
 	let strings = collect_ident_strings id in
 	let p = attach_right strings p in
-        Ast0.Param(p,[],None,midattr@attr)
+        Ast0.Param(p,None,attr)
     | Ast0.OptParam(p) -> Ast0.OptParam(drop_param_name p)
     | p -> p)
 
@@ -281,7 +281,7 @@ let drop_names dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem) ->
+	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let params =
 	    Ast0.rewrap params
 	      (List.map drop_param_name (Ast0.unwrap params)) in
@@ -289,7 +289,7 @@ let drop_names dec =
 	    (Ast0.Decl
 	       (info,
 		Ast0.rewrap proto
-		  (Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem))))
+		  (Ast0.FunProto(fninfo,name,lp,params,va,rp,sem))))
       |	_ -> failwith "unexpected declaration")
   | _ -> failwith "unexpected term"
 
@@ -305,7 +305,7 @@ let new_iname name index =
 
 let rec rename_param old_name all param index =
   match Ast0.unwrap param with
-    Ast0.Param(ty,midattr,Some id,attr) when all ->
+    Ast0.Param(ty,Some id,attr) when all ->
       (match Ast0.unwrap id with
 	Ast0.MetaId
 	  (((_,name),arity,info,mcodekind,pos,adj),constraints,seed,pure) ->
@@ -316,7 +316,7 @@ let rec rename_param old_name all param index =
 		 ((nm,arity,info,mcodekind,pos,adj),constraints,seed,
 		  Ast0.Pure)) in
 	  ([Ast.MetaIdDecl(Ast.NONE,nm)],
-	   Ast0.rewrap param (Ast0.Param(ty,midattr,Some new_id,attr)))
+	   Ast0.rewrap param (Ast0.Param(ty,Some new_id,attr)))
       |	_ -> ([],param))
   | Ast0.Pdots(d) ->
       let nm = (old_name,new_iname "__P" index) in
@@ -354,7 +354,7 @@ let fresh_names old_name mdef dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem) ->
+	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let (metavars,newdec) =
 	    let (metavars,l) =
 	      let params = Ast0.unwrap params in
@@ -367,7 +367,7 @@ let fresh_names old_name mdef dec =
 		  (info,
 		   Ast0.rewrap proto
 		     (Ast0.FunProto
-			(fninfo,attr,name,lp,Ast0.rewrap params l,va,rp,sem))))) in
+			(fninfo,name,lp,Ast0.rewrap params l,va,rp,sem))))) in
 	  let (def_metavars,newdef) =
 	    match Ast0.unwrap mdef with
 	      Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,attrs,lb,body,rb,y) ->
@@ -390,7 +390,7 @@ let no_names dec =
   match Ast0.unwrap dec with
     Ast0.Decl(info,proto) ->
       (match Ast0.unwrap proto with
-	Ast0.FunProto(fninfo,attr,name,lp,params,va,rp,sem) ->
+	Ast0.FunProto(fninfo,name,lp,params,va,rp,sem) ->
 	  let sem =
 	    (* convert semicolon to minus, since we are dropping the whole
 	       thing *)
@@ -402,7 +402,7 @@ let no_names dec =
 	       (info,
 		Ast0.rewrap proto
 		  (Ast0.FunProto
-		     (fninfo,attr,name,lp,
+		     (fninfo,name,lp,
 		      Ast0.rewrap params
 			(let info = Ast0.get_info params in
 			let mcodekind =

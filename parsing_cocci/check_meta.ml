@@ -196,9 +196,8 @@ and expression context old_metas table minus e =
   | Ast0.RecordPtAccess(exp,ar,field) ->
       expression ID old_metas table minus exp;
       ident FIELD old_metas table minus field
-  | Ast0.Cast(lp,ty,attr,rp,exp) ->
+  | Ast0.Cast(lp,ty,rp,exp) ->
       typeC old_metas table minus ty;
-      List.iter (attribute old_metas table minus) attr;
       expression ID old_metas table minus exp
   | Ast0.SizeOfExpr(szf,exp) -> expression ID old_metas table minus exp
   | Ast0.SizeOfType(szf,lp,ty,rp) -> typeC old_metas table minus ty
@@ -256,7 +255,9 @@ and check_args fn (_,args,_) =
 
 and typeC old_metas table minus t =
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,ty) -> typeC old_metas table minus ty
+    Ast0.ConstVol(cv,attr,ty) ->
+      typeC old_metas table minus ty;
+      List.iter (attribute old_metas table minus) attr
   | Ast0.Signed(sgn,ty) ->
       get_opt (typeC old_metas table minus) ty
   | Ast0.Pointer(ty,star) -> typeC old_metas table minus ty
@@ -304,9 +305,8 @@ and declaration context old_metas table minus d =
       check_table table minus name;
       constraints table minus cstr
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
-  | Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+  | Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
       typeC old_metas table minus ty;
-      List.iter (attribute old_metas table minus) midattr;
       ident context old_metas table minus id;
       List.iter (attribute old_metas table minus) endattr;
       (match Ast0.unwrap ini with
@@ -319,15 +319,13 @@ and declaration context old_metas table minus d =
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
 	    initialiser old_metas table minus ini)
-  | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+  | Ast0.UnInit(stg,ty,id,endattr,sem) ->
       typeC old_metas table minus ty;
-      List.iter (attribute old_metas table minus) midattr;
       ident context old_metas table minus id;
       List.iter (attribute old_metas table minus) endattr
-  | Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
+  | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
-      List.iter (attribute old_metas table minus) attr;
       parameter_list old_metas table minus params
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       ident GLOBAL old_metas table minus name;
@@ -339,9 +337,8 @@ and declaration context old_metas table minus d =
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp -> expression ID old_metas table minus exp
       |	_ -> initialiser old_metas table minus ini)
-  | Ast0.TyDecl(ty,attr,sem) ->
-      typeC old_metas table minus ty;
-      List.iter (attribute old_metas table minus) attr
+  | Ast0.TyDecl(ty,sem) ->
+      typeC old_metas table minus ty
   | Ast0.Typedef(stg,ty,id,sem) ->
       typeC old_metas table minus ty;
       typeC old_metas table minus id
@@ -429,9 +426,8 @@ and initialiser_list old_metas table minus =
 
 and parameterTypeDef old_metas table minus param =
   match Ast0.unwrap param with
-    Ast0.Param(ty,midattr,id,attr) ->
+    Ast0.Param(ty,id,attr) ->
       get_opt (ident ID old_metas table minus) id;
-      List.iter (attribute old_metas table minus) midattr;
       typeC old_metas table minus ty;
       List.iter (attribute old_metas table minus) attr
   | Ast0.MetaParam(name,cstr,_) ->

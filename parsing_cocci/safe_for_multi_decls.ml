@@ -123,17 +123,16 @@ let decl r k e =
   | Ast.NoStorage -> {e with Ast.safe_for_multi_decls = Ast.NoStorage}
   | Ast.Unsafe ->
       match Ast.unwrap e with
-	Ast.Init(stg,ty,midattr,_,endattr,_,_,sem)
-      | Ast.UnInit(stg,ty,midattr,_,endattr,sem) ->
+	Ast.Init(stg,ty,_,endattr,_,_,sem)
+      | Ast.UnInit(stg,ty,_,endattr,sem) ->
 	  let stg_modif =
 	    match stg with
 	      Some stg -> mcode () stg
 	    | None -> false in
-	  let midattr_modif = List.exists attribute midattr in
 	  let endattr_modif = List.exists attribute endattr in
 	  let ft_modif = contains_modif ty in
 	  let sem_modif = mcode () sem in
-	  if not(stg_modif || midattr_modif || endattr_modif || ft_modif || sem_modif)
+	  if not(stg_modif || endattr_modif || ft_modif || sem_modif)
 	  then {e with Ast.safe_for_multi_decls = Ast.Safe}
 	  else e
       | _ -> e

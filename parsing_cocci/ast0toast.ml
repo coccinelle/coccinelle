@@ -439,10 +439,9 @@ and expression e =
 	Ast.RecordAccess(expression exp,mcode pt,ident field)
     | Ast0.RecordPtAccess(exp,ar,field) ->
 	Ast.RecordPtAccess(expression exp,mcode ar,ident field)
-    | Ast0.Cast(lp,ty,attr,rp,exp) ->
+    | Ast0.Cast(lp,ty,rp,exp) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
-	let attr = List.map attribute attr in
-	Ast.Cast(mcode lp,typeC allminus ty,attr,mcode rp,expression exp)
+	Ast.Cast(mcode lp,typeC allminus ty,mcode rp,expression exp)
     | Ast0.SizeOfExpr(szf,exp) ->
 	Ast.SizeOfExpr(mcode szf,expression exp)
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
@@ -589,7 +588,7 @@ and typeC allminus t =
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) ->
-        Ast.Type(allminus,[],rewrap t no_isos (base_typeC allminus t))
+        Ast.Type(allminus,[],[],rewrap t no_isos (base_typeC allminus t))
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
     | Ast0.ConjType(_,types,_,_) ->
@@ -661,15 +660,14 @@ and declaration d =
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(stg,tyid,endattr,eq,ini,sem)
+	Ast.Init(stg,ty,id,endattr,eq,ini,sem)
     | Ast0.UnInit(stg,ty,id,endattr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let endattr = List.map attribute endattr in
 	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,endattr,
 		   mcode sem)
-    | Ast0.FunProto(fi,attr,name,lp,params,va,rp,sem) ->
+    | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in
-          let attr = List.map attribute attr in
 	  let name = ident name in
 	  let lp = mcode lp in
 	  let params = parameter_list params in
@@ -678,7 +676,7 @@ and declaration d =
             | Some (comma,ellipsis) -> Some(mcode comma,mcode ellipsis) in
 	  let rp = mcode rp in
 	  let sem = mcode sem in
-	  Ast.FunProto(fi,attr,name,lp,params,va,rp,sem)
+	  Ast.FunProto(fi,name,lp,params,va,rp,sem)
     | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
 	(* this would seem to need allminus... *)
 	let stg = get_option mcode stg in
@@ -700,15 +698,14 @@ and declaration d =
 	let ini = initialiser ini in
 	let sem = mcode sem in
 	Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)
-    | Ast0.TyDecl(ty,attr,sem) ->
+    | Ast0.TyDecl(ty,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	let attr = List.map attribute attr in
-	Ast.TyDecl(typeC allminus ty,attr,mcode sem)
+	Ast.TyDecl(typeC allminus ty,mcode sem)
     | Ast0.Typedef(stg,ty,id,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let id = typeC allminus id in
 	(match Ast.unwrap id with
-          Ast.Type(_,[],id) -> (* only MetaType or Id *)
+          Ast.Type(_,[],[],id) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)

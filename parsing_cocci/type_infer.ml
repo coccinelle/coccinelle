@@ -48,8 +48,11 @@ let lub_type t1 t2 =
         match Ast0.unwrap ty1, Ast0.unwrap ty2 with
           (Ast0.BaseType (Ast.Unknown, _), ty)
         | (ty, Ast0.BaseType (Ast.Unknown, _)) -> Ast0.rewrap ty1 ty
-	| (Ast0.ConstVol(cv1,ty1),Ast0.ConstVol(cv2,ty2)) when cv1 = cv2 ->
-	    Ast0.rewrap ty1 (Ast0.ConstVol(cv1,loop ty1 ty2))
+	| (Ast0.ConstVol(cv1,attr1,ty1),Ast0.ConstVol(cv2,attr2,ty2))
+	  when List.sort compare(List.map Ast0.unwrap_mcode cv1) =
+	       List.sort compare(List.map Ast0.unwrap_mcode cv2) ->
+	    (* not sure what to do with attrs *)
+	    Ast0.rewrap ty1 (Ast0.ConstVol(cv1,attr1,loop ty1 ty2))
         (* pad: in pointer arithmetic, as in ptr+1, the lub must be ptr *)
 	| (Ast0.Pointer(ty1, s),Ast0.Pointer(ty2, _)) ->
 	    Ast0.rewrap ty1 (Ast0.Pointer(loop ty1 ty2, s))
@@ -86,7 +89,7 @@ let lub_envs envs =
 let strip_cv =
   Common.map_option (function ty ->
     match Ast0.unwrap ty with
-    | Ast0.ConstVol(_,ty') -> ty'
+    | Ast0.ConstVol(_,_,ty') -> ty'
     | _ -> ty)
 
 (* types that might be integer types.  should char be allowed? *)
@@ -291,7 +294,7 @@ let rec propagate_types env =
                | Some x ->
                    let ty = Ast0.wrap x in
                    err exp ty "non-structure pointer type in field ref")
-	| Ast0.Cast(lp,ty,attr,rp,exp) -> Some ty
+	| Ast0.Cast(lp,ty,rp,exp) -> Some ty
 	| Ast0.SizeOfExpr(szf,exp) -> Some (Ast0.wrap int_type)
 	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some (Ast0.wrap int_type)
 	| Ast0.Delete(dlt,exp) -> Some (Ast0.wrap void_type)
@@ -377,17 +380,17 @@ let rec propagate_types env =
   and process_decl env decl =
     match Ast0.unwrap decl with
       Ast0.MetaDecl(_,_,_) -> []
-    | Ast0.Init(_,ty,_,id,_,_,exp,_) ->
+    | Ast0.Init(_,ty,id,_,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	List.map (function i -> (i,ty)) (strip id)
-    | Ast0.UnInit(_,ty,_,id,_,_) ->
+    | Ast0.UnInit(_,ty,id,_,_) ->
 	List.map (function i -> (i,ty)) (strip id)
-    | Ast0.FunProto(fi,ar,nm,lp,params,va,rp,sem) -> []
+    | Ast0.FunProto(fi,nm,lp,params,va,rp,sem) -> []
     | Ast0.MacroDecl(_,_,_,_,_,_,_) -> []
     | Ast0.MacroDeclInit(_,_,_,_,_,_,exp,_) ->
         let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
 	[]
-    | Ast0.TyDecl(ty,_,_) -> []
+    | Ast0.TyDecl(ty,_) -> []
               (* pad: should handle typedef one day and add a binding *)
     | Ast0.Typedef((a,_,_,_,_,_),b,c,(d,_,_,_,_,_)) ->
 	[]
@@ -423,7 +426,7 @@ let rec propagate_types env =
       Ast0.FunDecl(_,fninfo,name,lp,params,va,rp,_,lbrace,body,rbrace,_) ->
 	let rec get_binding p =
 	  match Ast0.unwrap p with
-	    Ast0.Param(ty,midattr,Some id,attr) ->
+	    Ast0.Param(ty,Some id,attr) ->
 	      List.map (function i -> (i,ty)) (strip id)
 	  | Ast0.OptParam(param) -> get_binding param
 	  | Ast0.AsParam(param,e) -> get_binding param

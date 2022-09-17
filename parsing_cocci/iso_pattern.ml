@@ -587,7 +587,7 @@ let match_maker checks_needed context_required whencode_allowed =
 			(* all caps is a const *)
 			Str.string_match all_caps nm 0
 		    | _ -> false)
-		| Ast0.Cast(lp,ty,attr,rp,e) -> matches e
+		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.SizeOfExpr(se,exp) -> true
 		| Ast0.SizeOfType(se,lp,ty,rp) -> true
 		| Ast0.Delete(dlt,exp) -> true
@@ -600,7 +600,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	      let rec matches e =
 		match Ast0.unwrap e with
 		  Ast0.Ident(c) -> true
-		| Ast0.Cast(lp,ty,attr,rp,e) -> matches e
+		| Ast0.Cast(lp,ty,rp,e) -> matches e
 		| Ast0.MetaExpr(nm,_,_,Ast.ID,p,_bitfield) ->
 		    (Ast0.lub_pure p pure) = pure
 		| _ -> false in
@@ -771,11 +771,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode opa op; match_expr expa expb;
 		   match_ident fielda fieldb]
-	  | (Ast0.Cast(lp1,tya,attra,rp1,expa),
-             Ast0.Cast(lp,tyb,attrb,rp,expb)) ->
+	  | (Ast0.Cast(lp1,tya,rp1,expa),
+             Ast0.Cast(lp,tyb,rp,expb)) ->
 	      conjunct_many_bindings
 		[check_mcode lp1 lp; check_mcode rp1 rp;
-                  match_attributes attra attrb;
 		  match_typeC tya tyb; match_expr expa expb]
 	  | (Ast0.SizeOfExpr(szf1,expa),Ast0.SizeOfExpr(szf,expb)) ->
 	      conjunct_bindings (check_mcode szf1 szf) (match_expr expa expb)
@@ -879,13 +878,15 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context t
 	then
 	  match (up,Ast0.unwrap t) with
-	    (Ast0.ConstVol(cva,tya),Ast0.ConstVol(cvb,tyb)) ->
+	    (Ast0.ConstVol(cva,attra,tya),Ast0.ConstVol(cvb,attrb,tyb)) ->
 	      if List.for_all2 mcode_equal cva cvb
 	      then
 	        conjunct_many_bindings
                   [match_list check_mcode
                     (function _ -> false) (function _ -> failwith "")
-                    cva cvb; match_typeC tya tyb]
+                    cva cvb;
+		    match_attributes attra attrb;
+		    match_typeC tya tyb]
 	      else return false
 	  | (Ast0.BaseType(tya,stringsa),Ast0.BaseType(tyb,stringsb)) ->
 	      if tya = tyb
@@ -977,37 +978,35 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
-	    (Ast0.Init(stga,tya,midattra,ida,endattra,eq1,inia,sc1),
-	     Ast0.Init(stgb,tyb,midattrb,idb,endattrb,eq,inib,sc)) ->
+	    (Ast0.Init(stga,tya,ida,endattra,eq1,inia,sc1),
+	     Ast0.Init(stgb,tyb,idb,endattrb,eq,inib,sc)) ->
 	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_many_bindings
 		   [check_mcode eq1 eq; check_mcode sc1 sc;
 		     match_option check_mcode stga stgb;
 		     match_typeC tya tyb;
-                     match_attributes midattra midattrb;
                      match_ident ida idb;
                      match_attributes endattra endattrb;
 		     match_init inia inib]
 	       else return false
-	  | (Ast0.UnInit(stga,tya,midattra,ida,endattra,sc1),
-	     Ast0.UnInit(stgb,tyb,midattrb,idb,endattrb,sc)) ->
+	  | (Ast0.UnInit(stga,tya,ida,endattra,sc1),
+	     Ast0.UnInit(stgb,tyb,idb,endattrb,sc)) ->
 	      if bool_match_option mcode_equal stga stgb
 	      then
 		conjunct_many_bindings
 		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
-                    match_typeC tya tyb; match_attributes midattra midattrb;
+                    match_typeC tya tyb;
                     match_ident ida idb; match_attributes endattra endattrb]
 	      else return false
-	  | (Ast0.FunProto(fninfo1,attr1,name1,lp1,params1,va1a,rp1,sem1),
-	     Ast0.FunProto(fninfo,attr,name,lp,params,va1b,rp,sem)) ->
+	  | (Ast0.FunProto(fninfo1,name1,lp1,params1,va1a,rp1,sem1),
+	     Ast0.FunProto(fninfo,name,lp,params,va1b,rp,sem)) ->
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; check_mcode rp1 rp; check_mcode sem1 sem;
 		   match_fninfo fninfo1 fninfo; match_ident name1 name;
 		   match_dots match_param is_plist_matcher do_plist_match
 		     params1 params;
-                   match_option varargs_equal va1a va1b;
-                   match_attributes attr1 attr
+                   match_option varargs_equal va1a va1b
                  ]
 	  | (Ast0.MacroDecl(stga,namea,lp1,argsa,rp1,attra,sc1),
 	     Ast0.MacroDecl(stgb,nameb,lp,argsb,rp,attrb,sc)) ->
@@ -1034,11 +1033,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		       argsa argsb;
 		     match_init ini1 ini]
 	       else return false
-	  | (Ast0.TyDecl(tya,attra,sc1),Ast0.TyDecl(tyb,attrb,sc)) ->
+	  | (Ast0.TyDecl(tya,sc1),Ast0.TyDecl(tyb,sc)) ->
               conjunct_many_bindings
-                  [check_mcode sc1 sc;
-                    match_typeC tya tyb;
-                    match_attributes attra attrb]
+                [check_mcode sc1 sc; match_typeC tya tyb]
 	  | (Ast0.Typedef(stga,tya,ida,sc1),Ast0.Typedef(stgb,tyb,idb,sc)) ->
 	      conjunct_bindings (check_mcode sc1 sc)
 		(conjunct_bindings (match_typeC tya tyb) (match_typeC ida idb))
@@ -1213,9 +1210,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context p
 	then
 	  match (up,Ast0.unwrap p) with
-	    (Ast0.Param(tya,midattra,ida,attra),Ast0.Param(tyb,midattrb,idb,attrb)) ->
+	    (Ast0.Param(tya,ida,attra),Ast0.Param(tyb,idb,attrb)) ->
 	      conjunct_bindings (match_typeC tya tyb)
-		  (match_option match_ident ida idb)
+		(conjunct_bindings
+		   (match_option match_ident ida idb)
+		   (match_attributes attra attrb))
 	  | (Ast0.PComma(c1),Ast0.PComma(c)) -> check_mcode c1 c
 	  | (Ast0.Pdots(d1),Ast0.Pdots(d)) -> check_mcode d1 d
 	  | (Ast0.OptParam(parama),Ast0.OptParam(paramb)) ->
@@ -1934,8 +1933,8 @@ let instantiate bindings mv_bindings model =
                                 Ast0.rewrap_mcode name new_mv in
                               Ast0.rewrap ty (
                                 Ast0.MetaType(new_mv_wrapped,cstr,pure)))
-                      | Ast0.ConstVol(cv,ty') ->
-                          Ast0.rewrap ty (Ast0.ConstVol(cv,renamer ty'))
+                      | Ast0.ConstVol(cv,attrs,ty') ->
+                          Ast0.rewrap ty (Ast0.ConstVol(cv,attrs,renamer ty'))
                       | Ast0.Pointer(ty', s) ->
                           Ast0.rewrap ty (Ast0.Pointer(renamer ty', s))
                       | Ast0.ParenType(s0, ty', s1) ->
@@ -2495,7 +2494,7 @@ let get_name bindings = function
 		 (function ty ->
 		   let rec loop ty =
 		     match Ast.unwrap ty with
-		       Ast.Type (m,cv,t) ->
+		       Ast.Type (m,cv,attrs,t) ->
 			 (match Ast.unwrap t with
 			   Ast.MetaType(nm,cstr,keep,inh) ->
 			     (try
@@ -2509,7 +2508,7 @@ let get_name bindings = function
 			 | Ast.Pointer(t2,star) ->
 			     let t =
 			       Ast.rewrap t (Ast.Pointer(loop t2,star)) in
-			     Ast.rewrap ty (Ast.Type (m,cv,t))
+			     Ast.rewrap ty (Ast.Type (m,cv,attrs,t))
 			 | _ -> ty)
 		     | _ -> ty in
 		   loop ty)
