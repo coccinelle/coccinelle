@@ -204,7 +204,7 @@ and binaryOp = base_binaryOp wrap
 (* Types *)
 
 and base_typeC =
-    ConstVol        of Ast.const_vol mcode list * typeC
+    ConstVol        of Ast.const_vol mcode list * attr list * typeC
   | BaseType        of Ast.baseType * string mcode list
   | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
@@ -252,9 +252,9 @@ and base_declaration =
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
   | AsDecl        of declaration * declaration
-  | Init of Ast.storage mcode option * typeC * attr list * ident *
+  | Init of Ast.storage mcode option * typeC * ident *
         attr list * string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit of Ast.storage mcode option * typeC * attr list * ident *
+  | UnInit of Ast.storage mcode option * typeC * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * attr list * ident (* name *) *
@@ -345,7 +345,7 @@ and initialiser_list = initialiser dots
 (* Parameter *)
 
 and base_parameterTypeDef =
-    Param         of typeC * attr list * ident option * attr list
+    Param         of typeC * ident option * attr list
   | MetaParam     of Ast.meta_name mcode * constraints * pure
   | MetaParamList of Ast.meta_name mcode * listlen * constraints * pure
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)
@@ -778,7 +778,7 @@ let meta_names_of_expression expression =
 
 let rec meta_names_of_typeC ty =
   match unwrap ty with
-    ConstVol (_, ty)
+    ConstVol (_, _, ty)
   | Signed (_, Some ty)
   | Pointer (ty, _)
   | Array (ty, _, _, _) -> meta_names_of_typeC ty

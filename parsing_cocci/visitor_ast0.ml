@@ -342,15 +342,16 @@ let visitor mode bind option_default
     let k t =
       rewrap t
 	(match Ast0.unwrap t with
-	  Ast0.ConstVol(cv,ty) ->
+	  Ast0.ConstVol(cv,attr,ty) ->
 	    let (cv_n,cv) = map_split cv_mcode cv in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (ty_n,ty) = typeC ty in
 	    let front =
 	      (* bind in the right order *)
 	      match Ast0.unwrap ty with
-		Ast0.Pointer(ty,star) -> multibind (ty_n::cv_n)
-              | _ -> multibind (cv_n@[ty_n]) in
-	    (front, Ast0.ConstVol(cv,ty))
+		Ast0.Pointer(ty,star) -> multibind (ty_n::cv_n@[attr_n])
+              | _ -> multibind (attr_n::cv_n@[ty_n]) in
+	    (front, Ast0.ConstVol(cv,attr,ty))
 	| Ast0.BaseType(ty,strings) ->
 	    let (strings_n,strings) = map_split_bind string_mcode strings in
 	    (strings_n, Ast0.BaseType(ty,strings))
@@ -364,12 +365,12 @@ let visitor mode bind option_default
 	    (bind ty_n star_n, Ast0.Pointer(ty,star))
         | Ast0.ParenType(lp,ty,rp) ->
 	    let (t,id) =
-              parentype_type (lp,ty,[],None,rp) in t
+              parentype_type (lp,ty,None,rp) in t
         | Ast0.FunctionType(ty,lp,params,rp) ->
 	    let (t,id) =
               functiontype_type (ty,None,lp,params,rp) in t
 	| Ast0.Array(ty,lb,size,rb) ->
-            let ((t,mid),id) = array_type (ty,[],None,lb,size,rb) in t
+            let (t,id) = array_type (ty,None,lb,size,rb) in t
 	| Ast0.Decimal(dec,lp,length,comma,precision_opt,rp) ->
 	    let (dec_n,dec) = string_mcode dec in
 	    let (lp_n,lp) = string_mcode lp in
@@ -441,26 +442,24 @@ let visitor mode bind option_default
     tyfn all_functions k t
 
   (* returns ((bind value,original value),id) since id may have been updated*)
-  and array_type (ty,midattr,(id : Ast0.ident option),lb,size,rb) =
+  and array_type (ty,(id : Ast0.ident option),lb,size,rb) =
     let (ty_n,ty) = typeC ty in
-    let (midattr_n,midattr) = map_split_bind attribute midattr in
     let (idl,idu) = (match id with
       | Some a -> let (b,c) = ident a in ([b],Some c)
       | None -> ([],None)) in
     let (lb_n,lb) = string_mcode lb in
     let (size_n,size) = get_option expression size in
     let (rb_n,rb) = string_mcode rb in
-    (((multibind ([ty_n] @ [midattr_n] @ idl @ [lb_n;size_n;rb_n]),
-     Ast0.Array(ty,lb,size,rb)),midattr), idu)
+    ((multibind ([ty_n] @ idl @ [lb_n;size_n;rb_n]),
+      Ast0.Array(ty,lb,size,rb)), idu)
 
-  and parentype_type (lp,ty,midattr,(id : Ast0.ident option),rp) =
+  and parentype_type (lp,ty,(id : Ast0.ident option),rp) =
     let function_pointer ty1 array_decs =
       match Ast0.unwrap ty1 with
         Ast0.Pointer(ty2,star) ->
           (match Ast0.unwrap ty2 with
             Ast0.FunctionType(ty3,lp3,params,rp3) ->
               let (ty_n,typ) = typeC ty3 in
-              let (midattr_n,midattr) = map_split_bind attribute midattr in
               let (lp_n,lp) = string_mcode lp in
               let (star_n,star) = string_mcode star in
               let (idl,idu) =
@@ -481,7 +480,7 @@ let visitor mode bind option_default
               let (params_n,params) = parameter_dots params in
               let (rp3_n,rp3) = string_mcode rp3 in
               let bind_val =
-                multibind ([ty_n;midattr_n;lp_n;star_n]
+                multibind ([ty_n;lp_n;star_n]
                 @ idl @ array_n @ [rp_n;lp3_n;params_n;rp3_n]) in
               let inner_type =
                 let inner_type1 =
@@ -516,25 +515,23 @@ let visitor mode bind option_default
     ((multibind ([ty_n] @ idl @ [lp_n; params_n; rp_n]),
      Ast0.FunctionType(ty,lp,params,rp)), idu)
 
-  and named_type ty midattr id =
+  and named_type ty id =
     match Ast0.unwrap ty with
       Ast0.Array(rty,lb,size,rb) ->
-	let ((tyres, midattr_n), idn) = array_type (rty,midattr,Some id,lb,size,rb) in
+	let (tyres, idn) = array_type (rty,Some id,lb,size,rb) in
         let idn = match idn with Some i -> i | None -> failwith "Impossible" in
-	((rewrap ty tyres, midattr_n), idn)
+	(rewrap ty tyres, idn)
     | Ast0.ParenType(lp,rty,rp) ->
-	let (tyres, idn) = parentype_type (lp,rty,midattr,Some id,rp) in
+	let (tyres, idn) = parentype_type (lp,rty,Some id,rp) in
 	let idn = match idn with Some i -> i | None -> failwith "Impossible" in
-        ((rewrap ty tyres,[]), idn)
+        (rewrap ty tyres, idn)
     | Ast0.FunctionType(rty,lp,params,rp) ->
-        assert (midattr = []); (* Impossible *)
 	let (tyres, idn) = functiontype_type (rty,Some id,lp,params,rp) in
 	let idn = match idn with Some i -> i | None -> failwith "Impossible" in
-        ((rewrap ty tyres,[]), idn)
+        (rewrap ty tyres, idn)
     | _ -> let (ty_n,ty) = typeC ty in
-           let (midattr_n,midattr) = map_split_bind attribute midattr in
            let (id_n,id) = ident id in
-           ((((multibind [ty_n;midattr_n;id_n]), ty), midattr), id)
+           (((multibind [ty_n;id_n]), ty), id)
 
   (* returns ((bind value,original value),id) since id may have been updated*)
   and array_type_typedef (ty,id,lb,size,rb) =
@@ -636,22 +633,22 @@ let visitor mode bind option_default
 	  Ast0.MetaDecl(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaDecl(name,constraints,pure))
-	| Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+	| Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
-	    let (((ty_ma_id_n,ty),midattr),id) = named_type ty midattr id in
+	    let ((ty_ma_id_n,ty),id) = named_type ty id in
 	    let (endattr_n,endattr) = map_split_bind attribute endattr in
 	    let (eq_n,eq) = string_mcode eq in
 	    let (ini_n,ini) = initialiser ini in
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [stg_n;ty_ma_id_n;endattr_n;eq_n;ini_n;sem_n],
-	     Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem))
-	| Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+	     Ast0.Init(stg,ty,id,endattr,eq,ini,sem))
+	| Ast0.UnInit(stg,ty,id,endattr,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
-	    let (((ty_ma_id_n,ty),midattr),id) = named_type ty midattr id in
+	    let ((ty_ma_id_n,ty),id) = named_type ty id in
 	    let (endattr_n,endattr) = map_split_bind attribute endattr in
 	    let (sem_n,sem) = string_mcode sem in
             (multibind [stg_n;ty_ma_id_n;endattr_n;sem_n],
-	     Ast0.UnInit(stg,ty,midattr,id,endattr,sem))
+	     Ast0.UnInit(stg,ty,id,endattr,sem))
 	| Ast0.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (attr_n,attr) = map_split_bind attribute attr in
@@ -730,7 +727,7 @@ let visitor mode bind option_default
 	      match id with
 		None -> (typeC ty, None)
 	      | Some id ->
-                  let ((ty,_), id) = named_type ty [] id in
+                  let (ty, id) = named_type ty id in
 		  (ty, Some id) in
 	    let bitfield (c, e) =
 	      let (c_n, c) = string_mcode c in
@@ -865,15 +862,14 @@ let visitor mode bind option_default
     let k p =
       rewrap p
 	(match Ast0.unwrap p with
-	  Ast0.Param(ty,midattrs,Some id,attrs) ->
-            let (((ty_mid_id_n,ty),midattr),id) = named_type ty midattrs id in
+	  Ast0.Param(ty,Some id,attrs) ->
+            let ((ty_mid_id_n,ty),id) = named_type ty id in
 	    let (attr_n,attr) = map_split_bind attribute attrs in
-	    (bind ty_mid_id_n attr_n, Ast0.Param(ty,midattr,Some id,attr))
-	| Ast0.Param(ty,midattrs,None,attrs) ->
+	    (bind ty_mid_id_n attr_n, Ast0.Param(ty,Some id,attr))
+	| Ast0.Param(ty,None,attrs) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (attr_n,attr) = map_split_bind attribute attrs in
-            assert (midattrs = []);
-            (bind ty_n attr_n, Ast0.Param(ty,[],None,attr))
+            (bind ty_n attr_n, Ast0.Param(ty,None,attr))
 	| Ast0.MetaParam(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaParam(name,constraints,pure))

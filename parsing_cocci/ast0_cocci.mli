@@ -195,7 +195,7 @@ and binaryOp = base_binaryOp wrap
 (* Types *)
 
 and base_typeC =
-    ConstVol        of Ast_cocci.const_vol mcode list * typeC
+    ConstVol        of Ast_cocci.const_vol mcode list * attr list * typeC
   | BaseType        of Ast_cocci.baseType * string mcode list
   | Signed          of Ast_cocci.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
@@ -241,9 +241,9 @@ and enum_base = string mcode (* : *) * typeC
 and base_declaration =
     MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
   | AsDecl        of declaration * declaration
-  | Init of Ast_cocci.storage mcode option * typeC * attr list * ident *
+  | Init of Ast_cocci.storage mcode option * typeC * ident *
         attr list * string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit of Ast_cocci.storage mcode option * typeC * attr list * ident *
+  | UnInit of Ast_cocci.storage mcode option * typeC * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * attr list * ident (* name *) *
@@ -331,7 +331,7 @@ and initialiser_list = initialiser dots
 (* Parameter *)
 
 and base_parameterTypeDef =
-    Param         of typeC * attr list * ident option * attr list
+    Param         of typeC * ident option * attr list
   | MetaParam     of Ast_cocci.meta_name mcode * constraints * pure
   | MetaParamList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | AsParam       of parameterTypeDef * expression (* expr, always metavar *)

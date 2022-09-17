@@ -561,7 +561,7 @@ and rewrap_iso t t1 = rewrap t (do_isos (Ast0.get_iso t)) t1
 and typeC allminus t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
-      Ast0.ConstVol(cv,ty) ->
+      Ast0.ConstVol(cv,attrs,ty) ->
 	let rec collect_disjs t =
 	  match Ast0.unwrap t with
 	    Ast0.DisjType(_,types,_,_) ->
@@ -573,7 +573,7 @@ and typeC allminus t =
 	  List.map
 	    (function ty ->
 	      Ast.Type
-		(allminus, List.map mcode cv,
+		(allminus, List.map mcode cv, List.map attribute attrs,
 		 rewrap_iso ty (base_typeC allminus ty)))
 	    (collect_disjs ty) in
 	(* one could worry that isos are lost because we flatten the
@@ -652,22 +652,20 @@ and declaration d =
 	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
-    | Ast0.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+    | Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let stg = get_option mcode stg in
 	let ty = typeC allminus ty in
 	let id = ident id in
-	let midattr = List.map attribute midattr in
 	let endattr = List.map attribute endattr in
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem)
-    | Ast0.UnInit(stg,ty,midattr,id,endattr,sem) ->
+	Ast.Init(stg,tyid,endattr,eq,ini,sem)
+    | Ast0.UnInit(stg,ty,id,endattr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
-	let midattr = List.map attribute midattr in
 	let endattr = List.map attribute endattr in
-	Ast.UnInit(get_option mcode stg,typeC allminus ty,midattr,ident id,endattr,
+	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,endattr,
 		   mcode sem)
     | Ast0.FunProto(fi,attr,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in
@@ -888,9 +886,9 @@ and designator = function
 and parameterTypeDef p =
   rewrap p no_isos
     (match Ast0.unwrap p with
-      Ast0.Param(ty,midattr,id,attr) ->
+      Ast0.Param(ty,id,attr) ->
 	let allminus = check_allminus.VT0.combiner_rec_parameter p in
-	Ast.Param(typeC allminus ty,List.map attribute midattr,get_option ident id,List.map attribute attr)
+	Ast.Param(typeC allminus ty,get_option ident id,List.map attribute attr)
     | Ast0.MetaParam(name,cstr,_) ->
 	Ast.MetaParam(mcode name,constraints cstr,unitary,false)
     | Ast0.MetaParamList(name,lenname,cstr,_) ->

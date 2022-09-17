@@ -1708,10 +1708,10 @@ storage:
 
 decl: t=ctype d=direct_declarator(type_ident) endar=attr_list
 	{ let (i,fn) = d in
-	Ast0_cocci.wrap(Ast0_cocci.Param(fn t, midar, Some i, endar)) }
+	Ast0_cocci.wrap(Ast0_cocci.Param(fn t, Some i, endar)) }
     | t=ctype
         { (*verify in FunDecl*)
-          Ast0_cocci.wrap(Ast0_cocci.Param(t, [], None, ar)) }
+          Ast0_cocci.wrap(Ast0_cocci.Param(t, None, ar)) }
     | TMetaParam
 	{ let (nm,cstr,pure,clt) = $1 in
 	Ast0_cocci.wrap

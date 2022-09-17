@@ -397,9 +397,9 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-  | Init of storage mcode option * fullType * attr list * ident *
+  | Init of storage mcode option * fullType * ident *
         attr list * string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit of storage mcode option * fullType * attr list * ident *
+  | UnInit of storage mcode option * fullType * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * attr list * ident (* name *) *
@@ -499,7 +499,7 @@ and initialiser = base_initialiser wrap
 (* Parameter *)
 
 and base_parameterTypeDef =
-    Param         of fullType * attr list * ident option * attr list
+    Param         of fullType * ident option * attr list
 
   | MetaParam     of meta_name mcode * constraints * keep_binding * inherited
   | MetaParamList of meta_name mcode * listlen * constraints * keep_binding *

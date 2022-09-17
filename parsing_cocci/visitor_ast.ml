@@ -316,10 +316,11 @@ let combiner bind option_default
   and fullType ft =
     let k ft =
       match Ast.unwrap ft with
-	Ast.Type(_,cv,ty) ->
+	Ast.Type(_,cv,attrs,ty) ->
 	  let lcv = List.map cv_mcode cv in
+	  let lattrs = List.map attribute attrs in
 	  let lty = typeC ty in
-          multibind (lcv@[lty])
+          multibind (lcv@lattrs@[lty])
       |	Ast.AsType(ty,asty) ->
 	  let lty = fullType ty in
 	  let lasty = fullType asty in
@@ -473,22 +474,20 @@ let combiner bind option_default
 	  let ldecl = declaration decl in
 	  let lasdecl = declaration asdecl in
 	  bind ldecl lasdecl
-      |	Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+      |	Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
-	  let lmidattr = multibind (List.map attribute midattr) in
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let leq = string_mcode eq in
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
-          multibind [lstg; lid; lmidattr; lendattr; leq; lini; lsem]
-      | Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
+          multibind [lstg; lid; lendattr; leq; lini; lsem]
+      | Ast.UnInit(stg,ty,id,endattr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
-	  let lmidattr = multibind (List.map attribute midattr) in
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let lsem = string_mcode sem in
-          multibind [lstg; lid; lmidattr; lendattr; lsem]
+          multibind [lstg; lid; lendattr; lsem]
       | Ast.FunProto(fi,attr,name,lp1,params,va,rp1,sem) ->
 	  let lfi = List.map fninfo fi in
 	  let lattr = multibind (List.map attribute attr) in
@@ -660,15 +659,13 @@ let combiner bind option_default
   and parameterTypeDef p =
     let k p =
       match Ast.unwrap p with
-        Ast.Param(ty,midattr,Some id,attr) ->
+        Ast.Param(ty,Some id,attr) ->
           let lid = named_type ty id in
-	  let lmidattr = multibind (List.map attribute midattr) in
           let lattr = multibind (List.map attribute attr) in
-          multibind [lid;lmidattr;lattr]
-      | Ast.Param(ty,midattr,None,attr) ->
+          multibind [lid;lattr]
+      | Ast.Param(ty,None,attr) ->
           let lty = fullType ty in
           let lattr = multibind (List.map attribute attr) in
-          assert (midattr = []);
           bind lty lattr
       | Ast.MetaParam(name,_,_,_) -> meta_mcode name
       | Ast.MetaParamList(name,_,_,_,_) -> meta_mcode name
@@ -1505,24 +1502,22 @@ let rebuilder
 	    let ldecl = declaration decl in
 	    let lasdecl = declaration asdecl in
 	    Ast.AsDecl(ldecl, lasdecl)
-	| Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+	| Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
-	    let lmidattr = List.map attribute midattr in
 	    let lid = ident id in
 	    let lendattr = List.map attribute endattr in
 	    let leq = string_mcode eq in
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
-	    Ast.Init(lstg, lty, lmidattr, lid, lendattr, leq, lini, lsem)
-	| Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
+	    Ast.Init(lstg, lty, lid, lendattr, leq, lini, lsem)
+	| Ast.UnInit(stg,ty,id,endattr,sem) ->
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
-	    let lmidattr = List.map attribute midattr in
 	    let lid = ident id in
 	    let lendattr = List.map attribute endattr in
 	    let lsem = string_mcode sem in
-	    Ast.UnInit(lstg, lty, lmidattr, lid, lendattr, lsem)
+	    Ast.UnInit(lstg, lty, lid, lendattr, lsem)
 	| Ast.FunProto(fi,attr,name,lp,params,va,rp,sem) ->
 	    let lfi = List.map fninfo fi in
 	    let lattr = List.map attribute attr in
@@ -1708,9 +1703,9 @@ let rebuilder
     let k p =
       Ast.rewrap p
 	(match Ast.unwrap p with
-	  Ast.Param(ty,midattr,id,attr) ->
+	  Ast.Param(ty,id,attr) ->
             Ast.Param
-              (fullType ty,List.map attribute midattr, get_option ident id,List.map attribute attr)
+              (fullType ty, get_option ident id,List.map attribute attr)
 	| Ast.MetaParam(name,constraints,keep,inherited) ->
 	    Ast.MetaParam(meta_mcode name,constraints,keep,inherited)
 	| Ast.MetaParamList(name,lenname_inh,constraints,keep,inherited) ->
