@@ -416,7 +416,7 @@ let fixSimpleTypeForCPPType x =
   returnType
 
 let fix_add_params_ident x =
-  let (s, ty, st, _attrs, _dotdot, _constr_inh) = x in
+  let (s, ty, st, _dotdot, _constr_inh) = x in
   match Ast_c.unwrap_typeC ty with
   | FunctionType (fullt, (params, bool)) ->
 
@@ -1742,7 +1742,7 @@ decl2:
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        let iistart = Ast_c.fakeInfo () in
        DeclList (
-         ($2 +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
+         ($2 +> List.map (fun ((attrs, ((name,f),endattrs), ini), iivirg) ->
            let s = str_of_name name in
 	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
@@ -1847,11 +1847,11 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 /*(* declarators (right part of type and variable) *)*/
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator2:
- | declaratori                  { ($1, NoInit) }
- | declaratori teq initialize   { ($1, ValInit($2, $3)) }
+ | declaratori                  { (Ast_c.noattr, $1, NoInit) }
+ | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
  /* C++ only */
  | declaratori TOParCplusplusInit macro_argument_list TCPar
-     { ($1, ConstrInit($3,[$2;$4])) }
+     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* declarators (right part of type and variable). *)*/
@@ -1861,15 +1861,15 @@ init_declarator2:
 /*(* attributes to it causes conflicts, thus the need for this rule. *)*/
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator_attrs2:
- | declaratori                  { ($1, NoInit) }
- | attributes declaratori       { ($2, NoInit) }
- | declaratori teq initialize   { ($1, ValInit($2, $3)) }
- | attributes declaratori teq initialize   { ($2, ValInit($3, $4)) }
+ | declaratori                  { (Ast_c.noattr, $1, NoInit) }
+ | attributes declaratori       { ($1, $2, NoInit) }
+ | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
+ | attributes declaratori teq initialize   { ($1, $2, ValInit($3, $4)) }
  /* C++ only */
  | declaratori TOParCplusplusInit macro_argument_list TCPar
-     { ($1, ConstrInit($3,[$2;$4])) }
+     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
  | attributes declaratori TOParCplusplusInit macro_argument_list TCPar
-     { ($2, ConstrInit($4,[$3;$5])) }
+     { ($1, $2, ConstrInit($4,[$3;$5])) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
@@ -2263,7 +2263,6 @@ enum_base:
        (dt "spec_qualif" ();
 	([],(addTypeD(
 	     (dt "type" (); $2),nullDecl)))) in
-     let (attrs, ds) = tmp in
      let (returnType, _) = fixDeclSpecForDecl tmp in
      Some (Some returnType, [$1]) }
  | /* empty */ { None }
@@ -2329,15 +2328,13 @@ ctor_dtor:
      let ret = mk_ty NoType [] in
      let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
      let storage = ((NoSto,false),[]) in
-     let attrs = [] in
-     (id, ty, storage, attrs, [], []) }
+     (id, ty, storage, [], []) }
  | Tconstructorname topar parameter_type_list tcpar TDotDot constr_extra_list {
      let id = RegularName (mk_string_wrap $1) in
      let ret = mk_ty NoType [] in
      let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
      let storage = ((NoSto,false),[]) in
-     let attrs = [] in
-     (id, ty, storage, attrs, [$5], $6) }
+     (id, ty, storage, [$5], $6) }
 
 constr_extra:
  | TIdent TOPar argument_list TCPar
@@ -2362,10 +2359,10 @@ introduce conflicts in the parser. */
 
 declaratorfd:
  | declarator
-   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr, [] }
+   { et "declaratorfd" (); $1, Ast_c.noattr }
  /*(* gccext: *)*/
 | declarator end_attributes
-   { et "declaratorfd" (); let (attr,dec) = $1 in dec, attr, $2 }
+   { et "declaratorfd" (); $1, $2 }
 
 /*(*************************************************************************)*/
 /*(* cpp directives *)*/
@@ -2434,7 +2431,7 @@ define_val:
      }
  | decl_spec abstract_declarator
      { let returnType = fixDeclSpecForMacro $1 in
-       let typ = (snd $2) returnType in
+       let typ = $2 returnType in
        DefineType typ
      }
 
@@ -2586,9 +2583,8 @@ cpp_other:
        warning [$2] "type defaults to 'int'"
 	 (mk_ty defaultInt [fakeInfo fake_pi]) in
      let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
-     let attrs = Ast_c.noattr in
      let sto = (NoSto, false), [] in
-     (id, fixOldCDecl ty, sto, attrs, [], []) in
+     (id, fixOldCDecl ty, sto, [], []) in
    let fundef = fixFunc ((fninfo, []), $5, None) in
    Definition fundef
  }
