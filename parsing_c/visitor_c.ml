@@ -324,9 +324,8 @@ let rec vk_expr = fun bigf expr ->
 
     | SizeOfExpr  (e) -> exprf e
     | SizeOfType  (t) -> vk_type bigf t
-    | Cast    (t, a, e) ->
+    | Cast    (t, e) ->
         vk_type bigf t;
-        a +> List.iter (vk_attribute bigf);
         exprf e
 
     (* old: | StatementExpr (((declxs, statxs), is)), is2 ->
@@ -487,11 +486,12 @@ and vk_type = fun bigf t ->
 
   let rec typef x = bigf.ktype (k, bigf) x
   and k t =
-    let (q, t) = t in
+    let (q, a, t) = t in
     let (unwrap_q, iiq) = q in
     let (unwrap_t, iit) = t in
     iif iiq;
     iif iit;
+    a +> List.iter (vk_attribute bigf);
     match unwrap_t with
     | NoType -> ()
     | BaseType _ -> ()
@@ -596,13 +596,11 @@ and vk_onedecl_opt process_type = fun bigf onedecl ->
       v_type_bis = tbis;
       v_storage = _sto;
       v_attr = attrs;
-      v_midattr = midattrs;
       v_endattr = endattrs})  ->
 
     (if process_type then vk_type bigf t);
     (* don't go in tbis *)
     attrs +> List.iter (vk_attribute bigf);
-    midattrs +> List.iter (vk_attribute bigf);
     var +> Common.do_option (fun (name, iniopt) ->
       vk_name bigf name;
       (match iniopt with
@@ -737,14 +735,12 @@ and vk_def = fun bigf d ->
        f_storage = sto;
        f_constr_inherited = constr_inh;
        f_body = statxs;
-       f_attr = attrs;
        f_endattr = endattrs;
        f_old_c_style = oldstyle;
       }, ii
         ->
         iif ii;
         iif iib;
-        attrs +> List.iter (vk_attribute bigf);
         endattrs +> List.iter (vk_attribute bigf);
         vk_type bigf returnt;
         vk_name bigf name;
@@ -1298,10 +1294,9 @@ let rec vk_expr_s = fun bigf expr ->
 
       | SizeOfExpr  (e) -> SizeOfExpr (exprf e)
       | SizeOfType  (t) -> SizeOfType (vk_type_s bigf t)
-      | Cast    (t, a, e)  ->
+      | Cast    (t, e)  ->
           Cast
             (vk_type_s bigf t,
-             a +> List.map (vk_attribute_s bigf),
              exprf e)
 
       | StatementExpr (statxs, is) ->
@@ -1527,11 +1522,12 @@ and vk_type_s = fun bigf t ->
   let rec typef t = bigf.ktype_s (k,bigf) t
   and iif ii = vk_ii_s bigf ii
   and k t =
-    let (q, t) = t in
+    let (q, a, t) = t in
     let (unwrap_q, iiq) = q in
     (* strip_info_visitor needs iiq to be processed before iit *)
     let iif_iiq = iif iiq in
     let q' = unwrap_q in
+    let a' = a +> List.map (vk_attribute_s bigf) in
     let (unwrap_t, iit) = t in
     let t' =
       match unwrap_t with
@@ -1569,6 +1565,7 @@ and vk_type_s = fun bigf t ->
 			 vk_argument_s bigf e, iif ii))
     in
     (q', iif_iiq),
+    a',
     (t', iif iit)
 
 
@@ -1631,7 +1628,6 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
             v_storage = sto;
             v_local= local;
             v_attr = attrs;
-            v_midattr = midattrs;
             v_endattr = endattrs} =
   let iif ii = vk_ii_s bigf ii in
     {v_namei =
@@ -1652,7 +1648,6 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
      v_storage = sto;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
-     v_midattr = midattrs +> List.map (vk_attribute_s bigf);
      v_endattr = endattrs +> List.map (vk_attribute_s bigf);
     }
 
@@ -1771,7 +1766,6 @@ and vk_def_s = fun bigf d ->
        f_storage = sto;
        f_constr_inherited = constr_inh;
        f_body = statxs;
-       f_attr = attrs;
        f_endattr = endattrs;
        f_old_c_style = oldstyle;
       }, ii
@@ -1785,8 +1779,6 @@ and vk_def_s = fun bigf d ->
               vk_expr_s bigf elem, iif iicomma);
          f_body =
             vk_statement_sequencable_list_s bigf statxs;
-         f_attr =
-            attrs +> List.map (vk_attribute_s bigf);
          f_endattr =
             endattrs +> List.map (vk_attribute_s bigf);
          f_old_c_style =
@@ -2161,14 +2153,10 @@ and vk_param_s = fun bigf param ->
     {p_namei = swrapopt;
      p_register = (b, iib);
      p_type=ft;
-     p_attr = attrs;
-     p_midattr = midattrs;
      p_endattr = endattrs} = param in
   { p_namei = swrapopt +> Common.map_option (vk_name_s bigf);
     p_register = (b, iif iib);
     p_type = vk_type_s bigf ft;
-    p_attr = attrs +> List.map (vk_attribute_s bigf);
-    p_midattr = midattrs +> List.map (vk_attribute_s bigf);
     p_endattr = endattrs +> List.map (vk_attribute_s bigf);
   }
 

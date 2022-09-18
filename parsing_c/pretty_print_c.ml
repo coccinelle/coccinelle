@@ -27,7 +27,7 @@ let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 (* Types *)
 (*****************************************************************************)
 
-type type_with_ident = Ast_c.fullType -> (unit -> unit) -> (unit -> unit) -> unit
+type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
 type type_with_ident_rest = Ast_c.fullType -> (unit -> unit) -> unit
 
 type 'a printer = 'a -> unit
@@ -155,8 +155,8 @@ let mk_pretty_printers
 	pp_expression e
     | SizeOfType  (t),     [i1;i2;i3] ->
         pr_elem i1; pr_elem i2; pp_type t; pr_elem i3
-    | Cast    (t, a, e),   [i1;i2] ->
-        pr_elem i1; pp_type t; pp_attributes a;
+    | Cast    (t, e),   [i1;i2] ->
+        pr_elem i1; pp_type t;
         pr_elem i2; pp_expression e;
 
     | StatementExpr (statxs, [ii1;ii2]),  [i1;i2] ->
@@ -215,7 +215,7 @@ let mk_pretty_printers
     | CondExpr (_,_,_) | Sequence (_,_) | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
-    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_,_)
+    | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
     | ParenExpr (_) | New (_) | Delete (_,_)
     | Defined (_)),_ -> raise (Impossible 95)
@@ -561,44 +561,44 @@ and pp_string_format (e,ii) =
 *)
   and (pp_type_with_ident:
 	 (unit -> unit) option -> (storage * il) option ->
-	   fullType -> (unit -> unit) option -> attribute list ->
-	   attribute list ->  unit) =
-    fun ident sto ft midattr attrs endattrs ->
+	   fullType -> attribute list ->  unit) =
+    fun ident sto ft endattrs ->
       pp_base_type ft  sto;
-      Common.do_option (fun f -> f()) midattr;
       (match (ident, Ast_c.unwrap_typeC ft) with
 	(Some _,_) | (_,Pointer _) -> pr_space()
       |	_ -> ());
-      pp_type_with_ident_rest ident ft attrs endattrs
+      pp_type_with_ident_rest ident ft [] endattrs
 
 
   and (pp_base_type: fullType -> (storage * il) option -> unit) =
-    fun (qu, (ty, iity)) sto ->
-      let get_sto sto =
-        match sto with
-        | None -> [] | Some (s, iis) -> (*assert (List.length iis = 1);*) iis
-      in
-      let print_sto_qu (sto, (qu, iiqu)) =
-        let all_ii = get_sto sto @ iiqu in
-        all_ii
-          +> List.sort Ast_c.compare_pos
-          +> Common.print_between pr_space pr_elem
+    fun (qu, attr, (ty, iity)) sto ->
+      let get_aux_positions sto (qu, iiqu) attrs =
+	let sto_info =
+	  match sto with
+	    None -> []
+	  | Some (s,iis) ->
+	      List.map (fun i -> (i,fun _ -> pr_elem i)) iis in
+	let qu_info =
+	  List.map (fun i -> (i,fun _ -> pr_elem i)) iiqu in
+	let attr_info =
+	  List.map
+	    (function attr ->
+	      let iis = Lib_parsing_c.ii_of_attr attr in
+	      (List.hd iis, fun _ -> pp_attribute attr))
+	    attrs in
+	sto_info @ qu_info @ attr_info in
 
-      in
-      let print_sto_qu_ty (sto, (qu, iiqu), iity) =
-        let all_ii = get_sto sto @ iiqu @ iity in
-        let all_ii2 = all_ii +> List.sort Ast_c.compare_pos in
+      let print_ii_list info =
+	List.sort (fun (i1,_) (i2,_) -> Ast_c.compare_pos i1 i2) info +>
+	Common.print_between pr_space (fun (_,pr) -> pr()) in
 
-        if all_ii <> all_ii2
-        then begin
-            (* TODO in fact for pointer, the qualifier is after the type
-             * cf -test strangeorder
-             *)
-          pr2 "STRANGEORDER";
-          all_ii2 +> Common.print_between pr_space pr_elem
-        end
-        else all_ii2 +> Common.print_between pr_space pr_elem
-      in
+      let print_sto_qu _ =
+	print_ii_list (get_aux_positions sto qu attr) in
+
+      let print_sto_qu_ty ii =
+	let sto_qu = get_aux_positions sto qu attr in
+	let ty = List.map (fun i -> (i,fun _ -> pr_elem i)) ii in
+	print_ii_list (sto_qu@ty) in
 
       match ty, iity with
       |	(NoType,_) -> ()
@@ -609,7 +609,7 @@ and pp_string_format (e,ii) =
           pp_base_type returnt sto
 
       | (StructUnion (su, sopt, base_classes, fields),iis) ->
-          print_sto_qu (sto, qu);
+          print_sto_qu();
 
           (match sopt,iis with
           | Some s , [su;id;dotdot;lb;rb] ->
@@ -635,8 +635,8 @@ and pp_string_format (e,ii) =
           | x -> raise (Impossible 102)
 	  )
 
-      | (EnumDef  (enident, base, enumt), iis) ->
-	  pp_base_type (qu, snd enident) sto;
+      | (EnumDef  ((_qu,_attr,enident), base, enumt), iis) ->
+	  pp_base_type (qu, attr, enident) sto;
 
 	  let rest = 
 	    match (base, iis) with
@@ -662,26 +662,24 @@ and pp_string_format (e,ii) =
 	  |  _ -> raise (Impossible 1031))
 
       | (BaseType _, iis) ->
-          print_sto_qu_ty (sto, qu, iis);
+          print_sto_qu_ty iis;
 
       | (StructUnionName (s, structunion), iis) ->
           assert (List.length iis = 2);
-          print_sto_qu_ty (sto, qu, iis);
+          print_sto_qu_ty iis;
 
       | (EnumName  (key, s), ii) ->
-          print_sto_qu_ty (sto, qu, ii)
+          print_sto_qu_ty ii
   
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
-	  (* hope that sto before qu is right... cf print_sto_qu_ty *)
-	  let stoqulp = get_sto sto @ (snd qu) @ [dec] in
-	  Common.print_between pr_space pr_elem stoqulp;
+	  print_sto_qu_ty [dec];
 	  pr_elem lp; pp_expression l; pr_elem cm;
 	  do_option pp_expression p; pr_elem rp
 
       | (TypeName (name,typ), noii) ->
           assert (noii = []);
           let (_s, iis) = get_s_and_info_of_name name in
-          print_sto_qu_ty (sto, qu, [iis]);
+          print_sto_qu_ty [iis];
 
           if !Flag_parsing_c.pretty_print_typedef_value
           then begin
@@ -696,7 +694,7 @@ and pp_string_format (e,ii) =
 	  pp_base_type t sto
 
       | (TypeOfExpr (e), iis) ->
-          print_sto_qu (sto, qu);
+          print_sto_qu();
           (match iis with
           | [itypeof;iopar;icpar] ->
               pr_elem itypeof; pr_elem iopar;
@@ -706,7 +704,7 @@ and pp_string_format (e,ii) =
           )
 
       | (TypeOfType (t), iis) ->
-          print_sto_qu (sto, qu);
+          print_sto_qu();
           (match iis with
           | [itypeof;iopar;icpar] ->
               pr_elem itypeof; pr_elem iopar;
@@ -714,7 +712,7 @@ and pp_string_format (e,ii) =
               pr_elem icpar;
           | _ -> raise (Impossible 106)
 	  )
-      | (AutoType, iis) -> print_sto_qu_ty (sto, qu, iis)
+      | (AutoType, iis) -> print_sto_qu_ty iis
 
       | (TemplateType(name,es),ii) ->
 	  let (i1,i2) = Common.tuple_of_list2 ii in
@@ -747,8 +745,7 @@ and pp_string_format (e,ii) =
 		  | None -> None
                   | Some name -> Some (function _ -> pp_name name)
                 in
-		pp_type_with_ident identinfo None typ None
-		  Ast_c.noattr Ast_c.noattr;
+		pp_type_with_ident identinfo None typ Ast_c.noattr;
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
@@ -758,7 +755,7 @@ and pp_string_format (e,ii) =
 		    pp_type typ;
 		| Some name ->
 		    pp_type_with_ident (Some (function _ -> pp_name name))
-		      None typ None Ast_c.noattr Ast_c.noattr;
+		      None typ Ast_c.noattr;
 		    );
                 pr_elem iidot;
 		pp_expression expr
@@ -774,8 +771,7 @@ and pp_string_format (e,ii) =
 		    | None -> None
 		    | Some name -> Some (function _ -> pp_name name)
 		  in
-		  pp_type_with_ident_rest identinfo typ
-		    Ast_c.noattr Ast_c.noattr
+		  pp_type_with_ident_rest identinfo typ Ast_c.noattr Ast_c.noattr
 
 	      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
 		  iivirg +> List.iter pr_elem;
@@ -840,7 +836,22 @@ and pp_string_format (e,ii) =
   and (pp_type_with_ident_rest: (unit -> unit) option ->
     fullType -> attribute list -> attribute list -> unit) =
 
-    fun ident (((qu, iiqu), (ty, iity)) as fullt) attrs endattrs ->
+    fun ident (((qu, iiqu), attrs, (ty, iity)) as fullt) extra_attrs endattrs ->
+
+      pp_attributes extra_attrs;
+
+      let print_qu_attr _ =
+	let qu_info =
+	  List.map (fun i -> (i,fun _ -> pr_elem i)) iiqu in
+	let attr_info =
+	  List.map
+	    (function attr ->
+	      let iis = Lib_parsing_c.ii_of_attr attr in
+	      (List.hd iis, fun _ -> pp_attribute attr))
+	    attrs in
+	let info = qu_info @ attr_info in
+	List.sort (fun (i1,_) (i2,_) -> Ast_c.compare_pos i1 i2) info +>
+	List.iter (function (_,x) -> pr_space(); x()) in
 
       let print_ident ident = Common.do_option (fun f ->
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
@@ -874,38 +885,36 @@ and pp_string_format (e,ii) =
           (* bug: pp_type_with_ident_rest None t;      print_ident ident *)
           pp_type_left t;
           pr_elem i;
-          iiqu +>
-          List.iter (* le const est forcement apres le '*' *)
-            (function x -> pr_space(); pr_elem x);
-          if iiqu <> [] || get_comments_after i <> []
+	  print_qu_attr();
+          if iiqu <> [] || attrs <> [] || get_comments_after i <> []
           then pr_space();
           print_ident ident
 
       (* ugly special case ... todo? maybe sufficient in practice *)
       | (ParenType ttop, [i1;i2]) ->
           (match Ast_c.get_ty_and_ii ttop with
-          | (_q1, (Pointer t2, [ipointer])) ->
-              (match Ast_c.get_ty_and_ii t2 with
-              | (q2, (FunctionType t, ii3)) ->
+          | (Pointer t2, [ipointer]) ->
+              (match t2 with
+              | (q2, attrs, (FunctionType t, ii3)) ->
 
-		  pp_type_left (q2, mk_tybis (FunctionType t) ii3);
+		  pp_type_left (q2, attrs, mk_tybis (FunctionType t) ii3);
 		  pr_elem i1;
 		  pr_elem ipointer;
 		  print_ident ident;
 		  pr_elem i2;
-		  pp_type_right (q2, mk_tybis (FunctionType t) ii3);
+		  pp_type_right (q2, attrs, mk_tybis (FunctionType t) ii3);
               | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
-                  pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
+                  pp_type_with_ident_rest ident ttop Ast_c.noattr Ast_c.noattr;
               )
           (* another ugly special case *)
-          | _q1, (Array (eopt,t2 ), [iarray1;iarray2]) ->
+          | (Array (eopt,t2 ), [iarray1;iarray2]) ->
               (match Ast_c.get_ty_and_ii t2 with
-              | (_q2, (Pointer t3, [ipointer])) ->
-                  (match Ast_c.get_ty_and_ii t3 with
-                  | (q3, (FunctionType t, iifunc)) ->
+              | (Pointer t3, [ipointer]) ->
+                  (match t3 with
+                  | (q3, attrs, (FunctionType t, iifunc)) ->
 
-		      pp_type_left (q3, mk_tybis (FunctionType t) iifunc);
+		      pp_type_left (q3, attrs, mk_tybis (FunctionType t) iifunc);
 		      pr_elem i1;
 		      pr_elem ipointer;
 		      print_ident ident;
@@ -913,26 +922,26 @@ and pp_string_format (e,ii) =
 		      do_option pp_expression eopt;
 		      pr_elem iarray2;
 		      pr_elem i2;
-		      pp_type_right (q3, mk_tybis (FunctionType t) iifunc)
+		      pp_type_right (q3, attrs, mk_tybis (FunctionType t) iifunc)
                   | _ ->
                       pr2 "PB PARENTYPE ZARB, I forget about the ()";
-                      pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
+                      pp_type_with_ident_rest ident ttop Ast_c.noattr Ast_c.noattr;
                   )
               | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
-                  pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
+                  pp_type_with_ident_rest ident ttop Ast_c.noattr Ast_c.noattr;
               )
           | _t ->
 
               pr2 "PB PARENTYPE ZARB, I forget about the ()";
-              pp_type_with_ident_rest ident ttop attrs Ast_c.noattr;
+              pp_type_with_ident_rest ident ttop Ast_c.noattr Ast_c.noattr;
           )
 
 
       | (Array (eopt, t), [i1;i2]) ->
           pp_type_left fullt;
 
-          iiqu +> List.iter pr_elem;
+          print_qu_attr();
           print_ident ident;
 
           pp_type_right fullt;
@@ -941,7 +950,7 @@ and pp_string_format (e,ii) =
       | (FunctionType (returnt, paramst), [i1;i2]) ->
           pp_type_left fullt;
 
-          iiqu +> List.iter pr_elem;
+          print_qu_attr();
           print_ident ident;
 
           pp_type_right fullt;
@@ -952,16 +961,27 @@ and pp_string_format (e,ii) =
 
 
   and (pp_type_left: fullType -> unit) =
-    fun ((qu, iiqu), (ty, iity)) ->
+    fun ((qu, iiqu), attr, (ty, iity)) ->
+      let print_qu_attr _ =
+	let qu_info =
+	  List.map (fun i -> (i,fun _ -> pr_elem i)) iiqu in
+	let attr_info =
+	  List.map
+	    (function attr ->
+	      let iis = Lib_parsing_c.ii_of_attr attr in
+	      (List.hd iis, fun _ -> pp_attribute attr))
+	    attr in
+	let info = qu_info @ attr_info in
+	List.sort (fun (i1,_) (i2,_) -> Ast_c.compare_pos i1 i2) info +>
+	List.iter (function (_,x) -> pr_space(); x()) in
+
       match ty, iity with
 	(NoType,_) -> failwith "pp_type_left: unexpected NoType"
       | (Pointer t, [i]) ->
           pp_type_left t;
           pr_elem i;
-          iiqu +>
-          List.iter (* le const est forcement apres le '*' *)
-            (function x -> pr_space(); pr_elem x);
-          if iiqu <> [] || get_comments_after i <> []
+	  print_qu_attr();
+          if iiqu <> [] || attr <> [] || get_comments_after i <> []
           then pr_space()
 
       | (Array (eopt, t), [i1;i2]) -> pp_type_left t
@@ -998,13 +1018,13 @@ and pp_string_format (e,ii) =
         pp_type t
     | Some name ->
 	pp_type_with_ident (Some (function _ -> pp_name name))
-	  None t None Ast_c.noattr Ast_c.noattr
+	  None t Ast_c.noattr
 
   and pp_params (ts, (b, iib)) =
     pp_param_list ts;
     iib +> List.iter pr_elem
 
-  and pp_type_right (((qu, iiqu), (ty, iity)) : fullType) =
+  and pp_type_right (((qu, iiqu), attrs, (ty, iity)) : fullType) =
     match ty, iity with
       (NoType,_) -> failwith "pp_type_right: unexpected NoType"
     | (Pointer t, [i]) ->  pp_type_right t
@@ -1037,9 +1057,9 @@ and pp_string_format (e,ii) =
     | (FunctionType _ | Array _ | Pointer _), _ -> raise (Impossible 111)
 
   and pp_type t =
-    pp_type_with_ident None None t None Ast_c.noattr Ast_c.noattr
-  and pp_type_ident t midattr i =
-    pp_type_with_ident (Some i) None t (Some midattr) Ast_c.noattr Ast_c.noattr
+    pp_type_with_ident None None t Ast_c.noattr
+  and pp_type_ident t i =
+    pp_type_with_ident (Some i) None t Ast_c.noattr
   and pp_type_ident_rest t i =
     pp_type_with_ident_rest (Some i) t Ast_c.noattr Ast_c.noattr
   and pp_base_type2 t =
@@ -1051,7 +1071,6 @@ and pp_string_format (e,ii) =
                    v_type = returnType;
                    v_storage = storage;
                    v_attr = attrs;
-                   v_midattr = midattrs;
                    v_endattr = endattrs;
                   },[])::xs),
 	       iivirg::ifakestart::iisto) ->
@@ -1064,9 +1083,10 @@ and pp_string_format (e,ii) =
         (* handling the first var. Special case, we print the whole type *)
 	(match var with
 	| Some (name, iniopt) ->
+	    assert (attrs = []); (* can only be non-null for later variables *)
 	    pp_type_with_ident
 	      (Some (function _ -> pp_name name)) (Some (storage, iisto))
-	      returnType None  (attrs@midattrs) endattrs;
+	      returnType endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
 	    | Ast_c.ValInit(iini,init) ->
@@ -1083,7 +1103,6 @@ and pp_string_format (e,ii) =
 	    v_type = returnType;
 	    v_storage = storage2;
 	    v_attr = attrs;
-	    v_midattr = midattrs;
 	    v_endattr = endattrs;
 	  }, iivirg) ->
 
@@ -1236,7 +1255,6 @@ and pp_init (init, iinit) =
           f_storage = sto;
 	  f_constr_inherited = constr_inh;
           f_body = statxs;
-          f_attr = attrs;
 	} = defbis in
     let (idotdot,isto) =
       if !Flag.c_plus_plus = Flag.Off
@@ -1247,52 +1265,11 @@ and pp_init (init, iinit) =
 	| _ -> ([List.hd isto],List.tl isto) in
     pr_elem ifakestart;
 
-    pp_type_with_ident None (Some (sto, isto))
-      returnt None Ast_c.noattr Ast_c.noattr;
+    pp_type_with_ident None (Some (sto, isto)) returnt Ast_c.noattr;
 
-    pp_attributes attrs;
-    pr_space();
     pp_name name;
 
     pr_elem iifunc1;
-
-    (* not anymore, cf tests/optional_name_parameter and
-       macro_parameter_shortcut.c
-           (match paramst with
-           | [(((bool, None, t), ii_b_s), iicomma)] ->
-               assert
-		 (match t with
-		 | qu, (BaseType Void, ii) -> true
-		 | _ -> true
-	       );
-               assert (iicomma = []);
-               assert (ii_b_s = []);
-               pp_type_with_ident None None t
-
-           | paramst ->
-               paramst +> List.iter (fun (((bool, s, t), ii_b_s), iicomma) ->
-	       iicomma +> List.iter pr_elem;
-
-	       (match b, s, ii_b_s with
-               | false, Some s, [i1] ->
-		   pp_type_with_ident (Some (function _ -> pr_elem i1)) None t;
-               | true, Some s, [i1;i2] ->
-		   pr_elem i1;
-		   pp_type_with_ident (Some (function _ -> pr_elem i2)) None t;
-
-            (* in definition we have name for params, except when f(void) *)
-               | _, None, _ -> raise Impossible
-               | false, None, [] ->
-
-               | _ -> raise Impossible
-           )));
-
-         (* normally ii represent the ",..." but it is also abused
-            with the f(void) case *)
-         (* assert (List.length iib <= 2);*)
-           iib +> List.iter pr_elem;
-
-        *)
     pp_param_list paramst;
     iib +> List.iter pr_elem;
     pr_elem iifunc2;
@@ -1485,8 +1462,7 @@ and pp_init (init, iinit) =
     | F.FunHeader (({f_name =idb;
                       f_type = (rett, (paramst,(isvaargs,iidotsb)));
                       f_storage = stob;
-                      f_body = body;
-                      f_attr = attrs},ii) as def) ->
+                      f_body = body},ii) as def) ->
 
 			assert (body = []);
 			pp_fun_header def

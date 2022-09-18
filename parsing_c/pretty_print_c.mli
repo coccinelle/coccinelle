@@ -1,4 +1,4 @@
-type type_with_ident = Ast_c.fullType -> (unit -> unit) -> (unit -> unit) -> unit
+type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
 type type_with_ident_rest = Ast_c.fullType -> (unit -> unit) -> unit
 
 type 'a printer = 'a -> unit

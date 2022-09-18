@@ -178,8 +178,8 @@ let cache_name_visitor file =
                       | _ -> CacheVarFunc in
                     add_to_name_cache
                       (Ast_c.str_of_name name) (file, exp_type)
-               | {Ast_c.v_namei = None; Ast_c.v_type = typ} ->
-                    (match (Ast_c.unwrap (snd typ)) with
+               | {Ast_c.v_namei = None; Ast_c.v_type = (q,a,typ)} ->
+                    (match (Ast_c.unwrap typ) with
                       Ast_c.StructUnion (_, Some n, _, def) ->
                         (* Cache field names *)
                         cache_struct_fields n def
@@ -222,13 +222,13 @@ let get_type_visitor file l =
                           add_to_ret
                             (RetVarOrFunc(s, (typ, Ast_c.NotLocalVar))) in
                     f ()
-               | {Ast_c.v_namei = None; Ast_c.v_type = typ} ->
-                   (match (Ast_c.unwrap (snd typ)) with
+               | {Ast_c.v_namei = None; Ast_c.v_type = (q,a,typ)} ->
+                   (match (Ast_c.unwrap typ) with
                      Ast_c.StructUnion (su, snameopt, _, def) ->
                        (match snameopt with
                          Some s ->
                            let def' = Lib.al_fields def in
-                           let ii = Ast_c.get_ii_typeC_take_care (snd typ) in
+                           let ii = Ast_c.get_ii_typeC_take_care typ in
                            let ii' = Lib.al_ii ii in
                            add_to_ret
                              (RetStructUnionNameDef (s, ((su, def'),ii')))

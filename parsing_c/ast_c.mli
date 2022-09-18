@@ -23,7 +23,7 @@ and name =
   | CppConcatenatedName of string wrap wrap2 list
   | CppVariadicName of string wrap
   | CppIdentBuilder of string wrap * string wrap wrap2 list
-and fullType = typeQualifier * typeC
+and fullType = typeQualifier * attribute list * typeC
 and typeC = typeCbis wrap
 and typeCbis =
     NoType
@@ -83,8 +83,6 @@ and parameterType = {
   p_namei : name option;
   p_register : bool wrap;
   p_type : fullType;
-  p_attr : attribute list;
-  p_midattr : attribute list;
   p_endattr : attribute list;
 }
 and typeQualifier = typeQualifierbis wrap
@@ -118,7 +116,7 @@ and expressionbis =
   | RecordPtAccess of expression * name
   | SizeOfExpr of expression
   | SizeOfType of fullType
-  | Cast of fullType * attribute list * expression
+  | Cast of fullType * expression
   | StatementExpr of compound wrap
   | Constructor of fullType * initialiser
   | ParenExpr of expression
@@ -231,7 +229,6 @@ and onedecl = {
   v_storage : storage;
   v_local : local_decl;
   v_attr : attribute list;
-  v_midattr : attribute list;
   v_endattr : attribute list;
 }
 and v_init =
@@ -261,7 +258,6 @@ and definitionbis = {
   f_storage : storage;
   f_constr_inherited: expression wrap2 list;
   f_body : compound;
-  f_attr : attribute list;
   f_endattr : attribute list;
   f_old_c_style : declaration list option;
 }
@@ -415,20 +411,20 @@ val unwrap : 'a * 'b -> 'a
 val unwrap2 : 'a * 'b -> 'a
 val unwrap_expr : ('a * 'b) * 'c -> 'a
 val rewrap_expr : ('a * 'b) * 'c -> 'd -> ('d * 'b) * 'c
-val unwrap_typeC : 'a * ('b * 'c) -> 'b
-val rewrap_typeC : 'a * ('b * 'c) -> 'd -> 'a * ('d * 'c)
-val unwrap_typeCbis : 'a * 'b -> 'a
+val unwrap_typeC : fullType -> typeCbis
+val rewrap_typeC : fullType -> typeCbis -> fullType
+val unwrap_typeCbis : typeC -> typeCbis
 val unwrap_st : 'a * 'b -> 'a
 val mk_e : 'a -> 'b -> ('a * ('c option * test) ref) * 'b
 val mk_e_bis : 'a -> 'b -> 'c -> ('a * 'b) * 'c
-val mk_ty : 'a -> 'b -> (typeQualifierbis * 'c list) * ('a * 'b)
+val mk_ty : 'a -> 'b -> (typeQualifierbis * 'c list) * attribute list * ('a * 'b)
 val mk_tybis : 'a -> 'b -> 'a * 'b
 val mk_st : 'a -> 'b -> 'a * 'b
 val get_ii_typeC_take_care : 'a * 'b -> 'b
 val get_ii_st_take_care : 'a * 'b -> 'b
 val get_ii_expr_take_care : 'a * 'b -> 'b
 val get_st_and_ii : 'a * 'b -> 'a * 'b
-val get_ty_and_ii : 'a * ('b * 'c) -> 'a * ('b * 'c)
+val get_ty_and_ii : 'a * attribute list * ('b * 'c) -> 'b * 'c
 val get_e_and_ii : 'a * 'b -> 'a * 'b
 val get_type_expr : ('a * 'b ref) * 'c -> 'b
 val set_type_expr : ('a * 'b ref) * 'c -> 'b -> unit

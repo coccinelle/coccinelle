@@ -178,7 +178,7 @@ and name =
  *)
 
 
-and fullType = typeQualifier * typeC
+and fullType = typeQualifier * attribute list * typeC
  and typeC = typeCbis wrap (* todo reput wrap3 *)
 
   and typeCbis =
@@ -297,8 +297,6 @@ and fullType = typeQualifier * typeC
         { p_namei: name option;
           p_register: bool wrap;
           p_type: fullType;
-          p_attr: attribute list;
-          p_midattr: attribute list;
           p_endattr: attribute list;
         }
         (* => (bool (register) * fullType) list * bool *)
@@ -361,7 +359,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
 
   | SizeOfExpr     of expression
   | SizeOfType     of fullType
-  | Cast           of fullType * attribute list * expression
+  | Cast           of fullType * expression
 
   (* gccext: *)
   | StatementExpr of compound wrap (* ( )     new scope *)
@@ -597,7 +595,6 @@ and declaration =
          v_storage: storage;
          v_local: local_decl; (* cocci: *)
          v_attr: attribute list; (* gccext: *)
-         v_midattr: attribute list; (* gccext: *)
          v_endattr: attribute list; (* gccext: *)
        }
      and v_init =
@@ -648,7 +645,6 @@ and definition = definitionbis wrap (* ( ) { } fakestart sto *)
     f_storage: storage;
     f_constr_inherited: expression wrap2 list;
     f_body: compound;
-    f_attr: attribute list; (* gccext: *)
     f_endattr: attribute list; (* gccext: *)
     f_old_c_style: declaration list option;
   }
@@ -1006,8 +1002,8 @@ let unwrap2 = fst
 let unwrap_expr ((unwrap_e, typ), iie) = unwrap_e
 let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 
-let unwrap_typeC (qu, (typeC, ii)) = typeC
-let rewrap_typeC (qu, (typeC, ii)) newtypeC  = (qu, (newtypeC, ii))
+let unwrap_typeC (qu, attr, (typeC, ii)) = typeC
+let rewrap_typeC (qu, attr, (typeC, ii)) newtypeC  = (qu, attr, (newtypeC, ii))
 
 let unwrap_typeCbis (typeC, ii) = typeC
 
@@ -1017,7 +1013,7 @@ let unwrap_st (unwrap_st, ii) = unwrap_st
 let mk_e unwrap_e ii = (unwrap_e, noType()), ii
 let mk_e_bis unwrap_e ty ii = (unwrap_e, ty), ii
 
-let mk_ty typeC ii = nQ, (typeC, ii)
+let mk_ty typeC ii = nQ, [], (typeC, ii)
 let mk_tybis typeC ii = (typeC, ii)
 
 let mk_st unwrap_st ii = (unwrap_st, ii)
@@ -1028,7 +1024,7 @@ let get_ii_st_take_care (st, ii) = ii
 let get_ii_expr_take_care (e, ii) = ii
 
 let get_st_and_ii (st, ii) = st, ii
-let get_ty_and_ii (qu, (typeC, ii)) = qu, (typeC, ii)
+let get_ty_and_ii (qu, attrs, (typeC, ii)) = (typeC, ii)
 let get_e_and_ii  (e, ii) = e, ii
 
 
