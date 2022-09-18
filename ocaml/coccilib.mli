@@ -117,8 +117,6 @@ module Ast_c :
       p_namei : name option;
       p_register : bool wrap;
       p_type : fullType;
-      p_attr : attribute list;
-      p_midattr : attribute list;
       p_endattr : attribute list;
     }
     and typeQualifier = typeQualifierbis wrap
@@ -163,7 +161,7 @@ module Ast_c :
       | RecordPtAccess of expression * name
       | SizeOfExpr of expression
       | SizeOfType of fullType
-      | Cast of fullType * attribute list * expression
+      | Cast of fullType * expression
       | StatementExpr of compound wrap
       | Constructor of fullType * initialiser
       | ParenExpr of expression
@@ -319,7 +317,6 @@ module Ast_c :
       v_storage : storage;
       v_local : local_decl;
       v_attr : attribute list;
-      v_midattr : attribute list;
       v_endattr : attribute list;
     }
     and v_init =
@@ -357,7 +354,6 @@ module Ast_c :
       f_storage : storage;
       f_constr_inherited: expression wrap2 list;
       f_body : compound;
-      f_attr : attribute list;
       f_endattr : attribute list;
       f_old_c_style : declaration list option;
     }
@@ -2650,7 +2646,7 @@ module Ast_cocci :
       | ArrayAccess of expression * string mcode * expression * string mcode
       | RecordAccess of expression * string mcode * ident
       | RecordPtAccess of expression * string mcode * ident
-      | Cast of string mcode * fullType * attr list * string mcode * expression
+      | Cast of string mcode * fullType * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * fullType * string mcode
       | Delete of string mcode * expression
@@ -2845,13 +2841,13 @@ module Ast_cocci :
     and const_vol = Ast_cocci.const_vol = Const | Volatile
     and base_declaration =
       Ast_cocci.base_declaration =
-        Init of storage mcode option * fullType * attr list * ident *
+        Init of storage mcode option * fullType * ident *
             attr list * string mcode * initialiser * string mcode
-      | UnInit of storage mcode option * fullType * attr list * ident *
+      | UnInit of storage mcode option * fullType * ident *
             attr list * string mcode
       | FunProto of fninfo list * attr list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
-      | TyDecl of fullType * attr list * string mcode
+      | TyDecl of fullType * string mcode
       | MacroDecl of storage mcode option * ident * string mcode *
           expression dots * string mcode * attr list * string mcode
       | MacroDeclInit of storage mcode option * ident * string mcode *
@@ -3409,7 +3405,7 @@ module Ast0_cocci :
       | ArrayAccess of expression * string mcode * expression * string mcode
       | RecordAccess of expression * string mcode * ident
       | RecordPtAccess of expression * string mcode * ident
-      | Cast of string mcode * typeC * attr list * string mcode * expression
+      | Cast of string mcode * typeC * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * typeC * string mcode
       | Delete of string mcode * expression
@@ -3502,13 +3498,13 @@ module Ast0_cocci :
       Ast0_cocci.base_declaration =
         MetaDecl of Ast_cocci.meta_name mcode * constraints * pure
       | AsDecl of declaration * declaration
-      | Init of Ast_cocci.storage mcode option * typeC * attr list * ident *
+      | Init of Ast_cocci.storage mcode option * typeC * ident *
           attr list * string mcode * initialiser * string mcode
-      | UnInit of Ast_cocci.storage mcode option * typeC * attr list * ident *
+      | UnInit of Ast_cocci.storage mcode option * typeC * ident *
           attr list * string mcode
       | FunProto of fninfo list * attr list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
-      | TyDecl of typeC * attr list * string mcode
+      | TyDecl of typeC * string mcode
       | MacroDecl of Ast_cocci.storage mcode option * ident * string mcode *
           expression dots * string mcode * attr list * string mcode
       | MacroDeclInit of Ast_cocci.storage mcode option * ident *

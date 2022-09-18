@@ -161,7 +161,7 @@ let rec print_typedef pr = function
 	  td in
       if not (List.mem s !typedefs)
       then (typedefs := s::!typedefs; pr "typedef "; pr s; pr ";\n")
-  | (Ast_c.Pointer(_,ty),_) -> print_typedef pr ty
+  | (Ast_c.Pointer(_,_,ty),_) -> print_typedef pr ty
   | _ -> ()
 
 let rewrap_str s ii =

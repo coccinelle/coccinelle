@@ -19,11 +19,11 @@ let undanger = update_danger nodanger
 
 let undanger_type = function
     (* undanger the right bits *)
-    (tq,(Ast_c.Array (sz,ty),ii)) ->
+    (tq,attr,(Ast_c.Array (sz,ty),ii)) ->
       List.iter (Visitor_c.vk_info undanger) ii;
       Common.do_option (Visitor_c.vk_expr undanger) sz
-  | (tq,(Ast_c.Pointer _,ii)) -> List.iter (Visitor_c.vk_info undanger) ii
-  | (tq,(Ast_c.FunctionType(ret,(params,(dots,dotsii))),ii)) ->
+  | (tq,attr,(Ast_c.Pointer _,ii)) -> List.iter (Visitor_c.vk_info undanger) ii
+  | (tq,attr,(Ast_c.FunctionType(ret,(params,(dots,dotsii))),ii)) ->
       List.iter (Visitor_c.vk_info undanger) ii;
       List.iter (Visitor_c.vk_info undanger) dotsii;
       Visitor_c.vk_param_list undanger params

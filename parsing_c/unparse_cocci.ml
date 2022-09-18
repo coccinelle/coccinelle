@@ -455,7 +455,7 @@ let rec expression e =
     | Ast_c.RecordPtAccess (e, name) -> postfix
     | Ast_c.SizeOfExpr (e) -> unary
     | Ast_c.SizeOfType (t) -> unary
-    | Ast_c.Cast (t, a, e) -> cast
+    | Ast_c.Cast (t, e) -> cast
     | Ast_c.StatementExpr (statxs, _) -> top
     | Ast_c.Constructor (t, init) -> unary
     | Ast_c.ParenExpr (e) -> primary
@@ -503,9 +503,8 @@ let rec expression e =
       loop exp postfix; mcode print_string pt; ident field
   | Ast.RecordPtAccess(exp,ar,field) ->
       loop exp postfix; mcode print_string ar; ident field
-  | Ast.Cast(lp,ty,attr,rp,exp) ->
+  | Ast.Cast(lp,ty,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
-      print_attribute_list attr;
       mcode print_string rp; loop exp cast
   | Ast.SizeOfExpr(sizeof,exp) ->
       mcode print_string sizeof; loop exp unary
@@ -995,10 +994,10 @@ and declaration d =
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
-  | Ast.Init(stg,ty,midattr,id,endattr,eq,ini,sem) ->
+  | Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
-      print_named_type ty midattr (fun _ -> ident id);
+      print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem

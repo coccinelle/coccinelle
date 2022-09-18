@@ -59,10 +59,10 @@ let dumb_astcocci_rule_elem = function
  | A.DisjRuleElem _ -> failwith "not possible - compiled away in asttoctl"
 
 let dumb_astcocci_decl = function
-   A.UnInit (stg, typa, midattr, sa, endattr, _)     -> ()
- | A.Init (stg, typa, midattr, sa, endattr, _, expa, _) -> ()
+   A.UnInit (stg, typa, sa, endattr, _)     -> ()
+ | A.Init (stg, typa, sa, endattr, _, expa, _) -> ()
  | A.FunProto _ -> ()
- | A.TyDecl (typa, _, _)     -> ()
+ | A.TyDecl (typa, _)     -> ()
  | A.MacroDecl(stg, fn, _, eas, _, _, _) -> ()
  | A.MacroDeclInit(stg, fn, _, eas, _, _, _, _) -> ()
  | A.MetaDecl _ -> ()
@@ -73,12 +73,12 @@ let dumb_astcocci_decl = function
  | A.OptDecl _ -> ()
 
 let dumb_astcocci_initialiser = function (* seems same as the above *)
-    A.Init(stg,ty,midattr,id,endattr,eq,ini,sem) -> ()
-  | A.UnInit(stg,ty,midattr,id,endattr,sem) -> ()
+    A.Init(stg,ty,id,endattr,eq,ini,sem) -> ()
+  | A.UnInit(stg,ty,id,endattr,sem) -> ()
   | A.FunProto _ -> ()
   | A.MacroDecl(_, fn, _, eas, _, _, _) -> ()
   | A.MacroDeclInit(_, fn, _, eas, _, _, _, _) -> ()
-  | A.TyDecl(ty,attr,sem) -> ()
+  | A.TyDecl(ty,sem) -> ()
   | A.Typedef(d,ty1,ty2,pv) -> ()
   | A.DisjDecl(decls) -> ()
   | A.ConjDecl(decls) -> ()
@@ -123,7 +123,7 @@ let dumb_astcocci_expr = function
  | A.ArrayAccess (ea1, _, ea2, _) -> ()
  | A.RecordAccess (ea, _, ida) -> ()
  | A.RecordPtAccess (ea, _, ida) -> ()
- | A.Cast (_, typa, attra, _, ea) -> ()
+ | A.Cast (_, typa, _, ea) -> ()
  | A.SizeOfExpr (_, ea) -> ()
  | A.SizeOfType (_, _, typa, _) -> ()
  | A.Delete (_, ea) -> ()

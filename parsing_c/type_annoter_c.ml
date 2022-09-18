@@ -584,7 +584,7 @@ let rec is_simple_expr expr =
       true
   | Binary (e1, op, e2) ->
       true
-  | Cast (t, a, e) ->
+  | Cast (t, e) ->
       true
   | ParenExpr (e) -> is_simple_expr e
 
@@ -1078,7 +1078,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
 
     (* -------------------------------------------------- *)
-    | Cast (t, a, e) ->
+    | Cast (t, e) ->
         k expr;
         (* todo: if infer, can "push" info ? add_types_expr [t] e ? *)
         make_info_def_fix (Lib.al_type t)
