@@ -430,9 +430,9 @@ let test_attributes file =
   let ast = Parse_c.program_of_program2 ast2 in
 
   Visitor_c.vk_program { Visitor_c.default_visitor_c with
-    Visitor_c.kdef = (fun (k, bigf) (defbis, ii) ->
-      let sattr  = Ast_c.s_of_attr defbis.f_attr in
-      pr2 (spf "%-30s: %s" (Ast_c.str_of_name (defbis.f_name)) sattr);
+    Visitor_c.ktype = (fun (k, bigf) (q, a, t) ->
+      let sattr  = Ast_c.s_of_attr a in
+      pr2 (spf "%s" sattr);
     );
     Visitor_c.kdecl = (fun (k, bigf) decl ->
       match decl with

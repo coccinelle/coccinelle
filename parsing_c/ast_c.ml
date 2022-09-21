@@ -1450,7 +1450,7 @@ let get_local_ii_of_tybis_inlining_ii_of_name ty =
 
 (* the following is used to obtain the argument to LocalVar *)
 let info_of_type ft =
-  let (qu, ty) = ft in
+  let (qu, attr, ty) = ft in
   (* bugfix: because of string->name, the ii can be deeper *)
   let ii = get_local_ii_of_tybis_inlining_ii_of_name ty in
   match ii with

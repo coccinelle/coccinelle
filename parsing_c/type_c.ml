@@ -204,14 +204,14 @@ let get_opt_type e =
 
 
 let structdef_to_struct_name ty =
-  let (qu, tybis) = ty in
+  let (qu, attr, tybis) = ty in
   match Ast_c.unwrap_typeC ty with
   | (StructUnion (su, sopt, base_classes, fields)) ->
       let iis = Ast_c.get_ii_typeC_take_care tybis in
       (match sopt, iis with
       (* todo? but what if correspond to a nested struct def ? *)
       | Some s , [i1;i2;i3;i4] ->
-          qu, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
+          qu, attr, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
       | None, _ ->
           ty
       | x -> raise (Impossible 126)
@@ -305,8 +305,6 @@ let (fake_function_type:
                 { Ast_c.p_namei = None;
                   p_register = false, Ast_c.noii;
                   p_type = ft;
-                  p_attr = [];
-                  p_midattr = [];
                   p_endattr = [];
                 }
               in

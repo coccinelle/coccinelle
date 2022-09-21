@@ -481,7 +481,7 @@ val ii_of_name : name -> il
 val get_local_ii_of_expr_inlining_ii_of_name :
   (expressionbis * 'a) * il -> il
 val get_local_ii_of_tybis_inlining_ii_of_name : typeCbis * il -> il
-val info_of_type : 'a * (typeCbis * il) -> parse_info option
+val info_of_type : 'a * attribute list * (typeCbis * il) -> parse_info option
 val get_local_ii_of_st_inlining_ii_of_name :
   statementbis * info list -> info list
 val name_of_parameter : parameterType -> string option

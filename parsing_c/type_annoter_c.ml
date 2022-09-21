@@ -968,20 +968,20 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
     | Unary (e, GetRef) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
 
-	let inherited_fn tq1 ((tq2,ii),ty) =
+	let inherited_fn tq1 ((tq2,ii),attr,ty) = (* should we union the attrs? *)
 	  let cst = tq1.Ast_c.const || tq2.Ast_c.const in
 	  let vol = tq1.Ast_c.volatile || tq2.Ast_c.volatile in
 	  let res = tq1.Ast_c.restrict || tq2.Ast_c.restrict in
-	  (({Ast_c.const=cst;Ast_c.volatile=vol;Ast_c.restrict=res},ii),ty) in
+	  (({Ast_c.const=cst;Ast_c.volatile=vol;Ast_c.restrict=res},ii),attr,ty) in
 	let rec inherited e =
 	  match Ast_c.unwrap_expr e with
 	    RecordAccess (e, _) ->
 	      (match Ast_c.get_onlytype_expr e with
-		Some ((tq1,_),_) -> inherited_fn tq1
+		Some ((tq1,_),_,_) -> inherited_fn tq1
 	      | None -> (fun x -> x))
 	  | RecordPtAccess (e, _) ->
 	      (match Ast_c.get_onlytype_expr e with
-		Some(_,(Ast_c.Pointer ((tq1,_),_),_)) -> inherited_fn tq1
+		Some(_,_,(Ast_c.Pointer ((tq1,_),_,_),_)) -> inherited_fn tq1
 	      | Some t -> (fun x -> x)
 	      | None -> (fun x -> x))
 	  | ArrayAccess (e, _) -> inherited e
@@ -1056,7 +1056,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                 let s = Ast_c.str_of_name namefld in
                 let f = Ast_c.file_of_info (Ast_c.info_of_name namefld) in
                 let ret_typ =
-                  (match (Ast_c.unwrap (snd t)) with
+                  (match Ast_c.unwrap_typeC t with
                     Ast_c.StructUnionName(su, sname) ->
                       get_type_from_includes_cache
                         f s [IC.CacheField sname]
@@ -1364,7 +1364,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
        * the ref of abstract-lined types, but the real one, so
        * don't al_type here
        *)
-      let (_q, tbis) = typ in
+      let (_q, _attr, tbis) = typ in
       match Ast_c.unwrap_typeC typ with
       | StructUnion  (su, Some s, base_classes, structType) ->
           let structType' = Lib.al_fields structType in

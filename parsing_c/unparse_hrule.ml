@@ -188,12 +188,12 @@ let rewrap_prefix_name prefix name =
 
 let print_metavar pr = function
   | {Ast_c.p_namei = Some name;
-     p_type = (_,(Ast_c.Pointer(_,(Ast_c.BaseType(Ast_c.Void),_)),_));
+     p_type = (_,_,(Ast_c.Pointer(_,_,(Ast_c.BaseType(Ast_c.Void),_)),_));
     }
     ->
       let param = Ast_c.str_of_name name in
       pr ("expression "^prefix); pr param
-  | ({Ast_c.p_namei = Some name; p_type = (_,ty)} : Ast_c.parameterType) ->
+  | ({Ast_c.p_namei = Some name; p_type = (_,_,ty)} : Ast_c.parameterType) ->
 
       let name' = rewrap_prefix_name prefix name in
 
@@ -208,8 +208,7 @@ let print_metavar pr = function
         {Ast_c.p_register = (false,[]);
          p_namei = Some name';
          p_type =
-	  (({Ast_c.const = false; Ast_c.volatile = false; Ast_c.restrict = false},[]),
-	   ty);
+	  (({Ast_c.const = false; Ast_c.volatile = false; Ast_c.restrict = false},[]),[],ty);
          p_attr = [];
          p_midattr = [];
          p_endattr = [];
@@ -232,7 +231,7 @@ let print_extra_typedefs pr env =
     { Visitor_c.default_visitor_c with
       Visitor_c.ktype = (fun (k, bigf) ty ->
 	match ty with
-	  (_,((Ast_c.TypeName(_,_),_) as ty)) -> print_typedef pr ty
+	  (_,_,((Ast_c.TypeName(_,_),_) as ty)) -> print_typedef pr ty
 	| _ -> k ty) } in
   List.iter
     (function (_,vl) ->
@@ -458,7 +457,7 @@ let print_metavariables pr local_metas paramst env header_req function_name =
   pr (Printf.sprintf "position _p!=same_%s.p;\n" function_name);
   pr "identifier _f;\n";
   let rec loop = function
-      [] | [{Ast_c.p_type =(_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> []
+      [] | [{Ast_c.p_type =(_,_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> []
     | ((first,_) as f)::rest ->
 	print_metavar pr first; pr ";\n";
 	(make_exp f) :: loop rest in
@@ -489,7 +488,7 @@ let pp_def_gen pr defn isexp =
   pr (Ast_c.str_of_name name); pr "(";
   (if b then failwith "not handling variable argument functions");
   (match paramst with
-    [] | [{Ast_c.p_type = (_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> ()
+    [] | [{Ast_c.p_type = (_,_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> ()
   | (first,_)::rest ->
       print_param_name pr first;
       List.iter (function (x,_) -> pr ", "; print_param_name pr x) rest);
