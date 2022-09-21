@@ -706,14 +706,17 @@ and sz2c = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(_,cv,ty) ->
+    Ast.Type(_,cv,attrs,ty) ->
       (match Ast.unwrap ty with
 	Ast.Pointer(_,_) ->
           typeC ty;
-          param_print_between (function _ -> ()) (fun c -> pr_space();
-          mcode const_vol c) cv
+          param_print_between (function _ -> ())
+	    (fun c -> pr_space(); mcode const_vol c)
+	    cv;
+	  print_attribute_list attrs ~befspace:false ~aftspace:true
       | _ ->
-          param_print_between (function _ -> pr_space()) (mcode const_vol) cv;
+          param_print_between (fun _ -> pr_space()) (mcode const_vol) cv;
+	  print_attribute_list attrs ~befspace:false ~aftspace:true;
           typeC ty)
 
   | Ast.AsType(ty, asty) -> fullType ty
@@ -763,7 +766,7 @@ and typeC ty =
   | Ast.Pointer(ty,star) ->
       fullType ty; ft_space ty; mcode print_string star; eatspace()
   | Ast.ParenType(lp,ty,rp) ->
-      print_parentype (lp,[],ty,rp) (function _ -> ())
+      print_parentype (lp,ty,rp) (function _ -> ())
   | Ast.FunctionType(ty,lp,params,rp) ->
       fullType ty;
       mcode print_string lp;
@@ -845,27 +848,26 @@ and storage = function
 (* --------------------------------------------------------------------- *)
 (* ParenType *)
 
-and print_parentype (lp,midattr,ty,rp) fn =
+and print_parentype (lp,ty,rp) fn =
   let function_pointer ty1 array_dec =
     match Ast.unwrap ty1 with
-     Ast.Type(_,_,fty1) ->
+     Ast.Type(_,_,_,fty1) ->
       (match Ast.unwrap fty1 with
         Ast.Pointer(ty2,star) ->
          (match Ast.unwrap ty2 with
-           Ast.Type(_,_,fty3) ->
+           Ast.Type(_,_,_,fty3) ->
             (match Ast.unwrap fty3 with
               Ast.FunctionType(ty3,lp3,params,rp3) ->
                fullType ty3;
-               print_attribute_list midattr ~befspace:true ~aftspace:true;
                mcode print_string lp;
                mcode print_string star;
                fn();
                let _ =
                  match array_dec with
                    Some(lb1,size,rb1) ->
-                    mcode print_string lb1;
-                    print_option expression size;
-                    mcode print_string rb1
+                     mcode print_string lb1;
+                     print_option expression size;
+                     mcode print_string rb1
                  | None -> () in
                mcode print_string rp;
                mcode print_string lp3;
@@ -876,7 +878,7 @@ and print_parentype (lp,midattr,ty,rp) fn =
        | _ -> failwith "ParenType Unparse_cocci")
      | _ -> failwith "ParenType Unparse_cocci" in
   match Ast.unwrap ty with
-    Ast.Type(_,_,fty1) ->
+    Ast.Type(_,_,_,fty1) ->
       (match Ast.unwrap fty1 with
         Ast.Array(ty1,lb1,size,rb1) ->
           function_pointer ty1 (Some(lb1,size,rb1))
@@ -888,17 +890,18 @@ and print_parentype (lp,midattr,ty,rp) fn =
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
 
-and print_named_type ty midattr id =
+and print_named_type ty id =
   match Ast.unwrap ty with
-    Ast.Type(_,[],ty1) ->
+    Ast.Type(_,[],midattr,ty1) ->
       (match Ast.unwrap ty1 with
         Ast.Array(_,_,_,_) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(_,cv,ty) ->
+		  Ast.Type(_,cv,attrs,ty) ->
 		    param_print_between (function _ -> pr_space()) (mcode const_vol) cv;
+		    print_attribute_list attrs;
 		    loop ty
 		      (function _ ->
 			k ();
@@ -929,7 +932,7 @@ and print_named_type ty midattr id =
           let (res,name_string,line,lcol,rcol) = lookup_metavar name in
           let (info_new,straft) = match res with
               Some (Ast_c.MetaTypeVal ty) ->
-                let (qu, iiqu), (tyy, iity) = ty in
+                let (qu, iiqu), attrs, (tyy, iity) = ty in
                 (match tyy with
                     Ast_c.Pointer _
                   | Ast_c.Array _ -> {info with Ast.straft = [] },info.Ast.straft
@@ -938,11 +941,10 @@ and print_named_type ty midattr id =
           handle_metavar (a,info_new,b,c) (function
               Ast_c.MetaTypeVal ty ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
-                  (function _ -> print_attribute_list midattr ~befspace:false ~aftspace:false)
 		  (function _ -> id())
             | _ -> error name ty "type value expected")
       | Ast.ParenType(lp,ty,rp) ->
-          print_parentype (lp,midattr,ty,rp) (function _ -> id())
+          print_parentype (lp,ty,rp) (function _ -> id())
       | Ast.FunctionType(ty,lp,params,rp) ->
           assert (midattr = []);
           fullType ty;
@@ -954,7 +956,7 @@ and print_named_type ty midattr id =
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)
       | _ -> fullType ty; ft_space ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id())
-  | _ -> fullType ty; ft_space ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id()
+  | _ -> fullType ty; id()
 
 and ty_space ty =
   match Ast.unwrap ty with
@@ -963,7 +965,7 @@ and ty_space ty =
 
 and ft_space ty =
   match Ast.unwrap ty with
-    Ast.Type(_,cv,ty) ->
+    Ast.Type(_,cv,attrs,ty) ->
       let isptr =
 	match Ast.unwrap ty with
 	  Ast.Pointer(_,_) -> true
@@ -974,9 +976,9 @@ and ft_space ty =
 		failwith
 		  (Printf.sprintf "variable %s not known on SP line %d\n"
 		     name_string line)
-	    | Some (Ast_c.MetaTypeVal (tq,ty)) ->
+	    | Some (Ast_c.MetaTypeVal (tq,attrs,ty)) ->
 		(match Ast_c.unwrap ty with
-		  Ast_c.Pointer(_,_) ->  true
+		  Ast_c.Pointer(_,_,_) ->  true
 		| _ -> false)
 	    | _ -> false)
 	| _ -> false in
@@ -1001,15 +1003,13 @@ and declaration d =
       print_attribute_list endattr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,midattr,id,endattr,sem) ->
+  | Ast.UnInit(stg,ty,id,endattr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
-      print_named_type ty midattr (fun _ -> ident id);
       print_attribute_list endattr;
       mcode print_string sem
-  | Ast.FunProto (fninfo,attr,name,lp1,params,va,rp1,sem) ->
+  | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
       List.iter print_fninfo fninfo;
-      print_attribute_list attr ~befspace:false ~aftspace:true;
       ident name; mcode print_string_box lp1;
       parameter_list params;
       begin match va with
@@ -1036,13 +1036,12 @@ and declaration d =
       close_box(); mcode print_string rp;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
-  | Ast.TyDecl(ty,attr,sem) ->
+  | Ast.TyDecl(ty,sem) ->
       fullType ty;
-      print_attribute_list attr;
       mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; pr_space();
-      print_named_type ty [] (fun _ -> typeC id);
+      print_named_type ty (fun _ -> typeC id);
       mcode print_string sem
   | Ast.DisjDecl(_) | Ast.ConjDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl) -> raise CantBeInPlus
@@ -1073,7 +1072,7 @@ and field d =
       begin
 	match id with
 	  None -> fullType ty
-        | Some id -> print_named_type ty [] (fun _ -> ident id)
+        | Some id -> print_named_type ty (fun _ -> ident id)
       end;
       let bitfield (c, e) =
 	mcode print_string c;
@@ -1192,12 +1191,11 @@ and designator = function
 
 and parameterTypeDef p =
   match Ast.unwrap p with
-    Ast.Param(ty,midattr,Some id,attr) ->
-      print_named_type ty midattr (fun _ -> ident id);
+    Ast.Param(ty,Some id,attr) ->
+      print_named_type ty (fun _ -> ident id);
       print_attribute_list attr;
-  | Ast.Param(ty,midattr,None,attr) ->
+  | Ast.Param(ty,None,attr) ->
       fullType ty;
-      assert (midattr = []);
       print_attribute_list attr;
   | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name

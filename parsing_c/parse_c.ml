@@ -378,10 +378,7 @@ let parse_gen ~cpp ~tos parsefunc infos s =
   result
 
 (* Please DO NOT remove this code, even though most of it is not used *)
-let type_of_string s     =
-  let (_,_,typname) =
-    parse_gen ~cpp:false ~tos:true Parser_c.type_name None s in
-  typname
+let type_of_string s     = parse_gen ~cpp:false ~tos:true Parser_c.type_name None s
 let statement_of_string  = parse_gen ~cpp:false ~tos:false Parser_c.statement None
 let expression_of_string = parse_gen ~cpp:false ~tos:false Parser_c.expr None
 let cpp_expression_of_string = parse_gen ~cpp:true ~tos:false Parser_c.expr

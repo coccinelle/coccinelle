@@ -437,9 +437,9 @@ and print_parentype (lp,ty,rp) fn =
                let _ =
                  match array_dec with
                    Some(lb1,size,rb1) ->
-                      mcode print_string lb1;
-                      print_option expression size;
-                      mcode print_string rb1
+                     mcode print_string lb1;
+                     print_option expression size;
+                     mcode print_string rb1
                  | None -> () in
                mcode print_string rp;
                mcode print_string lp3;
@@ -588,7 +588,7 @@ and print_named_type ty id =
 	  loop ty1 (function _ -> ())
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
-      | _ -> fullType ty; id())
+      | _ -> fullType ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id())
   | _ -> fullType ty; id()
 
 and declaration d =
