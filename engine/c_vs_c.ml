@@ -69,14 +69,14 @@ let same_s saopt sbopt =
 
 
 let rec fullType a b =
-  let ((qua,iiqa), tya) = a in
-  let ((qub,iiqb), tyb) = b in
+  let ((qua,iiqa), attra, tya) = a in
+  let ((qub,iiqb), attrb, tyb) = b in
   (qua.const = qub.const && qua.volatile = qub.volatile &&
-   qua.restrict = qub.restrict) >&&>
+   qua.restrict = qub.restrict && && attra = attrb) >&&>
 
     let (qu,iiq) = (qua, iiqa) in
     typeC tya tyb >>= (fun ty ->
-      return ((qu,iiq), ty)
+      return ((qu,iiq), attra, ty)
     )
 
 and typeC tya tyb =
@@ -137,10 +137,10 @@ and typeC tya tyb =
           acc >>= (fun xs ->
 
             let {p_register = (ba,iiba); p_namei = saopt; p_type = ta;
-                 p_attr = attrsa; p_midattr = midattrsa; p_endattr = endattrsa} =
+		  p_endattr = endattrsa} =
               parama in
             let {p_register = (bb,iibb); p_namei = sbopt; p_type = tb;
-                 p_attr = attrsb; p_midattr = midattrsb; p_endattr = endattrsb} =
+		  p_endattr = endattrsb} =
               paramb in
 
             let bx = ba in
@@ -148,19 +148,14 @@ and typeC tya tyb =
 
             let sxopt = saopt in
 
-            let attrsx = attrsa in
-            let midattrsx = midattrsa in
             let endattrsx = endattrsa in
 
             (* todo?  iso on name or argument ? *)
-            (ba = bb && same_s saopt sbopt &&
-              attrsa = attrsb && midattrsa = midattrsb && endattrsa = endattrsb) >&&>
+            (ba = bb && same_s saopt sbopt && endattrsa = endattrsb) >&&>
             fullType ta tb >>= (fun tx ->
               let paramx = { p_register = (bx, iibx);
                              p_namei = sxopt;
                              p_type = tx;
-                             p_attr = attrsx;
-                             p_midattr = midattrsx;
                              p_endattr = endattrsx; } in
               return ((paramx,iix)::xs)
             )
@@ -206,7 +201,6 @@ and typeC tya tyb =
 *)
 
   | AutoType, AutoType -> return (AutoType, iix)
-
 
   | StructUnion (sua, saopt, base_classesa, sta),
       StructUnion (sub, sbopt, base_classesb, stb) ->
@@ -279,12 +273,12 @@ and typeC tya tyb =
    * to the typedef.
    *)
   | TypeName (name, Some a), _ ->
-      fullType a (Ast_c.nQ, tyb) >>= (fun x ->
+      fullType a (Ast_c.nQ, [], tyb) >>= (fun x ->
         return (TypeName (name, Some x), iia)
       )
 
   | _, TypeName (name, Some b) ->
-      fullType b (Ast_c.nQ, tya) >>= (fun x ->
+      fullType b (Ast_c.nQ, [], tya) >>= (fun x ->
         return (TypeName (name, Some x), iib) (* subtil: *)
       )
 

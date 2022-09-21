@@ -140,7 +140,7 @@ let dumb_astcocci_expr = function
  | A.OptExp _ -> ()
 
 let dumb_astcocci_fulltype = function
-    A.Type(_,cv,ty) -> ()
+    A.Type(_,cv,attrs,ty) -> ()
   | A.AsType(_,_) -> ()
   | A.DisjType(types) -> ()
   | A.ConjType(types) -> ()

@@ -50,7 +50,7 @@ module Ast_c :
       | CppConcatenatedName of string wrap wrap2 list
       | CppVariadicName of string wrap
       | CppIdentBuilder of string wrap * string wrap wrap2 list
-    and fullType = typeQualifier * typeC
+    and fullType = typeQualifier * attribute list * typeC
     and typeC = typeCbis wrap
     and typeCbis =
       Ast_c.typeCbis =
@@ -534,20 +534,20 @@ module Ast_c :
     val unwrap2 : 'a * 'b -> 'a
     val unwrap_expr : ('a * 'b) * 'c -> 'a
     val rewrap_expr : ('a * 'b) * 'c -> 'd -> ('d * 'b) * 'c
-    val unwrap_typeC : 'a * ('b * 'c) -> 'b
-    val rewrap_typeC : 'a * ('b * 'c) -> 'd -> 'a * ('d * 'c)
-    val unwrap_typeCbis : 'a * 'b -> 'a
+    val unwrap_typeC : fullType -> typeCbis
+    val rewrap_typeC : fullType -> typeCbis -> fullType
+    val unwrap_typeCbis : typeC -> typeCbis
     val unwrap_st : 'a * 'b -> 'a
     val mk_e : 'a -> 'b -> ('a * ('c option * test) ref) * 'b
     val mk_e_bis : 'a -> 'b -> 'c -> ('a * 'b) * 'c
-    val mk_ty : 'a -> 'b -> (typeQualifierbis * 'c list) * ('a * 'b)
+    val mk_ty : 'a -> 'b -> (typeQualifierbis * 'c list) * attribute list * ('a * 'b)
     val mk_tybis : 'a -> 'b -> 'a * 'b
     val mk_st : 'a -> 'b -> 'a * 'b
     val get_ii_typeC_take_care : 'a * 'b -> 'b
     val get_ii_st_take_care : 'a * 'b -> 'b
     val get_ii_expr_take_care : 'a * 'b -> 'b
     val get_st_and_ii : 'a * 'b -> 'a * 'b
-    val get_ty_and_ii : 'a * ('b * 'c) -> 'a * ('b * 'c)
+    val get_ty_and_ii : 'a * attribute list * ('b * 'c) -> 'b * 'c
     val get_e_and_ii : 'a * 'b -> 'a * 'b
     val get_type_expr : ('a * 'b ref) * 'c -> 'b
     val set_type_expr : ('a * 'b ref) * 'c -> 'b -> unit
@@ -609,7 +609,7 @@ module Ast_c :
     val get_local_ii_of_expr_inlining_ii_of_name :
       (expressionbis * 'a) * il -> il
     val get_local_ii_of_tybis_inlining_ii_of_name : typeCbis * il -> il
-    val info_of_type : 'a * (typeCbis * il) -> parse_info option
+    val info_of_type : 'a * attribute list * (typeCbis * il) -> parse_info option
     val get_local_ii_of_st_inlining_ii_of_name :
       statementbis * info list -> info list
     val name_of_parameter : parameterType -> string option
@@ -859,8 +859,7 @@ module Parser_c :
       (Lexing.lexbuf -> token) -> Lexing.lexbuf -> Ast_c.statement
     val expr : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> Ast_c.expression
     val type_name :
-      (Lexing.lexbuf -> token) -> Lexing.lexbuf ->
-      Ast_c.attribute list * Ast_c.fullType
+      (Lexing.lexbuf -> token) -> Lexing.lexbuf -> Ast_c.fullType
   end
 module Lexer_c :
   sig
@@ -892,7 +891,7 @@ module Lexer_c :
   end
 module Pretty_print_c :
   sig
-    type type_with_ident = Ast_c.fullType -> (unit -> unit) -> (unit -> unit) -> unit
+    type type_with_ident = Ast_c.fullType -> (unit -> unit) -> unit
     type type_with_ident_rest = Ast_c.fullType -> (unit -> unit) -> unit
     type 'a printer = 'a -> unit
     type pretty_printers =
@@ -2785,7 +2784,7 @@ module Ast_cocci :
     and isWchar = Ast_cocci.isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
     and base_fullType =
       Ast_cocci.base_fullType =
-        Type of bool * const_vol mcode list * typeC
+        Type of bool * const_vol mcode list * attr list * typeC
       | AsType of fullType * fullType
       | DisjType of fullType list
       | ConjType of fullType list
@@ -2845,7 +2844,7 @@ module Ast_cocci :
             attr list * string mcode * initialiser * string mcode
       | UnInit of storage mcode option * fullType * ident *
             attr list * string mcode
-      | FunProto of fninfo list * attr list * ident * string mcode * parameter_list *
+      | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
       | TyDecl of fullType * string mcode
       | MacroDecl of storage mcode option * ident * string mcode *
@@ -2910,7 +2909,7 @@ module Ast_cocci :
     and initialiser = base_initialiser wrap
     and base_parameterTypeDef =
       Ast_cocci.base_parameterTypeDef =
-        Param of fullType * attr list * ident option * attr list
+        Param of fullType * ident option * attr list
       | MetaParam of meta_name mcode * constraints * keep_binding * inherited
       | MetaParamList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
@@ -3467,7 +3466,7 @@ module Ast0_cocci :
     and binaryOp = base_binaryOp wrap
     and base_typeC =
       Ast0_cocci.base_typeC =
-        ConstVol of Ast_cocci.const_vol mcode list * typeC
+        ConstVol of Ast_cocci.const_vol mcode list * attr list * typeC
       | BaseType of Ast_cocci.baseType * string mcode list
       | Signed of Ast_cocci.sign mcode * typeC option
       | Pointer of typeC * string mcode
@@ -3502,7 +3501,7 @@ module Ast0_cocci :
           attr list * string mcode * initialiser * string mcode
       | UnInit of Ast_cocci.storage mcode option * typeC * ident *
           attr list * string mcode
-      | FunProto of fninfo list * attr list * ident * string mcode * parameter_list *
+      | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
       | TyDecl of typeC * string mcode
       | MacroDecl of Ast_cocci.storage mcode option * ident * string mcode *
@@ -3562,7 +3561,7 @@ module Ast0_cocci :
     and initialiser_list = initialiser dots
     and base_parameterTypeDef =
       Ast0_cocci.base_parameterTypeDef =
-        Param of typeC * attr list * ident option * attr list
+        Param of typeC * ident option * attr list
       | MetaParam of Ast_cocci.meta_name mcode * constraints * pure
       | MetaParamList of Ast_cocci.meta_name mcode * listlen * constraints *
           pure

@@ -530,12 +530,12 @@ and unsplit_initialiser_bis comma_before = function
 (* coupling: same in type_annotater_c.ml *)
 let structdef_to_struct_name ty =
   match ty with
-  | qu, (B.StructUnion (su, sopt, base_classes, fields), iis) ->
+  | qu, attr, (B.StructUnion (su, sopt, base_classes, fields), iis) ->
       (match sopt,iis with
       | Some s , [i1;i2;i3;i4;i5] ->
-          qu, (B.StructUnionName (su, s), [i1;i2])
+          qu, attr, (B.StructUnionName (su, s), [i1;i2])
       | Some s , [i1;i2;i3;i4] ->
-          qu, (B.StructUnionName (su, s), [i1;i2])
+          qu, attr, (B.StructUnionName (su, s), [i1;i2])
       | None, _ ->
           ty
 
@@ -1141,7 +1141,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
        * differentiate between different cases *)
       let rec matches_id = function
 	  B.Ident(name) -> true
-	| B.Cast(ty,a,e) -> matches_id (B.unwrap_expr e)
+	| B.Cast(ty,e) -> matches_id (B.unwrap_expr e)
 	| _ -> false in
       let form_ok =
 	match (form,expr) with
@@ -1157,7 +1157,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 		    true
                   end
                   else false
-	      | B.Cast(ty,a,e) -> matches (B.unwrap_expr e)
+	      | B.Cast(ty,e) -> matches (B.unwrap_expr e)
 	      |	B.Unary(e,B.UnMinus) -> matches (B.unwrap_expr e)
 	      | B.SizeOfExpr(exp) -> true
 	      | B.SizeOfType(ty) -> true
@@ -1194,7 +1194,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	| Some bitfield', Some tb ->
 	    begin
 	      match fst tb with
-		(_, (Ast_c.FieldType (_, _, Some be), _)) ->
+		(_, _, (Ast_c.FieldType (_, _, Some be), _)) ->
 		  begin
 		    match fst (fst be) with
 		      Ast_c.Constant (Ast_c.Int (value, _)) ->
@@ -1545,33 +1545,18 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
    *    by trying | ea, B.Case (typb, eb) -> match_e_e ea eb ?
    *)
 
-  | A.Cast (ia1, typa, attrsa, ia2, ea),
-    ((B.Cast (typb, attrsb, eb), typ),ii) ->
-
-      let attr_allminus =
-        let attr_is_not_context a =
-          let attr_arg_is_not_context a =
-            match A.unwrap a with
-              A.MacroAttr(_,_,A.CONTEXT(_,_),_) -> false
-            | A.MetaAttr((_,_,A.CONTEXT(_,_),_),_,_,_) -> false
-            | _ -> true in
-          match A.unwrap a with
-          | A.Attribute arg -> attr_arg_is_not_context arg
-          | A.GccAttribute((_,_,A.CONTEXT(_,_),_),_,_,_,_,_) -> false
-          | _ -> true in
-        check_allminus.Visitor_ast.combiner_fullType typa &&
-        List.for_all attr_is_not_context attrsa in
+  | A.Cast (ia1, typa, ia2, ea),
+    ((B.Cast (typb, eb), typ),ii) ->
 
       let (ib1, ib2) = tuple_of_list2 ii in
       fullType typa typb >>= (fun typa typb ->
-      attribute_list attr_allminus attrsa attrsb >>= (fun attrsa attrsb ->
       expression ea eb >>= (fun ea eb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
         return (
-          ((A.Cast (ia1, typa, attrsa, ia2, ea))) +> wa,
-          ((B.Cast (typb, attrsb, eb),typ),[ib1;ib2])
-        ))))))
+          ((A.Cast (ia1, typa, ia2, ea))) +> wa,
+          ((B.Cast (typb, eb),typ),[ib1;ib2])
+        )))))
 
   | A.SizeOfExpr (ia1, ea), ((B.SizeOfExpr (eb), typ),ii) ->
       let ib1 = tuple_of_list1 ii in
@@ -1761,7 +1746,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 
 
   | _,
-     (((B.Cast (_, _, _)|B.ParenExpr _|B.SizeOfType _|B.SizeOfExpr _|
+     (((B.Cast ( _, _)|B.ParenExpr _|B.SizeOfType _|B.SizeOfExpr _|
      B.Constructor (_, _)|
      B.RecordPtAccess (_, _)|
      B.RecordAccess (_, _)|B.ArrayAccess (_, _)|
@@ -2133,7 +2118,7 @@ and argument arga argb =
   | A.TypeExp tya,
     Right (B.ArgType
             {B.p_register=b,iib; p_namei=sopt;p_type=tyb;
-             p_attr=attrs;p_midattr=midattrs;p_endattr=endattrs}) ->
+             p_endattr=endattrs}) ->
       if b || sopt <> None
       then
         (* failwith "the argument have a storage and ast_cocci does not have"*)
@@ -2146,8 +2131,6 @@ and argument arga argb =
             (Right (B.ArgType {B.p_register=(b,iib);
                                p_namei=sopt;
                                p_type=tyb;
-                               p_attr=attrs;
-                               p_midattr=midattrs;
                                p_endattr=endattrs;}))
         ))
 
@@ -2263,58 +2246,38 @@ and parameter = fun parama paramb ->
 	      return
 		(A.MetaParam(ida,constraints,keep,inherited)+>
 		 A.rewrap parama,eb)))
-  | A.Param (typa, midattrsa, idaopt, attrsa), eb ->
+  | A.Param (typa, idaopt, attrsa), eb ->
       let {B.p_register = (hasreg,iihasreg);
 	    p_namei = nameidbopt;
 	    p_type = typb;
-            p_attr = attrsb;
-            p_midattr = midattrsb;
             p_endattr = endattrsb;} = paramb in
 
       let attr_allminus =
         check_allminus.Visitor_ast.combiner_parameter parama in
 
       fullType typa typb >>= (fun typa typb ->
-      attribute_list attr_allminus midattrsa midattrsb >>= (fun midattrsa midattrsb ->
-      attribute_list attr_allminus attrsa endattrsb >>= (fun attrsa attrsb ->
 	match idaopt, nameidbopt with
 	| Some ida, Some nameidb ->
       (* todo: if minus on ida, should also minus the iihasreg ? *)
 	    ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
               return (
-              A.Param (typa, midattrsa, Some ida, attrsa)+> A.rewrap parama,
+              A.Param (typa, Some ida, attrsa)+> A.rewrap parama,
               {B.p_register = (hasreg, iihasreg);
 		p_namei = Some (nameidb);
-                p_type = typb;
-                p_attr = attrsb;
-                p_midattr = midattrsb;
+		p_type = typb;
                 p_endattr = endattrsb;}
 		))
 
 	| None, None ->
 	    return (
-            A.Param (typa, midattrsa, None, attrsa)+> A.rewrap parama,
+            A.Param (typa, None, attrsa)+> A.rewrap parama,
             {B.p_register=(hasreg,iihasreg);
               p_namei = None;
               p_type = typb;
-              p_attr = attrsb;
-              p_midattr = midattrsb;
               p_endattr = endattrsb;}
 	      )
-  (* why handle this case ? because of transform_proto ? we may not
-   * have an ident in the proto.
-   * If have some plus on ida ? do nothing about ida ?
-   *)
- (* not anymore !!! now that julia is handling the proto.
-  | _, Right iihasreg ->
-      return (
-        (idaopt, typa),
-        ((hasreg, None, typb), iihasreg)
-      )
- *)
-
 	| Some _, None -> fail
-	| None, Some _ -> fail)))
+	| None, Some _ -> fail)
   | A.OptParam _, _ ->
       failwith "not handling Opt for Param"
   | _ -> fail
@@ -2550,19 +2513,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
 
- | A.TyDecl (tya0, attra, ptvirga),
+ | A.TyDecl (tya0, ptvirga),
    ({B.v_namei = Some (nameidb, B.NoInit);
      B.v_type = typb0;
      B.v_storage = (B.StoTypedef, inl);
      B.v_local = local;
-     B.v_attr = attrs;
-     B.v_midattr = midattrs;
-     B.v_endattr = endattrs;
+     B.v_attr = []; (* no var, so attrs in type *)
+     B.v_endattr = [];
      B.v_type_bis = typb0bis;
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
-   | A.Type(allminus,cv1,tya1), ((qu,il),typb1) ->
+   | A.Type(allminus,cv1,attr1,tya1), ((qu,il),attrb,typb1) ->
        (* allminus doesn't seem useful here - nothing done with cv1 *)
 
      (match A.unwrap tya1, typb1 with
@@ -2585,52 +2547,50 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        in
        let structnameb =
          structdef_to_struct_name
-           (Ast_c.nQ, (B.StructUnion (sub, sbopt, base_classes, declsb), ii))
+           (Ast_c.nQ, [], (B.StructUnion (sub, sbopt, base_classes, declsb), ii))
        in
        let fake_typeb =
-         Ast_c.nQ,((B.TypeName (nameidb, Some
+         Ast_c.nQ,[],((B.TypeName (nameidb, Some
            (Lib_parsing_c.al_type structnameb))), [])
        in
 
        struct_fields (A.unwrap declsa) declsb >>= (fun undeclsa declsb ->
-         attribute_list allminus attra endattrs >>= (fun attra endattrs ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
          tokenf lba lbb >>= (fun lba lbb ->
          tokenf rba rbb >>= (fun rba rbb ->
          let declsa = A.rewrap declsa undeclsa in
 
          (match A.unwrap tya2 with
-         | A.Type(allminus, cv3, tya3) -> (* again allminus not used *)
+         | A.Type(allminus, cv3, attr3, tya3) -> (* again allminus not used *)
            (match A.unwrap tya3 with
            | A.MetaType(ida, cstr, keep, inherited) ->
 
                fullType tya2 fake_typeb >>= (fun tya2 fake_typeb ->
 		 let tya1 =
 		   A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1 in
-		 let tya0 = A.Type(allminus, cv1, tya1) +> A.rewrap tya0 in
+		 let tya0 = A.Type(allminus, cv1, attr1, tya1) +> A.rewrap tya0 in
 
 
 		 let typb1 = B.StructUnion (sub,sbopt,base_classes,declsb),
                    [iisub] @ iisbopt @ [lbb;rbb] in
-		 let typb0 = ((qu, il), typb1) in
+		 let typb0 = ((qu, il), attrb, typb1) in
 
 		 match fake_typeb with
-		 | _nQ, ((B.TypeName (nameidb, typ)),[]) ->
+		 | _nQ, [], ((B.TypeName (nameidb, typ)),[]) ->
 		     begin
 		       match typ with
 			 Some typ' ->
 			   check_constraints cstr ida (B.MetaTypeVal typ')
 			     (fun () ->
 			       return (
-			       (A.TyDecl (tya0, attra, ptvirga))
+			       (A.TyDecl (tya0, ptvirga))
 			        +> A.rewrap decla,
 			       (({B.v_namei = Some (nameidb, B.NoInit);
 				  B.v_type = typb0;
 				  B.v_storage = (B.StoTypedef, inl);
 				  B.v_local = local;
-				  B.v_attr = attrs;
-				  B.v_midattr = midattrs;
-				  B.v_endattr = endattrs;
+				  B.v_attr = [];
+				  B.v_endattr = [];
 				  B.v_type_bis = typb0bis;
 				},
 				 iivirg),iiptvirgb,iistob)
@@ -2646,24 +2606,23 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
                in
-               let tya0 = A.Type(allminus, cv1, tya1) +> A.rewrap tya0 in
+               let tya0 = A.Type(allminus, cv1, attr1, tya1) +> A.rewrap tya0 in
 
                match structnameb with
-               | _nQ, (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
+               | _nQ, [], (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
 
                    let typb1 = B.StructUnion (sub,sbopt,base_classes,declsb),
                      [iisub;iisbopt;lbb;rbb] in
-                   let typb0 = ((qu, il), typb1) in
+                   let typb0 = ((qu, il), attrb, typb1) in
 
                    return (
-                     (A.TyDecl (tya0, attra, ptvirga)) +> A.rewrap decla,
+                     (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
                      (({B.v_namei = Some (nameidb, B.NoInit);
                         B.v_type = typb0;
                         B.v_storage = (B.StoTypedef, inl);
                         B.v_local = local;
-                        B.v_attr = attrs;
-                        B.v_midattr = midattrs;
-                        B.v_endattr = endattrs;
+                        B.v_attr = [];
+                        B.v_endattr = [];
                         B.v_type_bis = typb0bis;
                      },
                       iivirg),iiptvirgb,iistob)
@@ -2673,61 +2632,57 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            | _ -> raise (Impossible 31)
            )
          | _ -> fail
-       ))))))
+       )))))
      | _ -> fail
      )
    | _ -> fail
    )
 
-   | A.UnInit (stoa, typa, midattra, ida, endattra, ptvirga),
+   | A.UnInit (stoa, typa, ida, endattra, ptvirga),
      ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_);}, iivirg)
      -> fail
 
-   | A.Init (stoa, typa, midattra, ida, endattra, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, endattra, eqa, inia, ptvirga),
      ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_);}, iivirg)
        -> fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
-   | A.UnInit (stoa, typa, midattrsa, ida, endattrsa, ptvirga),
+   | A.UnInit (stoa, typa, ida, endattrsa, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
-       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
-       attribute_list allminus midattrsa midattrs >>= (fun midattrsa middattrs ->
        attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
         (fun stoa (stob, iistob) ->
          return (
-           (A.UnInit (stoa, typa, midattrsa, ida, endattrsa, ptvirga)) +>  A.rewrap decla,
+           (A.UnInit (stoa, typa, ida, endattrsa, ptvirga)) +>  A.rewrap decla,
            (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
-              B.v_midattr = midattrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
 	    iiptvirgb,iistob)
-         )))))))
+         ))))))
 
-   | A.Init (stoa, typa, midattrsa, ida, endattrsa, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
-       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
@@ -2735,46 +2690,42 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
-       attribute_list allminus midattrsa midattrs >>= (fun midattrsa midattrs ->
        attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
        storage_optional_allminus allminus stoa (stob, iistob) >>=
        (fun stoa (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
-           (A.Init (stoa,typa,midattrsa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
+           (A.Init (stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
            (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
               B.v_attr = attrs;
-              B.v_midattr = midattrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
-         )))))))))
+         ))))))))
 
-   | A.Init (stoa, typa, midattra, ida, endattra, eqa, inia, ptvirga),
+   | A.Init (stoa, typa, ida, endattra, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ConstrInit _);
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
-       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg)
        -> fail (* C++ constructor declaration not supported in SmPL *)
 
-   | A.FunProto(fninfoa,attra,ida,lpa,paramsa,va,rpa,sema),
+   | A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema),
      ({B.v_namei = Some (idb, B.NoInit);
        B.v_type =
-	((({B.const = false; B.volatile = false; B.restrict = false},[]) as q),
+	((({B.const = false; B.volatile = false; B.restrict = false},[]) as q),[],
 	 (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), ii));
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
-       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
@@ -2799,35 +2750,32 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         storage_optional_allminus allminus
           stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
         attribute_list allminus attras attrs >>= (fun attras attrs ->
-        attribute_list allminus attra midattrs >>= (fun attra midattrs ->
         fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
 	let fninfoa = put_fninfo stoa tya inla attras in
         parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
           (fun paramsaunwrap paramsb ->
             let paramsa = A.rewrap paramsa paramsaunwrap in
             return (
-              (A.FunProto(fninfoa,attra,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
+              (A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema) +> A.rewrap decla,
 	       (({B.v_namei = Some (idb, B.NoInit);
 		  B.v_type =
-		  (q,
+		  (q,[],
 		   (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))),
 		    [lpb; rpb]));
 		  B.v_storage = stob;
 		  B.v_local = local;
 		  B.v_attr = attrs;
-		  B.v_midattr = midattrs;
 		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
-	      ))))))))))
+	      )))))))))
 
    (* do iso-by-absence here ? allow typedecl and var ? *)
-   | A.TyDecl (typa, attra, ptvirga),
+   | A.TyDecl (typa, ptvirga),
      ({B.v_namei = None; B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
        B.v_attr = attrs;
-       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg)  ->
@@ -2835,20 +2783,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        if stob = (B.NoSto, false)
        then
          fullType typa typb >>= (fun typa typb ->
-         attribute_list allminus attra (attrs @  midattrs @ endattrs) >>= (fun attra endattrs ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
            return (
-             (A.TyDecl (typa, attra, ptvirga)) +> A.rewrap decla,
+             (A.TyDecl (typa, ptvirga)) +> A.rewrap decla,
              (({B.v_namei = None;
                 B.v_type = typb;
                 B.v_storage = stob;
                 B.v_local = local;
                 B.v_attr = attrs;
-                B.v_midattr = midattrs;
                 B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
              }, iivirg), iiptvirgb, iistob)
-           ))))
+           )))
        else fail
         (* (attrs @ endattrs) above is a workaround.
          * Current Coccinelle is having a problem with attrs and endattrs in C parser.
@@ -2891,7 +2837,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_storage = (B.StoTypedef,inline);
        B.v_local = local;
        B.v_attr = attrs;
-       B.v_midattr = midattrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
@@ -2909,11 +2854,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        | A.MetaType(_,_,_,_) ->
 
            let fake_typeb =
-             Ast_c.nQ, ((B.TypeName (nameidb, Ast_c.noTypedefDef())), [])
+             Ast_c.nQ, [], ((B.TypeName (nameidb, Ast_c.noTypedefDef())), [])
            in
            fullTypebis ida fake_typeb >>= (fun ida fake_typeb ->
              match fake_typeb with
-             | _nQ, ((B.TypeName (nameidb, _typ)), []) ->
+             | _nQ, [], ((B.TypeName (nameidb, _typ)), []) ->
                  return (ida, nameidb)
              | _ -> raise (Impossible 32)
            )
@@ -2947,7 +2892,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_storage = (B.StoTypedef,inline);
               B.v_local = local;
               B.v_attr = attrs;
-              B.v_midattr = midattrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
            },
@@ -3577,22 +3521,23 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
    X.optional_qualifier_flag (fun optional_qualifier ->
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
-   | A.Type(allminus,cv,ty1), ((qu,il),ty2) ->
+   | A.Type(allminus,cv,attra,ty1), ((qu,il),attrb,ty2) ->
         (* todo: can be __const__ ? can be const & volatile so
          * should filter instead ?
          *)
-       (match cv with
+       attribute_list allminus attra attrb >>= (fun attra attrb ->
+       match cv with
        (* "iso-by-absence" *)
        | [] ->
            let do_stuff () =
-             fullTypebis ty1 ((qu,il), ty2) >>= (fun ty1 ((qu,il), ty2) ->
+             fullTypebis ty1 ((qu,il), attrb, ty2) >>= (fun ty1 ((qu,il), attrb, ty2) ->
              (if allminus
 	     then minusize_list il
 	     else return ((), il)
 	     ) >>= (fun () il ->
 	       return (
-                 (A.Type(allminus, [], ty1)) +> A.rewrap typa,
-                 ((qu,il), ty2)
+                 (A.Type(allminus, [], attra, ty1)) +> A.rewrap typa,
+                 ((qu,il), attrb, ty2)
                )))
            in
            (match optional_qualifier, qu.B.const || qu.B.volatile || qu.B.restrict with
@@ -3610,10 +3555,10 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
            | A.Const, [i1], true, _
            | A.Volatile, [i1], _, true ->
                tokenf x i1 >>= (fun x i1 ->
-               fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
+               fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
                  return (
-                   (A.Type(allminus, [x], ty1)) +> A.rewrap typa,
-                   ((qu, [i1]), ty2)
+                   (A.Type(allminus, [x], attra, ty1)) +> A.rewrap typa,
+                   ((qu, [i1]), attrb, ty2)
                  )))
            | _ -> fail
            )
@@ -3623,20 +3568,20 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
             * These are in parsing_c/parser_c.mly *)
            (match term x, term y, il with
            | A.Const, A.Volatile, [i1;i2] when qu.B.volatile && qu.B.const ->
-             fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
+             fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
              tokenf x i1 >>= (fun x i1 ->
              tokenf y i2 >>= (fun y i2 ->
                return (
-                 (A.Type(allminus, [x;y], ty1)) +> A.rewrap typa,
-                 ((qu, [i1;i2]), ty2)
+                 (A.Type(allminus, [x;y], attra, ty1)) +> A.rewrap typa,
+                 ((qu, [i1;i2]), attrb, ty2)
                ))))
            | A.Volatile, A.Const, [i1;i2] when qu.B.volatile && qu.B.const ->
-             fullTypebis ty1 (Ast_c.nQ,ty2) >>= (fun ty1 (_, ty2) ->
+             fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
              tokenf x i2 >>= (fun x i2 ->
              tokenf y i1 >>= (fun y i1 ->
                return (
-                 (A.Type(allminus, [x;y], ty1)) +> A.rewrap typa,
-                 ((qu, [i1;i2]), ty2)
+                 (A.Type(allminus, [x;y], attra, ty1)) +> A.rewrap typa,
+                 ((qu, [i1;i2]), attrb, ty2)
                ))))
            | _ -> fail
            )
@@ -3681,7 +3626,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
   (* cas general *)
   | A.MetaType(ida,cstr,keep, inherited),  typb ->
       let type_present =
-	let (tyq, (ty, tyii)) = typb in
+	let (tyq, attr, (ty, tyii)) = typb in
 	match ty with
 	  B.NoType -> false
 	| _ -> true in
@@ -3689,7 +3634,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	match A.get_pos_var ida with
 	  [] -> false
 	| _ ->
-	    let (tyq, (ty, tyii)) = typb in
+	    let (tyq, attr, (ty, tyii)) = typb in
 	    let tyii =
 	      match ty with
 		B.TypeName(name,typ) ->
@@ -3710,9 +3655,9 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 		typb)))
 	      )
       else fail (* K&R, or macro, or C++? *)
-  | unwrap, (qub, typb) ->
+  | unwrap, (qub, attrb, typb) ->
       typeC ta typb >>= (fun ta typb ->
-        return (ta, (qub, typb))
+        return (ta, (qub, attrb, typb))
       )
 
 and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
@@ -3874,11 +3819,11 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
       let match_to_type rebaseb =
 	sign signaopt signbopt >>= (fun signaopt iisignbopt ->
-          let fta = A.rewrap basea (A.Type(false(*don't know*),[],basea)) in
-	let ftb = Ast_c.nQ,(B.BaseType (rebaseb), iibaseb) in
-	fullType fta ftb >>= (fun fta (_,tb) ->
+          let fta = A.rewrap basea (A.Type(false(*don't know*),[],[],basea)) in
+	let ftb = Ast_c.nQ,[],(B.BaseType (rebaseb), iibaseb) in
+	fullType fta ftb >>= (fun fta (_,_,tb) ->
 	  (match A.unwrap fta,tb with
-	    A.Type(_,_,basea), (B.BaseType baseb, ii) ->
+	    A.Type(_,_,_,basea), (B.BaseType baseb, ii) ->
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
 	      (B.BaseType (baseb), iisignbopt @ ii)
@@ -3918,7 +3863,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
 		| _ -> failwith "typeC: signed: base: not possible")
 	| A.MetaType(ida, cstr, keep, inherited) ->
-	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, tb))
+	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, [], tb))
 	      (fun () ->
 		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
 		  (function (basea, Some signaopt) ->
@@ -4056,7 +4001,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-                 A.Type(allminus,[],ty) ->
+                 A.Type(allminus,[],[],ty) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
 		       (match (term sua, sub) with
@@ -4066,7 +4011,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		       (fun _ _ ->
 			 tokenf sua iisub >>= (fun sua iisub ->
 			   let ty =
-                             A.Type(allminus,[],
+                             A.Type(allminus,[],[],
 				    A.StructUnionName(sua, None) +> A.rewrap ty)
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
@@ -4080,11 +4025,11 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
          | (Some sb,Common.Right (iisub,iisb)) ->
 
              (* build a StructUnionName from a StructUnion *)
-             let fake_su = B.nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) in
+             let fake_su = B.nQ, [], (B.StructUnionName (sub, sb), [iisub;iisb]) in
 
              fullType ty fake_su >>= (fun ty fake_su ->
                match fake_su with
-               | _nQ, (B.StructUnionName (sub, sb), [iisub;iisb]) ->
+               | _nQ, [], (B.StructUnionName (sub, sb), [iisub;iisb]) ->
                    return (ty,  [iisub; iisb])
                | _ -> raise (Impossible 46))
 	 | _ -> fail in
@@ -4149,8 +4094,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
            | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
                -> raise Todo
         )
-    | _, (B.FieldType (tyb, _, _), _) ->
-	typeC ta (snd tyb)
+    | _, (B.FieldType ((_,_,tyb), _, _), _) ->
+	typeC ta tyb
 
     | _, (B.NoType, ii) -> fail
     | _, (B.TypeOfExpr e, ii) -> fail
@@ -4398,7 +4343,7 @@ and attribute_list attras attrbs =
 	(function x -> Some x) attras attrbs >>=
       (fun attras attrbs -> return (Some attras, attrbs))) *)
 
-(* The cheap hackish version.  No wrapping requires... *)
+(* The cheap hackish version.  No wrapping required... *)
 
 and attribute_list allminus attras attrbs =
   X.optional_attributes_flag (fun optional_attributes ->
@@ -4559,7 +4504,7 @@ and compatible_base_type_meta a signa qua b ii local =
 
 and compatible_type a (b,local) =
   match A.unwrap a, b with
-    A.Type (false, [], a'), _ ->
+    A.Type (false, [], [], a'), _ ->
       compatible_typeC a' (b, local)
   | A.Type (false, const_vol, a'), (qub, b') ->
       if
@@ -4570,7 +4515,7 @@ and compatible_type a (b,local) =
         | [A.Volatile;A.Const] -> (fst qub).B.volatile && (fst qub).B.const
         | _ -> failwith "Cocci_vs_c.compatible_type: Duplicate const/volatile"
         )
-      then compatible_typeC a' ((Ast_c.nQ, b'), local)
+      then compatible_typeC a' ((Ast_c.nQ, [], b'), local)
       else fail
   | _ ->
       failwith "Cocci_vs_c.compatible_type: unimplemented"
