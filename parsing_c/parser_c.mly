@@ -143,8 +143,10 @@ let addQualif = function
   | (({volatile=true},ii),({volatile=true},ii2 as x))-> warning "duplicate 'volatile'" x
   | (({const=true},ii),   (v,ii2)) -> {v with const=true},ii::ii2
   | (({volatile=true},ii),(v,ii2)) -> {v with volatile=true},ii2@[ii]
-  | _ ->
-      internal_error "there is no noconst or novolatile keyword"
+  | ((_,ii),_) ->
+      internal_error
+	(Printf.sprintf "there is no noconst or novolatile keyword: %s:%d"
+	   (file_of_info ii) (line_of_info ii))
 
 let addQualifD (qu, ({qualifD = v} as x)) =
   { x with qualifD = (addQualif (qu, v)) }
