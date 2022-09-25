@@ -132,7 +132,7 @@ let addTypeD     = function
        {v with typeD = (a,b, Some (BaseType (FloatType CDoubleComplex))),ii @ ii2}
 
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
-      let mktype t ii = (nQ,(t,ii)) in
+      let mktype t ii = (nQ,[],(t,ii)) in
       computed_warning ii
 	(fun _ ->
 	  Printf.sprintf

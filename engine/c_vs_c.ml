@@ -72,7 +72,7 @@ let rec fullType a b =
   let ((qua,iiqa), attra, tya) = a in
   let ((qub,iiqb), attrb, tyb) = b in
   (qua.const = qub.const && qua.volatile = qub.volatile &&
-   qua.restrict = qub.restrict && && attra = attrb) >&&>
+   qua.restrict = qub.restrict && attra = attrb) >&&>
 
     let (qu,iiq) = (qua, iiqa) in
     typeC tya tyb >>= (fun ty ->
