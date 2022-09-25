@@ -667,10 +667,11 @@ let macro_body_to_maybe_hint body =
 
 exception Bad_param
 
-let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
- fun xs ->
+let rec (define_parse: (string * define_def) list -> Parser_c.token list ->
+                       (string * define_def) list) =
+ fun acc xs ->
   match xs with
-  | [] -> []
+  | [] -> List.rev acc
   | TDefine i1::TIdentDefine (s,i2)::TOParDefine i3::xs ->
       (* note: the macro could be badly written and have no closing ')' for
        * its param, which would make us go too far away, but I don't think
@@ -727,8 +728,8 @@ let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
 	  Some (s, (s, Params params, macro_body_to_maybe_hint body))
 	with Bad_param -> None in
       (match def with
-	Some def -> def::define_parse xs
-      |	None -> define_parse xs)
+	Some def -> define_parse (def::acc) xs
+      | None -> define_parse acc xs)
 
   | TDefine i1::TIdentDefine (s,i2)::xs ->
       let (body, _, xs) =
@@ -736,15 +737,15 @@ let rec (define_parse: Parser_c.token list -> (string * define_def) list) =
       let body = body +> List.map
         (TH.visitor_info_of_tok Ast_c.make_expanded) in
       let def = (s, (s, NoParam, macro_body_to_maybe_hint body)) in
-      def::define_parse xs
+      define_parse (def::acc) xs
 
   (* cf tests-bis/define_plus.c *)
   | TDefine i1::xs ->
       let line = Ast_c.line_of_info i1 in
       pr2 (spf "WEIRD: no ident in define at line %d" line);
-      define_parse xs
+      define_parse acc xs
 
-  | x::xs -> define_parse xs
+  | x::xs -> define_parse acc xs
 
 
 
@@ -752,4 +753,4 @@ let extract_macros xs =
   let cleaner = xs +> List.filter (fun x ->
     not (TH.is_comment x)
   ) in
-  define_parse cleaner
+  define_parse [] cleaner
