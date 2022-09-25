@@ -303,7 +303,7 @@ and fullType = typeQualifier * typeC
 
 
 and typeQualifier = typeQualifierbis wrap
-and typeQualifierbis = {const: bool; volatile: bool}
+and typeQualifierbis = {const: bool; volatile: bool; restrict: bool}
 
 (* gccext: cppext: *)
 and attribute = attributebis wrap
@@ -922,7 +922,7 @@ and com = comment list ref
 (*****************************************************************************)
 (* Some constructors *)
 (*****************************************************************************)
-let nullQualif = ({const=false; volatile= false}, [])
+let nullQualif = ({const=false; volatile= false; restrict= false}, [])
 let nQ = nullQualif
 
 let defaultInt = (BaseType (IntType (Si (Signed, CInt))))

@@ -86,7 +86,7 @@ and parameterType = {
   p_endattr : attribute list;
 }
 and typeQualifier = typeQualifierbis wrap
-and typeQualifierbis = { const : bool; volatile : bool; }
+and typeQualifierbis = { const : bool; volatile : bool; restrict : bool; }
 and attribute = attributebis wrap
 and attributebis = Attribute of attr_arg | GccAttribute of argument wrap2 list
 and attr_arg = attr_arg_bis wrap

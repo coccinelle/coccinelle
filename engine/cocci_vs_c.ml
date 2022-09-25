@@ -2785,7 +2785,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | A.FunProto(fninfoa,attra,ida,lpa,paramsa,va,rpa,sema),
      ({B.v_namei = Some (idb, B.NoInit);
        B.v_type =
-	((({B.const = false; B.volatile = false},[]) as q),
+	((({B.const = false; B.volatile = false; B.restrict = false},[]) as q),
 	 (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), ii));
        B.v_storage = stob;
        B.v_local = local;
@@ -3587,7 +3587,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                  ((qu,il), ty2)
                )))
            in
-           (match optional_qualifier, qu.B.const || qu.B.volatile with
+           (match optional_qualifier, qu.B.const || qu.B.volatile || qu.B.restrict with
            | false, false -> do_stuff ()
            | false, true -> fail
            | true, false -> do_stuff ()
@@ -3597,7 +3597,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                do_stuff()
            )
 
-       | [x] ->
+       | [x] -> (* restrict not checked because not support by SmPL *)
            (match term x, il, qu.B.const, qu.B.volatile with
            | A.Const, [i1], true, _
            | A.Volatile, [i1], _, true ->

@@ -124,6 +124,7 @@ module Ast_c :
       Ast_c.typeQualifierbis = {
       const : bool;
       volatile : bool;
+      restrict : bool;
     }
     and attribute = attributebis wrap
     and attributebis = Ast_c.attributebis =

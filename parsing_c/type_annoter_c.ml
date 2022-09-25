@@ -971,7 +971,8 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	let inherited_fn tq1 ((tq2,ii),ty) =
 	  let cst = tq1.Ast_c.const || tq2.Ast_c.const in
 	  let vol = tq1.Ast_c.volatile || tq2.Ast_c.volatile in
-	  (({Ast_c.const=cst;Ast_c.volatile=vol},ii),ty) in
+	  let res = tq1.Ast_c.restrict || tq2.Ast_c.restrict in
+	  (({Ast_c.const=cst;Ast_c.volatile=vol;Ast_c.restrict=res},ii),ty) in
 	let rec inherited e =
 	  match Ast_c.unwrap_expr e with
 	    RecordAccess (e, _) ->

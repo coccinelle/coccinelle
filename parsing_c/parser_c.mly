@@ -126,7 +126,7 @@ let addTypeD     = function
        {v with typeD = (a,b, Some (BaseType (FloatType CDoubleComplex))),ii @ ii2}
 
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
-      let mktype t ii = (({const=false;volatile=false;},[]),(t,ii)) in
+      let mktype t ii = (nQ,(t,ii)) in
       computed_warning
 	(fun _ ->
 	  Printf.sprintf
@@ -141,11 +141,13 @@ let addTypeD     = function
 let addQualif = function
   | (({const=true},ii),   ({const=true},ii2 as x)) ->   warning "duplicate 'const'" x
   | (({volatile=true},ii),({volatile=true},ii2 as x))-> warning "duplicate 'volatile'" x
+  | (({restrict=true},ii),({restrict=true},ii2 as x))-> warning "duplicate 'restrict'" x
   | (({const=true},ii),   (v,ii2)) -> {v with const=true},ii::ii2
   | (({volatile=true},ii),(v,ii2)) -> {v with volatile=true},ii2@[ii]
+  | (({restrict=true},ii),(v,ii2)) -> {v with restrict=true},ii2@[ii]
   | ((_,ii),_) ->
       internal_error
-	(Printf.sprintf "there is no noconst or novolatile keyword: %s:%d"
+	(Printf.sprintf "there is no const, volatile or restrict keyword: %s:%d"
 	   (file_of_info ii) (line_of_info ii))
 
 let addQualifD (qu, ({qualifD = v} as x)) =
@@ -1365,10 +1367,10 @@ type_spec:
 /*(*-----------------------------------------------------------------------*)*/
 
 type_qualif:
- | Tconst    { {const=true  ; volatile=false}, $1 }
- | Tvolatile { {const=false ; volatile=true},  $1 }
+ | Tconst    { {const=true  ; volatile=false; restrict=false}, $1 }
+ | Tvolatile { {const=false ; volatile=true ; restrict=false},  $1 }
  /*(* C99 *)*/
- | Trestrict { (* TODO *) {const=false ; volatile=false},  $1 }
+ | Trestrict { {const=false; volatile=false; restrict=true},  $1 }
 
 
 /*(*-----------------------------------------------------------------------*)*/

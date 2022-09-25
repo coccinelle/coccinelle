@@ -71,7 +71,8 @@ let same_s saopt sbopt =
 let rec fullType a b =
   let ((qua,iiqa), tya) = a in
   let ((qub,iiqb), tyb) = b in
-  (qua.const = qub.const && qua.volatile = qub.volatile) >&&>
+  (qua.const = qub.const && qua.volatile = qub.volatile &&
+   qua.restrict = qub.restrict) >&&>
 
     let (qu,iiq) = (qua, iiqa) in
     typeC tya tyb >>= (fun ty ->

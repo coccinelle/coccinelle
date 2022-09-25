@@ -202,12 +202,14 @@ let print_metavar pr = function
       Pretty_print_c.pp_param_gen
 	~pr_elem:(function x ->
 	  let str = Ast_c.str_of_info x in
-	  if not (List.mem str ["const";"volatile"])
+	  if not (List.mem str ["const";"volatile";"__restrict"])
 	  then pr str)
 	~pr_space:(function _ -> pr " ")
         {Ast_c.p_register = (false,[]);
          p_namei = Some name';
-         p_type = (({Ast_c.const = false; Ast_c.volatile = false},[]),ty);
+         p_type =
+	  (({Ast_c.const = false; Ast_c.volatile = false; Ast_c.restrict = false},[]),
+	   ty);
          p_attr = [];
          p_midattr = [];
          p_endattr = [];
