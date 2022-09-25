@@ -68,6 +68,7 @@ description-pak
 /bundles/stdcompat/stdcompat-*/*.ml
 /bundles/stdcompat/stdcompat-*/*.mli
 /bundles/stdcompat/stdcompat-*/config.h
+/bundles/stdcompat/stdcompat-*/config.h.in
 /bundles/stdcompat/stdcompat-*/stamp-h1
 /bundles/stdcompat/stdcompat-*/stdcompat.h
 /bundles/stdcompat/stdcompat-*/stdcompat__stubs.c
