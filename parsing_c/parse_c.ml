@@ -1115,7 +1115,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
 
   let tr = mk_tokens_state toks in
 
-  let rec loop tr =
+  let rec loop acc tr =
 
     (* todo?: I am not sure that it represents current_line, cos maybe
      * tr.current partipated in the previous parsing phase, so maybe tr.current
@@ -1300,11 +1300,11 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     in
 
     (match elem with
-    | Ast_c.FinalDef x -> [(Ast_c.FinalDef x, info)]
-    | xs -> (xs, info):: loop tr (* recurse *)
+    | Ast_c.FinalDef x -> List.rev ((Ast_c.FinalDef x, info)::acc)
+    | xs -> loop ((xs, info) :: acc) tr (* recurse *)
     )
   in
-  let v = loop tr in
+  let v = loop [] tr in
   let v = with_program2 Parsing_consistency_c.consistency_checking v in
   with_program2_unit Danger.add_danger v;
   let v =
