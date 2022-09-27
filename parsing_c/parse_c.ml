@@ -1039,7 +1039,8 @@ and handle_include file wrapped_incl k =
     then
       match f with
       | Some header_filename when Common.lfile_exists header_filename ->
-          if not (IC.has_been_parsed header_filename)
+          if not (!Includes.include_headers_for_types) ||
+	     not (IC.has_been_parsed header_filename)
           then
             begin
               IC.add_to_parsed_files header_filename;
