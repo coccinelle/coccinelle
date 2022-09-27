@@ -31,14 +31,20 @@ module T = Token_c
 (*****************************************************************************)
 (* Wrappers *)
 (*****************************************************************************)
-let warning s v =
+let string_and_loc s = function
+    ii::_ ->
+      Printf.sprintf "PARSING: %s:%d: %s"
+	(file_of_info ii) (line_of_info ii) s
+  | [] -> Printf.sprintf "PARSING: %s" s
+
+let warning ii s v =
   if !Flag_parsing_c.verbose_parsing
-  then Common.warning ("PARSING: " ^ s) v
+  then Common.warning (string_and_loc s ii) v
   else v
 
-let computed_warning s v = (*do not construct string unless it will be shown*)
+let computed_warning ii s v = (*do not construct string unless it will be shown*)
   if !Flag_parsing_c.verbose_parsing
-  then Common.warning ("PARSING: " ^ (s())) v
+  then Common.warning (string_and_loc (s()) ii) v
   else v
 
 let pr2, pr2_once = Common.mk_pr2_wrappers Flag_parsing_c.verbose_parsing
@@ -74,34 +80,34 @@ let fake_pi = Common.fake_parse_info
 let addStorageD  = function
   | ((x,ii), ({storageD = (NoSto,[])} as v)) -> { v with storageD = (x, [ii]) }
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->
-      if x = y then warning "duplicate storage classes" v
-      else warning "multiple storage classes, keeping the second" v
+      if x = y then warning [ii] "duplicate storage classes" v
+      else warning [ii] "multiple storage classes, keeping the second" v
 
 let addInlineD  = function
   | ((true,ii), ({inlineD = (false,[])} as v)) -> { v with inlineD=(true,[ii])}
-  | ((true,ii), ({inlineD = (true, ii2)} as v)) -> warning "duplicate inline" v
+  | ((true,ii), ({inlineD = (true, ii2)} as v)) -> warning [ii] "duplicate inline" v
   | _ -> raise (Impossible 86)
 
 
 let addTypeD     = function
   | ((Left3 Signed,ii)   ,({typeD = ((Some Signed,  b,c),ii2)} as v)) ->
-      warning "duplicate 'signed'"   v
+      warning ii "duplicate 'signed'"   v
   | ((Left3 UnSigned,ii) ,({typeD = ((Some UnSigned,b,c),ii2)} as v)) ->
-      warning "duplicate 'unsigned'" v
+      warning ii "duplicate 'unsigned'" v
   | ((Left3 _,ii),        ({typeD = ((Some _,b,c),ii2)} as _v)) ->
       raise (Semantic ("both signed and unsigned specified", fake_pi))
   | ((Left3 x,ii),        ({typeD = ((None,b,c),ii2)} as v))   ->
       {v with typeD = (Some x,b,c),ii @ ii2}
 
   | ((Middle3 Short,ii),  ({typeD = ((a,Some Short,c),ii2)} as v)) ->
-      warning "duplicate 'short'" v
+      warning ii "duplicate 'short'" v
 
 
   (* gccext: long long allowed *)
   | ((Middle3 Long,ii),   ({typeD = ((a,Some Long ,c),ii2)} as v)) ->
       { v with typeD = (a, Some LongLong, c),ii @ ii2 }
   | ((Middle3 Long,ii),   ({typeD = ((a,Some LongLong ,c),ii2)} as v)) ->
-      warning "triplicate 'long'" v
+      warning ii "triplicate 'long'" v
 
 
   | ((Middle3 _,ii),      ({typeD = ((a,Some _,c),ii2)} as _v)) ->
@@ -127,7 +133,7 @@ let addTypeD     = function
 
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
       let mktype t ii = (nQ,(t,ii)) in
-      computed_warning
+      computed_warning ii
 	(fun _ ->
 	  Printf.sprintf
 	    "two or more data types: dropping %s, keeping typeD %s\n"
@@ -139,9 +145,9 @@ let addTypeD     = function
 
 
 let addQualif = function
-  | (({const=true},ii),   ({const=true},ii2 as x)) ->   warning "duplicate 'const'" x
-  | (({volatile=true},ii),({volatile=true},ii2 as x))-> warning "duplicate 'volatile'" x
-  | (({restrict=true},ii),({restrict=true},ii2 as x))-> warning "duplicate 'restrict'" x
+  | (({const=true},ii),   ({const=true},ii2 as x)) ->   warning [ii] "duplicate 'const'" x
+  | (({volatile=true},ii),({volatile=true},ii2 as x))-> warning [ii] "duplicate 'volatile'" x
+  | (({restrict=true},ii),({restrict=true},ii2 as x))-> warning [ii] "duplicate 'restrict'" x
   | (({const=true},ii),   (v,ii2)) -> {v with const=true},ii::ii2
   | (({volatile=true},ii),(v,ii2)) -> {v with volatile=true},ii2@[ii]
   | (({restrict=true},ii),(v,ii2)) -> {v with restrict=true},ii2@[ii]
@@ -175,7 +181,8 @@ let (fixDeclSpecForDecl: decl -> (fullType * (storage wrap)))  = function
      (* generate fake_info, otherwise type_annotater can crash in
       * offset.
       *)
-     warning "type defaults to 'int'" (defaultInt, [fakeInfo fake_pi])
+     warning (iist@iiq@iit@iinl) "type defaults to 'int'"
+       (defaultInt, [fakeInfo fake_pi])
  | (None, None, Some t)   -> (t, iit)
 
  | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  ->
@@ -902,7 +909,7 @@ unary_expr:
      { let ret = mk_e(SizeOfType (snd $3)) [$1;$2;$4] in
        match (fst $3) with (* warn about dropped attributes *)
          [] -> ret
-       | _ -> warning "attributes found in sizeof(...), dropping" ret }
+       | _ -> warning [$1] "attributes found in sizeof(...), dropping" ret }
  | Tdelete cast_expr               { mk_e(Delete(false, $2))  [$1] }
  | Tdelete TOCro TCCro cast_expr   { mk_e(Delete(true, $4))   [$1;$2;$3] }
  | Tdefined identifier_cpp         { mk_e(Defined $2)         [$1] }
@@ -1346,7 +1353,7 @@ simple_type:
      { let ret = Right3 (TypeOfType (snd $3)), [$1;$2;$4] in
        match (fst $3) with (* warn about dropped attributes *)
          [] -> ret
-       | _ -> warning "attributes found in typeof(...), dropping" ret }
+       | _ -> warning [$1] "attributes found in typeof(...), dropping" ret }
 
 type_spec2_without_braces:
      simple_type { $1 }
@@ -2587,7 +2594,7 @@ cpp_other:
 	 let paramlist = (parameters, (false, [])) in (* no varargs *)
 	 let id = RegularName (mk_string_wrap $1) in
 	 let ret =
-	   warning "type defaults to 'int'"
+	   warning [$2] "type defaults to 'int'"
 	     (mk_ty defaultInt [fakeInfo fake_pi]) in
 	 let ty =
 	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
@@ -2619,7 +2626,7 @@ cpp_other:
    let fninfo =
      let id = RegularName (mk_string_wrap $1) in
      let ret =
-       warning "type defaults to 'int'"
+       warning [$2] "type defaults to 'int'"
 	 (mk_ty defaultInt [fakeInfo fake_pi]) in
      let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
      let attrs = Ast_c.noattr in
