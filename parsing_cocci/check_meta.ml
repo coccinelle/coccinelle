@@ -256,8 +256,12 @@ and check_args fn (_,args,_) =
 and typeC old_metas table minus t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cv,attr,ty) ->
+      let do_cva = function
+	  Ast0.CV cv -> ()
+	| Ast0.Attr attr -> attribute old_metas table minus attr in
+      List.iter do_cva cvbefore;
       typeC old_metas table minus ty;
-      List.iter (attribute old_metas table minus) attr
+      List.iter do_cva cvafter
   | Ast0.Signed(sgn,ty) ->
       get_opt (typeC old_metas table minus) ty
   | Ast0.Pointer(ty,star) -> typeC old_metas table minus ty

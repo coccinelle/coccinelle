@@ -92,7 +92,7 @@ let binaryOp op = match Ast0.unwrap op with
 
 let typeC t =
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,attrs,ty) -> [44]
+    Ast0.ConstVol(cvbefore,ty,cvafter) -> [44]
   | Ast0.BaseType(ty,strings) -> [48]
   | Ast0.Signed(sign,ty) -> [129]
   | Ast0.Pointer(ty,star) -> [49]

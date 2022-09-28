@@ -204,7 +204,7 @@ and binaryOp = base_binaryOp wrap
 (* Types *)
 
 and base_typeC =
-    ConstVol        of Ast.const_vol mcode list * attr list * typeC
+    ConstVol        of cvattr list * typeC * cvattr list
   | BaseType        of Ast.baseType * string mcode list
   | Signed          of Ast.sign mcode * typeC option
   | Pointer         of typeC * string mcode (* * *)
@@ -472,6 +472,10 @@ and fninfo =
     FStorage of Ast.storage mcode
   | FType of typeC
   | FInline of string mcode
+
+and cvattr =
+    CV of Ast.const_vol mcode
+  | Attr of attr
 
 and base_attr =
     Attribute of attr_arg
@@ -777,7 +781,7 @@ let meta_names_of_expression expression =
 
 let rec meta_names_of_typeC ty =
   match unwrap ty with
-    ConstVol (_, _, ty)
+    ConstVol (_, ty, _)
   | Signed (_, Some ty)
   | Pointer (ty, _)
   | Array (ty, _, _, _) -> meta_names_of_typeC ty

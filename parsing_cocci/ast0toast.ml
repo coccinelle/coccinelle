@@ -560,7 +560,19 @@ and rewrap_iso t t1 = rewrap t (do_isos (Ast0.get_iso t)) t1
 and typeC allminus t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
-      Ast0.ConstVol(cv,attrs,ty) ->
+      Ast0.ConstVol(cvabefore,ty,cvaafter) ->
+	let (cv,attrs) =
+	  List.partition
+	    (function Ast0.CV _ -> true | Ast0.Attr _ -> false)
+	    (cvbefore@cvafter) in
+	let cv =
+	  List.map
+	    (function Ast0.CV cv -> cv | _ -> failwith "not possible")
+	    cv in
+	let attrs =
+	  List.map
+	    (function Ast0.Attr attr -> attr | _ -> failwith "not possible")
+	    attrs in
 	let rec collect_disjs t =
 	  match Ast0.unwrap t with
 	    Ast0.DisjType(_,types,_,_) ->

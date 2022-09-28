@@ -571,11 +571,21 @@ and string_format e =
 
 and typeC t =
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,attrs,ty) ->
-      let cv = List.map normal_mcode cv in
-      let attrs = List.map attribute attrs in
+    Ast0.ConstVol(cvbefore,ty,cvafter) ->
+      let do_cvattr = function
+	  Ast0.CV cv -> normal_mcode cv
+	| Ast0.Attr attr -> attribute attr in
+      let cvbefore = List.map do_cvattr cvbefore in
+      let cvafter = List.map do_cvattr cvafter in
       let ty = typeC ty in
-      mkres t (Ast0.ConstVol(cv,attrs,ty)) (promote_mcode (List.hd cv)) ty
+      (match (cvbefore,List.rev cvafter) with
+	([],[]) -> failwith "useless ConstVol"
+      | (cv::_,[]) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) (promote_mcode cv) ty
+      | ([],cv::_) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) ty (promote_mcode cv)
+      | (cvb,cva) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) (promote_mcode cvb) (promote_mcode cva))
   | Ast0.BaseType(ty,strings) ->
       let strings = List.map normal_mcode strings in
       let first = List.hd strings in

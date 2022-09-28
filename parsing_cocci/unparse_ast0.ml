@@ -341,10 +341,13 @@ and typeC t =
   print_context t
     (function _ ->
       match Ast0.unwrap t with
-	Ast0.ConstVol(cv,attr,ty) ->
-	  List.iter (function s -> mcode U.const_vol s) cv;
-	  print_attribute_list attr ~befspace:false ~aftspace:true;
-	  print_string " "; typeC ty
+	Ast0.ConstVol(cvbefore,ty,cvafter) ->
+	  let do_cva = function
+	      Ast0.CV cv -> mcode U.const_vol cv
+	    | Ast0.Attr attr -> print_attribute attr; print_string " " in
+	  List.iter do_cva cvbefore;
+	  print_string " "; typeC ty;
+	  List.iter do_cva cvafter
       |	Ast0.BaseType(ty,strings) ->
 	  List.iter (function s -> mcode print_string s; print_string " ")
 	    strings

@@ -341,16 +341,17 @@ let visitor mode bind option_default
     let k t =
       rewrap t
 	(match Ast0.unwrap t with
-	  Ast0.ConstVol(cv,attr,ty) ->
-	    let (cv_n,cv) = map_split cv_mcode cv in
-	    let (attr_n,attr) = map_split_bind attribute attr in
+	  Ast0.ConstVol(cvbefore,ty,cvafter) ->
+	    let do_cvattr = function
+		Ast0.CV cv -> cv_mcode cv
+	      | Ast0.Attr attr -> attribute attr in
+	    let (cvbefore_n,cvbefore) =
+	      map_split_bind do_cvattr cvbefore in
 	    let (ty_n,ty) = typeC ty in
-	    let front =
-	      (* bind in the right order *)
-	      match Ast0.unwrap ty with
-		Ast0.Pointer(ty,star) -> multibind (ty_n::cv_n@[attr_n])
-              | _ -> multibind (attr_n::cv_n@[ty_n]) in
-	    (front, Ast0.ConstVol(cv,attr,ty))
+	    let (cvafter_n,cvafter) =
+	      map_split_bind do_cvattr cvafter in
+	    let front = multibind (cvbefore_n@ty_n::cv_after_n) in
+	    (front, Ast0.ConstVol(cvbefore,ty,cvafter))
 	| Ast0.BaseType(ty,strings) ->
 	    let (strings_n,strings) = map_split_bind string_mcode strings in
 	    (strings_n, Ast0.BaseType(ty,strings))
