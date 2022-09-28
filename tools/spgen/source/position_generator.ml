@@ -183,8 +183,8 @@ let rec type_pos t snp
         "in position generator."
       )
   | Ast0.ConjType(lp,tlist,pipelist,rp) -> None (* not sure *)
-  | Ast0.ConstVol(const,t) ->
-      let constructor ~item = Ast0.ConstVol(const,item) in
+  | Ast0.ConstVol(const,attr,t) ->
+      let constructor ~item = Ast0.ConstVol(const,attr,item) in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor snp
   | Ast0.Signed(sign,t) ->
       let constructor ~mc = Ast0.Signed(mc,t) in
@@ -359,9 +359,9 @@ let rec expression_pos exp snp
       let c ~exp ~id = Ast0.RecordPtAccess(exp, arrow, id) in
       let alt() = id_wrap ~id ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~id) ~alt snp
-  | Ast0.Cast(lp, typec, attr, rp, exp) ->
+  | Ast0.Cast(lp, typec, rp, exp) ->
       let _ = type_pos typec snp in (* sanity check for disj *)
-      let c ~exp ~mc = Ast0.Cast(lp, typec, attr, mc, exp) in
+      let c ~exp ~mc = Ast0.Cast(lp, typec, mc, exp) in
       let alt() = mcode_wrap ~mc:rp ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~mc:rp) ~alt snp
   | Ast0.SizeOfExpr(sizeofmc, exp) ->
@@ -413,16 +413,16 @@ let rec declaration_pos decl snp
   | Ast0.MetaDecl _
   | Ast0.AsDecl _ ->
       None
-  | Ast0.Init(st, ty, midattr, id, endattr, eq, ini, sem) ->
+  | Ast0.Init(st, ty, id, endattr, eq, ini, sem) ->
       let _ = type_pos ty snp in (* sanity check *)
-      let constructor ~id = Ast0.Init(st, ty, midattr, id, endattr, eq, ini, sem) in
+      let constructor ~id = Ast0.Init(st, ty, id, endattr, eq, ini, sem) in
       id_wrap ~id ~constructor snp
-  | Ast0.UnInit(st, ty, midattr, id, endattr, sem) ->
+  | Ast0.UnInit(st, ty, id, endattr, sem) ->
       let _ = type_pos ty snp in (* sanity check *)
-      let constructor ~id = Ast0.UnInit(st, ty, midattr, id, endattr, sem) in
+      let constructor ~id = Ast0.UnInit(st, ty, id, endattr, sem) in
       id_wrap ~id ~constructor snp
-  | Ast0.TyDecl (t, attr, sem) ->
-      let c ~item ~mc = Ast0.TyDecl(item, attr, mc) in
+  | Ast0.TyDecl (t, sem) ->
+      let c ~item ~mc = Ast0.TyDecl(item, mc) in
       let alt() = mcode_wrap ~mc:sem ~constructor:(c ~item:t) snp in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor:(c ~mc:sem) ~alt snp
   | Ast0.Typedef (tm, tc, tc2, sem) ->
@@ -437,8 +437,8 @@ let rec declaration_pos decl snp
   | Ast0.OptDecl(dec) ->
       let constructor ~item = Ast0.OptDecl item in
       item_wrap ~item:dec ~item_posfn:declaration_pos ~constructor snp
-  | Ast0.FunProto(fninfo,attr,id,lp1,params,va,rp1,sem) ->
-      let constructor ~id = Ast0.FunProto(fninfo,attr,id,lp1,params,va,rp1,sem) in
+  | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
+      let constructor ~id = Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) in
       id_wrap ~id ~constructor snp
 
 let rec field_pos decl snp
