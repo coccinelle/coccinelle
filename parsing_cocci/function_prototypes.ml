@@ -224,10 +224,38 @@ let rec right_attach_ident strings id =
     | Ast0.AsIdent(id,asid) -> Ast0.AsIdent(right_attach_ident strings id,asid)
     | _ -> failwith "disj, opt, and funcs not supported")
 
+let right_attach_attr_args strings attr_args =
+  Ast0.rewrap attr_args
+    (match Ast0.unwrap attr_args with
+      Ast0.MacroAttr(arg) ->
+	Ast0.MacroAttr(right_attach_mcode strings arg)
+    | Ast0.MetaAttr(name,x,y) ->
+	Ast0.MetaAttr(right_attach_mcode strings name,x,y)
+    | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+	Ast0.MacroAttrArgs(attr,lp,args,right_attach_mcode strings rp))
+
+let right_attach_attr strings attr =
+  Ast0.rewrap attr
+    (match Ast0.unwrap attr with
+      Ast0.Attribute(arg) -> Ast0.Attribute(right_attach_attr_arg strings arg)
+    | Ast0.GccAttribute(attr,lp1,lp2,args,rp2,rp1) ->
+	Ast0.GccAttribute(attr,lp1,lp2,args,rp2,right_attach_mcode strings rp1))
+
 let rec attach_right strings ty =
   Ast0.rewrap ty
     (match Ast0.unwrap ty with
-      Ast0.ConstVol(cv,attr,ty) -> Ast0.ConstVol(cv,attr,attach_right strings ty)
+      Ast0.ConstVol(cvbefore,ty,[]) ->
+	Ast0.ConstVol(cvbefore,attach_right strings ty,[])
+    | Ast0.ConstVol(cvbefore,ty,cvafter) ->
+	(match List.rev cvafter with
+	  cvattr::rest ->
+	    let cvattr =
+	      match cvattr with
+		Ast0.CV cv -> right_attach_mcode strings cv
+	      | Ast0.Attr attr -> right_attach_attr strings attr in
+	    Ast0.ConstVol(cvbefore,attach_right strings ty,
+			  List.rev(cvattr::rest))
+	| _ -> failwith "not possible")
     | Ast0.BaseType(bt,sl) ->
 	let slhd = right_attach_mcode strings (List.hd(List.rev sl)) in
 	Ast0.BaseType(bt,List.rev (slhd :: (List.tl (List.rev sl))))

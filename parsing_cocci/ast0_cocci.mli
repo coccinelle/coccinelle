@@ -458,6 +458,10 @@ and fninfo =
   | FType of typeC
   | FInline of string mcode
 
+and cvattr =
+    CV of Ast_cocci.const_vol mcode
+  | Attr of attr
+
 and base_attr =
     Attribute of attr_arg
   | GccAttribute of string mcode (* __attribute__ *) *

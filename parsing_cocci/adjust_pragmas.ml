@@ -157,13 +157,16 @@ and right_statement_dots sd =
 
 let rec left_ty t =
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,attrs,ty) ->
-      (match cv,attrs with
-	[],[] -> failwith "empty const/vol list in type"
-      | [],s::r ->
-	  call_right left_attribute s t (function s -> Ast0.ConstVol([],s::r,ty))
-      | s::r,_ ->
-          call_right left_mcode s t (function s -> Ast0.ConstVol(s::r,attrs,ty)))
+    Ast0.ConstVol([],ty,cvafter) ->
+      call_right left_ty ty t (function ty -> Ast0.ConstVol([],ty,cvafter))
+  | Ast0.ConstVol(cv::cvbefore,ty,cvafter) ->
+      (match cv with
+	Ast0.CV cv ->
+	  call_right left_mcode cv t
+	    (function cv -> Ast0.ConstVol((Ast0.CV cv)::cvbefore,ty,cvafter))
+      | Ast0.Attr attr ->
+	  call_right left_attribute attr t
+	    (function attr -> Ast0.ConstVol((Ast0.Attr attr)::cvbefore,ty,cvafter)))
   | Ast0.BaseType(ty,strings) ->
       (match strings with
 	[] -> failwith "empty strings in type"

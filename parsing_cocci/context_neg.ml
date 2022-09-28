@@ -724,8 +724,26 @@ and binaryOp_equal op1 op2 =
 let equal_typeC t1 t2 =
   match (Ast0.unwrap t1,Ast0.unwrap t2) with
     (Ast0.ConstVol(cv1,attr1,_),Ast0.ConstVol(cv2,attr2,_)) ->
-      List.for_all2 equal_mcode (List.sort compare cv1) (List.sort compare cv2) &&
-      List.for_all2 equal_attribute (List.sort compare attr1) (List.sort compare attr2)
+      let get_cvs =
+	List.fold_left
+	  (fun prev ->
+	    function
+		Ast0.CV -> cv::prev
+	      | Ast0.Attr attr -> prev)
+	  [] in
+      let get_attrs =
+	List.fold_left
+	  (fun prev ->
+	    function
+		Ast0.CV -> prev
+	      | Ast0.Attr attr -> attr:prev)
+	  [] in
+      let cva = List.sort compare(get_cvs (cvbeforea@cvaftera)) in
+      let cvb = List.sort compare(get_cvs (cvbeforeb@cvafterb)) in
+      let attra = List.sort compare(get_attrs (cvbeforea@cvaftera)) in
+      let attrb = List.sort compare(get_attrs (cvbeforeb@cvafterb)) in
+      List.for_all2 equal_mcode cva cvb &&
+      List.for_all2 equal_attribute attra attrb
   | (Ast0.BaseType(ty1,stringsa),Ast0.BaseType(ty2,stringsb)) ->
       List.for_all2 equal_mcode stringsa stringsb
   | (Ast0.Signed(sign1,_),Ast0.Signed(sign2,_)) ->

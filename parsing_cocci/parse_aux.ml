@@ -149,10 +149,10 @@ let logic_op ast_op left op right =
   let op' = Ast0.wrap (Ast0.Logical (clt2mcode ast_op op)) in  
   Ast0.wrap (Ast0.Binary(left, op', right))
 
-let make_cv cv attr ty =
+let make_cv cvbefore ty cvafter =
   match cv,attr with
     [],[] -> ty
-  | _ -> Ast0.wrap (Ast0.ConstVol(cv,attr,ty))
+  | _ -> Ast0.wrap (Ast0.ConstVol(cvbefore,ty,cvafter))
 
 let make_attr attr =
   Ast0.wrap(Ast0.Attribute(attr))

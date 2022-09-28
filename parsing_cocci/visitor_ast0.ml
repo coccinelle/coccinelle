@@ -350,7 +350,7 @@ let visitor mode bind option_default
 	    let (ty_n,ty) = typeC ty in
 	    let (cvafter_n,cvafter) =
 	      map_split_bind do_cvattr cvafter in
-	    let front = multibind (cvbefore_n@ty_n::cv_after_n) in
+	    let front = multibind (cvbefore_n::ty_n::[cvafter_n]) in
 	    (front, Ast0.ConstVol(cvbefore,ty,cvafter))
 	| Ast0.BaseType(ty,strings) ->
 	    let (strings_n,strings) = map_split_bind string_mcode strings in

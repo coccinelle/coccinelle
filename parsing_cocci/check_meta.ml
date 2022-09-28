@@ -255,7 +255,7 @@ and check_args fn (_,args,_) =
 
 and typeC old_metas table minus t =
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,attr,ty) ->
+    Ast0.ConstVol(cvbefore,ty,cvafter) ->
       let do_cva = function
 	  Ast0.CV cv -> ()
 	| Ast0.Attr attr -> attribute old_metas table minus attr in

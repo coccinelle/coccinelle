@@ -38,6 +38,19 @@ let size_type = Ast0.BaseType (Ast.SizeType, [])
 let ssize_type = Ast0.BaseType (Ast.SSizeType, [])
 let ptrdiff_type = Ast0.BaseType (Ast.PtrDiffType, [])
 
+let same_cvs = cvattrs1 cvattrs2 =
+  let get_cvs =
+    List.fold_left
+      (fun prev ->
+	function
+	    Ast0.CV cv -> cv :: prev
+	  | Ast0.Attr attr -> prev)
+      [] in
+  let cvattrs1 = get_cvs cvattrs1 in
+  let cvattrs2 = get_cvs cvattrs2 in
+  List.sort compare(List.map Ast0.unwrap_mcode cvattrs1) =
+  List.sort compare(List.map Ast0.unwrap_mcode cvattrs2)
+
 let lub_type t1 t2 =
   match (t1,t2) with
     (None,None) -> None
@@ -48,11 +61,10 @@ let lub_type t1 t2 =
         match Ast0.unwrap ty1, Ast0.unwrap ty2 with
           (Ast0.BaseType (Ast.Unknown, _), ty)
         | (ty, Ast0.BaseType (Ast.Unknown, _)) -> Ast0.rewrap ty1 ty
-	| (Ast0.ConstVol(cv1,attr1,ty1),Ast0.ConstVol(cv2,attr2,ty2))
-	  when List.sort compare(List.map Ast0.unwrap_mcode cv1) =
-	       List.sort compare(List.map Ast0.unwrap_mcode cv2) ->
+	| (Ast0.ConstVol(cvbefore1,ty1,cvafter1),Ast0.ConstVol(cvbefore2,ty2,cvafter2))
+	  when same_cvs (cvbefore1@cvafter1) (cvbefore2@cvafter2) ->
 	    (* not sure what to do with attrs *)
-	    Ast0.rewrap ty1 (Ast0.ConstVol(cv1,attr1,loop ty1 ty2))
+	    Ast0.rewrap ty1 (Ast0.ConstVol(cvbefore1,loop ty1 ty2,cvafter1))
         (* pad: in pointer arithmetic, as in ptr+1, the lub must be ptr *)
 	| (Ast0.Pointer(ty1, s),Ast0.Pointer(ty2, _)) ->
 	    Ast0.rewrap ty1 (Ast0.Pointer(loop ty1 ty2, s))
@@ -89,7 +101,7 @@ let lub_envs envs =
 let strip_cv =
   Common.map_option (function ty ->
     match Ast0.unwrap ty with
-    | Ast0.ConstVol(_,_,ty') -> ty'
+    | Ast0.ConstVol(_,ty',_) -> ty'
     | _ -> ty)
 
 (* types that might be integer types.  should char be allowed? *)

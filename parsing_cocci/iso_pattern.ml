@@ -878,16 +878,35 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context t
 	then
 	  match (up,Ast0.unwrap t) with
-	    (Ast0.ConstVol(cva,attra,tya),Ast0.ConstVol(cvb,attrb,tyb)) ->
-	      if List.for_all2 mcode_equal cva cvb
-	      then
-	        conjunct_many_bindings
-                  [match_list check_mcode
-                    (function _ -> false) (function _ -> failwith "")
-                    cva cvb;
-		    match_attributes attra attrb;
-		    match_typeC tya tyb]
-	      else return false
+	    (Ast0.ConstVol(cvbeforea,tya,cvaftera),
+	     Ast0.ConstVol(cvbeforeb,tyb,cvafterb)) ->
+	       let get_cvs =
+		 List.fold_left
+		   (fun prev ->
+		     function
+			 Ast0.CV -> cv::prev
+		       | Ast0.Attr attr -> prev)
+		   [] in
+	       let get_attrs =
+		 List.fold_left
+		   (fun prev ->
+		     function
+			 Ast0.CV -> prev
+		       | Ast0.Attr attr -> attr:prev)
+		   [] in
+	       let cva = List.sort compare(get_cvs (cvbeforea@cvaftera)) in
+	       let cvb = List.sort compare(get_cvs (cvbeforeb@cvafterb)) in
+	       let attra = List.sort compare(get_attrs (cvbeforea@cvaftera)) in
+	       let attrb = List.sort compare(get_attrs (cvbeforeb@cvafterb)) in
+	       if List.for_all2 mcode_equal cva cvb
+	       then
+	         conjunct_many_bindings
+                   [match_list check_mcode
+                       (function _ -> false) (function _ -> failwith "")
+                       cva cvb;
+		     match_attributes attra attrb;
+		     match_typeC tya tyb]
+	       else return false
 	  | (Ast0.BaseType(tya,stringsa),Ast0.BaseType(tyb,stringsb)) ->
 	      if tya = tyb
 	      then
@@ -1931,8 +1950,9 @@ let instantiate bindings mv_bindings model =
                                 Ast0.rewrap_mcode name new_mv in
                               Ast0.rewrap ty (
                                 Ast0.MetaType(new_mv_wrapped,cstr,pure)))
-                      | Ast0.ConstVol(cv,attrs,ty') ->
-                          Ast0.rewrap ty (Ast0.ConstVol(cv,attrs,renamer ty'))
+                      | Ast0.ConstVol(cvbefore,ty',cvafter) ->
+                          Ast0.rewrap ty
+			    (Ast0.ConstVol(cvbefore,renamer ty',cvafter))
                       | Ast0.Pointer(ty', s) ->
                           Ast0.rewrap ty (Ast0.Pointer(renamer ty', s))
                       | Ast0.ParenType(s0, ty', s1) ->

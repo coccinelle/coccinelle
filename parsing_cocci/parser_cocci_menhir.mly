@@ -1176,15 +1176,11 @@ ctype_without_braces:
 
 ctype_and_ptr(ty):
 cv1=const_vol t=ty cv2=const_vol_attr_list m=list(mul)
-   { let cvs =  cv1 @ (fst cv2) in
-     let attrs = snd cv2 in
-     (cvs, attrs, t, m) }
+   { let cv1 = List.map (fun x -> Ast0.CV x) cv1 in
+     (cv1,t,cv2,m) }
 
 full_ctype_and_ptr(ty):
-cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul)
-   { let cvs = (fst cv1) @ (fst cv2) in
-     let attrs = (snd cv1) @ (snd cv2) in
-     (cvs, attrs, t, m) }
+cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul) { (cv1, t, cv2, m) }
 
 ctype:
   ctype_and_ptr(all_basic_types)
@@ -1223,15 +1219,14 @@ ctype_only_non_signable:
 	(Parse_aux.make_cv cvs attrs ty) m }
 
 const_vol_attr_list:
-  /* empty */ { ([],[]) }
+  /* empty */ { [] }
 | Tconst const_vol_attr_list
-  { let (cv,attrs) = $2 in
-    ((Parse_aux.clt2mcode Ast_cocci.Const $1)::cv,attrs) }
+  { Ast0.CV(Parse_aux.clt2mcode Ast_cocci.Const $1) :: $2 }
 | Tvolatile const_vol_attr_list
   { let (cv,attrs) = $2 in
-    ((Parse_aux.clt2mcode Ast_cocci.Volatile $1)::cv,attrs) }
+  { Ast0.CV(Parse_aux.clt2mcode Ast_cocci.Volatile $1) :: $2 }
 | attr const_vol_attr_list
-  { let (cv,attrs) = $2 in (cv,$1::attrs) }
+  { Ast0.Attr $1 :: $2 }
 
 mul: a=TMul b=const_vol_attr_list { (a,b) }
 
@@ -1285,7 +1280,7 @@ struct_decl_one:
 	 bf=struct_bitfield?
 	 pv=TPtVirg
 	 { let (id,fn) = d in
-	 let idtype = Parse_aux.make_cv (fst cv) (snd cv) (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+	 let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) [] in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn idtype,id,bf,Parse_aux.clt2mcode ";" pv)) }
 
 struct_bitfield:
@@ -1869,21 +1864,19 @@ decl_var:
   /* type is a typedef name */
   | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=comma_list(d_ident) pv=TPtVirg
-      { let cvs = cv @ (fst midattrs) in
-        let attrs = snd midattrs in
+      { let cv = List.map (fun x -> Ast0.CV x) cv in
         List.map
 	  (function (id,fn) ->
 	    let idtype =
-	      Parse_aux.make_cv cvs attrs (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+	      Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
 	    Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,id,[],Parse_aux.clt2mcode ";" pv)))
 	  d }
   | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list q=TEq e=initialize pv=TPtVirg
-      { let cvs = cv @ (fst midattrs) in
-        let attrs = snd midattrs in
+      { let cv = List.map (fun x -> Ast0.CV x) cv in
         let (id,fn) = d in
 	!Data.add_type_name (Parse_aux.id2name i);
-	let idtype = Parse_aux.make_cv cvs attrs (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+	let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
 	[Ast0_cocci.wrap(Ast0_cocci.Init(s,fn idtype,id,endattrs,Parse_aux.clt2mcode "=" q,e,
 					 Parse_aux.clt2mcode ";" pv))] }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
@@ -1928,18 +1921,16 @@ one_decl_var(ender):
   /* type is a typedef name */
   | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list pv=TPtVirg
-      { let cvs = cv @ (fst midattrs) in
-        let attrs = snd midattrs in
+      { let cv = List.map (fun x -> Ast0.CV x) cv in
 	let (id,fn) = d in
-        let idtype = Parse_aux.make_cv cvs attrs (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+        let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
 	Ast0_cocci.wrap(Ast0_cocci.UnInit(s,fn idtype,id,endattrs,Parse_aux.clt2mcode ";" pv)) }
   | s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
       d=d_ident a=attr_list q=TEq e=initialize pv=TPtVirg
-      { let cvs = cv @ (fst midattrs) in
-        let attrs = snd midattrs in
+      { let cv = List.map (fun x -> Ast0.CV x) cv in
 	let (id,fn) = d in
 	!Data.add_type_name (Parse_aux.id2name i);
-	let idtype = Parse_aux.make_cv cvs attrs (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) in
+	let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
 	Ast0_cocci.wrap(Ast0_cocci.Init(s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,
 					Parse_aux.clt2mcode ";" pv)) }
   | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
