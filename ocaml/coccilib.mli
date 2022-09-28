@@ -3006,7 +3006,6 @@ module Ast_cocci :
         FStorage of storage mcode
       | FType of fullType
       | FInline of string mcode
-      | FAttr of attr
     and base_attr =
       Ast_cocci.base_attr =
         Attribute of Ast_cocci.attr_arg
@@ -3659,7 +3658,6 @@ module Ast0_cocci :
         FStorage of Ast_cocci.storage mcode
       | FType of typeC
       | FInline of string mcode
-      | FAttr of attr
     and base_attr =
       Ast0_cocci.base_attr =
         Attribute of Ast0_cocci.attr_arg

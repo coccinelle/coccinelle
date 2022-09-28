@@ -71,8 +71,14 @@ let same_s saopt sbopt =
 let rec fullType a b =
   let ((qua,iiqa), attra, tya) = a in
   let ((qub,iiqb), attrb, tyb) = b in
+  let compare_attr _ =
+    let sattra =
+      List.sort compare (List.map Lib_parsing_c.al_attribute attra) in
+    let sattrb =
+      List.sort compare (List.map Lib_parsing_c.al_attribute attrb) in
+    sattra = sattrb in
   (qua.const = qub.const && qua.volatile = qub.volatile &&
-   qua.restrict = qub.restrict && attra = attrb) >&&>
+   qua.restrict = qub.restrict && compare_attr()) >&&>
 
     let (qu,iiq) = (qua, iiqa) in
     typeC tya tyb >>= (fun ty ->

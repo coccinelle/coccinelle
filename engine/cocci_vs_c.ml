@@ -2252,9 +2252,6 @@ and parameter = fun parama paramb ->
 	    p_type = typb;
             p_endattr = endattrsb;} = paramb in
 
-      let attr_allminus =
-        check_allminus.Visitor_ast.combiner_parameter parama in
-
       fullType typa typb >>= (fun typa typb ->
 	match idaopt, nameidbopt with
 	| Some ida, Some nameidb ->
@@ -2725,7 +2722,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 	 (B.FunctionType(tyb, (paramsb, (isvaargs, iidotsb))), ii));
        B.v_storage = stob;
        B.v_local = local;
-       B.v_attr = attrs;
+       B.v_attr = attrs; (* should be []? *)
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      }, iivirg) ->
@@ -2744,14 +2741,13 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
         tokenf rpa rpb >>= (fun rpa rpb ->
         tokenf sema iiptvirgb >>= (fun sema iiptvirgb ->
-	let (stoa,tya,inla,attras) = get_fninfo fninfoa in
+	let (stoa,tya,inla) = get_fninfo fninfoa in
         inline_optional_allminus allminus
           inla (stob, iistob) >>= (fun inla (stob, iistob) ->
         storage_optional_allminus allminus
           stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
-        attribute_list allminus attras attrs >>= (fun attras attrs ->
         fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
-	let fninfoa = put_fninfo stoa tya inla attras in
+	let fninfoa = put_fninfo stoa tya inla in
         parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
           (fun paramsaunwrap paramsb ->
             let paramsa = A.rewrap paramsa paramsaunwrap in
@@ -2768,7 +2764,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
 		}, iivirg), iiptvirgb, iistob))))
-	      )))))))))
+	      ))))))))
 
    (* do iso-by-absence here ? allow typedecl and var ? *)
    | A.TyDecl (typa, ptvirga),
@@ -2975,25 +2971,12 @@ and get_fninfo fninfoa =
   let inla =
     match List.filter (function A.FInline(i) -> true | _ -> false) fninfoa
     with [A.FInline(i)] -> Some i | _ -> None in
+  (stoa,tya,inla)
 
-  let attras =
-    match List.filter (function A.FAttr(a) -> true | _ -> false) fninfoa
-    with
-      [] -> [] |(* _ -> failwith "matching of attributes not supported"*)
-	(* The following provides matching of one attribute against one
-	   attribute.  But the problem is that in the C ast there are no
-	   attributes in the attr field.  The attributes are all comments.
-	   So there is nothing to match against. *)
-	(**)  [A.FAttr(a)] -> [a]
-	(*| [] -> None*)
-	| _ -> failwith "only one attr match allowed" (**) in
-  (stoa,tya,inla,attras)
-
-and put_fninfo stoa tya inla attras =
+and put_fninfo stoa tya inla =
   (match stoa  with Some st -> [A.FStorage st] | None -> []) @
     (match inla   with Some i -> [A.FInline i] | None -> []) @
-    (match tya    with Some t -> [A.FType t] | None -> []) @
-    (List.map (fun x -> A.FAttr x) attras)
+    (match tya    with Some t -> [A.FType t] | None -> [])
 
 (* ------------------------------------------------------------------------- *)
 
@@ -4475,7 +4458,7 @@ and compatible_base_type a signa b =
   | _, (B.Void|B.FloatType _|B.IntType _
         |B.SizeType|B.SSizeType|B.PtrDiffType) -> fail
 
-and compatible_base_type_meta a signa qua b ii local =
+and compatible_base_type_meta a signa qua attr b ii local =
   let fullType_of_baseType b = Ast_c.mk_ty (Ast_c.BaseType b) [] in
   match A.unwrap a, b with
     A.MetaType(ida, cstr, keep, inherited),
@@ -4483,7 +4466,7 @@ and compatible_base_type_meta a signa qua b ii local =
       check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
 	(fun () ->
 	  compatible_sign signa signb >>= fun _ _ ->
-	    let newb = ((qua, (B.BaseType (B.IntType B.CChar),ii)),local) in
+	    let newb = ((qua, attr, (B.BaseType (B.IntType B.CChar),ii)),local) in
 	    compatible_typeC a newb
 	    )
   | A.MetaType(ida, cstr, keep, inherited), B.IntType (B.Si (signb, ty)) ->
@@ -4491,7 +4474,7 @@ and compatible_base_type_meta a signa qua b ii local =
 	(fun () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb =
-	      ((qua, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),
+	      ((qua, attr, (B.BaseType (B.IntType (B.Si (B.Signed, ty))),ii)),
 	       local) in
 	    compatible_typeC a newb
 	    )
@@ -4506,7 +4489,7 @@ and compatible_type a (b,local) =
   match A.unwrap a, b with
     A.Type (false, [], [], a'), _ ->
       compatible_typeC a' (b, local)
-  | A.Type (false, const_vol, a'), (qub, b') ->
+  | A.Type (false, const_vol, [], a'), (qub, [], b') ->
       if
         (match List.map  A.unwrap_mcode const_vol with
         | [A.Const] -> (fst qub).B.const
@@ -4524,38 +4507,38 @@ and compatible_typeC a (b,local) =
 
   let rec loop tya tyb =
     match A.unwrap tya, tyb with
-    | _, (qua, (B.NoType, _)) ->
+    | _, (qua, attra, (B.NoType, _)) ->
 	failwith "compatible_type: matching with NoType"
   (* for metavariables of type expression *^* *)
   (* must be before the general BaseType case *)
     | A.BaseType (A.Unknown, _) , _ -> ok
-    | A.BaseType (a, _), (qua, (B.BaseType b,ii)) ->
+    | A.BaseType (a, _), (qua, attra, (B.BaseType b,ii)) ->
 	compatible_base_type a None b
 
-    | A.SignedT (signa,None), (qua, (B.BaseType b,ii)) ->
+    | A.SignedT (signa,None), (qua, attra, (B.BaseType b,ii)) ->
         compatible_base_type A.IntType (Some signa) b
 
-    | A.SignedT (signa,Some ty), (qua, (B.BaseType b,ii)) ->
+    | A.SignedT (signa,Some ty), (qua, attra, (B.BaseType b,ii)) ->
         (match A.unwrap ty with
           A.BaseType (ty, _) ->
 	    compatible_base_type ty (Some signa) b
         | A.MetaType(ida, cstr, keep, inherited) ->
 	    check_constraints cstr ida (B.MetaTypeVal tyb)
 	      (fun () ->
-		compatible_base_type_meta ty (Some signa) qua b ii local
+		compatible_base_type_meta ty (Some signa) qua attra b ii local
 		  )
 	| _ -> failwith "compatible_typeC: not possible")
 
-    | A.Pointer (a, _), (qub, (B.Pointer b, ii)) ->
+    | A.Pointer (a, _), (qub, attra, (B.Pointer b, ii)) ->
 	compatible_type a (b, local)
-    | A.ParenType (_, a, _), (qub, (B.ParenType b, ii)) ->
+    | A.ParenType (_, a, _), (qub, attra, (B.ParenType b, ii)) ->
 	compatible_type a (b, local)
-    | A.FunctionType (a, _, _, _), (qub, (B.FunctionType (b,_), ii)) ->
+    | A.FunctionType (a, _, _, _), (qub, attra, (B.FunctionType (b,_), ii)) ->
 	compatible_type a (b, local)
-    | A.Array (a, _, _, _), (qub, (B.Array (eopt, b),ii)) ->
+    | A.Array (a, _, _, _), (qub, attra, (B.Array (eopt, b),ii)) ->
       (* no size info for cocci *)
 	compatible_type a (b, local)
-    | A.Decimal(_, _, e1, _, e2, _), (qub, (B.Decimal(l,p),ii)) ->
+    | A.Decimal(_, _, e1, _, e2, _), (qub, attra, (B.Decimal(l,p),ii)) ->
 	(match X.mode with
 	  TransformMode -> ok (* nothing to do here *)
 	| PatternMode ->
@@ -4572,12 +4555,12 @@ and compatible_typeC a (b,local) =
                       (fun _ _ -> (* no transformation to record *)
                         ok)))
     | A.StructUnionName (sua, name),
-	(qub, (B.StructUnionName (sub, sb),ii)) ->
+	(qub, attrb, (B.StructUnionName (sub, sb),ii)) ->
 	  if equal_structUnion_type_cocci sua sub
 	  then structure_type_name name sb ii
 	  else fail
     | A.EnumName (_, sta, name),
-	(qub, (B.EnumName (stb, Some sb),ii)) ->
+	(qub, attrb, (B.EnumName (stb, Some sb),ii)) ->
 	  let tmp =
 	    (match sta, stb with
 	    None, None -> true
@@ -4588,7 +4571,7 @@ and compatible_typeC a (b,local) =
 	      structure_type_name name sb ii
 	    else
 	      fail
-    | A.TypeName sa, (qub, (B.TypeName (namesb, _typb),noii)) ->
+    | A.TypeName sa, (qub, attrb, (B.TypeName (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
 	if A.unwrap_mcode sa = sb
 	then ok
@@ -4603,21 +4586,21 @@ and compatible_typeC a (b,local) =
 	    (fun () -> ok
             )
 	    )
-    | _, (_, (B.FieldType (typb, _, _), _)) ->
+    | _, (_, _, (B.FieldType (typb, _, _), _)) ->
 	loop tya typb
 
-    | _, (_, (B.ParenType typb, _)) ->
+    | _, (_, _, (B.ParenType typb, _)) ->
 	loop tya typb
 
   (* subtil: must be after the MetaType case *)
-    | a, (qub, (B.TypeName (_namesb, Some b), noii)) ->
+    | a, (qub, attrb, (B.TypeName (_namesb, Some b), noii)) ->
       (* kind of typedef iso *)
 	loop tya b
 
-    | A.AutoType _, (_, (B.AutoType, _)) -> ok
+    | A.AutoType _, (_, _, (B.AutoType, _)) -> ok
 
     | (_,
-      (_,
+      (_,_,
       ((
        B.AutoType| B.TemplateType _|
        B.TypeOfType _|B.TypeOfExpr _|
@@ -5139,7 +5122,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
                   f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                   f_storage = stob;
 		  f_constr_inherited = constr_inh;
-                  f_attr = attrs;
                   f_endattr = endattrs;
                   f_body = body;
                   f_old_c_style = oldstyle;
@@ -5149,7 +5131,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       if oldstyle <> None
       then pr2 "OLD STYLE DECL NOT WELL SUPPORTED";
 
-      let (stoa,tya,inla,attras) = get_fninfo fninfoa in
+      let (stoa,tya,inla) = get_fninfo fninfoa in
 
       (match ii with
       | ioparenb::icparenb::iifakestart::iistob ->
@@ -5178,7 +5160,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
             inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
             stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
-          attribute_list allminus attras attrs >>= (fun attras attrs ->
           attribute_list allminus endattras endattrs >>= (fun endattras endattrs ->
               (
                 if isvaargs
@@ -5193,7 +5174,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
            fullType_optional_allminus allminus tya retb >>= (fun tya retb ->
 
-             let fninfoa = put_fninfo stoa tya inla attras in
+             let fninfoa = put_fninfo stoa tya inla in
 
              return (
                A.FunHeader(mckstart,allminus,fninfoa,ida,oparen,
@@ -5202,14 +5183,13 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
                              f_type = (retb, (paramsb, (isvaargs, iidotsb)));
                              f_storage = stob;
 			     f_constr_inherited = constr_inh;
-                             f_attr = attrs;
                              f_endattr = endattrs;
                              f_body = body;
                              f_old_c_style = oldstyle; (* TODO *)
                            },
                            ioparenb::icparenb::iifakestart::iidotdotb@iistob)
                 )
-              )))))))))))
+              ))))))))))
       | _ -> raise (Impossible 49)
       )
 
