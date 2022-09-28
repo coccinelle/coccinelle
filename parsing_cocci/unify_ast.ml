@@ -718,8 +718,6 @@ and unify_fninfo patterninfo cinfo =
 	unify_fullType tya tyb && loop (resta,restb)
     | (Ast.FInline(ia)::resta,Ast.FInline(ib)::restb) ->
 	if unify_mcode ia ib then loop (resta,restb) else false
-    | (Ast.FAttr(ia)::resta,Ast.FAttr(ib)::restb) ->
-	if unify_attribute ia ib then loop (resta,restb) else false
     | (x::resta,((y::_) as restb)) ->
 	(match compare x y with
 	  -1 -> false

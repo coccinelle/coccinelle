@@ -1659,12 +1659,7 @@ fninfo:
 	raise (Semantic_cocci.Semantic "duplicate inline")
       with Not_found ->
 	(Ast0_cocci.FInline(Parse_aux.clt2mcode "inline" $1))::$2 }
-  | a=attr    fninfo
-      { try
-	let _ =
-	  List.find (function Ast0_cocci.FAttr(_) -> true | _ -> false) $2 in
-	raise (Semantic_cocci.Semantic "multiple attributes")
-      with Not_found -> (Ast0_cocci.FAttr(a))::$2 }
+
 
 fninfo_nt:
     /* empty */ { [], [] }

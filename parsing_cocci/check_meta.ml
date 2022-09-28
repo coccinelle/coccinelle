@@ -583,7 +583,6 @@ and fninfo old_metas table minus = function
     Ast0.FStorage(stg) -> ()
   | Ast0.FType(ty) -> typeC old_metas table minus ty
   | Ast0.FInline(inline) -> ()
-  | Ast0.FAttr(attr) -> attribute old_metas table minus attr
 
 and attribute old_metas table minus x =
   match Ast0.unwrap x with

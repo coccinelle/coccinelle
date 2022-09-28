@@ -1226,7 +1226,6 @@ and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
   | Ast0.FType(ty) -> Ast.FType(typeC false ty)
   | Ast0.FInline(inline) -> Ast.FInline(mcode inline)
-  | Ast0.FAttr(attr) -> Ast.FAttr(attribute attr)
 
 and attribute a =
   rewrap a no_isos

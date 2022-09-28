@@ -783,7 +783,6 @@ let equal_fninfo x y =
     (Ast0.FStorage(s1),Ast0.FStorage(s2)) -> equal_mcode s1 s2
   | (Ast0.FType(_),Ast0.FType(_)) -> true
   | (Ast0.FInline(i1),Ast0.FInline(i2)) -> equal_mcode i1 i2
-  | (Ast0.FAttr(i1),Ast0.FAttr(i2)) -> equal_attribute i1 i2
   | _ -> false
 
 let equal_declaration d1 d2 =

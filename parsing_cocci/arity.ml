@@ -1304,7 +1304,6 @@ and fninfo arity = function
     Ast0.FStorage(stg) -> Ast0.FStorage(mcode stg)
   | Ast0.FType(ty) -> Ast0.FType(typeC arity ty)
   | Ast0.FInline(inline) -> Ast0.FInline(mcode inline)
-  | Ast0.FAttr(attr) -> Ast0.FAttr(attribute arity attr)
 
 and fninfo2arity fninfo =
   List.concat
@@ -1312,8 +1311,7 @@ and fninfo2arity fninfo =
        (function
 	   Ast0.FStorage(stg) -> [mcode2arity stg]
 	 | Ast0.FType(ty) -> []
-	 | Ast0.FInline(inline) -> [mcode2arity inline]
-	 | Ast0.FAttr(attr) -> [])
+	 | Ast0.FInline(inline) -> [mcode2arity inline])
        fninfo)
 
 and make_attribute =

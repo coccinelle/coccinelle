@@ -1180,8 +1180,6 @@ let visitor mode bind option_default
     | Ast0.FType(ty) -> let (n,ty) = typeC ty in (n,Ast0.FType(ty))
     | Ast0.FInline(inline) ->
 	let (n,inline) = string_mcode inline in (n,Ast0.FInline(inline))
-    | Ast0.FAttr(init) ->
-	let (n,init) = attribute init in (n,Ast0.FAttr(init))
 
   and attribute a =
     let k a =

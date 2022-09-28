@@ -746,8 +746,7 @@ and declaration d =
 	  [] -> mkres d res name right
 	| Ast0.FStorage(stg)::_ -> mkres d res (promote_mcode stg) right
 	| Ast0.FType(ty)::_ -> mkres d res ty right
-	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right
-	| Ast0.FAttr(attr)::_ -> mkres d res attr right)
+	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right)
   | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
       let name = ident name in
       let lp = normal_mcode lp in
@@ -1364,8 +1363,7 @@ let rec statement s =
 	  [] -> mkres s res name right
 	| Ast0.FStorage(stg)::_ -> mkres s res (promote_mcode stg) right
 	| Ast0.FType(ty)::_ -> mkres s res ty right
-	| Ast0.FInline(inline)::_ -> mkres s res (promote_mcode inline) right
-	| Ast0.FAttr(attr)::_ -> mkres s res attr right)
+	| Ast0.FInline(inline)::_ -> mkres s res (promote_mcode inline) right)
 
     | Ast0.Include(inc,stm) ->
 	let inc = normal_mcode inc in
@@ -1426,11 +1424,6 @@ and leftfninfo fninfo name bef = (* cases on what is leftmost *)
       (leftinfo,
        Ast0.FInline(set_mcode_info inline (Ast0.get_info inlinfo))::rest,
        name)
-  | Ast0.FAttr(attr)::rest ->
-      let attr = attribute attr in
-      let (leftinfo,attr) =
-	promote_to_statement_start attr bef in
-      (leftinfo,Ast0.FAttr(attr)::rest,name)
 
 and pragmainfo pi =
   match Ast0.unwrap pi with

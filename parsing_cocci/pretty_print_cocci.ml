@@ -470,7 +470,6 @@ and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
   | Ast.FType(ty) -> fullType ty
   | Ast.FInline(inline) -> mcode print_string inline; print_string " "
-  | Ast.FAttr(attr) -> print_attribute attr; print_string " "
 
 and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
   if befspace && not (attrs = []) then print_string " ";

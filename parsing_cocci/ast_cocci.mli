@@ -613,7 +613,6 @@ and fninfo =
     FStorage of storage mcode
   | FType of fullType
   | FInline of string mcode
-  | FAttr of attr
 
 and base_attr =
     Attribute of attr_arg

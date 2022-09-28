@@ -1457,8 +1457,6 @@ let match_maker checks_needed context_required whencode_allowed =
 	  if mcode_equal ia ib
 	  then conjunct_bindings (check_mcode ia ib) (loop (resta,restb))
 	  else return false
-      |	(Ast0.FAttr(ia)::resta,Ast0.FAttr(ib)::restb) ->
-          conjunct_bindings (match_attributes [ia] [ib]) (loop (resta,restb))
       |	(x::resta,((y::_) as restb)) ->
 	  (match compare x y with
 	    -1 -> return false

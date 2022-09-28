@@ -472,7 +472,6 @@ and fninfo =
     FStorage of Ast.storage mcode
   | FType of typeC
   | FInline of string mcode
-  | FAttr of attr
 
 and base_attr =
     Attribute of attr_arg

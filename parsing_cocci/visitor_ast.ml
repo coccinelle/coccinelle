@@ -953,7 +953,6 @@ let combiner bind option_default
       Ast.FStorage(stg) -> storage_mcode stg
     | Ast.FType(ty) -> fullType ty
     | Ast.FInline(inline) -> string_mcode inline
-    | Ast.FAttr(attr) -> attribute attr
 
   and attribute a =
     let k a =
@@ -2011,7 +2010,6 @@ let rebuilder
       Ast.FStorage(stg) -> Ast.FStorage(storage_mcode stg)
     | Ast.FType(ty) -> Ast.FType(fullType ty)
     | Ast.FInline(inline) -> Ast.FInline(string_mcode inline)
-    | Ast.FAttr(attr) -> Ast.FAttr(attribute attr)
 
   and attribute a =
     let k a =

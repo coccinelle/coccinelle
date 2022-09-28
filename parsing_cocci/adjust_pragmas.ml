@@ -260,8 +260,6 @@ let left_fundecl name fninfo =
       fncall_right left_ty ty (function ty -> (Ast0.FType ty)::x)
   | (Ast0.FInline inl)::x ->
       fncall_right left_mcode inl (function inl -> (Ast0.FInline inl)::x)
-  | (Ast0.FAttr atr)::x ->
-      fncall_right left_attribute atr (function atr -> (Ast0.FAttr atr)::x)
 
 let rec left_decl decl =
   match Ast0.unwrap decl with
@@ -297,11 +295,7 @@ let rec left_decl decl =
       | (Ast0.FInline inl)::x ->
 	  call_right left_mcode inl decl
 	    (function inl ->
-	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,va,rp1,sem))
-      | (Ast0.FAttr attr0)::x ->
-	  call_right left_attribute attr0 decl
-	    (function attr0 ->
-	      Ast0.FunProto((Ast0.FAttr attr0)::x,name,lp1,params,va,rp1,sem)))
+	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,va,rp1,sem)))
   | Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem))
