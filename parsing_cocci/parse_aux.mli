@@ -94,8 +94,6 @@ val logic_op :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
   string -> Ast0_cocci.expression -> Ast0_cocci.base_expression Ast0_cocci.wrap
-val make_cv :
-  Ast_cocci.const_vol Ast0_cocci.mcode list -> Ast0_cocci.attr list -> Ast0_cocci.typeC -> Ast0_cocci.typeC
 val make_attr:
   Ast0_cocci.attr_arg -> Ast0_cocci.attr
 val make_gcc_attr:
@@ -107,6 +105,11 @@ val pointerify :
   (Data.clt)
   list -> Ast0_cocci.typeC
 val ty_pointerify : Ast0_cocci.typeC -> 'a list -> Ast0_cocci.typeC
+val make_cv :
+    Ast0_cocci.cvattr list -> Ast0_cocci.typeC -> Ast0_cocci.cvattr list -> Ast0_cocci.typeC
+val make_ctype_and_ptr :
+    Ast0_cocci.cvattr list * Ast0_cocci.typeC * Ast0_cocci.cvattr list *
+       (Data.clt * Ast0_cocci.cvattr list) list -> Ast0_cocci.typeC
 val arrayify :
   Ast0_cocci.typeC ->
   ((Data.line_type * int * int * int * int * int *

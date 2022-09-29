@@ -884,15 +884,15 @@ let match_maker checks_needed context_required whencode_allowed =
 		 List.fold_left
 		   (fun prev ->
 		     function
-			 Ast0.CV -> cv::prev
+			 Ast0.CV cv -> cv::prev
 		       | Ast0.Attr attr -> prev)
 		   [] in
 	       let get_attrs =
 		 List.fold_left
 		   (fun prev ->
 		     function
-			 Ast0.CV -> prev
-		       | Ast0.Attr attr -> attr:prev)
+			 Ast0.CV cv -> prev
+		       | Ast0.Attr attr -> attr::prev)
 		   [] in
 	       let cva = List.sort compare(get_cvs (cvbeforea@cvaftera)) in
 	       let cvb = List.sort compare(get_cvs (cvbeforeb@cvafterb)) in

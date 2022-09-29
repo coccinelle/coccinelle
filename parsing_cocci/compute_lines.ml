@@ -573,19 +573,33 @@ and typeC t =
   match Ast0.unwrap t with
     Ast0.ConstVol(cvbefore,ty,cvafter) ->
       let do_cvattr = function
-	  Ast0.CV cv -> normal_mcode cv
-	| Ast0.Attr attr -> attribute attr in
+	  Ast0.CV cv -> Ast0.CV (normal_mcode cv)
+	| Ast0.Attr attr -> Ast0.Attr (attribute attr) in
       let cvbefore = List.map do_cvattr cvbefore in
       let cvafter = List.map do_cvattr cvafter in
       let ty = typeC ty in
+      (* long due to polymorphism issue *)
       (match (cvbefore,List.rev cvafter) with
 	([],[]) -> failwith "useless ConstVol"
-      | (cv::_,[]) ->
+      | (Ast0.CV cv::_,[]) ->
 	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) (promote_mcode cv) ty
-      | ([],cv::_) ->
+      | (Ast0.Attr attr::_,[]) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) attr ty
+      | ([],Ast0.CV cv::_) ->
 	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) ty (promote_mcode cv)
-      | (cvb,cva) ->
-	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) (promote_mcode cvb) (promote_mcode cva))
+      | ([],Ast0.Attr attr::_) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) ty attr
+      | (Ast0.CV cvb::_,Ast0.CV cva::_) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter))
+	    (promote_mcode cvb) (promote_mcode cva)
+      | (Ast0.CV cvb::_,Ast0.Attr attra::_) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter))
+	    (promote_mcode cvb) attra
+      | (Ast0.Attr attrb::_,Ast0.CV cva::_) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter))
+	    attrb (promote_mcode cva)
+      | (Ast0.Attr attrb::_,Ast0.Attr attra::_) ->
+	  mkres t (Ast0.ConstVol(cvbefore,ty,cvafter)) attrb attra)
   | Ast0.BaseType(ty,strings) ->
       let strings = List.map normal_mcode strings in
       let first = List.hd strings in

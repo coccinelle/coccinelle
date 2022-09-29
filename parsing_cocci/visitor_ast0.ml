@@ -343,8 +343,12 @@ let visitor mode bind option_default
 	(match Ast0.unwrap t with
 	  Ast0.ConstVol(cvbefore,ty,cvafter) ->
 	    let do_cvattr = function
-		Ast0.CV cv -> cv_mcode cv
-	      | Ast0.Attr attr -> attribute attr in
+		Ast0.CV cv ->
+		  let (cv_n,cv) = cv_mcode cv in
+		  (cv_n,Ast0.CV cv)
+	      | Ast0.Attr attr ->
+		  let (attr_n,attr) = attribute attr in
+		  (attr_n,Ast0.Attr attr) in
 	    let (cvbefore_n,cvbefore) =
 	      map_split_bind do_cvattr cvbefore in
 	    let (ty_n,ty) = typeC ty in

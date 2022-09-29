@@ -38,7 +38,7 @@ let size_type = Ast0.BaseType (Ast.SizeType, [])
 let ssize_type = Ast0.BaseType (Ast.SSizeType, [])
 let ptrdiff_type = Ast0.BaseType (Ast.PtrDiffType, [])
 
-let same_cvs = cvattrs1 cvattrs2 =
+let same_cvs cvattrs1 cvattrs2 =
   let get_cvs =
     List.fold_left
       (fun prev ->

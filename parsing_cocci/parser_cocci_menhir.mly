@@ -1159,12 +1159,7 @@ top_ctype:
 ctype_without_braces:
   full_ctype_and_ptr(all_basic_types_without_braces)
 | full_ctype_and_ptr(signed_or_unsigned)
-    { let (cvs,attrs,ty,m) = $1 in
-      List.fold_left
-	(function prev ->
-	  function (star,(cvs,attrs)) ->
-	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cvs attrs ty) m }
+    { Parse_aux.make_ctype_and_ptr $1 }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
@@ -1185,12 +1180,7 @@ cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul) { (cv1, t, cv2,
 ctype:
   ctype_and_ptr(all_basic_types)
 | ctype_and_ptr(signed_or_unsigned)
-    { let (cvs,attrs,ty,m) = $1 in
-      List.fold_left
-	(function prev ->
-	  function (star,(cvs,attrs)) ->
-	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cvs attrs ty) m }
+    { Parse_aux.make_ctype_and_ptr $1 }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
@@ -1202,28 +1192,17 @@ ctype:
 
 ctype_only_signable:
   full_ctype_and_ptr(all_basic_types_signable)
-    { let (cvs,attrs,ty,m) = $1 in
-      List.fold_left
-	(function prev ->
-	  function (star,(cvs,attrs)) ->
-	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cvs attrs ty) m }
+    { Parse_aux.make_ctype_and_ptr $1 }
 
 ctype_only_non_signable:
   full_ctype_and_ptr(all_basic_types_non_signable)
-    { let (cvs,attrs,ty,m) = $1 in
-      List.fold_left
-	(function prev ->
-	  function (star,(cvs,attrs)) ->
-	    Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
-	(Parse_aux.make_cv cvs attrs ty) m }
+    { Parse_aux.make_ctype_and_ptr $1 }
 
 const_vol_attr_list:
   /* empty */ { [] }
 | Tconst const_vol_attr_list
   { Ast0.CV(Parse_aux.clt2mcode Ast_cocci.Const $1) :: $2 }
 | Tvolatile const_vol_attr_list
-  { let (cv,attrs) = $2 in
   { Ast0.CV(Parse_aux.clt2mcode Ast_cocci.Volatile $1) :: $2 }
 | attr const_vol_attr_list
   { Ast0.Attr $1 :: $2 }
@@ -1236,8 +1215,9 @@ mctype:
 
 /* signed, unsigned alone not allowed */
 typedef_ctype:
-  cv=const_vol ty=all_basic_types m=list(TMul)
-    { Parse_aux.pointerify (Parse_aux.make_cv cv [] ty) m }
+  cv1=const_vol ty=all_basic_types cv2=const_vol_attr_list m=list(TMul)
+    { let cv1 = List.map (fun x -> Ast0.CV x) cv1 in
+      Parse_aux.pointerify (Parse_aux.make_cv cv1 ty cv2) m }
 | lp=TOPar0 t=midzero_list(mctype,mctype) rp=TCPar0
     { let (mids,code) = t in
       Ast0_cocci.wrap
@@ -1997,11 +1977,7 @@ direct_abstract_d:
     o=TOPar m=list(mul) d=direct_abstract_d c=TCPar
       { function t ->
 	  let mty =
-	    List.fold_left
-	      (function prev ->
-		function (star,(cvs,attrs)) ->
-		  Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]))
-	      t m in
+	    Parse_aux.make_ctype_and_ptr [] t [] m in
           let ty = d mty in
           let _ =
            match Ast0_cocci.unwrap ty with
@@ -2830,9 +2806,9 @@ cstr_ident:
 
 ctype_or_ident:
 | ctype_and_ptr(all_basic_types_or_ident)
-    { let (cvs,attrs,ty,m) = $1 in
-      match cvs, attrs, ty, m with
-	[], [], Common.Right ident, [] -> Common.Right ident
+    { let (cv1,ty,cv2,m) = $1 in
+      match cv1, ty, cv2, m with
+	[], Common.Right ident, [], [] -> Common.Right ident
       | _ ->
 	  let ty =
 	    match ty with
@@ -2845,8 +2821,7 @@ ctype_or_ident:
 		Ast0_cocci.wrap(
 		  Ast0_cocci.MetaType(Ast0_cocci.make_mcode nm,Ast_cocci.CstrTrue,
 				Ast0_cocci.Impure (*will be ignored*))) in
-	  let f prev (star,(cvs,attrs)) = Parse_aux.make_cv cvs attrs (Parse_aux.pointerify prev [star]) in
-	  Common.Left (List.fold_left f (Parse_aux.make_cv cvs attrs ty) m) }
+	  Common.Left (Parse_aux.make_ctype_and_ptr (cv1,ty,cv2,m)) }
 | ty=signed_or_unsigned { Common.Left ty }
 
 all_basic_types_or_ident:

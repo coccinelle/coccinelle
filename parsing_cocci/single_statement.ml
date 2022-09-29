@@ -161,10 +161,26 @@ let rec left_expression e =
 (* --------------------------------------------------------------------- *)
 (* Types *)
 
+and left_attr_arg a =
+  modif_before a ||
+  match Ast0.unwrap a with
+    Ast0.MacroAttr(arg) -> modif_before_mcode arg
+  | Ast0.MacroAttrArgs(nm,lp,exps,rp) -> modif_before_mcode nm
+  | Ast0.MetaAttr(nm,x,y) -> modif_before_mcode nm
+
+and left_attr a =
+  modif_before a ||
+  match Ast0.unwrap a with
+    Ast0.Attribute(arg) -> left_attr_arg arg
+  | Ast0.GccAttribute(attr,lp1,lp2,exps,rp2,rp1) ->
+      modif_before_mcode attr
+
 and left_typeC t =
   modif_before t ||
   match Ast0.unwrap t with
-    Ast0.ConstVol(cv,attrs,ty) -> modif_before_mcode (List.hd cv)
+    Ast0.ConstVol([],ty,cvafter) -> left_typeC ty
+  | Ast0.ConstVol((Ast0.CV cv)::_,ty,_) -> modif_before_mcode cv
+  | Ast0.ConstVol((Ast0.Attr attr)::_,ty,_) -> left_attr attr
   | Ast0.BaseType(ty,strings) -> modif_before_mcode (List.hd strings)
   | Ast0.Signed(sgn,ty) -> modif_before_mcode sgn
   | Ast0.Pointer(ty,star) -> left_typeC ty

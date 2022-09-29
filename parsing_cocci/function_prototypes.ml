@@ -237,7 +237,7 @@ let right_attach_attr_args strings attr_args =
 let right_attach_attr strings attr =
   Ast0.rewrap attr
     (match Ast0.unwrap attr with
-      Ast0.Attribute(arg) -> Ast0.Attribute(right_attach_attr_arg strings arg)
+      Ast0.Attribute(arg) -> Ast0.Attribute(right_attach_attr_args strings arg)
     | Ast0.GccAttribute(attr,lp1,lp2,args,rp2,rp1) ->
 	Ast0.GccAttribute(attr,lp1,lp2,args,rp2,right_attach_mcode strings rp1))
 
@@ -251,8 +251,8 @@ let rec attach_right strings ty =
 	  cvattr::rest ->
 	    let cvattr =
 	      match cvattr with
-		Ast0.CV cv -> right_attach_mcode strings cv
-	      | Ast0.Attr attr -> right_attach_attr strings attr in
+		Ast0.CV cv -> Ast0.CV (right_attach_mcode strings cv)
+	      | Ast0.Attr attr -> Ast0.Attr (right_attach_attr strings attr) in
 	    Ast0.ConstVol(cvbefore,attach_right strings ty,
 			  List.rev(cvattr::rest))
 	| _ -> failwith "not possible")

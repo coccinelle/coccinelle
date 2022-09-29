@@ -149,11 +149,6 @@ let logic_op ast_op left op right =
   let op' = Ast0.wrap (Ast0.Logical (clt2mcode ast_op op)) in  
   Ast0.wrap (Ast0.Binary(left, op', right))
 
-let make_cv cvbefore ty cvafter =
-  match cv,attr with
-    [],[] -> ty
-  | _ -> Ast0.wrap (Ast0.ConstVol(cvbefore,ty,cvafter))
-
 let make_attr attr =
   Ast0.wrap(Ast0.Attribute(attr))
 
@@ -177,6 +172,17 @@ let ty_pointerify ty m =
   List.fold_left
     (fun inner cur -> Ast0.wrap (Ast0.Pointer (inner, Ast0.make_mcode "")))
     ty m
+
+let make_cv cvbefore ty cvafter =
+  match cvbefore,cvafter with
+    [],[] -> ty
+  | _ -> Ast0.wrap (Ast0.ConstVol(cvbefore,ty,cvafter))
+
+let make_ctype_and_ptr (cv1, ty, cv2, m) =
+  List.fold_left
+    (fun prev (star,cvattrs) ->
+      make_cv [] (pointerify prev [star]) cvattrs)
+    (make_cv cv1 ty cv2) m
 
 let arrayify ty ar =
   List.fold_right

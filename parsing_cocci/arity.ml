@@ -433,8 +433,8 @@ and top_typeC tgt opt_allowed typ =
 	    all_same opt_allowed tgt (mcode2line cv)
 	      (List.map mcode2arity cvs) in
       let do_cvattr = function
-	  Ast0.CV cv -> mcode cv
-	| Ast0.Attr attr -> attribute arity attr in
+	  Ast0.CV cv -> Ast0.CV(mcode cv)
+	| Ast0.Attr attr -> Ast0.Attr(attribute arity attr) in
       let cvbefore = List.map do_cvattr cvbefore in
       let cvafter = List.map do_cvattr cvafter in
       let ty = typeC arity ty in

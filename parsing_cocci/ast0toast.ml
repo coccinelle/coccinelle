@@ -560,7 +560,7 @@ and rewrap_iso t t1 = rewrap t (do_isos (Ast0.get_iso t)) t1
 and typeC allminus t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
-      Ast0.ConstVol(cvabefore,ty,cvaafter) ->
+      Ast0.ConstVol(cvbefore,ty,cvafter) ->
 	let (cv,attrs) =
 	  List.partition
 	    (function Ast0.CV _ -> true | Ast0.Attr _ -> false)
