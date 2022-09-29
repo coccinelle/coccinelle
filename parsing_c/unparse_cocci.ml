@@ -1005,6 +1005,7 @@ and declaration d =
   | Ast.UnInit(stg,ty,id,endattr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
+      print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       mcode print_string sem
   | Ast.FunProto (fninfo,name,lp1,params,va,rp1,sem) ->
