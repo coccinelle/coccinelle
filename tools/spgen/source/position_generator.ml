@@ -183,8 +183,8 @@ let rec type_pos t snp
         "in position generator."
       )
   | Ast0.ConjType(lp,tlist,pipelist,rp) -> None (* not sure *)
-  | Ast0.ConstVol(const,attr,t) ->
-      let constructor ~item = Ast0.ConstVol(const,attr,item) in
+  | Ast0.ConstVol(cv1,t,cv2) ->
+      let constructor ~item = Ast0.ConstVol(cv1,item,cv2) in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor snp
   | Ast0.Signed(sign,t) ->
       let constructor ~mc = Ast0.Signed(mc,t) in

@@ -3465,7 +3465,7 @@ module Ast0_cocci :
     and binaryOp = base_binaryOp wrap
     and base_typeC =
       Ast0_cocci.base_typeC =
-        ConstVol of Ast_cocci.const_vol mcode list * attr list * typeC
+        ConstVol of cvattr list * typeC * cvattr list
       | BaseType of Ast_cocci.baseType * string mcode list
       | Signed of Ast_cocci.sign mcode * typeC option
       | Pointer of typeC * string mcode
@@ -3658,6 +3658,10 @@ module Ast0_cocci :
         FStorage of Ast_cocci.storage mcode
       | FType of typeC
       | FInline of string mcode
+    and cvattr =
+      Ast0_cocci.cvattr =
+	CV of Ast_cocci.const_vol mcode
+      | Attr of attr
     and base_attr =
       Ast0_cocci.base_attr =
         Attribute of Ast0_cocci.attr_arg

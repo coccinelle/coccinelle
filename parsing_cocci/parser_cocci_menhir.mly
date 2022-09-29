@@ -1977,7 +1977,7 @@ direct_abstract_d:
     o=TOPar m=list(mul) d=direct_abstract_d c=TCPar
       { function t ->
 	  let mty =
-	    Parse_aux.make_ctype_and_ptr [] t [] m in
+	    Parse_aux.make_ctype_and_ptr ([],t,[],m) in
           let ty = d mty in
           let _ =
            match Ast0_cocci.unwrap ty with
