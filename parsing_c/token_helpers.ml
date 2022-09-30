@@ -217,9 +217,6 @@ let is_ident_like = function
 
   | TMacroAttr _
   | TMacroAttrArgs _
-  | TMacroEndAttr _
-  | TMacroEndAttrArgs _
-  | TMacroGccEndAttr _
   | TMacroStmt _
   | TMacroIdStmt _
   | TMacroString _
@@ -340,9 +337,6 @@ let info_of_tok = function
   | TMacroIdentBuilder     (s, i) -> i
   | TMacroAttr             (s, i) -> i
   | TMacroAttrArgs         (s, i) -> i
-  | TMacroEndAttr          (s, i) -> i
-  | TMacroEndAttrArgs      (s, i) -> i
-  | TMacroGccEndAttr       (i) -> i
   | TMacroStmt             (s, i) -> i
   | TMacroIdStmt           (s, i) -> i
   | TMacroString           (s, i) -> i
@@ -537,9 +531,6 @@ let visitor_info_of_tok f = function
   | TMacroIdentBuilder             (s, i) -> TMacroIdentBuilder (s, f i)
   | TMacroAttr           (s, i)   -> TMacroAttr            (s, f i)
   | TMacroAttrArgs       (s, i)   -> TMacroAttrArgs        (s, f i)
-  | TMacroEndAttr        (s, i)   -> TMacroEndAttr         (s, f i)
-  | TMacroEndAttrArgs    (s, i)   -> TMacroEndAttrArgs     (s, f i)
-  | TMacroGccEndAttr     (i)      -> TMacroGccEndAttr      (f i)
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
   | TMacroIdStmt         (s, i)   -> TMacroIdStmt          (s, f i)
   | TMacroString         (s, i)   -> TMacroString          (s, f i)
@@ -840,9 +831,6 @@ let string_of_token = function
   | TCppDirectiveOther _ -> "TCppDirectiveOther"
   | TMacroAttr _ -> "TMacroAttr"
   | TMacroAttrArgs _ -> "TMacroAttrArgs"
-  | TMacroEndAttr _ -> "TMacroEndAttr"
-  | TMacroEndAttrArgs _ -> "TMacroEndAttrArgs"
-  | TMacroGccEndAttr _ -> "TMacroGccEndAttr"
   | TMacroStmt _ -> "TMacroStmt"
   | TMacroIdStmt _ -> "TMacroIdStmt"
   | TMacroIdentBuilder _ -> "TMacroIdentBuilder"

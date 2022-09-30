@@ -559,7 +559,7 @@ let args_to_params l pb =
 /*(* gccext: extra tokens *)*/
 /*(*-----------------------------------------*)*/
 %token <Ast_c.info> Tasm
-%token <Ast_c.info> Tattribute TMacroGccEndAttr
+%token <Ast_c.info> Tattribute
 %token <Ast_c.info> TattributeNoarg
 %token <Ast_c.info> Tinline
 %token <Ast_c.info> Ttypeof
@@ -646,7 +646,6 @@ let args_to_params l pb =
 /*(* appear  after fix_tokens_cpp, cf also parsing_hacks#hint *)*/
 
 %token <(string * Ast_c.info)>            TMacroAttr TMacroAttrArgs
-%token <(string * Ast_c.info)>            TMacroEndAttr TMacroEndAttrArgs
 %token <(string * Ast_c.info)>            TMacroStmt TMacroIdStmt
 %token <(string * Ast_c.info)> TMacroIdentBuilder
 /*(* no need value for the moment *)*/

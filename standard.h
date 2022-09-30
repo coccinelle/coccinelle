@@ -120,7 +120,6 @@
 
 #define  __pmac
 #define  __force
-#define  __nocast
 #define  __read_mostly
 
 #define  __must_check
