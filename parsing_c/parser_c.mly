@@ -1132,7 +1132,6 @@ stat_or_decl:
 
 expr_statement:
  | TPtVirg                     { None,    [$1] }
- | end_attributes TPtVirg      { None,    [$2] }
  | expr TPtVirg                { Some $1, [$2] }
 
 selection:
@@ -1726,16 +1725,16 @@ abstract_declaratort:
 /*(*************************************************************************)*/
 
 decl2:
- | decl_spec end_attributes_opt TPtVirg
+ | decl_spec TPtVirg
      { function local ->
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        let iistart = Ast_c.fakeInfo () in
        DeclList ([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
 		   v_attr = Ast_c.noattr;
-                   v_endattr = $2; v_type_bis = ref None;
+                   v_endattr = []; v_type_bis = ref None;
                 },[]],
-                ($3::iistart::snd storage))
+                ($2::iistart::snd storage))
      }
  | decl_spec init_declarator_list TPtVirg
      { function local ->
@@ -1759,7 +1758,7 @@ decl2:
          ),  ($3::iistart::snd storage))
      }
  /*(* cppext: *)*/
- | storage_const_opt TMacroDecl TOPar macro_argument_list TCPar end_attributes_opt
+ | storage_const_opt TMacroDecl TOPar macro_argument_list TCPar attributes_opt
    TPtVirg
      { function _ ->
        match $1 with
@@ -1891,9 +1890,6 @@ declaratori:
  /*(* gccext: *)*/
  | declarator gcc_asm_decl
      { LP.add_ident (str_of_name (fst $1)); $1, [] }
- /*(* gccext: *)*/
- | declarator end_attributes
-     { LP.add_ident (str_of_name (fst $1)); $1, $2 (* TODO *) }
 
 gcc_asm_decl:
  | Tasm TOPar asmbody TCPar              {  }
@@ -2071,7 +2067,7 @@ post_constructor:
 | /* empty */ { (false, []) }
 
 field_declaration:
- | decl_spec struct_declarator_list end_attributes_opt TPtVirg
+ | decl_spec struct_declarator_list TPtVirg
      {
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        (if fst (unwrap storage) <> NoSto
@@ -2079,18 +2075,18 @@ field_declaration:
 	 raise
 	   (Semantic
 	      ("field_declaration: case 1: parsing don't allow this",
-	       Ast_c.parse_info_of_info $4)));
+	       Ast_c.parse_info_of_info $3)));
 
        let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
-                         ,[$4;iistart])
+                         ,[$3;iistart])
          (* don't need to check if typedef or func initialised cos
           * grammar don't allow typedef nor initialiser in struct
           *)
      }
 
- | decl_spec end_attributes_opt TPtVirg
+ | decl_spec TPtVirg
      {
        (* gccext: allow empty elements if it is a structdef or enumdef *)
        let (returnType,storage) = fixDeclSpecForDecl $1 in
@@ -2099,10 +2095,10 @@ field_declaration:
 	 raise
 	   (Semantic
 	      ("field_declaration: case 2: parsing don't allow this",
-	       Ast_c.parse_info_of_info $3)));
+	       Ast_c.parse_info_of_info $2)));
 
        let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
-       FieldDeclList ([(Simple (None, returnType)) , []], [$3;iistart])
+       FieldDeclList ([(Simple (None, returnType)) , []], [$2;iistart])
      }
  | simple_type dotdot const_expr2 TPtVirg
      /* specialized for the only thing that makes sense for an anonymous
@@ -2360,9 +2356,6 @@ introduce conflicts in the parser. */
 declaratorfd:
  | declarator
    { et "declaratorfd" (); $1, Ast_c.noattr }
- /*(* gccext: *)*/
-| declarator end_attributes
-   { et "declaratorfd" (); $1, $2 }
 
 /*(*************************************************************************)*/
 /*(* cpp directives *)*/
@@ -2539,7 +2532,7 @@ cpp_other:
     * the rule are slightly different, they can't be statement and so expr
     * at the top, only decl or function definition.
     *)*/
- | identifier TOPar macro_argument_list TCPar end_attributes_opt TPtVirg
+ | identifier TOPar macro_argument_list TCPar attributes_opt TPtVirg
      {
        if args_are_params $3
        then
@@ -2789,10 +2782,10 @@ enumerator_list:
 
 
 init_declarator_list:
- | init_declarator                             { [$1,   []] }
- | init_declarator_list TComma cpp_directive_list init_declarator_attrs
+ | init_declarator attributes_opt                            { [$1,   []] }
+ | init_declarator_list TComma cpp_directive_list init_declarator_attrs attributes_opt
      { $1 @ [$4, [$2]] }
- | init_declarator_list TComma init_declarator_attrs { $1 @ [$3, [$2]] }
+ | init_declarator_list TComma init_declarator_attrs attributes_opt { $1 @ [$3, [$2]] }
 
 declaratorsfd_list:
  | declaratorsfd                            { [$1, []] }
@@ -2831,25 +2824,8 @@ attribute_list:
 
 attributes: attribute_list { $1 }
 
-end_attr_arg:
- | TMacroEndAttr { MacroAttr (fst $1), [snd $1] }
- | TMacroEndAttrArgs TOPar argument_list TCPar
-     { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
-
-end_attribute_gcc:
- | TMacroGccEndAttr tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
-
-end_attribute_list:
- | end_attribute_gcc { [$1] } // not iterable in practice
- | end_attr_arg { [Attribute $1, []] }
- | end_attribute_list end_attribute_gcc { $1 @ [$2] }
- | end_attribute_list end_attr_arg { $1 @ [Attribute $2, []] }
-
-end_attributes: end_attribute_list { $1 }
-
-end_attributes_opt:
- | end_attributes { $1 }
- | /*(* empty *)*/ { [] }
+attributes_opt: attribute_list { $1 }
+ |                             { [] }
 
 comma_opt:
  | TComma {  [$1] }

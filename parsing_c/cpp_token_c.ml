@@ -549,12 +549,6 @@ let apply_macro_defs
 	  apply_macro_defs dynamic_macs pos xs
       | _ -> failwith "#define with no end")
 
-  | PToken ({tok = TIdent (s,i1)} as id)::
-    PToken ({tok = TPtVirg _} | {tok = TEq _})::xs
-      when List.mem s !Flag.cocci_attribute_names ->
-	id.tok <- TMacroEndAttr (s, i1);
-	apply_macro_defs dynamic_macs pos xs
-
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when List.mem s !Flag.cocci_attribute_names ->
 	id.tok <- TMacroAttr (s, i1);

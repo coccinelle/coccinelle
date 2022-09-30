@@ -1133,15 +1133,6 @@ let rec find_macro_paren xs =
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 *)
-  | TV.PToken ({TV.tok = Tattribute ii} as id)
-    ::TV.Parenthised (xxs,info_parens)
-    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
-    ::xs
-     ->
-      pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
-		 (Ast_c.str_of_info ii));
-      id.TV.tok <- TMacroGccEndAttr ii;
-      find_macro_paren xs
   | TV.PToken ({TV.tok = TattributeNoarg ii} as id)
     ::xs
      ->
@@ -1149,31 +1140,6 @@ let rec find_macro_paren xs =
 		 (Ast_c.str_of_info ii));
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
-  | TV.PToken ({TV.tok = TIdent _})::TV.PToken ({TV.tok = TIdent _})
-    ::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
-    ::TV.Parenthised (xxs,info_parens)
-    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
-    ::xs when (LP.current_context () = LP.InTopLevel &&
-	      s ==~ regexp_annot) ->
-      msg_attribute s;
-      id.TV.tok <- TMacroEndAttrArgs (s,ii);
-      find_macro_paren xs
-  | TV.PToken ({TV.tok = TCCro _})::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
-    ::TV.Parenthised (xxs,info_parens)
-    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
-    ::xs when (LP.current_context () = LP.InTopLevel &&
-	      s ==~ regexp_annot) ->
-      msg_attribute s;
-      id.TV.tok <- TMacroEndAttrArgs (s,ii);
-      find_macro_paren xs
-  | TV.PToken ({TV.tok = TMacroAttr (s,ii)} as attr)
-    ::TV.Parenthised (xxs,info_parens)
-    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
-    ::xs
-     ->
-      attr.TV.tok <- TMacroEndAttrArgs (s,ii);
-      find_macro_paren xs
-
 (*
   (* attribute cpp, __xxx id *)
   | TV.PToken ({TV.tok = TIdent (s,i1)} as id)
@@ -2847,29 +2813,6 @@ let lookahead2 ~pass next before =
         TMacroIterator (s, i1)
       end
       else TIdent (s, i1)
-
-  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
-     TIdent(s2,i2)::TIdent(s3,i3)::_)
-      when (LP.current_context () = LP.InTopLevel &&
-	s1 ==~ regexp_annot) ->
-	  msg_attribute s1;
-	  TMacroEndAttr (s1, i1)
-
-  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,TCCro(i2)::_)
-      when LP.current_context () = LP.InTopLevel &&
-	s1 ==~ regexp_annot ->
-	  msg_attribute s1;
-	  TMacroEndAttr (s1, i1)
-
-  | (TIdent(s1,i1)::TOBrace(ii2)::rest,TCPar(i2)::_)
-      when LP.current_context () = LP.InTopLevel &&
-	s1 ==~ regexp_annot ->
-	  msg_attribute s1;
-	  TMacroEndAttr (s1, i1)
-
-  | (TMacroAttr(s1,i1)::(TPtVirg(ii2)|TEq(ii2)|TOBrace(ii2))::rest,_)
-      ->
-	  TMacroEndAttr (s1, i1)
 
   | (TMacroAttr(s1,i1)::TOPar(ii2)::t::rest,_)
       when match t with TMul(_) -> false | _ -> true ->
