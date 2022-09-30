@@ -2297,11 +2297,11 @@ cpp_directive_list:
 function_def:
  | start_fun compound      { LP.del_scope(); ($1, $2, None) }
  | start_fun cpp_directive_list compound { LP.del_scope(); ($1, $3, None) }
- | start_fun decl_list compound      {
+/* | start_fun decl_list compound      {
      (* TODO: undo the typedef added ? *)
      LP.del_scope();
      ($1, $3, Some $2)
-   }
+   } */
 
 start_fun: start_fun2
   { LP.new_scope();
