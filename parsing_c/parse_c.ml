@@ -215,9 +215,12 @@ let print_commentized xs =
 	    if newline = !line
 	    then pr2_no_nl (s ^ " ")
 	    else begin
+	      let str =
+		Printf.sprintf "%s:%d: passed:"
+		  pinfo.Common.file newline in
               if !line = -1
-              then pr2_no_nl "passed:"
-              else pr2_no_nl "\npassed:";
+              then pr2_no_nl str
+              else pr2_no_nl ("\n"^str);
               line := newline;
               pr2_no_nl (s ^ " ");
 	    end
