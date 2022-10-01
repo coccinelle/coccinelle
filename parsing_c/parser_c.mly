@@ -1673,9 +1673,8 @@ parameter_decl_arg: /* more tolerant */
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
 
 declaratorp:
- | declarator  { LP.add_ident (str_of_name (fst $1)); Ast_c.noattr,$1 }
  /*(* gccext: *)*/
- | declarator attributes
+ | declarator attributes_opt
                { LP.add_ident (str_of_name (fst $1)); $2, $1 }
 
 abstract_declaratorp:
@@ -1884,8 +1883,8 @@ init_declarator_attrs: init_declarator_attrs2 { dt "init_attrs" (); $1 }
 /*(*----------------------------*)*/
 
 declaratori:
- | declarator
-     { LP.add_ident (str_of_name (fst $1)); $1, [] }
+ | declarator attributes_opt
+     { LP.add_ident (str_of_name (fst $1)); $1, $2 }
  /*(* gccext: *)*/
  | declarator gcc_asm_decl
      { LP.add_ident (str_of_name (fst $1)); $1, [] }
@@ -2781,10 +2780,10 @@ enumerator_list:
 
 
 init_declarator_list:
- | init_declarator attributes_opt                            { [$1,   []] }
- | init_declarator_list TComma cpp_directive_list init_declarator_attrs attributes_opt
+ | init_declarator                            { [$1,[]] }
+ | init_declarator_list TComma cpp_directive_list init_declarator_attrs
      { $1 @ [$4, [$2]] }
- | init_declarator_list TComma init_declarator_attrs attributes_opt { $1 @ [$3, [$2]] }
+ | init_declarator_list TComma init_declarator_attrs { $1 @ [$3, [$2]] }
 
 declaratorsfd_list:
  | declaratorsfd                            { [$1, []] }
