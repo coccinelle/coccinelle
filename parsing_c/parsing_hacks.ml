@@ -684,7 +684,7 @@ let rec commentize_skip_start_to_end xs =
               | _ -> false
               )
             in
-            let topass = x::x2::before in
+            let topass = x::x2::before in pr2 "sac a\n";
             topass +> List.iter (fun tok ->
               TV.set_as_comment Token_c.CppPassingExplicit tok
             );
@@ -715,7 +715,7 @@ let rec find_ifdef_bool xs =
 
       (match xxs with
       | [] -> raise (Impossible 90)
-      | firstclause::xxs ->
+      | firstclause::xxs -> pr2 "sac b\n";
           info_ifdef_stmt +>
             List.iter (TV.save_as_comment (fun x ->
                                     Token_c.CppIfDirective x));
@@ -850,7 +850,7 @@ let rec find_ifdef_mid xs =
               *)
             then begin
               msg_ifdef_mid_something();
-
+ pr2 "sac c\n";
               (* keep only first, treat the rest as comment *)
               info_ifdef_stmt +> List.iter
                   (TV.save_as_comment (function x -> Token_c.CppIfDirective x));
@@ -887,7 +887,7 @@ let rec find_ifdef_funheaders = function
     ::xs
    when List.length ifdefblock1 <= thresholdFunheaderLimit &&
         List.length ifdefblock2 <= thresholdFunheaderLimit
-    ->
+    -> pr2 "sac d\n";
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
@@ -910,7 +910,7 @@ let rec find_ifdef_funheaders = function
       )
     ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line4)
     ::xs
-    ->
+    -> pr2 "sac e\n";
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
@@ -930,7 +930,7 @@ let rec find_ifdef_funheaders = function
       )
     ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line4)
     ::xs
-    ->
+    -> pr2 "sac f\n";
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
@@ -1010,7 +1010,7 @@ let find_ifdef_cparen_else xs =
           in
           if condition then begin
             msg_ifdef_cparen_else();
-
+ pr2 "sac g\n";
             (* keep only first, treat the rest as comment *)
             info_ifdef_stmt +>
 	    List.iter (TV.save_as_comment (fun x -> Token_c.CppIfDirective x));
@@ -1133,13 +1133,47 @@ let rec find_macro_paren xs =
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
 *)
-  | TV.PToken ({TV.tok = TattributeNoarg ii} as id)
+(*  | TV.PToken ({TV.tok = Tattribute ii} as id)
+    ::TV.Parenthised (xxs,info_parens)
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
     ::xs
      ->
+      pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
+		 (Ast_c.str_of_info ii));
+      id.TV.tok <- TMacroGccEndAttr ii;
+      find_macro_paren xs*)
+  | TV.PToken ({TV.tok = TattributeNoarg ii} as id)
+    ::xs
+     -> pr2 "sac h\n";
       pr2_cpp (Printf.sprintf "MACRO: attributenoarg %s detected "
 		 (Ast_c.str_of_info ii));
       TV.set_as_comment Token_c.CppAttr id;
       find_macro_paren xs
+  | TV.PToken ({TV.tok = TIdent _})::TV.PToken ({TV.tok = TIdent _})
+    ::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
+    ::TV.Parenthised (xxs,info_parens)
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
+    ::xs when (LP.current_context () = LP.InTopLevel &&
+	      s ==~ regexp_annot) ->
+      msg_attribute s;
+      id.TV.tok <- TMacroAttrArgs (s,ii);
+      find_macro_paren xs
+  | TV.PToken ({TV.tok = TCCro _})::TV.PToken ({TV.tok = TIdent (s,ii)} as id)
+    ::TV.Parenthised (xxs,info_parens)
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _})
+    ::xs when (LP.current_context () = LP.InTopLevel &&
+	      s ==~ regexp_annot) ->
+      msg_attribute s;
+      id.TV.tok <- TMacroAttrArgs (s,ii);
+      find_macro_paren xs
+  | TV.PToken ({TV.tok = TMacroAttr (s,ii)} as attr)
+    ::TV.Parenthised (xxs,info_parens)
+    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
+    ::xs
+     ->
+      attr.TV.tok <- TMacroAttrArgs (s,ii);
+      find_macro_paren xs
+
 (*
   (* attribute cpp, __xxx id *)
   | TV.PToken ({TV.tok = TIdent (s,i1)} as id)
@@ -1179,7 +1213,7 @@ let rec find_macro_paren xs =
   (* string macro with params, before case *)
   | TV.PToken ({TV.tok = (TString _| TMacroString _)})::TV.PToken ({TV.tok = TIdent (s,_)} as id)
     ::TV.Parenthised (xxs, info_parens)
-    ::xs ->
+    ::xs -> pr2 "sac i\n";
 
       msg_stringification_params s;
       id.TV.tok <- TMacroString (s, TH.info_of_tok id.TV.tok);
@@ -1191,7 +1225,7 @@ let rec find_macro_paren xs =
   | TV.PToken ({TV.tok = TIdent (s,_)} as id)
     ::TV.Parenthised (xxs, info_parens)
     ::TV.PToken ({TV.tok = (TString _ | TMacroString _)})
-    ::xs ->
+    ::xs -> pr2 "sac j\n";
 
       msg_stringification_params s;
       id.TV.tok <- TMacroString (s, TH.info_of_tok id.TV.tok);
@@ -1509,7 +1543,7 @@ let rec find_macro_lineparen prev_line_end xs =
         else begin
           msg_macro_noptvirg s;
 	  (match ctx with
-	    TV.InStruct ->
+	    TV.InStruct -> pr2 "sac k\n";
               macro.TV.tok <- TMacroDecl (s, TH.info_of_tok macro.TV.tok);
               [args] +>
               TV.iter_token_paren (TV.set_as_comment Token_c.CppMacro)
@@ -1525,7 +1559,7 @@ let rec find_macro_lineparen prev_line_end xs =
 		!res in
 	      if contains_semicolon [args]
 	      then
-		begin
+		begin pr2 "sac l\n";
 		  macro.TV.tok <- TMacroIdStmt (s, TH.info_of_tok macro.TV.tok);
 		  [args] +>
 		  TV.iter_token_paren (TV.set_as_comment Token_c.CppMacro)
@@ -2102,12 +2136,12 @@ let lookahead2 ~pass next before =
 
 	(* extern "_" tt *)
   | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _)
-    when !Flag.c_plus_plus <> Flag.Off ->
+    when !Flag.c_plus_plus <> Flag.Off -> Printf.eprintf "comment 1\n";
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* ) const { *)
   | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _)
-    when !Flag.c_plus_plus <> Flag.Off ->
+    when !Flag.c_plus_plus <> Flag.Off -> Printf.eprintf "comment 2\n";
 	  TCommentCpp (Token_c.CppDirective, i1)
 
   (* const ident const: ident must be a type *)
@@ -2121,25 +2155,25 @@ let lookahead2 ~pass next before =
 	(* xx const tt *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _)
     when not_struct_enum before
-	&& is_type type_ ->
+	&& is_type type_ -> Printf.eprintf "comment 3\n";
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx struct *)
   | (TIdent (s, i1)::Tstruct _::_  , _)
-    when not_struct_enum before ->
+    when not_struct_enum before -> Printf.eprintf "comment 4\n";
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx tt *)
   | (TIdent (s, i1)::type_::_  , _)
     when not_struct_enum before
-	&& is_type type_ ->
+	&& is_type type_ -> Printf.eprintf "comment 5\n";
 	  TCommentCpp (Token_c.CppDirective, i1)
 
         (* tt xx yy ( : xx is an annot *)
   | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, seen::_)
     when LP.current_context () = LP.InTopLevel
 	&& (is_struct_enum before || is_type seen)
-	&& s ==~ regexp_annot ->
+	&& s ==~ regexp_annot -> Printf.eprintf "comment 6\n";
 	  TCommentCpp (Token_c.CppMacro, i1)
 
         (* tt * xx yy ( : xx is an annot *)
@@ -2147,20 +2181,23 @@ let lookahead2 ~pass next before =
     when LP.current_context () = LP.InTopLevel
 	&& pointer ptr
 	&& s ==~ regexp_annot ->
-	  TCommentCpp (Token_c.CppMacro, i1)
+      msg_attribute s;
+      TMacroAttr (s,i1)
 
 	(* tt xx yy; : yy is an annot *)
   | (TIdent (s, i1)::(TPtVirg _|TEq _)::_, TIdent (s2, i2)::type_::rest)
     when (is_struct_enum (type_::rest)
 	|| is_type type_)
 	&& s ==~ regexp_annot ->
-	  TCommentCpp (Token_c.CppMacro, i1)
+      msg_attribute s;
+      TMacroAttr (s,i1)
 
 	(* tt * xx yy; : yy is an annot *)
   | (TIdent (s, i1)::(TPtVirg _|TEq _)::_, TIdent (s2, i2)::ptr)
     when pointer ptr
 	&& s ==~ regexp_annot ->
-	  TCommentCpp (Token_c.CppMacro, i1)
+      msg_attribute s;
+      TMacroAttr (s,i1)
 
 	(* tt xx yy; : yy is an annot, so xx is an ident *)
   | (TIdent (s, i1)::TIdent (s2, i2)::(TPtVirg _|TEq _)::_, seen::_)
@@ -2181,8 +2218,8 @@ let lookahead2 ~pass next before =
 	&& is_type seen ->
 	  if is_macro s2 then
 	    TIdent (s, i1)
-	  else
-	    TCommentCpp (Token_c.CppDirective, i1)
+	  else ( Printf.eprintf "comment 10\n";
+	    TCommentCpp (Token_c.CppDirective, i1))
 
 	(* tt xx yy *)
   | (TIdent (s, i1)::rest, _)
@@ -2192,17 +2229,18 @@ let lookahead2 ~pass next before =
              (function x ->
                 is_type x || is_storage_spec x || is_type_qualif x) rest
         && s ==~ regexp_annot ->
-	    TCommentCpp (Token_c.CppMacro, i1)
+      msg_attribute s;
+      TMacroAttr (s,i1)
 
   | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_)
     when not_struct_enum before
-	&& is_macro s2 && is_type seen ->
+	&& is_macro s2 && is_type seen -> Printf.eprintf "comment 12\n";
 	  TCommentCpp (Token_c.CppDirective, i2)
 
 	(* tt xx * *)
   | (TIdent (s, i1)::ptr  , seen::_)
     when not_struct_enum before
-	&& pointer ptr && is_type seen ->
+	&& pointer ptr && is_type seen -> Printf.eprintf "comment 13\n";
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
@@ -2211,13 +2249,13 @@ let lookahead2 ~pass next before =
 	&& pointer ptr ->
 	  if is_macro s2 then
 	    TIdent (s, i1)
-	  else
-	    TCommentCpp (Token_c.CppDirective, i1)
+	  else ( Printf.eprintf "comment 14\n";
+	    TCommentCpp (Token_c.CppDirective, i1))
 
 	(* tt * xx yy *)
   | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr)
     when not_struct_enum before
-	&& is_macro s2 && pointer ptr ->
+	&& is_macro s2 && pointer ptr -> Printf.eprintf "comment 15\n";
 	  TCommentCpp (Token_c.CppDirective, i2)
 
         (* exception to next rule *)
@@ -2228,7 +2266,7 @@ let lookahead2 ~pass next before =
 	(* tt xx yy *)
   | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_)
     when not_struct_enum before
-	&& is_macro s2 && is_type seen ->
+	&& is_macro s2 && is_type seen -> Printf.eprintf "comment 16\n";
 	  TCommentCpp (Token_c.CppDirective, i2)
 
   (*  xx * yy      AND  in paramdecl *)
@@ -2250,7 +2288,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
 	&& ok_typedef s2
 	&& is_known_typdef s2
-        ->
+        -> Printf.eprintf "comment 17\n";
 	  TCommentCpp(Token_c.CppMacro, i1)
 
   (* xx yy zz : xx is a typedef ident *)
@@ -2267,7 +2305,7 @@ let lookahead2 ~pass next before =
 	&& not_struct_enum before
 	&& ok_typedef s2
 	&& is_known_typdef s2
-        ->
+        -> Printf.eprintf "comment 18\n";
 	  TCommentCpp(Token_c.CppMacro, i1)
 
   (* xx yy * zz : xx is a typedef ident *)
@@ -2771,6 +2809,7 @@ let lookahead2 ~pass next before =
           | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
           | TEndif _ -> Token_c.Endif
           | _ -> Token_c.Other in (* not possible here *)
+	 Printf.eprintf "comment 19\n";
               TCommentCpp (Token_c.CppIfDirective x, ii)
         end
       else x
@@ -2779,7 +2818,7 @@ let lookahead2 ~pass next before =
       ->
         if (pass >= 2)
         then begin
-          pr2_cpp("UNDEF: I treat it as comment");
+          pr2_cpp("UNDEF: I treat it as comment"); Printf.eprintf "comment 20\n";
           TCommentCpp (Token_c.CppDirective, ii)
         end
         else x
@@ -2788,7 +2827,7 @@ let lookahead2 ~pass next before =
       ->
         if (pass >= 2)
         then begin
-          pr2_cpp ("OTHER directive: I treat it as comment");
+          pr2_cpp ("OTHER directive: I treat it as comment");  Printf.eprintf "comment 21\n";
           TCommentCpp (Token_c.CppDirective, ii)
         end
         else x
@@ -2813,6 +2852,29 @@ let lookahead2 ~pass next before =
         TMacroIterator (s, i1)
       end
       else TIdent (s, i1)
+
+  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
+     TIdent(s2,i2)::TIdent(s3,i3)::_)
+      when (LP.current_context () = LP.InTopLevel &&
+	s1 ==~ regexp_annot) ->
+	  msg_attribute s1;
+	  TMacroAttr (s1, i1)
+
+  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,TCCro(i2)::_)
+      when LP.current_context () = LP.InTopLevel &&
+	s1 ==~ regexp_annot ->
+	  msg_attribute s1;
+	  TMacroAttr (s1, i1)
+
+  | (TIdent(s1,i1)::TOBrace(ii2)::rest,TCPar(i2)::_)
+      when LP.current_context () = LP.InTopLevel &&
+	s1 ==~ regexp_annot ->
+	  msg_attribute s1;
+	  TMacroAttr (s1, i1)
+
+  | (TMacroAttr(s1,i1)::(TPtVirg(ii2)|TEq(ii2)|TOBrace(ii2))::rest,_)
+      ->
+	  TMacroAttr (s1, i1)
 
   | (TMacroAttr(s1,i1)::TOPar(ii2)::t::rest,_)
       when match t with TMul(_) -> false | _ -> true ->

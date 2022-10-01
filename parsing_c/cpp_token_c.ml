@@ -83,7 +83,7 @@ let assoc_hint_string = [
   "YACFE_STRING"     , HintMacroString;
   "YACFE_STATEMENT"  , HintMacroStatement;
   "YACFE_ATTRIBUTE"  , HintAttribute;
-  "YACFE_END_ATTRIBUTE" , HintEndAttribute;
+  "YACFE_END_ATTRIBUTE" , HintAttribute;
   "YACFE_IDENT_BUILDER" , HintMacroIdentBuilder;
 
   "MACROANNOTATION"   , HintAttribute;
@@ -548,6 +548,12 @@ let apply_macro_defs
 	    List.filter (function x -> not (x = mypos)) pos in
 	  apply_macro_defs dynamic_macs pos xs
       | _ -> failwith "#define with no end")
+
+  | PToken ({tok = TIdent (s,i1)} as id)::
+    PToken ({tok = TPtVirg _} | {tok = TEq _})::xs
+      when List.mem s !Flag.cocci_attribute_names ->
+        id.tok <- TMacroAttr (s, i1);
+        apply_macro_defs dynamic_macs pos xs
 
   | PToken ({tok = TIdent (s,i1)} as id)::xs
       when List.mem s !Flag.cocci_attribute_names ->
