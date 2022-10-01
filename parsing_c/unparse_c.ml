@@ -253,7 +253,9 @@ let get_fakeInfo_and_tokens celem toks =
       (*old: assert(before +> List.for_all (TH.is_comment)); *)
       before +> List.iter (fun x ->
         if not (TH.is_comment x)
-        then pr2 ("WEIRD: not a comment:" ^ TH.str_of_tok x)
+        then
+	  pr2 (Printf.sprintf "%s:%d: WEIRD: not a comment:
+		 %s" (TH.file_of_tok x) (TH.line_of_tok x) (TH.str_of_tok x))
         (* case such as  int asm d3("x"); not yet in ast *)
         );
       before +> List.iter (fun x -> push2 (T1 x) toks_out);
