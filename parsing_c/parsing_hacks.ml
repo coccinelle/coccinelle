@@ -2166,8 +2166,10 @@ let lookahead2 ~pass next before =
 	(* xx tt *)
   | (TIdent (s, i1)::type_::_  , _)
     when not_struct_enum before
-	&& is_type type_ -> Printf.eprintf "comment 5\n";
-	  TCommentCpp (Token_c.CppDirective, i1)
+	&& is_type type_
+	&& s ==~ regexp_annot ->
+      msg_attribute s;
+      TMacroAttr (s,i1)
 
         (* tt xx yy ( : xx is an annot *)
   | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, seen::_)
@@ -2218,7 +2220,7 @@ let lookahead2 ~pass next before =
 	&& is_type seen ->
 	  if is_macro s2 then
 	    TIdent (s, i1)
-	  else ( Printf.eprintf "comment 10\n";
+	  else ( Printf.eprintf "comment 10: %s %d\n" s (Ast_c.line_of_info i1);
 	    TCommentCpp (Token_c.CppDirective, i1))
 
 	(* tt xx yy *)
@@ -2997,6 +2999,26 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
       aux xs
     );
   } ast
+
+(* ----------------------------------------------------------------------- *)
+(* annotations *)
+
+let detect_annotations toks =
+  let not_annotations = Hashtbl.create 101 in
+  let rec loop = function
+      TIdent(s,i1)::((TOPar _::_) as rest) when s ==~ regexp_annot ->
+	Hashtbl.replace not_annotations s ();
+	loop rest
+    | x :: xs -> loop xs
+    | [] -> () in
+  loop toks;
+  let rec redo acc = function
+      TIdent(s,i1)::rest
+      when s ==~ regexp_annot && not (Hashtbl.mem not_annotations s) ->
+	redo (TMacroAttr(s,i1)::acc) rest
+    | x::xs -> redo (x::acc) xs
+    | [] -> List.rev acc in
+  redo [] toks
 
 (* ----------------------------------------------------------------------- *)
 (* Changes specific to C++ *)
