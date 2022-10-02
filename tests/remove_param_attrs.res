@@ -10,7 +10,7 @@ int func3(int x, int y) {
 	return 0;
 }
 
-int func1(int x, __attribute__((nocast)) int y) {
+int func1(int x, int y) {
 	return 0;
 }
 
