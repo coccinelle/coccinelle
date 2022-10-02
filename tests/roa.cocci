@@ -13,7 +13,9 @@ struct
 identifier i,j;
 @@
 
-struct i
+- struct
++ union
+      i
 -     j
 +     not_used
     =
