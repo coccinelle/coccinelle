@@ -3514,7 +3514,9 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
        let rec cvattr_align cvattrs (qu,il) attrb =
 	 match cvattrs with
 	   [] ->
-             if not optional_attributes && (il <> [] || attrb <> [])
+             if not optional_qualifier && il <> []
+             then fail
+             else if not optional_attributes && attrb <> []
              then fail
              else return ([], ([],[],il,attrb))
 	 | A.CV cv :: rest ->
