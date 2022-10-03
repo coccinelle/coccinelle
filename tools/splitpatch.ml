@@ -511,7 +511,7 @@ let make_mail_header o date maintainers ctr number cover subject =
       Printf.fprintf o "To: %s\n" x;
       Printf.fprintf o "Cc: %s\n" (String.concat "," xs)
   | _ -> failwith "no maintainers");
-  if number = 1 && not cover
+  if (*number = 1 &&*) not cover
   then Printf.fprintf o "Subject: [PATCH] %s\n\n" subject
   else
     if number >= 100
