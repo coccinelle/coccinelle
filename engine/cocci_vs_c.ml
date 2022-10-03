@@ -3503,14 +3503,18 @@ and enum_field ida idb =
 (* ------------------------------------------------------------------------- *)
 and (fullType: (A.fullType, Ast_c.fullType) matcher) =
  fun typa typb ->
-   X.optional_qualifier_flag (fun optional_qualifier ->
-   X.optional_attributes_flag (fun optional_attributes ->
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
    | A.Type(allminus,cvbefore,ty1,cvafter), ((qu,il),attrb,ty2) ->
         (* todo: can be __const__ ? can be const & volatile so
          * should filter instead ?
          *)
+       X.optional_qualifier_flag (fun optional_qualifier ->
+       X.optional_attributes_flag (fun optional_attributes ->
+       let metatype =
+	 match A.unwrap ty1 with
+	   A.MetaType _ -> true
+	 | _ -> false in
        let rec cvattr_align cvattrs (qu,il) attrb =
 	 match cvattrs with
 	   [] ->
@@ -3518,7 +3522,14 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
              then fail
              else if not optional_attributes && attrb <> []
              then fail
-             else return ([], ([],[],il,attrb))
+             else if metatype
+	     then return ([], ([],[],il,attrb))
+	     else if allminus
+	     then
+	       minusize_list il >>= (fun () il ->
+	       allminus_attrs attrb >>= (fun _ attrb ->
+	       return ([], (il,attrb,[],[]))))
+	     else return ([], (il,attrb,[],[]))
 	 | A.CV cv :: rest ->
 	     (match term cv with
 	       A.Const when qu.B.const ->
@@ -3564,7 +3575,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
            return (
            (A.Type(allminus, cvattrs, ty1, [])) +> A.rewrap typa,
            ((qu, il@restii), attrb@restattrb, ty2)
-         )))
+         )))))
 
   | A.AsType(ty,asty), tyb ->
       fullType ty tyb >>= (fun ty tyb ->
@@ -3586,8 +3597,6 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
       loop [] typb typas
 
    | A.OptType(_), _ -> failwith "not handling Opt on type"
-   ))
-
 
 (*
  * Why not (A.typeC, Ast_c.typeC) matcher ?
@@ -4329,14 +4338,7 @@ and attribute_list allminus attras attrbs =
   match attras,attrbs with
     [], _ when optional_attributes || attrbs = [] ->
       if allminus
-      then
-        let rec loop = function
-            [] -> return ([],[])
-          | ib::ibs ->
-              X.distrf_attr minusizer ib >>= (fun _ ib ->
-                  loop ibs >>= (fun l ibs ->
-                    return([],ib::ibs))) in
-        loop attrbs
+      then allminus_attrs attrbs
       else return ([], attrbs)
   | [], _ -> fail
   | [attra], [attrb] ->
@@ -4345,6 +4347,15 @@ and attribute_list allminus attras attrbs =
     )
   | [attra], attrb -> fail
   | _ -> failwith "only one attribute allowed in SmPL")
+
+and allminus_attrs attrbs =
+  let rec loop = function
+      [] -> return ([],[])
+    | ib::ibs ->
+        X.distrf_attr minusizer ib >>= (fun _ ib ->
+        loop ibs >>= (fun l ibs ->
+	return([],ib::ibs))) in
+  loop attrbs
 
 and attribute = fun allminus ea eb ->
     match A.unwrap ea, eb with
