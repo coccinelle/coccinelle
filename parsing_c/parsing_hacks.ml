@@ -1496,11 +1496,7 @@ let rec find_macro_lineparen prev_line_end xs =
           (TV.PToken ({TV.col = col2 } as other)::restline2
           ) as line2)
     ::xs
-    when
-      ((*Printf.eprintf "checking on %s: %b %b %b %b\n" s
-	 (ctx = TV.InFunction) (ctx = TV.InStruct) (ctx = TV.NoContext)
-	 (ctx = TV.InInitializer);*)
-      List.mem ctx [TV.InFunction;TV.InStruct;TV.NoContext])
+    when List.mem ctx [TV.InFunction;TV.InStruct;TV.NoContext]
     (* when s ==~ regexp_macro *)
     ->
       (* This can give a false positive for K&R functions if the function
@@ -2164,7 +2160,7 @@ let lookahead2 ~pass next before =
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx tt *)
-  | (TIdent (s, i1)::type_::_  , _)
+(*  | (TIdent (s, i1)::type_::_  , _)
     when not_struct_enum before
 	&& is_type type_
 	&& s ==~ regexp_annot ->
@@ -2232,7 +2228,7 @@ let lookahead2 ~pass next before =
                 is_type x || is_storage_spec x || is_type_qualif x) rest
         && s ==~ regexp_annot ->
       msg_attribute s;
-      TMacroAttr (s,i1)
+      TMacroAttr (s,i1) *)
 
   | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_)
     when not_struct_enum before
@@ -2855,7 +2851,7 @@ let lookahead2 ~pass next before =
       end
       else TIdent (s, i1)
 
-  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
+(*  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
      TIdent(s2,i2)::TIdent(s3,i3)::_)
       when (LP.current_context () = LP.InTopLevel &&
 	s1 ==~ regexp_annot) ->
@@ -2872,7 +2868,7 @@ let lookahead2 ~pass next before =
       when LP.current_context () = LP.InTopLevel &&
 	s1 ==~ regexp_annot ->
 	  msg_attribute s1;
-	  TMacroAttr (s1, i1)
+	  TMacroAttr (s1, i1) *)
 
   | (TMacroAttr(s1,i1)::(TPtVirg(ii2)|TEq(ii2)|TOBrace(ii2))::rest,_)
       ->
@@ -3006,15 +3002,25 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
 let detect_annotations toks =
   let not_annotations = Hashtbl.create 101 in
   let rec loop = function
-      TIdent(s,i1)::((TOPar _::_) as rest) when s ==~ regexp_annot ->
-	Hashtbl.replace not_annotations s ();
-	loop rest
+      TIdent(s,i1)::rest when s ==~ regexp_annot ->
+	(match Common.drop_while TH.is_just_comment_or_space rest with
+	  TOPar _::rest ->
+	    Hashtbl.replace not_annotations s ();
+	    loop rest
+	| _ -> loop rest)
+    | TAssign _::rest | TEq _::rest ->
+	(match Common.drop_while TH.is_just_comment_or_space rest with
+	  TIdent(s,i1)::rest when s ==~ regexp_annot ->
+	    Hashtbl.replace not_annotations s ();
+	    loop rest
+	| _ -> loop rest)
     | x :: xs -> loop xs
     | [] -> () in
   loop toks;
   let rec redo acc = function
       TIdent(s,i1)::rest
       when s ==~ regexp_annot && not (Hashtbl.mem not_annotations s) ->
+	msg_attribute s;
 	redo (TMacroAttr(s,i1)::acc) rest
     | x::xs -> redo (x::acc) xs
     | [] -> List.rev acc in

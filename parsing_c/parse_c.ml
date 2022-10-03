@@ -1111,6 +1111,8 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     then Parsing_hacks.convert_templates toks
     else toks in
 
+  let toks = Parsing_hacks.detect_annotations toks in
+
   (* List.iter
        (fun t -> Printf.eprintf "tok: %s --- %s\n" (TH.str_of_tok t) (TH.string_of_token t))
        toks; *)
