@@ -308,11 +308,16 @@ and unify_string_format e1 e2 =
 
 and unify_fullType ft1 ft2 =
   match (Ast.unwrap ft1,Ast.unwrap ft2) with
-    (Ast.Type(_,cv1,attr1,ty1),Ast.Type(_,cv2,attr2,ty2)) ->
-      if List.length cv1 = List.length cv2 &&
-         List.for_all2 unify_mcode cv1 cv2 &&
-	 List.length attr1 = List.length attr2 &&
-	 List.for_all2 unify_attribute attr1 attr2
+    (Ast.Type(_,cv1before,ty1,cv1after),Ast.Type(_,cv2before,ty2,cv2after)) ->
+      let do_cvattr cvattr1 cvattr2 =
+	match (cvattr1,cvattr2) with
+	  (Ast.CV cv1, Ast.CV cv2) -> unify_mcode cv1 cv2
+	| (Ast.Attr attr1, Ast.Attr attr2) -> unify_attribute attr1 attr2
+	| _ -> false in
+      if List.length cv1before = List.length cv2before &&
+	 List.for_all2 do_cvattr cv1before cv2before &&
+	 List.length cv1after = List.length cv2after &&
+	 List.for_all2 do_cvattr cv1after cv2after
       then unify_typeC ty1 ty2
       else false
   | (Ast.AsType(ty1,asty1),_) ->

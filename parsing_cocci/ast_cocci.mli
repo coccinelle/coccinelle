@@ -321,8 +321,7 @@ and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 (* Types *)
 
 and base_fullType =
-    Type            of bool (* true if all minus *) *
-                       const_vol mcode list * attr list * typeC
+    Type            of bool (* true if all minus *) * cvattr list * typeC * cvattr list
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list
   | ConjType        of fullType list
@@ -614,6 +613,10 @@ and fninfo =
   | FType of fullType
   | FInline of string mcode
 
+and cvattr =
+    CV of const_vol mcode
+  | Attr of attr
+
 and base_attr =
     Attribute of attr_arg
   | GccAttribute of string mcode (* __attribute__ *) *
@@ -887,7 +890,7 @@ val string_of_binaryOp : binaryOp -> string
 
 val string_of_sign : sign -> string
 val string_of_baseType : baseType -> string
-val string_of_const_vol : const_vol list -> string
+val string_of_const_vol : const_vol -> string
 val string_of_structUnion : structUnion -> string
 val string_of_typeC : typeC -> string
 val string_of_fullType : fullType -> string

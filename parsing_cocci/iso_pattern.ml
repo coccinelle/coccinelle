@@ -2512,7 +2512,7 @@ let get_name bindings = function
 		 (function ty ->
 		   let rec loop ty =
 		     match Ast.unwrap ty with
-		       Ast.Type (m,cv,attrs,t) ->
+		       Ast.Type (m,cvbefore,t,cvafter) ->
 			 (match Ast.unwrap t with
 			   Ast.MetaType(nm,cstr,keep,inh) ->
 			     (try
@@ -2526,7 +2526,7 @@ let get_name bindings = function
 			 | Ast.Pointer(t2,star) ->
 			     let t =
 			       Ast.rewrap t (Ast.Pointer(loop t2,star)) in
-			     Ast.rewrap ty (Ast.Type (m,cv,attrs,t))
+			     Ast.rewrap ty (Ast.Type (m,cvbefore,t,cvafter))
 			 | _ -> ty)
 		     | _ -> ty in
 		   loop ty)

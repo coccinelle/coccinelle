@@ -47,9 +47,11 @@ let disjdots f d =
 
 let rec disjty ft =
   match Ast.unwrap ft with
-    Ast.Type(allminus,cv,attr,ty) ->
+    Ast.Type(allminus,cvbefore,ty,cvafter) ->
       let ty = disjtypeC ty in
-      List.map (function ty -> Ast.rewrap ft (Ast.Type(allminus,cv,attr,ty))) ty
+      List.map
+	(function ty -> Ast.rewrap ft (Ast.Type(allminus,cvbefore,ty,cvafter)))
+	ty
   | Ast.AsType(ty,asty) -> (* as ty doesn't contain disj *)
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap ft (Ast.AsType(ty,asty))) ty

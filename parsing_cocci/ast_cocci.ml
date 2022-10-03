@@ -339,8 +339,7 @@ and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 (* Types *)
 
 and base_fullType =
-    Type            of bool (* true if all minus *) *
-	               const_vol mcode list * attr list * typeC
+    Type            of bool (* true if all minus *) * cvattr list * typeC * cvattr list
   | AsType          of fullType * fullType (* as type, always metavar *)
   | DisjType        of fullType list
   | ConjType        of fullType list
@@ -634,6 +633,10 @@ and fninfo =
     FStorage of storage mcode
   | FType of fullType
   | FInline of string mcode
+
+and cvattr =
+    CV of const_vol mcode
+  | Attr of attr
 
 and base_attr =
     Attribute of attr_arg
@@ -1114,8 +1117,9 @@ let string_of_baseType = function
   | BoolType -> "bool"
   | Unknown -> "unknown"
 
-let string_of_const_vol cv = String.concat " "
-  (List.map (function Const -> "const" | Volatile -> "volatile") cv)
+let string_of_const_vol = function
+    Const -> "const"
+  | Volatile -> "volatile"
 
 let string_of_meta_name (_, name) = name
 
@@ -1177,16 +1181,15 @@ let rec string_of_typeC ty =
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
   match unwrap ty with
-    Type (_, const_vol, attrs, ty') ->
-      let cvs =
-	match const_vol with
-	  [] -> ""
-	| _ -> string_of_const_vol (List.map unwrap_mcode const_vol) ^ " " in
-      let attrs =
-	match attrs with
-	  [] -> ""
-	| _ -> "TODO: attrs " in
-      cvs ^ attrs ^ string_of_typeC ty'
+    Type (_, cvbefore, ty', cvafter) ->
+      let do_cvattr = function
+	  CV cv -> string_of_const_vol (unwrap_mcode cv)
+	| Attr attr -> "TODO: attrs" in
+      (String.concat " " (List.map do_cvattr cvbefore)) ^
+      (if cvbefore = [] then "" else " ") ^
+      (string_of_typeC ty') ^
+      (if cvbefore = [] then "" else " ") ^
+      (String.concat " " (List.map do_cvattr cvafter))
   | AsType (ty', _) -> string_of_fullType ty'
   | DisjType l -> String.concat "|" (List.map string_of_fullType l)
   | ConjType l -> String.concat "&" (List.map string_of_fullType l)
@@ -1194,7 +1197,7 @@ and string_of_fullType ty =
 
 let typeC_of_fullType_opt ty =
   match unwrap ty with
-    Type (_, [], [], ty') -> Some ty'
+    Type (_, [], ty', []) -> Some ty'
   | _ -> None
 
 let ident_of_expression_opt expression =
@@ -1228,7 +1231,7 @@ let empty_transformer = {
 let rec fullType_map tr ty =
   rewrap ty begin
     match unwrap ty with
-      Type (a, b, c, ty') -> Type (a, b, c, typeC_map tr ty')
+      Type (a, b, ty', c) -> Type (a, b, typeC_map tr ty', c)
     | AsType (ty0, ty1) ->
         AsType (fullType_map tr ty0, fullType_map tr ty1)
     | DisjType l -> DisjType (List.map (fullType_map tr) l)
@@ -1294,7 +1297,7 @@ and typeC_map tr ty =
 
 let rec fullType_fold tr ty v =
   match unwrap ty with
-    Type (_, _, _, ty') -> typeC_fold tr ty' v
+    Type (_, _, ty', _) -> typeC_fold tr ty' v
   | AsType (ty0, ty1) ->
       let v' = fullType_fold tr ty0 v in
       fullType_fold tr ty1 v'

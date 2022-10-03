@@ -2253,6 +2253,7 @@ and parameter = fun parama paramb ->
             p_endattr = endattrsb;} = paramb in
 
       fullType typa typb >>= (fun typa typb ->
+	attribute_list false attrsa endattrsb >>= (fun attrsa endattrsb ->
 	match idaopt, nameidbopt with
 	| Some ida, Some nameidb ->
       (* todo: if minus on ida, should also minus the iihasreg ? *)
@@ -2274,7 +2275,7 @@ and parameter = fun parama paramb ->
               p_endattr = endattrsb;}
 	      )
 	| Some _, None -> fail
-	| None, Some _ -> fail)
+	| None, Some _ -> fail))
   | A.OptParam _, _ ->
       failwith "not handling Opt for Param"
   | _ -> fail
@@ -2521,8 +2522,9 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
-   | A.Type(allminus,cv1,attr1,tya1), ((qu,il),attrb,typb1) ->
-       (* allminus doesn't seem useful here - nothing done with cv1 *)
+   | A.Type(allminus,cvbefore,tya1,cvafter), ((qu,il),attrb,typb1) ->
+       (* allminus doesn't seem useful here - nothing done with
+	  cvbefore, cvafter *)
 
      (match A.unwrap tya1, typb1 with
      | A.StructUnionDef(tya2, lba, declsa, rba),
@@ -2558,14 +2560,14 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          let declsa = A.rewrap declsa undeclsa in
 
          (match A.unwrap tya2 with
-         | A.Type(allminus, cv3, attr3, tya3) -> (* again allminus not used *)
+         | A.Type(allminus, cvbefore3, tya3, cvafter3) -> (* again allminus not used *)
            (match A.unwrap tya3 with
            | A.MetaType(ida, cstr, keep, inherited) ->
 
                fullType tya2 fake_typeb >>= (fun tya2 fake_typeb ->
 		 let tya1 =
 		   A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1 in
-		 let tya0 = A.Type(allminus, cv1, attr1, tya1) +> A.rewrap tya0 in
+		 let tya0 = A.Type(allminus, cvbefore, tya1, cvafter) +> A.rewrap tya0 in
 
 
 		 let typb1 = B.StructUnion (sub,sbopt,base_classes,declsb),
@@ -2603,7 +2605,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
                let tya1 = A.StructUnionDef(tya2,lba,declsa,rba)+> A.rewrap tya1
                in
-               let tya0 = A.Type(allminus, cv1, attr1, tya1) +> A.rewrap tya0 in
+               let tya0 = A.Type(allminus, cvbefore, tya1, cvafter) +> A.rewrap tya0 in
 
                match structnameb with
                | _nQ, [], (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
@@ -3502,74 +3504,62 @@ and enum_field ida idb =
 and (fullType: (A.fullType, Ast_c.fullType) matcher) =
  fun typa typb ->
    X.optional_qualifier_flag (fun optional_qualifier ->
+   X.optional_attributes_flag (fun optional_attributes ->
    X.all_bound (A.get_inherited typa) >&&>
    match A.unwrap typa, typb with
-   | A.Type(allminus,cv,attra,ty1), ((qu,il),attrb,ty2) ->
+   | A.Type(allminus,cvbefore,ty1,cvafter), ((qu,il),attrb,ty2) ->
         (* todo: can be __const__ ? can be const & volatile so
          * should filter instead ?
          *)
-       attribute_list allminus attra attrb >>= (fun attra attrb ->
-       match cv with
-       (* "iso-by-absence" *)
-       | [] ->
-           let do_stuff () =
-             fullTypebis ty1 ((qu,il), attrb, ty2) >>= (fun ty1 ((qu,il), attrb, ty2) ->
-             (if allminus
-	     then minusize_list il
-	     else return ((), il)
-	     ) >>= (fun () il ->
-	       return (
-                 (A.Type(allminus, [], attra, ty1)) +> A.rewrap typa,
-                 ((qu,il), attrb, ty2)
-               )))
-           in
-           (match optional_qualifier, qu.B.const || qu.B.volatile || qu.B.restrict with
-           | false, false -> do_stuff ()
-           | false, true -> fail
-           | true, false -> do_stuff ()
-           | true, true ->
-               if !FlagM.show_misc
-               then pr2_once "USING optional_qualifier builtin isomorphism";
-               do_stuff()
-           )
-
-       | [x] -> (* restrict not checked because not support by SmPL *)
-           (match term x, il, qu.B.const, qu.B.volatile with
-           | A.Const, [i1], true, _
-           | A.Volatile, [i1], _, true ->
-               tokenf x i1 >>= (fun x i1 ->
-               fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
-                 return (
-                   (A.Type(allminus, [x], attra, ty1)) +> A.rewrap typa,
-                   ((qu, [i1]), attrb, ty2)
-                 )))
-           | _ -> fail
-           )
-
-       | [x;y] ->
-           (* i1, i2 are const and volatile information respectively.
-            * These are in parsing_c/parser_c.mly *)
-           (match term x, term y, il with
-           | A.Const, A.Volatile, [i1;i2] when qu.B.volatile && qu.B.const ->
-             fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
-             tokenf x i1 >>= (fun x i1 ->
-             tokenf y i2 >>= (fun y i2 ->
-               return (
-                 (A.Type(allminus, [x;y], attra, ty1)) +> A.rewrap typa,
-                 ((qu, [i1;i2]), attrb, ty2)
-               ))))
-           | A.Volatile, A.Const, [i1;i2] when qu.B.volatile && qu.B.const ->
-             fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
-             tokenf x i2 >>= (fun x i2 ->
-             tokenf y i1 >>= (fun y i1 ->
-               return (
-                 (A.Type(allminus, [x;y], attra, ty1)) +> A.rewrap typa,
-                 ((qu, [i1;i2]), attrb, ty2)
-               ))))
-           | _ -> fail
-           )
-       | _ -> failwith "Duplicate const/volatile"
-       )
+       let rec cvattr_align cvattrs (qu,il) attrb =
+	 match cvattrs with
+	   [] ->
+             if not optional_attributes && (il <> [] || attrb <> [])
+             then fail
+             else return ([], ([],[]))
+	 | A.CV cv :: rest ->
+	     (match term cv with
+	       A.Const when qu.B.const ->
+		 let rec loop acc = function
+		     [] -> failwith "no token for const"
+		   | i::ii ->
+		       if Ast_c.str_of_info i = "const"
+		       then
+			 tokenf cv i >>= (fun cv i ->
+			   cvattr_align rest ({qu with B.const = false}, ((List.rev acc) @ ii)) attrb >>=
+                           (fun cvattrs (ii, attrb) -> return (A.CV cv :: cvattrs, (i :: ii, attrb))))
+		       else loop (i :: acc) ii in
+		 loop [] il
+	     | A.Volatile when qu.B.volatile ->
+		 let rec loop acc = function
+		     [] -> failwith "no token for volatile"
+		   | i::ii ->
+		       if Ast_c.str_of_info i = "volatile"
+		       then
+			 tokenf cv i >>= (fun cv i ->
+			   cvattr_align rest ({qu with B.volatile = false}, ((List.rev acc) @ ii)) attrb >>=
+                           (fun cvattrs (ii, attrb) -> return (A.CV cv :: cvattrs, (i :: ii, attrb))))
+		       else loop (i :: acc) ii in
+		 loop [] il
+	     | _ -> fail)
+	 | A.Attr attr :: rest ->
+             let rec loop acc = function
+                 [] -> fail
+	       | attrb :: attrbs ->
+                   (function tin ->
+                     (attribute allminus attr attrb >>= (fun attr attrb ->
+		       cvattr_align rest (qu,il) ((List.rev acc)@attrbs) >>=
+		       (fun cvattrs (il,attrbs) -> return (A.Attr attr :: cvattrs, (il,attrb :: attrbs)))))
+		       tin) >||>
+		       loop (attrb :: acc) attrbs in
+	     loop [] attrb in
+       cvattr_align (cvbefore@cvafter) (qu,il) attrb >>=
+       (fun cvattrs (il,attrb) ->
+         fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
+           return (
+           (A.Type(allminus, cvattrs, ty1, [])) +> A.rewrap typa,
+           ((qu, il), attrb, ty2)
+         )))
 
   | A.AsType(ty,asty), tyb ->
       fullType ty tyb >>= (fun ty tyb ->
@@ -3591,7 +3581,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
       loop [] typb typas
 
    | A.OptType(_), _ -> failwith "not handling Opt on type"
-   )
+   ))
 
 
 (*
@@ -3802,11 +3792,11 @@ and simulate_signed_meta ta basea signaopt tb baseb ii rebuilda =
 
       let match_to_type rebaseb =
 	sign signaopt signbopt >>= (fun signaopt iisignbopt ->
-          let fta = A.rewrap basea (A.Type(false(*don't know*),[],[],basea)) in
+          let fta = A.rewrap basea (A.Type(false(*don't know*),[],basea,[])) in
 	let ftb = Ast_c.nQ,[],(B.BaseType (rebaseb), iibaseb) in
 	fullType fta ftb >>= (fun fta (_,_,tb) ->
 	  (match A.unwrap fta,tb with
-	    A.Type(_,_,_,basea), (B.BaseType baseb, ii) ->
+	    A.Type(_,_,basea,_), (B.BaseType baseb, ii) ->
 	      return (
 	      (rebuilda (basea, signaopt)) +> A.rewrap ta,
 	      (B.BaseType (baseb), iisignbopt @ ii)
@@ -3849,8 +3839,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, [], tb))
 	      (fun () ->
 		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
-		  (function (basea, Some signaopt) ->
-		    A.SignedT(signaopt,Some basea)
+		  (function
+		      (basea, Some signaopt) -> A.SignedT(signaopt,Some basea)
 		    | _ -> failwith "typeC: signed: meta: not possible")
 		  )
 	| _ -> failwith "typeC: signed: not possible")
@@ -3984,7 +3974,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		the part that matched *)
 	     let rec loop s =
 	       match A.unwrap s with
-                 A.Type(allminus,[],[],ty) ->
+                 A.Type(allminus,[],ty,[]) ->
 		   (match A.unwrap ty with
 		     A.StructUnionName(sua, None) ->
 		       (match (term sua, sub) with
@@ -3994,8 +3984,9 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		       (fun _ _ ->
 			 tokenf sua iisub >>= (fun sua iisub ->
 			   let ty =
-                             A.Type(allminus,[],[],
-				    A.StructUnionName(sua, None) +> A.rewrap ty)
+                             A.Type(allminus,[],
+				    A.StructUnionName(sua, None) +> A.rewrap ty,
+				    [])
 			       +> A.rewrap s in
 			   return (ty,[iisub])))
 		   | _ -> fail)
@@ -4487,17 +4478,21 @@ and compatible_base_type_meta a signa qua attr b ii local =
 
 and compatible_type a (b,local) =
   match A.unwrap a, b with
-    A.Type (false, [], [], a'), _ ->
+    A.Type (false, [], a', []), _ ->
       compatible_typeC a' (b, local)
-  | A.Type (false, const_vol, [], a'), (qub, [], b') ->
-      if
-        (match List.map  A.unwrap_mcode const_vol with
-        | [A.Const] -> (fst qub).B.const
-        | [A.Volatile] -> (fst qub).B.volatile
-        | [A.Const;A.Volatile] -> (fst qub).B.const && (fst qub).B.volatile
-        | [A.Volatile;A.Const] -> (fst qub).B.volatile && (fst qub).B.const
-        | _ -> failwith "Cocci_vs_c.compatible_type: Duplicate const/volatile"
-        )
+  | A.Type (false, cvbefore, a', cvafter), (qub, [], b') ->
+      let cvattrs = cvbefore @ cvafter in
+      let hasconst =
+        List.exists
+	  (function A.CV cv -> A.unwrap_mcode cv = A.Const | _ -> false)
+	  cvattrs in
+      let hasvol =
+        List.exists
+	  (function A.CV cv -> A.unwrap_mcode cv = A.Volatile | _ -> false)
+	  cvattrs in
+      if (not hasconst || (fst qub).B.const) &&
+	 (not hasvol || (fst qub).B.volatile) &&
+	 true (* should check for attributes also *)
       then compatible_typeC a' ((Ast_c.nQ, [], b'), local)
       else fail
   | _ ->

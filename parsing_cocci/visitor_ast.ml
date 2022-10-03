@@ -315,11 +315,14 @@ let combiner bind option_default
   and fullType ft =
     let k ft =
       match Ast.unwrap ft with
-	Ast.Type(_,cv,attrs,ty) ->
-	  let lcv = List.map cv_mcode cv in
-	  let lattrs = List.map attribute attrs in
+	Ast.Type(_,cvbefore,ty,cvafter) ->
+	  let do_cvattr = function
+	      Ast.CV cv -> cv_mcode cv
+	    | Ast.Attr attr -> attribute attr in
+	  let lcvbefore = List.map do_cvattr cvbefore in
 	  let lty = typeC ty in
-          multibind (lcv@lattrs@[lty])
+	  let lcvafter = List.map do_cvattr cvafter in
+          multibind (lcvbefore@lty::lcvafter)
       |	Ast.AsType(ty,asty) ->
 	  let lty = fullType ty in
 	  let lasty = fullType asty in
@@ -340,11 +343,11 @@ let combiner bind option_default
   and parentype_type (lp,ty,(id : Ast.ident option),rp) =
     let function_pointer ty1 array_dec =
       match Ast.unwrap ty1 with
-       Ast.Type(_,_,_,fty1) ->
+       Ast.Type(_,_,fty1,_) ->
         (match Ast.unwrap fty1 with
           Ast.Pointer(ty2,star) ->
            (match Ast.unwrap ty2 with
-             Ast.Type(_,_,_,fty3) ->
+             Ast.Type(_,_,fty3,_) ->
               (match Ast.unwrap fty3 with
                 Ast.FunctionType(ty3,lp3,params,rp3) ->
                  let ltyp = fullType ty3 in
@@ -374,7 +377,7 @@ let combiner bind option_default
          | _ -> failwith "ParenType Visitor_ast")
        | _ -> failwith "ParenType Visitor_ast" in
     match Ast.unwrap ty with
-      Ast.Type(_,_,_,fty1) ->
+      Ast.Type(_,_,fty1,_) ->
         (match Ast.unwrap fty1 with
           Ast.Array(ty1,lb1,size,rb1) ->
             function_pointer ty1 (Some(lb1,size,rb1))
@@ -453,7 +456,7 @@ let combiner bind option_default
 
   and named_type ty id =
     match Ast.unwrap ty with
-      Ast.Type(_,[],[],ty1) ->
+      Ast.Type(_,[],ty1,[]) ->
 	(match Ast.unwrap ty1 with
 	| Ast.Array(ty,lb,size,rb) -> array_type (ty, Some id, lb, size, rb)
         | Ast.ParenType(lp,ty,rp) -> parentype_type (lp, ty, Some id, rp)
@@ -1395,11 +1398,14 @@ let rebuilder
     let k ft =
       Ast.rewrap ft
 	(match Ast.unwrap ft with
-	  Ast.Type(allminus,cv,attr,ty) ->
-	    let lcv = List.map cv_mcode cv in
-	    let lattr = List.map attribute attr in
+	  Ast.Type(allminus,cvbefore,ty,cvafter) ->
+	  let do_cvattr = function
+	      Ast.CV cv -> Ast.CV (cv_mcode cv)
+	    | Ast.Attr attr -> Ast.Attr (attribute attr) in
+	    let lcvbefore = List.map do_cvattr cvbefore in
 	    let lty = typeC ty in
-	    Ast.Type (allminus, lcv, lattr, lty)
+	    let lcvafter = List.map do_cvattr cvafter in
+	    Ast.Type (allminus, lcvbefore, lty, lcvafter)
 	| Ast.AsType(ty,asty) ->
 	    let lty = fullType ty in
 	    let lasty = fullType asty in

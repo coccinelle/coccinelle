@@ -2781,7 +2781,7 @@ module Ast_cocci :
     and isWchar = Ast_cocci.isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
     and base_fullType =
       Ast_cocci.base_fullType =
-        Type of bool * const_vol mcode list * attr list * typeC
+        Type of bool * cvattr list * typeC * cvattr list
       | AsType of fullType * fullType
       | DisjType of fullType list
       | ConjType of fullType list
@@ -3003,6 +3003,10 @@ module Ast_cocci :
         FStorage of storage mcode
       | FType of fullType
       | FInline of string mcode
+    and cvattr =
+      Ast_cocci.cvattr =
+	CV of const_vol mcode
+      | Attr of attr
     and base_attr =
       Ast_cocci.base_attr =
         Attribute of Ast_cocci.attr_arg
@@ -3242,7 +3246,7 @@ module Ast_cocci :
     val string_of_binaryOp : binaryOp -> string
     val string_of_sign : sign -> string
     val string_of_baseType : baseType -> string
-    val string_of_const_vol : const_vol list -> string
+    val string_of_const_vol : const_vol -> string
     val string_of_structUnion : structUnion -> string
     val string_of_typeC : typeC -> string
     val string_of_fullType : fullType -> string

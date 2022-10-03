@@ -404,16 +404,15 @@ and storage = function
 
 and fullType ft =
   match Ast.unwrap ft with
-    Ast.Type(_,cv,attrs,ty) ->
-      (match Ast.unwrap ty with
-	Ast.Pointer(_,_) ->
-	  typeC ty;
-	  List.iter (function x -> print_string " "; mcode const_vol x) cv;
-	  print_attribute_list attrs ~befspace:true ~aftspace:false
-      |	_ ->
-	  List.iter (function x -> mcode const_vol x; print_string " ") cv;
-	  print_attribute_list attrs ~befspace:false ~aftspace:true;
-	  typeC ty)
+    Ast.Type(_,cvbefore,ty,cvafter) ->
+      let do_cvattr = function
+	  Ast.CV cv -> mcode const_vol cv
+	| Ast.Attr attr -> print_attribute attr in
+      print_between print_space do_cvattr cvbefore;
+      (if cvbefore <> [] then print_string " ");
+      typeC ty;
+      (if cvafter <> [] then print_string " ");
+      print_between print_space do_cvattr cvafter
   | Ast.AsType(ty,asty) -> fullType ty; print_string "@"; fullType asty
   | Ast.DisjType(decls) -> print_disj_list fullType decls "|"
   | Ast.ConjType(decls) -> print_disj_list fullType decls "&"
@@ -422,11 +421,11 @@ and fullType ft =
 and print_parentype (lp,ty,rp) fn =
   let function_pointer ty1 array_dec =
     match Ast.unwrap ty1 with
-     Ast.Type(_,_,_,fty1) ->
+     Ast.Type(_,_,fty1,_) ->
       (match Ast.unwrap fty1 with
         Ast.Pointer(ty2,star) ->
          (match Ast.unwrap ty2 with
-           Ast.Type(_,_,_,fty3) ->
+           Ast.Type(_,_,fty3,_) ->
             (match Ast.unwrap fty3 with
               Ast.FunctionType(ty3,lp3,params,rp3) ->
                fullType ty3;
@@ -450,7 +449,7 @@ and print_parentype (lp,ty,rp) fn =
        | _ -> failwith "ParenType Pretty_print_cocci")
      | _ -> failwith "ParenType Pretty_print_cocci" in
   match Ast.unwrap ty with
-    Ast.Type(_,_,_,fty1) ->
+    Ast.Type(_,_,fty1,_) ->
       (match Ast.unwrap fty1 with
         Ast.Array(ty1,lb1,size,rb1) ->
           function_pointer ty1 (Some(lb1,size,rb1))
@@ -555,7 +554,7 @@ and structUnion ty = print_string (Ast.string_of_structUnion ty ^ " ")
 
 and sign s = print_string (Ast.string_of_sign s ^ " ")
 
-and const_vol const_vol = print_string (Ast.string_of_const_vol [const_vol] ^ " ")
+and const_vol const_vol = print_string (Ast.string_of_const_vol const_vol ^ " ")
 
 (* --------------------------------------------------------------------- *)
 (* Variable declaration *)
@@ -564,30 +563,33 @@ and const_vol const_vol = print_string (Ast.string_of_const_vol [const_vol] ^ " 
 
 and print_named_type ty id =
   match Ast.unwrap ty with
-    Ast.Type(_,[],midattr,ty1) ->
+    Ast.Type(_,[],ty1,[]) ->
       (match Ast.unwrap ty1 with
         Ast.Array(ty,lb,size,rb) ->
 	  let rec loop ty k =
 	    match Ast.unwrap ty with
 	      Ast.Array(ty,lb,size,rb) ->
 		(match Ast.unwrap ty with
-		  Ast.Type(_,cvs,attrs,ty) ->
-		    List.iter
-		      (function x -> mcode const_vol x; print_string " ")
-		      cvs;
-		    print_attribute_list attrs;
+		  Ast.Type(_,cvbefore,ty,cvafter) ->
+		    let do_cvattr = function
+			Ast.CV cv -> mcode const_vol cv
+		      | Ast.Attr attr -> print_attribute attr in
+		    print_between print_space do_cvattr cvbefore;
+		    (if cvbefore <> [] then print_space());
 		    loop ty
 		      (function _ ->
 			k ();
 			mcode print_string lb;
 			print_option expression size;
-			mcode print_string rb)
+			mcode print_string rb);
+		    (if cvafter <> [] then print_space());
+		    print_between print_space do_cvattr cvafter
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id(); k () in
+	    | _ -> typeC ty; id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
-      | _ -> fullType ty; print_attribute_list midattr ~befspace:false ~aftspace:true; id())
+      | _ -> fullType ty; id())
   | _ -> fullType ty; id()
 
 and declaration d =

@@ -561,18 +561,9 @@ and typeC allminus t =
   rewrap t (do_isos (Ast0.get_iso t))
     (match Ast0.unwrap t with
       Ast0.ConstVol(cvbefore,ty,cvafter) ->
-	let (cv,attrs) =
-	  List.partition
-	    (function Ast0.CV _ -> true | Ast0.Attr _ -> false)
-	    (cvbefore@cvafter) in
-	let cv =
-	  List.map
-	    (function Ast0.CV cv -> cv | _ -> failwith "not possible")
-	    cv in
-	let attrs =
-	  List.map
-	    (function Ast0.Attr attr -> attr | _ -> failwith "not possible")
-	    attrs in
+	let do_cvattr = function
+	    Ast0.CV cv -> Ast.CV (mcode cv)
+	  | Ast0.Attr attr -> Ast.Attr(attribute attr) in
 	let rec collect_disjs t =
 	  match Ast0.unwrap t with
 	    Ast0.DisjType(_,types,_,_) ->
@@ -584,8 +575,9 @@ and typeC allminus t =
 	  List.map
 	    (function ty ->
 	      Ast.Type
-		(allminus, List.map mcode cv, List.map attribute attrs,
-		 rewrap_iso ty (base_typeC allminus ty)))
+		(allminus, List.map do_cvattr cvbefore,
+		 rewrap_iso ty (base_typeC allminus ty),
+		 List.map do_cvattr cvafter))
 	    (collect_disjs ty) in
 	(* one could worry that isos are lost because we flatten the
 	   disjunctions.  but there should not be isos on the disjunctions
@@ -600,7 +592,7 @@ and typeC allminus t =
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
     | Ast0.TypeName(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) ->
-        Ast.Type(allminus,[],[],rewrap t no_isos (base_typeC allminus t))
+        Ast.Type(allminus,[],rewrap t no_isos (base_typeC allminus t),[])
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
     | Ast0.ConjType(_,types,_,_) ->
@@ -717,7 +709,7 @@ and declaration d =
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	let id = typeC allminus id in
 	(match Ast.unwrap id with
-          Ast.Type(_,[],[],id) -> (* only MetaType or Id *)
+          Ast.Type(_,[],id,[]) -> (* only MetaType or Id *)
 	    Ast.Typedef(mcode stg,typeC allminus ty,id,mcode sem)
 	| _ -> failwith "bad typedef")
     | Ast0.DisjDecl(_,decls,_,_) -> Ast.DisjDecl(List.map declaration decls)
