@@ -3516,7 +3516,7 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 	   [] ->
              if not optional_attributes && (il <> [] || attrb <> [])
              then fail
-             else return ([], ([],[]))
+             else return ([], ([],[],il,attrb))
 	 | A.CV cv :: rest ->
 	     (match term cv with
 	       A.Const when qu.B.const ->
@@ -3527,7 +3527,8 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 		       then
 			 tokenf cv i >>= (fun cv i ->
 			   cvattr_align rest ({qu with B.const = false}, ((List.rev acc) @ ii)) attrb >>=
-                           (fun cvattrs (ii, attrb) -> return (A.CV cv :: cvattrs, (i :: ii, attrb))))
+                           (fun cvattrs (ii, attrb, restii, restattrb) ->
+			     return (A.CV cv :: cvattrs, (i :: ii, attrb, restii, restattrb))))
 		       else loop (i :: acc) ii in
 		 loop [] il
 	     | A.Volatile when qu.B.volatile ->
@@ -3538,7 +3539,8 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
 		       then
 			 tokenf cv i >>= (fun cv i ->
 			   cvattr_align rest ({qu with B.volatile = false}, ((List.rev acc) @ ii)) attrb >>=
-                           (fun cvattrs (ii, attrb) -> return (A.CV cv :: cvattrs, (i :: ii, attrb))))
+                           (fun cvattrs (ii, attrb, restii, restattrb) ->
+			     return (A.CV cv :: cvattrs, (i :: ii, attrb, restii, restattrb))))
 		       else loop (i :: acc) ii in
 		 loop [] il
 	     | _ -> fail)
@@ -3549,16 +3551,17 @@ and (fullType: (A.fullType, Ast_c.fullType) matcher) =
                    (function tin ->
                      (attribute allminus attr attrb >>= (fun attr attrb ->
 		       cvattr_align rest (qu,il) ((List.rev acc)@attrbs) >>=
-		       (fun cvattrs (il,attrbs) -> return (A.Attr attr :: cvattrs, (il,attrb :: attrbs)))))
+		       (fun cvattrs (il, attrbs, restii, restattrb) ->
+			 return (A.Attr attr :: cvattrs, (il,attrb :: attrbs, restii, restattrb)))))
 		       tin) >||>
 		       loop (attrb :: acc) attrbs in
 	     loop [] attrb in
        cvattr_align (cvbefore@cvafter) (qu,il) attrb >>=
-       (fun cvattrs (il,attrb) ->
-         fullTypebis ty1 (Ast_c.nQ,[],ty2) >>= (fun ty1 (_, _, ty2) ->
+       (fun cvattrs (il,attrb,restii,restattrb) ->
+         fullTypebis ty1 ((qu,restii),restattrb,ty2) >>= (fun ty1 ((qu,restii),restattrb,ty2) ->
            return (
            (A.Type(allminus, cvattrs, ty1, [])) +> A.rewrap typa,
-           ((qu, il), attrb, ty2)
+           ((qu, il@restii), attrb@restattrb, ty2)
          )))
 
   | A.AsType(ty,asty), tyb ->
