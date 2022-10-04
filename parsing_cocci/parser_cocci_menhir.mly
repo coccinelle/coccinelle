@@ -1193,10 +1193,26 @@ ctype:
 ctype_only_signable:
   full_ctype_and_ptr(all_basic_types_signable)
     { Parse_aux.make_ctype_and_ptr $1 }
+| lp=TOPar0 t=midzero_list(ctype_only_signable,ctype_only_signable) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0_cocci.wrap
+	(Ast0_cocci.DisjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
+| lp=TOPar0 t=andzero_list(ctype_only_signable,ctype_only_signable) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0_cocci.wrap
+	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype_only_non_signable:
   full_ctype_and_ptr(all_basic_types_non_signable)
     { Parse_aux.make_ctype_and_ptr $1 }
+| lp=TOPar0 t=midzero_list(ctype_only_non_signable,ctype_only_non_signable) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0_cocci.wrap
+	(Ast0_cocci.DisjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
+| lp=TOPar0 t=andzero_list(ctype_only_non_signable,ctype_only_non_signable) rp=TCPar0
+    { let (mids,code) = t in
+      Ast0_cocci.wrap
+	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 const_vol_attr_list:
   /* empty */ { [] }
