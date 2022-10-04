@@ -2352,8 +2352,8 @@ as typedefs.  Unfortunately, doing something about this problem seems to
 introduce conflicts in the parser. */
 
 declaratorfd:
- | declarator
-   { et "declaratorfd" (); $1, Ast_c.noattr }
+ | declarator attributes_opt
+   { et "declaratorfd" (); $1, $2 }
 
 /*(*************************************************************************)*/
 /*(* cpp directives *)*/
