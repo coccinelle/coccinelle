@@ -2807,8 +2807,7 @@ let lookahead2 ~pass next before =
           | TIfdefelse _ | TIfdefelif _ -> Token_c.Else
           | TEndif _ -> Token_c.Endif
           | _ -> Token_c.Other in (* not possible here *)
-	 Printf.eprintf "comment 19\n";
-              TCommentCpp (Token_c.CppIfDirective x, ii)
+        TCommentCpp (Token_c.CppIfDirective x, ii)
         end
       else x
 
