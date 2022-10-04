@@ -1178,8 +1178,8 @@ full_ctype_and_ptr(ty):
 cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul) { (cv1, t, cv2, m) }
 
 ctype:
-  ctype_and_ptr(all_basic_types)
-| ctype_and_ptr(signed_or_unsigned)
+  full_ctype_and_ptr(all_basic_types)
+| full_ctype_and_ptr(signed_or_unsigned)
     { Parse_aux.make_ctype_and_ptr $1 }
 | lp=TOPar0 t=midzero_list(ctype,ctype) rp=TCPar0
     { let (mids,code) = t in
