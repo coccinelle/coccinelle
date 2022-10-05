@@ -197,6 +197,7 @@
 #define __net_initdata MACROANNOTATION
 
 #define __paginginit MACROANNOTATION // in mm
+#define __ro_after_init MACROANNOTATION
 
 // ----------------------------------------------------------------------------
 // String macros
