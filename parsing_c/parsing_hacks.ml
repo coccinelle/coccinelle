@@ -2847,7 +2847,8 @@ let lookahead2 ~pass next before =
       then
 	begin
           msg_foreach s;
-	  Data.iterator_names := s :: !Data.iterator_names;
+	  (if not(List.mem s !Data.iterator_names)
+	  then Data.iterator_names := s :: !Data.iterator_names);
           TMacroIterator (s, i1)
 	end
       else if List.mem s !Data.iterator_names

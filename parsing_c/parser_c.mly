@@ -2425,8 +2425,12 @@ define_val:
        (match $1 with
 	 ([a], d) when d = nullDecl ->
 	   (match name with
-	     Left name -> Data.attr_names := name :: !Data.attr_names
-	   | Right name -> Data.arg_attr_names := name :: !Data.arg_attr_names)
+	     Left name ->
+	       (if not(List.mem name !Data.attr_names)
+	       then Data.attr_names := name :: !Data.attr_names)
+	   | Right name ->
+	       (if not(List.mem name !Data.arg_attr_names)
+	       then Data.arg_attr_names := name :: !Data.arg_attr_names))
        | _ -> ());
        let returnType = fixDeclSpecForMacro $1 in
        DefineType returnType
