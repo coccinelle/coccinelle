@@ -611,6 +611,8 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 		then Parser_c.TMacroAttr(s,ii)
 		else if List.mem s !Data.arg_attr_names
 		then Parser_c.TMacroAttrArgs(s,ii)
+		else if List.mem s !Data.iterator_names
+		then Parser_c.TMacroIterator(s, ii)
 		else
                 if
                   LP.is_typedef s &&

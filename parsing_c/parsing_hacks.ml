@@ -2844,10 +2844,14 @@ let lookahead2 ~pass next before =
       if s ==~ regexp_foreach &&
         is_really_foreach (Common.take_safe forLOOKAHEAD rest)
 
-      then begin
-        msg_foreach s;
-        TMacroIterator (s, i1)
-      end
+      then
+	begin
+          msg_foreach s;
+	  Data.iterator_names := s :: !Data.iterator_names;
+          TMacroIterator (s, i1)
+	end
+      else if List.mem s !Data.iterator_names
+      then TMacroIterator (s, i1)
       else TIdent (s, i1)
 
 (*  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
