@@ -607,6 +607,11 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           (* typedef_fix1 *)
           let v = match v with
             | Parser_c.TIdent (s, ii) ->
+		if List.mem s !Data.attr_names
+		then Parser_c.TMacroAttr(s,ii)
+		else if List.mem s !Data.arg_attr_names
+		then Parser_c.TMacroAttrArgs(s,ii)
+		else
                 if
                   LP.is_typedef s &&
                     not (!Flag_parsing_c.disable_add_typedef) &&
@@ -1110,8 +1115,6 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     if !Flag.c_plus_plus <> Flag.Off
     then Parsing_hacks.convert_templates toks
     else toks in
-
-  let toks = Parsing_hacks.detect_annotations toks in
 
   (* List.iter
        (fun t -> Printf.eprintf "tok: %s --- %s\n" (TH.str_of_tok t) (TH.string_of_token t))

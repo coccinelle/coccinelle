@@ -145,5 +145,6 @@ val fresh_id_scripts:
 
 val type_names : string list ref
 val attr_names : string list ref
+val arg_attr_names : string list ref
 val declarer_names : string list ref
 val iterator_names : string list ref

@@ -1409,6 +1409,8 @@ attr_arg:
  | TMacroAttr { MacroAttr (fst $1), [snd $1] }
  | TMacroAttrArgs TOPar argument_list TCPar
      { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
+ | TMacroAttrArgs TOPar argument_list TCParEOL
+     { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
 
 attribute_gcc:
  | Tattribute tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
@@ -2384,16 +2386,18 @@ cpp_directive:
      }
 
  | TDefine TIdentDefine define_val TDefEOL
-     { Define ((fst $2, [$1; snd $2;$4]), (DefineVar, $3)) }
+     { let name = fst $2 in
+       Define ((name, [$1; snd $2;$4]), (DefineVar, ($3 (Left name)))) }
 
  /*
  (* The TOParDefine is introduced to avoid ambiguity with previous rules.
   * A TOParDefine is a TOPar that was just next to the ident.
   *)*/
  | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
-     { Define
-         ((fst $2, [$1; snd $2; $7]),
-           (DefineFunc ($4, [$3;$5]), $6))
+     { let name = fst $2 in
+       Define
+         ((name, [$1; snd $2; $7]),
+           (DefineFunc ($4, [$3;$5]), ($6 (Right name))))
      }
 
  | TUndef TIdentDefine TDefEOL
@@ -2412,22 +2416,31 @@ pragma_strings:
    * do a assign_expr_of_string in parse_c
    *)*/
 define_val:
- | expr      { DefineExpr $1 }
- | statement { DefineStmt $1 }
- | decl      { DefineStmt (mk_st (Decl ($1 Ast_c.NotLocalDecl)) Ast_c.noii) }
+ | expr      { fun _ -> DefineExpr $1 }
+ | statement { fun _ -> DefineStmt $1 }
+ | decl      { fun _ -> DefineStmt (mk_st (Decl ($1 Ast_c.NotLocalDecl)) Ast_c.noii) }
 
  | decl_spec
-     { let returnType = fixDeclSpecForMacro $1 in
+     { fun name ->
+       (match $1 with
+	 ([a], d) when d = nullDecl ->
+	   (match name with
+	     Left name -> Data.attr_names := name :: !Data.attr_names
+	   | Right name -> Data.arg_attr_names := name :: !Data.arg_attr_names)
+       | _ -> ());
+       let returnType = fixDeclSpecForMacro $1 in
        DefineType returnType
      }
  | decl_spec abstract_declarator
-     { let returnType = fixDeclSpecForMacro $1 in
+     { fun _ ->
+       let returnType = fixDeclSpecForMacro $1 in
        let typ = $2 returnType in
        DefineType typ
      }
 
  | stat_or_decl stat_or_decl_list
-     { DefineMulti
+     { fun _ ->
+         DefineMulti
 	 (List.map
 	    (function
 		StmtElem e -> e
@@ -2441,10 +2454,10 @@ define_val:
 
 
 
- | function_definition { DefineFunction $1 }
+ | function_definition { fun _ -> DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
-    { DefineInit (InitList (List.rev $2), [$1;$4] @ $3 @ $5)  }
+    { fun _ -> DefineInit (InitList (List.rev $2), [$1;$4] @ $3 @ $5)  }
 
  /*(* note: had a conflict before when were putting TInt instead of expr *)*/
  | Tdo statement Twhile TOPar expr TCPar
@@ -2453,15 +2466,15 @@ define_val:
        if fst $5 <> "0"
        then pr2 "WEIRD: in macro and have not a while(0)";
        *)
-       DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
+       fun _ -> DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
      }
 
- | Tasm TOPar asmbody TCPar              { DefineTodo }
- | Tasm Tvolatile TOPar asmbody TCPar    { DefineTodo }
+ | Tasm TOPar asmbody TCPar              { fun _ -> DefineTodo }
+ | Tasm Tvolatile TOPar asmbody TCPar    { fun _ -> DefineTodo }
 
  /*(* aliases macro *)*/
 
- | /*(* empty *)*/ { DefineEmpty }
+ | /*(* empty *)*/ { fun _ -> DefineEmpty }
 
 
 

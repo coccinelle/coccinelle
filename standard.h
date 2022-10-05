@@ -87,116 +87,116 @@
 // ----------------------------------------------------------------------------
 // Attributes. could perhaps generalize via "__.*"
 // ----------------------------------------------------------------------------
-#define  __init
-#define  __initconst
-#define  __page_aligned_data
-#define  __page_aligned_bss
-#define  __always_unused
-#define  __visible
-#define  __exit
-#define  __user
-#define  __iomem
-#define  __initdata
-#define  __exitdata
-#define  __devinit
-#define  __devexit
-#define  __devinitdata
-#define  __cpuinit
-#define  __cpuinitdata
-#define  __init_or_module
-#define  __initdata_or_module
-#define  __pminit
-#define  __pminitdata
-#define  __irq_entry
+#define  __init MACROANNOTATION
+#define  __initconst MACROANNOTATION
+#define  __page_aligned_data MACROANNOTATION
+#define  __page_aligned_bss MACROANNOTATION
+#define  __always_unused MACROANNOTATION
+#define  __visible MACROANNOTATION
+#define  __exit MACROANNOTATION
+#define  __user MACROANNOTATION
+#define  __iomem MACROANNOTATION
+#define  __initdata MACROANNOTATION
+#define  __exitdata MACROANNOTATION
+#define  __devinit MACROANNOTATION
+#define  __devexit MACROANNOTATION
+#define  __devinitdata MACROANNOTATION
+#define  __cpuinit MACROANNOTATION
+#define  __cpuinitdata MACROANNOTATION
+#define  __init_or_module MACROANNOTATION
+#define  __initdata_or_module MACROANNOTATION
+#define  __pminit MACROANNOTATION
+#define  __pminitdata MACROANNOTATION
+#define  __irq_entry MACROANNOTATION
 
-#define  __cacheline_aligned
-#define  ____cacheline_aligned
-#define  __cacheline_aligned_in_smp
-#define  ____cacheline_aligned_in_smp
-#define  ____cacheline_internodealigned_in_smp
+#define  __cacheline_aligned MACROANNOTATION
+#define  ____cacheline_aligned MACROANNOTATION
+#define  __cacheline_aligned_in_smp MACROANNOTATION
+#define  ____cacheline_aligned_in_smp MACROANNOTATION
+#define  ____cacheline_internodealigned_in_smp MACROANNOTATION
 
-#define  __ALIGNED__
-#define  __3xp_aligned
+#define  __ALIGNED__ MACROANNOTATION
+#define  __3xp_aligned MACROANNOTATION
 
-#define  __pmac
-#define  __force
-#define  __read_mostly
+#define  __pmac MACROANNOTATION
+#define  __force MACROANNOTATION
+#define  __read_mostly MACROANNOTATION
 
-#define  __must_check
+#define  __must_check MACROANNOTATION
 // pb
-#define  __unused
-#define  __maybe_unused
+#define  __unused MACROANNOTATION
+#define  __maybe_unused MACROANNOTATION
 
 
-#define  __attribute_used__
-#define  __attribute_pure__
-#define  __attribute_const__
+#define  __attribute_used__ MACROANNOTATION
+#define  __attribute_pure__ MACROANNOTATION
+#define  __attribute_const__ MACROANNOTATION
 // #define _attribute__const __attribute__((const))
 
-#define  __always_inline
+#define  __always_inline MACROANNOTATION
 
-#define  __xipram
+#define  __xipram MACROANNOTATION
 
 // in the other part of the kernel, in arch/, mm/, etc
-#define  __sched
-#define  __initmv
-#define  __exception
-#define  __cpuexit
-#define  __kprobes
-#define  __meminit
-#define  __meminitdata
-#define  __nosavedata
-#define  __kernel
-#define  __nomods_init
-#define  __apicdebuginit
-#define  __ipc_init
-#define  __modinit
-#define  __lockfunc
-#define  __weak
-#define  __tlb_handler_align
-#define  __lock_aligned
-#define  __force_data
-#define  __nongprelbss
-#define  __nongpreldata
-#define  __noreturn
+#define  __sched MACROANNOTATION
+#define  __initmv MACROANNOTATION
+#define  __exception MACROANNOTATION
+#define  __cpuexit MACROANNOTATION
+#define  __kprobes MACROANNOTATION
+#define  __meminit MACROANNOTATION
+#define  __meminitdata MACROANNOTATION
+#define  __nosavedata MACROANNOTATION
+#define  __kernel MACROANNOTATION
+#define  __nomods_init MACROANNOTATION
+#define  __apicdebuginit MACROANNOTATION
+#define  __ipc_init MACROANNOTATION
+#define  __modinit MACROANNOTATION
+#define  __lockfunc MACROANNOTATION
+#define  __weak MACROANNOTATION
+#define  __tlb_handler_align MACROANNOTATION
+#define  __lock_aligned MACROANNOTATION
+#define  __force_data MACROANNOTATION
+#define  __nongprelbss MACROANNOTATION
+#define  __nongpreldata MACROANNOTATION
+#define  __noreturn MACROANNOTATION
 
-#define  __section_jiffies
-#define  __vsyscall_fn
-#define  __section_vgetcpu_mode
-#define  __section_vsyscall_gtod_data
+#define  __section_jiffies MACROANNOTATION
+#define  __vsyscall_fn MACROANNOTATION
+#define  __section_vgetcpu_mode MACROANNOTATION
+#define  __section_vsyscall_gtod_data MACROANNOTATION
 
 // in header files
-#define  __bitwise
-#define  __bitwise__
-#define  __deprecated
+#define  __bitwise MACROANNOTATION
+#define  __bitwise__ MACROANNOTATION
+#define  __deprecated MACROANNOTATION
 
 
 // last found
-#define __init_refok
+#define __init_refok MACROANNOTATION
 
 
 // maybe only in old kernel
-#define  __openfirmware
+#define  __openfirmware MACROANNOTATION
 
 // now in lexer
 //#define __extension__
 
-#define __thread
-#define __used
-#define __pure
+#define __thread MACROANNOTATION
+#define __used MACROANNOTATION
+#define __pure MACROANNOTATION
 
-#define __ref
-#define __refdata
+#define __ref MACROANNOTATION
+#define __refdata MACROANNOTATION
 
-#define __uses_jump_to_uncached
+#define __uses_jump_to_uncached MACROANNOTATION
 
 
 // last last
-#define __net_init
-#define __net_exit
-#define __net_initdata
+#define __net_init MACROANNOTATION
+#define __net_exit MACROANNOTATION
+#define __net_initdata MACROANNOTATION
 
-#define __paginginit // in mm
+#define __paginginit MACROANNOTATION // in mm
 
 // ----------------------------------------------------------------------------
 // String macros
@@ -319,9 +319,9 @@
 #define  ASC_INITDATA
 #define  in2000__INITDATA
 #define  PACKED
-#define  __packed
-#define  __rcu
-#define  __percpu
+#define  __packed MACROANNOTATION
+#define  __rcu MACROANNOTATION
+#define  __percpu MACROANNOTATION
 
 #define  WPMINFO
 #define  CPMINFO

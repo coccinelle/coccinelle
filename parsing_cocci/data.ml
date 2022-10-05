@@ -167,5 +167,6 @@ let fresh_id_scripts:
 
 let type_names = ref ([]:string list)
 let attr_names = ref ([]:string list)
+let arg_attr_names = ref ([]:string list)
 let declarer_names = ref ([]:string list)
 let iterator_names = ref ([]:string list)

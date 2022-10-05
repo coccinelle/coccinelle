@@ -2995,35 +2995,17 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
     );
   } ast
 
-(* ----------------------------------------------------------------------- *)
-(* annotations *)
-
 let detect_annotations toks =
-  let not_annotations = Hashtbl.create 101 in
-  let rec loop = function
-      TIdent(s,i1)::rest when s ==~ regexp_annot ->
-	(match Common.drop_while TH.is_just_comment_or_space rest with
-	  TOPar _::rest ->
-	    Hashtbl.replace not_annotations s ();
-	    loop rest
-	| _ -> loop rest)
-    | TAssign _::rest | TEq _::rest ->
-	(match Common.drop_while TH.is_just_comment_or_space rest with
-	  TIdent(s,i1)::rest when s ==~ regexp_annot ->
-	    Hashtbl.replace not_annotations s ();
-	    loop rest
-	| _ -> loop rest)
-    | x :: xs -> loop xs
-    | [] -> () in
-  loop toks;
-  let rec redo acc = function
-      TIdent(s,i1)::rest
-      when s ==~ regexp_annot && not (Hashtbl.mem not_annotations s) ->
-	msg_attribute s;
-	redo (TMacroAttr(s,i1)::acc) rest
-    | x::xs -> redo (x::acc) xs
+  let rec loop acc = function
+      TIdent(s,i)::rest ->
+	if List.mem s !Data.attr_names
+	then (Printf.eprintf "found an attr: %s\n" s; loop (TMacroAttr(s,i) :: acc) rest)
+	else if List.mem s !Data.arg_attr_names
+	then (Printf.eprintf "found an attr with args: %s\n" s; loop (TMacroAttrArgs(s,i) :: acc) rest)
+	else loop (TIdent(s,i) :: acc) rest
+    | x::xs -> loop (x::acc) xs
     | [] -> List.rev acc in
-  redo [] toks
+  loop [] toks
 
 (* ----------------------------------------------------------------------- *)
 (* Changes specific to C++ *)
