@@ -1288,6 +1288,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -1309,6 +1310,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* need retag this const, otherwise ambiguity in grammar
@@ -1338,6 +1340,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -1361,6 +1364,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -1378,6 +1382,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* continue with the rest of the line *)
@@ -1400,6 +1405,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* continue with the rest of the line *)
@@ -1429,6 +1435,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
+      Hashtbl.replace Data.special_names s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -2841,19 +2848,19 @@ let lookahead2 ~pass next before =
        *)
         ->
 
-      if s ==~ regexp_foreach &&
-        is_really_foreach (Common.take_safe forLOOKAHEAD rest)
-
-      then
-	begin
-          msg_foreach s;
-	  (if not(List.mem s !Data.iterator_names)
-	  then Data.iterator_names := s :: !Data.iterator_names);
-          TMacroIterator (s, i1)
-	end
-      else if List.mem s !Data.iterator_names
-      then TMacroIterator (s, i1)
-      else TIdent (s, i1)
+      (match Hashtbl.find_opt Data.special_names s with
+	Some Data.Iterator -> TMacroIterator (s, i1)
+      | _ ->
+	
+	  if s ==~ regexp_foreach &&
+            is_really_foreach (Common.take_safe forLOOKAHEAD rest)
+	  then
+	    begin
+              msg_foreach s;
+	      Hashtbl.replace Data.special_names s Data.Iterator;
+              TMacroIterator (s, i1)
+	    end
+	  else TIdent (s, i1))
 
 (*  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
      TIdent(s2,i2)::TIdent(s3,i3)::_)
@@ -2999,18 +3006,6 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
       aux xs
     );
   } ast
-
-let detect_annotations toks =
-  let rec loop acc = function
-      TIdent(s,i)::rest ->
-	if List.mem s !Data.attr_names
-	then (Printf.eprintf "found an attr: %s\n" s; loop (TMacroAttr(s,i) :: acc) rest)
-	else if List.mem s !Data.arg_attr_names
-	then (Printf.eprintf "found an attr with args: %s\n" s; loop (TMacroAttrArgs(s,i) :: acc) rest)
-	else loop (TIdent(s,i) :: acc) rest
-    | x::xs -> loop (x::acc) xs
-    | [] -> List.rev acc in
-  loop [] toks
 
 (* ----------------------------------------------------------------------- *)
 (* Changes specific to C++ *)

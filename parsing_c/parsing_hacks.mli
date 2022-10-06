@@ -83,8 +83,6 @@ val tokens_include:
   Ast_c.info * string * string * bool ref ->
   Parser_c.token * Parser_c.token list
 
-val detect_annotations : Parser_c.token list -> Parser_c.token list
-
 (* ------------------------------------------------------------------------ *)
 (* Parsing hack helpers related to #ifdef *)
 (* ------------------------------------------------------------------------ *)

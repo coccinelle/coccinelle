@@ -873,13 +873,13 @@ rule token = parse
 			 whether to use MacroAttr or MacroEndAttr *)
 		      (*if List.mem s !Data.type_names
 		      then TypedefIdent (s, info)
-		      else if List.mem s !Data.attr_names
-		      then TMacroAttr (s, info)
-		      else*) if List.mem s !Data.declarer_names
-		      then TMacroDecl (s, info)
-		      else if List.mem s !Data.iterator_names
-		      then TMacroIterator (s, info)
-		      else TIdent (s, info)
+		      else *)
+		      (match Hashtbl.find_opt Data.special_names s with
+			Some Data.Attr -> TMacroAttr(s,info)
+		      | Some Data.AttrArgs -> TMacroAttrArgs(s,info)
+		      | Some Data.Declarer -> TMacroDecl(s, info)
+		      | Some Data.Iterator -> TMacroIterator(s, info)
+		      | _ -> TIdent (s, info))
         )
       }
   (* gccext: apparently gcc allows dollar in variable names. found such

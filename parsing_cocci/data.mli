@@ -141,10 +141,7 @@ val fresh_id_scripts:
 (** The list of all fresh id scripts. *)
 
 (* ---------------------------------------------------------------------- *)
-(* Names of some special tokens.  Make these acessible to the C parser *)
+(* Names of some special tokens.  Make these accessible to the C parser *)
 
-val type_names : string list ref
-val attr_names : string list ref
-val arg_attr_names : string list ref
-val declarer_names : string list ref
-val iterator_names : string list ref
+type nametypes = Type | Attr | AttrArgs | Declarer | Iterator
+val special_names : (string, nametypes) Hashtbl.t

@@ -2426,11 +2426,9 @@ define_val:
 	 ((_::_) as a, d) when d = nullDecl ->
 	   (match name with
 	     Left name ->
-	       (if not(List.mem name !Data.attr_names)
-	       then Data.attr_names := name :: !Data.attr_names)
+	       Hashtbl.replace Data.special_names name Data.Attr
 	   | Right name ->
-	       (if not(List.mem name !Data.arg_attr_names)
-	       then Data.arg_attr_names := name :: !Data.arg_attr_names));
+	       Hashtbl.replace Data.special_names name Data.AttrArgs);
 	   DefineAttr a
        | _ ->
 	   let returnType = fixDeclSpecForMacro $1 in

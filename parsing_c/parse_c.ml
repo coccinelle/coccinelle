@@ -607,19 +607,17 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           (* typedef_fix1 *)
           let v = match v with
             | Parser_c.TIdent (s, ii) ->
-		if List.mem s !Data.attr_names
-		then Parser_c.TMacroAttr(s,ii)
-		else if List.mem s !Data.arg_attr_names
-		then Parser_c.TMacroAttrArgs(s,ii)
-		else if List.mem s !Data.iterator_names
-		then Parser_c.TMacroIterator(s, ii)
-		else
-                if
-                  LP.is_typedef s &&
-                    not (!Flag_parsing_c.disable_add_typedef) &&
-                    pass = 1
-                then Parser_c.TypedefIdent (s, ii)
-                else Parser_c.TIdent (s, ii)
+		(match Hashtbl.find_opt Data.special_names s with
+		  Some Data.Attr -> Parser_c.TMacroAttr(s,ii)
+		| Some Data.AttrArgs -> Parser_c.TMacroAttrArgs(s,ii)
+		| Some Data.Declarer -> Parser_c.TMacroDecl(s, ii)
+		| Some Data.Iterator -> Parser_c.TMacroIterator(s, ii)
+		| _ ->
+                    if LP.is_typedef s &&
+                      not (!Flag_parsing_c.disable_add_typedef) &&
+                      pass = 1
+                    then Parser_c.TypedefIdent (s, ii)
+                    else Parser_c.TIdent (s, ii))
             | x -> x
           in
 
