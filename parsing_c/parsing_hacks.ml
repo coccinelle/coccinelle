@@ -684,7 +684,7 @@ let rec commentize_skip_start_to_end xs =
               | _ -> false
               )
             in
-            let topass = x::x2::before in pr2 "sac a\n";
+            let topass = x::x2::before in
             topass +> List.iter (fun tok ->
               TV.set_as_comment Token_c.CppPassingExplicit tok
             );
@@ -715,7 +715,7 @@ let rec find_ifdef_bool xs =
 
       (match xxs with
       | [] -> raise (Impossible 90)
-      | firstclause::xxs -> pr2 "sac b\n";
+      | firstclause::xxs ->
           info_ifdef_stmt +>
             List.iter (TV.save_as_comment (fun x ->
                                     Token_c.CppIfDirective x));
@@ -850,7 +850,6 @@ let rec find_ifdef_mid xs =
               *)
             then begin
               msg_ifdef_mid_something();
- pr2 "sac c\n";
               (* keep only first, treat the rest as comment *)
               info_ifdef_stmt +> List.iter
                   (TV.save_as_comment (function x -> Token_c.CppIfDirective x));
@@ -887,7 +886,7 @@ let rec find_ifdef_funheaders = function
     ::xs
    when List.length ifdefblock1 <= thresholdFunheaderLimit &&
         List.length ifdefblock2 <= thresholdFunheaderLimit
-    -> pr2 "sac d\n";
+    ->
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
@@ -910,7 +909,7 @@ let rec find_ifdef_funheaders = function
       )
     ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line4)
     ::xs
-    -> pr2 "sac e\n";
+    ->
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
@@ -930,7 +929,7 @@ let rec find_ifdef_funheaders = function
       )
     ::TV.NotIfdefLine (({TV.tok = TOBrace i; TV.col = 0})::line4)
     ::xs
-    -> pr2 "sac f\n";
+    ->
       find_ifdef_funheaders xs;
 
       msg_ifdef_funheaders ();
@@ -1010,7 +1009,6 @@ let find_ifdef_cparen_else xs =
           in
           if condition then begin
             msg_ifdef_cparen_else();
- pr2 "sac g\n";
             (* keep only first, treat the rest as comment *)
             info_ifdef_stmt +>
 	    List.iter (TV.save_as_comment (fun x -> Token_c.CppIfDirective x));
@@ -1115,36 +1113,9 @@ let rec find_macro_paren xs =
   | [] -> ()
 
   (* attribute *)
-  (*
-   * Current coccinelle supports only __attribute__ or __attribute
-   * with one argument. Since the current implementation is
-   * incomplete, this code is commented out just in case.
-   * In the future, we will add support for gcc attribute with
-   * multiple arguments.
-   *)
-(*| TV.PToken ({TV.tok = Tattribute ii} as id)
-    ::Parenthised (xxs,info_parens)
-    ::xs
-     ->
-      pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
-		 (Ast_c.str_of_info ii));
-      [Parenthised (xxs, info_parens)] +>
-        iter_token_paren (TV.set_as_comment Token_c.CppAttr);
-      TV.set_as_comment Token_c.CppAttr id;
-      find_macro_paren xs
-*)
-(*  | TV.PToken ({TV.tok = Tattribute ii} as id)
-    ::TV.Parenthised (xxs,info_parens)
-    ::(TV.PToken {TV.tok = TPtVirg _} | TV.PToken {TV.tok = TEq _} | TV.PToken {TV.tok = TOBrace _})
-    ::xs
-     ->
-      pr2_cpp (Printf.sprintf "MACRO: attribute %s detected "
-		 (Ast_c.str_of_info ii));
-      id.TV.tok <- TMacroGccEndAttr ii;
-      find_macro_paren xs*)
   | TV.PToken ({TV.tok = TattributeNoarg ii} as id)
     ::xs
-     -> pr2 "sac h\n";
+     ->
       pr2_cpp (Printf.sprintf "MACRO: attributenoarg %s detected "
 		 (Ast_c.str_of_info ii));
       TV.set_as_comment Token_c.CppAttr id;
@@ -1213,7 +1184,7 @@ let rec find_macro_paren xs =
   (* string macro with params, before case *)
   | TV.PToken ({TV.tok = (TString _| TMacroString _)})::TV.PToken ({TV.tok = TIdent (s,_)} as id)
     ::TV.Parenthised (xxs, info_parens)
-    ::xs -> pr2 "sac i\n";
+    ::xs ->
 
       msg_stringification_params s;
       id.TV.tok <- TMacroString (s, TH.info_of_tok id.TV.tok);
@@ -1225,7 +1196,7 @@ let rec find_macro_paren xs =
   | TV.PToken ({TV.tok = TIdent (s,_)} as id)
     ::TV.Parenthised (xxs, info_parens)
     ::TV.PToken ({TV.tok = (TString _ | TMacroString _)})
-    ::xs -> pr2 "sac j\n";
+    ::xs ->
 
       msg_stringification_params s;
       id.TV.tok <- TMacroString (s, TH.info_of_tok id.TV.tok);
@@ -1546,7 +1517,7 @@ let rec find_macro_lineparen prev_line_end xs =
         else begin
           msg_macro_noptvirg s;
 	  (match ctx with
-	    TV.InStruct -> pr2 "sac k\n";
+	    TV.InStruct ->
               macro.TV.tok <- TMacroDecl (s, TH.info_of_tok macro.TV.tok);
               [args] +>
               TV.iter_token_paren (TV.set_as_comment Token_c.CppMacro)
@@ -1562,7 +1533,7 @@ let rec find_macro_lineparen prev_line_end xs =
 		!res in
 	      if contains_semicolon [args]
 	      then
-		begin pr2 "sac l\n";
+		begin
 		  macro.TV.tok <- TMacroIdStmt (s, TH.info_of_tok macro.TV.tok);
 		  [args] +>
 		  TV.iter_token_paren (TV.set_as_comment Token_c.CppMacro)
