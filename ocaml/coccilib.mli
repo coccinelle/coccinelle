@@ -401,6 +401,7 @@ module Ast_c :
         DefineExpr of expression
       | DefineStmt of statement
       | DefineType of fullType
+      | DefineAttr of attribute list
       | DefineDoWhileZero of (statement * expression) wrap
       | DefineFunction of definition
       | DefineInit of initialiser

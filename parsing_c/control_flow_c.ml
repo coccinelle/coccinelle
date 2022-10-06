@@ -214,6 +214,7 @@ type node = node1 * string
 
   | DefineExpr of expression
   | DefineType of fullType
+  | DefineAttr of attribute list
   | DefineDoWhileZeroHeader of unit wrap
   | DefineInit of initialiser
   | DefineTodo
@@ -381,7 +382,8 @@ let extract_fullstatement node =
   | MacroIterHeader (st, _) -> Some st
 
   | Include _
-  | DefineHeader _ | DefineType _ | DefineExpr  _ | DefineDoWhileZeroHeader _
+  | DefineHeader _ | DefineType _ | DefineAttr _ | DefineExpr _
+  | DefineDoWhileZeroHeader _
   | DefineInit _ | DefineTodo | PragmaHeader _ | MacroTop _
       -> None
 

@@ -1445,18 +1445,17 @@ let specialdeclmacro_to_stmt (s, args, ii) =
       let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s in
       !g#add_arc ((topi, headeri),Direct);
 
-      (match defval with
-      | Ast_c.DefineExpr e ->
-          let ei   = !g +> add_node (DefineExpr e) lbl_0 "defexpr" in
-          let endi = !g +> add_node EndNode        lbl_0 "[end]" in
-          !g#add_arc ((headeri, ei) ,Direct);
-          !g#add_arc ((ei, endi) ,Direct);
+      let atomic_for_matching node txt =
+        let ei   = !g +> add_node node lbl_0 txt in
+        let endi = !g +> add_node EndNode lbl_0 "[end]" in
+        !g#add_arc ((headeri, ei) ,Direct);
+        !g#add_arc ((ei, endi) ,Direct) in
 
-      | Ast_c.DefineType ft ->
-          let ei   = !g +> add_node (DefineType ft) lbl_0 "deftyp" in
-          let endi = !g +> add_node EndNode         lbl_0 "[end]" in
-          !g#add_arc ((headeri, ei) ,Direct);
-          !g#add_arc ((ei, endi) ,Direct);
+      (match defval with
+      | Ast_c.DefineExpr e -> atomic_for_matching (DefineExpr e) "defexpr"
+      | Ast_c.DefineType ft -> atomic_for_matching (DefineType ft) "deftyp"
+      | Ast_c.DefineAttr a -> atomic_for_matching (DefineAttr a) "defattr"
+      | Ast_c.DefineInit i -> atomic_for_matching (DefineInit i) "definit"
 
       | Ast_c.DefineStmt st ->
           (* can have some return; inside the statement *)
@@ -1501,11 +1500,6 @@ let specialdeclmacro_to_stmt (s, args, ii) =
       | Ast_c.DefineEmpty ->
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
           !g#add_arc ((headeri, endi),Direct);
-      | Ast_c.DefineInit i ->
-          let ei   = !g +> add_node (DefineInit i) lbl_0 "definit" in
-          let endi = !g +> add_node EndNode        lbl_0 "[end]" in
-          !g#add_arc ((headeri, ei) ,Direct);
-          !g#add_arc ((ei, endi) ,Direct);
       | Ast_c.DefineMulti sts -> (* christia: todo *)
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo ->

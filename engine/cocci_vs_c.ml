@@ -5623,6 +5623,9 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
   | _,
     (F.MacroStmt (_, _)| F.DefineDoWhileZeroHeader _| F.EndNode|F.TopNode)
       -> fail
+
+  | _, F.DefineAttr eb  -> fail (* not supported in SmPL *)
+
   | _,
     (F.Label (_, _, _)|F.Break (_, _, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|

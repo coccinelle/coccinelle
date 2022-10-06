@@ -694,6 +694,7 @@ and define = string wrap (* #define s eol *) * (define_kind * define_val)
 
      | DefineStmt of statement
      | DefineType of fullType
+     | DefineAttr of attribute list
      | DefineDoWhileZero of (statement * expression) wrap (* do { } while(0) *)
 
      | DefineFunction of definition

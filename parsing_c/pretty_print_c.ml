@@ -1372,6 +1372,7 @@ and pp_init (init, iinit) =
           | DefineFunction def -> pp_def def
 
           | DefineType ty -> pp_type ty
+          | DefineAttr a -> pp_attributes a
           | DefineText (s, ii) -> List.iter pr_elem ii
           | DefineEmpty -> ()
           | DefineInit ini -> pp_init ini
@@ -1542,6 +1543,8 @@ and pp_init (init, iinit) =
     | F.DefineExpr e  -> pp_expression e
 
     | F.DefineType ft  -> pp_type ft
+
+    | F.DefineAttr a  -> pp_attributes a
 
     | F.DefineHeader ((s,ii), (defkind))  ->
         let (idefine,iident,ieol) = Common.tuple_of_list3 ii in

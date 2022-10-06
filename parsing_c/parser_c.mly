@@ -2422,18 +2422,19 @@ define_val:
 
  | decl_spec
      { fun name ->
-       (match $1 with
-	 ([a], d) when d = nullDecl ->
+       match $1 with
+	 ((_::_) as a, d) when d = nullDecl ->
 	   (match name with
 	     Left name ->
 	       (if not(List.mem name !Data.attr_names)
 	       then Data.attr_names := name :: !Data.attr_names)
 	   | Right name ->
 	       (if not(List.mem name !Data.arg_attr_names)
-	       then Data.arg_attr_names := name :: !Data.arg_attr_names))
-       | _ -> ());
-       let returnType = fixDeclSpecForMacro $1 in
-       DefineType returnType
+	       then Data.arg_attr_names := name :: !Data.arg_attr_names));
+	   DefineAttr a
+       | _ ->
+	   let returnType = fixDeclSpecForMacro $1 in
+	   DefineType returnType
      }
  | decl_spec abstract_declarator
      { fun _ ->

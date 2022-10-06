@@ -920,6 +920,7 @@ and vk_define_val bigf defval =
       vk_ii bigf ii
   | DefineFunction def -> vk_def bigf def
   | DefineType ty -> vk_type bigf ty
+  | DefineAttr a -> a +> List.iter (vk_attribute bigf)
   | DefineText (s, ii) -> vk_ii bigf ii
   | DefineEmpty -> ()
   | DefineInit ini -> vk_ini bigf ini
@@ -1022,7 +1023,8 @@ and vk_node = fun bigf node ->
     | F.CaseNode i -> ()
 
     | F.DefineExpr e  -> vk_expr bigf e
-    | F.DefineType ft  -> vk_type bigf ft
+    | F.DefineType ft -> vk_type bigf ft
+    | F.DefineAttr a  -> a +> List.iter (vk_attribute bigf)
     | F.DefineHeader ((s,ii), (defkind))  ->
         iif ii;
         vk_define_kind bigf defkind;
@@ -1956,6 +1958,8 @@ and vk_define_val_s = fun bigf x ->
         DefineDoWhileZero ((st',e'), iif ii)
     | DefineFunction def -> DefineFunction (vk_def_s bigf def)
     | DefineType ty -> DefineType (vk_type_s bigf ty)
+    | DefineAttr a ->
+	DefineAttr (a +> List.map (vk_attribute_s bigf))
     | DefineText (s, ii) -> DefineText (s, iif ii)
     | DefineEmpty -> DefineEmpty
     | DefineInit ini -> DefineInit (vk_ini_s bigf ini)
@@ -2073,6 +2077,8 @@ and vk_node_s = fun bigf node ->
 
     | F.DefineExpr e -> F.DefineExpr (vk_expr_s bigf e)
     | F.DefineType ft -> F.DefineType (vk_type_s bigf ft)
+    | F.DefineAttr a ->
+	F.DefineAttr (a +> List.map (vk_attribute_s bigf))
     | F.DefineDoWhileZeroHeader ((),ii) ->
         F.DefineDoWhileZeroHeader ((),iif ii)
     | F.DefineInit i -> F.DefineInit (vk_ini_s bigf i)

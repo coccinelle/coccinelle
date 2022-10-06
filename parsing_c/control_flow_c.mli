@@ -50,6 +50,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | DefineExpr of expression
   | DefineType of fullType
+  | DefineAttr of attribute list
   | DefineDoWhileZeroHeader of unit wrap
   | DefineInit of initialiser
 
