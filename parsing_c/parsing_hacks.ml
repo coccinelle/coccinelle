@@ -1226,9 +1226,15 @@ let rec find_macro_paren xs =
       id.TV.tok <- TMacroString (s, TH.info_of_tok id.TV.tok);
       find_macro_paren xs
 
-
-
-
+  (* iterator *)
+  | TV.PToken ({TV.tok = TDefine _})::
+    TV.PToken ({TV.tok = TIdentDefine (s,_)})::
+    TV.Parenthised _::
+    ((TV.PToken ({TV.tok = (Tfor _ | TMacroIterator _)})::
+    TV.Parenthised _::
+    TV.PToken ({TV.tok = TDefEOL _})::_) as xs) ->
+      Hashtbl.replace Data.special_names s Data.Iterator;
+      find_macro_paren xs (* no need to recurse on define header *)
 
   (* recurse *)
   | (TV.PToken x)::xs -> find_macro_paren xs
