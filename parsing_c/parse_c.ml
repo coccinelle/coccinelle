@@ -607,7 +607,10 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           (* typedef_fix1 *)
           let v = match v with
             | Parser_c.TIdent (s, ii) ->
-		(match Hashtbl.find_opt Data.special_names s with
+		let res =
+		  try Some(Hashtbl.find Data.special_names s)
+		  with _ -> None in
+		(match res with
 		  Some Data.Attr -> Parser_c.TMacroAttr(s,ii)
 		| Some Data.AttrArgs -> Parser_c.TMacroAttrArgs(s,ii)
 		| Some Data.Declarer -> Parser_c.TMacroDecl(s, ii)

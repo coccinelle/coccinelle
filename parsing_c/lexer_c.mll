@@ -874,7 +874,10 @@ rule token = parse
 		      (*if List.mem s !Data.type_names
 		      then TypedefIdent (s, info)
 		      else *)
-		      (match Hashtbl.find_opt Data.special_names s with
+		      let res =
+			try Some(Hashtbl.find Data.special_names s)
+			with _ -> None in
+		      (match res with
 			Some Data.Attr -> TMacroAttr(s,info)
 		      | Some Data.AttrArgs -> TMacroAttrArgs(s,info)
 		      | Some Data.Declarer -> TMacroDecl(s, info)

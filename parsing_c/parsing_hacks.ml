@@ -2816,20 +2816,21 @@ let lookahead2 ~pass next before =
        * will be considered as a loop
        *)
         ->
-
-      (match Hashtbl.find_opt Data.special_names s with
-	Some Data.Iterator -> TMacroIterator (s, i1)
-      | _ ->
-	
-	  if s ==~ regexp_foreach &&
-            is_really_foreach (Common.take_safe forLOOKAHEAD rest)
-	  then
-	    begin
-              msg_foreach s;
-	      Hashtbl.replace Data.special_names s Data.Iterator;
-              TMacroIterator (s, i1)
-	    end
-	  else TIdent (s, i1))
+	  let res =
+	    try Some(Hashtbl.find Data.special_names s)
+	    with _ -> None in
+	  (match res with
+	    Some Data.Iterator -> TMacroIterator (s, i1)
+	  | _ ->
+	      if s ==~ regexp_foreach &&
+		is_really_foreach (Common.take_safe forLOOKAHEAD rest)
+	      then
+		begin
+		  msg_foreach s;
+		  Hashtbl.replace Data.special_names s Data.Iterator;
+		  TMacroIterator (s, i1)
+		end
+	      else TIdent (s, i1))
 
 (*  | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,
      TIdent(s2,i2)::TIdent(s3,i3)::_)
