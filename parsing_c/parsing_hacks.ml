@@ -2110,12 +2110,12 @@ let lookahead2 ~pass next before =
 
 	(* extern "_" tt *)
   | ((TString ((s, _), i1) | TMacroString (s, i1)) :: _ , Textern _ :: _)
-    when !Flag.c_plus_plus <> Flag.Off -> Printf.eprintf "comment 1\n";
+    when !Flag.c_plus_plus <> Flag.Off ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* ) const { *)
   | (Tconst i1 :: TOBrace _ :: _ , TCPar _ :: _)
-    when !Flag.c_plus_plus <> Flag.Off -> Printf.eprintf "comment 2\n";
+    when !Flag.c_plus_plus <> Flag.Off ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
   (* const ident const: ident must be a type *)
@@ -2129,12 +2129,12 @@ let lookahead2 ~pass next before =
 	(* xx const tt *)
   | (TIdent (s, i1)::(Tconst _|Tvolatile _|Trestrict _)::type_::_  , _)
     when not_struct_enum before
-	&& is_type type_ -> Printf.eprintf "comment 3\n";
+	&& is_type type_ ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx struct *)
   | (TIdent (s, i1)::Tstruct _::_  , _)
-    when not_struct_enum before -> Printf.eprintf "comment 4\n";
+    when not_struct_enum before ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx tt *)
@@ -2149,7 +2149,7 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, seen::_)
     when LP.current_context () = LP.InTopLevel
 	&& (is_struct_enum before || is_type seen)
-	&& s ==~ regexp_annot -> Printf.eprintf "comment 6\n";
+	&& s ==~ regexp_annot ->
 	  TCommentCpp (Token_c.CppMacro, i1)
 
         (* tt * xx yy ( : xx is an annot *)
@@ -2194,8 +2194,8 @@ let lookahead2 ~pass next before =
 	&& is_type seen ->
 	  if is_macro s2 then
 	    TIdent (s, i1)
-	  else ( Printf.eprintf "comment 10: %s %d\n" s (Ast_c.line_of_info i1);
-	    TCommentCpp (Token_c.CppDirective, i1))
+	  else
+	    TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt xx yy *)
   | (TIdent (s, i1)::rest, _)
@@ -2210,13 +2210,13 @@ let lookahead2 ~pass next before =
 
   | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_)
     when not_struct_enum before
-	&& is_macro s2 && is_type seen -> Printf.eprintf "comment 12\n";
+	&& is_macro s2 && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
 	(* tt xx * *)
   | (TIdent (s, i1)::ptr  , seen::_)
     when not_struct_enum before
-	&& pointer ptr && is_type seen -> Printf.eprintf "comment 13\n";
+	&& pointer ptr && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
@@ -2225,13 +2225,13 @@ let lookahead2 ~pass next before =
 	&& pointer ptr ->
 	  if is_macro s2 then
 	    TIdent (s, i1)
-	  else ( Printf.eprintf "comment 14\n";
-	    TCommentCpp (Token_c.CppDirective, i1))
+	  else
+	    TCommentCpp (Token_c.CppDirective, i1)
 
 	(* tt * xx yy *)
   | (TIdent(s2, i2)::_  , TIdent (s, i1)::ptr)
     when not_struct_enum before
-	&& is_macro s2 && pointer ptr -> Printf.eprintf "comment 15\n";
+	&& is_macro s2 && pointer ptr ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
         (* exception to next rule *)
@@ -2242,7 +2242,7 @@ let lookahead2 ~pass next before =
 	(* tt xx yy *)
   | (TIdent(s2, i2)::_  , TIdent(s, i1)::seen::_)
     when not_struct_enum before
-	&& is_macro s2 && is_type seen -> Printf.eprintf "comment 16\n";
+	&& is_macro s2 && is_type seen ->
 	  TCommentCpp (Token_c.CppDirective, i2)
 
   (*  xx * yy      AND  in paramdecl *)
@@ -2264,8 +2264,7 @@ let lookahead2 ~pass next before =
     when not_struct_enum before
 	&& ok_typedef s2
 	&& is_known_typdef s2
-        -> Printf.eprintf "comment 17\n";
-	  TCommentCpp(Token_c.CppMacro, i1)
+        -> TCommentCpp(Token_c.CppMacro, i1)
 
   (* xx yy zz : xx is a typedef ident *)
   | (TIdent (s, i1)::TIdent (s2, i2)::TIdent(_,_)::_ , _)
@@ -2281,8 +2280,7 @@ let lookahead2 ~pass next before =
 	&& not_struct_enum before
 	&& ok_typedef s2
 	&& is_known_typdef s2
-        -> Printf.eprintf "comment 18\n";
-	  TCommentCpp(Token_c.CppMacro, i1)
+        -> TCommentCpp(Token_c.CppMacro, i1)
 
   (* xx yy * zz : xx is a typedef ident *)
   | (TIdent (s, i1)::TIdent (s2, i2)::ptr , _)
@@ -2793,7 +2791,7 @@ let lookahead2 ~pass next before =
       ->
         if (pass >= 2)
         then begin
-          pr2_cpp("UNDEF: I treat it as comment"); Printf.eprintf "comment 20\n";
+          pr2_cpp("UNDEF: I treat it as comment");
           TCommentCpp (Token_c.CppDirective, ii)
         end
         else x
@@ -2802,7 +2800,7 @@ let lookahead2 ~pass next before =
       ->
         if (pass >= 2)
         then begin
-          pr2_cpp ("OTHER directive: I treat it as comment");  Printf.eprintf "comment 21\n";
+          pr2_cpp ("OTHER directive: I treat it as comment");
           TCommentCpp (Token_c.CppDirective, ii)
         end
         else x
