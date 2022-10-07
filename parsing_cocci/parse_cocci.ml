@@ -2696,7 +2696,7 @@ let parse file =
 		do_parse_script_rule parse_fscript_rule s l old_metas deps
             | _ -> failwith "Malformed rule name" in
 
-	  let rec loop old_metas starts_with_name =
+	  let rec loop acc_rules old_metas starts_with_name =
 	    (!D.init_rule)();
 
             let gen_starts_with_name more tokens =
@@ -2711,14 +2711,15 @@ let parse file =
               parse_rule old_metas starts_with_name in
 	    let all_metas = metavars @ old_metas in
 
-            if more then
-	      let (all_rules,all_metas) =
-		loop all_metas (gen_starts_with_name more tokens) in
-	      (rule::all_rules,all_metas)
-            else ([rule],all_metas) in
+            if more
+	    then
+	      loop (rule :: acc_rules) all_metas
+		(gen_starts_with_name more tokens)
+            else
+	      (List.rev (rule :: acc_rules), all_metas) in
 
 	  let (all_rules,all_metas) =
-	    loop extra_metas (x = PC.TArob) in
+	    loop [] extra_metas (x = PC.TArob) in
 
 	  (List.fold_left
 	     (function prev -> function cur -> Common.union_set cur prev)
