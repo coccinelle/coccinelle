@@ -1699,17 +1699,6 @@ let rec process_pragmas (bef : 'a option) (skips : 'a list) = function
       (* This is a ..., in an argument list, field initializer list etc,
 	 which might go away, so nothing should be attached to the , *)
       process_pragmas bef (b::a::skips) xs
-  | ((PC.TAttr_(i),x) as xx)::xs ->
-      (match line_type i with
-        D.PLUS | D.PLUSPLUS ->
-          (match transform_attr xs bef skips with
-            None ->
-              let (attr,rest) = collect_attr xs in
-              process_pragmas bef skips
-              ((PC.TDirective(Ast.Space("__attribute__"^attr),i),x)::rest)
-          | Some (attr,rest) ->
-              process_pragmas bef (xx::skips) (attr @ rest))
-      | _ -> (add_bef bef) @ List.rev skips @ (process_pragmas (Some xx) [] xs))
   | ((PC.TDirective(s,i),_)::_) as l ->
       let (pragmas,rest) = collect_all_pragmas [] l in
       let (pass,rest0) = collect_pass rest in
