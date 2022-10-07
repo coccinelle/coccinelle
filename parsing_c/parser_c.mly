@@ -2449,13 +2449,6 @@ define_val:
 		StmtElem e -> e
 	      | _ -> failwith "unexpected statement for DefineMulti")
 	    ($1 :: $2)) }
-/*(*
- | statement statement { DefineTodo }
- | decl function_definition { DefineTodo }
-*)*/
-
-
-
 
  | function_definition { fun _ -> DefineFunction $1 }
 
@@ -2474,8 +2467,6 @@ define_val:
 
  | Tasm TOPar asmbody TCPar              { fun _ -> DefineTodo }
  | Tasm Tvolatile TOPar asmbody TCPar    { fun _ -> DefineTodo }
-
- /*(* aliases macro *)*/
 
  | /*(* empty *)*/ { fun _ -> DefineEmpty }
 
