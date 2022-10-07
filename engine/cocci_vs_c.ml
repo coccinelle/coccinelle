@@ -46,6 +46,7 @@ let (need_unordered_initialisers : B.initialiser B.wrap2 list -> bool) =
        -> true
      | B.InitExpr _
      | B.InitList _
+     | B.InitListNoBrace _
        -> false)
 
 (* For the #include <linux/...> in the .cocci, need to find where is
@@ -3106,7 +3107,8 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
     | _, (B.InitIndexOld (_, _), _) -> fail
     | _, (B.InitFieldOld (_, _), _) -> fail
 
-    | _, ((B.InitDesignators (_, _)|B.InitList _|B.InitExpr _), _)
+    | _, ((B.InitDesignators (_, _)|
+           B.InitList _|B.InitListNoBrace _|B.InitExpr _), _)
         -> fail
 
 and designators dla dlb =

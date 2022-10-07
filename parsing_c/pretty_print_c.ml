@@ -1187,6 +1187,15 @@ and pp_init (init, iinit) =
           iicommaopt +> List.iter pr_elem;
 	  end_block();
           pr_elem i2;
+      | InitListNoBrace xs, iicommaopt ->
+          start_block();
+          xs +> List.iter (fun (x, ii) ->
+            assert (List.length ii <= 1);
+            ii +> List.iter (function e -> pr_elem e; pr_nl());
+            pp_init x
+          );
+          iicommaopt +> List.iter pr_elem;
+	  end_block()
 
       | InitDesignators (xs, initialiser), [i1] -> (* : *)
           xs +> List.iter pp_designator;

@@ -224,6 +224,11 @@ let remove_useless_fakeInfo_struct program =
           Ast_c.InitList args, (i1 :: i2 :: tl)
         | ii -> Ast_c.InitList args, ii
         )
+      | Ast_c.InitListNoBrace args, [iicommaopt] when
+          (not (contain_plus iicommaopt))
+            && (Ast_c.is_fake iicommaopt) ->
+              (* sometimes the guy put a normal iicommaopt *)
+              Ast_c.InitListNoBrace args, []
       | x -> x)
     } in
   Visitor_c.vk_toplevel_s bigf program

@@ -243,6 +243,7 @@ and initialiser = initialiserbis wrap
 and initialiserbis =
     InitExpr of expression
   | InitList of initialiser wrap2 list
+  | InitListNoBrace of initialiser wrap2 (* , *) list (* only for #define *)
   | InitDesignators of designator list * initialiser
   | InitFieldOld of string * initialiser
   | InitIndexOld of expression * initialiser

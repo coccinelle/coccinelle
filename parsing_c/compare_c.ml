@@ -69,6 +69,8 @@ let normal_form_program xs =
       match ini with
       | InitList xs, [i1;i2;iicommaopt] ->
           k (InitList xs, [i1;i2])
+      | InitListNoBrace xs, [iicommaopt] ->
+          k (InitListNoBrace xs, [])
       | _ -> k ini
     );
 

@@ -613,6 +613,7 @@ and declaration =
        and initialiserbis =
           | InitExpr of expression
           | InitList of initialiser wrap2 (* , *) list
+          | InitListNoBrace of initialiser wrap2 (* , *) list (* only for #define *)
           (* gccext: *)
           | InitDesignators of designator list * initialiser
           | InitFieldOld  of string * initialiser

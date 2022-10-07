@@ -621,7 +621,7 @@ and vk_ini = fun bigf ini ->
     iif iini;
     match ini with
     | InitExpr e -> vk_expr bigf e
-    | InitList initxs ->
+    | InitList initxs | InitListNoBrace initxs ->
         initxs +> List.iter (fun (ini, ii) ->
           inif ini;
           iif ii;
@@ -1667,6 +1667,10 @@ and vk_ini_s = fun bigf ini ->
       | InitExpr e -> InitExpr (vk_expr_s bigf e)
       | InitList initxs ->
           InitList (initxs +> List.map (fun (ini, ii) ->
+            inif ini, vk_ii_s bigf ii)
+          )
+      | InitListNoBrace initxs ->
+          InitListNoBrace (initxs +> List.map (fun (ini, ii) ->
             inif ini, vk_ii_s bigf ii)
           )
 

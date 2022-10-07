@@ -2453,7 +2453,7 @@ define_val:
  | function_definition { fun _ -> DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
-    { fun _ -> DefineInit (InitList (List.rev $2), [$1;$4] @ $3 @ $5)  }
+    { fun _ -> DefineInit (InitList (List.rev $2), [$1;$4] @ $3 @ $5) }
 
  /*(* note: had a conflict before when were putting TInt instead of expr *)*/
  | Tdo statement Twhile TOPar expr TCPar
@@ -2467,6 +2467,18 @@ define_val:
 
  | Tasm TOPar asmbody TCPar              { fun _ -> DefineTodo }
  | Tasm Tvolatile TOPar asmbody TCPar    { fun _ -> DefineTodo }
+
+ | designator_list TEq initialize2 gcc_comma_opt_struct
+     { fun _ ->
+       let e1 = InitDesignators ($1, $3), [$2] in
+       DefineInit (InitListNoBrace [e1, []], $4) }
+ | designator_list TEq initialize2 TComma initialize_list gcc_comma_opt_struct
+     { fun _ ->
+       let e1 = InitDesignators ($1, $3), [$2] in
+       match List.rev $5 with
+	 (first,[])::rest ->
+	   DefineInit(InitListNoBrace ((e1,[])::(first,[$4])::rest), $6)
+       | _ -> failwith "malformed list" }
 
  | /*(* empty *)*/ { fun _ -> DefineEmpty }
 

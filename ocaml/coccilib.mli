@@ -337,6 +337,7 @@ module Ast_c :
       Ast_c.initialiserbis =
         InitExpr of expression
       | InitList of initialiser wrap2 list
+      | InitListNoBrace of initialiser wrap2 (* , *) list
       | InitDesignators of designator list * initialiser
       | InitFieldOld of string * initialiser
       | InitIndexOld of expression * initialiser
