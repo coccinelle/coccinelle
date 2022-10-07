@@ -721,7 +721,7 @@ and fullType ft =
 
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
-  | Ast.FType(ty) -> fullType ty
+  | Ast.FType(ty) -> fullType ty; pr_space()
   | Ast.FInline(inline) -> mcode print_string inline; pr_space()
 
 and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
@@ -956,7 +956,7 @@ and print_named_type ty id =
         that would put ( * ) around the variable.  This makes one wonder
         why we really need a special case for function pointer *)
       | _ -> fullType ty; ft_space ty; id())
-  | _ -> fullType ty; id()
+  | _ -> fullType ty; ft_space ty; id()
 
 and ty_space ty =
   match Ast.unwrap ty with

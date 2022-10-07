@@ -467,7 +467,7 @@ and varargs = function
 
 and print_fninfo = function
     Ast.FStorage(stg) -> mcode storage stg
-  | Ast.FType(ty) -> fullType ty
+  | Ast.FType(ty) -> fullType ty; print_string " "
   | Ast.FInline(inline) -> mcode print_string inline; print_string " "
 
 and print_attribute_list ?(befspace=true) ?(aftspace=false) attrs =
@@ -497,9 +497,9 @@ and print_attr_arg arg =
 and typeC ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,strings) ->
-      List.iter (function s -> mcode print_string s; print_string " ") strings
+      print_between print_space (mcode print_string) strings
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option typeC ty
-  | Ast.Pointer(ty,star) -> fullType ty; mcode print_string star
+  | Ast.Pointer(ty,star) -> fullType ty; print_space(); mcode print_string star
   | Ast.ParenType(lp,ty,rp) ->
       print_parentype (lp,ty,rp) (function _ -> ())
   | Ast.FunctionType(ty,lp,params,rp) ->
@@ -585,12 +585,12 @@ and print_named_type ty id =
 		    (if cvafter <> [] then print_space());
 		    print_between print_space do_cvattr cvafter
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; id(); k () in
+	    | _ -> typeC ty; print_space(); id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
-      | _ -> fullType ty; id())
-  | _ -> fullType ty; id()
+      | _ -> fullType ty; print_space(); id())
+  | _ -> fullType ty; print_space(); id()
 
 and declaration d =
   match Ast.unwrap d with
