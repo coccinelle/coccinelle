@@ -711,9 +711,9 @@ and fullType ft =
 	  Ast.CV cv -> mcode const_vol cv
 	| Ast.Attr attr -> print_attribute attr in
       print_between pr_space do_cvattr cvbefore;
-      (if cvbefore <> [] then pr_space());
-      typeC ty;
-      (if cvafter <> [] then pr_space());
+      (if cvbefore <> [] then print_text " ");
+      typeC (cvafter <> []) ty;
+      (if cvafter <> [] then print_text " ");
       print_between pr_space do_cvattr cvafter
   | Ast.AsType(ty, asty) -> fullType ty
   | Ast.DisjType _ | Ast.ConjType _ -> raise CantBeInPlus
@@ -753,13 +753,14 @@ and print_attr_arg arg =
               pretty_print_c.Pretty_print_c.attr_arg a
           | _ -> error name arg "attr_arg value expected")
 
-and typeC ty =
+and typeC endattrs ty =
   match Ast.unwrap ty with
     Ast.BaseType(ty,strings) ->
       print_between pr_space (mcode print_string) strings
-  | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option_prespace typeC ty
+  | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option_prespace (typeC endattrs) ty
   | Ast.Pointer(ty,star) ->
-      fullType ty; ft_space ty; mcode print_string star; eatspace()
+      fullType ty; ft_space ty; mcode print_string star;
+      if not endattrs then eatspace()
   | Ast.ParenType(lp,ty,rp) ->
       print_parentype (lp,ty,rp) (function _ -> ())
   | Ast.FunctionType(ty,lp,params,rp) ->
@@ -909,7 +910,7 @@ and print_named_type ty id =
 		    (if cvafter <> [] then pr_space());
 		    print_between (function _ -> pr_space()) do_cvattr cvafter;
 		| _ -> failwith "complex array types not supported")
-	    | _ -> typeC ty; ty_space ty; id(); k () in
+	    | _ -> typeC false ty; ty_space ty; id(); k () in
 	  loop ty1 (function _ -> ())
       | Ast.MetaType(name,_,_,_) ->
           (* MetaType with an array and a pointer have to be treated specially.
@@ -967,6 +968,7 @@ and ft_space ty =
   match Ast.unwrap ty with
     Ast.Type(_,cvbefore,ty,cvafter) ->
       let isptr =
+	cvafter = [] &&
 	match Ast.unwrap ty with
 	  Ast.Pointer(_,_) -> true
 	| Ast.MetaType(name,_,_,_) ->
@@ -1042,7 +1044,7 @@ and declaration d =
       mcode print_string sem
   | Ast.Typedef(stg,ty,id,sem) ->
       mcode print_string stg; pr_space();
-      print_named_type ty (fun _ -> typeC id);
+      print_named_type ty (fun _ -> typeC false id);
       mcode print_string sem
   | Ast.DisjDecl(_) | Ast.ConjDecl(_) -> raise CantBeInPlus
   | Ast.OptDecl(decl) -> raise CantBeInPlus
@@ -1655,7 +1657,7 @@ let pp_any = function
   | Ast.EnumDeclDotsTag(x) -> dots force_newline enum_decl x; false
   | Ast.DefParDotsTag(x) -> dots (fun _ -> ()) print_define_param x; false
 
-  | Ast.TypeCTag(x) -> typeC x; false
+  | Ast.TypeCTag(x) -> typeC false x; false
   | Ast.ParamTag(x) -> parameterTypeDef x; false
   | Ast.SgrepStartTag(x) -> failwith "unexpected start tag"
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
