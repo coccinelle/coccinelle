@@ -1695,6 +1695,12 @@ storage:
 decl: t=ctype d=direct_declarator(type_ident) endar=attr_list
 	{ let (i,fn) = d in
 	Ast0_cocci.wrap(Ast0_cocci.Param(fn t, Some i, endar)) }
+    | t=pure_ident d=direct_declarator(type_ident) endar=attr_list
+	{ let ty = Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode t)) in
+        let (i,fn) = d in
+	!Data.add_type_name (fst t);
+	Hashtbl.replace Data.special_names (fst t) Data.Type;
+	Ast0_cocci.wrap(Ast0_cocci.Param(fn ty, Some i, endar)) }
     | t=ctype
         { (*verify in FunDecl*)
           Ast0_cocci.wrap(Ast0_cocci.Param(t, None, [])) }
