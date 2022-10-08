@@ -431,7 +431,10 @@ let apply_macro_defs
 	      |	Some bind ->
 
                   let xxs' = xxs +> List.map (fun x ->
-		    (tokens_of_paren_ordered x) +> List.map (fun x ->
+		    (tokens_of_paren_ordered x) +>
+		    (* no need to expand fake tokens, just drop them *)
+		    List.filter (fun x -> not(TH.is_fake x.tok)) +>
+		    List.map (fun x ->
 		      TH.visitor_info_of_tok Ast_c.make_expanded x.tok
 			)
 		      ) in
