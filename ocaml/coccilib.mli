@@ -713,6 +713,7 @@ module Parser_c :
       | TCCro of Ast_c.info
       | TDot of Ast_c.info
       | TComma of Ast_c.info
+      | TNoComma of Ast_c.info
       | TPtrOp of Ast_c.info
       | TInc of Ast_c.info
       | TDec of Ast_c.info

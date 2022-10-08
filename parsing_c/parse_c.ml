@@ -607,20 +607,11 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           (* typedef_fix1 *)
           let v = match v with
             | Parser_c.TIdent (s, ii) ->
-		let res =
-		  try Some(Hashtbl.find Data.special_names s)
-		  with _ -> None in
-		(match res with
-		  Some Data.Attr -> Parser_c.TMacroAttr(s,ii)
-		| Some Data.AttrArgs -> Parser_c.TMacroAttrArgs(s,ii)
-		| Some Data.Declarer -> Parser_c.TMacroDecl(s, ii)
-		| Some Data.Iterator -> Parser_c.TMacroIterator(s, ii)
-		| _ ->
-                    if LP.is_typedef s &&
-                      not (!Flag_parsing_c.disable_add_typedef) &&
-                      pass = 1
-                    then Parser_c.TypedefIdent (s, ii)
-                    else Parser_c.TIdent (s, ii))
+                if LP.is_typedef s &&
+                  not (!Flag_parsing_c.disable_add_typedef) &&
+                  pass = 1
+                then Parser_c.TypedefIdent (s, ii)
+                else Parser_c.TIdent (s, ii)
             | x -> x
           in
 
@@ -630,9 +621,26 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 	    if !in_exec
 	    then v
 	    else
-	      Parsing_hacks.lookahead ~pass
-		(clean_for_lookahead (v::tr.rest_clean))
-		passed_before in
+	      let other _ =
+		Parsing_hacks.lookahead ~pass
+		  (clean_for_lookahead (v::tr.rest_clean))
+		  passed_before in
+	      match v with
+		Parser_c.TIdent(s,ii) ->
+		  let res =
+		    try Some(Hashtbl.find Data.special_names s)
+		    with _ -> None in
+		  (match res with
+		    Some Data.Attr -> Parser_c.TMacroAttr(s,ii)
+		  | Some Data.AttrArgs -> Parser_c.TMacroAttrArgs(s,ii)
+		  | Some Data.Declarer -> Parser_c.TMacroDecl(s, ii)
+		  | Some Data.Iterator -> Parser_c.TMacroIterator(s, ii)
+		  | Some Data.CommaInit ->
+		      tr.rest <- Parsing_hacks.fix_comma_init ii tr.rest;
+		      tr.rest_clean <- Parsing_hacks.fix_comma_init ii tr.rest_clean;
+		      v
+		  | _ -> other())
+	      | _ -> other() in
 
           tr.passed <- v::tr.passed;
 

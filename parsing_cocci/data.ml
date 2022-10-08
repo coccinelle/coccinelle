@@ -165,5 +165,5 @@ let fresh_id_scripts:
 (* ---------------------------------------------------------------------- *)
 (* Names of some special tokens.  Make these acessible to the C parser *)
 
-type nametypes = Type | Attr | AttrArgs | Declarer | Iterator
+type nametypes = Type | Attr | AttrArgs | Declarer | Iterator | CommaInit
 let special_names = ((Hashtbl.create 101) : (string, nametypes) Hashtbl.t)

@@ -2037,7 +2037,6 @@ let paren_before_comma l =
 
 let lookahead2 ~pass next before =
   match (next, before) with
-
   | t::_, (TOPar il)::TIdent(s,i2)::(Tstatic _|Tconst _|Textern _)::_
     when is_macro s && (LP.current_context() = LP.InParameter) ->
       (* swap context, not really in a parameter list *)
@@ -2982,6 +2981,37 @@ let cpp_ifdef_statementize (ast :toplevel list) :toplevel list =
       aux xs
     );
   } ast
+
+let fix_comma_init ii toks =
+  let postfakeInfo pii  =
+    let (max,min) =  Lib_parsing_c.max_min_ii_by_pos pii in
+    let max_pi = Ast_c.get_info (fun x -> x) max in
+    let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
+		column=max_pi.Common.column;file=max_pi.Common.file},
+	      String.length max_pi.Common.str) in
+    { pinfo = FakeTok ("",vp);
+      cocci_tag = ref Ast_c.emptyAnnot;
+      annots_tag = Token_annot.empty;
+      comments_tag = ref Ast_c.emptyComments;
+      danger = ref Ast_c.NoDanger;
+    } in
+  match toks with
+    (TOPar _::_) as rest ->
+      let rec iloop acc n = function
+	  [] -> rest (* ran out *)
+	| x::xs ->
+	    match x with
+	      TOPar _ -> iloop (x::acc) (n+1) xs
+	    | TCPar ii ->
+		if n = 1
+		then
+		  List.fold_left
+		    (fun prev cur -> cur :: prev)
+		    (x :: TNoComma (postfakeInfo [ii]) :: xs) acc
+		else iloop (x::acc) (n-1) xs
+	    | _ -> iloop (x::acc) n xs in
+      iloop [] 0 rest
+  | _ -> TNoComma (postfakeInfo [ii]) :: toks
 
 (* ----------------------------------------------------------------------- *)
 (* Changes specific to C++ *)

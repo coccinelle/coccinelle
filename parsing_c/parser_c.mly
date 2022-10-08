@@ -524,7 +524,7 @@ let args_to_params l pb =
 */
 
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro
-%token <Ast_c.info> TDot TComma TPtrOp
+%token <Ast_c.info> TDot TComma TNoComma TPtrOp
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
@@ -939,7 +939,7 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace TCBrace
      { mk_e(Constructor ($2, (InitList [], [$4;$5]))) [$1;$3] }
  | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
-     { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7] @ $6))) [$1;$3] }
+     { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7] @ snd $6))) [$1;$3] }
 
 primary_expr_without_ident:
  | TInt
@@ -1901,7 +1901,7 @@ initialize:
  | assign_expr
      { InitExpr $1,                [] }
  | tobrace_ini initialize_list gcc_comma_opt_struct  tcbrace_ini
-     { InitList (List.rev $2),     [$1;$4] @ $3 }
+     { InitList (List.rev $2),     [$1;$4] @ snd $3 }
  | tobrace_ini tcbrace_ini
      { InitList [],       [$1;$2] } /*(* gccext: *)*/
 
@@ -1914,16 +1914,16 @@ initialize:
  *)
 */
 initialize_list:
- | initialize2                        { [$1,   []] }
- | initialize_list TComma initialize2 { ($3,  [$2])::$1 }
-
+ | initialize2                          { [$1, []] }
+ | initialize_list TComma initialize2   { ($3, [$2])::$1 }
+ | initialize_list TNoComma initialize2 { ($3, [$2])::$1 }
 
 /*(* gccext: condexpr and no assign_expr cos can have ambiguity with comma *)*/
 initialize2:
  | cond_expr
      { InitExpr $1,   [] }
  | tobrace_ini initialize_list gcc_comma_opt_struct tcbrace_ini
-     { InitList (List.rev $2),   [$1;$4] @ $3 }
+     { InitList (List.rev $2),   [$1;$4] @ snd $3 }
  | tobrace_ini tcbrace_ini
      { InitList [],  [$1;$2]  }
 
@@ -1956,8 +1956,9 @@ designator:
 /*(*----------------------------*)*/
 
 gcc_comma_opt_struct:
- | TComma {  [$1] }
- | /*(* empty *)*/  {  [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","]  }
+ | TComma {  true, [$1] }
+ | TNoComma {  false, [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","] }
+ | /*(* empty *)*/  { false, [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","]  }
 
 
 
@@ -2221,7 +2222,7 @@ enum_spec:
       let (returnType, _) = fixDeclSpecForDecl ([],tmp) in
       let comma_opt =
 	if List.length $4 = 0
-	then [] else $5 in
+	then [] else snd $5 in
       (EnumDef (returnType, ty, $4), td@[$3;$6] @ comma_opt)
     }
 
@@ -2453,7 +2454,9 @@ define_val:
  | function_definition { fun _ -> DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
-    { fun _ -> DefineInit (InitList (List.rev $2), [$1;$4] @ $3 @ $5) }
+    { function Left name | Right name ->
+      (if $5 <> [] then Hashtbl.replace Data.special_names name Data.CommaInit);
+      DefineInit (InitList (List.rev $2), [$1;$4] @ snd $3 @ $5) }
 
  /*(* note: had a conflict before when were putting TInt instead of expr *)*/
  | Tdo statement Twhile TOPar expr TCPar
@@ -2469,15 +2472,17 @@ define_val:
  | Tasm Tvolatile TOPar asmbody TCPar    { fun _ -> DefineTodo }
 
  | designator_list TEq initialize2 gcc_comma_opt_struct
-     { fun _ ->
+     { function Left name | Right name ->
        let e1 = InitDesignators ($1, $3), [$2] in
-       DefineInit (InitListNoBrace [e1, []], $4) }
+       (if fst $4 then Hashtbl.replace Data.special_names name Data.CommaInit);
+       DefineInit (InitListNoBrace [e1, []], snd $4) }
  | designator_list TEq initialize2 TComma initialize_list gcc_comma_opt_struct
-     { fun _ ->
+     { function Left name | Right name ->
        let e1 = InitDesignators ($1, $3), [$2] in
+       (if fst $6 then Hashtbl.replace Data.special_names name Data.CommaInit);
        match List.rev $5 with
 	 (first,[])::rest ->
-	   DefineInit(InitListNoBrace ((e1,[])::(first,[$4])::rest), $6)
+	   DefineInit(InitListNoBrace ((e1,[])::(first,[$4])::rest), snd $6)
        | _ -> failwith "malformed list" }
 
  | /*(* empty *)*/ { fun _ -> DefineEmpty }

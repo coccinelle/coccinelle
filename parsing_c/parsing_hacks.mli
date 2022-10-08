@@ -83,6 +83,8 @@ val tokens_include:
   Ast_c.info * string * string * bool ref ->
   Parser_c.token * Parser_c.token list
 
+val fix_comma_init : Ast_c.info -> Parser_c.token list -> Parser_c.token list
+
 (* ------------------------------------------------------------------------ *)
 (* Parsing hack helpers related to #ifdef *)
 (* ------------------------------------------------------------------------ *)
