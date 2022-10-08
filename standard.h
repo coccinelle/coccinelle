@@ -164,6 +164,7 @@
 #define  __vsyscall_fn MACROANNOTATION
 #define  __section_vgetcpu_mode MACROANNOTATION
 #define  __section_vsyscall_gtod_data MACROANNOTATION
+#define  __section(x) MACROANNOTATION
 
 // in header files
 #define  __bitwise MACROANNOTATION

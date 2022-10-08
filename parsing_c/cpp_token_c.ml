@@ -104,8 +104,8 @@ let (is_parsinghack_hint: string -> bool) = fun s ->
   parsinghack_hint_of_string s <> None
 
 let (token_from_parsinghack_hint:
-     (string * Ast_c.info) -> parsinghack_hint -> Parser_c.token) =
- fun (s,ii) hint ->
+     bool -> (string * Ast_c.info) -> parsinghack_hint -> Parser_c.token) =
+ fun hasargs (s,ii) hint ->
    match hint with
    | HintIterator ->
        Parser_c.TMacroIterator (s, ii)
@@ -116,7 +116,9 @@ let (token_from_parsinghack_hint:
    | HintMacroStatement ->
        Parser_c.TMacroStmt (s, ii)
    | HintAttribute ->
-       Parser_c.TMacroAttr (s, ii)
+       if hasargs
+       then Parser_c.TMacroAttrArgs (s, ii)
+       else Parser_c.TMacroAttr (s, ii)
    | HintEndAttribute -> failwith "not supported"
    | HintMacroIdentBuilder ->
        Parser_c.TMacroIdentBuilder (s, ii)
@@ -390,7 +392,7 @@ let apply_macro_defs
           | DefineHintBody (hint,  _, {contents = false})
           | DefineHint hint ->
               msg_apply_known_macro_hint s;
-              id.tok <- token_from_parsinghack_hint (s,i1) hint;
+              id.tok <- token_from_parsinghack_hint false (s,i1) hint;
           )
       | Params params ->
           (match body with
@@ -501,7 +503,7 @@ let apply_macro_defs
             | DefineHintBody (hint,  _, {contents = false})
             | DefineHint hint ->
                 msg_apply_known_macro_hint s;
-                id.tok <- token_from_parsinghack_hint (s,i1) hint;
+                id.tok <- token_from_parsinghack_hint true (s,i1) hint;
             )
       );
       (match body with
@@ -588,7 +590,7 @@ let apply_macro_defs
           | DefineHintBody (hint,  _, {contents = false})
           | DefineHint hint ->
                 msg_apply_known_macro_hint s;
-                id.tok <- token_from_parsinghack_hint (s,i1) hint;
+                id.tok <- token_from_parsinghack_hint false (s,i1) hint;
           )
       );
       apply_macro_defs dynamic_macs pos xs
