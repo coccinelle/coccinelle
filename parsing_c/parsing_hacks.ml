@@ -2293,7 +2293,7 @@ let lookahead2 ~pass next before =
 	&& not_struct_enum before
 	&& ok_typedef s
         ->
-      msg_typedef s i1 2; LP.add_typedef_root s i1;
+      msg_typedef s i1 200; LP.add_typedef_root s i1;
       TypedefIdent (s, i1)
 
   (* xx yy *)
@@ -2301,7 +2301,7 @@ let lookahead2 ~pass next before =
 	&& ok_typedef s && not (is_macro_paren s2 rest)
         ->
          (* && not_annot s2 BUT lead to false positive*)
-      msg_typedef s i1 2; LP.add_typedef_root s i1;
+      msg_typedef s i1 201; LP.add_typedef_root s i1;
       TypedefIdent (s, i1)
 
 
