@@ -534,10 +534,10 @@ let visitor_info_of_tok f = function
   | TMacroStmt           (s, i)   -> TMacroStmt            (s, f i)
   | TMacroIdStmt         (s, i)   -> TMacroIdStmt          (s, f i)
   | TMacroString         (s, i)   -> TMacroString          (s, f i)
-  | TMacroDecl           (s, i) -> TMacroDecl            (s, f i)
-  | TMacroDeclConst      (i)   -> TMacroDeclConst       (f i)
-  | TMacroIterator       (s, i) -> TMacroIterator        (s, f i)
-(*  | TMacroTop          (s,i) -> TMacroTop             (s,f i) *)
+  | TMacroDecl           (s, i)   -> TMacroDecl            (s, f i)
+  | TMacroDeclConst      (i)      -> TMacroDeclConst       (f i)
+  | TMacroIterator       (s, i)   -> TMacroIterator        (s, f i)
+(*  | TMacroTop          (s,i)    -> TMacroTop             (s,f i) *)
   | TCParEOL (i) ->     TCParEOL (f i)
 
 
