@@ -201,6 +201,7 @@ let is_stuff_taking_parenthized = function
   | Tswitch _
   | Ttypeof _
   | TMacroIterator _
+  | TMacroAttrArgs _
     -> true
   | _ -> false
 
