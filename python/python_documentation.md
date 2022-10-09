@@ -11,13 +11,20 @@ file at the end of the execution of the Python script.
 
 Example: tests/exitp.cocci
 
+## cocci.include_match(state)
+
+If a python rule is running, it has matched. If the match should be
+removed from consideration, this can be called with `state` set to
+`False`.
+
+Example: tests/incpos.cocci
+
 ## cocci.has_env_binding(rule, name)
 
 Returns `true` if the meta-variable `name` is bound in the rule
 `rule`.
 
-## cocci.add_pending_instance(files, virtual_rules, virtual_identifiers,
-       extend_virtual_ids)
+## cocci.add_pending_instance(files, virtual_rules, virtual_identifiers, extend_virtual_ids)
 
 Internal function for the method iteration.register().
 
@@ -28,9 +35,17 @@ Converts the string `id` to a C identifier.
 
 Example: tests/python_mdecl.cocci
 
+## cocci.make_expr(expr)
+
+Converts the thing `expr` to a C expression.
+(Equivalent to Coccilib.make_expr in OCaml.)
+
+Example: tests/python_mdecl.cocci
+
 ## cocci.make_stmt(phrase)
 
 Parses the string `phrase` as a C statement and returns the statement.
+(Equivalent to Coccilib.make_stmt in OCaml.)
 
 Example: tests/python_mdecl.cocci
 
