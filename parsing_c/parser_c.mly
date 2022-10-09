@@ -133,12 +133,22 @@ let addTypeD     = function
 
   | ((Right3 t,ii),       ({typeD = ((a,b,Some x),ii2)} as v)) ->
       let mktype t ii = (nQ,[],(t,ii)) in
+      let oldtype = Pretty_print_c.string_of_fullType (mktype x ii2) in
+      let newtype = Pretty_print_c.string_of_fullType (mktype t ii) in
+      let oldattr =
+	String.length oldtype > 2 && String.get oldtype 0 = '_' &&
+	String.get oldtype 1 = '_' in
+      let newattr =
+	String.length oldtype > 2 && String.get oldtype 0 = '_' &&
+	String.get oldtype 1 = '_' in
+      (if oldattr && not newattr
+      then Data.add_special_name oldtype Data.Attr
+      else if newattr && not oldattr
+      then Data.add_special_name newtype Data.Attr);
       computed_warning ii
 	(fun _ ->
-	  Printf.sprintf
-	    "two or more data types: dropping %s, keeping typeD %s\n"
-	    (Pretty_print_c.string_of_fullType (mktype t ii))
-	    (Pretty_print_c.string_of_fullType (mktype x ii2)))
+	  Printf.sprintf "two or more data types: dropping %s, keeping typeD %s\n"
+	    newtype oldtype)
 	v
   | ((Right3 t,ii),       ({typeD = ((a,b,None),ii2)} as v))   ->
       {v with typeD = (a,b, Some t),ii @ ii2}
