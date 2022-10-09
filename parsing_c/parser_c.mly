@@ -2404,8 +2404,10 @@ cpp_directive:
  (* The TOParDefine is introduced to avoid ambiguity with previous rules.
   * A TOParDefine is a TOPar that was just next to the ident.
   *)*/
- | TDefine TIdentDefine TOParDefine param_define_list TCPar define_val TDefEOL
-     { let name = fst $2 in
+ | TDefine TIdentDefine TOParDefine call_param_define_list TCPar define_val TDefEOL
+     { LP.restore_typedef_state();
+       Data.clear_define_params();
+       let name = fst $2 in
        Define
          ((name, [$1; snd $2; $7]),
            (DefineFunc ($4, [$3;$5]), ($6 (Right name))))
@@ -2702,8 +2704,11 @@ tcbrace_ini: TCBrace { LP.pop_context (); $1 }
 tobrace_struct: TOBrace { LP.push_context LP.InStruct; $1}
 tcbrace_struct: TCBrace { LP.pop_context (); $1 }
 
-
-
+call_param_define_list:
+  param_define_list
+     { LP.save_typedef_state();
+       Data.set_define_params (List.map (fun x -> Ast_c.unwrap (fst x)) $1);
+       $1 }
 
 topar: TOPar
      { LP.new_scope ();et "topar" ();
