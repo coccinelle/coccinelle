@@ -343,11 +343,11 @@
 #define  nabi_no_regargs
 
 
-#define  ATTRIB_NORET
-#define  ATTRIBUTE_UNUSED
+#define  ATTRIB_NORET MACROANNOTATION
+#define  ATTRIBUTE_UNUSED MACROANNOTATION
 #define  BTEXT
 #define  BTDATA
-#define  PAGE_ALIGNED
+#define  PAGE_ALIGNED MACROANNOTATION
 
 #define  EARLY_INIT_SECTION_ATTR
 
@@ -367,18 +367,18 @@
 // ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 
-#define __releases(x)
-#define __acquires(x)
+#define __releases(x) MACROANNOTATION
+#define __acquires(x) MACROANNOTATION
 
-#define __must_hold(x)
-#define __printf(a,b)
+#define __must_hold(x) MACROANNOTATION
+#define __printf(a,b) MACROANNOTATION
 
 //now in lexer
 //#define __declspec(x)
 
-#define __page_aligned(x)
-#define __aligned(x)
-#define __vsyscall(x)
+#define __page_aligned(x) MACROANNOTATION
+#define __aligned(x) MACROANNOTATION
+#define __vsyscall(x) MACROANNOTATION
 
 #define noinstr
 
@@ -430,9 +430,9 @@ static const struct machine_desc __mach_desc_##_type	\
 // include/linux/types.h
 //#define BITS_TO_LONGS(bits) \
 //	(((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
-#define DECLARE_BITMAP YACFE_DECLARATOR
-#define DEFINE_PER_CPU YACFE_DECLARATOR
-#define DECLARE_PER_CPU YACFE_DECLARATOR
+#define DECLARE_BITMAP(x) YACFE_DECLARATOR
+#define DEFINE_PER_CPU(x) YACFE_DECLARATOR
+#define DECLARE_PER_CPU(x) YACFE_DECLARATOR
 
 
 
@@ -793,6 +793,19 @@ do {									\
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
 #define COMPAT_SYSCALL_DEFINE6(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5, t6, a6) \
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)
+
+#define BPF_CALL_0(func) \
+    u64 func(void)
+#define BPF_CALL_1(func, t1, a1) \
+    u64 func(t1 a1)
+#define BPF_CALL_2(func, t1, a1, t2, a2) \
+    u64 func(t1 a1, t2 a2)
+#define BPF_CALL_3(func, t1, a1, t2, a2, t3, a3) \
+    u64 func(t1 a1, t2 a2, t3 a3)
+#define BPF_CALL_4(func, t1, a1, t2, a2, t3, a3, t4, a4) \
+    u64 func(t1 a1, t2 a2, t3 a3, t4 a4)
+#define BPF_CALL_5(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5) \
+    u64 func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
 
 #define KBUILD_MODNAME YACFE_STRING
 
