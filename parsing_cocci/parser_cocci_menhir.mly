@@ -1700,7 +1700,7 @@ decl: t=ctype d=direct_declarator(type_ident) endar=attr_list
 	let ty = Parse_aux.make_ctype_and_ptr ([],ty,cv2,m) in
         let (i,fn) = d in
 	!Data.add_type_name (fst t);
-	Hashtbl.replace Data.special_names (fst t) Data.Type;
+	Data.add_special_name (fst t) Data.Type;
 	Ast0_cocci.wrap(Ast0_cocci.Param(fn ty, Some i, endar)) }
     | t=ctype
         { (*verify in FunDecl*)

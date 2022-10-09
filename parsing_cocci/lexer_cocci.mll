@@ -355,7 +355,7 @@ let mkassign op lexbuf =
 
 let spinit _ = (* per semantic patch *)
   Hashtbl.clear Data.non_local_script_constraints;
-  Hashtbl.clear Data.special_names
+  Data.clear_special_names()
 
 let init _ = (* per file, first .cocci then iso *)
   line := 1;
@@ -532,12 +532,12 @@ let init _ = (* per file, first .cocci then iso *)
   Data.add_type_name :=
     (function name ->
       let fn clt = TTypeId(name,clt) in
-      Hashtbl.replace Data.special_names name Data.Type;
+      Data.add_special_name name Data.Type;
       Hashtbl.replace type_names name fn);
   Data.add_attribute :=
     (function name ->
       let fn clt = Tattr (name, clt) in
-      Hashtbl.replace Data.special_names name Data.Attr;
+      Data.add_special_name name Data.Attr;
       Hashtbl.replace attr_names name fn);
   Data.add_attribute_meta :=
     (fun name cstr pure ->
@@ -554,12 +554,12 @@ let init _ = (* per file, first .cocci then iso *)
   Data.add_declarer_name :=
     (function name ->
       let fn clt = TDeclarerId(name,clt) in
-      Hashtbl.replace Data.special_names name Data.Declarer;
+      Data.add_special_name name Data.Declarer;
       Hashtbl.replace declarer_names name fn);
   Data.add_iterator_name :=
     (function name ->
       let fn clt = TIteratorId(name,clt) in
-      Hashtbl.replace Data.special_names name Data.Iterator;
+      Data.add_special_name name Data.Iterator;
       Hashtbl.replace iterator_names name fn);
   Data.add_symbol_meta :=
     (function name ->

@@ -1233,7 +1233,7 @@ let rec find_macro_paren xs =
     ((TV.PToken ({TV.tok = (Tfor _ | TMacroIterator _)})::
     TV.Parenthised _::
     TV.PToken ({TV.tok = TDefEOL _})::_) as xs) ->
-      Hashtbl.replace Data.special_names s Data.Iterator;
+      Data.add_special_name s Data.Iterator;
       find_macro_paren xs (* no need to recurse on define header *)
 
   (* recurse *)
@@ -1265,7 +1265,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -1287,7 +1287,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* need retag this const, otherwise ambiguity in grammar
@@ -1317,7 +1317,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -1341,7 +1341,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -1359,7 +1359,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* continue with the rest of the line *)
@@ -1382,7 +1382,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       (* continue with the rest of the line *)
@@ -1412,7 +1412,7 @@ let rec find_macro_lineparen prev_line_end xs =
 
       msg_declare_macro s;
       let info = TH.info_of_tok macro.TV.tok in
-      Hashtbl.replace Data.special_names s Data.Declarer;
+      Data.add_special_name s Data.Declarer;
       macro.TV.tok <- TMacroDecl (Ast_c.str_of_info info, info);
 
       find_macro_lineparen true (xs)
@@ -2143,7 +2143,7 @@ let lookahead2 ~pass next before =
 	  TCommentCpp (Token_c.CppDirective, i1)
 
 	(* xx tt *)
-(*  | (TIdent (s, i1)::type_::_  , _)
+  | (TIdent (s, i1)::type_::_  , _)
     when not_struct_enum before
 	&& is_type type_
 	&& s ==~ regexp_annot ->
@@ -2151,12 +2151,12 @@ let lookahead2 ~pass next before =
       TMacroAttr (s,i1)
 
         (* tt xx yy ( : xx is an annot *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, seen::_)
+(*| (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, seen::_)
     when LP.current_context () = LP.InTopLevel
 	&& (is_struct_enum before || is_type seen)
 	&& s ==~ regexp_annot ->
 	  TCommentCpp (Token_c.CppMacro, i1)
-
+*)
         (* tt * xx yy ( : xx is an annot *)
   | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_, ptr)
     when LP.current_context () = LP.InTopLevel
@@ -2179,7 +2179,7 @@ let lookahead2 ~pass next before =
 	&& s ==~ regexp_annot ->
       msg_attribute s;
       TMacroAttr (s,i1)
-
+(*
 	(* tt xx yy; : yy is an annot, so xx is an ident *)
   | (TIdent (s, i1)::TIdent (s2, i2)::(TPtVirg _|TEq _)::_, seen::_)
     when (is_struct_enum before
@@ -2200,7 +2200,7 @@ let lookahead2 ~pass next before =
 	  if is_macro s2 then
 	    TIdent (s, i1)
 	  else
-	    TCommentCpp (Token_c.CppDirective, i1)
+	    TCommentCpp (Token_c.CppDirective, i1) *)
 
 	(* tt xx yy *)
   | (TIdent (s, i1)::rest, _)
@@ -2211,7 +2211,7 @@ let lookahead2 ~pass next before =
                 is_type x || is_storage_spec x || is_type_qualif x) rest
         && s ==~ regexp_annot ->
       msg_attribute s;
-      TMacroAttr (s,i1) *)
+      TMacroAttr (s,i1)
 
   | (TIdent (s2, i2)::_  , TIdent (s, i1)::seen::_)
     when not_struct_enum before
@@ -2822,7 +2822,7 @@ let lookahead2 ~pass next before =
        *)
         ->
 	  let res =
-	    try Some(Hashtbl.find Data.special_names s)
+	    try Some(Data.get_special_name s)
 	    with _ -> None in
 	  (match res with
 	    Some Data.Iterator -> TMacroIterator (s, i1)
@@ -2832,7 +2832,7 @@ let lookahead2 ~pass next before =
 	      then
 		begin
 		  msg_foreach s;
-		  Hashtbl.replace Data.special_names s Data.Iterator;
+		  Data.add_special_name s Data.Iterator;
 		  TMacroIterator (s, i1)
 		end
 	      else TIdent (s, i1))
