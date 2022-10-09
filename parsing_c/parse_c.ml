@@ -628,7 +628,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
 	      match v with
 		Parser_c.TIdent(s,ii) ->
 		  let res =
-		    try Some(Hashtbl.find Data.special_names s)
+		    try Some(Data.get_special_name s)
 		    with _ -> None in
 		  (match res with
 		    Some Data.Attr -> Parser_c.TMacroAttr(s,ii)

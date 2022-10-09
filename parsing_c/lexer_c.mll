@@ -875,7 +875,7 @@ rule token = parse
 		      then TypedefIdent (s, info)
 		      else *)
 		      let res =
-			try Some(Hashtbl.find Data.special_names s)
+			try Some(Data.get_special_name s)
 			with _ -> None in
 		      (match res with
 			Some Data.Attr -> TMacroAttr(s,info)

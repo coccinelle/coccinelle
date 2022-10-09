@@ -2425,11 +2425,13 @@ define_val:
      { fun name ->
        match $1 with
 	 ((_::_) as a, d) when d = nullDecl ->
-	   (match name with
-	     Left name ->
-	       Hashtbl.replace Data.special_names name Data.Attr
-	   | Right name ->
-	       Hashtbl.replace Data.special_names name Data.AttrArgs);
+	   (if not isfake (* fake is for category test *)
+	   then
+	     (match name with
+	       Left name ->
+		 Data.add_special_name name Data.Attr
+	     | Right name ->
+		 Data.add_special_name name Data.AttrArgs));
 	   DefineAttr a
        | _ ->
 	   let returnType = fixDeclSpecForMacro $1 in
@@ -2454,8 +2456,8 @@ define_val:
  | function_definition { fun _ -> DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
-    { function Left name | Right name ->
-      (if $5 <> [] then Hashtbl.replace Data.special_names name Data.CommaInit);
+    { fun isfake -> function Left name | Right name ->
+      (if not isfake && $5 <> [] then Data.add_special_name name Data.CommaInit);
       DefineInit (InitList (List.rev $2), [$1;$4] @ snd $3 @ $5) }
 
  /*(* note: had a conflict before when were putting TInt instead of expr *)*/
@@ -2474,12 +2476,12 @@ define_val:
  | designator_list TEq initialize2 gcc_comma_opt_struct
      { function Left name | Right name ->
        let e1 = InitDesignators ($1, $3), [$2] in
-       (if fst $4 then Hashtbl.replace Data.special_names name Data.CommaInit);
+       (if not isfake && fst $4 then Data.add_special_name name Data.CommaInit);
        DefineInit (InitListNoBrace [e1, []], snd $4) }
  | designator_list TEq initialize2 TComma initialize_list gcc_comma_opt_struct
      { function Left name | Right name ->
        let e1 = InitDesignators ($1, $3), [$2] in
-       (if fst $6 then Hashtbl.replace Data.special_names name Data.CommaInit);
+       (if not isfake && fst $6 then Data.add_special_name name Data.CommaInit);
        match List.rev $5 with
 	 (first,[])::rest ->
 	   DefineInit(InitListNoBrace ((e1,[])::(first,[$4])::rest), snd $6)

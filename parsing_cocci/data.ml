@@ -165,5 +165,58 @@ let fresh_id_scripts:
 (* ---------------------------------------------------------------------- *)
 (* Names of some special tokens.  Make these acessible to the C parser *)
 
-type nametypes = Type | Attr | AttrArgs | Declarer | Iterator | CommaInit
+type nametypes = Type | Attr | AttrArgs | Declarer | Iterator | CommaInit | Ambiguous
 let special_names = ((Hashtbl.create 101) : (string, nametypes) Hashtbl.t)
+let define_params = ref ([] : string list)
+
+let ty2c = function
+    Type -> "type"
+  | Attr -> "attribute"
+  | AttrArgs -> "attribute with arguments"
+  | Declarer -> "declarer"
+  | Iterator -> "iterator"
+  | CommaInit -> "initializer ending in a comma"
+  | Ambiguous -> "ambiguous"
+
+let add_special_name nm ty =
+  if not (List.mem nm !define_params)
+  then
+    begin
+      let ty =
+	try
+	  let old = Hashtbl.find special_names nm in
+	  if old = ty
+	  then None
+	  else
+	    begin
+	      (if !Common.print_to_stderr
+	      then
+		let str =
+		  Printf.sprintf
+		    "SPECIAL NAMES: adding %s as a %s, was %s, now considered ambiguous"
+		    nm (ty2c ty) (ty2c old) in
+		Common.pr2 str);
+	      Some Ambiguous
+	    end
+	with Not_found -> Some ty in
+      match ty with
+	None -> ()
+      | Some Ambiguous ->
+	  Hashtbl.replace special_names nm Ambiguous
+      | Some ty ->
+	  (if !Common.print_to_stderr
+	  then
+	    let str =
+	      Printf.sprintf "SPECIAL NAMES: adding %s as a %s"
+		nm (ty2c ty) in
+	    Common.pr2 str);
+	  Hashtbl.add special_names nm ty
+    end
+
+let get_special_name nm =
+  Hashtbl.find special_names nm
+
+let clear_special_names _ = Hashtbl.clear special_names
+
+let set_define_params names = define_params := names
+let clear_define_params _ = define_params := []

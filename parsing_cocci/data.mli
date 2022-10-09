@@ -143,5 +143,9 @@ val fresh_id_scripts:
 (* ---------------------------------------------------------------------- *)
 (* Names of some special tokens.  Make these accessible to the C parser *)
 
-type nametypes = Type | Attr | AttrArgs | Declarer | Iterator | CommaInit
-val special_names : (string, nametypes) Hashtbl.t
+type nametypes = Type | Attr | AttrArgs | Declarer | Iterator | CommaInit | Ambiguous
+val add_special_name : string -> nametypes -> unit
+val get_special_name : string -> nametypes
+val clear_special_names : unit -> unit
+val set_define_params : string list -> unit
+val clear_define_params : unit -> unit
