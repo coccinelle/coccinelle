@@ -764,6 +764,8 @@ do {									\
 // system calls
 // ----------------------------------------------------------------------------
 
+#define SYSCALL_DEFINE0(func) \
+    asmlinkage unsigned long func(void)
 #define SYSCALL_DEFINE1(func, t1, a1) \
     asmlinkage unsigned long func(t1 a1)
 #define SYSCALL_DEFINE2(func, t1, a1, t2, a2) \
@@ -775,6 +777,21 @@ do {									\
 #define SYSCALL_DEFINE5(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5) \
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
 #define SYSCALL_DEFINE6(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5, t6, a6) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)
+
+#define COMPAT_SYSCALL_DEFINE0(func) \
+    asmlinkage unsigned long func(void)
+#define COMPAT_SYSCALL_DEFINE1(func, t1, a1) \
+    asmlinkage unsigned long func(t1 a1)
+#define COMPAT_SYSCALL_DEFINE2(func, t1, a1, t2, a2) \
+    asmlinkage unsigned long func(t1 a1, t2 a2)
+#define COMPAT_SYSCALL_DEFINE3(func, t1, a1, t2, a2, t3, a3) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3)
+#define COMPAT_SYSCALL_DEFINE4(func, t1, a1, t2, a2, t3, a3, t4, a4) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4)
+#define COMPAT_SYSCALL_DEFINE5(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5) \
+    asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5)
+#define COMPAT_SYSCALL_DEFINE6(func, t1, a1, t2, a2, t3, a3, t4, a4, t5, a5, t6, a6) \
     asmlinkage unsigned long func(t1 a1, t2 a2, t3 a3, t4 a4, t5 a5, t6 a6)
 
 #define KBUILD_MODNAME YACFE_STRING
