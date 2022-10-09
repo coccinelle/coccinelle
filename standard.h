@@ -274,6 +274,8 @@
 
 #define  STATIC_INLINE static inline
 #define  __EXTERN_INLINE extern inline
+#define INLINE inline
+#define nokprobe_inline inline
 
 #define  AGPEXTERN extern
 
