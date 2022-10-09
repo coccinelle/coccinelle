@@ -2398,7 +2398,7 @@ cpp_directive:
 
  | TDefine TIdentDefine define_val TDefEOL
      { let name = fst $2 in
-       Define ((name, [$1; snd $2;$4]), (DefineVar, ($3 (Left name)))) }
+       Define ((name, [$1; snd $2;$4]), (DefineVar, ($3 (Ast_c.is_fake $1) (Left name)))) }
 
  /*
  (* The TOParDefine is introduced to avoid ambiguity with previous rules.
@@ -2410,7 +2410,7 @@ cpp_directive:
        let name = fst $2 in
        Define
          ((name, [$1; snd $2; $7]),
-           (DefineFunc ($4, [$3;$5]), ($6 (Right name))))
+           (DefineFunc ($4, [$3;$5]), ($6 (Ast_c.is_fake $1) (Right name))))
      }
 
  | TUndef TIdentDefine TDefEOL
@@ -2429,12 +2429,12 @@ pragma_strings:
    * do a assign_expr_of_string in parse_c
    *)*/
 define_val:
- | expr      { fun _ -> DefineExpr $1 }
- | statement { fun _ -> DefineStmt $1 }
- | decl      { fun _ -> DefineStmt (mk_st (Decl ($1 Ast_c.NotLocalDecl)) Ast_c.noii) }
+ | expr      { fun _ _ -> DefineExpr $1 }
+ | statement { fun _ _ -> DefineStmt $1 }
+ | decl      { fun _ _ -> DefineStmt (mk_st (Decl ($1 Ast_c.NotLocalDecl)) Ast_c.noii) }
 
  | decl_spec
-     { fun name ->
+     { fun isfake name ->
        match $1 with
 	 ((_::_) as a, d) when d = nullDecl ->
 	   (if not isfake (* fake is for category test *)
@@ -2450,14 +2450,14 @@ define_val:
 	   DefineType returnType
      }
  | decl_spec abstract_declarator
-     { fun _ ->
+     { fun _ _ ->
        let returnType = fixDeclSpecForMacro $1 in
        let typ = $2 returnType in
        DefineType typ
      }
 
  | stat_or_decl stat_or_decl_list
-     { fun _ ->
+     { fun _ _ ->
          DefineMulti
 	 (List.map
 	    (function
@@ -2465,7 +2465,7 @@ define_val:
 	      | _ -> failwith "unexpected statement for DefineMulti")
 	    ($1 :: $2)) }
 
- | function_definition { fun _ -> DefineFunction $1 }
+ | function_definition { fun _ _ -> DefineFunction $1 }
 
  | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
     { fun isfake -> function Left name | Right name ->
@@ -2479,19 +2479,19 @@ define_val:
        if fst $5 <> "0"
        then pr2 "WEIRD: in macro and have not a while(0)";
        *)
-       fun _ -> DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
+       fun _ _ -> DefineDoWhileZero (($2,$5),   [$1;$3;$4;$6])
      }
 
- | Tasm TOPar asmbody TCPar              { fun _ -> DefineTodo }
- | Tasm Tvolatile TOPar asmbody TCPar    { fun _ -> DefineTodo }
+ | Tasm TOPar asmbody TCPar              { fun _ _ -> DefineTodo }
+ | Tasm Tvolatile TOPar asmbody TCPar    { fun _ _ -> DefineTodo }
 
  | designator_list TEq initialize2 gcc_comma_opt_struct
-     { function Left name | Right name ->
+     { fun isfake -> function Left name | Right name ->
        let e1 = InitDesignators ($1, $3), [$2] in
        (if not isfake && fst $4 then Data.add_special_name name Data.CommaInit);
        DefineInit (InitListNoBrace [e1, []], snd $4) }
  | designator_list TEq initialize2 TComma initialize_list gcc_comma_opt_struct
-     { function Left name | Right name ->
+     { fun isfake -> function Left name | Right name ->
        let e1 = InitDesignators ($1, $3), [$2] in
        (if not isfake && fst $6 then Data.add_special_name name Data.CommaInit);
        match List.rev $5 with
@@ -2499,7 +2499,7 @@ define_val:
 	   DefineInit(InitListNoBrace ((e1,[])::(first,[$4])::rest), snd $6)
        | _ -> failwith "malformed list" }
 
- | /*(* empty *)*/ { fun _ -> DefineEmpty }
+ | /*(* empty *)*/ { fun _ _ -> DefineEmpty }
 
 
 
