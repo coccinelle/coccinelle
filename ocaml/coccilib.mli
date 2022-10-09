@@ -809,7 +809,6 @@ module Parser_c :
       | Tinline of Ast_c.info
       | Ttypeof of Ast_c.info
       | TDefine of Ast_c.info
-      | TDefParamVariadic of (string * Ast_c.info)
       | TCppEscapedNewline of Ast_c.info
       | TCppConcatOp of Ast_c.info
       | TOParDefine of Ast_c.info

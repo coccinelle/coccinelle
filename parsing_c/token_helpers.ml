@@ -212,7 +212,6 @@ let is_ident_like = function
   | TKRParam _
   | TypedefIdent _
   | TIdentDefine  _
-  | TDefParamVariadic _
 
   | TUnknown _
 
@@ -327,7 +326,6 @@ let info_of_tok = function
   | TOParDefine (i1) ->     i1
   | TIdentDefine  (s, i) -> i
   | TCppEscapedNewline (ii) -> ii
-  | TDefParamVariadic (s, i1) ->     i1
 
   | TCppConcatOp (ii) -> ii
 
@@ -522,8 +520,6 @@ let visitor_info_of_tok f = function
 
   | TOParDefine (i1) -> TOParDefine (f i1)
   | TIdentDefine  (s, i) -> TIdentDefine (s, f i)
-
-  | TDefParamVariadic (s, i1) -> TDefParamVariadic (s, f i1)
 
   | TOBraceDefineInit (i1) -> TOBraceDefineInit (f i1)
 
@@ -808,7 +804,6 @@ let string_of_token = function
   | Tinline _ -> "Tinline"
   | Ttypeof _ -> "Ttypeof"
   | TDefine _ -> "TDefine"
-  | TDefParamVariadic _ -> "TDefParamVariadic"
   | TCppEscapedNewline _ -> "TCppEscapedNewline"
   | TCppConcatOp _ -> "TCppConcatOp"
   | TOParDefine _ -> "TOParDefine"

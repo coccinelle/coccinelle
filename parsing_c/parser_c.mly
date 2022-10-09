@@ -585,7 +585,6 @@ let args_to_params l pb =
 /*(*---------------*)*/
 
 %token <Ast_c.info> TDefine
-%token <(string * Ast_c.info)> TDefParamVariadic
 
 /*(* disappear after fix_tokens_define *)*/
 %token <Ast_c.info> TCppEscapedNewline
@@ -1214,6 +1213,11 @@ jump:
 /*(* gccext: *)*/
 /*(*----------------------------*)*/
 string_elem:
+ | TQuote string_fragments TQuote
+     { let ((fullstring,isW),lqinfo) = $1 in
+       let (_,rqinfo) = $3 in
+       let inner = List.map snd $2 in
+       lqinfo :: List.concat inner @ [rqinfo] }
  | TString { [snd $1] }
  /*(* cppext:  ex= printk (KERN_INFO "xxx" UTS_RELEASE)  *)*/
  | TMacroString { [snd $1] }
@@ -2507,8 +2511,11 @@ define_val:
 param_define:
  | TIdent               { mk_string_wrap $1 }
  | TypedefIdent         { mk_string_wrap $1 }
- | TDefParamVariadic    { mk_string_wrap $1 }
  | TEllipsis            { "...", [$1] }
+ | TIdent TEllipsis
+     { fst $1 ^ "...", [snd $1; $2] }
+ | TypedefIdent TEllipsis
+     { fst $1 ^ "...", [snd $1; $2] }
  /*(* they reuse keywords :(  *)*/
  | Tregister            { "register", [$1] }
 

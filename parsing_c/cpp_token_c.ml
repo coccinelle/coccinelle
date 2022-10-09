@@ -688,28 +688,32 @@ let rec (define_parse: (string * define_def) list -> Parser_c.token list ->
 	  let (body, _, xs) =
             xs +> Common.split_when (function TDefEOL _ -> true | _ -> false) in
 	  let params =
-            tokparams +> Common.map_filter (function
-              |	 TComma _ -> None
-              |	 TIdent (s, _) -> Some (FixedArg s)
+	    let rec loop = function
+		[] -> []
+	      | TComma _ :: rest -> loop rest
+                (* TODO *)
+	      | (TIdent (s, _)|TypedefIdent (s, _)) :: TEllipsis _ :: rest ->
+		  (VariadicArg (s^"...")) :: loop rest
+                (* TODO *)
+	      | TEllipsis _ :: rest -> (VariadicArg "...") :: loop rest
 
-              (* TODO *)
-              |	 TDefParamVariadic (s, _) -> Some (VariadicArg s)
-              (* TODO *)
-              |	 TEllipsis _ -> Some (VariadicArg "...")
+	      | TIdent (s, _) :: rest -> (FixedArg s) :: loop rest
 
-              |	 x ->
-              (* bugfix: param of macros can be tricky *)
-                  let s = TH.str_of_tok x in
-                  if s ==~ Common.regexp_alpha
-                  then begin
-                    pr2 (spf "remapping: %s to a macro parameter" s);
-                    Some (FixedArg s)
-                  end
-                  else
-                    begin
-                      pr2 (spf "bad character %s in macro parameter list" s);
-                      raise Bad_param
-                    end) in
+	      | x::rest ->
+                  (* bugfix: param of macros can be tricky *)
+		  let s = TH.str_of_tok x in
+		  if s ==~ Common.regexp_alpha
+		  then
+		    begin
+		      pr2 (spf "remapping: %s to a macro parameter" s);
+		      (FixedArg s) :: loop rest
+		    end
+		  else
+		    begin
+		      pr2 (spf "bad character %s in macro parameter list" s);
+		      raise Bad_param
+		    end in
+	    loop tokparams in
           (* bugfix: also substitute to ident in body so cpp_engine will
              * have an easy job.
           *)

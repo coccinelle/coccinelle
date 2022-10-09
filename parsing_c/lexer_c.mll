@@ -753,9 +753,6 @@ rule token = parse
       { let info = tokinfo lexbuf in
         TIdent (tok lexbuf, info)
       }
-  (* the ... next to id, e.g. arg..., works with ##, e.g. ##arg *)
-  | ((id as s)  "...")
-      { TDefParamVariadic (s, tokinfo lexbuf) }
 
 
 
