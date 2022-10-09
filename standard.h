@@ -419,8 +419,8 @@ static const struct machine_desc __mach_desc_##_type	\
 // include/asm-i386/pci.h
 // the DECLARE are detected by parsing_hack but not when they are
 // inside a struct def.
-//#define DECLARE_PCI_UNMAP_ADDR(ADDR_NAME)
-//#define DECLARE_PCI_UNMAP_LEN(LEN_NAME)
+#define DECLARE_PCI_UNMAP_ADDR YACFE_DECLARATOR
+#define DECLARE_PCI_UNMAP_LEN YACFE_DECLARATOR
 
 // defined in drivers/infiniband/hw/mthca/mthca_doorbell.h
 //#define MTHCA_DECLARE_DOORBELL_LOCK(doorbell_lock)
@@ -428,16 +428,9 @@ static const struct machine_desc __mach_desc_##_type	\
 // include/linux/types.h
 //#define BITS_TO_LONGS(bits) \
 //	(((bits)+BITS_PER_LONG-1)/BITS_PER_LONG)
-#define DECLARE_BITMAP(name,bits)
-	/*unsigned*/ long name[BITS_TO_LONGS(bits)]
-
-
-// include/asm-i386/percpu.h
-// interesting macro where we see the need of __typeof__(type) with
-// for example DECLARE_PER_CPU(char[256], iucv_dbf_txt_buf);
-#define DEFINE_PER_CPU(type, name) \
-    __attribute__((__section__(".data.percpu"))) __typeof__(type) per_cpu__##name
-#define DECLARE_PER_CPU(type, name) extern __typeof__(type) per_cpu__##name
+#define DECLARE_BITMAP YACFE_DECLARATOR
+#define DEFINE_PER_CPU YACFE_DECLARATOR
+#define DECLARE_PER_CPU YACFE_DECLARATOR
 
 
 
