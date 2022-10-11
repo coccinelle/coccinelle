@@ -2838,13 +2838,16 @@ let lookahead2 ~pass next before =
 	s1 ==~ regexp_annot) ->
 	  msg_attribute s1;
 	  TMacroAttr (s1, i1)
+*)
 
+  (* after an array reference and before ; or = *)
   | (TIdent(s1,i1)::(TPtVirg(ii2)|TEq(ii2))::rest,TCCro(i2)::_)
       when LP.current_context () = LP.InTopLevel &&
 	s1 ==~ regexp_annot ->
 	  msg_attribute s1;
 	  TMacroAttr (s1, i1)
 
+(*
   | (TIdent(s1,i1)::TOBrace(ii2)::rest,TCPar(i2)::_)
       when LP.current_context () = LP.InTopLevel &&
 	s1 ==~ regexp_annot ->
