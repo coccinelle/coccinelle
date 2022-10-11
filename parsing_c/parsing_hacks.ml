@@ -2179,20 +2179,15 @@ let lookahead2 ~pass next before =
 	&& s ==~ regexp_annot ->
       msg_attribute s;
       TMacroAttr (s,i1)
-(*
+
 	(* tt xx yy; : yy is an annot, so xx is an ident *)
   | (TIdent (s, i1)::TIdent (s2, i2)::(TPtVirg _|TEq _)::_, seen::_)
     when (is_struct_enum before
-	|| is_type seen)
+	|| is_type seen || pointer before)
+	&& not(s ==~ regexp_annot)
 	&& s2 ==~ regexp_annot ->
 	  TIdent (s, i1)
-
-	(* tt * xx yy; : yy is an annot, so xx is an ident *)
-  | (TIdent (s, i1)::TIdent (s2, i2)::(TPtVirg _|TEq _)::_, ptr)
-    when pointer ptr
-	&& s2 ==~ regexp_annot ->
-	  TIdent (s, i1)
-
+(*
 	(* tt xx yy *)
   | (TIdent (s, i1)::TIdent (s2, i2)::_  , seen::_)
     when not_struct_enum before
