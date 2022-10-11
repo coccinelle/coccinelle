@@ -199,6 +199,7 @@
 
 #define __paginginit MACROANNOTATION // in mm
 #define __ro_after_init MACROANNOTATION
+#define __lsm_ro_after_init MACROANNOTATION
 
 // ----------------------------------------------------------------------------
 // String macros
@@ -275,6 +276,7 @@
 #define  STATIC_INLINE static inline
 #define  __EXTERN_INLINE extern inline
 #define INLINE inline
+#define FORCE_INLINE_TEMPLATE inline
 #define nokprobe_inline inline
 
 #define  AGPEXTERN extern
@@ -434,6 +436,10 @@ static const struct machine_desc __mach_desc_##_type	\
 #define DEFINE_PER_CPU(x) YACFE_DECLARATOR
 #define DECLARE_PER_CPU(x) YACFE_DECLARATOR
 
+#define DEFINE_STATIC_KEY_FALSE(x) YACFE_DECLARATOR
+#define DEFINE_STATIC_KEY_FALSE_RO(x) YACFE_DECLARATOR
+#define DEFINE_STATIC_KEY_TRUE(x) YACFE_DECLARATOR
+#define DEFINE_STATIC_KEY_TRUE_RO(x) YACFE_DECLARATOR
 
 
 // include/linux/kobject.h
