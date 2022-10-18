@@ -2309,6 +2309,8 @@ let newlines_for_unindents xs =
   let is_plusnl =
     function C2("\n",_) | Cocci2("\n",_,_,_,_) -> true | _ -> false in
   let is_nl x = is_ctxnl x || is_plusnl x in
+  let isempty =
+    function Cocci2(s,_,_,_,_) -> s = "" | _ -> false in
   let rec loop = function
       [] -> []
     | (Unindent_cocci2 false)::x::nl::rest ->
@@ -2324,7 +2326,12 @@ let newlines_for_unindents xs =
     | plusnl::(Unindent_cocci2 false)::x::[] when is_plusnl plusnl ->
 	plusnl::(Unindent_cocci2 false)::x::[]
     | plusnl::(Unindent_cocci2 false)::x::rest when is_plusnl plusnl ->
-	plusnl::(Unindent_cocci2 false)::x::loop (C2("\n",None)::rest)
+	if not(isempty x)
+	then
+	  (* x can be empty when a newline is in the + code *)
+	  plusnl::(Unindent_cocci2 false)::x::loop (C2("\n",None)::rest)
+	else
+	  plusnl::(Unindent_cocci2 false)::x::loop rest
     | y::(Unindent_cocci2 false)::x::nl::rest when is_nl nl ->
 	y::C2("\n",None)::(Unindent_cocci2 false)::x::loop (nl::rest)
     | y::(Unindent_cocci2 false)::x::rest ->
