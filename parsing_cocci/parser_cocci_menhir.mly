@@ -1117,6 +1117,13 @@ signed_basic_types:
 | r=Tunsigned ty=signable_types
     { Ast0_cocci.wrap(Ast0_cocci.Signed(Parse_aux.clt2mcode Ast_cocci.Unsigned r,Some ty)) }
 
+signed_basic_types_tyempty:
+  signed_basic_types {$1}
+| r=Tsigned
+    { Ast0_cocci.wrap(Ast0_cocci.Signed(Parse_aux.clt2mcode Ast_cocci.Signed r,None)) }
+| r=Tunsigned
+    { Ast0_cocci.wrap(Ast0_cocci.Signed(Parse_aux.clt2mcode Ast_cocci.Unsigned r,None)) }
+
 all_basic_types_without_braces:
   ty=signed_basic_types { ty }
 | ty=signable_types { ty }
@@ -1124,7 +1131,7 @@ all_basic_types_without_braces:
 
 // must include TTypeId to allow bitfield on u8, etc
 all_basic_types_signable:
-  ty=signed_basic_types { ty }
+  ty=signed_basic_types_tyempty { ty }
 | ty=signable_types { ty }
 | p=TTypeId
     { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
