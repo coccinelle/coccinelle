@@ -248,6 +248,8 @@ let equal_metavarval valu valu' =
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_init a = Lib_parsing_c.al_init b
   | Ast_c.MetaInitListVal (_,a), Ast_c.MetaInitListVal (_,b) ->
+      (* hope that the newline hints are the same, because no way
+	 to change the existing binding *)
       Lib_parsing_c.al_inits a = Lib_parsing_c.al_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_type a = Lib_parsing_c.al_type b *)
@@ -351,6 +353,8 @@ let equal_inh_metavarval valu valu'=
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_inh_init a = Lib_parsing_c.al_inh_init b
   | Ast_c.MetaInitListVal (_,a), Ast_c.MetaInitListVal (_,b) ->
+      (* hope that the newline hints are the same, because no way
+	 to change the existing binding *)
       Lib_parsing_c.al_inh_inits a = Lib_parsing_c.al_inh_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_inh_type a = Lib_parsing_c.al_inh_type b *)
