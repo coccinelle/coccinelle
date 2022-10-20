@@ -126,8 +126,8 @@ module XTRANS = struct
 	    (v,Ast_c.MetaTypeVal(Lib_parsing_c.real_al_type ty))
 	| Ast_c.MetaInitVal(i) ->
 	    (v,Ast_c.MetaInitVal(Lib_parsing_c.real_al_init i))
-	| Ast_c.MetaInitListVal(is) ->
-	    (v,Ast_c.MetaInitListVal(Lib_parsing_c.real_al_inits is))
+	| Ast_c.MetaInitListVal(newlines,is) ->
+	    (v,Ast_c.MetaInitListVal(newlines,Lib_parsing_c.real_al_inits is))
 	| Ast_c.MetaDeclVal(d,original) ->
 	    (v,
 	     Ast_c.MetaDeclVal

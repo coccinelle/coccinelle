@@ -247,7 +247,7 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_statement_seq_list b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_init a = Lib_parsing_c.al_init b
-  | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
+  | Ast_c.MetaInitListVal (_,a), Ast_c.MetaInitListVal (_,b) ->
       Lib_parsing_c.al_inits a = Lib_parsing_c.al_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_type a = Lib_parsing_c.al_type b *)
@@ -350,7 +350,7 @@ let equal_inh_metavarval valu valu'=
 	Lib_parsing_c.al_inh_statement_seq_list b
   | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
       Lib_parsing_c.al_inh_init a = Lib_parsing_c.al_inh_init b
-  | Ast_c.MetaInitListVal a, Ast_c.MetaInitListVal b ->
+  | Ast_c.MetaInitListVal (_,a), Ast_c.MetaInitListVal (_,b) ->
       Lib_parsing_c.al_inh_inits a = Lib_parsing_c.al_inh_inits b
   | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
       (* old: Lib_parsing_c.al_inh_type a = Lib_parsing_c.al_inh_type b *)
@@ -3293,7 +3293,24 @@ and initialisers_ordered2 = fun ias ibs ->
     | _ -> None in
   let build_metalist _ (ida,leninfo,cstr,keep,inherited) =
     A.MetaInitList(ida,leninfo,cstr,keep,inherited) in
-  let mktermval v = Ast_c.MetaInitListVal v in
+  let mktermval v =
+    let nocomma = List.map Ast_c.unwrap v in
+    let (first,last) =
+      match (nocomma,List.rev nocomma) with
+	(st::_,en::_) ->
+          let (stmax,stmin) =
+	    Lib_parsing_c.max_min_ii_by_pos
+	      (Lib_parsing_c.ii_of_ini st) in
+          let (enmax,enmin) =
+            Lib_parsing_c.max_min_ii_by_pos
+	      (Lib_parsing_c.ii_of_ini en) in
+	  (Ast_c.line_of_info stmin,Ast_c.line_of_info enmax)
+      | _ -> (0,0) in
+    let newlines =
+      if first + (List.length nocomma) <= last
+      then B.Keep
+      else B.Compress in
+    Ast_c.MetaInitListVal (newlines,v) in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "initialisers: no ii: not possible" in
   list_matcher match_dots build_dots match_comma build_comma

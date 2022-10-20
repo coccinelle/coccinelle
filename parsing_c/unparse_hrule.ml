@@ -249,7 +249,7 @@ let print_extra_typedefs pr env =
 
       | Ast_c.MetaTypeVal(ty) -> Visitor_c.vk_type bigf ty
       | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
-      | Ast_c.MetaInitListVal(ty) -> Visitor_c.vk_ini_list bigf ty
+      | Ast_c.MetaInitListVal(_,ty) -> Visitor_c.vk_ini_list bigf ty
       | Ast_c.MetaDeclVal(decl,_) -> Visitor_c.vk_decl bigf decl
       | Ast_c.MetaFieldVal(field) -> Visitor_c.vk_struct_field bigf field
       | Ast_c.MetaFieldListVal(fields) ->
@@ -307,8 +307,8 @@ let rename argids env =
 	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty)
        | Ast_c.MetaInitVal(ini) ->
 	   Ast_c.MetaInitVal(Visitor_c.vk_ini_s bigf ini)
-       | Ast_c.MetaInitListVal(ini) ->
-	   Ast_c.MetaInitListVal(Visitor_c.vk_inis_s bigf ini)
+       | Ast_c.MetaInitListVal(newlines,ini) ->
+	   Ast_c.MetaInitListVal(newlines,Visitor_c.vk_inis_s bigf ini)
        | Ast_c.MetaDeclVal(stm,original) ->
 	   Ast_c.MetaDeclVal(Visitor_c.vk_decl_s bigf stm,
 			     Visitor_c.vk_decl_s bigf original)

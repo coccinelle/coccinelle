@@ -28,7 +28,7 @@ let rec pp_binding_kind = function
       Pretty_print_c.pp_arg_list_simple expr_list
   | Ast_c.MetaInitVal      ini ->
       Pretty_print_c.pp_init_simple ini
-  | Ast_c.MetaInitListVal      ini -> pp "<<initlist>>"
+  | Ast_c.MetaInitListVal      (_,ini) -> pp "<<initlist>>"
   | Ast_c.MetaTypeVal      typ ->
       Pretty_print_c.pp_type_simple typ
   | Ast_c.MetaDeclVal      (decl,_) ->

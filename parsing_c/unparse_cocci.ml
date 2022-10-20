@@ -1119,7 +1119,7 @@ and initialiser nlcomma i =
         | _ -> error name i "initialiser value expected")
   | Ast.MetaInitList(name,_,_,_,_) ->
       handle_metavar name  (function
-          Ast_c.MetaInitListVal ini ->
+          Ast_c.MetaInitListVal (newlines,ini) ->
 	    pretty_print_c.Pretty_print_c.init_list ini
         | _ -> error name i "initialiser list value expected")
   | Ast.AsInit(init,asinit) -> initialiser nlcomma init

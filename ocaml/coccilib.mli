@@ -449,6 +449,9 @@ module Ast_c :
     and program = toplevel list
     and metavars_binding =
         (Ast_cocci.meta_name, metavar_binding_kind) Common.assoc
+    and newlines =
+      Ast_c.newlines =
+	Keep | Compress
     and metavar_binding_kind =
       Ast_c.metavar_binding_kind =
         MetaIdVal of string
@@ -460,7 +463,7 @@ module Ast_c :
       | MetaParamListVal of parameterType wrap2 list
       | MetaTypeVal of fullType
       | MetaInitVal of initialiser
-      | MetaInitListVal of initialiser wrap2 list
+      | MetaInitListVal of newlines * initialiser wrap2 list
       | MetaDeclVal of declaration * declaration
       | MetaFieldVal of field
       | MetaFieldListVal of field list

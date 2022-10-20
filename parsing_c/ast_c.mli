@@ -337,6 +337,7 @@ and toplevel =
 and program = toplevel list
 and metavars_binding =
     (Ast_cocci.meta_name, metavar_binding_kind) Common.assoc
+and newlines = Keep | Compress
 and metavar_binding_kind =
     MetaIdVal of string
   | MetaFuncVal of string
@@ -347,7 +348,7 @@ and metavar_binding_kind =
   | MetaParamListVal of parameterType wrap2 list
   | MetaTypeVal of fullType
   | MetaInitVal of initialiser
-  | MetaInitListVal of initialiser wrap2 list
+  | MetaInitListVal of newlines * initialiser wrap2 list
   | MetaDeclVal of declaration * declaration
   | MetaFieldVal of field
   | MetaFieldListVal of field list
