@@ -1110,6 +1110,16 @@ and enum_decl d =
 (* --------------------------------------------------------------------- *)
 (* Initialiser *)
 
+and oneline i =
+  match Ast.unwrap i with
+    Ast.MetaInitList(name,_,_,_,_) ->
+      let (res,name_string,line,lcol,rcol) = lookup_metavar name in
+      (match res with
+	Some (Ast_c.MetaInitListVal (newlines,ini)) ->
+	  newlines = Ast_c.Compress
+      | _ -> false)
+  | _ -> true
+
 and initialiser nlcomma i =
   match Ast.unwrap i with
     Ast.MetaInit(name,_,_,_) ->
@@ -1120,14 +1130,14 @@ and initialiser nlcomma i =
   | Ast.MetaInitList(name,_,_,_,_) ->
       handle_metavar name  (function
           Ast_c.MetaInitListVal (newlines,ini) ->
-	    pretty_print_c.Pretty_print_c.init_list ini
+	    pretty_print_c.Pretty_print_c.init_list (newlines,ini)
         | _ -> error name i "initialiser list value expected")
   | Ast.AsInit(init,asinit) -> initialiser nlcomma init
   | Ast.InitExpr(exp) -> expression exp
   | Ast.ArInitList(lb,initlist,rb) ->
       (match Ast.unwrap initlist with
 	[] -> mcode print_string lb; mcode print_string rb
-      | ([_] as lst) -> (* { 0 } is a common idiom *)
+      | ([x] as lst) when oneline x -> (* { 0 } is a common idiom *)
 	  mcode print_string lb; pr_space();
 	  initialiser_list nlcomma lst;
 	  pr_space(); mcode print_string rb

@@ -44,7 +44,7 @@ type pretty_printers = {
   field           : Ast_c.field printer;
   field_list      : Ast_c.field list printer;
   init            : Ast_c.initialiser printer;
-  init_list       : (Ast_c.initialiser wrap2 list) printer;
+  init_list       : (Ast_c.newlines * Ast_c.initialiser wrap2 list) printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
   dparamlist      : ((string Ast_c.wrap) Ast_c.wrap2 list) printer;
@@ -98,6 +98,12 @@ let mk_pretty_printers
     l +> List.iter (fun (e, opt) ->
       assert (List.length opt <= 1); (* opt must be a comma? *)
       opt +> List.iter (function x -> pr_elem x; pr_space());
+      printer e) in
+
+  let pp_nl_list printer l =
+    l +> List.iter (fun (e, opt) ->
+      assert (List.length opt <= 1); (* opt must be a comma? *)
+      opt +> List.iter (function x -> pr_elem x; pr_nl());
       printer e) in
 
   let pp_list2 printer l = (* no comma case *)
@@ -1176,7 +1182,10 @@ and pp_init (init, iinit) =
       | InitList _ | InitExpr _
 	  ), _ -> raise (Impossible 116)
 
-  and pp_init_list ini = pp_list pp_init ini
+  and pp_init_list (newlines, ini) =
+    match newlines with
+      Ast_c.Keep -> pp_nl_list pp_init ini
+    | Ast_c.Compress -> pp_list pp_init ini
 
   and pp_designator = function
     | DesignatorField (s), [i1; i2] ->

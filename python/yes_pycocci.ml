@@ -344,8 +344,8 @@ let construct_variables mv e =
 	instantiate_term_list py Pycocci_aux.exprlistrep exprlist
     | Some (_, Ast_c.MetaParamListVal (paramlist)) ->
 	instantiate_term_list py Pycocci_aux.paramlistrep paramlist
-    | Some (_, Ast_c.MetaInitListVal (_,initlist)) ->
-	instantiate_term_list py Pycocci_aux.initlistrep initlist
+    | Some (_, Ast_c.MetaInitListVal (newlines,initlist)) ->
+	instantiate_term_list py Pycocci_aux.initlistrep (newlines,initlist)
     | Some (_, Ast_c.MetaFieldListVal (fieldlist)) ->
 	instantiate_term_list py Pycocci_aux.fieldlistrep fieldlist
     | Some (_, Ast_c.MetaPosValList l) ->

@@ -26,7 +26,8 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_arg_list_gen expr_list
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini
-| Ast_c.MetaInitListVal  (_,ini) -> call_pretty Pretty_print_c.pp_init_list_gen ini
+| Ast_c.MetaInitListVal  (newlines,ini) ->
+    call_pretty Pretty_print_c.pp_init_list_gen (newlines,ini)
 | Ast_c.MetaDeclVal      (declaration,_) ->
     call_pretty Pretty_print_c.pp_decl_gen declaration
 | Ast_c.MetaFieldVal      field ->

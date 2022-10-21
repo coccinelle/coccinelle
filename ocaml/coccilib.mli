@@ -894,7 +894,7 @@ module Pretty_print_c :
       field : Ast_c.field printer;
       field_list : Ast_c.field list printer;
       init : Ast_c.initialiser printer;
-      init_list : Ast_c.initialiser Ast_c.wrap2 list printer;
+      init_list : (Ast_c.newlines * Ast_c.initialiser Ast_c.wrap2 list) printer;
       param : Ast_c.parameterType printer;
       paramlist : Ast_c.parameterType Ast_c.wrap2 list printer;
       dparamlist : string Ast_c.wrap Ast_c.wrap2 list printer;
@@ -964,7 +964,8 @@ module Pretty_print_c :
       pr_space:unit printer -> Ast_c.initialiser printer
     val pp_init_list_gen :
       pr_elem:Ast_c.info printer ->
-      pr_space:unit printer -> Ast_c.initialiser Ast_c.wrap2 list printer
+      pr_space:unit printer ->
+	(Ast_c.newlines * Ast_c.initialiser Ast_c.wrap2 list) printer
     val pp_string_fragment_list_gen :
       pr_elem:Ast_c.info printer ->
       pr_space:unit printer -> Ast_c.string_fragment list printer

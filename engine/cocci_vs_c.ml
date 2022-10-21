@@ -3311,7 +3311,7 @@ and initialisers_ordered2 = fun ias ibs ->
 	  (Ast_c.line_of_info stmin,Ast_c.line_of_info enmax)
       | _ -> (0,0) in
     let newlines =
-      if first + (List.length nocomma) <= last
+      if first + (List.length nocomma) - 1 <= last
       then B.Keep
       else B.Compress in
     Ast_c.MetaInitListVal (newlines,v) in

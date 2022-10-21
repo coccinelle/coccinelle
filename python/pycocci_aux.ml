@@ -41,9 +41,12 @@ let paramlistrep =
   commalistrep Pretty_print_c.pp_param_list_gen Pretty_print_c.pp_param_gen
     Ast_c.unwrap
 
-let initlistrep =
-  commalistrep Pretty_print_c.pp_init_list_gen Pretty_print_c.pp_init_gen
-    Ast_c.unwrap
+let initlistrep (newlines,inits) =
+  (call_pretty Pretty_print_c.pp_init_list_gen (newlines,inits),
+   List.map
+     (function x ->
+       call_pretty Pretty_print_c.pp_init_gen (Ast_c.unwrap x) (* drop commas *))
+     inits)
 
 let fieldlistrep =
   commalistrep Pretty_print_c.pp_field_list_gen Pretty_print_c.pp_field_gen
@@ -60,7 +63,8 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_arg_list_gen expr_list
 | Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
 | Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini
-| Ast_c.MetaInitListVal  (_,ini) -> call_pretty Pretty_print_c.pp_init_list_gen ini
+| Ast_c.MetaInitListVal  (newlines,ini) ->
+    call_pretty Pretty_print_c.pp_init_list_gen (newlines,ini)
 | Ast_c.MetaDeclVal      (decl,_) ->
     call_pretty Pretty_print_c.pp_decl_gen decl
 | Ast_c.MetaFieldVal      field ->
