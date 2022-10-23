@@ -7,6 +7,7 @@
 val unparse : Ast_cocci.metavar list -> Ast_cocci.rule -> unit
 val unparse_to_string : Ast_cocci.rule -> string
 val expression : Ast_cocci.expression -> unit
+val expression_to_string : Ast_cocci.expression -> string
 val ident : Ast_cocci.ident -> unit
 val ident_to_string : Ast_cocci.ident -> string
 val declaration : Ast_cocci.declaration -> unit

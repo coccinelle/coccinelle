@@ -1724,11 +1724,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
             )
 	  ))
       |	_ ->
+	  let ln = A.get_line ea in
 	  failwith
-	    "for nestexpr, only handling the case with dots and only one exp")
+	    (Printf.sprintf "%sfor nestexpr %s, only handling the case with dots and only one exp"
+	       (if ln > 0 then Printf.sprintf "line %d: " ln else "")
+	       (Pretty_print_cocci.expression_to_string ea)))
 
   | A.NestExpr _,     _ ->
-      failwith "only handling multi and no when code in a nest expr"
+      let ln = A.get_line ea in
+      failwith
+	(Printf.sprintf
+	   "%sfor nest expression %s: only handling multi, ie <+... ...+>, and no when code in a nest expr"
+	   (if ln > 0 then Printf.sprintf "line %d: " ln else "")
+	   (Pretty_print_cocci.expression_to_string ea))
 
   (* only in arg lists or in define body *)
   | A.TypeExp _,    _ -> fail

@@ -1337,6 +1337,10 @@ let ident_to_string x =
   print_newlines_disj := true;
   Common.format_to_string (function _ -> ident x)
 
+let expression_to_string x =
+  print_newlines_disj := true;
+  Common.format_to_string (function _ -> expression x)
+
 let unparse_to_string x =
   print_newlines_disj := true;
   Common.format_to_string (function _ -> unparse [] x)
