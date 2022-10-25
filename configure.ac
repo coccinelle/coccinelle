@@ -317,17 +317,21 @@ AS_IF([test "x$enable_python" != xno],
   AC_CHECK_COCCI_EXTPKG([pyml])  dnl  will set $enable_pyml to 'yes', 'no', or 'local'
 
   AS_IF([test "x$enable_pyml" = "xyes"],
-    [AC_MSG_CHECKING([if installed pyml provides Class.init with list of parent classes])
-     echo "Py.Class.init ~parents:[[]]" > configure_test.ml
-     AS_IF([$OCAMLFIND c -package pyml -c configure_test.ml > /dev/null 2>/dev/null],
-       [AC_MSG_RESULT([yes])],
-       [AC_MSG_RESULT([no])
-        AC_SUBST([enable_pyml],[local])
-        AC_SUBST([MODULES_pyml],[$COCCI_SRCDIR/bundles/pyml/pyml.cma])
-        AC_SUBST([MAKE_pyml],[$COCCI_SRCDIR/bundles/pyml])
-        AC_SUBST([PATH_pyml],[$COCCI_SRCDIR/bundles/pyml])])
-     rm -f configure_test.ml configure_test.cmo configure_test.cmi configure_test.cmt
-  ])])
+    AS_IF([test "x$enable_stdcompat" = "xlocal"],
+      [AC_MSG_NOTICE([pyml bundle will be used instead to be compatible with stdcompat bundle])
+       AC_SUBST([enable_pyml],[local])],
+      [AC_MSG_CHECKING([if installed pyml provides Class.init with list of parent classes])
+       echo "Py.Class.init ~parents:[[]]" > configure_test.ml
+       AS_IF([$OCAMLFIND c -package pyml -c configure_test.ml > /dev/null 2>/dev/null],
+         [AC_MSG_RESULT([yes])],
+         [AC_MSG_RESULT([no])
+          AC_SUBST([enable_pyml],[local])])
+       rm -f configure_test.ml configure_test.cmo configure_test.cmi configure_test.cmt])
+    AS_IF([test "x$enable_pyml" = "xlocal"],
+      [AC_SUBST([MODULES_pyml],[$COCCI_SRCDIR/bundles/pyml/pyml.cma])
+       AC_SUBST([MAKE_pyml],[$COCCI_SRCDIR/bundles/pyml])
+       AC_SUBST([PATH_pyml],[$COCCI_SRCDIR/bundles/pyml])])
+  )])
 
 AS_IF([test -z "$enable_python"],
 [dnl
