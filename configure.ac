@@ -321,7 +321,7 @@ AS_IF([test "x$enable_python" != xno],
       [AC_MSG_NOTICE([pyml bundle will be used instead to be compatible with stdcompat bundle])
        AC_SUBST([enable_pyml],[local])],
       [AC_MSG_CHECKING([if installed pyml provides Class.init with list of parent classes])
-       echo "Py.Class.init ~parents:[[]]" > configure_test.ml
+       [[echo "Py.Class.init ~parents:[]" > configure_test.ml]]
        AS_IF([$OCAMLFIND c -package pyml -c configure_test.ml > /dev/null 2>/dev/null],
          [AC_MSG_RESULT([yes])],
          [AC_MSG_RESULT([no])
