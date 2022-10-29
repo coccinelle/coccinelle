@@ -1023,20 +1023,23 @@ and declaration d =
       end;
       close_box(); mcode print_string rp1;
       mcode print_string sem
-  | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+  | Ast.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
+      print_attribute_list preattr;
       ident name; mcode print_string_box lp;
       dots (function _ -> ()) arg_expression args;
       close_box(); mcode print_string rp;
       print_attribute_list attr;
       mcode print_string sem
-  | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+  | Ast.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
+      print_attribute_list preattr;
       ident name; mcode print_string_box lp;
       dots (function _ -> ()) arg_expression args;
       close_box(); mcode print_string rp;
+      print_attribute_list attr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) ->

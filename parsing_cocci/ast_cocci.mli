@@ -388,13 +388,13 @@ and base_declaration =
 	(string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) * string mcode (* ; *)
   | TyDecl of fullType * string mcode (* ; *)
-  | MacroDecl of storage mcode option *
+  | MacroDecl of storage mcode option * attr list *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *
         attr list * string mcode (* ; *)
-  | MacroDeclInit of storage mcode option *
+  | MacroDeclInit of storage mcode option * attr list *
 	ident (* name *) * string mcode (* ( *) *
-        expression dots * string mcode (* ) *) * string mcode (*=*) *
+        expression dots * string mcode (* ) *) * attr list * string mcode (*=*) *
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType * typeC * string mcode (*;*)
   | DisjDecl   of declaration list

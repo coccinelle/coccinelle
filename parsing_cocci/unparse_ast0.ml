@@ -456,18 +456,21 @@ and declaration d =
 	  parameter_list params; varargs va;
 	  close_box(); mcode print_string rp1;
 	  mcode print_string sem
-      | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+      | Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
 	  print_option (mcode U.storage) stg;
+          print_attribute_list preattr;
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp;
           print_attribute_list attr;
 	  mcode print_string sem
-      | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+      | Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
 	  print_option (mcode U.storage) stg;
+          print_attribute_list preattr;
 	  ident name; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp;
+          print_attribute_list attr;
           print_string " ";
           mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem

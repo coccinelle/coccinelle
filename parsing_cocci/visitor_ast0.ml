@@ -668,27 +668,30 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
             (multibind [fi_n;name_n;lp1_n;params_n;va_n;rp1_n;sem_n],
 	     Ast0.FunProto(fi,name,lp1,params,va,rp1,sem))
-	| Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+	| Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
+	    let (preattr_n,preattr) = map_split_bind attribute preattr in
 	    let (name_n,name) = ident name in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [stg_n;name_n;lp_n;args_n;rp_n;attr_n;sem_n],
-	     Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
-	| Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	    (multibind [stg_n;preattr_n;name_n;lp_n;args_n;rp_n;attr_n;sem_n],
+	     Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem))
+	| Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
 	    let (stg_n,stg) = get_option storage_mcode stg in
+	    let (preattr_n,preattr) = map_split_bind attribute preattr in
 	    let (name_n,name) = ident name in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
+	    let (attr_n,attr) = map_split_bind attribute attr in
 	    let (eq_n,eq) = string_mcode eq in
 	    let (ini_n,ini) = initialiser ini in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [stg_n;name_n;lp_n;args_n;rp_n;eq_n;ini_n;sem_n],
-	     Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
+	    (multibind [stg_n;preattr_n;name_n;lp_n;args_n;rp_n;attr_n;eq_n;ini_n;sem_n],
+	     Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem))
 	| Ast0.TyDecl(ty,sem) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (sem_n,sem) = string_mcode sem in

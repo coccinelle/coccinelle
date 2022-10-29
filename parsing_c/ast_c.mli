@@ -218,10 +218,12 @@ and exec_code = exec_code_bis wrap
 and declaration =
     DeclList of onedecl wrap2 list wrap
   | MacroDecl of
-      (storagebis * string * argument wrap2 list * attribute list * bool)
+      (storagebis * attribute list * string *
+	 argument wrap2 list * attribute list * bool)
         wrap
   | MacroDeclInit of
-      (storagebis * string * argument wrap2 list * initialiser) wrap
+      (storagebis * attribute list * string *
+	 argument wrap2 list * attribute list * initialiser) wrap
 and onedecl = {
   v_namei : (name * v_init) option;
   v_type : fullType;

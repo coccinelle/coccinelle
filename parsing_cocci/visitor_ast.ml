@@ -502,25 +502,28 @@ let combiner bind option_default
 	  let lrp1 = string_mcode rp1 in
 	  multibind
             (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
-      | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+      | Ast.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
+	  let lpreattr = multibind (List.map attribute preattr) in
 	  let lname = ident name in
 	  let llp = string_mcode lp in
 	  let largs = expression_dots args in
 	  let lrp = string_mcode rp in
 	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
-	  multibind [lstg; lname; llp; largs; lrp; lattr; lsem]
-      | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	  multibind [lstg; lpreattr; lname; llp; largs; lrp; lattr; lsem]
+      | Ast.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
 	  let lstg = get_option storage_mcode stg in
+	  let lpreattr = multibind (List.map attribute preattr) in
 	  let lname = ident name in
 	  let llp = string_mcode lp in
 	  let largs = expression_dots args in
 	  let lrp = string_mcode rp in
+	  let lattr = multibind (List.map attribute attr) in
 	  let leq = string_mcode eq in
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
-	  multibind [lstg; lname; llp; largs; lrp; leq; lini; lsem]
+	  multibind [lstg; lpreattr; lname; llp; largs; lrp; lattr; leq; lini; lsem]
       | Ast.TyDecl(ty,sem) ->
 	  let lty = fullType ty in
 	  let lsem = string_mcode sem in
@@ -1532,25 +1535,28 @@ let rebuilder
 	    let lrp = string_mcode rp in
 	    let lsem = string_mcode sem in
 	    Ast.FunProto(lfi,lname,llp,lparams,lva,lrp,lsem)
-	| Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+	| Ast.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
 	    let lstg = get_option storage_mcode stg in
+	    let lpreattr = List.map attribute preattr in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
 	    let largs = expression_dots args in
 	    let lrp = string_mcode rp in
 	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
-	    Ast.MacroDecl(lstg, lname, llp, largs, lrp, lattr, lsem)
-	| Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	    Ast.MacroDecl(lstg, lpreattr, lname, llp, largs, lrp, lattr, lsem)
+	| Ast.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
 	    let lstg = get_option storage_mcode stg in
+	    let lpreattr = List.map attribute preattr in
 	    let lname = ident name in
 	    let llp = string_mcode lp in
 	    let largs = expression_dots args in
 	    let lrp = string_mcode rp in
+	    let lattr = List.map attribute attr in
 	    let leq = string_mcode eq in
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
-	    Ast.MacroDeclInit(lstg, lname, llp, largs, lrp, leq, lini, lsem)
+	    Ast.MacroDeclInit(lstg, lpreattr, lname, llp, largs, lrp, lattr, leq, lini, lsem)
 	| Ast.TyDecl(ty,sem) ->
 	    let lty = fullType ty in
 	    let lsem = string_mcode sem in

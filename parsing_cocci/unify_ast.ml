@@ -432,18 +432,24 @@ and unify_declaration d1 d2 =
 	  unify_ident nm1 nm2 &&
 	  unify_dots unify_parameterTypeDef pdots params1 params2
        else false
-  | (Ast.MacroDecl(s1,n1,lp1,args1,rp1,attr1,sem1),
-     Ast.MacroDecl(s2,n2,lp2,args2,rp2,attr2,sem2)) ->
+  | (Ast.MacroDecl(s1,preattr1,n1,lp1,args1,rp1,attr1,sem1),
+     Ast.MacroDecl(s2,preattr2,n2,lp2,args2,rp2,attr2,sem2)) ->
        if bool_unify_option unify_mcode s1 s2 &&
+         (List.length preattr1 = List.length preattr2) &&
+         List.for_all2 unify_attribute preattr1 preattr2 &&
          (List.length attr1 = List.length attr2) &&
          List.for_all2 unify_attribute attr1 attr2
        then
 	 unify_ident n1 n2 &&
 	 unify_dots unify_expression edots args1 args2
        else false
-  | (Ast.MacroDeclInit(s1,n1,lp1,args1,rp1,eq1,ini1,sem1),
-     Ast.MacroDeclInit(s2,n2,lp2,args2,rp2,eq2,ini2,sem2)) ->
-       if bool_unify_option unify_mcode s1 s2
+  | (Ast.MacroDeclInit(s1,preattr1,n1,lp1,args1,rp1,attr1,eq1,ini1,sem1),
+     Ast.MacroDeclInit(s2,preattr2,n2,lp2,args2,rp2,attr2,eq2,ini2,sem2)) ->
+       if bool_unify_option unify_mcode s1 s2 &&
+         (List.length preattr1 = List.length preattr2) &&
+         List.for_all2 unify_attribute preattr1 preattr2 &&
+         (List.length attr1 = List.length attr2) &&
+         List.for_all2 unify_attribute attr1 attr2
        then
 	 unify_ident n1 n2 &&
 	 unify_dots unify_expression edots args1 args2 &&

@@ -251,13 +251,13 @@ and base_declaration =
         (string mcode (* , *) * string mcode (* ...... *) ) option *
 	string mcode (* ) *) * string mcode (* ; *)
   | TyDecl of typeC * string mcode (* ; *)
-  | MacroDecl of Ast_cocci.storage mcode option *
+  | MacroDecl of Ast_cocci.storage mcode option * attr list *
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *
         attr list * string mcode (* ; *)
-  | MacroDeclInit of Ast_cocci.storage mcode option *
+  | MacroDeclInit of Ast_cocci.storage mcode option * attr list *
 	ident (* name *) * string mcode (* ( *) *
-        expression dots * string mcode (* ) *) * string mcode (*=*) *
+        expression dots * string mcode (* ) *) * attr list * string mcode (*=*) *
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (* typedef *) * typeC * typeC * string mcode (*;*)
   | DisjDecl   of string mcode * declaration list * string mcode list *

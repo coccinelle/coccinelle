@@ -572,13 +572,16 @@ and vk_decl = fun bigf d ->
         iif ii;
         vk_onedecl bigf x
       );
-    | MacroDecl ((_stob, s, args, attrs, ptvg),ii) ->
+    | MacroDecl ((_stob, preattrs, s, args, attrs, ptvg),ii) ->
         iif ii;
-        attrs +> List.iter (vk_attribute bigf);
-        vk_argument_list bigf args
-    | MacroDeclInit ((_stob, s, args, ini),ii) ->
-        iif ii;
+        preattrs +> List.iter (vk_attribute bigf);
         vk_argument_list bigf args;
+        attrs +> List.iter (vk_attribute bigf)
+    | MacroDeclInit ((_stob, preattrs, s, args, attrs, ini),ii) ->
+        iif ii;
+        preattrs +> List.iter (vk_attribute bigf);
+        vk_argument_list bigf args;
+        attrs +> List.iter (vk_attribute bigf);
 	vk_ini bigf ini
   in f (k, bigf) d
 
@@ -1608,18 +1611,23 @@ and vk_decl_s = fun bigf d ->
     | DeclList (xs, ii) ->
         DeclList (List.map (fun (x,ii) -> (vk_onedecl_s bigf x, iif ii)) xs,
 		  iif ii)
-    | MacroDecl ((stob, s, args, attrs, ptvg),ii) ->
+    | MacroDecl ((stob, preattrs, s, args, attrs, ptvg),ii) ->
         MacroDecl
-          ((stob, s,
-           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
-           attrs +> List.map (vk_attribute_s bigf),
-           ptvg),
+          ((stob,
+            preattrs +> List.map (vk_attribute_s bigf),
+	    s,
+            args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+            attrs +> List.map (vk_attribute_s bigf),
+            ptvg),
           iif ii)
-    | MacroDeclInit ((stob, s, args, ini),ii) ->
+    | MacroDeclInit ((stob, preattrs, s, args, attrs, ini),ii) ->
         MacroDeclInit
-          ((stob, s,
-           args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
-	   vk_ini_s bigf ini),
+          ((stob,
+            preattrs +> List.map (vk_attribute_s bigf),
+	    s,
+            args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+            attrs +> List.map (vk_attribute_s bigf),
+	    vk_ini_s bigf ini),
           iif ii)
 
   in f (k, bigf) d

@@ -261,6 +261,11 @@ let fixDeclSpecForMacro = function ((attrs,{storageD = (st,iist)}) as r) ->
         (Semantic ("storage class specified for macro type decl",
                   fake_pi))
 
+let fixDeclSpecForMacroDecl = function (attrs,d) ->
+  if d.typeD = nullDecl.typeD && d.qualifD = nullDecl.qualifD
+     && d.inlineD = nullDecl.inlineD
+  then (attrs,d.storageD)
+  else raise (Semantic ("too much info on MacroDecl", fake_pi))
 
 let fixDeclSpecForFuncDef x =
   let (returnType,storage) = fixDeclSpecForDecl x in
@@ -1772,30 +1777,34 @@ decl2:
          ),  ($3::iistart::snd storage))
      }
  /*(* cppext: *)*/
- | storage_const_opt TMacroDecl TOPar macro_argument_list TCPar attributes_opt
+ /* using full decl spec allows too much,but avoids conflicts */
+ | TMacroDecl TOPar macro_argument_list TCPar attributes_opt
    TPtVirg
      { function _ ->
-       match $1 with
-	 Some (sto,stoii) ->
-	   MacroDecl
-	     ((sto, fst $2, $4, $6, true),
-              (snd $2::$3::$5::$7::fakeInfo()::stoii))
-       | None ->
-	   MacroDecl
-	     ((NoSto, fst $2, $4, $6, true),
-              [snd $2;$3;$5;$7;fakeInfo()]) }
+       MacroDecl
+	 ((NoSto, [], fst $1, $3, $5, true),
+          (snd $1::$2::$4::$6::fakeInfo()::[])) }
 
- | storage_const_opt
-     TMacroDecl TOPar macro_argument_list TCPar teq initialize TPtVirg
+ | TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq initialize TPtVirg
      { function _ ->
-       match $1 with
-	 Some (sto,stoii) ->
-	   MacroDeclInit
-	     ((sto, fst $2, $4, $7),
-	      (snd $2::$3::$5::$6::$8::fakeInfo()::stoii))
-       | None ->
-	   MacroDeclInit
-	     ((NoSto, fst $2, $4, $7), [snd $2;$3;$5;$6;$8;fakeInfo()]) }
+       MacroDeclInit
+	 ((NoSto, [], fst $1, $3, $5, $7),
+	  (snd $1::$2::$4::$6::$8::fakeInfo()::[])) }
+ | decl_spec TMacroDecl TOPar macro_argument_list TCPar attributes_opt
+   TPtVirg
+     { function _ ->
+       let (attrs,(sto,stoii)) = fixDeclSpecForMacroDecl $1 in
+       MacroDecl
+	 ((sto, attrs, fst $2, $4, $6, true),
+          (snd $2::$3::$5::$7::fakeInfo()::stoii)) }
+
+ | decl_spec
+     TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq initialize TPtVirg
+     { function _ ->
+       let (attrs,(sto,stoii)) = fixDeclSpecForMacroDecl $1 in
+       MacroDeclInit
+	 ((sto, attrs, fst $2, $4, $6, $8),
+	  (snd $2::$3::$5::$7::$9::fakeInfo()::stoii)) }
 
 storage_const_opt:
    storage_class_spec_nt TMacroDeclConst { Some (fst $1,[snd $1; $2]) }
@@ -2602,7 +2611,7 @@ cpp_other:
        else
 	 Declaration
 	   (MacroDecl
-             ((NoSto, fst $1, $3, $5, true),
+             ((NoSto, [], fst $1, $3, $5, true),
               [snd $1;$2;$4;$6;fakeInfo()]))
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
@@ -2629,7 +2638,7 @@ cpp_other:
  | identifier TOPar macro_argument_list TCParEOL
      { Declaration
 	 (MacroDecl
-           ((NoSto, fst $1, $3, Ast_c.noattr, false),
+           ((NoSto, [], fst $1, $3, Ast_c.noattr, false),
             [snd $1;$2;$4;fakeInfo()])) }
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/

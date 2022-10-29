@@ -54,12 +54,12 @@ let rec right_decl d =
   | Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem) ->
       call_right right_mcode sem d
 	(function ty -> Ast0.FunProto(fninfo,id,lp1,params,va,rp1,sem))
-  | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+  | Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
       call_right right_mcode sem d
-	(function sem -> Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
-  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	(function sem -> Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem))
+  | Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
       call_right right_mcode sem d
-	(function sem -> Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
+	(function sem -> Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.TyDecl(ty,sem))
@@ -299,19 +299,25 @@ let rec left_decl decl =
 	  call_right left_mcode inl decl
 	    (function inl ->
 	      Ast0.FunProto((Ast0.FInline inl)::x,name,lp1,params,va,rp1,sem)))
-  | Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem) ->
+  | Ast0.MacroDecl(Some stg,preattr,name,lp,args,rp,attr,sem) ->
       call_right left_mcode stg decl
-	(function stg -> Ast0.MacroDecl(Some stg,name,lp,args,rp,attr,sem))
-  | Ast0.MacroDecl(None,name,lp,args,rp,attr,sem) ->
+	(function stg -> Ast0.MacroDecl(Some stg,preattr,name,lp,args,rp,attr,sem))
+  | Ast0.MacroDecl(None,[],name,lp,args,rp,attr,sem) ->
       call_right left_ident name decl
-	(function name -> Ast0.MacroDecl(None,name,lp,args,rp,attr,sem))
-  | Ast0.MacroDeclInit(Some stg,name,lp,args,rp,eq,ini,sem) ->
+	(function name -> Ast0.MacroDecl(None,[],name,lp,args,rp,attr,sem))
+  | Ast0.MacroDecl(None,preattr::l,name,lp,args,rp,attr,sem) ->
+      call_right left_attribute preattr decl
+	(function preattr -> Ast0.MacroDecl(None,preattr::l,name,lp,args,rp,attr,sem))
+  | Ast0.MacroDeclInit(Some stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
       call_right left_mcode stg decl
 	(function stg ->
-	  Ast0.MacroDeclInit(Some stg,name,lp,args,rp,eq,ini,sem))
-  | Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem) ->
+	  Ast0.MacroDeclInit(Some stg,preattr,name,lp,args,rp,attr,eq,ini,sem))
+  | Ast0.MacroDeclInit(None,[],name,lp,args,rp,attr,eq,ini,sem) ->
       call_right left_ident name decl
-	(function name -> Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem))
+	(function name -> Ast0.MacroDeclInit(None,[],name,lp,args,rp,attr,eq,ini,sem))
+  | Ast0.MacroDeclInit(None,preattr::l,name,lp,args,rp,attr,eq,ini,sem) ->
+      call_right left_attribute preattr decl
+	(function preattr -> Ast0.MacroDeclInit(None,preattr::l,name,lp,args,rp,attr,eq,ini,sem))
   | Ast0.TyDecl(ty,sem) ->
       call_right left_ty ty decl (function ty -> Ast0.TyDecl(ty,sem))
   | Ast0.Typedef(stg,ty,id,sem) ->

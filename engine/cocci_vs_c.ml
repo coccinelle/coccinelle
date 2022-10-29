@@ -2401,8 +2401,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	      fail
 	end
 
-  | A.MacroDecl (stoa,sa,lpa,eas,rpa,attrsa,enda),
-	B.MacroDecl ((stob,sb,ebs,attrsb,true),ii) ->
+  | A.MacroDecl (stoa,preattrsa,sa,lpa,eas,rpa,attrsa,enda),
+	B.MacroDecl ((stob,preattrsb,sb,ebs,attrsb,true),ii) ->
       let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
         (match ii with
         | iisb::lpb::rpb::iiendb::iifakestart::iisto ->
@@ -2411,6 +2411,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         ) in
         storage_optional_allminus allminus
           stoa ((stob, false), iistob) >>= (fun stoa ((stob, _), iistob) ->
+	attribute_list allminus preattrsa preattrsb >>= (fun preattrsa preattrsb ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
 	ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
 	attribute_list allminus attrsa attrsb >>= (fun attrsa attrsb ->
@@ -2422,13 +2423,13 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 
           return (
             (mckstart, allminus,
-            (A.MacroDecl (stoa,sa,lpa,eas,rpa,attrsa,enda)) +> A.rewrap decla),
-            (B.MacroDecl ((stob,sb,ebs,attrsb,true),
+            (A.MacroDecl (stoa,preattrsa,sa,lpa,eas,rpa,attrsa,enda)) +> A.rewrap decla),
+            (B.MacroDecl ((stob,preattrsb,sb,ebs,attrsb,true),
                          [iisb;lpb;rpb;iiendb;iifakestart] @ iistob))
-          )))))))))
+          ))))))))))
 
-  | A.MacroDecl (None,sa,lpa,eas,rpa,attrsa,enda),
-      B.MacroDecl ((B.NoSto,sb,ebs,attrsb,false),ii) ->
+  | A.MacroDecl (None,[],sa,lpa,eas,rpa,attrsa,enda),
+      B.MacroDecl ((B.NoSto,[],sb,ebs,attrsb,false),ii) ->
 	(* This is for macrodecls with no semicolons, which come from
 	   a parsing rule that deals with function prototypes with no
 	   return type.  That parsing rule would have a conflict if there
@@ -2455,14 +2456,14 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		  return (
 		  (mckstart, allminus,
 		   (A.MacroDecl
-                     (None,sa,lpa,eas,rpa,attrsa,enda)) +> A.rewrap decla),
-		  (B.MacroDecl ((B.NoSto,sb,ebs,attrsb,false),
+                     (None,[],sa,lpa,eas,rpa,attrsa,enda)) +> A.rewrap decla),
+		  (B.MacroDecl ((B.NoSto,[],sb,ebs,attrsb,false),
 				[iisb;lpb;rpb;iifakestart]))
 		  )))))))
       | _ -> fail)
 
-  | A.MacroDeclInit (stoa,sa,lpa,eas,rpa,weqa,inia,enda),
-      B.MacroDeclInit ((stob,sb,ebs,inib),ii) ->
+  | A.MacroDeclInit (stoa,preattrsa,sa,lpa,eas,rpa,attrsa,weqa,inia,enda),
+      B.MacroDeclInit ((stob,preattrsb,sb,ebs,attrsb,inib),ii) ->
       let (iisb, lpb, rpb, weqb, iiendb, iifakestart, iistob) =
         (match ii with
         |  iisb::lpb::rpb::weqb::iiendb::iifakestart::iisto ->
@@ -2471,6 +2472,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         ) in
         storage_optional_allminus allminus
           stoa ((stob, false), iistob) >>= (fun stoa ((stob, _), iistob) ->
+	attribute_list allminus preattrsa preattrsb >>= (fun preattrsa preattrsb ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
         tokenf lpa lpb >>= (fun lpa lpb ->
@@ -2478,19 +2480,20 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         tokenf weqa weqb >>= (fun weqa weqb ->
         tokenf enda iiendb >>= (fun enda iiendb ->
         arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+	attribute_list allminus attrsa attrsb >>= (fun attrsa attrsb ->
 	initialiser inia inib >>= (fun inia inib ->
         let eas = A.rewrap eas easunwrap in
 
           return (
             (mckstart, allminus,
-             (A.MacroDeclInit(stoa,sa,lpa,eas,rpa,weqa,inia,enda)) +>
+             (A.MacroDeclInit(stoa,preattrsa,sa,lpa,eas,rpa,attrsa,weqa,inia,enda)) +>
 	     A.rewrap decla),
-            (B.MacroDeclInit ((stob,sb,ebs,inib),
+            (B.MacroDeclInit ((stob,preattrsb,sb,ebs,attrsb,inib),
                          [iisb;lpb;rpb;iiendb;iifakestart] @ iistob))
-          ))))))))))
+          ))))))))))))
 
 
-  | A.MacroDeclInit (stoa,sa,lpa,eas,rpa,weqa,inia,enda), _ -> fail
+  | A.MacroDeclInit (stoa,preattrs,sa,lpa,eas,rpa,attrs,weqa,inia,enda), _ -> fail
 
   | _, (B.MacroDecl _ |B.MacroDeclInit _ |B.DeclList _) -> fail
 

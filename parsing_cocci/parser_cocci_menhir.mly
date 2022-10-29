@@ -1882,17 +1882,17 @@ decl_var:
 	let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
 	[Ast0_cocci.wrap(Ast0_cocci.Init(s,fn idtype,id,endattrs,Parse_aux.clt2mcode "=" q,e,
 					 Parse_aux.clt2mcode ";" pv))] }
-  | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
+  | s=ioption(storage) prear=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       ar=attr_list p=TPtVirg
-      { [Ast0_cocci.wrap(Ast0_cocci.MacroDecl(s,d,Parse_aux.clt2mcode "(" o,e,
+      { [Ast0_cocci.wrap(Ast0_cocci.MacroDecl(s,prear,d,Parse_aux.clt2mcode "(" o,e,
 				  Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode ";" p))] }
-  | s=ioption(storage)
-      d=decl_ident o=TOPar e=eexpr_list_option c=TCPar q=TEq i=initialize
+  | s=ioption(storage) prear=attr_list
+      d=decl_ident o=TOPar e=eexpr_list_option c=TCPar ar=attr_list q=TEq i=initialize
       p=TPtVirg
       { [Ast0_cocci.wrap
 	    (Ast0_cocci.MacroDeclInit
-	       (s,d,Parse_aux.clt2mcode "(" o,e,
-		Parse_aux.clt2mcode ")" c,Parse_aux.clt2mcode "=" q,i,
+	       (s,prear,d,Parse_aux.clt2mcode "(" o,e,
+		Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode "=" q,i,
 		Parse_aux.clt2mcode ";" p))] }
   | s=Ttypedef t=typedef_ctype
       d=comma_list(direct_declarator(typedef_ident)) pv=TPtVirg
@@ -1936,19 +1936,17 @@ one_decl_var(ender):
 	let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
 	Ast0_cocci.wrap(Ast0_cocci.Init(s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,
 					Parse_aux.clt2mcode ";" pv)) }
-  | s=ioption(storage) d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
+  | s=ioption(storage) par=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       ar=attr_list p=ender
-      { Ast0_cocci.wrap
-	  (Ast0_cocci.MacroDecl
-	     (s,d,Parse_aux.clt2mcode "(" o,e,
-	      Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode ";" p)) }
-  | s=ioption(storage)
-      d=decl_ident o=TOPar e=eexpr_list_option c=TCPar q=TEq i=initialize
+      { Ast0_cocci.wrap(Ast0_cocci.MacroDecl(s,par,d,Parse_aux.clt2mcode "(" o,e,
+				  Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode ";" p)) }
+  | s=ioption(storage) par=attr_list
+      d=decl_ident o=TOPar e=eexpr_list_option c=TCPar ar=attr_list q=TEq i=initialize
       p=ender
       { Ast0_cocci.wrap
             (Ast0_cocci.MacroDeclInit
-               (s,d,Parse_aux.clt2mcode "(" o,e,
-                Parse_aux.clt2mcode ")" c,Parse_aux.clt2mcode "=" q,i,
+               (s,par,d,Parse_aux.clt2mcode "(" o,e,
+                Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode "=" q,i,
                 Parse_aux.clt2mcode ";" p)) }
 
 

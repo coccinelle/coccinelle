@@ -681,27 +681,30 @@ and declaration d =
 	  let rp = mcode rp in
 	  let sem = mcode sem in
 	  Ast.FunProto(fi,name,lp,params,va,rp,sem)
-    | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+    | Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
 	(* this would seem to need allminus... *)
 	let stg = get_option mcode stg in
+	let preattr = List.map attribute preattr in
 	let name = ident name in
 	let lp = mcode lp in
 	let args = dots expression args in
 	let rp = mcode rp in
 	let attr = List.map attribute attr in
 	let sem = mcode sem in
-	Ast.MacroDecl(stg,name,lp,args,rp,attr,sem)
-    | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+	Ast.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem)
+    | Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
 	(* this would seem to need allminus... *)
 	let stg = get_option mcode stg in
+	let preattr = List.map attribute preattr in
 	let name = ident name in
 	let lp = mcode lp in
 	let args = dots expression args in
 	let rp = mcode rp in
+	let attr = List.map attribute attr in
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem)
+	Ast.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem)
     | Ast0.TyDecl(ty,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
 	Ast.TyDecl(typeC allminus ty,mcode sem)

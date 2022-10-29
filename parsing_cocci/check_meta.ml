@@ -331,13 +331,16 @@ and declaration context old_metas table minus d =
       ident FN old_metas table minus name;
       List.iter (fninfo old_metas table minus) fi;
       parameter_list old_metas table minus params
-  | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
-      ident GLOBAL old_metas table minus name;
-      List.iter (attribute old_metas table minus) attr;
-      dots (expression ID old_metas table minus) args
-  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+  | Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
+      List.iter (attribute old_metas table minus) preattr;
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args;
+      List.iter (attribute old_metas table minus) attr
+  | Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
+      List.iter (attribute old_metas table minus) preattr;
+      ident GLOBAL old_metas table minus name;
+      dots (expression ID old_metas table minus) args;
+      List.iter (attribute old_metas table minus) attr;
       (match Ast0.unwrap ini with
 	Ast0.InitExpr exp -> expression ID old_metas table minus exp
       |	_ -> initialiser old_metas table minus ini)

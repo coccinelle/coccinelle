@@ -615,16 +615,21 @@ and declaration d =
       parameter_list params; varargs va;
       close_box(); mcode print_string rp1;
       mcode print_string sem
-  | Ast.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
-      print_option (mcode storage) stg; ident name; mcode print_string_box lp;
+  | Ast.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
+      print_option (mcode storage) stg;
+      print_attribute_list preattr;
+      ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp;
       print_attribute_list attr;
       mcode print_string sem
-  | Ast.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
-      print_option (mcode storage) stg; ident name; mcode print_string_box lp;
+  | Ast.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
+      print_option (mcode storage) stg;
+      print_attribute_list preattr;
+      ident name; mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp;
+      print_attribute_list attr;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
   | Ast.TyDecl(ty,sem) ->

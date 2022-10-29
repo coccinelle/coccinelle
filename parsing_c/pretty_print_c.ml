@@ -1124,9 +1124,10 @@ and pp_string_format (e,ii) =
 	pr_elem iivirg;
 
     | MacroDecl
-      ((sto, s, es, attrs, true), iis::lp::rp::iiend::ifakestart::iisto) ->
+      ((sto, preattrs, s, es, attrs, true), iis::lp::rp::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
+	pp_attributes preattrs;
 	pr_elem iis;
 	pr_elem lp;
 	es +> List.iter (fun (e, opt) ->
@@ -1139,9 +1140,10 @@ and pp_string_format (e,ii) =
 	pr_elem iiend;
 
     | MacroDecl
-      ((sto, s, es, attrs, false), iis::lp::rp::ifakestart::iisto) ->
+      ((sto, preattrs, s, es, attrs, false), iis::lp::rp::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
+	pp_attributes preattrs;
 	pr_elem iis;
 	pr_elem lp;
 	es +> List.iter (fun (e, opt) ->
@@ -1154,9 +1156,10 @@ and pp_string_format (e,ii) =
 	pp_attributes attrs;
 
     | MacroDeclInit
-	((sto, s, es, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
+	((sto, preattrs, s, es, attrs, ini), iis::lp::rp::eq::iiend::ifakestart::iisto) ->
 	pr_elem ifakestart;
 	iisto +> List.iter pr_elem; (* static and const *)
+	pp_attributes preattrs;
 	pr_elem iis;
 	pr_elem lp;
 	es +> List.iter (fun (e, opt) ->
@@ -1166,6 +1169,7 @@ and pp_string_format (e,ii) =
 	);
 
 	pr_elem rp;
+	pp_attributes attrs;
 	pr_elem eq;
 	pp_init ini;
 	pr_elem iiend;

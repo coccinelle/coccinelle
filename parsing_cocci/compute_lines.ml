@@ -771,7 +771,8 @@ and declaration d =
 	| Ast0.FStorage(stg)::_ -> mkres d res (promote_mcode stg) right
 	| Ast0.FType(ty)::_ -> mkres d res ty right
 	| Ast0.FInline(inline)::_ -> mkres d res (promote_mcode inline) right)
-  | Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem) ->
+  | Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
+      let preattr = List.map attribute preattr in
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
@@ -780,27 +781,39 @@ and declaration d =
       let sem = normal_mcode sem in
       (match stg with
 	None ->
-	  mkres d (Ast0.MacroDecl(None,name,lp,args,rp,attr,sem))
-	    name (promote_mcode sem)
+	  (match preattr with
+	    [] ->
+	      mkres d (Ast0.MacroDecl(None,preattr,name,lp,args,rp,attr,sem))
+		name (promote_mcode sem)
+	  | lattr::_ ->
+	      mkres d (Ast0.MacroDecl(None,preattr,name,lp,args,rp,attr,sem))
+		lattr (promote_mcode sem))
       | Some x ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.MacroDecl(stg,name,lp,args,rp,attr,sem))
+	  mkres d (Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem))
 	    (promote_mcode x) (promote_mcode sem))
-  | Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem) ->
+  | Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
+      let preattr = List.map attribute preattr in
       let name = ident name in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       let rp = normal_mcode rp in
+      let attr = List.map attribute attr in
       let eq = normal_mcode eq in
       let ini = initialiser ini in
       let sem = normal_mcode sem in
       (match stg with
 	None ->
-	  mkres d (Ast0.MacroDeclInit(None,name,lp,args,rp,eq,ini,sem))
-	    name (promote_mcode sem)
+	  (match preattr with
+	    [] ->
+	      mkres d (Ast0.MacroDeclInit(None,[],name,lp,args,rp,attr,eq,ini,sem))
+		name (promote_mcode sem)
+	  | lattr::_ ->
+	      mkres d (Ast0.MacroDeclInit(None,preattr,name,lp,args,rp,attr,eq,ini,sem))
+		lattr (promote_mcode sem))
       | Some x ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.MacroDeclInit(stg,name,lp,args,rp,eq,ini,sem))
+	  mkres d (Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem))
 	    (promote_mcode x) (promote_mcode sem))
   | Ast0.TyDecl(ty,sem) ->
       let ty = typeC ty in

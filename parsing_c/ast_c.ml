@@ -579,10 +579,10 @@ and declaration =
   (* cppext: *)
     (* bool is true if there is a ; at the end *)
   | MacroDecl of
-      (storagebis * string * argument wrap2 list * attribute list * bool)
+      (storagebis * attribute list * string * argument wrap2 list * attribute list * bool)
         wrap (* fakestart *)
   | MacroDeclInit of
-      (storagebis * string * argument wrap2 list * initialiser)
+      (storagebis * attribute list * string * argument wrap2 list * attribute list * initialiser)
 	wrap (* fakestart *)
 
      and onedecl =
