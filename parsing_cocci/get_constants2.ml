@@ -369,7 +369,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 
   let rec cstr r k c =
     match c with
-      Ast.CstrFalse -> False
+      Ast.CstrFalse | Ast.CstrExit -> False
     | Ast.CstrTrue -> True
     | Ast.CstrAnd list ->
 	List.fold_left (fun accu c -> build_and accu (cstr r k c)) True list

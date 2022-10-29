@@ -17,7 +17,7 @@ type predicate =
   | GotoAfter (* control node for escaping branches *)
   | FallThrough | LoopFallThrough
   | Return (* any exit from the current function *)
-  | FunHeader | UnsafeBrace | Top | Exit | ErrorExit | Goto
+  | FunHeader | UnsafeBrace | Top | Exit | PreExit | ErrorExit | Goto
   | Paren of Ast_cocci.meta_name
   | Match of Ast_cocci.rule_elem
   | Label of Ast_cocci.meta_name

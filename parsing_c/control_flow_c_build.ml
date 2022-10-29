@@ -345,7 +345,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       in
 
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
-      let endnode     = mk_node      (SeqEnd (brace, i2))    lbl [] s2 in
+      let endnode     = mk_node      (SeqEnd (brace, i2)) lbl [] s2 in
       let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
 (*
       let _endnode_dup =
@@ -1314,11 +1314,12 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
         f_endattr= endattrs;
         f_old_c_style = oldstyle;
         }, ii) = funcdef in
-  let iifunheader, iicompound =
+  let iifunheader, iicompound, iiend =
     (match ii with
-    | ioparen::icparen::iobrace::icbrace::iifake::isto ->
-        ioparen::icparen::iifake::isto,
-        [iobrace;icbrace]
+    | ioparen::icparen::iobrace::icbrace::iistart::iiend::isto ->
+        ioparen::icparen::iistart::isto,
+        [iobrace;icbrace],
+	iiend
     | _ -> raise (Impossible 72)
     )
   in
@@ -1338,11 +1339,13 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
       }, iifunheader))
     lbl_start ("function " ^ Ast_c.str_of_name namefuncs) in
   let enteri     = !g +> add_node Enter     lbl_0 "[enter]"     in
-  let exiti      = !g +> add_node Exit      lbl_0 "[exit]"      in
+  let preexiti   = !g +> add_node (PreExit iiend) lbl_0 "[preexit]"      in
+  let exiti      = !g +> add_node Exit lbl_0 "[exit]"      in
   let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
 
   !g#add_arc ((topi, headi), Direct);
   !g#add_arc ((headi, enteri), Direct);
+  !g#add_arc ((preexiti, exiti), Direct);
 
   (* ---------------------------------------------------------------- *)
   (* todocheck: assert ? such as we have "consommer" tous les labels  *)
@@ -1350,14 +1353,14 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
     { initial_info with
       labels = lbl_start;
       labels_assoc = compute_labels_and_create_them topstatement;
-      exiti      = Some exiti;
+      exiti      = Some preexiti;
       errorexiti = Some errorexiti;
       compound_caller = FunctionDef;
     }
   in
 
   let lasti = aux_statement (Some enteri, info) topstatement in
-  !g +> add_arc_opt (lasti, exiti) in
+  !g +> add_arc_opt (lasti, preexiti) in
 
 (*****************************************************************************)
 (* Entry point *)
@@ -1594,6 +1597,7 @@ let deadcode_detection (g : Control_flow_c.cflow) =
       | TopNode -> ()
       | FunHeader _ -> ()
       | ErrorExit -> ()
+      | PreExit _ -> ()
       | Exit -> ()     (* if have 'loop: if(x) return; i++; goto loop' *)
       | SeqEnd _ -> () (* todo?: certaines '}' deviennent orphelins *)
       | x ->

@@ -227,6 +227,7 @@ and base_expression =
 and 'expression generic_constraints =
     CstrFalse
   | CstrTrue
+  | CstrExit
   | CstrAnd of 'expression generic_constraints list
   | CstrOr of 'expression generic_constraints list
   | CstrNot of 'expression generic_constraints

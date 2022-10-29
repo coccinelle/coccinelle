@@ -160,6 +160,7 @@ let unsbrpred   = predmaker false (Lib_engine.UnsafeBrace, CTL.Control)
 let toppred     = predmaker false (Lib_engine.Top,         CTL.Control)
 let exitpred    = predmaker false (Lib_engine.ErrorExit,   CTL.Control)
 let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
+let preendpred  = predmaker false (Lib_engine.PreExit,     CTL.Control)
 let gotopred    = predmaker false (Lib_engine.Goto,        CTL.Control)
 let inlooppred  = predmaker false (Lib_engine.InLoop,      CTL.Control)
 let truepred    = predmaker false (Lib_engine.TrueBranch,  CTL.Control)
@@ -2602,17 +2603,16 @@ and statement stmt top after quantified minus_quantified
 		     false guard)] in
       let function_header =
 	match aft with
-	  Ast.CONTEXT(_,Ast.NOTHING) -> function_header
+	  Ast.CONTEXT(_,Ast.NOTHING) (* nothing added after the end of the function *)
+	| Ast.MINUS(_,_,_,Ast.NOREPLACEMENT) -> function_header
 	| _ ->
 	    let match_ender =
 	      quantify guard aafvs (* vars needed only for ender *)
-		(ctl_and (endpred label)
-		   (ctl_back_ex
-		      (make_match
-			 (make_meta_rule_elem "7" aft Ast.CstrTrue
-			    (afvs,afresh,ainh))))) in
+		(make_match
+		   (make_meta_rule_elem "7" aft Ast.CstrExit
+		      (afvs,afresh,ainh))) in
 	    CTL.AndAny(CTL.FORWARD,CTL.NONSTRICT,function_header,
-		       ctl_or (ctl_not (endpred label)) match_ender) in
+		       ctl_or (ctl_not (preendpred label)) match_ender) in
       quantify guard ahfvs
 	(quantify guard b1fvs
 	   (make_seq [function_header; quantify guard b2fvs body_code]))

@@ -13,6 +13,7 @@ type predicate =
   | UnsafeBrace
   | Top
   | Exit
+  | PreExit
   | ErrorExit
   | Goto
   | Paren of Ast_cocci.meta_name

@@ -2659,6 +2659,7 @@ module Ast_cocci :
       'a Ast_cocci.generic_constraints =
         CstrFalse
       | CstrTrue
+      | CstrExit
       | CstrAnd of 'a generic_constraints list
       | CstrOr of 'a generic_constraints list
       | CstrNot of 'a generic_constraints

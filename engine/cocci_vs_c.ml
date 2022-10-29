@@ -4893,7 +4893,7 @@ and define_parameter = fun parama paramb ->
       if b then return ((), ())
       else fail in
     match c with
-      A.CstrFalse -> fail
+      A.CstrFalse | A.CstrExit -> fail
     | A.CstrTrue -> return ((), ())
     | A.CstrAnd list ->
 	let rec loop list =
@@ -4976,7 +4976,16 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
   (* note: the order of the clauses is important. *)
 
-  | _, F.Enter | _, F.Exit | _, F.ErrorExit -> fail2()
+  | A.MetaRuleElem(mcode,A.CstrExit,keep,inherited), F.PreExit i1 ->
+      tokenf mcode i1 >>= (fun mcode i1 ->
+        return (
+        A.MetaRuleElem (mcode,A.CstrExit,keep,inherited),
+        F.PreExit i1
+        ))
+
+  | A.MetaRuleElem(mcode,A.CstrExit,keep,inherited), _ -> fail2()
+
+  | _, F.Enter | _, F.PreExit _ | _, F.Exit | _, F.ErrorExit -> fail2()
 
   (* the metaRuleElem contains just '-' information. We don't need to add
    * stuff in the environment. If we need stuff in environment, because

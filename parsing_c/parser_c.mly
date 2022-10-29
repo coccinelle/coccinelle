@@ -298,6 +298,21 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
       raise (Semantic ("seems this is not a function", fake_pi))
 
 
+(* For fake info added at the end of a conditional or iteration, to have the
+correct position information *)
+let postfakeInfo pii  =
+  let (max,min) =  Lib_parsing_c.max_min_ii_by_pos pii in
+  let max_pi = Ast_c.get_info (fun x -> x) max in
+  let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
+	      column=max_pi.Common.column;file=max_pi.Common.file},
+	    String.length max_pi.Common.str) in
+  { pinfo = FakeTok ("",vp);
+    cocci_tag = ref Ast_c.emptyAnnot;
+    annots_tag = Token_annot.empty;
+    comments_tag = ref Ast_c.emptyComments;
+    danger = ref Ast_c.NoDanger;
+  }
+
 let fixFunc (typ, compound, old_style_opt) =
   let (cp,iicp) = compound in
 
@@ -310,6 +325,7 @@ let fixFunc (typ, compound, old_style_opt) =
       let iifunc = Ast_c.get_ii_typeC_take_care tybis in
 
       let iistart = Ast_c.fakeInfo () in
+      let iiend   = postfakeInfo iicp in
       assert (qu = nullQualif);
 
       (match params with
@@ -365,7 +381,7 @@ let fixFunc (typ, compound, old_style_opt) =
        f_endattr = endattrs;
        f_old_c_style = old_style_opt;
       },
-      (iifunc @ iicp @ [iistart] @ iidotdot @ iist)
+      (iifunc @ iicp @ [iistart;iiend] @ iidotdot @ iist)
   | _ ->
       raise
         (Semantic
@@ -447,21 +463,6 @@ let args_to_params l pb =
 		   ("function with no return type must have types in param list",
 		    pi)))
 	l
-
-(* For fake info added at the end of a conditional or iteration, to have the
-correct position information *)
-let postfakeInfo pii  =
-  let (max,min) =  Lib_parsing_c.max_min_ii_by_pos pii in
-  let max_pi = Ast_c.get_info (fun x -> x) max in
-  let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
-	      column=max_pi.Common.column;file=max_pi.Common.file},
-	    String.length max_pi.Common.str) in
-  { pinfo = FakeTok ("",vp);
-    cocci_tag = ref Ast_c.emptyAnnot;
-    annots_tag = Token_annot.empty;
-    comments_tag = ref Ast_c.emptyComments;
-    danger = ref Ast_c.NoDanger;
-  }
 
 (*let check_cpp tok =
   if !Flag.c_plus_plus = Flag.Off

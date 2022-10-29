@@ -868,7 +868,7 @@ let (transform2: string (* rule name *) -> string list (* dropped_isos *) ->
       (* assert that have done something. But with metaruleElem sometimes
          don't modify fake nodes. So special case before on Fake nodes. *)
       (match F.unwrap node with
-      | F.Enter | F.Exit | F.ErrorExit
+      | F.Enter | F.PreExit _ | F.Exit | F.ErrorExit
       | F.EndStatement _ | F.CaseNode _
       | F.Fake
       | F.TrueNode _ | F.FalseNode | F.AfterNode _ | F.FallThroughNode

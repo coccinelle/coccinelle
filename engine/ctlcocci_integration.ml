@@ -215,7 +215,12 @@ let labels_for_ctl (dropped_isos : string list)
     | Lib_engine.Exit ->
 	loop_nodes p
 	  (function node ->
-	    match F.unwrap node with F.Exit | F.EndNode -> true | _ -> false)
+	    match F.unwrap node with F.Exit | F.PreExit _ | F.EndNode -> true | _ -> false)
+
+    | Lib_engine.PreExit ->
+	loop_nodes p
+	  (function node ->
+	    match F.unwrap node with F.PreExit _ -> true | _ -> false)
 
     | Lib_engine.ErrorExit ->
 	loop_nodes p
@@ -324,7 +329,7 @@ let fix_flow_ctl2 (flow : F.cflow) : F.cflow =
 
   (* for the regular functions *)
   (try
-    let exitnodei  = F.find_node (fun x -> x = F.Exit) !g in
+    let exitnodei  = F.find_node (function F.Exit -> true | _ -> false) !g in
     let errornodei = F.find_node (fun x -> x = F.ErrorExit) !g in
 
     !g#add_arc ((exitnodei, exitnodei), F.Direct);

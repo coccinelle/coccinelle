@@ -174,6 +174,8 @@ let rec constraints_to_buffer ~rn buffer cstr =
     Ast.CstrTrue | Ast.CstrSub [] -> ()
   | Ast.CstrFalse ->
       failwith "Ast_cocci.string_of_constraints: no syntax for Ast.CstrFalse"
+  | Ast.CstrExit ->
+      failwith "Ast_cocci.string_of_constraints: no syntax for Ast.CstrExit"
   | Ast.CstrAnd list -> ignore (List.fold_left (print_sub " && ") true list)
   | Ast.CstrOr list ->
       begin

@@ -84,6 +84,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   (* ------------------------ *)
   | Enter
+  | PreExit of info
   | Exit
   | Fake
   | CaseNode of int

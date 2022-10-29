@@ -249,6 +249,7 @@ type node = node1 * string
   (* ------------------------ *)
   (* some control nodes *)
   | Enter
+  | PreExit of info (* for adding things after functions *)
   | Exit
 
 
@@ -421,6 +422,7 @@ let extract_fullstatement node =
   | EndStatement _
   | DoWhileTail _
   | Enter
+  | PreExit _
   | Exit
   | Fake
   | CaseNode _

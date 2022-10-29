@@ -1026,6 +1026,7 @@ and vk_node = fun bigf node ->
 
     | F.Else info -> infof info
     | F.EndStatement iopt -> do_option infof iopt
+    | F.PreExit iopt -> infof iopt
 
     | F.SeqEnd (i, info) -> infof info
     | F.SeqStart (st, i, info) -> infof info
@@ -2051,6 +2052,7 @@ and vk_node_s = fun bigf node ->
     | F.Label (st, name, ((),ii)) ->
         F.Label (st, vk_name_s bigf name, ((),iif ii))
     | F.EndStatement iopt -> F.EndStatement (map_option infof iopt)
+    | F.PreExit iopt -> F.PreExit (infof iopt)
     | F.DoHeader (st, info) -> F.DoHeader (st, infof info)
     | F.Else info -> F.Else (infof info)
     | F.SeqEnd (i, info) -> F.SeqEnd (i, infof info)

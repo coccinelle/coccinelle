@@ -1304,12 +1304,13 @@ and pp_init (init, iinit) =
   and pp_def def =
     let defbis, ii = def in
     match ii with
-    | iifunc1::iifunc2::i1::i2::ifakestart::isto ->
+    | iifunc1::iifunc2::i1::i2::ifakestart::ifakeend::isto ->
 	pp_def_start defbis iifunc1 iifunc2 ifakestart isto;
 	pr_space();
         pr_elem i1;
 	pp_statement_seq_list defbis.f_body;
-        pr_elem i2
+        pr_elem i2;
+        pr_elem ifakeend
     | _ -> raise (Impossible 118)
 
   and pp_fun_header def =
@@ -1606,6 +1607,7 @@ and pp_init (init, iinit) =
     | F.TopNode -> pr2 "TopNode"
     | F.EndNode -> pr2 "EndNode"
     | F.ErrorExit -> pr2 "ErrorExit"
+    | F.PreExit _ -> pr2 "PreExit"
     | F.Exit -> pr2 "Exit"
     | F.Enter -> pr2 "Enter"
     | F.LoopFallThroughNode -> pr2 "LoopFallThroughNode"

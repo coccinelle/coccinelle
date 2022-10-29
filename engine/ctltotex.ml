@@ -256,6 +256,7 @@ let pred2c = function
   | Lib_engine.UnsafeBrace -> ("\\msf{UnsafeBrace}",11)
   | Lib_engine.Top -> ("\\msf{Top}",3)
   | Lib_engine.Exit -> ("\\msf{Exit}",4)
+  | Lib_engine.PreExit -> ("\\msf{PreExit}",4)
   | Lib_engine.ErrorExit -> ("\\msf{ErrorExit}",9)
   | Lib_engine.Paren(s) ->
       let s = meta2c s in

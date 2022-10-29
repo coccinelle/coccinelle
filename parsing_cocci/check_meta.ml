@@ -624,6 +624,7 @@ and exec_code context old_metas table minus e =
 and constraints table minus = function
     Ast.CstrFalse -> ()
   | Ast.CstrTrue -> ()
+  | Ast.CstrExit -> ()
   | Ast.CstrAnd l -> List.iter (constraints table minus) l
   | Ast.CstrOr l -> List.iter (constraints table minus) l
   | Ast.CstrNot c -> constraints table minus c

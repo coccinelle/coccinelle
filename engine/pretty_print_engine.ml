@@ -119,6 +119,7 @@ let pp_predicate = function
   | Top -> pp "Top"
   | ErrorExit -> pp "ErrorExit"
   | Exit -> pp "Exit"
+  | PreExit -> pp "PreExit"
   | Goto -> pp "Goto"
   | Paren s -> pp "Paren("; pp_meta s; pp ")"
   | Match (re) -> Pretty_print_cocci.print_rule_elem re
