@@ -858,7 +858,9 @@ and vk_cpp_directive bigf directive =
         vk_define_kind bigf defkind;
         vk_define_val bigf defval
     | Pragma ((id,rest),ii) ->
-        vk_name bigf id; iif ii
+	vk_name bigf id;
+	rest +> List.iter (fun (str,ii) -> iif ii);
+	iif ii
     | OtherDirective (ii) ->
         iif ii
   in f (k, bigf) directive
@@ -1001,7 +1003,9 @@ and vk_node = fun bigf node ->
         ()
 
     | F.PragmaHeader ((id,rest),ii) ->
-        vk_name bigf id; iif ii
+	vk_name bigf id;
+	rest +> List.iter (fun (str,ii) -> iif ii);
+	iif ii
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -1840,7 +1844,9 @@ and vk_cpp_directive_s = fun bigf top ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
     | Pragma((id,rest),ii) ->
-	Pragma((vk_name_s bigf id,rest),iif ii)
+	Pragma((vk_name_s bigf id,
+		rest +> List.map (fun (str,ii) -> (str,iif ii))),
+	       iif ii)
     | OtherDirective (ii) -> OtherDirective (iif ii)
 
   in f (k, bigf) top
@@ -2012,7 +2018,9 @@ and vk_node_s = fun bigf node ->
     | F.DefineTodo -> F.DefineTodo
 
     | F.PragmaHeader ((id,rest),ii) ->
-        F.PragmaHeader((vk_name_s bigf id,rest),iif ii)
+	F.PragmaHeader((vk_name_s bigf id,
+			rest +> List.map (fun (str,ii) -> (str,iif ii))),
+		       iif ii)
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

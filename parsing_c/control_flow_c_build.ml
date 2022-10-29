@@ -1232,6 +1232,14 @@ and aux_statement_list starti (xi, newxi) statxs =
     | Ast_c.StmtElem statement ->
         aux_statement (starti, newxi') statement
 
+    | Ast_c.CppDirectiveStmt (Ast_c.Pragma ((id,rest),ii)) ->
+	let elem = PragmaHeader ((id,rest),ii) in
+	let str = "#pragma" in
+	let ei =   !g +> add_node elem    lbl_0 str in
+
+	!g +> add_arc_opt (starti, ei);
+	Some ei
+
     | Ast_c.CppDirectiveStmt directive ->
         pr2_once ("ast_to_flow: filter a directive");
         starti
