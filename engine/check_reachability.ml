@@ -88,12 +88,13 @@ let create_formulas _ =
 	    (node,
 	     Ast_ctl.AF(Ast_ctl.BACKWARD,Ast_ctl.NONSTRICT,
 			Ast_ctl.Or(or_roots,Ast_ctl.Pred(After))),
+	     let nonroot = Ast_ctl.Not(or_roots) in
 	     Ast_ctl.And
 	       (Ast_ctl.NONSTRICT,
-		Ast_ctl.Not(or_roots),
+		nonroot,
 		Ast_ctl.EX
 		  (Ast_ctl.BACKWARD,
-		   Ast_ctl.EU(Ast_ctl.BACKWARD,or_roots,match_node))))
+		   Ast_ctl.EU(Ast_ctl.BACKWARD,nonroot,match_node))))
 	   (*exef
 	      (wrap(Ast_ctl.And(Ast_ctl.NONSTRICT,match_node,exef(roots))))*)
 	  :: acc)
