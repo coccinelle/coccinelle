@@ -1015,8 +1015,9 @@ and pp_string_format (e,ii) =
 
   and pp_param param =
     let {p_namei = nameopt;
-         p_register = (b,iib);
-         p_type=t;} = param in
+	  p_register = (b,iib);
+	  p_type=t;
+	  p_endattr=endattr} = param in
 
     iib +> List.iter pr_elem;
 
@@ -1025,7 +1026,7 @@ and pp_string_format (e,ii) =
         pp_type t
     | Some name ->
 	pp_type_with_ident (Some (function _ -> pp_name name))
-	  None t Ast_c.noattr
+	  None t endattr
 
   and pp_params (ts, (b, iib)) =
     pp_param_list ts;
