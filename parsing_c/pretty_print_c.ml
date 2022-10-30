@@ -574,7 +574,14 @@ and pp_string_format (e,ii) =
     fun (qu, attr, (ty, iity)) sto ->
       let ii_is_before =
 	if iity = []
-	then (fun ii -> true)
+	then
+	  let iis =
+	    Lib_parsing_c.ii_of_type(nQ,[],(ty, iity)) in
+	  if iis = []
+	  then (fun ii -> true)
+	  else
+	    let ii0 = List.hd iis in
+	    (fun ii -> Ast_c.compare_pos ii ii0 < 0)
 	else
 	  let ii0 = List.hd iity in
 	  (fun ii -> Ast_c.compare_pos ii ii0 < 0) in
@@ -685,16 +692,18 @@ and pp_string_format (e,ii) =
       | (TypeName (name,typ), noii) ->
           assert (noii = []);
           let (_s, iis) = get_s_and_info_of_name name in
-          print_sto_qu (fun _ -> print_order_ty [iis]);
+          print_sto_qu
+	    (fun _ ->
+	      print_order_ty [iis];
 
-          if !Flag_parsing_c.pretty_print_typedef_value
-          then begin
-            pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "{*");
-            typ +> Common.do_option (fun typ ->
-                pp_type typ;
-            );
-            pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
-          end;
+              if !Flag_parsing_c.pretty_print_typedef_value
+              then begin
+		pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "{*");
+		typ +> Common.do_option (fun typ ->
+                  pp_type typ;
+		  );
+		pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
+              end)
 
       | (FieldType (t, _, _), iis) ->
 	  pp_base_type t sto
