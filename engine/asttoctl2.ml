@@ -159,7 +159,7 @@ let funpred     = predmaker false (Lib_engine.FunHeader,   CTL.Control)
 let unsbrpred   = predmaker false (Lib_engine.UnsafeBrace, CTL.Control)
 let toppred     = predmaker false (Lib_engine.Top,         CTL.Control)
 let exitpred    = predmaker false (Lib_engine.ErrorExit,   CTL.Control)
-let endpred     = predmaker false (Lib_engine.Exit,        CTL.Control)
+let endpred     = predmaker false (Lib_engine.PreExit,     CTL.Control)
 let preendpred  = predmaker false (Lib_engine.PreExit,     CTL.Control)
 let gotopred    = predmaker false (Lib_engine.Goto,        CTL.Control)
 let inlooppred  = predmaker false (Lib_engine.InLoop,      CTL.Control)
@@ -2434,7 +2434,7 @@ and statement stmt top after quantified minus_quantified
 	    Ast.rewrap rbrace(Ast.SeqEnd (Ast.make_mcode data))
 	| _ -> failwith "unexpected close brace" in
       let end_brace =
-	let exit = CTL.Pred (Lib_engine.Exit,CTL.Control) in
+	let exit = CTL.Pred (Lib_engine.PreExit,CTL.Control) in
 	let errorexit = CTL.Pred (Lib_engine.ErrorExit,CTL.Control) in
 	let fake_brace = CTL.Pred (Lib_engine.FakeBrace,CTL.Control) in
 	ctl_and
@@ -2756,7 +2756,7 @@ and force_inner_decl l formula =
        A function declaration has at least the function header, an open brance,
        and a close brace before the end *)
     ctl_and CTL.STRICT
-      (ctl_not(ctl_ex(ctl_ex(CTL.Pred (Lib_engine.Exit,CTL.Control)))))
+      (ctl_not(ctl_ex(ctl_ex(ctl_ex(CTL.Pred (Lib_engine.Exit,CTL.Control))))))
       formula
   else formula
 
