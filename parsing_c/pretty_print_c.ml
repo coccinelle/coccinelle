@@ -572,6 +572,12 @@ and pp_string_format (e,ii) =
 
   and (pp_base_type: fullType -> (storage * il) option -> unit) =
     fun (qu, attr, (ty, iity)) sto ->
+      let ii_is_before =
+	if iity = []
+	then (fun ii -> true)
+	else
+	  let ii0 = List.hd iity in
+	  (fun ii -> Ast_c.compare_pos ii ii0 < 0) in
       let get_aux_positions sto (qu, iiqu) attrs =
 	let sto_info =
 	  match sto with
@@ -586,19 +592,21 @@ and pp_string_format (e,ii) =
 	      let iis = Lib_parsing_c.ii_of_attr attr in
 	      (List.hd iis, fun _ -> pp_attribute attr))
 	    attrs in
-	sto_info @ qu_info @ attr_info in
+	(* separate before type and after type *)
+	List.partition (fun (ii',fn) -> ii_is_before ii')
+	  (sto_info @ qu_info @ attr_info) in
 
       let print_ii_list info =
 	List.sort (fun (i1,_) (i2,_) -> Ast_c.compare_pos i1 i2) info +>
 	Common.print_between pr_space (fun (_,pr) -> pr()) in
 
-      let print_sto_qu _ =
-	print_ii_list (get_aux_positions sto qu attr) in
+      let print_sto_qu print_type =
+	let (beforeii,afterii) = get_aux_positions sto qu attr in
+	print_ii_list beforeii; print_type(); print_ii_list afterii in
 
-      let print_sto_qu_ty ii =
-	let sto_qu = get_aux_positions sto qu attr in
+      let print_order_ty ii =
 	let ty = List.map (fun i -> (i,fun _ -> pr_elem i)) ii in
-	print_ii_list (sto_qu@ty) in
+	print_ii_list ty in
 
       match ty, iity with
       |	(NoType,_) -> ()
@@ -609,31 +617,29 @@ and pp_string_format (e,ii) =
           pp_base_type returnt sto
 
       | (StructUnion (su, sopt, base_classes, fields),iis) ->
-          print_sto_qu();
+          print_sto_qu
+	    (fun _ ->
+              (match sopt,iis with
+              | Some s , [su;id;dotdot;lb;rb] ->
+		  pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem dotdot;
+		  pp_list pp_base_class base_classes; pr_space(); pr_elem lb
+              | Some s , [su;id;lb;rb] ->
+		  pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem lb;
+              | None , [su;dotdot;lb;rb] ->
+		  pr_elem su; pr_space(); pr_elem dotdot; pr_space(); pr_elem lb;
+              | None, [su;lb;rb] ->
+		  pr_elem su; pr_space(); pr_elem lb;
+              | x -> raise (Impossible 101));
 
-          (match sopt,iis with
-          | Some s , [su;id;dotdot;lb;rb] ->
-              pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem dotdot;
-	      pp_list pp_base_class base_classes; pr_space(); pr_elem lb
-          | Some s , [su;id;lb;rb] ->
-              pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem lb;
-          | None , [su;dotdot;lb;rb] ->
-              pr_elem su; pr_space(); pr_elem dotdot; pr_space(); pr_elem lb;
-          | None, [su;lb;rb] ->
-              pr_elem su; pr_space(); pr_elem lb;
-          | x -> raise (Impossible 101)
-	  );
+              fields +> List.iter (fun x -> pr_nl(); pr_indent(); pp_field x);
+	      pr_nl();
 
-          fields +> List.iter (fun x -> pr_nl(); pr_indent(); pp_field x);
-	  pr_nl();
-
-          (match sopt,iis with
-          | Some s , [i1;i2;i3;i4;i5] -> pr_elem i5
-          | Some s , [i1;i2;i3;i4] ->    pr_elem i4
-          | None, [i1;i2;i3;i4] ->       pr_elem i4
-          | None, [i1;i2;i3] ->          pr_elem i3
-          | x -> raise (Impossible 102)
-	  )
+              (match sopt,iis with
+              | Some s , [i1;i2;i3;i4;i5] -> pr_elem i5
+              | Some s , [i1;i2;i3;i4] ->    pr_elem i4
+              | None, [i1;i2;i3;i4] ->       pr_elem i4
+              | None, [i1;i2;i3] ->          pr_elem i3
+              | x -> raise (Impossible 102)))
 
       | (EnumDef  ((_qu,_attr,enident), base, enumt), iis) ->
 	  pp_base_type (qu, attr, enident) sto;
@@ -662,24 +668,24 @@ and pp_string_format (e,ii) =
 	  |  _ -> raise (Impossible 1031))
 
       | (BaseType _, iis) ->
-          print_sto_qu_ty iis;
+          print_sto_qu (fun _ -> print_order_ty iis)
 
       | (StructUnionName (s, structunion), iis) ->
           assert (List.length iis = 2);
-          print_sto_qu_ty iis;
+          print_sto_qu (fun _ -> print_order_ty iis)
 
-      | (EnumName  (key, s), ii) ->
-          print_sto_qu_ty ii
+      | (EnumName  (key, s), iis) ->
+          print_sto_qu (fun _ -> print_order_ty iis)
   
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
-	  print_sto_qu_ty [dec];
+          print_sto_qu (fun _ -> print_order_ty [dec]);
 	  pr_elem lp; pp_expression l; pr_elem cm;
 	  do_option pp_expression p; pr_elem rp
 
       | (TypeName (name,typ), noii) ->
           assert (noii = []);
           let (_s, iis) = get_s_and_info_of_name name in
-          print_sto_qu_ty [iis];
+          print_sto_qu (fun _ -> print_order_ty [iis]);
 
           if !Flag_parsing_c.pretty_print_typedef_value
           then begin
@@ -694,25 +700,26 @@ and pp_string_format (e,ii) =
 	  pp_base_type t sto
 
       | (TypeOfExpr (e), iis) ->
-          print_sto_qu();
-          (match iis with
-          | [itypeof;iopar;icpar] ->
-              pr_elem itypeof; pr_elem iopar;
-              pp_expression e;
-              pr_elem icpar;
-          | _ -> raise (Impossible 105)
-          )
+          print_sto_qu
+	    (fun _ ->
+              match iis with
+              | [itypeof;iopar;icpar] ->
+		  pr_elem itypeof; pr_elem iopar;
+		  pp_expression e;
+		  pr_elem icpar;
+              | _ -> raise (Impossible 105))
 
       | (TypeOfType (t), iis) ->
-          print_sto_qu();
-          (match iis with
-          | [itypeof;iopar;icpar] ->
-              pr_elem itypeof; pr_elem iopar;
-              pp_type t;
-              pr_elem icpar;
-          | _ -> raise (Impossible 106)
-	  )
-      | (AutoType, iis) -> print_sto_qu_ty iis
+          print_sto_qu
+	    (fun _ ->
+              match iis with
+              | [itypeof;iopar;icpar] ->
+		  pr_elem itypeof; pr_elem iopar;
+		  pp_type t;
+		  pr_elem icpar;
+              | _ -> raise (Impossible 106))
+      | (AutoType, iis) ->
+          print_sto_qu (fun _ -> print_order_ty iis)
 
       | (TemplateType(name,es),ii) ->
 	  let (i1,i2) = Common.tuple_of_list2 ii in
