@@ -883,8 +883,6 @@ and pp_string_format (e,ii) =
       | (AutoType, _)                           -> print_ident ident
       | (TemplateType _, _)                     -> print_ident ident
 
-
-
       | (Pointer t, [i]) ->
           (* subtil:  void ( *done)(int i)   is a Pointer
              (FunctionType (return=void, params=int i) *)
