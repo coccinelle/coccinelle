@@ -37,12 +37,14 @@ expression s.E;
 
 @a@
 declaration d;
+symbol x;
 @@
 
 -int x@d;
 
 @@
 declaration a.d;
+symbol y;
 @@
 
 int y;
