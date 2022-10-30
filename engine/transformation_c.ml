@@ -114,36 +114,47 @@ module XTRANS = struct
   (* When env is used in + code, have to strip it more to avoid circular
   references due to local variable information *)
 
+  let drop_exp_types = (* keep position information *)
+    { Visitor_c.default_visitor_c_s with
+      Visitor_c.kinfo_s = (fun (k,_) i ->
+	{ i with cocci_tag = ref Ast_c.emptyAnnot; }
+      );
+      Visitor_c.kexpr_s = (fun (k,_) e ->
+	let (e', ty),ii' = k e in
+	(e', Ast_c.noType()), ii'
+      );
+    }
+
   let clean_env env =
     List.map
       (function (v,vl) ->
 	match vl with
 	| Ast_c.MetaExprVal(e,ml,ty) ->
-	    (v,Ast_c.MetaExprVal(Lib_parsing_c.real_al_expr e,ml,ty))
+	    (v,Ast_c.MetaExprVal(Visitor_c.vk_expr_s drop_exp_types e,ml,ty))
 	| Ast_c.MetaExprListVal(es) ->
-	    (v,Ast_c.MetaExprListVal(Lib_parsing_c.real_al_arguments es))
+	    (v,Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s drop_exp_types es))
 	| Ast_c.MetaTypeVal(ty) ->
-	    (v,Ast_c.MetaTypeVal(Lib_parsing_c.real_al_type ty))
+	    (v,Ast_c.MetaTypeVal(Visitor_c.vk_type_s drop_exp_types ty))
 	| Ast_c.MetaInitVal(i) ->
-	    (v,Ast_c.MetaInitVal(Lib_parsing_c.real_al_init i))
+	    (v,Ast_c.MetaInitVal(Visitor_c.vk_ini_s drop_exp_types i))
 	| Ast_c.MetaInitListVal(newlines,is) ->
-	    (v,Ast_c.MetaInitListVal(newlines,Lib_parsing_c.real_al_inits is))
+	    (v,Ast_c.MetaInitListVal(newlines,Visitor_c.vk_inis_s drop_exp_types is))
 	| Ast_c.MetaDeclVal(d,original) ->
 	    (v,
 	     Ast_c.MetaDeclVal
-	       (Lib_parsing_c.real_al_decl d,
-		Lib_parsing_c.real_al_decl_with_comments original))
+	       (Visitor_c.vk_decl_s drop_exp_types d,
+		Visitor_c.vk_decl_s drop_exp_types original))
 	| Ast_c.MetaStmtVal(s,original,ty) ->
 	    (v,
 	     Ast_c.MetaStmtVal
-	       (Lib_parsing_c.real_al_statement s,
-		Lib_parsing_c.real_al_statement_with_comments original,ty))
+	       (Visitor_c.vk_statement_s drop_exp_types s,
+		Visitor_c.vk_statement_s drop_exp_types original,ty))
 	(* These don't contain local variables, but the cocci_tag field
 	   causes problems too.  Why is this not needd for other metavars? *)
 	| Ast_c.MetaAssignOpVal(b) ->
-	    (v,Ast_c.MetaAssignOpVal(Lib_parsing_c.real_al_assignop b))
+	    (v,Ast_c.MetaAssignOpVal(Visitor_c.vk_assignOp_s drop_exp_types b))
 	| Ast_c.MetaBinaryOpVal(b) ->
-	    (v,Ast_c.MetaBinaryOpVal(Lib_parsing_c.real_al_binop b))
+	    (v,Ast_c.MetaBinaryOpVal(Visitor_c.vk_binaryOp_s drop_exp_types b))
 	| _ -> (v,vl))
       env
 
