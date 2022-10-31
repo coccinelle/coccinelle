@@ -27,3 +27,8 @@ val mysat :
 
 
 val print_bench : unit -> unit
+
+val same_env : (* for the top level *)
+    (Ast_cocci.meta_name * Ast_c.metavar_binding_kind) list ->
+      (Ast_cocci.meta_name * Ast_c.metavar_binding_kind) list ->
+	bool

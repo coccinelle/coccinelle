@@ -656,3 +656,16 @@ let (mysat2:
 
 let mysat a b c =
   Common.profile_code "mysat" (fun () -> mysat2 a b c)
+
+let same_env e1 e2 =
+  let rec loop e1 e2 =
+    match (e1,e2) with
+      ((x1,x1v)::rest1,(x2,x2v)::rest2) ->
+	ENV.eq_mvar x1 x2 &&
+	ENV.eq_val
+	  (Lib_engine.NormalMetaVal x1v)
+	  (Lib_engine.NormalMetaVal x2v) &&
+	loop rest1 rest2
+    | ([],[]) -> true
+    | _ -> false in
+  loop e1 e2
