@@ -533,7 +533,7 @@ let rec expression e =
 
   | Ast.MetaExpr (name,_,_,_typedontcare,_formdontcare,_,_bitfield) ->
       handle_metavar name (function
-        | Ast_c.MetaExprVal ((((e, _), _) as exp),_,_) ->
+        | Ast_c.MetaExprVal (_,(((e, _), _) as exp),_,_) ->
 	    if prec_of_c e < prec then
 	      begin
 		print_text "(";
@@ -547,7 +547,7 @@ let rec expression e =
 
   | Ast.MetaExprList (name,_,_,_,_) ->
       handle_metavar name (function
-        | Ast_c.MetaExprListVal args ->
+        | Ast_c.MetaExprListVal(_,args) ->
             pretty_print_c.Pretty_print_c.arg_list args
 	| Ast_c.MetaParamListVal _ ->
 	    failwith "have meta param list matching meta exp list\n";
@@ -749,7 +749,7 @@ and print_attr_arg arg =
   | Ast.MetaAttr(name,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaAttrArgVal a ->
+	    Ast_c.MetaAttrArgVal(_,a) ->
               pretty_print_c.Pretty_print_c.attr_arg a
           | _ -> error name arg "attr_arg value expected")
 
@@ -807,8 +807,8 @@ and typeC endattrs ty =
   | Ast.AutoType(auto) -> mcode print_string auto
   | Ast.MetaType(name,_,_,_) ->
       handle_metavar name  (function
-          Ast_c.MetaTypeVal exp ->
-            pretty_print_c.Pretty_print_c.ty exp
+          Ast_c.MetaTypeVal(_,ty) ->
+            pretty_print_c.Pretty_print_c.ty ty
         | _ -> error name ty "type value expected")
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
@@ -931,8 +931,9 @@ and print_named_type ty id =
            *)
           let (a,info,b,c) = name in
           let (res,name_string,line,lcol,rcol) = lookup_metavar name in
-          let (info_new,straft) = match res with
-              Some (Ast_c.MetaTypeVal ty) ->
+          let (info_new,straft) =
+	    match res with
+              Some (Ast_c.MetaTypeVal(_,ty)) ->
                 let (qu, iiqu), attrs, (tyy, iity) = ty in
                 (match tyy with
                     Ast_c.Pointer _
@@ -941,7 +942,7 @@ and print_named_type ty id =
                   | _ -> info,[])
             | _ -> error name ty "type value expected" in
           handle_metavar (a,info_new,b,c) (function
-              Ast_c.MetaTypeVal ty ->
+              Ast_c.MetaTypeVal(_,ty) ->
 		pretty_print_c.Pretty_print_c.type_with_ident ty
 		  (function _ -> id())
             | _ -> error name ty "type value expected")
@@ -978,7 +979,7 @@ and ft_space ty =
 		failwith
 		  (Printf.sprintf "variable %s not known on SP line %d\n"
 		     name_string line)
-	    | Some (Ast_c.MetaTypeVal (tq,attrs,ty)) ->
+	    | Some (Ast_c.MetaTypeVal(_,(tq,attrs,ty))) ->
 		(match Ast_c.unwrap ty with
 		  Ast_c.Pointer(_,_,_) ->  true
 		| _ -> false)
@@ -1064,14 +1065,14 @@ and field d =
     Ast.MetaField(name,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaFieldVal f ->
+	    Ast_c.MetaFieldVal(_,f) ->
 	      pretty_print_c.Pretty_print_c.field f
 	  | _ -> error name d "field value expected")
 
   | Ast.MetaFieldList(name,_,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaFieldListVal f ->
+	    Ast_c.MetaFieldListVal(_,f) ->
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
 	  | _ -> error name d "field list value expected")
   | Ast.Field(ty,id,bf,sem) ->
@@ -1119,7 +1120,7 @@ and oneline i =
     Ast.MetaInitList(name,_,_,_,_) ->
       let (res,name_string,line,lcol,rcol) = lookup_metavar name in
       (match res with
-	Some (Ast_c.MetaInitListVal (newlines,ini)) ->
+	Some (Ast_c.MetaInitListVal (newlines,_,ini)) ->
 	  newlines = Ast_c.Compress
       | _ -> false)
   | _ -> true
@@ -1128,12 +1129,12 @@ and initialiser nlcomma i =
   match Ast.unwrap i with
     Ast.MetaInit(name,_,_,_) ->
       handle_metavar name  (function
-          Ast_c.MetaInitVal ini ->
+          Ast_c.MetaInitVal(_,ini) ->
             pretty_print_c.Pretty_print_c.init ini
         | _ -> error name i "initialiser value expected")
   | Ast.MetaInitList(name,_,_,_,_) ->
       handle_metavar name  (function
-          Ast_c.MetaInitListVal (newlines,ini) ->
+          Ast_c.MetaInitListVal (newlines,_,ini) ->
 	    pretty_print_c.Pretty_print_c.init_list (newlines,ini)
         | _ -> error name i "initialiser list value expected")
   | Ast.AsInit(init,asinit) -> initialiser nlcomma init
@@ -1206,13 +1207,13 @@ and parameterTypeDef p =
   | Ast.MetaParam(name,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaParamVal p ->
+	    Ast_c.MetaParamVal(_,p) ->
               pretty_print_c.Pretty_print_c.param p
           | _ -> error name p "parameter value expected")
   | Ast.MetaParamList(name,_,_,_,_) ->
       handle_metavar name
 	(function
-	    Ast_c.MetaParamListVal p ->
+	    Ast_c.MetaParamListVal(_,p) ->
               pretty_print_c.Pretty_print_c.paramlist p
           | _ -> error name p "parameter list value expected")
 
@@ -1364,7 +1365,7 @@ and rule_elem arity re =
 
   | Ast.MetaStmtList(name,_,_,_,_) ->
       handle_metavar name (function
-        | Ast_c.MetaStmtListVal(statxs,_) ->
+        | Ast_c.MetaStmtListVal(_,statxs,_) ->
             pretty_print_c.Pretty_print_c.statement_seq_list statxs
         | _ -> error name re "statement list value expected")
   | Ast.AsRe(re,asre) -> rule_elem arity re

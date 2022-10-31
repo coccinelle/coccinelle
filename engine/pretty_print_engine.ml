@@ -17,36 +17,36 @@ let rec pp_binding_kind = function
   | Ast_c.MetaIdVal        s -> pp ("id " ^ s)
   | Ast_c.MetaFuncVal      s -> pp ("func " ^ s)
   | Ast_c.MetaLocalFuncVal s -> pp ("localfunc " ^ s)
-  | Ast_c.MetaExprVal    (expr,_,_) -> Pretty_print_c.pp_expression_simple expr
+  | Ast_c.MetaExprVal    (_,expr,_,_) -> Pretty_print_c.pp_expression_simple expr
   | Ast_c.MetaAssignOpVal op        ->
       pp "meta assign op ";
       Pretty_print_c.pp_assignOp_simple op
   | Ast_c.MetaBinaryOpVal op        ->
       pp "meta binary op ";
       Pretty_print_c.pp_binaryOp_simple op
-  | Ast_c.MetaExprListVal  expr_list ->
+  | Ast_c.MetaExprListVal  (_,expr_list) ->
       Pretty_print_c.pp_arg_list_simple expr_list
-  | Ast_c.MetaInitVal      ini ->
+  | Ast_c.MetaInitVal      (_,ini) ->
       Pretty_print_c.pp_init_simple ini
-  | Ast_c.MetaInitListVal      (_,ini) -> pp "<<initlist>>"
-  | Ast_c.MetaTypeVal      typ ->
+  | Ast_c.MetaInitListVal      (_,_,ini) -> pp "<<initlist>>"
+  | Ast_c.MetaTypeVal      (_,typ) ->
       Pretty_print_c.pp_type_simple typ
-  | Ast_c.MetaDeclVal      (decl,_) ->
+  | Ast_c.MetaDeclVal      (_,decl) ->
       Pretty_print_c.pp_decl_simple decl
-  | Ast_c.MetaFieldVal      decl ->
+  | Ast_c.MetaFieldVal      (_,decl) ->
       Pretty_print_c.pp_field_simple decl
-  | Ast_c.MetaFieldListVal      decls ->
+  | Ast_c.MetaFieldListVal      (_,decls) ->
       List.iter Pretty_print_c.pp_field_simple decls
-  | Ast_c.MetaStmtVal      (statement,_,_) ->
+  | Ast_c.MetaStmtVal      (_,statement,_) ->
       Pretty_print_c.pp_statement_simple statement
-  | Ast_c.MetaStmtListVal      (statxs,_) ->
+  | Ast_c.MetaStmtListVal      (_,statxs,_) ->
       Pretty_print_c.pp_statement_seq_list_simple statxs
   | Ast_c.MetaFmtVal fmt -> Pretty_print_c.pp_string_format_simple fmt
-  | Ast_c.MetaAttrArgVal arg -> Pretty_print_c.pp_attr_arg_simple arg
+  | Ast_c.MetaAttrArgVal (_,arg) -> Pretty_print_c.pp_attr_arg_simple arg
   | Ast_c.MetaFragListVal frags ->
       frags +> (List.iter Pretty_print_c.pp_string_fragment_simple)
-  | Ast_c.MetaParamVal     params -> pp "<<param>>"
-  | Ast_c.MetaParamListVal params -> pp "<<paramlist>>"
+  | Ast_c.MetaParamVal     (_,params) -> pp "<<param>>"
+  | Ast_c.MetaParamListVal (_,params) -> pp "<<paramlist>>"
   | Ast_c.MetaDParamListVal params -> pp "<<define_paramlist>>"
   | Ast_c.MetaListlenVal n -> pp (string_of_int n)
   | Ast_c.MetaPosVal (pos1, pos2) ->

@@ -21,26 +21,26 @@ let stringrep = function
 | Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
-| Ast_c.MetaExprVal      (expr,_,_) -> exprrep expr
-| Ast_c.MetaExprListVal  expr_list ->
+| Ast_c.MetaExprVal      (_,expr,_,_) -> exprrep expr
+| Ast_c.MetaExprListVal  (_,expr_list) ->
     call_pretty Pretty_print_c.pp_arg_list_gen expr_list
-| Ast_c.MetaTypeVal      typ -> call_pretty Pretty_print_c.pp_type_gen typ
-| Ast_c.MetaInitVal      ini -> call_pretty Pretty_print_c.pp_init_gen ini
-| Ast_c.MetaInitListVal  (newlines,ini) ->
+| Ast_c.MetaTypeVal      (_,typ) -> call_pretty Pretty_print_c.pp_type_gen typ
+| Ast_c.MetaInitVal      (_,ini) -> call_pretty Pretty_print_c.pp_init_gen ini
+| Ast_c.MetaInitListVal  (newlines,_,ini) ->
     call_pretty Pretty_print_c.pp_init_list_gen (newlines,ini)
-| Ast_c.MetaDeclVal      (declaration,_) ->
+| Ast_c.MetaDeclVal      (_,declaration) ->
     call_pretty Pretty_print_c.pp_decl_gen declaration
-| Ast_c.MetaFieldVal      field ->
+| Ast_c.MetaFieldVal      (_,field) ->
     call_pretty Pretty_print_c.pp_field_gen field
-| Ast_c.MetaFieldListVal field ->
+| Ast_c.MetaFieldListVal (_,field) ->
     call_pretty Pretty_print_c.pp_field_list_gen field
-| Ast_c.MetaStmtVal      (statement,_,_) ->
+| Ast_c.MetaStmtVal      (_,statement,_) ->
     call_pretty Pretty_print_c.pp_statement_gen statement
-| Ast_c.MetaStmtListVal      (statxs,_) ->
+| Ast_c.MetaStmtListVal      (_,statxs,_) ->
     call_pretty Pretty_print_c.pp_statement_seq_list_gen statxs
-| Ast_c.MetaParamVal     param ->
+| Ast_c.MetaParamVal     (_,param) ->
     call_pretty Pretty_print_c.pp_param_gen param
-| Ast_c.MetaParamListVal params ->
+| Ast_c.MetaParamListVal (_,params) ->
     call_pretty Pretty_print_c.pp_param_list_gen params
 | Ast_c.MetaDParamListVal params ->
     call_pretty Pretty_print_c.pp_define_param_list_gen params
@@ -48,7 +48,7 @@ let stringrep = function
     call_pretty0 Pretty_print_c.pp_string_fragment_list_gen frags
 | Ast_c.MetaFmtVal fmt ->
     call_pretty0 Pretty_print_c.pp_string_format_gen fmt
-| Ast_c.MetaAttrArgVal name ->
+| Ast_c.MetaAttrArgVal (_,name) ->
     call_pretty0 Pretty_print_c.pp_attr_arg_gen name
 | Ast_c.MetaListlenVal n -> string_of_int n
 | Ast_c.MetaPosVal (pos1, pos2) ->

@@ -420,7 +420,7 @@ module XMATCH = struct
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->
 	      success(Ast_c.MetaLocalFuncVal a) (*more?*)
-          | Ast_c.MetaExprVal (a,c,ty) ->
+          | Ast_c.MetaExprVal (a,original,c,ty) ->
 	      (* c in the value is only to prepare for the future in which
 		 we figure out how to have subterm constraints on unbound
 		 variables.  Now an environment will only contain expression
@@ -432,13 +432,13 @@ module XMATCH = struct
 		else Lib_parsing_c.semi_al_expr a in
 	      let inh_stripped = Lib_parsing_c.al_inh_expr a in
 	      let rec loop = function
-		  [] -> success(Ast_c.MetaExprVal(stripped,[],ty))
+		  [] -> success(Ast_c.MetaExprVal(stripped,original,[],ty))
 		| c::cs ->
 		    let tmp =
 		      Common.optionise
 			(fun () -> tin.binding0 +> List.assoc c) in
 		    (match tmp with
-		      Some (Ast_c.MetaExprVal(v,_,_)) ->
+		      Some (Ast_c.MetaExprVal(v,_,_,_)) ->
 			if C_vs_c.subexpression_of_expression inh_stripped v
 			then loop cs (* forget satisfied constraints *)
 			else None (* failure *)
@@ -447,12 +447,12 @@ module XMATCH = struct
 			 doesn't exist *)
 		    | None -> None) in
 	      loop c
-          | Ast_c.MetaExprListVal a ->
-	      success
-		(Ast_c.MetaExprListVal
-		   (if strip
-		   then Lib_parsing_c.al_arguments a
-		   else Lib_parsing_c.semi_al_arguments a))
+          | Ast_c.MetaExprListVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_arguments a
+		else Lib_parsing_c.semi_al_arguments a in
+	      success(Ast_c.MetaExprListVal(stripped,original))
 
           | Ast_c.MetaDeclVal(a,original) ->
 	      let stripped =
@@ -460,66 +460,65 @@ module XMATCH = struct
 		then Lib_parsing_c.al_declaration a
 		else Lib_parsing_c.semi_al_declaration a in
 	      success(Ast_c.MetaDeclVal(stripped,original))
-          | Ast_c.MetaFieldVal a ->
-	      success
-		(Ast_c.MetaFieldVal
-		   (if strip
-		   then Lib_parsing_c.al_field a
-		   else Lib_parsing_c.semi_al_field a))
-          | Ast_c.MetaFieldListVal a ->
-	      success
-		(Ast_c.MetaFieldListVal
-		   (if strip
-		   then Lib_parsing_c.al_fields a
-		   else Lib_parsing_c.semi_al_fields a))
+          | Ast_c.MetaFieldVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_field a
+		else Lib_parsing_c.semi_al_field a in
+	      success(Ast_c.MetaFieldVal(stripped,original))
+          | Ast_c.MetaFieldListVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_fields a
+		else Lib_parsing_c.semi_al_fields a in
+	      success(Ast_c.MetaFieldListVal(stripped,original))
           | Ast_c.MetaStmtVal(a,original,ty) ->
 	      let stripped =
 		if strip
 		then Lib_parsing_c.al_statement a
 		else Lib_parsing_c.semi_al_statement a in
 	      success(Ast_c.MetaStmtVal(stripped,original,ty))
-          | Ast_c.MetaStmtListVal(a,ty) ->
+          | Ast_c.MetaStmtListVal(a,original,ty) ->
 	      let stripped =
 		if strip
 		then Lib_parsing_c.al_statement_seq_list a
 		else Lib_parsing_c.semi_al_statement_seq_list a in
-	      success(Ast_c.MetaStmtListVal(stripped,ty))
-          | Ast_c.MetaTypeVal a ->
-	      success
-		(Ast_c.MetaTypeVal
-		   (if strip
-		   then Lib_parsing_c.al_type a
-		   else Lib_parsing_c.semi_al_type a))
+	      success(Ast_c.MetaStmtListVal(stripped,original,ty))
+          | Ast_c.MetaTypeVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_type a
+		else Lib_parsing_c.semi_al_type a in
+	      success(Ast_c.MetaTypeVal(stripped,original))
 
-          | Ast_c.MetaInitVal a ->
-	      success
-		(Ast_c.MetaInitVal
-		   (if strip
-		   then Lib_parsing_c.al_init a
-		   else Lib_parsing_c.semi_al_init a))
+          | Ast_c.MetaInitVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_init a
+		else Lib_parsing_c.semi_al_init a in
+	      success(Ast_c.MetaInitVal(stripped,original))
 
-          | Ast_c.MetaInitListVal (newlines,a) ->
-	      success
-		(Ast_c.MetaInitListVal
-		   (newlines,
-		    (if strip
-		    then Lib_parsing_c.al_inits a
-		    else Lib_parsing_c.semi_al_inits a)))
+          | Ast_c.MetaInitListVal (newlines,a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_inits a
+		else Lib_parsing_c.semi_al_inits a in
+	      success(Ast_c.MetaInitListVal(newlines,stripped,original))
 
           | Ast_c.MetaListlenVal a -> success(Ast_c.MetaListlenVal a)
 
-          | Ast_c.MetaParamVal a ->
-	      success
-		(Ast_c.MetaParamVal
-		   (if strip
-		   then Lib_parsing_c.al_param a
-		   else Lib_parsing_c.semi_al_param a))
-          | Ast_c.MetaParamListVal a ->
-	      success
-		(Ast_c.MetaParamListVal
-		   (if strip
-		   then Lib_parsing_c.al_params a
-		   else Lib_parsing_c.semi_al_params a))
+          | Ast_c.MetaParamVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_param a
+		else Lib_parsing_c.semi_al_param a in
+	      success(Ast_c.MetaParamVal(stripped,original))
+          | Ast_c.MetaParamListVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_params a
+		else Lib_parsing_c.semi_al_params a in
+	      success(Ast_c.MetaParamListVal(stripped,original))
 
           | Ast_c.MetaDParamListVal a ->
 	      success
@@ -540,12 +539,12 @@ module XMATCH = struct
 		   (if strip
 		   then Lib_parsing_c.al_string_format a
 		   else Lib_parsing_c.semi_al_string_format a))
-          | Ast_c.MetaAttrArgVal a ->
-	      success
-		(Ast_c.MetaAttrArgVal
-		   (if strip
-		   then Lib_parsing_c.al_attr_arg a
-		   else Lib_parsing_c.semi_al_attr_arg a))
+          | Ast_c.MetaAttrArgVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_attr_arg a
+		else Lib_parsing_c.semi_al_attr_arg a in
+	      success(Ast_c.MetaAttrArgVal(stripped,original))
 
           | Ast_c.MetaPosVal (pos1,pos2) ->
 	      success(Ast_c.MetaPosVal (pos1,pos2))

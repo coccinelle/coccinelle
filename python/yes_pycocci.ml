@@ -340,13 +340,13 @@ let construct_variables mv e =
        let id_repr = instantiate_Identifier(id) in
        let _ = build_variable py id_repr in
        () *)
-    | Some (_, Ast_c.MetaExprListVal (exprlist)) ->
+    | Some (_, Ast_c.MetaExprListVal (_,exprlist)) ->
 	instantiate_term_list py Pycocci_aux.exprlistrep exprlist
-    | Some (_, Ast_c.MetaParamListVal (paramlist)) ->
+    | Some (_, Ast_c.MetaParamListVal (_,paramlist)) ->
 	instantiate_term_list py Pycocci_aux.paramlistrep paramlist
-    | Some (_, Ast_c.MetaInitListVal (newlines,initlist)) ->
+    | Some (_, Ast_c.MetaInitListVal (newlines,_,initlist)) ->
 	instantiate_term_list py Pycocci_aux.initlistrep (newlines,initlist)
-    | Some (_, Ast_c.MetaFieldListVal (fieldlist)) ->
+    | Some (_, Ast_c.MetaFieldListVal (_,fieldlist)) ->
 	instantiate_term_list py Pycocci_aux.fieldlistrep fieldlist
     | Some (_, Ast_c.MetaPosValList l) ->
        let locs =

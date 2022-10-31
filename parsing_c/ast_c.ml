@@ -851,24 +851,24 @@ and metavars_binding = (Ast_cocci.meta_name, metavar_binding_kind) assoc
   | MetaFuncVal      of string
   | MetaLocalFuncVal of string
 
-  | MetaExprVal      of expression (* a "clean expr" *) *
+  | MetaExprVal      of expression (* a "clean expr" *) * expression (* original expr *) *
 	                (*subterm constraints, currently exprs*)
 	                Ast_cocci.meta_name list * stripped
-  | MetaExprListVal  of argument wrap2 list
-  | MetaParamVal     of parameterType
-  | MetaParamListVal of parameterType wrap2 list
+  | MetaExprListVal  of argument wrap2 list * argument wrap2 list
+  | MetaParamVal     of parameterType * parameterType
+  | MetaParamListVal of parameterType wrap2 list * parameterType wrap2 list
 
-  | MetaTypeVal      of fullType
-  | MetaInitVal      of initialiser
-  | MetaInitListVal  of newlines * initialiser wrap2 list
+  | MetaTypeVal      of fullType * fullType
+  | MetaInitVal      of initialiser * initialiser
+  | MetaInitListVal  of newlines * initialiser wrap2 list * initialiser wrap2 list
   | MetaDeclVal      of declaration * declaration
-  | MetaFieldVal     of field
-  | MetaFieldListVal of field list
+  | MetaFieldVal     of field * field
+  | MetaFieldListVal of field list * field list
   | MetaStmtVal      of statement * statement * stripped
-  | MetaStmtListVal  of statement_sequencable list * stripped
+  | MetaStmtListVal  of statement_sequencable list * statement_sequencable list * stripped
   | MetaDParamListVal of (string wrap) wrap2 list
   | MetaFmtVal       of string_format
-  | MetaAttrArgVal   of attr_arg
+  | MetaAttrArgVal   of attr_arg * attr_arg
   | MetaFragListVal  of string_fragment list
   | MetaAssignOpVal  of assignOp
   | MetaBinaryOpVal  of binaryOp

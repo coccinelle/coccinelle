@@ -222,14 +222,14 @@ let equal_metavarval valu valu' =
    * just isomorphisms). => TODO call isomorphism_c_c instead of
    * =. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
-  | Ast_c.MetaExprVal (a,_,_), Ast_c.MetaExprVal (b,_,_) ->
+  | Ast_c.MetaExprVal (a,_,_,_), Ast_c.MetaExprVal (b,_,_,_) ->
       Lib_parsing_c.al_expr a = Lib_parsing_c.al_expr b
-  | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
+  | Ast_c.MetaExprListVal(a,_), Ast_c.MetaExprListVal(b,_) ->
       Lib_parsing_c.al_arguments a = Lib_parsing_c.al_arguments b
 
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
       Lib_parsing_c.al_string_format a = Lib_parsing_c.al_string_format b
-  | Ast_c.MetaAttrArgVal a, Ast_c.MetaAttrArgVal b ->
+  | Ast_c.MetaAttrArgVal(a,_), Ast_c.MetaAttrArgVal(b,_) ->
       Lib_parsing_c.al_attr_arg a = Lib_parsing_c.al_attr_arg b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
       Lib_parsing_c.al_string_fragments a =
@@ -237,30 +237,30 @@ let equal_metavarval valu valu' =
 
   | Ast_c.MetaDeclVal(a,_), Ast_c.MetaDeclVal(b,_) ->
       Lib_parsing_c.al_declaration a = Lib_parsing_c.al_declaration b
-  | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
+  | Ast_c.MetaFieldVal(a,_), Ast_c.MetaFieldVal(b,_) ->
       Lib_parsing_c.al_field a = Lib_parsing_c.al_field b
-  | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
+  | Ast_c.MetaFieldListVal(a,_), Ast_c.MetaFieldListVal(b,_) ->
       Lib_parsing_c.al_fields a = Lib_parsing_c.al_fields b
   | Ast_c.MetaStmtVal(a,_,_), Ast_c.MetaStmtVal(b,_,_) ->
       Lib_parsing_c.al_statement a = Lib_parsing_c.al_statement b
-  | Ast_c.MetaStmtListVal(a,_), Ast_c.MetaStmtListVal(b,_) ->
+  | Ast_c.MetaStmtListVal(a,_,_), Ast_c.MetaStmtListVal(b,_,_) ->
       Lib_parsing_c.al_statement_seq_list a =
       Lib_parsing_c.al_statement_seq_list b
-  | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
+  | Ast_c.MetaInitVal(a,_), Ast_c.MetaInitVal(b,_) ->
       Lib_parsing_c.al_init a = Lib_parsing_c.al_init b
-  | Ast_c.MetaInitListVal (_,a), Ast_c.MetaInitListVal (_,b) ->
+  | Ast_c.MetaInitListVal (_,a,_), Ast_c.MetaInitListVal (_,b,_) ->
       (* hope that the newline hints are the same, because no way
 	 to change the existing binding *)
       Lib_parsing_c.al_inits a = Lib_parsing_c.al_inits b
-  | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
+  | Ast_c.MetaTypeVal(a,_), Ast_c.MetaTypeVal(b,_) ->
       (* old: Lib_parsing_c.al_type a = Lib_parsing_c.al_type b *)
       C_vs_c.eq_type a b
 
   | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a = b
 
-  | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b ->
+  | Ast_c.MetaParamVal(a,_), Ast_c.MetaParamVal(b,_) ->
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
-  | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b ->
+  | Ast_c.MetaParamListVal(a,_), Ast_c.MetaParamListVal(b,_) ->
       Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
   | Ast_c.MetaDParamListVal a, Ast_c.MetaDParamListVal b ->
       Lib_parsing_c.al_define_params a = Lib_parsing_c.al_define_params b
@@ -316,17 +316,17 @@ let equal_inh_metavarval valu valu'=
    * just isomorphisms). => TODO call isomorphism_c_c instead of
    * =. Maybe would be easier to transform ast_c in ast_cocci
    * and call the iso engine of julia. *)
-  | Ast_c.MetaExprVal (a,_,ty1), Ast_c.MetaExprVal (b,_,ty2) ->
+  | Ast_c.MetaExprVal (a,_,_,ty1), Ast_c.MetaExprVal (b,_,_,ty2) ->
       if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
       then Lib_parsing_c.real_al_expr a = Lib_parsing_c.real_al_expr b
       else Lib_parsing_c.al_inh_expr a = Lib_parsing_c.al_inh_expr b
-  | Ast_c.MetaExprListVal a, Ast_c.MetaExprListVal b ->
+  | Ast_c.MetaExprListVal(a,_), Ast_c.MetaExprListVal(b,_) ->
       Lib_parsing_c.al_inh_arguments a = Lib_parsing_c.al_inh_arguments b
 
   | Ast_c.MetaFmtVal a, Ast_c.MetaFmtVal b ->
       Lib_parsing_c.al_inh_string_format a =
       Lib_parsing_c.al_inh_string_format b
-  | Ast_c.MetaAttrArgVal a, Ast_c.MetaAttrArgVal b ->
+  | Ast_c.MetaAttrArgVal(a,_), Ast_c.MetaAttrArgVal(b,_) ->
       Lib_parsing_c.al_inh_attr_arg a = Lib_parsing_c.al_inh_attr_arg b
   | Ast_c.MetaFragListVal a, Ast_c.MetaFragListVal b ->
       Lib_parsing_c.al_inh_string_fragments a =
@@ -334,16 +334,16 @@ let equal_inh_metavarval valu valu'=
 
   | Ast_c.MetaDeclVal(a,_), Ast_c.MetaDeclVal(b,_) ->
       Lib_parsing_c.al_inh_declaration a = Lib_parsing_c.al_inh_declaration b
-  | Ast_c.MetaFieldVal a, Ast_c.MetaFieldVal b ->
+  | Ast_c.MetaFieldVal(a,_), Ast_c.MetaFieldVal(b,_) ->
       Lib_parsing_c.al_inh_field a = Lib_parsing_c.al_inh_field b
-  | Ast_c.MetaFieldListVal a, Ast_c.MetaFieldListVal b ->
+  | Ast_c.MetaFieldListVal(a,_), Ast_c.MetaFieldListVal(b,_) ->
       Lib_parsing_c.al_inh_field_list a = Lib_parsing_c.al_inh_field_list b
   | Ast_c.MetaStmtVal(a,orig_a,ty1), Ast_c.MetaStmtVal(b,orig_b,ty2) ->
       if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
       then
 	Lib_parsing_c.real_al_statement a = Lib_parsing_c.real_al_statement b
       else Lib_parsing_c.al_inh_statement a = Lib_parsing_c.al_inh_statement b
-  | Ast_c.MetaStmtListVal(a,ty1), Ast_c.MetaStmtListVal(b,ty2) ->
+  | Ast_c.MetaStmtListVal(a,_,ty1), Ast_c.MetaStmtListVal(b,_,ty2) ->
       if ty1 = Ast_c.WITHOUT_TYPES || ty2 = Ast_c.WITHOUT_TYPES
       then
 	Lib_parsing_c.real_al_statement_seq_list a =
@@ -351,21 +351,21 @@ let equal_inh_metavarval valu valu'=
       else
 	Lib_parsing_c.al_inh_statement_seq_list a =
 	Lib_parsing_c.al_inh_statement_seq_list b
-  | Ast_c.MetaInitVal a, Ast_c.MetaInitVal b ->
+  | Ast_c.MetaInitVal(a,_), Ast_c.MetaInitVal(b,_) ->
       Lib_parsing_c.al_inh_init a = Lib_parsing_c.al_inh_init b
-  | Ast_c.MetaInitListVal (_,a), Ast_c.MetaInitListVal (_,b) ->
+  | Ast_c.MetaInitListVal (_,a,_), Ast_c.MetaInitListVal (_,b,_) ->
       (* hope that the newline hints are the same, because no way
 	 to change the existing binding *)
       Lib_parsing_c.al_inh_inits a = Lib_parsing_c.al_inh_inits b
-  | Ast_c.MetaTypeVal a, Ast_c.MetaTypeVal b ->
+  | Ast_c.MetaTypeVal(a,_), Ast_c.MetaTypeVal(b,_) ->
       (* old: Lib_parsing_c.al_inh_type a = Lib_parsing_c.al_inh_type b *)
       C_vs_c.eq_type a b
 
   | Ast_c.MetaListlenVal a, Ast_c.MetaListlenVal b -> a = b
 
-  | Ast_c.MetaParamVal a, Ast_c.MetaParamVal b ->
+  | Ast_c.MetaParamVal(a,_), Ast_c.MetaParamVal(b,_) ->
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
-  | Ast_c.MetaParamListVal a, Ast_c.MetaParamListVal b ->
+  | Ast_c.MetaParamListVal(a,_), Ast_c.MetaParamListVal(b,_) ->
       Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
   | Ast_c.MetaDParamListVal a, Ast_c.MetaDParamListVal b ->
       Lib_parsing_c.al_define_params a = Lib_parsing_c.al_define_params b
@@ -1210,11 +1210,11 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  ) >>=
 	(fun () () ->
 	  (* wraps on C code, so has types *)
-	  let meta_expr_val l x = Ast_c.MetaExprVal(x,l,Ast_c.WITH_TYPES) in
+	  let meta_expr_val l x = Ast_c.MetaExprVal(x,x,l,Ast_c.WITH_TYPES) in
 	  begin
 	    let l, constraints' = extract_sub_constraints constraints in
 	    check_constraints constraints' ida
-	      (B.MetaExprVal (eb, [], B.WITH_TYPES))
+	      (B.MetaExprVal (eb, eb, [], B.WITH_TYPES))
 	      (fun () -> return (meta_expr_val l,()))
 	  end)
 	  >>=
@@ -2106,7 +2106,7 @@ and arguments_bis = fun eas ebs ->
     | _ -> None in
   let build_metalist _ (ida,leninfo,constraints,keep,inherited) =
     A.MetaExprList(ida,leninfo,constraints,keep,inherited) in
-  let mktermval v = Ast_c.MetaExprListVal v in
+  let mktermval v = Ast_c.MetaExprListVal(v,v) in
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
@@ -2181,14 +2181,15 @@ and parameters_bis eas ebs =
 	| _ ->
 	    let extra vl max_min k =
 	      let vl =
-		Ast_c.MetaExprListVal
-		     (List.map
-			(function (v,i) ->
-			  match v.Ast_c.p_namei with
-			    Some name ->
-			      (Left(Ast_c.mk_e (B.Ident name) Ast_c.noii),i)
-			  | None -> failwith "no name in parameter list")
-			vl) in
+		let v =
+		  List.map
+		    (function (v,i) ->
+		      match v.Ast_c.p_namei with
+			Some name ->
+			  (Left(Ast_c.mk_e (B.Ident name) Ast_c.noii),i)
+		      | None -> failwith "no name in parameter list")
+		    vl in
+		Ast_c.MetaExprListVal(v,v) in
 	      let rec loop = function
 		  [] -> k ()
 		| x::xs ->
@@ -2215,7 +2216,7 @@ and parameters_bis eas ebs =
 		    (build_metalist p (ida,leninfo,constraints,keep,inherited)),
 		  e)
     | _ -> failwith "parameters: build metalist: not possible" in
-  let mktermval v = Ast_c.MetaParamListVal v in
+  let mktermval v = Ast_c.MetaParamListVal(v,v) in
   let special_cases ea eas ebs = None in
   list_matcher match_dots build_dots match_comma build_comma
     match_metalist build_metalist mktermval
@@ -2238,7 +2239,7 @@ and parameter = fun parama paramb ->
     A.MetaParam (ida,constraints,keep,inherited), eb ->
       (* todo: use quaopt, hasreg ? *)
       let max_min _ = Lib_parsing_c.ii_of_param eb in
-      let mn = Ast_c.MetaParamVal eb in
+      let mn = Ast_c.MetaParamVal(eb,eb) in
       check_constraints constraints ida mn
 	(fun () ->
 	  X.envf keep inherited (ida,mn,max_min) (fun () ->
@@ -2583,7 +2584,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		     begin
 		       match typ with
 			 Some typ' ->
-			   check_constraints cstr ida (B.MetaTypeVal typ')
+			   check_constraints cstr ida (B.MetaTypeVal(typ',typ'))
 			     (fun () ->
 			       return (
 			       (A.TyDecl (tya0, ptvirga))
@@ -2992,7 +2993,7 @@ and (initialiser: (A.initialiser, Ast_c.initialiser) matcher) =  fun ia ib ->
 
     | (A.MetaInit(ida,constraints,keep,inherited), ib) ->
 	let max_min _ = Lib_parsing_c.ii_of_ini ib in
-	let mv = Ast_c.MetaInitVal ib in
+	let mv = Ast_c.MetaInitVal(ib,ib) in
 	check_constraints constraints ida mv
 	  (fun () ->
 	    X.envf keep inherited (ida, mv, max_min)
@@ -3228,7 +3229,7 @@ and initialisers_ordered2 = fun ias ibs ->
       if first + (List.length nocomma) - 1 <= last
       then B.Keep
       else B.Compress in
-    Ast_c.MetaInitListVal (newlines,v) in
+    Ast_c.MetaInitListVal (newlines,v,v) in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "initialisers: no ii: not possible" in
   list_matcher match_dots build_dots match_comma build_comma
@@ -3303,7 +3304,7 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
   let mktermval v =
     (* drop empty ii information, because nothing between elements *)
     let v = List.map Ast_c.unwrap v in
-    Ast_c.MetaFieldListVal v in
+    Ast_c.MetaFieldListVal(v,v) in
   let special_cases ea eas ebs = None in
   let no_ii x = failwith "struct_fields: no ii: not possible" in
   let make_ebs ebs = List.map (function x -> Left x) ebs in
@@ -3377,7 +3378,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	    (* not really fields *) fail
 	| A.MetaField (ida,cstr,keep,inherited), _ ->
 	    let max_min _ = Lib_parsing_c.ii_of_field fb in
-	    let mv = Ast_c.MetaFieldVal fb in
+	    let mv = Ast_c.MetaFieldVal(fb,fb) in
 	    check_constraints cstr ida mv
 	      (fun () ->
 		X.envf keep inherited (ida, mv, max_min)
@@ -3638,9 +3639,9 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
       if type_present && not position_required_but_unavailable
       then
 	let max_min _ = Lib_parsing_c.ii_of_type typb in
-	check_constraints cstr ida (B.MetaTypeVal typb)
+	check_constraints cstr ida (B.MetaTypeVal(typb,typb))
 	  (fun () ->
-	    X.envf keep inherited (ida, B.MetaTypeVal typb, max_min) (fun () ->
+	    X.envf keep inherited (ida, B.MetaTypeVal(typb,typb), max_min) (fun () ->
 	      X.distrf_type ida typb >>= (fun ida typb ->
 		return (
 		A.MetaType(ida, cstr, keep, inherited) +> A.rewrap ta,
@@ -3855,7 +3856,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 		   Some (A.rewrap basea (A.BaseType (basea1,strings1))))
 		| _ -> failwith "typeC: signed: base: not possible")
 	| A.MetaType(ida, cstr, keep, inherited) ->
-	    check_constraints cstr ida (B.MetaTypeVal (Ast_c.nQ, [], tb))
+	    let ft = (Ast_c.nQ, [], tb) in
+	    check_constraints cstr ida (B.MetaTypeVal(ft,ft))
 	      (fun () ->
 		simulate_signed_meta ta basea (Some signaopt) tb baseb ii
 		  (function
@@ -4423,7 +4425,7 @@ and attr_arg = fun allminus ea eb ->
   | A.MetaAttr (ida,constraints,keep,inherited), _ ->
       (* todo: use quaopt, hasreg ? *)
       let max_min _ = Lib_parsing_c.ii_of_attr_arg eb in
-      let mn = Ast_c.MetaAttrArgVal eb in
+      let mn = Ast_c.MetaAttrArgVal(eb,eb) in
       check_constraints constraints ida mn
 	(fun () ->
 	  X.envf keep inherited (ida,mn,max_min) (fun () ->
@@ -4475,14 +4477,16 @@ and compatible_base_type_meta a signa qua attr b ii local =
   match A.unwrap a, b with
     A.MetaType(ida, cstr, keep, inherited),
     B.IntType (B.Si (signb, B.CChar2)) ->
-      check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
+      let ft = fullType_of_baseType b in
+      check_constraints cstr ida (B.MetaTypeVal(ft,ft))
 	(fun () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb = ((qua, attr, (B.BaseType (B.IntType B.CChar),ii)),local) in
 	    compatible_typeC a newb
 	    )
   | A.MetaType(ida, cstr, keep, inherited), B.IntType (B.Si (signb, ty)) ->
-      check_constraints cstr ida (B.MetaTypeVal (fullType_of_baseType b))
+      let ft = fullType_of_baseType b in
+      check_constraints cstr ida (B.MetaTypeVal(ft,ft))
 	(fun () ->
 	  compatible_sign signa signb >>= fun _ _ ->
 	    let newb =
@@ -4539,7 +4543,7 @@ and compatible_typeC a (b,local) =
           A.BaseType (ty, _) ->
 	    compatible_base_type ty (Some signa) b
         | A.MetaType(ida, cstr, keep, inherited) ->
-	    check_constraints cstr ida (B.MetaTypeVal tyb)
+	    check_constraints cstr ida (B.MetaTypeVal(tyb,tyb))
 	      (fun () ->
 		compatible_base_type_meta ty (Some signa) qua attra b ii local
 		  )
@@ -4596,9 +4600,9 @@ and compatible_typeC a (b,local) =
     | A.MetaType (ida, cstr, keep, inherited), typb ->
 	let max_min _ = Lib_parsing_c.ii_of_type typb in
         let ida' = A.make_mcode (A.unwrap_mcode ida) in
-      check_constraints cstr ida (B.MetaTypeVal typb)
+      check_constraints cstr ida (B.MetaTypeVal(typb,typb))
 	(fun () ->
-          X.envf keep inherited (ida', B.MetaTypeVal typb, max_min)
+          X.envf keep inherited (ida', B.MetaTypeVal(typb,typb), max_min)
 	    (fun () -> ok
             )
 	    )
@@ -4784,8 +4788,8 @@ and define_parameter = fun parama paramb ->
       let s =
 	match idb with
 	  B.MetaIdVal s -> Some s
-	| B.MetaExprVal (e, _, _) -> Some (string_of_expression e)
-	| B.MetaTypeVal t -> Some (Pretty_print_c.string_of_fullType t)
+	| B.MetaExprVal (e, _, _, _) -> Some (string_of_expression e)
+	| B.MetaTypeVal(_,t) -> Some (Pretty_print_c.string_of_fullType t)
 	| B.MetaAssignOpVal op ->
 	    Some (A.string_of_assignOp (A.make_term (get_assignOp op)))
 	| B.MetaBinaryOpVal op ->
@@ -4797,7 +4801,7 @@ and define_parameter = fun parama paramb ->
     let check_int f =
       let i =
 	match idb with
-	  B.MetaExprVal (e, _, _) ->
+	  B.MetaExprVal (e, _, _, _) ->
 	    begin
 	      match B.unwrap_expr e with
 		B.Constant (B.Int (i, _)) -> Some i
@@ -4864,7 +4868,7 @@ and define_parameter = fun parama paramb ->
     | A.CstrExpr e ->
 	begin
 	  match idb with
-	    B.MetaExprVal (e', _, _) ->
+	    B.MetaExprVal (e', _, _, _) ->
 	      expression e e' >>= (fun _ _ -> return ((), ()))
 	  | _ ->
 	      match A.string_of_expression e with
@@ -4875,7 +4879,7 @@ and define_parameter = fun parama paramb ->
     | A.CstrType ty ->
 	begin
 	  match idb with
-	    B.MetaTypeVal ty' ->
+	    B.MetaTypeVal(ty',_) ->
 	      fullType ty ty' >>= (fun _ _ -> return ((), ()))
 	  | _ -> fail
 	end in
@@ -5017,7 +5021,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	  match_len stb leninfo
 	    (fun _ ->
 	      let max_min _ = Lib_parsing_c.ii_of_stmtseqlist stb in
-	      let mv = Ast_c.MetaStmtListVal(stb,Ast_c.WITH_TYPES) in
+	      let mv = Ast_c.MetaStmtListVal(stb,stb,Ast_c.WITH_TYPES) in
 	      X.check_constraints (A.unwrap_mcode ida) mv cstr
 		(fun () ->
 		  X.envf keep inherited

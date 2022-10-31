@@ -78,7 +78,7 @@ let get_paramst env =
     then (argname := name; true)
     else false in
   match env_lookup fn env with
-    Ast_c.MetaParamListVal(paramst) -> (paramst,!argname)
+    Ast_c.MetaParamListVal(_,paramst) -> (paramst,!argname)
   | _ -> failwith "not possible"
 
 let get_function_name rule env =
@@ -238,26 +238,26 @@ let print_extra_typedefs pr env =
 	Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
       | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
       | Ast_c.MetaLocalFuncVal(_) -> ()
-      | Ast_c.MetaExprVal(exp,_,_) -> Visitor_c.vk_expr bigf exp
-      | Ast_c.MetaExprListVal(args) -> Visitor_c.vk_argument_list bigf args
-      | Ast_c.MetaParamVal(param) -> Visitor_c.vk_param bigf param
-      | Ast_c.MetaParamListVal(params) -> Visitor_c.vk_param_list bigf params
-      | Ast_c.MetaDParamListVal(params) ->
+      | Ast_c.MetaExprVal(exp,_,_,_) -> Visitor_c.vk_expr bigf exp
+      | Ast_c.MetaExprListVal(args,_) -> Visitor_c.vk_argument_list bigf args
+      | Ast_c.MetaParamVal(param,_) -> Visitor_c.vk_param bigf param
+      | Ast_c.MetaParamListVal(params,_) -> Visitor_c.vk_param_list bigf params
+      | Ast_c.MetaDParamListVal params ->
 	  Visitor_c.vk_define_params bigf params
 
-      | Ast_c.MetaTypeVal(ty) -> Visitor_c.vk_type bigf ty
-      | Ast_c.MetaInitVal(ty) -> Visitor_c.vk_ini bigf ty
-      | Ast_c.MetaInitListVal(_,ty) -> Visitor_c.vk_ini_list bigf ty
+      | Ast_c.MetaTypeVal(ty,_) -> Visitor_c.vk_type bigf ty
+      | Ast_c.MetaInitVal(ty,_) -> Visitor_c.vk_ini bigf ty
+      | Ast_c.MetaInitListVal(_,ty,_) -> Visitor_c.vk_ini_list bigf ty
       | Ast_c.MetaDeclVal(decl,_) -> Visitor_c.vk_decl bigf decl
-      | Ast_c.MetaFieldVal(field) -> Visitor_c.vk_struct_field bigf field
-      | Ast_c.MetaFieldListVal(fields) ->
+      | Ast_c.MetaFieldVal(field,_) -> Visitor_c.vk_struct_field bigf field
+      | Ast_c.MetaFieldListVal(fields,_) ->
 	  Visitor_c.vk_struct_fields bigf fields
       | Ast_c.MetaFmtVal(fmt) -> Visitor_c.vk_string_format bigf fmt
-      | Ast_c.MetaAttrArgVal(name) -> Visitor_c.vk_attr_arg bigf name
+      | Ast_c.MetaAttrArgVal(name,_) -> Visitor_c.vk_attr_arg bigf name
       | Ast_c.MetaFragListVal(frags) ->
 	  Visitor_c.vk_string_fragments bigf frags
       | Ast_c.MetaStmtVal(stm,_,_) -> Visitor_c.vk_statement bigf stm
-      | Ast_c.MetaStmtListVal(stms,_) ->
+      | Ast_c.MetaStmtListVal(stms,_,_) ->
 	  Visitor_c.vk_statement_sequencable_list bigf stms
       | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaComValList _
       | Ast_c.MetaListlenVal _ -> ()
@@ -290,42 +290,53 @@ let rename argids env =
 	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
        | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
        | Ast_c.MetaLocalFuncVal(_) -> vl
-       | Ast_c.MetaExprVal(exp,c,ty) ->
-	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,c,ty)
-       | Ast_c.MetaExprListVal(args) ->
-	   Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s bigf args)
-       | Ast_c.MetaParamVal(param) ->
-	   Ast_c.MetaParamVal(Visitor_c.vk_param_s bigf param)
-       | Ast_c.MetaParamListVal(params) ->
-	   Ast_c.MetaParamListVal(Visitor_c.vk_params_s bigf params)
+       | Ast_c.MetaExprVal(exp,original,c,ty) ->
+	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,
+			     Visitor_c.vk_expr_s bigf original,c,ty)
+       | Ast_c.MetaExprListVal(args,original) ->
+	   Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s bigf args,
+				 Visitor_c.vk_arguments_s bigf original)
+       | Ast_c.MetaParamVal(param,original) ->
+	   Ast_c.MetaParamVal(Visitor_c.vk_param_s bigf param,
+			      Visitor_c.vk_param_s bigf original)
+       | Ast_c.MetaParamListVal(params,original) ->
+	   Ast_c.MetaParamListVal(Visitor_c.vk_params_s bigf params,
+				  Visitor_c.vk_params_s bigf original)
        | Ast_c.MetaDParamListVal(params) ->
 	   Ast_c.MetaDParamListVal(Visitor_c.vk_define_params_s bigf params)
 
-       | Ast_c.MetaTypeVal(ty) ->
-	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty)
-       | Ast_c.MetaInitVal(ini) ->
-	   Ast_c.MetaInitVal(Visitor_c.vk_ini_s bigf ini)
-       | Ast_c.MetaInitListVal(newlines,ini) ->
-	   Ast_c.MetaInitListVal(newlines,Visitor_c.vk_inis_s bigf ini)
+       | Ast_c.MetaTypeVal(ty,original) ->
+	   Ast_c.MetaTypeVal(Visitor_c.vk_type_s bigf ty,
+			     Visitor_c.vk_type_s bigf original)
+       | Ast_c.MetaInitVal(ini,original) ->
+	   Ast_c.MetaInitVal(Visitor_c.vk_ini_s bigf ini,
+			     Visitor_c.vk_ini_s bigf original)
+       | Ast_c.MetaInitListVal(newlines,ini,original) ->
+	   Ast_c.MetaInitListVal(newlines,Visitor_c.vk_inis_s bigf ini,
+				 Visitor_c.vk_inis_s bigf original)
        | Ast_c.MetaDeclVal(stm,original) ->
 	   Ast_c.MetaDeclVal(Visitor_c.vk_decl_s bigf stm,
 			     Visitor_c.vk_decl_s bigf original)
-       | Ast_c.MetaFieldVal(stm) ->
-	   Ast_c.MetaFieldVal(Visitor_c.vk_struct_field_s bigf stm)
-       | Ast_c.MetaFieldListVal(stm) ->
-	   Ast_c.MetaFieldListVal(Visitor_c.vk_struct_fields_s bigf stm)
+       | Ast_c.MetaFieldVal(fld,original) ->
+	   Ast_c.MetaFieldVal(Visitor_c.vk_struct_field_s bigf fld,
+			      Visitor_c.vk_struct_field_s bigf original)
+       | Ast_c.MetaFieldListVal(fld,original) ->
+	   Ast_c.MetaFieldListVal(Visitor_c.vk_struct_fields_s bigf fld,
+				  Visitor_c.vk_struct_fields_s bigf original)
        | Ast_c.MetaFmtVal(fmt) ->
 	   Ast_c.MetaFmtVal(Visitor_c.vk_string_format_s bigf fmt)
-       | Ast_c.MetaAttrArgVal(name) ->
-	   Ast_c.MetaAttrArgVal(Visitor_c.vk_attr_arg_s bigf name)
+       | Ast_c.MetaAttrArgVal(name,original) ->
+	   Ast_c.MetaAttrArgVal(Visitor_c.vk_attr_arg_s bigf name,
+				Visitor_c.vk_attr_arg_s bigf original)
        | Ast_c.MetaFragListVal(frags) ->
 	   Ast_c.MetaFragListVal(Visitor_c.vk_string_fragments_s bigf frags)
        | Ast_c.MetaStmtVal(stm,original,ty) ->
 	   Ast_c.MetaStmtVal(Visitor_c.vk_statement_s bigf stm,
 			     Visitor_c.vk_statement_s bigf original,ty)
-       | Ast_c.MetaStmtListVal(stm,ty) ->
+       | Ast_c.MetaStmtListVal(stm,original,ty) ->
 	   Ast_c.MetaStmtListVal
-	     (Visitor_c.vk_statement_sequencable_list_s bigf stm,ty)
+	     (Visitor_c.vk_statement_sequencable_list_s bigf stm,
+	      Visitor_c.vk_statement_sequencable_list_s bigf original,ty)
        | Ast_c.MetaPosVal _ | Ast_c.MetaPosValList _ | Ast_c.MetaComValList _
        | Ast_c.MetaListlenVal _ -> vl
        | Ast_c.MetaNoVal -> failwith "referencing a metavar with no value"))
@@ -336,7 +347,7 @@ let print_one_type pr env ty =
     Some (Ast_cocci.MetaType(name,cstr,keep,inherited)) ->
       (try
 	match List.assoc name env with
-	  Ast_c.MetaTypeVal ty ->
+	  Ast_c.MetaTypeVal(ty,_) ->
 	    Pretty_print_c.pp_type_gen
 	      ~pr_elem:(function x -> pr (Ast_c.str_of_info x))
 	      ~pr_space:(function _ -> pr " ")
@@ -551,7 +562,7 @@ let pp_rule local_metas ast env srcfile =
 	function_name_count in
     let (argids,args) = List.split args in
     let env = rename argids env in
-    let env = (args_name,Ast_c.MetaExprListVal args)::env in
+    let env = (args_name,Ast_c.MetaExprListVal(args,args))::env in
     print_start pr;
     (* for printing C tokens *)
     let pr_c info =

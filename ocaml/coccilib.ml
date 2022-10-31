@@ -161,13 +161,13 @@ let make_ident s = Ast_c.MetaIdVal(s)
 let make_expr s =
   parse_failure "expression" s
     (function s ->
-      Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string "" s), [],
-			Ast_c.WITHOUT_TYPES))
+      let e = Lib_parsing_c.al_expr(cexpression_of_string "" s) in
+      Ast_c.MetaExprVal(e, e, [], Ast_c.WITHOUT_TYPES))
 let make_expr_with_env env s =
   parse_failure "expression" s
     (function s ->
-      Ast_c.MetaExprVal(Lib_parsing_c.al_expr(cexpression_of_string env s), [],
-			Ast_c.WITH_TYPES))
+      let e = Lib_parsing_c.al_expr(cexpression_of_string env s) in
+      Ast_c.MetaExprVal(e, e, [], Ast_c.WITH_TYPES))
 let make_stmt s =
   parse_failure "statement" s
     (function s ->
@@ -181,7 +181,8 @@ let make_stmt_with_env env s =
 let make_type s =
   parse_failure "type" s
     (function s ->
-      Ast_c.MetaTypeVal(Lib_parsing_c.al_type(Parse_c.type_of_string s)))
+      let t = Lib_parsing_c.al_type(Parse_c.type_of_string s) in
+      Ast_c.MetaTypeVal(t,t))
 let make_listlen i = Ast_c.MetaListlenVal i
 let make_full_position fl fn ce_startl ce_startc ce_endl ce_endc
     startl startc endl endc =

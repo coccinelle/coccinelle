@@ -445,13 +445,33 @@ module ENV =
 	 Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))) ->
 	   ((min1 <= min2) && (max1 >= max2)) ||
 	   ((min2 <= min1) && (max2 >= max1))
-      |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
-	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
+      |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal(b,_))) ->
           C_vs_c.eq_type a b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaExprVal(a,_,_,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaExprVal(b,_,_,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaExprListVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaExprListVal(b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaAttrArgVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaAttrArgVal(b,_))) -> a = b
       | (Lib_engine.NormalMetaVal(Ast_c.MetaStmtVal(a,_,_)),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaStmtVal(b,_,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaStmtListVal(a,_,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaStmtListVal(b,_,_))) -> a = b
       | (Lib_engine.NormalMetaVal(Ast_c.MetaDeclVal(a,_)),
 	 Lib_engine.NormalMetaVal(Ast_c.MetaDeclVal(b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaFieldVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaFieldVal(b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaFieldListVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaFieldListVal(b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaInitVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaInitVal(b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaInitListVal(_,a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaInitListVal(_,b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaParamVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaParamVal(b,_))) -> a = b
+      | (Lib_engine.NormalMetaVal(Ast_c.MetaParamListVal(a,_)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaParamListVal(b,_))) -> a = b
       |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
 	  compatible_labels l1 l2
       |	_ -> v = v'
@@ -466,9 +486,9 @@ module ENV =
 	     if (min2 <= min1) && (max2 >= max1)
 	     then Lib_engine.NormalMetaVal(Ast_c.MetaPosVal(min2,max2))
 	     else failwith "incompatible positions give to merge"
-      |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal a),
-	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal b)) ->
-          Lib_engine.NormalMetaVal (Ast_c.MetaTypeVal (C_vs_c.merge_type a b))
+      |	(Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal(a,original)),
+	 Lib_engine.NormalMetaVal(Ast_c.MetaTypeVal(b,_))) ->
+          Lib_engine.NormalMetaVal (Ast_c.MetaTypeVal (C_vs_c.merge_type a b,original))
       |	(Lib_engine.LabelVal(l1),Lib_engine.LabelVal(l2)) ->
 	  Lib_engine.LabelVal(merge_labels l1 l2)
 
@@ -592,16 +612,16 @@ let strip env =
     (function (v,vl) ->
       let vl =
 	match vl with
-	  Ast_c.MetaExprVal (a,c,ty) ->
-	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a,c,ty)
-	| Ast_c.MetaExprListVal a ->
-	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a)
+	  Ast_c.MetaExprVal (a,original,c,ty) ->
+	    Ast_c.MetaExprVal(Lib_parsing_c.al_inh_expr a,original,c,ty)
+	| Ast_c.MetaExprListVal(a,original) ->
+	    Ast_c.MetaExprListVal(Lib_parsing_c.al_inh_arguments a,original)
 	| Ast_c.MetaStmtVal(a,orig,ty) ->
 	    Ast_c.MetaStmtVal(Lib_parsing_c.al_inh_statement a,orig,ty)
-	| Ast_c.MetaInitVal a ->
-	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a)
-	| Ast_c.MetaInitListVal (newlines,a) ->
-	    Ast_c.MetaInitListVal(newlines,Lib_parsing_c.al_inh_inits a)
+	| Ast_c.MetaInitVal(a,original) ->
+	    Ast_c.MetaInitVal(Lib_parsing_c.al_inh_init a,original)
+	| Ast_c.MetaInitListVal (newlines,a,original) ->
+	    Ast_c.MetaInitListVal(newlines,Lib_parsing_c.al_inh_inits a,original)
 	| x -> (*don't contain binding info*) x in
       (v,vl))
     env

@@ -129,16 +129,21 @@ module XTRANS = struct
     List.map
       (function (v,vl) ->
 	match vl with
-	| Ast_c.MetaExprVal(e,ml,ty) ->
-	    (v,Ast_c.MetaExprVal(Visitor_c.vk_expr_s drop_exp_types e,ml,ty))
-	| Ast_c.MetaExprListVal(es) ->
-	    (v,Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s drop_exp_types es))
-	| Ast_c.MetaTypeVal(ty) ->
-	    (v,Ast_c.MetaTypeVal(Visitor_c.vk_type_s drop_exp_types ty))
-	| Ast_c.MetaInitVal(i) ->
-	    (v,Ast_c.MetaInitVal(Visitor_c.vk_ini_s drop_exp_types i))
-	| Ast_c.MetaInitListVal(newlines,is) ->
-	    (v,Ast_c.MetaInitListVal(newlines,Visitor_c.vk_inis_s drop_exp_types is))
+	| Ast_c.MetaExprVal(e,original,ml,ty) ->
+	    (v,Ast_c.MetaExprVal(Visitor_c.vk_expr_s drop_exp_types e,
+				 Visitor_c.vk_expr_s drop_exp_types original,ml,ty))
+	| Ast_c.MetaExprListVal(es,original) ->
+	    (v,Ast_c.MetaExprListVal(Visitor_c.vk_arguments_s drop_exp_types es,
+				     Visitor_c.vk_arguments_s drop_exp_types original))
+	| Ast_c.MetaTypeVal(ty,original) ->
+	    (v,Ast_c.MetaTypeVal(Visitor_c.vk_type_s drop_exp_types ty,
+				 Visitor_c.vk_type_s drop_exp_types original))
+	| Ast_c.MetaInitVal(i,original) ->
+	    (v,Ast_c.MetaInitVal(Visitor_c.vk_ini_s drop_exp_types i,
+				 Visitor_c.vk_ini_s drop_exp_types original))
+	| Ast_c.MetaInitListVal(newlines,is,original) ->
+	    (v,Ast_c.MetaInitListVal(newlines,Visitor_c.vk_inis_s drop_exp_types is,
+				     Visitor_c.vk_inis_s drop_exp_types original))
 	| Ast_c.MetaDeclVal(d,original) ->
 	    (v,
 	     Ast_c.MetaDeclVal

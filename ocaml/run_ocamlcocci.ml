@@ -60,23 +60,23 @@ let ast_binding vl = function
 	  Coccilib.Str id
       | Ast_c.MetaAssignOpVal op -> Coccilib.AssignOp op
       | Ast_c.MetaBinaryOpVal op -> Coccilib.BinaryOp op
-      | Ast_c.MetaExprVal(expr,_,_) -> Coccilib.Expr expr
-      | Ast_c.MetaExprListVal arglist -> Coccilib.ExprList arglist
-      | Ast_c.MetaParamVal param -> Coccilib.Param param
-      | Ast_c.MetaParamListVal paramlist -> Coccilib.ParamList paramlist
+      | Ast_c.MetaExprVal(_,expr,_,_) -> Coccilib.Expr expr
+      | Ast_c.MetaExprListVal(_,arglist) -> Coccilib.ExprList arglist
+      | Ast_c.MetaParamVal(_,param) -> Coccilib.Param param
+      | Ast_c.MetaParamListVal(_,paramlist) -> Coccilib.ParamList paramlist
       | Ast_c.MetaDParamListVal paramlist -> Coccilib.DParamList paramlist
 
-      | Ast_c.MetaTypeVal ty -> Coccilib.Type ty
-      | Ast_c.MetaInitVal init -> Coccilib.Init init
-      | Ast_c.MetaInitListVal (_,init) -> Coccilib.InitList init
-      | Ast_c.MetaDeclVal(decl,_) -> Coccilib.Decl decl
-      | Ast_c.MetaFieldVal field -> Coccilib.Field field
-      | Ast_c.MetaFieldListVal field -> Coccilib.FieldList field
-      | Ast_c.MetaStmtVal(stm,_,_) -> Coccilib.Stmt stm
-      | Ast_c.MetaStmtListVal(stm,_) -> Coccilib.StmtList stm
+      | Ast_c.MetaTypeVal(_,ty) -> Coccilib.Type ty
+      | Ast_c.MetaInitVal(_,init) -> Coccilib.Init init
+      | Ast_c.MetaInitListVal (_,_,init) -> Coccilib.InitList init
+      | Ast_c.MetaDeclVal(_,decl) -> Coccilib.Decl decl
+      | Ast_c.MetaFieldVal(_,field) -> Coccilib.Field field
+      | Ast_c.MetaFieldListVal(_,field) -> Coccilib.FieldList field
+      | Ast_c.MetaStmtVal(_,stm,_) -> Coccilib.Stmt stm
+      | Ast_c.MetaStmtListVal(_,stm,_) -> Coccilib.StmtList stm
       | Ast_c.MetaFragListVal frags -> Coccilib.FragList frags
       | Ast_c.MetaFmtVal fmt -> Coccilib.Fmt fmt
-      | Ast_c.MetaAttrArgVal name -> Coccilib.AttrArg name
+      | Ast_c.MetaAttrArgVal(_,name) -> Coccilib.AttrArg name
       | Ast_c.MetaNoVal -> failwith "no value for script metavariable"
       | Ast_c.MetaComValList l -> Coccilib.AstCom l
 
