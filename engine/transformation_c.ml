@@ -154,12 +154,34 @@ module XTRANS = struct
 	     Ast_c.MetaStmtVal
 	       (Visitor_c.vk_statement_s drop_exp_types s,
 		Visitor_c.vk_statement_s drop_exp_types original,ty))
+	| Ast_c.MetaStmtListVal(ss,original,ty) ->
+	    (v,Ast_c.MetaStmtListVal(Visitor_c.vk_statement_sequencable_list_s drop_exp_types ss,
+				     Visitor_c.vk_statement_sequencable_list_s drop_exp_types original,
+				     ty))
+
+	| Ast_c.MetaParamVal(p,original) ->
+	    (v,Ast_c.MetaParamVal(Visitor_c.vk_param_s drop_exp_types p,
+				  Visitor_c.vk_param_s drop_exp_types original))
+	| Ast_c.MetaParamListVal(p,original) ->
+	    (v,Ast_c.MetaParamListVal(Visitor_c.vk_params_s drop_exp_types p,
+				      Visitor_c.vk_params_s drop_exp_types original))
+	| Ast_c.MetaFieldVal(fld,original) ->
+	    (v,Ast_c.MetaFieldVal(Visitor_c.vk_struct_field_s drop_exp_types fld,
+				  Visitor_c.vk_struct_field_s drop_exp_types original))
+	| Ast_c.MetaFieldListVal(fld,original) ->
+	    (v,Ast_c.MetaFieldListVal(Visitor_c.vk_struct_fields_s drop_exp_types fld,
+				      Visitor_c.vk_struct_fields_s drop_exp_types original))
+	| Ast_c.MetaAttrArgVal(a,original) ->
+	    (v,Ast_c.MetaAttrArgVal(Visitor_c.vk_attr_arg_s drop_exp_types a,
+				    Visitor_c.vk_attr_arg_s drop_exp_types original))
+
 	(* These don't contain local variables, but the cocci_tag field
 	   causes problems too.  Why is this not needd for other metavars? *)
 	| Ast_c.MetaAssignOpVal(b) ->
 	    (v,Ast_c.MetaAssignOpVal(Visitor_c.vk_assignOp_s drop_exp_types b))
 	| Ast_c.MetaBinaryOpVal(b) ->
 	    (v,Ast_c.MetaBinaryOpVal(Visitor_c.vk_binaryOp_s drop_exp_types b))
+
 	| _ -> (v,vl))
       env
 
