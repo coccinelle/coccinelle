@@ -1667,7 +1667,11 @@ let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
 	      end
 	    else
 	      let (new_bindings,new_bindings_ua) =
-		try List.assoc relevant_bindings cache
+		try
+		  snd(List.find
+			(fun (binds,res) ->
+			  Ctlcocci_integration.same_env binds relevant_bindings)
+			cache)
 		with
 		  Not_found ->
 		    print_dependencies
