@@ -933,7 +933,7 @@ let glimpse_filter2 (_,query,_,_) dir =
       let rec loop = function
 	  [] -> None (* error, eg due to pattern too big *)
 	| query::queries ->
-	    Printf.fprintf stderr "%s\n" ("glimpse request = " ^ query);
+	    Printf.eprintf "%s\n" ("glimpse request = " ^ query);
 	    let command = spf "glimpse -y -H %s -N -W -w '%s'" dir query in
 	    let (glimpse_res,stat) = Common.cmd_to_list_and_status command in
 	    match stat with
@@ -1424,7 +1424,7 @@ singleton lists are then just appended to each other during the merge. *)
       if patching_failed
       then
         begin
-          Printf.fprintf stderr
+          Printf.eprintf
 	    "An error occurred when attempting to transform some files.\n";
           if !compare_with_expected == None
 	  then raise (UnixExit (-1))
@@ -1434,10 +1434,10 @@ and debug_restart virt_rules virt_ids =
   if !Flag_parsing_cocci.debug_parse_cocci
   then
     begin
-      Printf.fprintf stderr
+      Printf.eprintf
 	"Starting a new iteration with:\nVirtual rules: %s\n"
 	(String.concat " " virt_rules);
-      Printf.fprintf stderr
+      Printf.eprintf
 	"Virtual identifiers: %s\n\n"
 	(String.concat ", "
 	   (List.map
@@ -1705,7 +1705,7 @@ let main arglist =
 		Testing.testone "" x !compare_with_expected
 	      end
 	      else
-	        Printf.fprintf stderr
+	        Printf.eprintf
 		  "ERROR: File %s does not exist\n" testfile
 	end
 
@@ -1786,15 +1786,15 @@ let main_with_better_error_report arglist =
       main arglist
     with
     | Unix.Unix_error (e, "stat", filename) ->
-        Printf.fprintf stderr "ERROR: File %s does not exist: %s\n"
+        Printf.eprintf "ERROR: File %s does not exist: %s\n"
 	  filename (Unix.error_message e);
         raise (UnixExit (-1))
     | Parse_cocci.Bad_virt s ->
-	Printf.fprintf stderr "virtual rule %s not supported\n" s;
+	Printf.eprintf "virtual rule %s not supported\n" s;
         raise (UnixExit (-1))
     | Parse_cocci.SMPLParseError error_message
     | Failure error_message ->
-	Printf.fprintf stderr "%s\n" error_message;
+	Printf.eprintf "%s\n" error_message;
 	Printexc.print_backtrace stderr;
 	raise (UnixExit (-1))
 
