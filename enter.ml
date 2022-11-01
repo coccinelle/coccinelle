@@ -1409,8 +1409,8 @@ singleton lists are then just appended to each other during the merge. *)
 		end
 	      else
 		begin
-		  Common.pr2
-		    "Out of place transformation not compatible with iteration. Aborting.\n consider using -no_show_diff or -in_place";
+		  Printf.eprintf
+		    "Out of place transformation not compatible with iteration. Aborting.\n consider using --no-show-diff or --in-place";
 		  (x,xs,cocci_infos,outfiles,true)
 		end) in
       let (x,xs,cocci_infos,outfiles,patching_failed) = toploop false xs in
