@@ -4747,12 +4747,15 @@ and structure_type_name nm sb ii =
 and compatible_sign signa signb =
   let ok  = return ((),()) in
   match Common.map_option A.unwrap_mcode signa, signb with
-  | None, B.Signed
+  | None, B.Signed ->
+      X.optional_qualifier_flag (fun optional_qualifier ->
+	if optional_qualifier
+	then ok
+	else fail)
   | Some A.Signed, B.Signed
   | Some A.Unsigned, B.UnSigned
       -> ok
   | _ -> fail
-
 
 and equal_structUnion_type_cocci a b =
   match Ast_cocci.unwrap_mcode a, b with
