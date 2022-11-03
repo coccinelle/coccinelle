@@ -3812,7 +3812,7 @@ and simulate_signed ta basea stringsa signaopt tb baseb ii rebuilda =
 
       | A.ShortType, B.IntType (B.Si (_, B.CShort))
       | A.IntType,   B.IntType (B.Si (_, B.CInt))
-      | A.LongType,  B.IntType (B.Si (_, B.CLong))  ->
+      | A.LongType,  B.IntType (B.Si (_, B.CLong)) ->
 	  let stringa = tuple_of_list1 stringsa in
           (match iibaseb with
           | [] ->
