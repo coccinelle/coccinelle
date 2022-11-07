@@ -3001,8 +3001,14 @@ module Ast_cocci :
     and pragmainfo = base_pragmainfo wrap
     and forinfo =
       Ast_cocci.forinfo =
-        ForExp of expression option * string mcode
-      | ForDecl of annotated_decl
+	ForExp of expression option * string mcode (*;*) *
+	    expression option * string mcode (*;*) *
+            expression option
+      | ForDecl of (info * mcodekind) (* before the decl *) * annotated_decl *
+	    expression option * string mcode (*;*) *
+            expression option
+      | ForRange of (info * mcodekind) (* before the decl *) * annotated_decl *
+	    string mcode (* : *) * expression
     and fninfo =
       Ast_cocci.fninfo =
         FStorage of storage mcode
@@ -3647,8 +3653,14 @@ module Ast0_cocci :
     and pragmainfo = base_pragmainfo wrap
     and base_forinfo =
       Ast0_cocci.base_forinfo =
-        ForExp of expression option * string mcode
-      | ForDecl of (info * mcodekind) * declaration
+	ForExp of expression option * string mcode (*;*) *
+	    expression option * string mcode (*;*) *
+            expression option
+      | ForDecl of (info * mcodekind) (* before the decl *) * declaration *
+	    expression option * string mcode (*;*) *
+            expression option
+      | ForRange of (info * mcodekind) (* before the decl *) * declaration *
+	    string mcode (* : *) * expression
     and forinfo = base_forinfo wrap
     and fninfo =
       Ast0_cocci.fninfo =

@@ -1163,9 +1163,31 @@ iteration:
      { For (ForExp $3,$4,(Some $5, []),$7), [$1;$2;$6] }
  /*(* C++ext: for(int i = 0; i < n; i++)*)*/
  | Tfor TOPar decl expr_statement TCPar cpp_ifdef_statement
-     { For (ForDecl ($3 Ast_c.LocalDecl),$4,(None, []),$6),    [$1;$2;$5]}
+     { For (ForDecl(($3 Ast_c.LocalDecl),$4,(None, [])),$6),    [$1;$2;$5]}
  | Tfor TOPar decl expr_statement expr TCPar cpp_ifdef_statement
-     { For (ForDecl ($3 Ast_c.LocalDecl),$4,(Some $5, []),$7), [$1;$2;$6] }
+     { For (ForDecl(($3 Ast_c.LocalDecl),$4,(Some $5, [])),$7), [$1;$2;$6] }
+ | Tfor TOPar decl_spec declaratori TDotDot expr TCPar cpp_ifdef_statement
+     { let decl = (* should share with code in decl2 *)
+       let (returnType,storage) = fixDeclSpecForDecl (snd $3) in
+       let iistart = Ast_c.fakeInfo () in
+       DeclList (
+         ([$4] +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
+           let s = str_of_name name in
+	   if fst (unwrap storage) = StoTypedef
+	   then LP.add_typedef s;
+           {v_namei = Some (name, ini);
+            v_type = f returnType;
+            v_storage = unwrap storage;
+            v_local = Ast_c.LocalDecl;
+            v_attr = (fst (fst $3));
+            v_midattr = (snd (fst $3))@attrs;
+            v_endattr = endattrs;
+            v_type_bis = ref None;
+           },
+           iivirg
+         )
+         ),  ($4::iistart::snd storage)) in
+       For (ForRange(decl,$5),$7), [$1;$2;$6] }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }

@@ -374,20 +374,30 @@ and pp_string_format (e,ii) =
         pr_elem iifakend
 
 
-    | Iteration  (For (first,(e2opt,il2),(e3opt, il3),st)),
+    | Iteration  (For (first,st)),
         [i1;i2;i3;iifakend] ->
 
           pr_elem i1; pr_space();
           pr_elem i2;
 	  (match first with
-	    ForExp (e1opt,il1) ->
-              pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
-	  | ForDecl decl -> pp_decl decl);
-	  pr_space();
-          pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
-          assert (il3 = []);
-	  pr_space();
-          pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
+	    ForExp ((e1opt,il1),(e2opt,il2),(e3opt, il3)) ->
+              pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1);
+	      pr_space();
+              pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
+              assert (il3 = []);
+	      pr_space();
+              pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
+	  | ForDecl (decl,(e2opt,il2),(e3opt, il3)) ->
+	      pp_decl decl;
+	      pr_space();
+              pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
+              assert (il3 = []);
+	      pr_space();
+              pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
+	  | ForRange(decl,exp) ->
+	      pp_decl decl;
+	      pr_space();
+	      pp_expression e);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
           pr_elem iifakend

@@ -424,12 +424,19 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
     | Iteration  (While (e, st)) ->
         vk_expr bigf e; statf st;
     | Iteration  (DoWhile (st, e)) -> statf st; vk_expr bigf e;
-    | Iteration  (For (first, (e2opt,i2), (e3opt,i3), st)) ->
+    | Iteration  (For (first, st)) ->
 	(match first with
-	  ForExp (e1opt,i1) -> statf (mk_st (ExprStatement (e1opt)) i1)
-	| ForDecl decl -> vk_decl bigf decl);
-        statf (mk_st (ExprStatement (e2opt)) i2);
-        statf (mk_st (ExprStatement (e3opt)) i3);
+	  ForExp((e1opt,i1), (e2opt,i2), (e3opt,i3)) ->
+	    statf (mk_st (ExprStatement (e1opt)) i1);
+            statf (mk_st (ExprStatement (e2opt)) i2);
+            statf (mk_st (ExprStatement (e3opt)) i3)
+	| ForDecl(decl, (e2opt,i2), (e3opt,i3)) ->
+	    vk_decl bigf decl;
+            statf (mk_st (ExprStatement (e2opt)) i2);
+            statf (mk_st (ExprStatement (e3opt)) i3)
+	| ForRange(decl,exp) ->
+	    vk_decl bigf decl;
+	    vk_expr bigf exp);
         statf st;
 
     | Iteration  (MacroIteration (s, es, st)) ->
@@ -991,18 +998,23 @@ and vk_node = fun bigf node ->
         iif ii;
         vk_expr bigf e
 
-    | F.ForHeader (_st, ((ForExp (e1opt,i1), (e2opt,i2), (e3opt,i3)), ii)) ->
+    | F.ForHeader (_st, ((ForExp((e1opt,i1), (e2opt,i2), (e3opt,i3))), ii)) ->
         iif i1; iif i2; iif i3;
         iif ii;
         e1opt +> do_option (vk_expr bigf);
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
-    | F.ForHeader (_st, ((ForDecl decl, (e2opt,i2), (e3opt,i3)), ii)) ->
+    | F.ForHeader (_st, ((ForDecl(decl, (e2opt,i2), (e3opt,i3))), ii)) ->
         iif i2; iif i3;
         iif ii;
         decl  +> (vk_decl bigf);
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
+    | F.ForHeader (_st, ((ForRange(decl, exp)), ii)) ->
+        iif i2; iif i3;
+        iif ii;
+        decl  +> (vk_decl bigf);
+	vk_expr bigf exp
     | F.MacroIterHeader (_s, ((s,es), ii)) ->
         iif ii;
         vk_argument_list bigf es;
@@ -1394,33 +1406,45 @@ and vk_statement_s = fun bigf st ->
           Iteration  (While ((vk_expr_s bigf) e, statf st))
       | Iteration (DoWhile (st, e))  ->
           Iteration  (DoWhile (statf st, (vk_expr_s bigf) e))
-      | Iteration (For (first, (e2opt,i2), (e3opt,i3), st)) ->
+      | Iteration (For (first, st)) ->
 	  let first =
 	    match first with
-	      ForExp (e1opt,i1) ->
+	      ForExp((e1opt,i1), (e2opt,i2), (e3opt,i3)) ->
 		let e1opt' = statf (mk_st (ExprStatement (e1opt)) i1) in
 		let e1' = Ast_c.unwrap_st e1opt' in
 		let i1' = Ast_c.get_ii_st_take_care e1opt' in
-		(match e1' with
-		  ExprStatement x1 -> ForExp (x1,i1')
+
+		let e2opt' = statf (mk_st (ExprStatement (e2opt)) i2) in
+		let e3opt' = statf (mk_st (ExprStatement (e3opt)) i3) in
+		let e2' = Ast_c.unwrap_st e2opt' in
+		let e3' = Ast_c.unwrap_st e3opt' in
+		let i2' = Ast_c.get_ii_st_take_care e2opt' in
+		let i3' = Ast_c.get_ii_st_take_care e3opt' in
+
+		(match (e1',e2',e3') with
+		  (ExprStatement x1),(ExprStatement x2), (ExprStatement x3) ->
+		    ForExp((x1,i1'),(x2,i3'),(x2,i3'))
 		| _ ->
 		    failwith
 		      "can't be here if iterator keep ExprStatement as is")
-	    | ForDecl decl -> ForDecl (vk_decl_s bigf decl) in
-          let e2opt' = statf (mk_st (ExprStatement (e2opt)) i2) in
-          let e3opt' = statf (mk_st (ExprStatement (e3opt)) i3) in
-
-          let e2' = Ast_c.unwrap_st e2opt' in
-          let e3' = Ast_c.unwrap_st e3opt' in
-          let i2' = Ast_c.get_ii_st_take_care e2opt' in
-          let i3' = Ast_c.get_ii_st_take_care e3opt' in
-
-          (match (e2', e3') with
-          | ((ExprStatement x2), ((ExprStatement x3))) ->
-              Iteration (For (first, (x2,i2'), (x3,i3'), statf st))
-
-          | x -> failwith "can't be here if iterator keep ExprStatement as is"
-         )
+	    | ForDecl(decl, (e2opt,i2), (e3opt,i3)) ->
+		let e2opt' = statf (mk_st (ExprStatement (e2opt)) i2) in
+		let e3opt' = statf (mk_st (ExprStatement (e3opt)) i3) in
+		let e2' = Ast_c.unwrap_st e2opt' in
+		let e3' = Ast_c.unwrap_st e3opt' in
+		let i2' = Ast_c.get_ii_st_take_care e2opt' in
+		let i3' = Ast_c.get_ii_st_take_care e3opt' in
+		(match (e1',e2',e3') with
+		  (ExprStatement x1),(ExprStatement x2), (ExprStatement x3) ->
+		    ForDecl (vk_decl_s bigf decl,(x2,i3'),(x2,i3'))
+		| _ ->
+		    failwith
+		      "can't be here if iterator keep ExprStatement as is")
+	    | ForRange(decl,exp) ->
+		let decl = vk_decl_s bigf decl in
+		let exp = vk_expr_s bigf exp in
+		ForRange(decl,exp) in
+	  Iteration (For (first, statf st))
 
       | Iteration  (MacroIteration (s, es, st)) ->
           Iteration

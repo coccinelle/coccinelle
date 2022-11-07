@@ -516,7 +516,10 @@ and statement = statementbis wrap3
 
   and exprStatement = expression option
 
-  and declOrExpr = ForDecl of declaration | ForExp of expression option wrap
+  and declOrExpr =
+      ForDecl of declaration * exprStatement wrap * exprStatement wrap
+    | ForExp of expression option wrap * exprStatement wrap * exprStatement wrap
+    | ForRange of declaration * expression
 
  (* for Switch, need check that all elements in the compound start
   * with a case:, otherwise unreachable code.
@@ -533,8 +536,7 @@ and statement = statementbis wrap3
   and iteration     =
     | While   of expression * statement
     | DoWhile of statement * expression
-    | For     of declOrExpr * exprStatement wrap * exprStatement wrap *
-                 statement
+    | For     of declOrExpr * statement
     (* cppext: *)
     | MacroIteration of string * argument wrap2 list * statement
 
