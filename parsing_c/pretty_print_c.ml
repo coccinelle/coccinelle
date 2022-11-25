@@ -1792,6 +1792,11 @@ let string_of_ifdef_guard = function
   | Gif e     -> string_of_expression e
   | Gnone     -> "0"
 
+let string_of_flow n =
+  Common.format_to_string (fun () ->
+    pp_flow_simple n
+  )
+
 let string_of_toplevel top =
   Common.format_to_string (fun () ->
     pp_toplevel_simple top

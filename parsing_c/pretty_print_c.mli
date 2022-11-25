@@ -122,6 +122,7 @@ val string_of_expression: Ast_c.expression -> string
  * @author Iago Abal
  *)
 val string_of_ifdef_guard: Ast_c.ifdef_guard -> string
+val string_of_flow: Control_flow_c.node -> string
 val string_of_toplevel: Ast_c.toplevel -> string
 val string_of_fullType: Ast_c.fullType -> string
 val string_of_name: Ast_c.name -> string

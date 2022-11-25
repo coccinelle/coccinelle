@@ -50,8 +50,8 @@ SOURCES_parsing_cocci := \
 SOURCES_parsing_c := \
 	token_annot.ml flag_parsing_c.ml parsing_stat.ml \
 	token_c.ml ast_c.ml includes.ml control_flow_c.ml \
-	visitor_c.ml lib_parsing_c.ml includes_cache.ml control_flow_c_build.ml \
-	pretty_print_c.ml semantic_c.ml lexer_parser.ml parser_c.mly \
+	visitor_c.ml lib_parsing_c.ml includes_cache.ml pretty_print_c.ml \
+	control_flow_c_build.ml semantic_c.ml lexer_parser.ml parser_c.mly \
 	lexer_c.mll parse_string_c.ml token_helpers.ml token_views_c.ml \
 	cpp_token_c.ml parsing_hacks.ml cpp_analysis_c.ml \
 	unparse_cocci.ml parsing_recovery_c.ml parsing_consistency_c.ml \
