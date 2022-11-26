@@ -384,7 +384,7 @@ endef
 	$(RUN_OCAMLLEX) $<
 
 ml_files_but_menhir := $(ml_files_but_parsers) parsing_c/parser_c.ml
-ml_files := $(ml_files_but_menhir) parsing_cocci/parser_cocci_menhir.ml
+ml_files := $(ml_files_but_menhir) parsing_cocci/parser_cocci_menhir.ml coccinelle.ml
 ml_and_mli_files_but_menhir := $(ml_files_but_menhir) $(ml_files_but_menhir:.ml=.mli)
 
 ifneq ($(MAKECMDGOALS),clean)

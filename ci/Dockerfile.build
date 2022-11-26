@@ -3,3 +3,4 @@ FROM $from
 COPY --chown=ci:users . /home/ci/coccinelle/
 ARG configure_options
 RUN cd /home/ci/coccinelle && ./autogen && ./configure $configure_options && make
+RUN cd /home/ci/coccinelle && make coccinelle.cmxa
