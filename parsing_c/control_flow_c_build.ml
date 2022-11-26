@@ -70,7 +70,7 @@ let realstring = ref false
 
 let add_node node labels nodestr g =
   let nodestr =
-    if !realstring
+    if !realstring && (nodestr = "" || String.get nodestr 0 <> '[')
     then Pretty_print_c.string_of_flow (Control_flow_c.mk_node node labels [] "")
     else nodestr in
   g#add_node (Control_flow_c.mk_node node labels [] nodestr)
