@@ -654,15 +654,21 @@ and statement arity s =
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
 	  expression exp; close_box(); mcode print_string rp;
 	  mcode print_string sem
-      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,aft,adj)) ->
+      | Ast0.For(fr,lp,first,rp,body,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string fr; mcode print_string_box lp;
 	  (match Ast0.unwrap first with
-	    Ast0.ForExp(e1,sem1) ->
-	      print_option expression e1; mcode print_string sem1
-	  | Ast0.ForDecl (_,decl) -> declaration decl);
-	  print_option expression e2; mcode print_string sem2;
-	  print_option expression e3; close_box();
+	    Ast0.ForExp(e1,sem1,e2,sem2,e3) ->
+	      print_option expression e1; mcode print_string sem1;
+	      print_option expression e2; mcode print_string sem2;
+	      print_option expression e3
+	  | Ast0.ForDecl (_,decl,e2,sem2,e3) ->
+	      declaration decl;
+	      print_option expression e2; mcode print_string sem2;
+	      print_option expression e3
+	  | Ast0.ForRange (_,decl,exp) ->
+	      declaration decl; expression exp);
+	  close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
       | Ast0.Iterator(nm,lp,args,rp,body,(info,aft,adj)) ->
@@ -914,9 +920,16 @@ let rec unparse_anything x =
   | Ast0.ForInfoTag(fi)  ->
       print_string "ForInfo:"; force_newline();
       (match Ast0.unwrap fi with
-	Ast0.ForExp(e1,sem1) ->
-	  print_option expression e1; mcode print_string sem1
-      | Ast0.ForDecl (_,decl) -> declaration decl)
+	Ast0.ForExp(e1,sem1,e2,sem2,e3) ->
+	  print_option expression e1; mcode print_string sem1;
+	  print_option expression e2; mcode print_string sem2;
+	  print_option expression e3
+      | Ast0.ForDecl (_,decl,e2,sem2,e3) ->
+	  declaration decl;
+	  print_option expression e2; mcode print_string sem2;
+	  print_option expression e3
+      | Ast0.ForRange (_,decl,exp) ->
+	  declaration decl; expression exp)
   | Ast0.CaseLineTag(d)  -> case_line "" d
   | Ast0.StringFragmentTag(d)  -> string_fragment d
   | Ast0.AttributeTag(d) -> print_attribute d

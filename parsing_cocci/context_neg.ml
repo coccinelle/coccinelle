@@ -958,17 +958,18 @@ let equal_statement s1 s2 =
   | (Ast0.Do(d1,_,whl1,lp1,_,rp1,sem1),Ast0.Do(d2,_,whl2,lp2,_,rp2,sem2)) ->
       equal_mcode whl1 whl2 && equal_mcode d1 d2 &&
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 && equal_mcode sem1 sem2
-  | (Ast0.For(fr1,lp1,first1,_,sem21,_,rp1,_,_),
-     Ast0.For(fr2,lp2,first2,_,sem22,_,rp2,_,_)) ->
+  | (Ast0.For(fr1,lp1,first1,rp1,_,_),
+     Ast0.For(fr2,lp2,first2,rp2,_,_)) ->
        let first =
 	 match (Ast0.unwrap first1,Ast0.unwrap first2) with
-	   (Ast0.ForExp(_,sem1),Ast0.ForExp(_,sem2)) ->
-	     equal_mcode sem1 sem2
-	 | (Ast0.ForDecl _,Ast0.ForDecl _) -> true
+	   (Ast0.ForExp(_,sem1,_,sem21,_),Ast0.ForExp(_,sem2,_,sem22,_)) ->
+	     equal_mcode sem1 sem2 && equal_mcode sem21 sem22
+	 | (Ast0.ForDecl(_,_,sem21,_),Ast0.ForDecl(_,_,sem22,_)) ->
+	     equal_mcode sem21 sem22
+	 | (Ast0.ForRange(_,_),Ast0.ForRange(_,_)) -> true
 	 | _ -> false in
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
-       first && equal_mcode sem21 sem22 &&
-       equal_mcode rp1 rp2
+       first && equal_mcode rp1 rp2
   | (Ast0.Iterator(nm1,lp1,_,rp1,_,_),Ast0.Iterator(nm2,lp2,_,rp2,_,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.Switch(switch1,lp1,_,rp1,lb1,_,_,rb1),

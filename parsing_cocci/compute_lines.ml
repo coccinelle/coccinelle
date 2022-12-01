@@ -1147,27 +1147,43 @@ let rec statement s =
 	let rp = normal_mcode rp in
 	mkres s (Ast0.Do(d,body,wh,lp,exp,rp,sem))
 	  (promote_mcode d) (promote_mcode sem)
-    | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(_,aft,adj)) ->
+    | Ast0.For(fr,lp,first,rp,body,(_,aft,adj)) ->
 	let fr = normal_mcode fr in
 	let lp = normal_mcode lp in
 	let first =
 	  match Ast0.unwrap first with
-	    Ast0.ForExp(None,sem1) ->
+	    Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) ->
+	      let exp1 = get_option expression exp1 in
 	      let sem1 = normal_mcode sem1 in
-	      mkres first (Ast0.ForExp(None,sem1))
-		(promote_mcode sem1) (promote_mcode sem1)
-	  | Ast0.ForExp(Some exp1,sem1) ->
-	      let exp1 = expression exp1 in
-	      let sem1 = normal_mcode sem1 in
-	      mkres first (Ast0.ForExp(Some exp1,sem1))
-		exp1 (promote_mcode sem1)
-	  | Ast0.ForDecl((_,bef),decl) ->
+	      let exp2 = get_option expression exp2 in
+	      let sem2 = normal_mcode sem2 in
+	      let exp3 = get_option expression exp3 in
+	      let l1 =
+		match exp1 with
+		  Some exp1 -> exp1
+		| None -> promote_mcode sem1 in
+	      let l3 =
+		match exp3 with
+		  Some exp3 -> exp3
+		| None -> promote_mcode sem2 in
+	      mkres first (Ast0.ForExp(Some exp1,sem1,exp2,sem2,exp3))
+		l1 l3
+	  | Ast0.ForDecl((_,bef),decl,exp2,sem2,exp3) ->
 	      let decl = declaration decl in
 	      let (leftinfo,decl) = promote_to_statement_start decl bef in
-	      mkres first (Ast0.ForDecl ((leftinfo,bef),decl)) decl decl in
-	let exp2 = get_option expression exp2 in
-	let sem2 = normal_mcode sem2 in
-	let exp3 = get_option expression exp3 in
+	      let exp2 = get_option expression exp2 in
+	      let sem2 = normal_mcode sem2 in
+	      let exp3 = get_option expression exp3 in
+	      let l3 =
+		match exp3 with
+		  Some exp3 -> exp3
+		| None -> promote_mcode sem2 in
+	      mkres first (Ast0.ForDecl ((leftinfo,bef),decl,exp2,sem2,exp3)) decl l3
+	  | Ast0.ForRange((_,bef),decl,exp) ->
+	      let decl = declaration decl in
+	      let (leftinfo,decl) = promote_to_statement_start decl bef in
+	      let exp = get_option expression exp in
+	      mkres first (Ast0.ForDecl ((leftinfo,bef),decl,exp)) decl exp in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let (rightinfo,right,body) = promote_to_statement_end body aft in

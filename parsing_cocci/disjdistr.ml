@@ -439,19 +439,29 @@ let rec disj_rule_elem r k re =
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.WhileTail(whl,lp,exp,rp,sem)))
-  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
-      let disjfirst = function
-	  Ast.ForExp(e1,sem1) ->
-	    List.map (function e1 -> Ast.ForExp(e1,sem1))
-	      (disjoption disjexp e1)
-	| Ast.ForDecl decl ->
-	    List.map (function decl -> Ast.ForDecl decl) (anndisjdecl decl) in
-      generic_orify_rule_elem
-	(disjmult_two disjfirst (disjoption disjexp)) re (first,[e2;e3])
-        (function
-            (first,[exp2;exp3]) ->
-              Ast.rewrap re (Ast.ForHeader(fr,lp,first,exp2,sem2,exp3,rp))
-          |  _ -> failwith "not possible")
+  | Ast.ForHeader(fr,lp,first,rp) ->
+      (match Ast.unwrap first with
+	Ast.ForExp(e1,sem1,e2,sem2,e3) ->
+	  disjmult3
+	    (disjoption disjexp e1)
+	    (disjoption disjexp e2)
+	    (disjoption disjexp e3)
+	    (fun e1 e2 e3 ->
+	      let first = Ast.rewrap first (Ast.ForExp(e1,sem1,e2,sem2,e3)) in
+	      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))
+      | Ast.ForDecl(decl,e2,sem2,e3) ->
+	  disjmult3
+	    (disjdecl decl)
+	    (disjoption disjexp e2)
+	    (disjoption disjexp e3)
+	    (fun decl e2 e3 ->
+	      let first = Ast.rewrap first (Ast.ForDecl(decl,e2,sem2,e3)) in
+	      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))
+      | Ast.ForRange(decl,exp) ->
+	  disjmult2 (disjdecl decl) (disjexp exp)
+	    (fun decl exp ->
+	      let first = Ast.rewrap first (Ast.ForRange(decl,exp)) in
+	      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp))))
   | Ast.IteratorHeader(whl,lp,args,rp) ->
       generic_orify_rule_elem (disjdots disjexp) re args
 	(function args -> Ast.rewrap re (Ast.IteratorHeader(whl,lp,args,rp)))

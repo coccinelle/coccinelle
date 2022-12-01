@@ -979,17 +979,14 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [d_n;body_n;whl_n;lp_n;exp_n;rp_n;sem_n],
 	     Ast0.Do(d,body,whl,lp,exp,rp,sem))
-	| Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
+	| Ast0.For(fr,lp,first,rp,body,aft) ->
 	    let (fr_n,fr) = string_mcode fr in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (first_n,first) = forinfo first in
-	    let (e2_n,e2) = get_option expression e2 in
-	    let (sem2_n,sem2) = string_mcode sem2 in
-	    let (e3_n,e3) = get_option expression e3 in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (body_n,body) = statement body in
-	    (multibind [fr_n;lp_n;first_n;e2_n;sem2_n;e3_n;rp_n;body_n],
-	     Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft))
+	    (multibind [fr_n;lp_n;first_n;rp_n;body_n],
+	     Ast0.For(fr,lp,first,rp,body,aft))
 	| Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	    let (nm_n,nm) = ident nm in
 	    let (lp_n,lp) = string_mcode lp in
@@ -1121,13 +1118,25 @@ let visitor mode bind option_default
     let k fi =
       rewrap fi
 	(match Ast0.unwrap fi with
-	  Ast0.ForExp(e1,sem1) ->
+	  Ast0.ForExp(e1,sem1,e2,sem2,e3) ->
 	    let (e1_n,e1) = get_option expression e1 in
 	    let (sem1_n,sem1) = string_mcode sem1 in
-	    (bind e1_n sem1_n, Ast0.ForExp(e1,sem1))
-	| Ast0.ForDecl (bef,decl) ->
+	    let (e2_n,e2) = get_option expression e2 in
+	    let (sem2_n,sem2) = string_mcode sem2 in
+	    let (e3_n,e3) = get_option expression e3 in
+	    (multibind [e1_n;sem1_n;e2_n;sem2_n;e3_n],
+	     Ast0.ForExp(e1,sem1,e2,sem2,e3))
+	| Ast0.ForDecl (bef,decl,e2,sem2,e3) ->
 	    let (decl_n,decl) = declaration decl in
-	    (decl_n,Ast0.ForDecl (bef,decl))) in
+	    let (e2_n,e2) = get_option expression e2 in
+	    let (sem2_n,sem2) = string_mcode sem2 in
+	    let (e3_n,e3) = get_option expression e3 in
+	    (multibind [decl_n;e2_n;sem2_n;e3_n],
+	     Ast0.ForDecl (bef,decl,e2,sem2,e3))
+	| Ast0.ForRange (bef,decl,exp) ->
+	    let (decl_n,decl) = declaration decl in
+	    let (exp_n,exp) = get_option expression exp in
+	    (decl_n,Ast0.ForRange (bef,decl,exp))) in
     forinfofn all_functions k fi
 
   (* not parameterizable for now... *)

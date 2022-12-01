@@ -464,7 +464,7 @@ and base_forinfo =
 	expression option * string mcode (*;*) *
         expression option
   | ForRange of (info * mcodekind) (* before the decl *) * declaration *
-	string mcode (* : *) * expression
+	expression
 
 and forinfo = base_forinfo wrap
 

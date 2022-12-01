@@ -489,14 +489,19 @@ and statement old_metas table minus s =
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       statement old_metas table minus body;
       expression ID old_metas table minus exp
-  | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,_) ->
+  | Ast0.For(fr,lp,first,rp,body,_) ->
       (match Ast0.unwrap first with
-	Ast0.ForExp(exp1,sem1) ->
-	  get_opt (expression ID old_metas table minus) exp1
-      |	Ast0.ForDecl (_,decl) ->
-	  declaration ID old_metas table minus decl);
-      get_opt (expression ID old_metas table minus) exp2;
-      get_opt (expression ID old_metas table minus) exp3;
+	Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) ->
+	  get_opt (expression ID old_metas table minus) exp1;
+	  get_opt (expression ID old_metas table minus) exp2;
+	  get_opt (expression ID old_metas table minus) exp3
+      |	Ast0.ForDecl (_,decl,exp2,sem2,exp3) ->
+	  declaration ID old_metas table minus decl;
+	  get_opt (expression ID old_metas table minus) exp2;
+	  get_opt (expression ID old_metas table minus) exp3
+      |	Ast0.ForRange (_,decl,exp) ->
+	  declaration ID old_metas table minus decl;
+	  expression ID old_metas table minus exp);
       statement old_metas table minus body
   | Ast0.Iterator(nm,lp,args,rp,body,_) ->
       ident GLOBAL old_metas table minus nm;

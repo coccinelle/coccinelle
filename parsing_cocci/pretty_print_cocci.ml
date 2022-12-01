@@ -806,11 +806,10 @@ and rule_elem arity re =
       mcode print_string whl; print_string " "; mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp;
       mcode print_string sem
-  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+  | Ast.ForHeader(fr,lp,first,rp) ->
       print_string arity;
       mcode print_string fr; mcode print_string_box lp; forinfo first;
-      print_option expression e2; mcode print_string sem2;
-      print_option expression e3; close_box();
+      close_box();
       mcode print_string rp; print_string " "
   | Ast.IteratorHeader(nm,lp,args,rp) ->
       print_string arity;
@@ -878,9 +877,16 @@ and rule_elem arity re =
       force_newline(); print_string ")"
 
 and forinfo = function
-    Ast.ForExp(e1,sem1) ->
-      print_option expression e1; mcode print_string sem1
-  | Ast.ForDecl(ann_decl) -> annotated_decl "" ann_decl
+    Ast.ForExp(e1,sem1,e2,sem2,e3) ->
+      print_option expression e1; mcode print_string sem1;
+      print_option expression e2; mcode print_string sem2;
+      print_option expression e3
+  | Ast.ForDecl(ann_decl,e2,sem2,e3) ->
+      annotated_decl "" ann_decl;
+      print_option expression e2; mcode print_string sem2;
+      print_option expression e3
+  | Ast.ForRange(ann_decl, exp) ->
+      annotated_decl "" ann_decl; expression e1
 
 and pragmainfo pi =
   match Ast.unwrap pi with

@@ -518,7 +518,8 @@ and statement = statementbis wrap3
 
   and declOrExpr =
       ForDecl of declaration * exprStatement wrap * exprStatement wrap
-    | ForExp of expression option wrap * exprStatement wrap * exprStatement wrap
+    | ForExp of
+	expression option wrap * exprStatement wrap * exprStatement wrap
     | ForRange of declaration * expression
 
  (* for Switch, need check that all elements in the compound start

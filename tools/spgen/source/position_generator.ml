@@ -461,14 +461,17 @@ let rec field_pos decl snp
 let forinfo_pos f snp
 : (Ast0.base_forinfo Ast0.wrap * Snap.t) option =
   match Ast0.unwrap f with
-  | Ast0.ForExp (Some exp, sem) ->
+  | Ast0.ForExp (Some exp,sem,expo1,sem,expo2) ->
       let c ~exp ~mc = Ast0.ForExp(Some exp, mc) in
       let alt() = mcode_wrap ~mc:sem ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~mc:sem) ~alt snp
-  | Ast0.ForExp (None, sem) ->
+  | Ast0.ForExp (None,sem,expo1,sem,expo2) ->
       let constructor ~mc = Ast0.ForExp (None, mc) in
       mcode_wrap ~mc:sem ~constructor snp
-  | Ast0.ForDecl (bef, decl) ->
+  | Ast0.ForDecl (bef,decl,expo1,sem,expo2) ->
+      let constructor ~item = Ast0.ForDecl(bef, item) in
+      item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor snp
+  | Ast0.ForDecl (bef,decl,expo) ->
       let constructor ~item = Ast0.ForDecl(bef, item) in
       item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor snp
 
@@ -552,8 +555,8 @@ let rec statement_pos s snp
       let c ~exp ~mc = Ast0.Do(mc, s, whmc, l, exp, r, sem) in
       let alt() = mcode_wrap ~mc:d ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~mc:d) ~alt snp
-  | Ast0.For (fo,lp, fi,expo1,sem,expo2,rp,stmt,a) ->
-      let c ~item ~mc = Ast0.For (mc,lp,item,expo1,sem,expo2,rp,stmt,a) in
+  | Ast0.For (fo,lp, fi,rp,stmt,a) ->
+      let c ~item ~mc = Ast0.For (mc,lp,item,rp,stmt,a) in
       let alt() = mcode_wrap ~mc:fo ~constructor:(c ~item:fi) snp in
       item_wrap
         ~item:fi ~item_posfn:forinfo_pos ~constructor:(c ~mc:fo) ~alt snp

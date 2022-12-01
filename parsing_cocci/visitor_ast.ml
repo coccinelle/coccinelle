@@ -723,7 +723,7 @@ let combiner bind option_default
 	  let lrp = string_mcode rp in
 	  let lsem = string_mcode sem in
 	  multibind [lwhl; llp; lexp; lrp; lsem]
-      | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+      | Ast.ForHeader(fr,lp,first,rp) ->
 	  let lfr = string_mcode fr in
 	  let llp = string_mcode lp in
 	  let lfirst = forinfo first in
@@ -1865,11 +1865,23 @@ let rebuilder
   (* not parameterizable for now... *)
   and forinfo fi =
     let k = function
-      Ast.ForExp(e1,sem1) ->
+      Ast.ForExp(e1,sem1,e2,sem2,e3) ->
 	let le1 = get_option expression e1 in
 	let lsem1 = string_mcode sem1 in
-	Ast.ForExp(le1, lsem1)
-    | Ast.ForDecl decl -> Ast.ForDecl (annotated_decl decl) in
+	let le2 = get_option expression e2 in
+	let lsem2 = string_mcode sem2 in
+	let le3 = get_option expression e3 in
+	Ast.ForExp(le1,lsem1,le2,lsem2,le3)
+    | Ast.ForDecl(decl,e2,sem2,e3) ->
+	let decl = annotated_decl decl in
+	let le2 = get_option expression e2 in
+	let lsem2 = string_mcode sem2 in
+	let le3 = get_option expression e3 in
+	Ast.ForDecl (decl,le2,lsem2,le3)
+    | Ast.ForRange(decl,exp) ->
+	let decl = annotated_decl decl in
+	let exp = get_option expression exp in
+	Ast.ForRange (decl,exp) in
     k fi
 
   (* not parameterizable for now... *)

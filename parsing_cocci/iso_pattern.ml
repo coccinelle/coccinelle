@@ -1312,22 +1312,29 @@ let match_maker checks_needed context_required whencode_allowed =
 		 [check_mcode d1 d; check_mcode w1 w; check_mcode lp1 lp;
 		   check_mcode rp1 rp; match_statement bodya bodyb;
 		   match_expr expa expb]
-	  | (Ast0.For(f1,lp1,firsta,e2a,sc2a,e3a,rp1,bodya,_),
-	     Ast0.For(f,lp,firstb,e2b,sc2b,e3b,rp,bodyb,_)) ->
+	  | (Ast0.For(f1,lp1,firsta,rp1,bodya,_),
+	     Ast0.For(f,lp,firstb,rp,bodyb,_)) ->
 	       let first =
 		 match (Ast0.unwrap firsta,Ast0.unwrap firstb) with
-		   (Ast0.ForExp(e1a,sc1a),Ast0.ForExp(e1b,sc1b)) ->
+		   (Ast0.ForExp(e1a,sc1a,e2a,sc2a,e3a),Ast0.ForExp(e1b,sc1b,e2b,sc2b,e3b)) ->
+		     conjunct_many_bindings
+		       [check_mcode sc2a sc2b;
+			 match_option match_expr e1a e1b;
+			 match_option match_expr e2a e2b;
+			 match_option match_expr e3a e3b]
+		 | (Ast0.ForDecl (_,decla,e2a,sc2a,e3a),Ast0.ForDecl (_,declb,e2b,sc2b,e3b)) ->
+		     conjunct_many_bindings
+		       [match_decl decla declb;
+			 match_option match_expr e2a e2b;
+			 match_option match_expr e3a e3b]
+		 | (Ast0.ForRange (_,decla,e2a),Ast0.ForRange (_,declb,e2b)) ->
 		     conjunct_bindings
-		       (check_mcode sc2a sc2b)
-		       (match_option match_expr e1a e1b)
-		 | (Ast0.ForDecl (_,decla),Ast0.ForDecl (_,declb)) ->
-		     match_decl decla declb
+		       (match_decl decla declb)
+		       (match_option match_expr e2a e2b)
 		 | _ -> return false in
 	       conjunct_many_bindings
 		 [check_mcode f1 f; check_mcode lp1 lp; first;
 		   check_mcode sc2a sc2b; check_mcode rp1 rp;
-		   match_option match_expr e2a e2b;
-		   match_option match_expr e3a e3b;
 		   match_statement bodya bodyb]
 	  | (Ast0.Iterator(nma,lp1,argsa,rp1,bodya,_),
 	     Ast0.Iterator(nmb,lp,argsb,rp,bodyb,_)) ->

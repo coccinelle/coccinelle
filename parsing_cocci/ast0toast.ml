@@ -965,13 +965,10 @@ and statement s =
 		 tokenwrap wh s
 		   (Ast.WhileTail(wh,mcode lp,expression exp,mcode rp,
 				  mcode sem)))
-      | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,aft) ->
+      | Ast0.For(fr,lp,first,rp,body,aft) ->
 	  let fr = mcode fr in
 	  let lp = mcode lp in
 	  let first = forinfo first in
-	  let exp2 = get_option expression exp2 in
-	  let sem2= mcode sem2 in
-	  let exp3 = get_option expression exp3 in
 	  let rp = mcode rp in
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap_rule_elem s
@@ -1212,11 +1209,23 @@ and define_param_dots l = dots define_param l
 
 and forinfo fi =
   match Ast0.unwrap fi with
-    Ast0.ForExp(exp1,sem1) ->
+    Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) ->
       let exp1 = get_option expression exp1 in
       let sem1 = mcode sem1 in
-      Ast.ForExp(exp1,sem1)
-  | Ast0.ForDecl ((_,bef),decl) -> Ast.ForDecl(annotated_decl (Some bef) decl)
+      let exp2 = get_option expression exp2 in
+      let sem2 = mcode sem2 in
+      let exp3 = get_option expression exp3 in
+      Ast.ForExp(exp1,sem1,exp2,sem2,exp3)
+  | Ast0.ForDecl ((_,bef),decl,exp2,sem2,exp3) ->
+      let decl = annotated_decl (Some bef) decl in
+      let exp2 = get_option expression exp2 in
+      let sem2 = mcode sem2 in
+      let exp3 = get_option expression exp3 in
+      Ast.ForDecl(decl,exp2,sem2,exp3)
+  | Ast0.ForRange ((_,bef),decl,exp) ->
+      let decl = annotated_decl (Some bef) decl in
+      let exp = expression exp in
+      Ast.ForRange(decl,exp)
 
 and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)

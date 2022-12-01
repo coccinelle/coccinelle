@@ -652,17 +652,19 @@ and unify_rule_elem re1 re2 =
   | (Ast.DoHeader(d1),Ast.DoHeader(d2)) -> true
   | (Ast.WhileTail(wh1,lp1,e1,rp1,s1),Ast.WhileTail(wh2,lp2,e2,rp2,s2)) ->
       unify_expression e1 e2
-  | (Ast.ForHeader(fr1,lp1,first1,e21,s21,e31,rp1),
-     Ast.ForHeader(fr2,lp2,first2,e22,s22,e32,rp2)) ->
-       let first =
-	 match (first1,first2) with
-	   (Ast.ForExp(e11,s11),Ast.ForExp(e12,s1)) ->
-	     unify_option unify_expression e11 e12
-	 | (Ast.ForDecl d1,Ast.ForDecl d2) -> unify_annotated_decl d1 d2
-	 | _ -> false in
-       first &&
-       unify_option unify_expression e21 e22 &&
-       unify_option unify_expression e31 e32
+  | (Ast.ForHeader(fr1,lp1,first1,rp1),Ast.ForHeader(fr2,lp2,first2,rp2)) ->
+       (match (first1,first2) with
+	 (Ast.ForExp(e11,s11,e21,s21,e31),Ast.ForExp(e12,s12,e22,s22,e32)) ->
+	   unify_option unify_expression e11 e12 &&
+	   unify_option unify_expression e21 e22 &&
+	   unify_option unify_expression e31 e32
+       | (Ast.ForDecl(d1,e21,s21,e31),Ast.ForDecl(d2,e22,s22,e32)) ->
+	   unify_annotated_decl d1 d2 &&
+	   unify_option unify_expression e21 e22 &&
+	   unify_option unify_expression e31 e32
+       | (Ast.ForRange(d1,e1),Ast.ForDecl(d2,e2)) ->
+	   unify_annotated_decl d1 d2 && unify_expression e1 e2
+       | _ -> false)
   | (Ast.IteratorHeader(nm1,lp1,args1,rp1),
      Ast.IteratorHeader(nm2,lp2,args2,rp2)) ->
        unify_ident nm1 nm2 &&

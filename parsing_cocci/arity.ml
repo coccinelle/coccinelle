@@ -972,32 +972,41 @@ and statement tgt stm =
       let rp = mcode rp in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.Do(d,body,wh,lp,exp,rp,sem))
-  | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,aft) ->
+  | Ast0.For(fr,lp,first,rp,body,aft) ->
       let arity =
-	let mcodes = [fr;lp;sem2;rp] in
+	let mcodes = [fr;lp;rp] in
 	let mcodes =
 	  match Ast0.unwrap first with
-	    Ast0.ForExp(exp1,sem1) -> sem1::mcodes
-	  | Ast0.ForDecl _ -> mcodes in
+	    Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) -> sem1::sem2::mcodes
+	  | Ast0.ForDecl(decl,exp2,sem2,exp3) -> sem2::mcodes
+	  | Ast0.ForRange(decl,exp) -> mcodes in
 	stm_same (mcode2line fr) (List.map mcode2arity mcodes) in
       let fr = mcode fr in
       let lp = mcode lp in
       let first =
 	match Ast0.unwrap first with
-	  Ast0.ForExp(exp1,sem1) ->
+	  Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) ->
 	    let exp1 = get_option (expression arity) exp1 in
 	    let sem1 = mcode sem1 in
-	    Ast0.rewrap first (Ast0.ForExp(exp1,sem1))
-	| Ast0.ForDecl (bef,decl) ->
+	    let exp2 = get_option (expression arity) exp2 in
+	    let sem2 = mcode sem2 in
+	    let exp3 = get_option (expression arity) exp3 in
+	    Ast0.rewrap first (Ast0.ForExp(exp1,sem1,exp2,sem2,exp3))
+	| Ast0.ForDecl (bef,decl,exp2,sem2,exp3) ->
+	    let decl = declaration arity decl in
+	    let exp2 = get_option (expression arity) exp2 in
+	    let sem2 = mcode sem2 in
+	    let exp3 = get_option (expression arity) exp3 in
 	    Ast0.rewrap first
-	      (Ast0.ForDecl(bef,declaration arity decl)) in
-      let exp2 = get_option (expression arity) exp2 in
-      let sem2 = mcode sem2 in
-      let exp3 = get_option (expression arity) exp3 in
+	      (Ast0.ForDecl(bef,decl,exp2,sem2,exp3))
+	| Ast0.ForRange(bef,decl,exp) ->
+	    let decl = declaration arity decl in
+	    let exp = expression arity exp in
+	    Ast0.rewrap first (Ast0.ForRange(bef,decl,exp)) in
       let rp = mcode rp in
       let body = statement arity body in
       make_rule_elem stm tgt arity
-	(Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,aft))
+	(Ast0.For(fr,lp,first,rp,body,aft))
   | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
       let arity = stm_same (mcode2line lp) (List.map mcode2arity [lp;rp]) in
       let nm = ident false arity nm in
