@@ -839,35 +839,7 @@ let rec extract_sub_constraints = function
   | c -> [], c
 
 let string_of_expression exp =
-  let warning s = pr2_once ("WARNING: "^s); "" in
-  match Ast_c.unwrap_expr exp with
-    Ast_c.Ident (name) ->
-      (match name with
-	Ast_c.RegularName     rname -> Ast_c.unwrap_st rname
-      | Ast_c.Operator _ ->
-	  warning
-	    "Unable to apply a constraint on an Operator identifier!"
-      | Ast_c.CppConcatenatedName _ ->
-	  warning
-	    "Unable to apply a constraint on a CppConcatenatedName identifier!"
-      | Ast_c.CppVariadicName     _ ->
-	  warning
-	    "Unable to apply a constraint on a CppVariadicName identifier!"
-      | Ast_c.CppIdentBuilder     _ ->
-	  warning
-	    "Unable to apply a constraint on a CppIdentBuilder identifier!")
-  | Ast_c.Constant cst ->
-      (match cst with
-	Ast_c.String (str, _) -> Printf.sprintf "\"%s\"" str
-      | Ast_c.MultiString strlist ->
-	  warning "Unable to apply a constraint on a multistring constant!"
-      | Ast_c.Char  (char , _) -> char
-      | Ast_c.Int   (int  , _) -> int
-      | Ast_c.Float (float, _) -> float
-      | Ast_c.DecimalConst (d, n, p) ->
-	  warning "Unable to apply a constraint on a decimal constant!")
-  | Ast_c.StringConstant (cst,orig,w) -> orig
-  | _ -> warning "Unable to apply a constraint on an expression!"
+  Pretty_print_c.string_of_expression exp
 
 (*****************************************************************************)
 (* Functor code, "Cocci vs C" *)
