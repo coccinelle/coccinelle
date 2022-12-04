@@ -89,9 +89,9 @@ AC_CHECK_OCAMLVERSION([OCAMLATLEAST4030],[4.03])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST50],[5.0])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
-AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLDOC" = xno -o "x$OCAMLMKLIB" = xno],
+AS_IF([test "x$OCAMLC" = xno -o "x$OCAMLDEP" = xno -o "x$OCAMLMKLIB" = xno],
 [dnl
-  AC_MSG_ERROR([It seems a few components of the OCaml distribution could not be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamldoc, ocamlmklib.])
+  AC_MSG_ERROR([It seems a few components of the OCaml distribution could not be found. Make sure the following tools are installed and in your path: ocamlc, ocamldep, ocamlmklib.])
 ])
 
 dnl  ocaml tools
