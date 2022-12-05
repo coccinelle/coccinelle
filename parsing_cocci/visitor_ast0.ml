@@ -1135,7 +1135,7 @@ let visitor mode bind option_default
 	     Ast0.ForDecl (bef,decl,e2,sem2,e3))
 	| Ast0.ForRange (bef,decl,exp) ->
 	    let (decl_n,decl) = declaration decl in
-	    let (exp_n,exp) = get_option expression exp in
+	    let (exp_n,exp) = expression exp in
 	    (decl_n,Ast0.ForRange (bef,decl,exp))) in
     forinfofn all_functions k fi
 

@@ -1011,7 +1011,6 @@ and vk_node = fun bigf node ->
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
     | F.ForHeader (_st, ((ForRange(decl, exp)), ii)) ->
-        iif i2; iif i3;
         iif ii;
         decl  +> (vk_decl bigf);
 	vk_expr bigf exp
@@ -1422,21 +1421,22 @@ and vk_statement_s = fun bigf st ->
 		let i3' = Ast_c.get_ii_st_take_care e3opt' in
 
 		(match (e1',e2',e3') with
-		  (ExprStatement x1),(ExprStatement x2), (ExprStatement x3) ->
-		    ForExp((x1,i1'),(x2,i3'),(x2,i3'))
+		  (ExprStatement x1,ExprStatement x2,ExprStatement x3) ->
+		    ForExp((x1,i1'),(x2,i2'),(x2,i3'))
 		| _ ->
 		    failwith
 		      "can't be here if iterator keep ExprStatement as is")
 	    | ForDecl(decl, (e2opt,i2), (e3opt,i3)) ->
+		let decl = vk_decl_s bigf decl in
 		let e2opt' = statf (mk_st (ExprStatement (e2opt)) i2) in
 		let e3opt' = statf (mk_st (ExprStatement (e3opt)) i3) in
 		let e2' = Ast_c.unwrap_st e2opt' in
 		let e3' = Ast_c.unwrap_st e3opt' in
 		let i2' = Ast_c.get_ii_st_take_care e2opt' in
 		let i3' = Ast_c.get_ii_st_take_care e3opt' in
-		(match (e1',e2',e3') with
-		  (ExprStatement x1),(ExprStatement x2), (ExprStatement x3) ->
-		    ForDecl (vk_decl_s bigf decl,(x2,i3'),(x2,i3'))
+		(match (e2',e3') with
+		  (ExprStatement x2, ExprStatement x3) ->
+		    ForDecl (decl,(x2,i2'),(x2,i3'))
 		| _ ->
 		    failwith
 		      "can't be here if iterator keep ExprStatement as is")
@@ -2046,18 +2046,21 @@ and vk_node_s = fun bigf node ->
     | F.DoWhileTail (e,ii)  ->
         F.DoWhileTail (vk_expr_s bigf e, iif ii)
 
-    | F.ForHeader (st, ((first, (e2opt,i2), (e3opt,i3)), ii)) ->
+    | F.ForHeader (st, (first, ii)) ->
 	let first =
 	  match first with
-	    ForExp (e1opt,i1) ->
-	      ForExp (e1opt +> Common.map_option (vk_expr_s bigf), iif i1)
-	  | ForDecl decl -> ForDecl (vk_decl_s bigf decl) in
+	    ForExp ((e1opt,i1), (e2opt,i2), (e3opt,i3)) ->
+	      ForExp ((e1opt +> Common.map_option (vk_expr_s bigf), iif i1),
+                      (e2opt +> Common.map_option (vk_expr_s bigf), iif i2),
+                      (e3opt +> Common.map_option (vk_expr_s bigf), iif i3))
+	  | ForDecl (decl, (e2opt,i2), (e3opt,i3)) ->
+	      ForDecl (vk_decl_s bigf decl,
+                       (e2opt +> Common.map_option (vk_expr_s bigf), iif i2),
+                       (e3opt +> Common.map_option (vk_expr_s bigf), iif i3))
+	  | ForRange (decl, exp) ->
+	      ForRange (vk_decl_s bigf decl, vk_expr_s bigf exp) in
 
-        F.ForHeader (st,
-                    ((first,
-                     (e2opt +> Common.map_option (vk_expr_s bigf), iif i2),
-                     (e3opt +> Common.map_option (vk_expr_s bigf), iif i3)),
-                    iif ii))
+        F.ForHeader (st, (first, iif ii))
 
     | F.MacroIterHeader (st, ((s,es), ii)) ->
         F.MacroIterHeader

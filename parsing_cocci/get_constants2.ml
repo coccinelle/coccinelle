@@ -606,7 +606,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	bind (keywords "while") (k re)
     | Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	bind (keywords "do") (k re)
-    | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+    | Ast.ForHeader(fr,lp,first,rp) ->
 	bind (keywords "for") (k re)
     | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	bind (keywords "switch") (k re)
@@ -709,7 +709,9 @@ let all_context =
       Ast.FunHeader(bef,_,_,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
     | Ast.Decl decl ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
-    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,e2,sem2,e3),rp) ->
+	bind (process_mcodekind (annotated_decl decl)) (k e)
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,e2),rp) ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 

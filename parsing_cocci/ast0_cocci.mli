@@ -384,8 +384,7 @@ and base_statement =
 	             expression * string mcode (* ) *) *
                      string mcode (* ; *)
   | For           of string mcode (* for *) * string mcode (* ( *) * forinfo *
-	             expression option * string mcode (*;*) *
-                     expression option * string mcode (* ) *) * statement *
+	             string mcode (* ) *) * statement *
 	             fake_mcode (* after info *)
   | Iterator      of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *) *

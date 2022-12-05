@@ -727,11 +727,8 @@ let combiner bind option_default
 	  let lfr = string_mcode fr in
 	  let llp = string_mcode lp in
 	  let lfirst = forinfo first in
-	  let le2 = get_option expression e2 in
-	  let lsem2 = string_mcode sem2 in
-	  let le3 = get_option expression e3 in
 	  let lrp = string_mcode rp in
-	  multibind [lfr; llp; lfirst; le2; lsem2; le3; lrp]
+	  multibind [lfr; llp; lfirst; lrp]
       | Ast.IteratorHeader(nm,lp,args,rp) ->
 	  let lnm = ident nm in
 	  let llp = string_mcode lp in
@@ -826,11 +823,23 @@ let combiner bind option_default
   (* not parameterisable, for now *)
   and forinfo fi =
     let k = function
-	Ast.ForExp(e1,sem1) ->
+	Ast.ForExp(e1,sem1,e2,sem2,e3) ->
 	  let le1 = get_option expression e1 in
 	  let lsem1 = string_mcode sem1 in
-	  bind le1 lsem1
-      | Ast.ForDecl decl -> annotated_decl decl in
+	  let le2 = get_option expression e2 in
+	  let lsem2 = string_mcode sem2 in
+	  let le3 = get_option expression e3 in
+	  multibind [le1;lsem1;le2;lsem2;le3]
+      | Ast.ForDecl(decl,e2,sem2,e3) ->
+	  let ldecl = annotated_decl decl in
+	  let le2 = get_option expression e2 in
+	  let lsem2 = string_mcode sem2 in
+	  let le3 = get_option expression e3 in
+	  multibind [ldecl;le2;lsem2;le3]
+      | Ast.ForRange (decl,exp) ->
+	  let ldecl = annotated_decl decl in
+	  let lexp = expression exp in
+	  bind ldecl lexp in
     k fi
 
   (* not parameterisable, for now *)
@@ -1759,15 +1768,12 @@ let rebuilder
 	    let lrp = string_mcode rp in
 	    let lsem = string_mcode sem in
 	    Ast.WhileTail(lwhl, llp, lexp, lrp, lsem)
-	| Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+	| Ast.ForHeader(fr,lp,first,rp) ->
 	    let lfr = string_mcode fr in
 	    let llp = string_mcode lp in
 	    let lfirst = forinfo first in
-	    let le2 = get_option expression e2 in
-	    let lsem2 = string_mcode sem2 in
-	    let le3 = get_option expression e3 in
 	    let lrp = string_mcode rp in
-	    Ast.ForHeader(lfr, llp, lfirst, le2, lsem2, le3, lrp)
+	    Ast.ForHeader(lfr, llp, lfirst, lrp)
 	| Ast.IteratorHeader(whl,lp,args,rp) ->
 	    let lnm = ident whl in
 	    let llp = string_mcode lp in
@@ -1880,7 +1886,7 @@ let rebuilder
 	Ast.ForDecl (decl,le2,lsem2,le3)
     | Ast.ForRange(decl,exp) ->
 	let decl = annotated_decl decl in
-	let exp = get_option expression exp in
+	let exp = expression exp in
 	Ast.ForRange (decl,exp) in
     k fi
 

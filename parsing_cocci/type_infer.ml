@@ -435,21 +435,29 @@ let rec propagate_types env =
 	let _ = k s in
         post_bool exp;
         None
-    | Ast0.For(a,b,first,exp,c,d,e,f,g) ->
+    | Ast0.For(a,b,first,e,f,g) ->
 	(match Ast0.unwrap first with
-	  Ast0.ForExp _ ->
-	    (match exp with
+	  Ast0.ForExp(e1,sem1,e2,sem2,e3) ->
+	    (match e2 with
 	      Some exp ->
 		let _ = k s in
 		post_bool exp;
 		None
 	    | None -> k s)
-	| Ast0.ForDecl (_,decl) ->
+	| Ast0.ForDecl (_,decl,e2,sem2,e3) ->
 	(* not super elegant..., reuses a ; (d) *)
 	    let newenv = (process_decl env decl)@env in
-	    let dummy = Ast0.rewrap first (Ast0.ForExp (None,c)) in
+	    let dummy =
+	      Ast0.rewrap first (Ast0.ForExp (None,sem2,e2,sem2,e3)) in
 	    (propagate_types newenv).VT0.combiner_rec_statement
-	      (Ast0.rewrap s (Ast0.For(a,b,dummy,exp,c,d,e,f,g))))
+	      (Ast0.rewrap s (Ast0.For(a,b,dummy,e,f,g)))
+	| Ast0.ForRange (_,decl,e2) ->
+	    let newenv = (process_decl env decl)@env in
+	    let sem = Ast0_cocci.make_mcode ";" in
+	    let dummy =
+	      Ast0.rewrap first (Ast0.ForExp (None,sem,None,sem,Some e2)) in
+	    (propagate_types newenv).VT0.combiner_rec_statement
+	      (Ast0.rewrap s (Ast0.For(a,b,dummy,e,f,g))))
     | Ast0.Switch(_,_,exp,_,_,decls,cases,_) ->
 	let senv = process_statement_list r env (Ast0.unwrap decls) in
 	let res =

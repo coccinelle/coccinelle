@@ -397,7 +397,7 @@ and pp_string_format (e,ii) =
 	  | ForRange(decl,exp) ->
 	      pp_decl decl;
 	      pr_space();
-	      pp_expression e);
+	      pp_expression exp);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
           pr_elem iifakend
@@ -459,7 +459,7 @@ and pp_string_format (e,ii) =
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
     | Selection (Ifdef_Ite _) | Selection (Ifdef_Ite2 _)
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
-    | Iteration  (For (_, (_,_), (_, _), _))
+    | Iteration  (For (_, _))
     | Iteration  (MacroIteration (_,_,_))
     | Jump ((Continue|Break|Return)) | Jump (ReturnExpr _)
     | Jump (GotoComputed _)
@@ -1512,19 +1512,27 @@ and pp_init (init, iinit) =
 	pr_elem i3; pr_elem i4
 
 
-    | F.ForHeader (_st, ((first, (e2opt,il2), (e3opt,il3)), ii)) ->
+    | F.ForHeader (_st, ((first), ii)) ->
 	let (i1,i2,i3) = tuple_of_list3 ii in
 	pr_elem i1; pr_space();
 	pr_elem i2;
 	(match first with
-	  ForExp (e1opt,il1) ->
-	    pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1)
-	| ForDecl decl -> pp_decl decl);
-	pr_space();
-	pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
-	assert (il3 = []);
-	pr_space();
-	pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3);
+	  ForExp ((e1opt,il1), (e2opt,il2), (e3opt,il3)) ->
+	    pp_statement (Ast_c.mk_st (ExprStatement e1opt) il1);
+	    pr_space();
+	    pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
+	    assert (il3 = []);
+	    pr_space();
+	    pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
+	| ForDecl (decl, (e2opt,il2), (e3opt,il3)) ->
+	    pp_decl decl;
+	    pr_space();
+	    pp_statement (Ast_c.mk_st (ExprStatement e2opt) il2);
+	    assert (il3 = []);
+	    pr_space();
+	    pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
+	| ForRange (decl, exp) ->
+	    pp_decl decl; pr_space(); pp_expression exp);
 	pr_elem i3
 
     | F.MacroIterHeader (_s, ((s,es), ii)) ->

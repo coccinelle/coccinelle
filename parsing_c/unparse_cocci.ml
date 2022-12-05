@@ -1286,12 +1286,10 @@ and rule_elem arity re =
       mcode print_string whl; pr_space(); mcode print_string_box lp;
       expression exp; close_box(); mcode print_string rp;
       mcode print_string sem
-  | Ast.ForHeader(fr,lp,first,e2,sem2,e3,rp) ->
+  | Ast.ForHeader(fr,lp,first,rp) ->
       pr_arity arity;
       mcode print_string fr; mcode print_string_box lp; forinfo first;
-      print_option expression e2; mcode print_string sem2;
-      print_option expression e3; close_box();
-      mcode print_string rp
+      close_box(); mcode print_string rp
   | Ast.IteratorHeader(nm,lp,args,rp) ->
       pr_arity arity;
       ident nm; pr_space(); mcode print_string_box lp;
@@ -1374,9 +1372,16 @@ and pragmainfo pi =
     | Ast.PragmaDots (dots) -> mcode print_string dots
 
 and forinfo = function
-    Ast.ForExp(e1,sem1) ->
-      print_option expression e1; mcode print_string sem1
-  | Ast.ForDecl decl -> annotated_decl decl
+    Ast.ForExp(e1,sem1,e2,sem2,e3) ->
+      print_option expression e1; mcode print_string sem1;
+      print_option expression e2; mcode print_string sem2;
+      print_option expression e3
+  | Ast.ForDecl(ann_decl,e2,sem2,e3) ->
+      annotated_decl ann_decl;
+      print_option expression e2; mcode print_string sem2;
+      print_option expression e3
+  | Ast.ForRange(ann_decl, exp) ->
+      annotated_decl ann_decl; expression exp
 
 and print_define_parameters params =
   match Ast.unwrap params with

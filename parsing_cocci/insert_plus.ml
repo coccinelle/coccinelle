@@ -296,7 +296,7 @@ bind to that; not good for isomorphisms *)
  (*     Ast0.IfThen(_,_,_,_,_,aft)
     | Ast0.IfThenElse(_,_,_,_,_,_,_,aft)
     | Ast0.While(_,_,_,_,_,aft)
-    | Ast0.For(_,_,_,_,_,_,_,_,aft)
+    | Ast0.For(_,_,_,_,_,aft)
     | Ast0.Iterator(_,_,_,_,_,aft) ->
 	redo_branched (do_nothing r k s) aft*)
     | Ast0.FunDecl((info,bef),fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,
@@ -319,7 +319,9 @@ bind to that; not good for isomorphisms *)
 
   let forinfo r k s =
     match Ast0.unwrap s with
-      Ast0.ForDecl((info,bef),decl) ->
+      Ast0.ForDecl((info,bef),decl,e2,sem2,e3) ->
+	(Decl,info,bef)::(k s)
+    | Ast0.ForRange((info,bef),decl,e2) ->
 	(Decl,info,bef)::(k s)
     | _ -> k s in
 
@@ -649,8 +651,8 @@ let collect_plus_nodes root =
 	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.While(whl,lp,exp,rp,body,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
-    | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
-	do_nothing_extra [] (info aft)mk_statement r k e
+    | Ast0.For(fr,lp,first,rp,body,aft) ->
+	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
     | _ -> do_nothing mk_statement r k e in
@@ -1239,7 +1241,7 @@ let reevaluate_contextness =
 	 donothing_extra (info aft) r k e
      | Ast0.While(whl,lp,exp,rp,body,aft) ->
 	 donothing_extra (info aft) r k e
-     | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
+     | Ast0.For(fr,lp,first,rp,body,aft) ->
 	 donothing_extra (info aft) r k e
      | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	 donothing_extra (info aft) r k e

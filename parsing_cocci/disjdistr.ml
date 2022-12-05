@@ -440,28 +440,42 @@ let rec disj_rule_elem r k re =
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.WhileTail(whl,lp,exp,rp,sem)))
   | Ast.ForHeader(fr,lp,first,rp) ->
-      (match Ast.unwrap first with
+      (match first with
 	Ast.ForExp(e1,sem1,e2,sem2,e3) ->
-	  disjmult3
-	    (disjoption disjexp e1)
-	    (disjoption disjexp e2)
-	    (disjoption disjexp e3)
-	    (fun e1 e2 e3 ->
-	      let first = Ast.rewrap first (Ast.ForExp(e1,sem1,e2,sem2,e3)) in
-	      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))
+	  generic_orify_rule_elem (disjoption disjexp) re e1
+	    (function e1 ->
+	      let first = Ast.ForExp(e1,sem1,e2,sem2,e3) in
+	      let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
+	      generic_orify_rule_elem (disjoption disjexp) re e2
+		(function e2 ->
+		  let first = Ast.ForExp(e1,sem1,e2,sem2,e3) in
+		  let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
+		  generic_orify_rule_elem (disjoption disjexp) re e3
+		    (function e3 ->
+		      let first = Ast.ForExp(e1,sem1,e2,sem2,e3) in
+		      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))))
       | Ast.ForDecl(decl,e2,sem2,e3) ->
-	  disjmult3
-	    (disjdecl decl)
-	    (disjoption disjexp e2)
-	    (disjoption disjexp e3)
-	    (fun decl e2 e3 ->
-	      let first = Ast.rewrap first (Ast.ForDecl(decl,e2,sem2,e3)) in
-	      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))
-      | Ast.ForRange(decl,exp) ->
-	  disjmult2 (disjdecl decl) (disjexp exp)
-	    (fun decl exp ->
-	      let first = Ast.rewrap first (Ast.ForRange(decl,exp)) in
-	      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp))))
+	  generic_orify_rule_elem anndisjdecl re decl
+	    (function decl ->
+	      let first = Ast.ForDecl(decl,e2,sem2,e3) in
+	      let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
+	      generic_orify_rule_elem (disjoption disjexp) re e2
+		(function e2 ->
+		  let first = Ast.ForDecl(decl,e2,sem2,e3) in
+		  let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
+		  generic_orify_rule_elem (disjoption disjexp) re e3
+		    (function e3 ->
+		      let first = Ast.ForDecl(decl,e2,sem2,e3) in
+		      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))))
+      | Ast.ForRange(decl,e2) ->
+	  generic_orify_rule_elem anndisjdecl re decl
+	    (function decl ->
+	      let first = Ast.ForRange(decl,e2) in
+	      let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
+	      generic_orify_rule_elem disjexp re e2
+		(function e2 ->
+		  let first = Ast.ForRange(decl,e2) in
+		  Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))))
   | Ast.IteratorHeader(whl,lp,args,rp) ->
       generic_orify_rule_elem (disjdots disjexp) re args
 	(function args -> Ast.rewrap re (Ast.IteratorHeader(whl,lp,args,rp)))

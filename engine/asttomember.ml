@@ -36,7 +36,9 @@ let contains_modif used_after x =
 	  bind (mcode r ((),(),bef,[])) res
       | Ast.Decl decl ->
 	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
-      | Ast.ForHeader(fr,lp,Ast.ForDecl decl,e2,sem2,e3,rp) ->
+      | Ast.ForHeader(fr,lp,Ast.ForDecl (decl,e2,sem2,e3),rp) ->
+	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
+      | Ast.ForHeader(fr,lp,Ast.ForRange (decl,exp),rp) ->
 	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
       | _ -> res in
     let recursor =
@@ -124,10 +126,16 @@ let strip x =
 	Ast.rewrap res
 	  (Ast.FunHeader(no_mcode,b,fninfo,name,lp,params,va,rp,endattrs))
     | Ast.Decl decl -> Ast.rewrap res (Ast.Decl(annotated_decl no_mcode decl))
-    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,e2,sem2,e3),rp) ->
 	Ast.rewrap res
-	  (Ast.ForHeader(fr,lp,Ast.ForDecl(annotated_decl no_mcode decl),
-			 e2,sem2,e3,rp))
+	  (Ast.ForHeader(fr,lp,
+			 Ast.ForDecl(annotated_decl no_mcode decl,e2,sem2,e3),
+			 rp))
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,e2),rp) ->
+	Ast.rewrap res
+	  (Ast.ForHeader(fr,lp,
+			 Ast.ForRange(annotated_decl no_mcode decl,e2),
+			 rp))
     | _ -> res in
   let r =
     V.rebuilder

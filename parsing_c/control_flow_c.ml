@@ -154,9 +154,7 @@ type node = node1 * string
   | WhileHeader of fullstatement * expression wrap
   | DoHeader of fullstatement * info
   | DoWhileTail of expression wrap
-  | ForHeader of fullstatement *
-                 (declOrExpr * exprStatement wrap * exprStatement wrap)
-                 wrap
+  | ForHeader of fullstatement * declOrExpr wrap
   | SwitchHeader of fullstatement * expression wrap
   | MacroIterHeader of fullstatement * (string * argument wrap2 list) wrap
 

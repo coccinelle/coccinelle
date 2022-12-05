@@ -886,7 +886,7 @@ and forinfo = function
       print_option expression e2; mcode print_string sem2;
       print_option expression e3
   | Ast.ForRange(ann_decl, exp) ->
-      annotated_decl "" ann_decl; expression e1
+      annotated_decl "" ann_decl; expression exp
 
 and pragmainfo pi =
   match Ast.unwrap pi with

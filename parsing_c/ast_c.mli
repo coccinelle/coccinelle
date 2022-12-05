@@ -189,7 +189,11 @@ and statement_sequencable =
   | IfdefStmt of ifdef_directive
   | IfdefStmt2 of ifdef_directive list * statement_sequencable list list
 and exprStatement = expression option
-and declOrExpr = ForDecl of declaration | ForExp of expression option wrap
+and declOrExpr =
+    ForDecl of declaration * exprStatement wrap * exprStatement wrap
+  | ForExp of
+      expression option wrap * exprStatement wrap * exprStatement wrap
+  | ForRange of declaration * expression
 and selection =
     If of expression * statement * statement
   | Switch of expression * statement
@@ -198,7 +202,7 @@ and selection =
 and iteration =
     While of expression * statement
   | DoWhile of statement * expression
-  | For of declOrExpr * exprStatement wrap * exprStatement wrap * statement
+  | For of declOrExpr * statement
   | MacroIteration of string * argument wrap2 list * statement
 and jump =
     Goto of name

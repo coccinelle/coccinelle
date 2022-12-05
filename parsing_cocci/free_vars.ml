@@ -608,7 +608,9 @@ let collect_in_plus_term =
 		(bind (cip_mcodekind recursor bef) (k re)))) *)
     | Ast.Decl decl ->
 	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
-    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,e2,sem2,e3),rp) ->
+	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,e2),rp) ->
 	bind (cip_mcodekind recursor (annotated_decl decl)) (k re)
     | _ -> k re in
 

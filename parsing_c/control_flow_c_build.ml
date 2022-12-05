@@ -783,12 +783,12 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
 
 
-  | Iteration  (Ast_c.For (e1opt, e2opt, e3opt, st)) ->
+  | Iteration  (Ast_c.For (first, st)) ->
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
       let newi =
-        !g+>add_node(ForHeader(stmt,((e1opt,e2opt,e3opt),ii))) lbl "for" in
+        !g+>add_node(ForHeader(stmt,(first,ii))) lbl "for" in
       !g +> add_arc_opt (starti, newi);
       let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
       (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)

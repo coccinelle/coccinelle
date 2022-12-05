@@ -51,9 +51,9 @@ let compute_adjacency p =
       | Ast0.While(wh,lp,exp,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
 	  Ast0.While(wh,lp,exp,rp,body,(info,mc,!counter))
-      | Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(info,mc,_)) ->
+      | Ast0.For(fr,lp,first,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
-	  Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,(info,mc,!counter))
+	  Ast0.For(fr,lp,first,rp,body,(info,mc,!counter))
       | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
 	  Ast0.Iterator(nm,lp,args,rp,body,(info,mc,!counter))

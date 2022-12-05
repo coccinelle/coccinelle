@@ -38,7 +38,7 @@ let dumb_astcocci_rule_elem = function
  | A.WhileHeader (_, _, ea, _) -> ()
  | A.DoHeader _ -> ()
  | A.WhileTail (_,_,ea,_,_) -> ()
- | A.ForHeader (_, _, _, ea2opt, _, ea3opt, _) -> ()
+ | A.ForHeader (_, _, _, _) -> ()
  | A.IteratorHeader (ia1, ia2, ea, ia3) -> ()
  | A.SwitchHeader _ -> ()
  | A.Break _ -> ()

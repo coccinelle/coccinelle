@@ -19,19 +19,11 @@ type pos_info =
     Ast_cocci.meta_name * Ast0_cocci.constraints * Ast_cocci.meta_collect * Data.clt
 type com_info = Ast_cocci.meta_name * Ast0_cocci.constraints * Data.clt
 val make_info :
-  int ->
-  int ->
-  int ->
-  int ->
-  int ->
+  int -> int -> int -> int -> int ->
   (Ast_cocci.added_string * Ast0_cocci.position_info) list ->
   (Ast_cocci.added_string * Ast0_cocci.position_info) list ->
   bool -> string -> Ast0_cocci.info
-val clt2info :
-  'a * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * 'b * string ->
-  Ast0_cocci.info
+val clt2info : Data.clt -> Ast0_cocci.info
 val drop_bef :
   'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i * 'j ->
   'a * 'b * 'c * 'd * 'e * 'f * 'k list * 'h * 'i * 'j
@@ -46,94 +38,47 @@ val set_aft :
 val drop_pos :
   'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i * 'j ->
   'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'k list * 'j
-val clt2mcode_ext :
-  'a ->
-  bool ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * 'b * string ->
-  'a * Ast0_cocci.arity * Ast0_cocci.info * Ast0_cocci.mcodekind * 'b ref * int
-val clt2mcode :
-  'a ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * 'b * string ->
-  'a * Ast0_cocci.arity * Ast0_cocci.info * Ast0_cocci.mcodekind * 'b ref * int
+val clt2mcode_ext : 'a -> bool -> Data.clt -> 'a Ast0_cocci.mcode
+val clt2mcode : 'a -> Data.clt -> 'a Ast0_cocci.mcode
 val id3name : 'a * 'b * 'c -> 'a
 val id2name : 'a * 'b -> 'a
 val id2clt : 'a * 'b -> 'b
-val id2mcode :
-  'a *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * 'b * string) ->
-  'a * Ast0_cocci.arity * Ast0_cocci.info * Ast0_cocci.mcodekind * 'b ref * int
-val sym2mcode :
-  'a *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * 'b * string) ->
-  'a * Ast0_cocci.arity * Ast0_cocci.info * Ast0_cocci.mcodekind * 'b ref * int
+val id2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
+val sym2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
 val mkdots :
   string ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) *
-  (Ast0_cocci.statement Ast0_cocci.dots, Ast0_cocci.statement) Ast0_cocci.whencode list ->
+    Data.clt *
+      (Ast0_cocci.statement Ast0_cocci.dots, Ast0_cocci.statement) Ast0_cocci.whencode list ->
   Ast0_cocci.base_statement Ast0_cocci.wrap
 val mkedots :
   string ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) *
-  (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.expression) option ->
+    Data.clt *
+      (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.expression) option ->
   Ast0_cocci.base_expression Ast0_cocci.wrap
 val mkdpdots :
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_define_param Ast0_cocci.wrap
+  string -> Data.clt -> Ast0_cocci.base_define_param Ast0_cocci.wrap
 val mkidots :
   string ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) *
-  (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.initialiser) option ->
+    Data.clt *
+      (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.initialiser) option ->
   Ast0_cocci.base_initialiser Ast0_cocci.wrap
 val mkfdots :
   string ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) *
-  (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.field) list option ->
+    Data.clt *
+      (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.field) list option ->
   Ast0_cocci.base_field Ast0_cocci.wrap
 val mkfdots_one :
   string ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) *
-  (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.field) option ->
+    Data.clt *
+      (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.field) option ->
   Ast0_cocci.base_field Ast0_cocci.wrap
 val mkpdots :
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_parameterTypeDef Ast0_cocci.wrap
+  string -> Data.clt -> Ast0_cocci.base_parameterTypeDef Ast0_cocci.wrap
 val mkenumdots :
   string ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) *
-  (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.enum_decl)
-  option ->
+    Data.clt *
+      (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.enum_decl)
+      option ->
   Ast0_cocci.base_enum_decl Ast0_cocci.wrap
 val arith_op :
   Ast_cocci.arithOp ->
@@ -159,10 +104,7 @@ val make_gcc_attr:
 val top_dots : 'a -> 'a Ast0_cocci.wrap
 val pointerify :
   Ast0_cocci.typeC ->
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string)
+  (Data.clt)
   list -> Ast0_cocci.typeC
 val ty_pointerify : Ast0_cocci.typeC -> 'a list -> Ast0_cocci.typeC
 val arrayify :
@@ -241,17 +183,11 @@ val create_len_metadec :
 val str2inc : string -> Ast_cocci.inc_elem list
 val meta_decl :
   Ast_cocci.meta_name * Ast0_cocci.constraints * Ast0_cocci.pure *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) ->
+  Data.clt ->
   Ast0_cocci.base_declaration Ast0_cocci.wrap
 val meta_field :
   Ast_cocci.meta_name * Ast0_cocci.constraints * Ast0_cocci.pure *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) ->
+  Data.clt ->
   Ast0_cocci.base_field Ast0_cocci.wrap
 val dolen :
   Data.line_type * int * int * int * int * int *
@@ -260,31 +196,19 @@ val dolen :
   string -> Ast_cocci.list_len -> Ast0_cocci.listlen
 val meta_field_list :
   Ast_cocci.meta_name * Ast_cocci.list_len * Ast0_cocci.constraints * Ast0_cocci.pure *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) ->
+  Data.clt ->
   Ast0_cocci.base_field Ast0_cocci.wrap
 val meta_stm :
   Ast_cocci.meta_name * Ast0_cocci.constraints * Ast0_cocci.pure *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) ->
+  Data.clt ->
   Ast0_cocci.base_statement Ast0_cocci.wrap
 val meta_stm_list :
   Ast_cocci.meta_name * Ast_cocci.list_len * Ast0_cocci.constraints * Ast0_cocci.pure *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) ->
+  Data.clt ->
   Ast0_cocci.base_statement Ast0_cocci.wrap
 val meta_dparam_list :
   Ast_cocci.meta_name * Ast_cocci.list_len * Ast0_cocci.constraints * Ast0_cocci.pure *
-  (Data.line_type * int * int * int * int * int *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-   string) ->
+  Data.clt ->
   Ast0_cocci.base_define_param Ast0_cocci.wrap
 val exp_stm :
   Ast0_cocci.expression option ->
@@ -294,217 +218,66 @@ val exp_stm :
   string -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val make_fake_mcode : 'a -> Ast0_cocci.info * Ast0_cocci.mcodekind * int
 val ifthen :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt -> Data.clt ->
   Ast0_cocci.expression ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ifthenelse :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt -> Data.clt ->
   Ast0_cocci.expression ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt ->
   Ast0_cocci.statement ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val forloop :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt -> Data.clt ->
   Ast0_cocci.expression option ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt ->
   Ast0_cocci.expression option ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt ->
   Ast0_cocci.expression option ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val forloop2 :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt -> Data.clt ->
   Ast0_cocci.declaration ->
   Ast0_cocci.expression option ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt ->
   Ast0_cocci.expression option ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+val forloop3 :
+  Data.clt -> Data.clt ->
+  Ast0_cocci.declaration ->
+  Ast0_cocci.expression ->
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val whileloop :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.expression ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Data.clt -> Ast0_cocci.expression ->
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val doloop :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.statement ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
+  Data.clt -> Ast0_cocci.statement -> Data.clt -> Data.clt ->
   Ast0_cocci.expression ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val iterator :
-  Ast0_cocci.ident ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.expression Ast0_cocci.dots ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Ast0_cocci.ident -> Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val switch :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.expression ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.declaration list ->
-  Ast0_cocci.case_line list ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Data.clt -> Ast0_cocci.expression -> Data.clt -> Data.clt ->
+  Ast0_cocci.declaration list -> Ast0_cocci.case_line list ->
+  Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ret_exp :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.expression ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.expression ->
+  Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ret :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val break :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val cont :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val label :
-  Ast0_cocci.ident ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Ast0_cocci.ident -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val goto :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.ident ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.ident ->
+  Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val seq :
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string ->
-  Ast0_cocci.statement Ast0_cocci.dots ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  Data.clt -> Ast0_cocci.statement Ast0_cocci.dots ->
+  Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val check_rule_name : (string * 'a) option -> string option
 val make_iso_rule_name_result : string -> Ast_cocci.rulename
 val fix_dependencies : Ast0_cocci.dependency -> Ast_cocci.dependency
@@ -532,40 +305,25 @@ type metavars =
   | MFmt of Ast0_cocci.string_format
 val string_metavariables :
   string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> metavars
+  Data.clt -> metavars
 val pct_split : string -> string list
 val parse_middle :
   string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast0_cocci.base_string_fragment Ast0_cocci.wrap list
+  Data.clt -> Ast0_cocci.base_string_fragment Ast0_cocci.wrap list
 val check_no_duplicates : Ast0_cocci.base_string_fragment Ast0_cocci.wrap list -> unit
 val update_line :
   'a * int * int * int * int * int * 'b * 'c * 'd * 'e ->
   int -> 'a * int * int * int * int * int * 'b * 'c * 'd * 'e
 val drop_minus_plus :
   string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> int * Ast0_cocci.base_string_fragment Ast0_cocci.wrap list
+  Data.clt -> int * Ast0_cocci.base_string_fragment Ast0_cocci.wrap list
 val not_format_string :
   string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
+  Data.clt -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
 val nometas : string -> bool
 val parse_string :
   string ->
-  Data.line_type * int * int * int * int * int *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-  (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-  string -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
+  Data.clt -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
 val unfloatl : string -> string
 val unfloatr : string -> string
 val mk_script :

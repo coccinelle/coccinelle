@@ -1158,36 +1158,32 @@ let rec statement s =
 	      let exp2 = get_option expression exp2 in
 	      let sem2 = normal_mcode sem2 in
 	      let exp3 = get_option expression exp3 in
-	      let l1 =
-		match exp1 with
-		  Some exp1 -> exp1
-		| None -> promote_mcode sem1 in
-	      let l3 =
-		match exp3 with
-		  Some exp3 -> exp3
-		| None -> promote_mcode sem2 in
-	      mkres first (Ast0.ForExp(Some exp1,sem1,exp2,sem2,exp3))
-		l1 l3
+	      let res = Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) in
+	      (match exp1,exp3 with
+		(Some exp1,Some exp3) -> mkres first res exp1 exp3
+	      | (Some exp1,None) -> mkres first res exp1 (promote_mcode sem2)
+	      | (None,Some exp3) -> mkres first res (promote_mcode sem1) exp3
+	      | (None,None) ->
+		  mkres first res (promote_mcode sem1) (promote_mcode sem2))
 	  | Ast0.ForDecl((_,bef),decl,exp2,sem2,exp3) ->
 	      let decl = declaration decl in
 	      let (leftinfo,decl) = promote_to_statement_start decl bef in
 	      let exp2 = get_option expression exp2 in
 	      let sem2 = normal_mcode sem2 in
 	      let exp3 = get_option expression exp3 in
-	      let l3 =
-		match exp3 with
-		  Some exp3 -> exp3
-		| None -> promote_mcode sem2 in
-	      mkres first (Ast0.ForDecl ((leftinfo,bef),decl,exp2,sem2,exp3)) decl l3
+	      let res = Ast0.ForDecl ((leftinfo,bef),decl,exp2,sem2,exp3) in
+	      (match exp3 with
+		Some exp3 -> mkres first res decl  exp3
+	      | None -> mkres first res decl (promote_mcode sem2))
 	  | Ast0.ForRange((_,bef),decl,exp) ->
 	      let decl = declaration decl in
 	      let (leftinfo,decl) = promote_to_statement_start decl bef in
-	      let exp = get_option expression exp in
-	      mkres first (Ast0.ForDecl ((leftinfo,bef),decl,exp)) decl exp in
+	      let exp = expression exp in
+	      mkres first (Ast0.ForRange ((leftinfo,bef),decl,exp)) decl exp in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let (rightinfo,right,body) = promote_to_statement_end body aft in
-	mkres s (Ast0.For(fr,lp,first,exp2,sem2,exp3,rp,body,
+	mkres s (Ast0.For(fr,lp,first,rp,body,
 			  (rightinfo,aft,adj)))
 	  (promote_mcode fr) right
     | Ast0.Iterator(nm,lp,args,rp,body,(_,aft,adj)) ->

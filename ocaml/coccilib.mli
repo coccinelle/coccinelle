@@ -267,8 +267,10 @@ module Ast_c :
     and exprStatement = expression option
     and declOrExpr =
       Ast_c.declOrExpr =
-        ForDecl of declaration
-      | ForExp of expression option wrap
+	ForDecl of declaration * exprStatement wrap * exprStatement wrap
+      | ForExp of
+	  expression option wrap * exprStatement wrap * exprStatement wrap
+      | ForRange of declaration * expression
     and selection =
       Ast_c.selection =
         If of expression * statement * statement
@@ -279,8 +281,7 @@ module Ast_c :
       Ast_c.iteration =
         While of expression * statement
       | DoWhile of statement * expression
-      | For of declOrExpr * exprStatement wrap * exprStatement wrap *
-          statement
+      | For of declOrExpr * statement
       | MacroIteration of string * argument wrap2 list * statement
     and jump =
       Ast_c.jump =
@@ -2961,8 +2962,7 @@ module Ast_cocci :
       | DoHeader of string mcode
       | WhileTail of string mcode * string mcode * expression *
           string mcode * string mcode
-      | ForHeader of string mcode * string mcode * forinfo *
-          expression option * string mcode * expression option * string mcode
+      | ForHeader of string mcode * string mcode * forinfo * string mcode
       | IteratorHeader of ident * string mcode * expression dots *
           string mcode
       | SwitchHeader of string mcode * string mcode * expression *
@@ -3004,11 +3004,9 @@ module Ast_cocci :
 	ForExp of expression option * string mcode (*;*) *
 	    expression option * string mcode (*;*) *
             expression option
-      | ForDecl of (info * mcodekind) (* before the decl *) * annotated_decl *
-	    expression option * string mcode (*;*) *
+      | ForDecl of annotated_decl * expression option * string mcode (*;*) *
             expression option
-      | ForRange of (info * mcodekind) (* before the decl *) * annotated_decl *
-	    string mcode (* : *) * expression
+      | ForRange of annotated_decl * expression
     and fninfo =
       Ast_cocci.fninfo =
         FStorage of storage mcode
@@ -3606,9 +3604,9 @@ module Ast0_cocci :
           statement * fake_mcode
       | Do of string mcode * statement * string mcode * string mcode *
           expression * string mcode * string mcode
-      | For of string mcode * string mcode * forinfo * expression option *
-          string mcode * expression option * string mcode * statement *
-          fake_mcode
+      | For of string mcode (* for *) * string mcode (* ( *) * forinfo *
+	    string mcode (* ) *) * statement *
+	    fake_mcode (* after info *)
       | Iterator of ident * string mcode * expression dots * string mcode *
           statement * fake_mcode
       | Switch of string mcode * string mcode * expression * string mcode *
@@ -3660,7 +3658,7 @@ module Ast0_cocci :
 	    expression option * string mcode (*;*) *
             expression option
       | ForRange of (info * mcodekind) (* before the decl *) * declaration *
-	    string mcode (* : *) * expression
+	    expression
     and forinfo = base_forinfo wrap
     and fninfo =
       Ast0_cocci.fninfo =

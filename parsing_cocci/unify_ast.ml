@@ -662,7 +662,7 @@ and unify_rule_elem re1 re2 =
 	   unify_annotated_decl d1 d2 &&
 	   unify_option unify_expression e21 e22 &&
 	   unify_option unify_expression e31 e32
-       | (Ast.ForRange(d1,e1),Ast.ForDecl(d2,e2)) ->
+       | (Ast.ForRange(d1,e1),Ast.ForRange(d2,e2)) ->
 	   unify_annotated_decl d1 d2 && unify_expression e1 e2
        | _ -> false)
   | (Ast.IteratorHeader(nm1,lp1,args1,rp1),

@@ -36,7 +36,9 @@ let contains_modif =
       Ast.FunHeader(bef,_,fninfo,name,lp,params,va,rp,endattrs) ->
       bind (mcode r ((),(),bef,[])) res
     | Ast.Decl decl -> bind (mcode r ((),(),annotated_decl decl,[])) res
-    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl),e2,sem2,e3,rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,e2,sem2,e3),rp) ->
+	bind (mcode r ((),(),annotated_decl decl,[])) res
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,e2),rp) ->
 	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let recursor =

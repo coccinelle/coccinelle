@@ -1316,26 +1316,29 @@ let match_maker checks_needed context_required whencode_allowed =
 	     Ast0.For(f,lp,firstb,rp,bodyb,_)) ->
 	       let first =
 		 match (Ast0.unwrap firsta,Ast0.unwrap firstb) with
-		   (Ast0.ForExp(e1a,sc1a,e2a,sc2a,e3a),Ast0.ForExp(e1b,sc1b,e2b,sc2b,e3b)) ->
+		   (Ast0.ForExp(e1a,sc1a,e2a,sc2a,e3a),
+		    Ast0.ForExp(e1b,sc1b,e2b,sc2b,e3b)) ->
 		     conjunct_many_bindings
-		       [check_mcode sc2a sc2b;
-			 match_option match_expr e1a e1b;
+		       [match_option match_expr e1a e1b;
+			 check_mcode sc1a sc1b;
 			 match_option match_expr e2a e2b;
+			 check_mcode sc2a sc2b;
 			 match_option match_expr e3a e3b]
-		 | (Ast0.ForDecl (_,decla,e2a,sc2a,e3a),Ast0.ForDecl (_,declb,e2b,sc2b,e3b)) ->
+		 | (Ast0.ForDecl (_,decla,e2a,sc2a,e3a),
+		    Ast0.ForDecl (_,declb,e2b,sc2b,e3b)) ->
 		     conjunct_many_bindings
 		       [match_decl decla declb;
 			 match_option match_expr e2a e2b;
+			 check_mcode sc2a sc2b;
 			 match_option match_expr e3a e3b]
 		 | (Ast0.ForRange (_,decla,e2a),Ast0.ForRange (_,declb,e2b)) ->
 		     conjunct_bindings
 		       (match_decl decla declb)
-		       (match_option match_expr e2a e2b)
+		       (match_expr e2a e2b)
 		 | _ -> return false in
 	       conjunct_many_bindings
 		 [check_mcode f1 f; check_mcode lp1 lp; first;
-		   check_mcode sc2a sc2b; check_mcode rp1 rp;
-		   match_statement bodya bodyb]
+		   check_mcode rp1 rp; match_statement bodya bodyb]
 	  | (Ast0.Iterator(nma,lp1,argsa,rp1,bodya,_),
 	     Ast0.Iterator(nmb,lp,argsb,rp,bodyb,_)) ->
 	       conjunct_many_bindings
@@ -1738,9 +1741,8 @@ let rebuild_mcode start_line =
 		 (info,copy_mcodekind mc,adj))
 	   | Ast0.While(whl,lp,exp,rp,body,(info,mc,adj)) ->
 	       Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc,adj))
-	   | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(info,mc,adj)) ->
-	       Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,
-			(info,copy_mcodekind mc,adj))
+	   | Ast0.For(fr,lp,first,rp,body,(info,mc,adj)) ->
+	       Ast0.For(fr,lp,first,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl
@@ -2434,13 +2436,13 @@ let extra_copy_stmt_plus model e =
     | Ast0.IfThen(_,_,_,_,_,(_,aft,_))
     | Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft,_))
     | Ast0.While(_,_,_,_,_,(_,aft,_))
-    | Ast0.For(_,_,_,_,_,_,_,_,(_,aft,_))
+    | Ast0.For(_,_,_,_,_,(_,aft,_))
     | Ast0.Iterator(_,_,_,_,_,(_,aft,_)) ->
 	(match Ast0.unwrap e with
 	  Ast0.IfThen(_,_,_,_,_,(_,aft1,_))
 	| Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft1,_))
 	| Ast0.While(_,_,_,_,_,(_,aft1,_))
-	| Ast0.For(_,_,_,_,_,_,_,_,(_,aft1,_))
+	| Ast0.For(_,_,_,_,_,(_,aft1,_))
 	| Ast0.Iterator(_,_,_,_,_,(_,aft1,_)) ->
 	    merge_plus_after aft aft1
 	| _ -> merge_plus_after aft (Ast0.get_mcodekind e))

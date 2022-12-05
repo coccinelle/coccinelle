@@ -178,7 +178,7 @@ let statement s =
   | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) -> [73]
   | Ast0.While(whl,lp,exp,rp,body,_) -> [74]
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> [75]
-  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,_) -> [76]
+  | Ast0.For(fr,lp,first,rp,body,_) -> [76]
   | Ast0.Iterator(nm,lp,args,rp,body,_) -> [142]
   | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> [125]
   | Ast0.Break(br,sem) -> [100]

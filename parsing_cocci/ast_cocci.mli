@@ -558,9 +558,7 @@ and base_rule_elem =
 	             expression * string mcode (* ) *) *
                      string mcode (* ; *)
   | ForHeader     of string mcode (* for *) * string mcode (* ( *) *
-                     forinfo *
-	             expression option * string mcode (*;*) *
-                     expression option * string mcode (* ) *)
+                     forinfo * string mcode (* ) *)
   | IteratorHeader of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *)
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
@@ -607,11 +605,9 @@ and forinfo =
     ForExp of expression option * string mcode (*;*) *
 	expression option * string mcode (*;*) *
         expression option
-  | ForDecl of (info * mcodekind) (* before the decl *) * annotated_decl *
-	expression option * string mcode (*;*) *
+  | ForDecl of annotated_decl * expression option * string mcode (*;*) *
         expression option
-  | ForRange of (info * mcodekind) (* before the decl *) * annotated_decl *
-	string mcode (* : *) * expression
+  | ForRange of annotated_decl * expression
 
 and fninfo =
     FStorage of storage mcode

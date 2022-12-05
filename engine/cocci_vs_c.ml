@@ -5376,39 +5376,52 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
 
 
-  | A.ForHeader (ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
-    F.ForHeader (st, ((firstb, (eb2opt,ib4s), (eb3opt,ib4vide)), ii))
+  | A.ForHeader (ia1, ia2, firsta, ia5),
+    F.ForHeader (st, ((firstb), ii))
     ->
-      assert (ib4vide = []);
       let (ib1, ib2, ib5) = tuple_of_list3 ii in
-      let ib4 = tuple_of_list1 ib4s in
-
       (match (firsta,firstb) with
-	(A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,ib3s)) ->
-	  let ib3 = tuple_of_list1 ib3s in
-	  tokenf ia3 ib3 >>= (fun ia3 ib3 ->
-	  eoption expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
-	    return (A.ForExp(ea1opt, ia3),B.ForExp(eb1opt,[ib3]))))
-      |	(A.ForDecl decla,B.ForDecl declb) ->
-	  annotated_decl decla declb >>=
-	  (fun decla declb ->
+	(A.ForExp(ea1opt, ia3, ea2opt, ia4, ea3opt),
+	 B.ForExp((eb1opt,ib3s), (eb2opt,ib4s), (eb3opt,ib4vide))) ->
+	   assert (ib4vide = []);
+	   let ib3 = tuple_of_list1 ib3s in
+	   let ib4 = tuple_of_list1 ib4s in
+	   tokenf ia3 ib3 >>= (fun ia3 ib3 ->
+	   tokenf ia4 ib4 >>= (fun ia4 ib4 ->
+	   eoption expression ea1opt eb1opt >>= (fun ea1opt eb1opt ->
+	   eoption expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
+	   eoption expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
+	     return (A.ForExp(ea1opt, ia3, ea2opt, ia4, ea3opt),
+		     B.ForExp((eb1opt,[ib3]), (eb2opt,[ib4]), (eb3opt,ib4vide))))))))
+      |	(A.ForDecl(decla, ea2opt, ia4, ea3opt),
+	 B.ForDecl(declb, (eb2opt,ib4s), (eb3opt,ib4vide))) ->
+	   assert (ib4vide = []);
+	   let ib4 = tuple_of_list1 ib4s in
+	   annotated_decl decla declb >>= (fun decla declb ->
+	   tokenf ia4 ib4 >>= (fun ia4 ib4 ->
+	   eoption expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
+	   eoption expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
+	     return (
+             A.ForDecl(decla, ea2opt, ia4, ea3opt),
+             B.ForDecl(declb, (eb2opt,[ib4]), (eb3opt,ib4vide))
+             )))))
+      |	(A.ForRange(decla, ea2), B.ForRange(declb, eb2)) ->
+	  annotated_decl decla declb >>= (fun decla declb ->
+	  expression ea2 eb2 >>= (fun ea2 eb2 ->
 	    return (
-            A.ForDecl decla,
-            B.ForDecl declb
-          ))
+	    A.ForRange(decla, ea2),
+	    B.ForRange(declb, eb2)
+	    )))
       |	_ -> fail)
 	>>=
       (fun firsta firstb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-      tokenf ia4 ib4 >>= (fun ia4 ib4 ->
       tokenf ia5 ib5 >>= (fun ia5 ib5 ->
-      eoption expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
-      eoption expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
         return (
-          A.ForHeader(ia1, ia2, firsta, ea2opt, ia4, ea3opt, ia5),
-          F.ForHeader(st,((firstb,(eb2opt,[ib4]),(eb3opt,[])),[ib1;ib2;ib5]))
-        ))))))))
+          A.ForHeader(ia1, ia2, firsta, ia5),
+          F.ForHeader(st,(firstb,[ib1;ib2;ib5]))
+        )))))
 
 
   | A.SwitchHeader(ia1,ia2,ea,ia3), F.SwitchHeader (st, (eb,ii)) ->

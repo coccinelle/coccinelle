@@ -178,7 +178,7 @@ let collect_plus_lines top =
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
       | Ast0.Iterator(_,_,_,_,_,(info,aft,adj))
       | Ast0.While(_,_,_,_,_,(info,aft,adj))
-      | Ast0.For(_,_,_,_,_,_,_,_,(info,aft,adj)) ->
+      | Ast0.For(_,_,_,_,_,(info,aft,adj)) ->
 	  bind (k s) (mcode info aft)
       |	_ -> k s in
   let fn =
@@ -550,7 +550,7 @@ let classify is_minus all_marked table code =
       | Ast0.IfThenElse(start,_,_,_,_,_,_,(info,aft,adj))
       | Ast0.Iterator(_,start,_,_,_,(info,aft,adj))
       | Ast0.While(start,_,_,_,_,(info,aft,adj))
-      | Ast0.For(start,_,_,_,_,_,_,_,(info,aft,adj)) ->
+      | Ast0.For(start,_,_,_,_,(info,aft,adj)) ->
 	  let mcode_info (_,_,info,_,_,_) = info in
 	  bind (k s) (nc_mcode ((),(),mcode_info start,aft,(),adj))
       |	_ -> k s) in
@@ -964,9 +964,9 @@ let equal_statement s1 s2 =
 	 match (Ast0.unwrap first1,Ast0.unwrap first2) with
 	   (Ast0.ForExp(_,sem1,_,sem21,_),Ast0.ForExp(_,sem2,_,sem22,_)) ->
 	     equal_mcode sem1 sem2 && equal_mcode sem21 sem22
-	 | (Ast0.ForDecl(_,_,sem21,_),Ast0.ForDecl(_,_,sem22,_)) ->
+	 | (Ast0.ForDecl(_,_,_,sem21,_),Ast0.ForDecl(_,_,_,sem22,_)) ->
 	     equal_mcode sem21 sem22
-	 | (Ast0.ForRange(_,_),Ast0.ForRange(_,_)) -> true
+	 | (Ast0.ForRange(_,_,_),Ast0.ForRange(_,_,_)) -> true
 	 | _ -> false in
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        first && equal_mcode rp1 rp2

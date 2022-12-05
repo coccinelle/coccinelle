@@ -89,7 +89,7 @@ let rec right_statement s =
   | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
       call_right right_mcode sem s
 	(function sem -> Ast0.Do(d,body,whl,lp,exp,rp,sem))
-  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) -> None
+  | Ast0.For(fr,lp,first,rp,body,aft) -> None
   | Ast0.Iterator(nm,lp,args,rp,body,aft) -> None
   | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
       call_right right_mcode rb s
@@ -363,13 +363,11 @@ let process =
 	    None -> Ast0.unwrap s
 	  | Some (pragmas,body) ->
 	      Ast0.While(whl,lp,exp,rp,body,update_before pragmas aft))
-      | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
+      | Ast0.For(fr,lp,first,rp,body,aft) ->
 	  (match right_statement body with
 	    None -> Ast0.unwrap s
 	  | Some (pragmas,body) ->
-	      Ast0.For
-		(fr,lp,first,e2,sem2,e3,rp,body,
-		 update_before pragmas aft))
+	      Ast0.For(fr,lp,first,rp,body,update_before pragmas aft))
       | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	  (match right_statement body with
 	    None -> Ast0.unwrap s

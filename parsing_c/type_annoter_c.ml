@@ -1574,8 +1574,8 @@ let annotate_test_expressions prog =
 	  (match i with
 	    While(e,s) -> propagate_test e
 	  | DoWhile(s,e) -> propagate_test e
-	  | For(_,es,_,_) ->
-	      (match unwrap es with Some e -> propagate_test e | None -> ())
+	  | For(ForExp(_,(Some e,_),_),_) -> propagate_test e
+	  | For(ForDecl(_,(Some e,_),_),_) -> propagate_test e
 	  | _ -> ());
 	  k st
       | _ -> k st

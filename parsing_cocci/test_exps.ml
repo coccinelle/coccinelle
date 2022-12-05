@@ -61,9 +61,19 @@ let set_test_poss =
 	Ast0.rewrap s (Ast0.While(i,lp,process_exp e,rp,s1,aft))
     | Ast0.Do(d,s1,w,lp,e,rp,sc) ->
 	Ast0.rewrap s (Ast0.Do(d,s1,w,lp,process_exp e,rp,sc))
-    | Ast0.For(f,lp,first,Some e2,sc2,e3,rp,s1,aft) ->
-	Ast0.rewrap s
-	  (Ast0.For(f,lp,first,Some (process_exp e2),sc2,e3,rp,s1,aft))
+    | Ast0.For(f,lp,first,rp,s1,aft) ->
+	(match Ast0.unwrap first with
+	  Ast0.ForExp(e1a,sc1a,Some e2a,sc2a,e3a) ->
+	    let first =
+	      Ast0.rewrap first
+		(Ast0.ForExp(e1a,sc1a,Some (process_exp e2a),sc2a,e3a)) in
+	    Ast0.rewrap s (Ast0.For(f,lp,first,rp,s1,aft))
+	| Ast0.ForDecl (bef,decla,Some e2a,sc2a,e3a) ->
+	    let first =
+	      Ast0.rewrap first
+		(Ast0.ForDecl(bef,decla,Some (process_exp e2a),sc2a,e3a)) in
+	    Ast0.rewrap s (Ast0.For(f,lp,first,rp,s1,aft))
+	| _ -> s)
     | Ast0.Dots(d,wc) ->
 	Ast0.rewrap s (Ast0.Dots(d,List.map process_wc wc))
     | Ast0.Nest(l,s1,r,wc,m) ->

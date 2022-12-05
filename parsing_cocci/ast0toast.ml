@@ -972,7 +972,7 @@ and statement s =
 	  let rp = mcode rp in
 	  let body = statement Ast.NotSequencible body in
 	  Ast.For(rewrap_rule_elem s
-		    (Ast.ForHeader(fr,lp,first,exp2,sem2,exp3,rp)),
+		    (Ast.ForHeader(fr,lp,first,rp)),
 		  body,([],[],[],convert_fake_mcode aft))
       | Ast0.Iterator(nm,lp,args,rp,body,aft) ->
 	  Ast.Iterator(rewrap_rule_elem s

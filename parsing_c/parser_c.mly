@@ -1158,9 +1158,9 @@ iteration:
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
  | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement
-     { For (ForExp $3,$4,(None, []),$6),    [$1;$2;$5]}
+     { For (ForExp ($3,$4,(None, [])),$6),    [$1;$2;$5]}
  | Tfor TOPar expr_statement expr_statement expr TCPar cpp_ifdef_statement
-     { For (ForExp $3,$4,(Some $5, []),$7), [$1;$2;$6] }
+     { For (ForExp ($3,$4,(Some $5, [])),$7), [$1;$2;$6] }
  /*(* C++ext: for(int i = 0; i < n; i++)*)*/
  | Tfor TOPar decl expr_statement TCPar cpp_ifdef_statement
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(None, [])),$6),    [$1;$2;$5]}
@@ -1170,8 +1170,10 @@ iteration:
      { let decl = (* should share with code in decl2 *)
        let (returnType,storage) = fixDeclSpecForDecl (snd $3) in
        let iistart = Ast_c.fakeInfo () in
+       let di = ($4, NoInit) in
+       let id_list = [di,[]] in
        DeclList (
-         ([$4] +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
+         (id_list +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
            let s = str_of_name name in
 	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
@@ -1186,8 +1188,8 @@ iteration:
            },
            iivirg
          )
-         ),  ($4::iistart::snd storage)) in
-       For (ForRange(decl,$5),$7), [$1;$2;$6] }
+         ),  ($5::iistart::snd storage)) in
+       For (ForRange(decl,$6),$8), [$1;$2;$7] }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }

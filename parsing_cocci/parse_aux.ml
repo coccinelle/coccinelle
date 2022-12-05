@@ -527,17 +527,22 @@ let ifthenelse iff lp tst rp thn e els =
     clt2mcode "else" e,els,make_fake_mcode()))
 
 let forloop fr lp e1 sc1 e2 sc2 e3 rp s =
-  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,
-		     Ast0.wrap(Ast0.ForExp(e1,clt2mcode ";" sc1)),e2,
-		     clt2mcode ";" sc2,e3,clt2mcode ")" rp,s,
-		     make_fake_mcode()))
+  let first =
+    Ast0.wrap(Ast0.ForExp(e1,clt2mcode ";" sc1,e2,clt2mcode ";" sc2,e3)) in
+  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,first,
+		     clt2mcode ")" rp,s,make_fake_mcode()))
 
 let forloop2 fr lp decl e2 sc2 e3 rp s =
   let bef = (Ast0.default_info(),Ast0.context_befaft()) in
-  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,
-		     Ast0.wrap(Ast0.ForDecl (bef,decl)),e2,
-		     clt2mcode ";" sc2,e3,clt2mcode ")" rp,s,
-		     make_fake_mcode()))
+  let first = Ast0.wrap(Ast0.ForDecl (bef,decl,e2,clt2mcode ";" sc2,e3)) in
+  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,first,
+		     clt2mcode ")" rp,s,make_fake_mcode()))
+
+let forloop3 fr lp decl e2 rp s =
+  let bef = (Ast0.default_info(),Ast0.context_befaft()) in
+  let first = Ast0.wrap(Ast0.ForRange (bef,decl,e2)) in
+  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,first,
+		     clt2mcode ")" rp,s,make_fake_mcode()))
 
 let whileloop w lp e rp s =
   Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,
