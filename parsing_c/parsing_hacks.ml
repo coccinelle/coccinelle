@@ -3005,7 +3005,13 @@ let convert_templates toks =
   let success a s i1 b i2 c i3 xs =
     b.TV.tok <- TTemplateStart i2;
     c.TV.tok <- i3;
-    let (_,tmp) = span (fun x -> TH.is_just_comment_or_space x.TV.tok) xs in
+    let comment_or_space_or_and x =
+      let tok = x.TV.tok in
+      TH.is_just_comment_or_space tok ||
+      (match tok with
+	TAnd _ -> true
+      | _ -> false) in
+    let (_,tmp) = span comment_or_space_or_and xs in
     (match tmp with
       {TV.tok = TIdent(_,_)} :: xs ->
 	a.TV.tok <- TypedefIdent(s,i1)
