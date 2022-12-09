@@ -1422,7 +1422,7 @@ and vk_statement_s = fun bigf st ->
 
 		(match (e1',e2',e3') with
 		  (ExprStatement x1,ExprStatement x2,ExprStatement x3) ->
-		    ForExp((x1,i1'),(x2,i2'),(x2,i3'))
+		    ForExp((x1,i1'),(x2,i2'),(x3,i3'))
 		| _ ->
 		    failwith
 		      "can't be here if iterator keep ExprStatement as is")
@@ -1436,7 +1436,7 @@ and vk_statement_s = fun bigf st ->
 		let i3' = Ast_c.get_ii_st_take_care e3opt' in
 		(match (e2',e3') with
 		  (ExprStatement x2, ExprStatement x3) ->
-		    ForDecl (decl,(x2,i2'),(x2,i3'))
+		    ForDecl (decl,(x2,i2'),(x3,i3'))
 		| _ ->
 		    failwith
 		      "can't be here if iterator keep ExprStatement as is")
