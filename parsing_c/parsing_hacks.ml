@@ -2092,6 +2092,14 @@ let lookahead2 ~pass next before =
       when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->
 	TIdent(s,i)
 
+  | TIdent(s,i1)::rest,_
+      when
+	let arg_ender =
+	  function TCPar _ | TComma _ | TTemplateEnd _ -> true | _ -> false in
+	pointer ~followed_by:arg_ender rest ->
+	msg_typedef s i1 180; LP.add_typedef_root s i1;
+	TypedefIdent (s,i1)
+
   (*-------------------------------------------------------------*)
   (* typedef inference, parse_typedef_fix3 *)
   (*-------------------------------------------------------------*)
