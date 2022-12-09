@@ -55,9 +55,13 @@ rule token = parse
 (* These are C strings.  Perhaps they require some adjustment. *)
 and string  = parse
   | '"'                 { "" }
+  | ['\n' '\r' '\011' '\012'] as x
+    { inc_line(); (Printf.sprintf "%c" x) ^ string lexbuf }
   | "\\\""              { "\\\"" ^ string lexbuf }
   | (_ as x)            { (String.make 1 x) ^ string lexbuf }
 
 and cstring  = parse
   | "'"                 { "" }
+  | ['\n' '\r' '\011' '\012'] as x
+    { inc_line(); (Printf.sprintf "%c" x) ^ cstring lexbuf }
   | (_ as x)            { (String.make 1 x) ^ cstring lexbuf }
