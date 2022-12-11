@@ -2092,7 +2092,7 @@ let lookahead2 ~pass next before =
       when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->
 	TIdent(s,i)
 
-  | TIdent(s,i1)::rest,_
+  | TIdent(s,i1)::rest,(TOPar _ | TComma _ | TTemplateStart _)::_
       when
 	let arg_ender =
 	  function TCPar _ | TComma _ | TTemplateEnd _ -> true | _ -> false in
