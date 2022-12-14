@@ -5983,17 +5983,21 @@ let with_pr2_to_string f =
   cat file
 
 (* julia: convert something printed using format to print into a string *)
-let format_to_string f =
+let do_format_to_string nl f =
   let acc = ref [] in
   let (pr,flush) = Format.get_formatter_output_functions() in
   Format.set_formatter_output_functions
     (fun s p n -> acc := String.sub s p n :: !acc)
     (fun _ -> ());
   let _ = f() in
-  Format.print_newline();
+  (if nl then Format.print_newline());
   Format.print_flush();
   Format.set_formatter_output_functions pr flush;
   String.concat "" (List.rev !acc)
+
+let format_to_string f = do_format_to_string true f
+
+let format_to_string_nonl f = do_format_to_string false f
 
 (*****************************************************************************)
 (* Misc/test *)

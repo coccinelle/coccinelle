@@ -320,6 +320,7 @@ val pp : string -> unit
 
 (* convert something printed using Format to print into a string *)
 val format_to_string : (unit -> unit) (* printer *) -> string
+val format_to_string_nonl : (unit -> unit) (* printer *) -> string
 
 (* works with _tab_level_print enabling to mix some calls to pp, pr2
  * and indent_do to sometimes use advanced indentation pretty printing

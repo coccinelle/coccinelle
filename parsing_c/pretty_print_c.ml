@@ -1836,7 +1836,7 @@ let pp_program_gen ~pr_elem ~pr_space =
 
 
 let string_of_expression e =
-  Common.format_to_string (fun () ->
+  Common.format_to_string_nonl (fun () ->
     pp_expression_simple e
   )
 
