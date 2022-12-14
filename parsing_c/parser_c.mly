@@ -1177,12 +1177,12 @@ iteration:
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(Some $5, [])),$7), [$1;$2;$6] }
  | Tfor TOPar decl_spec declaratori TDotDot expr TCPar cpp_ifdef_statement
      { let decl = (* should share with code in decl2 *)
-       let (returnType,storage) = fixDeclSpecForDecl (snd $3) in
+       let (returnType,storage) = fixDeclSpecForDecl $3 in
        let iistart = Ast_c.fakeInfo () in
        let di = ($4, NoInit) in
        let id_list = [di,[]] in
        DeclList (
-         (id_list +> List.map (fun ((((name,f),attrs,endattrs), ini), iivirg) ->
+         (id_list +> List.map (fun ((((name,f),endattrs), ini), iivirg) ->
            let s = str_of_name name in
 	   if fst (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
@@ -1190,8 +1190,7 @@ iteration:
             v_type = f returnType;
             v_storage = unwrap storage;
             v_local = Ast_c.LocalDecl;
-            v_attr = (fst (fst $3));
-            v_midattr = (snd (fst $3))@attrs;
+            v_attr = fst $3;
             v_endattr = endattrs;
             v_type_bis = ref None;
            },
