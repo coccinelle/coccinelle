@@ -1710,7 +1710,7 @@ in
       (* print a newline at the beginning, if needed *)
       newline_before();
       (* print a newline before each of the rest *)
-      let rec loop leading_newline indent_needed = function
+      let rec loop leading_newline indent_needed space_after = function
 	  [] -> ()
 	| x::xs ->
 	    (if leading_newline then force_newline());
@@ -1746,9 +1746,9 @@ in
 		    Ast.EComma _ -> false (* due to hint *)
 		  | _ -> true)
 	      |	t -> true in
-	    let indent_needed =
+	    let (indent_needed,space_after) =
 	      let rec loop space_after indent_needed = function
-		  [] -> indent_needed
+		  [] -> (indent_needed,space_after)
 		| x::xs ->
 		    (if indent_needed (* for open brace *)
 		    then force_newline()
@@ -1757,7 +1757,7 @@ in
 		    let indent_needed = pp_any x in
 		    let space_after = space_needed_after x in
 		    loop space_after indent_needed xs in
-	      loop false false x in
+	      loop space_after false x in
 	    let newline_needed =
 	      (* tokens don't group into multiline terms, so may need to avoid
 		 adding newline *)
@@ -1768,8 +1768,8 @@ in
 		  (* should never be followed by a newline *)
 		  false
 	      |	_ -> true in
-	    loop newline_needed indent_needed xs in
-      loop false false (x::xs);
+	    loop newline_needed indent_needed space_after xs in
+      loop false false false (x::xs);
       (* print a newline at the end, if needed *)
       newline_after()
 
