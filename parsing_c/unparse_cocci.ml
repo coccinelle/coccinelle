@@ -1768,7 +1768,7 @@ in
 		  (* should never be followed by a newline *)
 		  false
 	      |	_ -> true in
-	    loop newline_needed indent_needed space_after xs in
+	    loop newline_needed indent_needed (not newline_needed && space_after) xs in
       loop false false false (x::xs);
       (* print a newline at the end, if needed *)
       newline_after()
