@@ -963,6 +963,13 @@ and print_named_type ty id =
 and ty_space ty =
   match Ast.unwrap ty with
     Ast.Pointer(_,_) -> ()
+  | Ast.MetaType(name,_,_,_) ->
+      handle_metavar name (function
+          Ast_c.MetaTypeVal(_,(_,_,ty)) ->
+	    (match Ast_c.unwrap ty with
+	      Ast_c.Pointer _ -> ()
+	    | _ -> pr_space())
+        | _ -> error name ty "type value expected")
   | _ -> pr_space()
 
 and ft_space ty =
