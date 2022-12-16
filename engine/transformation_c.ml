@@ -117,7 +117,7 @@ module XTRANS = struct
   let drop_exp_types = (* keep position information *)
     { Visitor_c.default_visitor_c_s with
       Visitor_c.kinfo_s = (fun (k,_) i ->
-	{ i with cocci_tag = ref Ast_c.emptyAnnot; }
+	{ i with Ast_c.cocci_tag = ref Ast_c.emptyAnnot; }
       );
       Visitor_c.kexpr_s = (fun (k,_) e ->
 	let (e', ty),ii' = k e in
