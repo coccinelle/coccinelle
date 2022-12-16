@@ -30,7 +30,8 @@ void soa_scatter__particle_data_soa_t(struct particle_data_soa_t P_soa,
 
 void soa_gather__sph_particle_data_soa_t(struct sph_particle_data *P_aos,
 					 const struct sph_particle_data_soa_t P_soa,
-					 size_t first, size_t N) {
+					 size_t first, size_t N)
+{
 	size_t i;
 	if (P_aos == NULL)
 		return; //happens. e.g. in runs with gravity only SphP does not exist
@@ -44,7 +45,8 @@ void soa_gather__sph_particle_data_soa_t(struct sph_particle_data *P_aos,
 
 void soa_gather__particle_data_soa_t(struct particle_data *P_aos,
 				     const struct particle_data_soa_t P_soa,
-				     size_t first, size_t N) {
+				     size_t first, size_t N)
+{
 	size_t i;
 	if (P_aos == NULL)
 		return; //happens. e.g. in runs with gravity only SphP does not exist
@@ -58,7 +60,8 @@ void soa_gather__particle_data_soa_t(struct particle_data *P_aos,
 
 void soa_scatter__sph_particle_data_soa_t(struct sph_particle_data_soa_t P_soa,
 					  const struct sph_particle_data *P_aos,
-					  size_t first, size_t N) {
+					  size_t first, size_t N)
+{
 	size_t i;
 	if (P_aos == NULL)
 		return; //happens. e.g. in runs with gravity only SphP does not exist
@@ -72,7 +75,8 @@ void soa_scatter__sph_particle_data_soa_t(struct sph_particle_data_soa_t P_soa,
 
 void soa_scatter__particle_data_soa_t(struct particle_data_soa_t P_soa,
 				      const struct particle_data *P_aos,
-				      size_t first, size_t N) {
+				      size_t first, size_t N)
+{
 	size_t i;
 	if (P_aos == NULL)
 		return; //happens. e.g. in runs with gravity only SphP does not exist
@@ -84,8 +88,13 @@ void soa_scatter__particle_data_soa_t(struct particle_data_soa_t P_soa,
 	}
 }
 
-void allocate_memory() { return; }
-void force_treefree(){}
+void allocate_memory()
+{
+	return;
+}
+void force_treefree()
+{
+}
 
 void domain_Decomposition()
 {
