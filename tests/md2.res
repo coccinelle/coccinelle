@@ -1,7 +1,9 @@
 int main() {
 	int y;
 	static int y;
-	int y;int y;int y;
+	int y;
+	int y;
+	int y;
 	static int a,b,c;
 
 	char y;

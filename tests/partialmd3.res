@@ -1,3 +1,4 @@
 int main () {
-	int a,b;int q;
+	int a,b;
+	int q;
 }
