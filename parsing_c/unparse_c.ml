@@ -576,19 +576,13 @@ let is_newline_or_comment = function
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
-let is_newline_space_or_minus = function
-  | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
-  | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
-  | T2 (_, Min _, _, _) -> true
-  | _ -> false
-
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
   | _ -> false
 
 let contains_newline = List.exists is_newline
 
-let generated_newline = function
+let existing_or_added_newline = function
     T2((Parser_c.TCommentNewline _),Ctx,_i,_h) -> true
   | C2("",_) -> false
   | C2(s,_) -> String.get s 0 = '\n' (* may have whitespace after *)
@@ -596,6 +590,18 @@ let generated_newline = function
       (try let _ = Str.search_forward (Str.regexp "\n") s 0 in true
       with Not_found -> false)
   | _ -> false
+
+let generated_newline_space_or_min = function
+  | (T2(Parser_c.TComment _,_b,_i,_h)) as t -> not(is_slash_slash t) (* only whitespace *)
+  | C2("",_) -> true
+  | T2 (_, Min _, _, _) -> true
+  | t -> existing_or_added_newline t
+
+let ends_in_space t =
+  let s = str_of_token2 t in
+  if s = ""
+  then false
+  else String.get s (String.length s - 1) = ' '
 
 let is_fake2 = function Fake2 _ -> true | _ -> false
 let is_comma = function Comma _ -> true | _ -> false
@@ -1272,9 +1278,10 @@ let check_danger toks =
 (* // should not be followed by a non-newline existing token *)
 let fix_slash_slash toks =
   let rec loop acc = function
-      ((Cocci2 _) as t0)::((T2 _) as t1)::rest
-      when is_slash_slash t0 && not (is_newline t1) ->
-	loop (t1 :: (C2("\n",None)) :: t0 :: acc) rest
+      t0::rest when is_slash_slash t0 ->
+	(match Common.drop_while is_minus rest with
+	  t1::_ when existing_or_added_newline t1 -> loop (t0::acc) rest
+	| _ -> loop (C2("\n",None)::(t0::acc)) rest)
     | x::xs -> loop (x::acc) xs
     | [] -> List.rev acc in
   loop [] toks
@@ -1293,35 +1300,21 @@ let paren_then_brace toks =
       x :: search_paren (search_plus xs)
     | x::xs -> x :: search_paren xs
   and search_plus xs =
-    let (spaces, rest) = span is_safe_comment_or_space xs in
+    let (spaces, rest) = span generated_newline_space_or_min xs in
     match rest with
-      T2(Parser_c.TComment _,_,_,_)::_ ->
-	(* must be unsafe, ie //, moving brace up puts it under comment *)
-	xs
-    | _ ->
-	let (nls, rest) = span is_newline_space_or_minus rest in
-	let after =
-	  match List.rev spaces with
-	    [] -> [(C2 (" ",None))]
-	  | T2(Parser_c.TComment _,Ctx,_i,_h)::_ -> [(C2 (" ",None))]
-	  | _ ->
-	      if List.exists (function T2(_,Ctx,_,_) -> true | _ -> false)
-		  spaces
-	      then [] (* use existing trailing spaces *)
-	      else [(C2 (" ",None))] in
-	match rest with
-	  (* move the brace up to the previous line *)
-	| ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 ("\n",_,_,_,_)) as a) ::
-	  rest ->
-	    (* use what was there already, if available *)
-            let nls =
-              match nls with
-              | [] -> [a]
-              | T2(Parser_c.TOBrace _, _, _, _)::_ -> a::nls
-              | _ -> nls
-            in
-	    spaces @ after @ x :: nls @ rest
-	| _ -> xs in
+    | ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 (s,_,_,_,_)) as a) :: after
+      when s <> "" && String.get s 0 = '\n' -> Printf.eprintf "have a brace and newline\n";
+	(* move the brace up to the previous line *)
+	(* if there is a newline with indentation just before the {,
+	   then we want to move the { before that, to benefit from the
+	   correct indentation *)
+	(match Common.drop_while is_minus (List.rev spaces) with
+	  [] -> (C2 (" ",None)) :: rest
+	| t1 :: _ ->
+	    if existing_or_added_newline t1
+	    then (C2 (" ",None)) :: x :: spaces @ after (* don't need a *)
+	    else (C2 (" ",None)) :: x :: a :: spaces @ after)
+    | _ -> xs in
   search_paren toks
 
 let is_ident_like s = s ==~ regexp_alpha
@@ -2651,7 +2644,7 @@ let pp_program2 xs outfile  =
               (* phase2: can now start to filter and adjust *)
 	      let toks = check_danger toks in
 	      let toks = fix_slash_slash toks in
-              let toks = paren_then_brace toks in
+	      let toks = paren_then_brace toks in
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
