@@ -392,17 +392,18 @@ let displace_fake_nodes toks =
 (* Tokens2 generation *)
 (*****************************************************************************)
 
-let rec comment2t2 = function
+let rec comment2t2 seencomment = function
   | (Token_c.TCommentCpp
   (* not sure iif the following list is exhaustive or complete *)
     (Token_c.CppAttr|Token_c.CppMacro|Token_c.CppPassingCosWouldGetError),
     (info : Token_c.info)) :: rest ->
-    C2(info.Common.str,None) :: comment2t2 rest
+    C2(info.Common.str,None) :: comment2t2 true rest
   | (Token_c.TCommentCpp x,(info : Token_c.info)) :: rest ->
-    C2("\n"^info.Common.str^"\n",None) :: comment2t2 rest
+    C2("\n"^info.Common.str^"\n",None) :: comment2t2 true rest
   | [(_,_)] | [] -> []
   (* keep spacing within comments, if available *)
-  | (_,info)::rest -> C2(info.Common.str,None) :: comment2t2 rest
+  | (_,info)::rest when seencomment -> C2(info.Common.str,None) :: comment2t2 true rest
+  | _ :: rest -> comment2t2 seencomment rest
 
 let expand_mcode toks =
   let toks_out = ref [] in
@@ -469,7 +470,7 @@ let expand_mcode toks =
       );
       (* why nothing for mbefore? *)
       (Ast_c.get_comments_after info) +>
-      comment2t2 +>
+      comment2t2 false +>
       List.iter (fun x -> push2 x toks_out) in
 
     let pr_barrier ln col = (* marks a position, used around C code *)

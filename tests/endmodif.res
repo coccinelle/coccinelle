@@ -3,8 +3,6 @@ replace_g(void)
   return 12;
 }
 
-
-
 before_h(void)
 {
   return 12;
