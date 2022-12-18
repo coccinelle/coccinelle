@@ -549,7 +549,7 @@ let rec lexer_function ~pass tr = fun lexbuf ->
           (!Flag_parsing_c.cpp_directive_passing || (pass >= 2))
         then begin
           incr counter;
-          pr2 (msg^": inside function, I treat it as comment");
+          pr2_once (msg^": inside function, I treat it as comment");
           let v' =
 	    Parser_c.TCommentCpp (Token_c.CppDirective,TH.info_of_tok v)
           in
