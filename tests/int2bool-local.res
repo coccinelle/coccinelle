@@ -24,7 +24,6 @@ int nxny2(){
 int nxny3() {
 	int x;
 	int y;
-
 	x = (true)? 0 : 1;
 	y = 4;
 
@@ -33,7 +32,6 @@ int nxny3() {
 
 int px4() {
 	bool x;
-	
 	x = false;
 	return 4;
 }
@@ -41,7 +39,6 @@ int px4() {
 int nxny5() {
 	int x;
 	int y;
-
 	x = 0;
 	y = 1;
 

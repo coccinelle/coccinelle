@@ -513,7 +513,8 @@ let expand_mcode toks =
 	     if a fake token is being replaced, there should be a newline,
 	     hence use before *)
 	  (match t with
-	    Fake1 _ -> unparser any_xxs Unparse_cocci.Before
+	    Fake1 info when !(info.Ast_c.danger) = Ast_c.DangerStart ->
+	      unparser any_xxs Unparse_cocci.Before
           | _ -> unparser any_xxs Unparse_cocci.InPlace)
       )
     | Ast_cocci.CONTEXT (_,any_befaft) ->
