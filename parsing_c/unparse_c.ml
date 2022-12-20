@@ -1844,6 +1844,11 @@ type info =
 	     to compute indentation; it might be before a label, a #, or
 	     just an empty line *)
 
+let newlineNL = function
+    CtxNL _ -> true
+  | PlusNL _ -> true
+  | _ -> false
+
 let print_info l =
   List.iter
     (function
@@ -2426,12 +2431,24 @@ let adjust_indentation xs =
 	      depthmin dmin inparens false in
 	  (out_tu,minmap,t::res)
       | (n,PlusNL(depth,inparens),t)::rest ->
-	  let (out_tu,minmap,res) =
-	    loop tabbing_unit past_minmap dmin depth rest in
-	  let newtok =
-	    plus_search_in_maps n depth inparens past_minmap minmap
-	      tabbing_unit t in
-	  (out_tu, minmap, newtok::res)
+	  let dont_touch =
+	    let after_min =
+	      Common.drop_while (fun (_,_,t) -> is_minus t) rest in
+	    match after_min with
+	      (_,t,t1)::_ -> newlineNL t
+	    | _ -> false in
+	  if dont_touch
+	  then
+	    let (out_tu,minmap,res) =
+	      loop tabbing_unit past_minmap dmin dplus rest in
+	    (out_tu,minmap,t::res)
+	  else
+	    let (out_tu,minmap,res) =
+	      loop tabbing_unit past_minmap dmin depth rest in
+	    let newtok =
+	      plus_search_in_maps n depth inparens past_minmap minmap
+		tabbing_unit t in
+	    (out_tu, minmap, newtok::res)
       | (n,(Other _|Label),t)::rest ->
 	  let (out_tu,minmap,res) =
 	    loop tabbing_unit past_minmap dmin dplus rest in
