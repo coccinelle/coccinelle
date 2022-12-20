@@ -592,12 +592,12 @@ let is_newline = function
 
 let c2newline = function
     C2(s,_) -> s <> "" && String.get s 0 = '\n' (* has a newline *)
-	&& String.length (String.trim s) = 1 (* just a newline *)
+	&& String.length (Stdcompat.String.trim s) = 1 (* just a newline *)
   | _ -> false
 
 let cocci2newline = function
     Cocci2(s,_,_,_,_) -> s <> "" && String.get s 0 = '\n' (* has a newline *)
-	&& String.length (String.trim s) = 1 (* just a newline *)
+	&& String.length (Stdcompat.String.trim s) = 1 (* just a newline *)
   | _ -> false
 
 let contains_newline = List.exists is_newline
