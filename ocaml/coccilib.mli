@@ -529,7 +529,6 @@ module Ast_c :
     val emptyComments : comments_around
     val noRelPos : unit -> include_rel_pos option ref
     val noInIfdef : unit -> bool ref
-    val no_virt_pos : Common.parse_info * int
     val fakeInfo : 'a -> info
     val noii : 'a list
     val noattr : 'a list

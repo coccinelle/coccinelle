@@ -1147,6 +1147,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
      *)
     let checkpoint = TH.line_of_tok tr.current in
     let checkpoint_file = TH.file_of_tok tr.current in
+    Ast_c.reset_nonpos();
 
     (* call the parser *)
     let elem =

@@ -406,7 +406,7 @@ val mcode_and_env_of_cocciref :
 val emptyComments : comments_around
 val noRelPos : unit -> include_rel_pos option ref
 val noInIfdef : unit -> bool ref
-val no_virt_pos : Common.parse_info * int
+val reset_nonpos : unit -> unit
 val fakeInfo : 'a -> info
 val noii : 'a list
 val noattr : 'a list

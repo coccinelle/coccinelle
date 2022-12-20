@@ -979,11 +979,17 @@ let noInIfdef () =
  * an existing C element.
  * old: or when don't want 'synchronize' on it in unparse_c.ml
  * (now have other mark for the matter).
+ * Position of fake tokens must be unique within a file so that
+ * things added to fake toks are not added at multiple places.
  *)
-let no_virt_pos = ({str="";charpos=0;line=0;column=0;file=""},-1)
+let nonpos = ref 0
+let reset_nonpos _ = nonpos := !nonpos - 1
+let no_virt_pos _ =
+  nonpos := !nonpos - 1;
+  ({str="";charpos=0;line=0;column=0;file=""},!nonpos)
 
 let fakeInfo pi  =
-  { pinfo = FakeTok ("",no_virt_pos);
+  { pinfo = FakeTok ("",no_virt_pos());
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
@@ -1113,7 +1119,7 @@ let get_orig_info f ii =
   | AbstractLineTok pi -> f pi
 
 let make_expanded ii =
-  {ii with pinfo = ExpandedTok (get_opi ii.pinfo,no_virt_pos)}
+  {ii with pinfo = ExpandedTok (get_opi ii.pinfo,no_virt_pos())}
 
 let pos_of_info   ii = get_info      (function x -> x.Common.charpos) ii
 let opos_of_info  ii = get_orig_info (function x -> x.Common.charpos) ii
