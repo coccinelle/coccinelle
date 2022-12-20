@@ -406,11 +406,7 @@ and pp_string_format (e,ii) =
         pr_elem i1; pr_space();
         pr_elem i2;
 
-        es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-        );
+	pp_arg_list es;
 
         pr_elem i3;
         indent_if_needed st (function _ -> pp_statement st);
@@ -822,12 +818,7 @@ and pp_string_format (e,ii) =
 	pr_elem ifakestart;
 	pr_elem iis;
 	pr_elem lp;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	  );
-
+	pp_arg_list es;
 	pr_elem rp;
 	pr_elem iiend;
 
@@ -1146,11 +1137,7 @@ and pp_string_format (e,ii) =
 	pp_attributes preattrs;
 	pr_elem iis;
 	pr_elem lp;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	);
+	pp_arg_list es;
 	pr_elem rp;
 	pp_attributes attrs;
 	pr_elem iiend;
@@ -1162,12 +1149,7 @@ and pp_string_format (e,ii) =
 	pp_attributes preattrs;
 	pr_elem iis;
 	pr_elem lp;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	);
-
+	pp_arg_list es;
 	pr_elem rp;
 	pp_attributes attrs;
 
@@ -1178,15 +1160,10 @@ and pp_string_format (e,ii) =
 	pp_attributes preattrs;
 	pr_elem iis;
 	pr_elem lp;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	);
-
+	pp_arg_list es;
 	pr_elem rp;
 	pp_attributes attrs;
-	pr_elem eq;
+	pr_space(); pr_elem eq; pr_space();
 	pp_init ini;
 	pr_elem iiend;
 
@@ -1457,11 +1434,7 @@ and pp_init (init, iinit) =
     | MacroTop (s, es,   [i1;i2;i3;i4]) ->
 	pr_elem i1;
 	pr_elem i2;
-	es +> List.iter (fun (e, opt) ->
-          assert (List.length opt <= 1);
-          opt +> List.iter pr_elem;
-          pp_argument e;
-	);
+	pp_arg_list es;
 	pr_elem i3;
 	pr_elem i4;
 
@@ -1545,13 +1518,7 @@ and pp_init (init, iinit) =
 	let (i1,i2,i3) = tuple_of_list3 ii in
 	pr_elem i1; pr_space();
 	pr_elem i2;
-
-	es +> List.iter (fun (e, opt) ->
-	  assert (List.length opt <= 1);
-	  opt +> List.iter pr_elem;
-	  pp_argument e;
-	  );
-
+	pp_arg_list es;
 	pr_elem i3
 
     | F.ReturnExpr (_st, (e,ii)) ->
