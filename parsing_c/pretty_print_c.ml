@@ -1122,12 +1122,13 @@ and pp_string_format (e,ii) =
 	  }, iivirg) ->
 
 	    assert (storage2 = storage);
-	    iivirg +> List.iter pr_elem;
+	    iivirg +> List.iter pr_elem; pr_space();
 	    pp_type_with_ident_rest (Some (function _ -> pp_name name))
 	      returnType attrs endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(iini,init) -> pr_elem iini; pp_init init
+	    | Ast_c.ValInit(iini,init) ->
+		pr_space(); pr_elem iini; pr_space(); pp_init init
 	    | Ast_c.ConstrInit((init,[lp;rp])) ->
 		pr_elem lp; pp_arg_list init; pr_elem rp
 	    | Ast_c.ConstrInit _ -> raise (Impossible 113));
