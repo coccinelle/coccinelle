@@ -1334,7 +1334,7 @@ let paren_then_brace toks =
     let (spaces, rest) = span generated_newline_space_or_min xs in
     match rest with
     | ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 (s,_,_,_,_)) as a) :: after
-      when s <> "" && String.get s 0 = '\n' -> Printf.eprintf "have a brace and newline\n";
+      when s <> "" && String.get s 0 = '\n' ->
 	(* move the brace up to the previous line *)
 	(* if there is a newline with indentation just before the {,
 	   then we want to move the { before that, to benefit from the
