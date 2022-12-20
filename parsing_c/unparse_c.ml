@@ -1847,6 +1847,7 @@ type info =
 let newlineNL = function
     CtxNL _ -> true
   | PlusNL _ -> true
+  | Label -> true
   | _ -> false
 
 let print_info l =
@@ -2433,9 +2434,9 @@ let adjust_indentation xs =
       | (n,PlusNL(depth,inparens),t)::rest ->
 	  let dont_touch =
 	    let after_min =
-	      Common.drop_while (fun (_,_,t) -> is_minus t) rest in
+	      Common.drop_while (fun (_,_,t) -> is_minus t || is_space t) rest in
 	    match after_min with
-	      (_,t,t1)::_ -> newlineNL t
+	      (_,t,_)::_ -> newlineNL t
 	    | _ -> false in
 	  if dont_touch
 	  then
