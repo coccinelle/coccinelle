@@ -392,18 +392,27 @@ let displace_fake_nodes toks =
 (* Tokens2 generation *)
 (*****************************************************************************)
 
-let rec comment2t2 seencomment = function
-  | (Token_c.TCommentCpp
-  (* not sure iif the following list is exhaustive or complete *)
-    (Token_c.CppAttr|Token_c.CppMacro|Token_c.CppPassingCosWouldGetError),
-    (info : Token_c.info)) :: rest ->
-    C2(info.Common.str,None) :: comment2t2 true rest
-  | (Token_c.TCommentCpp x,(info : Token_c.info)) :: rest ->
-    C2("\n"^info.Common.str^"\n",None) :: comment2t2 true rest
-  | [(_,_)] | [] -> []
-  (* keep spacing within comments, if available *)
-  | (_,info)::rest when seencomment -> C2(info.Common.str,None) :: comment2t2 true rest
-  | _ :: rest -> comment2t2 seencomment rest
+(* This preserves the whitespace information stored with the match of a
+metavariable.  The problem is that we don't know whether this will be used
+at the end of a line, in which case a newline would be added by existing
+mechanisms, or in the middle of some code, in which case any newlines found
+around the comments have to be preserved.  So if there is a comment, we
+keep everything, and cleanup later in add_space (C2 newline followed by
+Cocci2 or T2 newline) *)
+let rec comment2t2 infos =
+  let has_comment =
+    List.exists
+      (function
+	  (Token_c.TCommentCpp _,_) -> true
+	| _ -> false)
+      infos in
+  if has_comment
+  then
+    let rec loop = function
+	[] -> []
+      | (_,info)::rest -> C2(info.Common.str,None) :: loop rest in
+    loop infos
+  else []
 
 let expand_mcode toks =
   let toks_out = ref [] in
@@ -469,8 +478,7 @@ let expand_mcode toks =
         push2 (C2 (Ast_c.str_of_info info,None)) toks_out
       );
       (* why nothing for mbefore? *)
-      (Ast_c.get_comments_after info) +>
-      comment2t2 false +>
+      (Ast_c.get_comments_after info) +> comment2t2 +>
       List.iter (fun x -> push2 x toks_out) in
 
     let pr_barrier ln col = (* marks a position, used around C code *)
@@ -580,6 +588,16 @@ let is_newline_or_comment = function
 
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+  | _ -> false
+
+let c2newline = function
+    C2(s,_) -> s <> "" && String.get s 0 = '\n' (* has a newline *)
+	&& String.length (String.trim s) = 1 (* just a newline *)
+  | _ -> false
+
+let cocci2newline = function
+    Cocci2(s,_,_,_,_) -> s <> "" && String.get s 0 = '\n' (* has a newline *)
+	&& String.length (String.trim s) = 1 (* just a newline *)
   | _ -> false
 
 let contains_newline = List.exists is_newline
@@ -1418,6 +1436,8 @@ let rec add_space xs =
     else x::(add_space (y::xs))
   | ((T2(_,Ctx,_,_)) as x)::((T2(_,Ctx,_,_)) as y)::xs -> (* don't touch *)
       x :: (add_space (y :: xs))
+  | x::y::xs when c2newline x && (is_newline y || cocci2newline y) ->
+      add_space (y :: xs)
   | x::y::xs -> (* not boundary, not sure if it is possible *)
     let sx = str_of_token2 x in
     let sy = str_of_token2 y in
