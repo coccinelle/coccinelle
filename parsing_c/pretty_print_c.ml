@@ -1196,7 +1196,7 @@ and pp_init (init, iinit) =
 
       | InitDesignators (xs, initialiser), [i1] -> (* : *)
           xs +> List.iter pp_designator;
-          pr_elem i1;
+          pr_space(); pr_elem i1; pr_space();
           pp_init initialiser
 
     (* no use of '=' in the "Old" style *)
