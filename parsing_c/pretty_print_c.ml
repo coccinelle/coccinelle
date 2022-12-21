@@ -655,6 +655,7 @@ and pp_string_format (e,ii) =
 
 	  (match rest with
 	    lb::rb::ii ->
+	      pr_space();
 	      pr_elem lb;
 	      enumt +> List.iter (fun ((name, eopt), iicomma) ->
 		assert (List.length iicomma <= 1);
