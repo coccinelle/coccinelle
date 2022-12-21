@@ -1546,7 +1546,7 @@ and vk_type_s = fun bigf t ->
           FunctionType(typef returnt,vk_paramst_s bigf paramst)
 
       | EnumDef  (sen, baset, enumt) ->
-          EnumDef (sen,
+          EnumDef (vk_type_s bigf sen,
 		   fmap (function baset -> baset) baset,
 		   vk_enum_fields_s bigf enumt)
       | StructUnion (sopt, su, base_classes, fields) ->
