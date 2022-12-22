@@ -605,7 +605,9 @@ and pp_string_format (e,ii) =
 
       let print_sto_qu print_type =
 	let (beforeii,afterii) = get_aux_positions sto qu attr in
-	print_ii_list beforeii; print_type(); print_ii_list afterii in
+	print_ii_list beforeii; print_type();
+	(if afterii <> [] then pr_space());
+	print_ii_list afterii in
 
       let print_order_ty ii =
 	let ty = List.map (fun i -> (i,fun _ -> pr_elem i)) ii in
