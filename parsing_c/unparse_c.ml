@@ -2432,7 +2432,7 @@ let adjust_indentation xs =
 	      depthmin dmin inparens false in
 	  (out_tu,minmap,t::res)
       | (n,PlusNL(depth,inparens),t)::rest ->
-	  let dont_touch =
+	  let dont_touch = (* double newline *)
 	    let after_min =
 	      Common.drop_while (fun (_,_,t) -> is_minus t || is_space t) rest in
 	    match after_min with
