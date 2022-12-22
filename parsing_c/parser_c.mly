@@ -1979,7 +1979,7 @@ designator:
 
 gcc_comma_opt_struct:
  | TComma {  true, [$1] }
- | TNoComma {  false, [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","] }
+ | TNoComma {  false, [$1] }
  | /*(* empty *)*/  { false, [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","]  }
 
 

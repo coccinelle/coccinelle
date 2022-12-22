@@ -2672,9 +2672,9 @@ let pp_program2 xs outfile  =
       | PPnormal ->
         (* now work on tokens *)
         (* phase1: just get all the tokens, all the information *)
-        assert(toks_e +> List.for_all (fun t ->
+        (*assert(toks_e +> List.for_all (fun t ->
           TH.is_origin t || TH.is_expanded t
-        ));
+        ));*)
         let toks = get_fakeInfo_and_tokens e toks_e in
         let toks = displace_fake_nodes toks in
         (* assert Origin;ExpandedTok;Faketok *)
