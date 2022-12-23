@@ -752,7 +752,7 @@ and pp_string_format (e,ii) =
                first var, we print the whole type *)
 
 	    (match x with
-	      (Simple (nameopt, typ)), iivirg ->
+	      (Simple (nameopt, typ, attrs)), iivirg ->
               (* first var cannot have a preceding ',' *)
 		assert (List.length iivirg = 0);
 		let identinfo =
@@ -760,7 +760,7 @@ and pp_string_format (e,ii) =
 		  | None -> None
                   | Some name -> Some (function _ -> pp_name name)
                 in
-		pp_type_with_ident identinfo None typ Ast_c.noattr;
+		pp_type_with_ident identinfo None typ attrs;
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
@@ -779,14 +779,14 @@ and pp_string_format (e,ii) =
 
                       (* for other vars *)
 	    xs +> List.iter (function
-	      | (Simple (nameopt, typ)), iivirg ->
+	      | (Simple (nameopt, typ, attrs)), iivirg ->
 		  iivirg +> List.iter pr_elem;
 		  let identinfo =
 		    match nameopt with
 		    | None -> None
 		    | Some name -> Some (function _ -> pp_name name)
 		  in
-		  pp_type_with_ident_rest identinfo typ Ast_c.noattr Ast_c.noattr
+		  pp_type_with_ident_rest identinfo typ Ast_c.noattr attrs
 
 	      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
 		  iivirg +> List.iter pr_elem;

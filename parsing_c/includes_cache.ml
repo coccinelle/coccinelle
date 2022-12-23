@@ -139,7 +139,7 @@ let cache_name_visitor file =
   let cache_struct_fields sname def =
     let _cache_field field =
       match (Ast_c.unwrap field) with
-        Ast_c.Simple (name, _)
+        Ast_c.Simple (name, _, _)
       | Ast_c.BitField (name, _, _, _) ->
           name +>
             do_option

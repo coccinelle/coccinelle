@@ -2942,13 +2942,13 @@ and onefield = fun allminus decla (declb, iiptvirgb) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
    A.Field (typa, ida, None, ptvirga),
-   (B.Simple (nameidb, typb), iivirg) ->
+   (B.Simple (nameidb, typb, attrs), iivirg) ->
      match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
        return (
        (A.Field (typa, ida, None, ptvirga) +>  A.rewrap decla),
-       ((B.Simple (nameidb, typb),iivirg), iiptvirgb)))))
+       ((B.Simple (nameidb, typb, attrs),iivirg), iiptvirgb)))))
  | A.Field (typa, ida, Some (ca, ea), ptvirga),
      (B.BitField (nameidb, typb, info, eb), iivirg) ->
      match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->

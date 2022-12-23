@@ -2121,7 +2121,7 @@ field_declaration:
 	       Ast_c.parse_info_of_info $2)));
 
        let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
-       FieldDeclList ([(Simple (None, returnType)) , []], [$2;iistart])
+       FieldDeclList ([(Simple (None, returnType, Ast_c.noattr)) , []], [$2;iistart])
      }
  | simple_type dotdot const_expr2 TPtVirg
      /* specialized for the only thing that makes sense for an anonymous
@@ -2184,15 +2184,15 @@ simple_field_declaration:
 
 
 struct_declarator:
- | declaratorsd
-     { (fun x -> Simple   (Some (fst $1), (snd $1) x)) }
- | declaratorsd dotdot const_expr2
+ | declarator attributes_opt
+     { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
+ | declarator dotdot const_expr2
      { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
 
 declaratorsfd:
  | declaratori
      { let (dec,endattr) = $1 in
-       (fun x -> Simple (Some (fst dec), (snd dec) x)) }
+       (fun x -> Simple (Some (fst dec), (snd dec) x, endattr)) }
  | declaratori dotdot TInt
      { let (dec,endattr) = $1 in
        let (str,(sign,base)) = fst $3 in
@@ -2202,15 +2202,6 @@ declaratorsfd:
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
-declaratorsd:
- | declarator
-     { $1 }
- /*(* gccext: *)*/
- | declarator attributes   { $1 } /* discarding attributes */
-
-
-
-
 struct_or_union_spec: s_or_u_spec2 { dt "su" (); $1 }
 struct_or_union: struct_or_union2 { et "su" (); $1 }
 cpp_struct_or_union: cpp_struct_or_union2 { et "su" (); $1 }

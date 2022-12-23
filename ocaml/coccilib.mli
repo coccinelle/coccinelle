@@ -107,7 +107,7 @@ module Ast_c :
         FieldDeclList of fieldkind wrap2 list wrap
     and fieldkind =
       Ast_c.fieldkind =
-        Simple of name option * fullType
+        Simple of name option * fullType * attribute list
       | BitField of name option * fullType * info * constExpression
     and enumType = oneEnumType wrap2 list
     and oneEnumType = name * (info * constExpression) option

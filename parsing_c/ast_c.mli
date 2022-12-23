@@ -74,7 +74,7 @@ and field =
   | IfdefStruct of ifdef_directive
 and field_declaration = FieldDeclList of fieldkind wrap2 list wrap
 and fieldkind =
-    Simple of name option * fullType
+    Simple of name option * fullType * attribute list (* endattrs *)
   | BitField of name option * fullType * info * constExpression
 and enumType = oneEnumType wrap2 list
 and oneEnumType = name * (info * constExpression) option
