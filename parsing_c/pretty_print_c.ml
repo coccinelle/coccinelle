@@ -865,12 +865,11 @@ and pp_string_format (e,ii) =
 
       let print_ident ident = Common.do_option (fun f ->
         (* XXX attrs +> pp_attributes pr_elem pr_space; *)
-        f();
-        pp_attributes endattrs
+        f()
 	) ident
       in
 
-      match ty, iity with
+      (match ty, iity with
       (* the work is to do in base_type !! *)
       | (NoType, iis)                           -> ()
       | (BaseType _, iis)                       -> print_ident ident
@@ -965,8 +964,8 @@ and pp_string_format (e,ii) =
 
 
       | (FunctionType _ | Array _ | ParenType _ | Pointer _), _ ->
-	  raise (Impossible 109)
-
+	  raise (Impossible 109));
+      pp_attributes endattrs
 
   and (pp_type_left: fullType -> unit) =
     fun ((qu, iiqu), attr, (ty, iity)) ->
