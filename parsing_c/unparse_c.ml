@@ -320,8 +320,9 @@ let displace_fake_nodes toks =
   let is_fake = function Fake1 _ -> true | _ -> false in
   let is_whitespace_or_noncol0_comment = function
     | T1(Parser_c.TCommentSpace _)
-  (* patch: cocci    *)
-    | T1(Parser_c.TCommentNewline _) -> true
+    (* patch: cocci    *)
+    | T1(Parser_c.TCommentNewline _)
+    | T1(Parser_c.TCommentCpp _) -> true
     | T1(Parser_c.TComment i) ->
 	(* column 0 is the leftmost column. *)
 	Ast_c.col_of_info i > 0
