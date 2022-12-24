@@ -895,7 +895,8 @@ and pp_string_format (e,ii) =
 	  print_qu_attr();
           if iiqu <> [] || attrs <> [] || get_comments_after i <> []
           then pr_space();
-          print_ident ident
+          print_ident ident;
+	  pp_type_right t
 
       (* ugly special case ... todo? maybe sufficient in practice *)
       | (ParenType ttop, [i1;i2]) ->
