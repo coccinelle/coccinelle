@@ -625,7 +625,7 @@ let macro_body_to_maybe_hint body =
       let lexbuf_fake = Lexing.from_function (fun _buf _n -> assert false) in
       let read_tokens tokens _lexbuf =
         match !tokens with
-        | [] -> TDefEOL (Ast_c.fakeInfo ())
+        | [] -> TDefEOL (Ast_c.fakeAfterInfo())
         | tok::toks ->
             tokens := toks;
             tok
@@ -641,7 +641,7 @@ let macro_body_to_maybe_hint body =
       let get_macro_iterator () =
 	match body with
 	  (Twhile _ | Tfor _)::_ -> (* need these tokns to have an iterator *)
-            let macro_tokens = body@[TPtVirg (Ast_c.fakeInfo())] in
+            let macro_tokens = body@[TPtVirg (Ast_c.fakeAfterInfo())] in
             (try
               match Parser_c.iteration (read_tokens (ref macro_tokens)) lexbuf_fake with
               | (Ast_c.While _ | Ast_c.For _), _ ->
@@ -652,7 +652,7 @@ let macro_body_to_maybe_hint body =
       in
       let get_macro_stmt () =
         let macro_tokens =
-          TDefine (Ast_c.fakeInfo())::TIdentDefine ("Fake ident", Ast_c.fakeInfo())::body
+          TDefine (Ast_c.fakeBeforeInfo())::TIdentDefine ("Fake ident", Ast_c.fakeAfterInfo())::body
         in
         try
           match Parser_c.cpp_directive (read_tokens (ref macro_tokens)) lexbuf_fake with

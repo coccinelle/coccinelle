@@ -193,7 +193,7 @@ let (fixDeclSpecForDecl: (attribute list * decl) -> (fullType * (storage wrap)))
       * offset.
       *)
      warning (iist@iiq@iit@iinl) "type defaults to 'int'"
-       (defaultInt, [fakeInfo fake_pi])
+       (defaultInt, [fakeAfterInfo()])
  | (None, None, Some t)   -> (t, iit)
 
  | (Some sign,   None, (None| Some (BaseType (IntType (Si (_,CInt))))))  ->
@@ -328,7 +328,7 @@ let postfakeInfo pii  =
   let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
 	      column=max_pi.Common.column;file=max_pi.Common.file},
 	    String.length max_pi.Common.str) in
-  { pinfo = FakeTok ("",vp);
+  { pinfo = FakeTok ("",vp,Ast_c.After);
     cocci_tag = ref Ast_c.emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref Ast_c.emptyComments;
@@ -346,7 +346,7 @@ let fixFunc (typ, compound, old_style_opt) =
   | FunctionType (fullt, (params,abool)) ->
       let iifunc = Ast_c.get_ii_typeC_take_care tybis in
 
-      let iistart = Ast_c.fakeInfo () in
+      let iistart = Ast_c.fakeBeforeInfo() in
       let iiend   = postfakeInfo iicp in
       assert (qu = nullQualif);
       assert (attrs = []);
@@ -1020,7 +1020,7 @@ argument:
 action_higherordermacro_ne:
  | taction_list_ne
      { if $1=[]
-       then ActMisc [Ast_c.fakeInfo()]
+       then ActMisc [fakeAfterInfo()]
        else ActMisc $1
      }
 
@@ -1028,7 +1028,7 @@ action_higherordermacro_ne:
 action_higherordermacro:
  | taction_list
      { if $1=[]
-       then ActMisc [Ast_c.fakeInfo()]
+       then ActMisc [fakeAfterInfo()]
        else ActMisc $1
      }
 
@@ -1067,7 +1067,7 @@ statement2:
  /*(* cppext: *)*/
  | TMacroStmt TOPar macro_argument_list TCPar {
    let fn = mk_e(Ident (RegularName (mk_string_wrap $1))) [] in
-   ExprStatement (Some(mk_e (FunCall (fn, $3)) [$2;$4])), [Ast_c.fakeInfo ()] }
+   ExprStatement (Some(mk_e (FunCall (fn, $3)) [$2;$4])), [fakeAfterInfo()] }
  | TMacroIdStmt { MacroStmt, [snd $1] }
 
  | Texec identifier exec_list TPtVirg { Exec($3), [$1;snd $2;$4] }
@@ -1178,7 +1178,7 @@ iteration:
  | Tfor TOPar decl_spec declaratori TDotDot expr TCPar cpp_ifdef_statement
      { let decl = (* should share with code in decl2 *)
        let (returnType,storage) = fixDeclSpecForDecl $3 in
-       let iistart = Ast_c.fakeInfo () in
+       let iistart = Ast_c.fakeBeforeInfo() in
        let di = ($4, NoInit) in
        let id_list = [di,[]] in
        DeclList (
@@ -1746,7 +1746,7 @@ decl2:
  | decl_spec TPtVirg
      { function local ->
        let (returnType,storage) = fixDeclSpecForDecl $1 in
-       let iistart = Ast_c.fakeInfo () in
+       let iistart = Ast_c.fakeBeforeInfo() in
        DeclList ([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
 		   v_attr = Ast_c.noattr;
@@ -1757,7 +1757,7 @@ decl2:
  | decl_spec init_declarator_list TPtVirg
      { function local ->
        let (returnType,storage) = fixDeclSpecForDecl $1 in
-       let iistart = Ast_c.fakeInfo () in
+       let iistart = Ast_c.fakeBeforeInfo() in
        DeclList (
          ($2 +> List.map (fun ((attrs, ((name,f),endattrs), ini), iivirg) ->
            let s = str_of_name name in
@@ -1782,20 +1782,20 @@ decl2:
      { function _ ->
        MacroDecl
 	 ((NoSto, [], fst $1, $3, $5, true),
-          (snd $1::$2::$4::$6::fakeInfo()::[])) }
+          (snd $1::$2::$4::$6::fakeBeforeInfo()::[])) }
 
  | TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq initialize TPtVirg
      { function _ ->
        MacroDeclInit
 	 ((NoSto, [], fst $1, $3, $5, $7),
-	  (snd $1::$2::$4::$6::$8::fakeInfo()::[])) }
+	  (snd $1::$2::$4::$6::$8::fakeBeforeInfo()::[])) }
  | decl_spec TMacroDecl TOPar macro_argument_list TCPar attributes_opt
    TPtVirg
      { function _ ->
        let (attrs,(sto,stoii)) = fixDeclSpecForMacroDecl $1 in
        MacroDecl
 	 ((sto, attrs, fst $2, $4, $6, true),
-          (snd $2::$3::$5::$7::fakeInfo()::stoii)) }
+          (snd $2::$3::$5::$7::fakeBeforeInfo()::stoii)) }
 
  | decl_spec
      TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq initialize TPtVirg
@@ -1803,7 +1803,7 @@ decl2:
        let (attrs,(sto,stoii)) = fixDeclSpecForMacroDecl $1 in
        MacroDeclInit
 	 ((sto, attrs, fst $2, $4, $6, $8),
-	  (snd $2::$3::$5::$7::$9::fakeInfo()::stoii)) }
+	  (snd $2::$3::$5::$7::$9::fakeBeforeInfo()::stoii)) }
 
 storage_const_opt:
    storage_class_spec_nt TMacroDeclConst { Some (fst $1,[snd $1; $2]) }
@@ -1980,7 +1980,7 @@ designator:
 gcc_comma_opt_struct:
  | TComma {  true, [$1] }
  | TNoComma {  false, [$1] }
- | /*(* empty *)*/  { false, [Ast_c.fakeInfo() +> Ast_c.rewrap_str ","]  }
+ | /*(* empty *)*/  { false, [fakeAfterInfo() +> Ast_c.rewrap_str ","]  }
 
 
 
@@ -2036,10 +2036,10 @@ struct_decl2:
     * the rule are slightly different.
     *)*/
  | identifier TOPar macro_argument_list TCPar TPtVirg
-     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
+     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeBeforeInfo()]) }
 
  | TMacroDecl TOPar macro_argument_list TCPar TPtVirg
-     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeInfo()]) }
+     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeBeforeInfo()]) }
 
  /*(* cppext: *)*/
  | cpp_directive
@@ -2074,16 +2074,16 @@ cpp_struct_decl2:
 
 c_plus_plus_constructor_decl:
  | identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
-     { (ConstructorDecl (fst $1, $3, $5)), [snd $1;$2;$4;$6;fakeInfo()] }
+     { (ConstructorDecl (fst $1, $3, $5)), [snd $1;$2;$4;$6;fakeBeforeInfo()] }
  | TTilde identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
-     { (DestructorDecl (fst $2, $4, $6)), [$1;snd $2;$3;$5;$7;fakeInfo()] }
+     { (DestructorDecl (fst $2, $4, $6)), [$1;snd $2;$3;$5;$7;fakeBeforeInfo()] }
 
  | identifier TOPar parameter_type_list TCPar post_constructor compound
      { (ConstructorDef (fst $1, $3, $5, fst $6)),
-       (snd $1) :: $2 :: $4 :: snd $6 @[fakeInfo()] }
+       (snd $1) :: $2 :: $4 :: snd $6 @[fakeBeforeInfo()] }
  | TTilde identifier TOPar parameter_type_list TCPar post_constructor compound
      { (DestructorDef (fst $2, $4, $6, fst $7)),
-       $1 :: snd $2 :: $3 :: $5 :: snd $7 @[fakeInfo()] }
+       $1 :: snd $2 :: $3 :: $5 :: snd $7 @[fakeBeforeInfo()] }
 
 post_constructor:
   Tfinal      { (true, [$1]) }
@@ -2100,7 +2100,7 @@ field_declaration:
 	      ("field_declaration: case 1: parsing don't allow this",
 	       Ast_c.parse_info_of_info $3)));
 
-       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$3;iistart])
@@ -2120,7 +2120,7 @@ field_declaration:
 	      ("field_declaration: case 2: parsing don't allow this",
 	       Ast_c.parse_info_of_info $2)));
 
-       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
        FieldDeclList ([(Simple (None, returnType, Ast_c.noattr)) , []], [$2;iistart])
      }
  | simple_type dotdot const_expr2 TPtVirg
@@ -2136,7 +2136,7 @@ field_declaration:
 	      ("field_declaration: case 3: parsing don't allow this",
 	       Ast_c.parse_info_of_info $2)));
 
-       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
        FieldDeclList (decl +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$4;iistart])
@@ -2155,7 +2155,7 @@ simple_field_declaration:
 	      ("simple_field_declaration: parsing don't allow this",
 	       Ast_c.parse_info_of_info $3)));
 
-       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$3;iistart])
@@ -2176,7 +2176,7 @@ simple_field_declaration:
 	      ("field_declaration: case 3: parsing don't allow this",
 	       Ast_c.parse_info_of_info $2)));
 
-       let iistart = Ast_c.fakeInfo () in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
        FieldDeclList (decl +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$4;iistart])
@@ -2585,12 +2585,12 @@ cpp_other:
 	 let id = RegularName (mk_string_wrap $1) in
 	 let ret =
 	   warning [$2] "type defaults to 'int'"
-	     (mk_ty defaultInt [fakeInfo fake_pi]) in
+	     (mk_ty defaultInt [fakeAfterInfo()]) in
 	 let ty =
 	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
 	 let attrs = Ast_c.noattr in
 	 let sto = (NoSto, false), [] in
-	 let iistart = Ast_c.fakeInfo () in
+	 let iistart = Ast_c.fakeBeforeInfo() in
 	 Declaration(
 	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
                       v_storage = unwrap sto; v_local = NotLocalDecl;
@@ -2602,7 +2602,7 @@ cpp_other:
 	 Declaration
 	   (MacroDecl
              ((NoSto, [], fst $1, $3, $5, true),
-              [snd $1;$2;$4;$6;fakeInfo()]))
+              [snd $1;$2;$4;$6;fakeBeforeInfo()]))
            (* old: MacroTop (fst $1, $3,    [snd $1;$2;$4;$5])  *)
      }
 
@@ -2616,7 +2616,7 @@ cpp_other:
      let id = RegularName (mk_string_wrap $1) in
      let ret =
        warning [$2] "type defaults to 'int'"
-	 (mk_ty defaultInt [fakeInfo fake_pi]) in
+	 (mk_ty defaultInt [fakeAfterInfo()]) in
      let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
      let sto = (NoSto, false), [] in
      (id, fixOldCDecl ty, sto, [], []) in
@@ -2629,7 +2629,7 @@ cpp_other:
      { Declaration
 	 (MacroDecl
            ((NoSto, [], fst $1, $3, Ast_c.noattr, false),
-            [snd $1;$2;$4;fakeInfo()])) }
+            [snd $1;$2;$4;Ast_c.fakeBeforeInfo()])) }
 
   /*(* ex: EXPORT_NO_SYMBOLS; *)*/
  | identifier TPtVirg { EmptyDef [snd $1;$2] }

@@ -74,12 +74,14 @@ type posl = int * int (* line-col, for MetaPosValList, for position variables *)
 type virtual_position = Common.parse_info * int (* character offset *)
  (* with sexp *)
 
+type befaft = Before | After (* reason for fake tok *)
+
 type parse_info =
   (* Present both in ast and list of tokens *)
   | OriginTok of Common.parse_info
   (* Present only in ast and generated after parsing. Used mainly
    * by Julia, to add stuff at virtual places, beginning of func or decl *)
-  | FakeTok of string * virtual_position
+  | FakeTok of string * virtual_position * befaft
   (* Present both in ast and list of tokens.  *)
   | ExpandedTok of Common.parse_info * virtual_position
 
@@ -988,13 +990,18 @@ let no_virt_pos _ =
   nonpos := !nonpos - 1;
   ({str="";charpos=0;line=0;column=0;file=""},!nonpos)
 
-let fakeInfo pi  =
-  { pinfo = FakeTok ("",no_virt_pos());
+let fakeInfo befaft =
+  { pinfo = FakeTok ("",no_virt_pos(),befaft);
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
     danger = ref NoDanger;
   }
+
+(* before fake tokens can be moved over whitespace in unparser.
+after fake tokens don't move, stay at the end of something. *)
+let fakeBeforeInfo _ = fakeInfo Before
+let fakeAfterInfo _  = fakeInfo After
 
 let noii = []
 let noattr = []
@@ -1058,7 +1065,7 @@ let rewrap_str s ii =
     (match ii.pinfo with
       OriginTok pi -> OriginTok { pi with Common.str = s;}
     | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.str = s;},vpi)
-    | FakeTok (_,vpi) -> FakeTok (s,vpi)
+    | FakeTok (_,vpi,befaft) -> FakeTok (s,vpi,befaft)
     | AbstractLineTok pi -> OriginTok { pi with Common.str = s;})}
 
 let rewrap_charpos charpos ii =
@@ -1067,7 +1074,7 @@ let rewrap_charpos charpos ii =
       OriginTok pi -> OriginTok { pi with Common.charpos = charpos;}
     | ExpandedTok (pi,vpi) ->
 	ExpandedTok ({ pi with Common.charpos = charpos;},vpi)
-    | FakeTok (s,vpi) -> FakeTok (s,vpi)
+    | FakeTok (s,vpi,befaft) -> FakeTok (s,vpi,befaft)
     | AbstractLineTok pi -> OriginTok { pi with Common.charpos = charpos;})}
 
 let rewrap_col col ii =
@@ -1075,7 +1082,7 @@ let rewrap_col col ii =
     (match ii.pinfo with
       OriginTok pi -> OriginTok { pi with Common.column = col;}
     | ExpandedTok (pi,vpi) -> ExpandedTok ({ pi with Common.column = col;},vpi)
-    | FakeTok (s,vpi) -> FakeTok (s,vpi)
+    | FakeTok (s,vpi,befaft) -> FakeTok (s,vpi,befaft)
     | AbstractLineTok pi -> OriginTok { pi with Common.column = col;})}
 
 let rewrap_pinfo pi ii =
@@ -1087,35 +1094,35 @@ let rewrap_pinfo pi ii =
 let get_pi = function
     OriginTok pi -> pi
   | ExpandedTok (_,(pi,_)) -> pi
-  | FakeTok (_,(pi,_)) -> pi
+  | FakeTok (_,(pi,_),_) -> pi
   | AbstractLineTok pi -> pi
 
 (* original info *)
 let get_opi = function
     OriginTok pi -> pi
   | ExpandedTok (pi,_) -> pi (* diff with get_pi *)
-  | FakeTok (_,_) -> failwith "no position information"
+  | FakeTok (_,_,_) -> failwith "no position information"
   | AbstractLineTok pi -> pi
 
 let str_of_info ii =
   match ii.pinfo with
     OriginTok pi -> pi.Common.str
   | ExpandedTok (pi,_) -> pi.Common.str
-  | FakeTok (s,_) -> s
+  | FakeTok (s,_,_) -> s
   | AbstractLineTok pi -> pi.Common.str
 
 let get_info f ii =
   match ii.pinfo with
     OriginTok pi -> f pi
   | ExpandedTok (_,(pi,_)) -> f pi
-  | FakeTok (_,(pi,_)) -> f pi
+  | FakeTok (_,(pi,_),_) -> f pi
   | AbstractLineTok pi -> f pi
 
 let get_orig_info f ii =
   match ii.pinfo with
     OriginTok pi -> f pi
   | ExpandedTok (pi,_) -> f pi (* diff with get_info *)
-  | FakeTok (_,(pi,_)) -> f pi
+  | FakeTok (_,(pi,_),_) -> f pi
   | AbstractLineTok pi -> f pi
 
 let make_expanded ii =
@@ -1135,7 +1142,7 @@ let strloc_of_info ii =
 
 let is_fake ii =
   match ii.pinfo with
-    FakeTok (_,_) -> true
+    FakeTok (_,_,_) -> true
   | _ -> false
 
 let is_origintok ii =
@@ -1149,7 +1156,7 @@ type posrv = Real of Common.parse_info | Virt of virtual_position
 let compare_pos ii1 ii2 =
   let get_pos = function
       OriginTok pi -> Real pi
-    | FakeTok (s,vpi) -> Virt vpi
+    | FakeTok (s,vpi,befaft) -> Virt vpi
     | ExpandedTok (pi,vpi) -> Virt vpi
     | AbstractLineTok pi -> Real pi in (* used for printing *)
   let pos1 = get_pos (pinfo_of_info ii1) in
@@ -1186,7 +1193,7 @@ let info_to_fixpos ii =
     OriginTok pi -> Ast_cocci.Real pi.Common.charpos
   | ExpandedTok (_,(pi,offset)) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
-  | FakeTok (_,(pi,offset)) ->
+  | FakeTok (_,(pi,offset),_) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
   | AbstractLineTok pi -> failwith "unexpected abstract"
 

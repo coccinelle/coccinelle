@@ -81,10 +81,10 @@ let mk_pretty_printers
  =
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
+  let pr_text s = pr_elem (Ast_c.fakeInfo Ast_c.After +> Ast_c.rewrap_str s) in
 (*
   let pr_nl_slash _ = (* multiline macro *)
-    let slash = (Ast_c.fakeInfo() +> Ast_c.rewrap_str " \\") in
-    pr_elem slash; pr_nl() in
+    pr_text " \\"; pr_nl() in
 *)
   let indent_if_needed st f =
     match Ast_c.unwrap_st st with
@@ -223,7 +223,7 @@ let mk_pretty_printers
 
     if !Flag_parsing_c.pretty_print_type_info
     then begin
-      pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "/*");
+      pr_text "/*";
       !typ +>
       (fun (ty,_test) -> ty +>
 	Common.do_option
@@ -231,8 +231,8 @@ let mk_pretty_printers
 	    let s = match l with
 	      Ast_c.LocalVar _ -> ", local"
 	    | _ -> "" in
-	    pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str s)));
-      pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*/");
+	    pr_text s));
+      pr_text "*/"
     end
 
   and pr_assignOp (_,ii) =
@@ -697,11 +697,11 @@ and pp_string_format (e,ii) =
 
               if !Flag_parsing_c.pretty_print_typedef_value
               then begin
-		pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "{*");
+		pr_text "{*";
 		typ +> Common.do_option (fun typ ->
                   pp_type typ;
 		  );
-		pr_elem (Ast_c.fakeInfo() +> Ast_c.rewrap_str "*}");
+		pr_text "*}"
               end)
 
       | (FieldType (t, _, _), iis) ->

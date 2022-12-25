@@ -356,7 +356,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
 (*
       let _endnode_dup =
-	mk_node (SeqEnd (brace, Ast_c.fakeInfo())) lbl [] s2 in
+	mk_node (SeqEnd (brace, Ast_c.fakeAfterInfo())) lbl [] s2 in
 *)
 
       (* This code makes a link from the top of the block to any } created

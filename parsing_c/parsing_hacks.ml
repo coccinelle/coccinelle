@@ -1769,8 +1769,8 @@ let insert_virtual_positions l =
 	| Ast_c.ExpandedTok (pi,_) ->
             let x' = inject (Ast_c.ExpandedTok (pi,(prev,offset))) in
 	    loop prev (offset + (strlen ii)) (x'::acc) xs
-	| Ast_c.FakeTok (s,_) ->
-            let x' = inject (Ast_c.FakeTok (s,(prev,offset))) in
+	| Ast_c.FakeTok (s,_,befaft) ->
+            let x' = inject (Ast_c.FakeTok (s,(prev,offset),befaft)) in
 	    loop prev (offset + (strlen ii)) (x'::acc) xs
 	| Ast_c.AbstractLineTok _ -> failwith "abstract not expected" in
   let rec skip_fake = function
@@ -2987,7 +2987,7 @@ let fix_comma_init ii toks =
     let vp = ({str="";charpos=max_pi.Common.charpos;line=max_pi.Common.line;
 		column=max_pi.Common.column;file=max_pi.Common.file},
 	      String.length max_pi.Common.str) in
-    { pinfo = FakeTok ("",vp);
+    { pinfo = FakeTok ("",vp,Ast_c.After);
       cocci_tag = ref Ast_c.emptyAnnot;
       annots_tag = Token_annot.empty;
       comments_tag = ref Ast_c.emptyComments;

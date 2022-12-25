@@ -363,7 +363,7 @@ let info_to_fixpos ii =
     Ast_c.OriginTok pi -> Ast_cocci.Real pi.Common.charpos
   | Ast_c.ExpandedTok (_,(pi,offset)) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
-  | Ast_c.FakeTok (_,(pi,offset)) ->
+  | Ast_c.FakeTok (_,(pi,offset),_) ->
       Ast_cocci.Virt (pi.Common.charpos,offset)
   | Ast_c.AbstractLineTok pi ->
       failwith ("unexpected abstract: "^(Dumper.dump pi))

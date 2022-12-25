@@ -24,10 +24,12 @@ module Ast_c :
   sig
     type posl = int * int
     type virtual_position = Common.parse_info * int
+    type befaft =
+      Ast_c.befaft = Before | After (* reason for fake tok *)
     type parse_info =
       Ast_c.parse_info =
         OriginTok of Common.parse_info
-      | FakeTok of string * virtual_position
+      | FakeTok of string * virtual_position * befaft
       | ExpandedTok of Common.parse_info * virtual_position
       | AbstractLineTok of Common.parse_info
     type danger = Ast_c.danger = DangerStart | DangerEnd | Danger | NoDanger
@@ -529,7 +531,7 @@ module Ast_c :
     val emptyComments : comments_around
     val noRelPos : unit -> include_rel_pos option ref
     val noInIfdef : unit -> bool ref
-    val fakeInfo : 'a -> info
+    val fakeInfo : befaft -> info
     val noii : 'a list
     val noattr : 'a list
     val noi_content : (Common.filename * program) option

@@ -229,9 +229,9 @@ let type_of_function (def,ii) =
 
   (* could use the info in the 'ii' ? *)
 
-  let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+  let fake = Ast_c.fakeAfterInfo() in
   let fake_oparen = Ast_c.rewrap_str "(" fake in
-  let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+  let fake = Ast_c.fakeAfterInfo() in
   let fake_cparen = Ast_c.rewrap_str ")" fake in
 
   Ast_c.mk_ty (FunctionType ftyp) [fake_oparen;fake_cparen]
@@ -290,9 +290,9 @@ let (fake_function_type:
    fullType option -> argument wrap2 list -> fullType option) =
  fun rettype args ->
 
-  let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+  let fake = Ast_c.fakeAfterInfo() in
   let fake_oparen = Ast_c.rewrap_str "(" fake in
-  let fake = Ast_c.fakeInfo (Common.fake_parse_info) in
+  let fake = Ast_c.fakeAfterInfo() in
   let fake_cparen = Ast_c.rewrap_str ")" fake in
 
   let (tyargs: parameterType wrap2 list) =

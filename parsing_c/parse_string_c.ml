@@ -18,7 +18,7 @@ let update_info str offset oldinfo pos maker =
 	    Common.str = str;
             Common.charpos = oldpinfo.Common.charpos + offset;
             Common.column = oldpinfo.Common.column + offset}
-    | Ast_c.FakeTok(str,vp) -> failwith "fake"
+    | Ast_c.FakeTok _ -> failwith "fake"
     | Ast_c.ExpandedTok(pi,vp) ->
 	failwith
 	  (Printf.sprintf "expanded: %s" (Dumper.dump oldinfo.Ast_c.pinfo))

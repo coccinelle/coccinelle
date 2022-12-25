@@ -443,7 +443,7 @@ let split_signb_baseb_ii (baseb, ii) =
 
 	| B.CInt, ["",i1] -> (* no type is specified at all *)
 	    (match i1.B.pinfo with
-	      B.FakeTok(_,_) -> []
+	      B.FakeTok _ -> []
 	    | _ -> error [i1] ("unrecognized signed int: "^
 			      (String.concat " "(List.map fst iis))))
 
@@ -4945,7 +4945,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
               (* DEAD CODE NOW ? only useful in -no_cocci_vs_c_3 ?
                  if mcode_contain_plus (mcodekind mcode)
                  then
-                 let fake_info = Ast_c.fakeInfo() in
+                 let fake_info = Ast_c.fakeAfterInfo() in
                  distrf distrf_node (mcodekind mcode)
                  (F.EndStatement (Some fake_info))
                  else return unwrap_node

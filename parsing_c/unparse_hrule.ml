@@ -171,7 +171,7 @@ let rewrap_str s ii =
 	Ast_c.OriginTok { pi with Common.str = s;}
     | Ast_c.ExpandedTok (pi,vpi) ->
 	Ast_c.ExpandedTok ({ pi with Common.str = s;},vpi)
-    | Ast_c.FakeTok (_,vpi) -> Ast_c.FakeTok (s,vpi)
+    | Ast_c.FakeTok (_,vpi,befaft) -> Ast_c.FakeTok (s,vpi,befaft)
     | Ast_c.AbstractLineTok pi ->
 	Ast_c.AbstractLineTok { pi with Common.str = s;})}
 
@@ -568,7 +568,7 @@ let pp_rule local_metas ast env srcfile =
     let pr_c info =
       match Ast_c.pinfo_of_info info with
 	Ast_c.AbstractLineTok _ -> pr (Ast_c.str_of_info info)
-      | Ast_c.FakeTok (s,_) -> pr s
+      | Ast_c.FakeTok (s,_,_) -> pr s
       |	_ ->
 	  Printf.printf "line: %s\n" (Dumper.dump info);
 	  error rule "not an abstract line" in

@@ -36,7 +36,7 @@ let pr2, pr2_once = mk_pr2_wrappers Flag_parsing_c.verbose_unparsing
 (*****************************************************************************)
 
 type token1 =
-  | Fake1 of Ast_c.info
+  | Fake1 of Ast_c.info * Ast_c.befaft
   | T1 of Parser_c.token
 
 (* The cocci_tag of the token should always be a NOTHING. The mark of
@@ -89,12 +89,12 @@ type token_extended =
 
 let info_of_token1 t =
   match t with
-  | Fake1 info -> info
+  | Fake1(info,_) -> info
   | T1 tok -> TH.info_of_tok tok
 
 let print_token1 = function
   | T1 tok -> TH.str_of_tok tok
-  | Fake1 info -> "fake"
+  | Fake1 _ -> "fake"
 
 let str_of_token2 = function
   | T2 (t,_,_,_) -> TH.str_of_tok t
@@ -246,8 +246,8 @@ let get_fakeInfo_and_tokens celem toks =
   (* todo? verify good order of position ? *)
   let pr_elem info =
     match Ast_c.pinfo_of_info info with
-    | Ast_c.FakeTok _ ->
-      push2 (Fake1 info) toks_out
+    | Ast_c.FakeTok(_,_,befaft) ->
+      push2 (Fake1(info,befaft)) toks_out
     | Ast_c.OriginTok _ | Ast_c.ExpandedTok _ ->
       (* get the associated comments/space/cppcomment tokens *)
       let (before, x, after) =
@@ -270,7 +270,7 @@ let get_fakeInfo_and_tokens celem toks =
     | Ast_c.AbstractLineTok _ ->
       (* can be called on type info when for instance use -type_c *)
       if !Flag_parsing_c.pretty_print_type_info
-      then push2 (Fake1 info) toks_out
+      then push2 (Fake1(info,Ast_c.After)) toks_out
       else raise (Impossible 134) (* at this stage *)
   in
 
@@ -332,12 +332,11 @@ let displace_fake_nodes toks =
       try Some (split_when is_fake toks)
       with Not_found -> None in
     match fake_info with
-    | Some(bef,((Fake1 info) as fake),aft) ->
+    | Some(bef,((Fake1(info,Ast_c.Before)) as fake),aft) ->
 	(* move the fake node forwards *)
         let (whitespace,rest) = span is_whitespace_or_noncol0_comment aft in
         bef @ whitespace @ fake :: (loop rest)
-    | None -> toks
-    | _ -> raise (Impossible 135) in
+    | Some _ | None -> toks in
   loop toks
 
 (*****************************************************************************)
@@ -373,7 +372,7 @@ let expand_mcode toks =
 
   let add_elem t minus =
     match t with
-    | Fake1 info ->
+    | Fake1(info,_) ->
       let str = Ast_c.str_of_info info in
       let isminus = match minus with Min _ -> true | Ctx -> false in
       (* don't add fake string if the thing should be removed *)
@@ -424,7 +423,7 @@ let expand_mcode toks =
       push2 (Cocci2 (s,ln,col,rcol,hint)) toks_out  in
     let pr_c info =
       (match Ast_c.pinfo_of_info info with
-      |	Ast_c.FakeTok (s,_) ->
+      |	Ast_c.FakeTok (s,_,_) ->
         push2 (C2 (s,None)) toks_out
       |	_ ->
         push2 (C2 (Ast_c.str_of_info info,None)) toks_out
@@ -474,7 +473,7 @@ let expand_mcode toks =
 	     if a fake token is being replaced, there should be a newline,
 	     hence use before *)
 	  (match t with
-	    Fake1 info when !(info.Ast_c.danger) = Ast_c.DangerStart ->
+	    Fake1(info,_) when !(info.Ast_c.danger) = Ast_c.DangerStart ->
 	      unparser any_xxs Unparse_cocci.Before
           | _ -> unparser any_xxs Unparse_cocci.InPlace)
       )
