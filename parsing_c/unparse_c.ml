@@ -1363,6 +1363,39 @@ let space_after = function
     [] -> true
   | x::xs -> is_newline x || is_space x || is_added_whitespace x      
 
+(* comment2c2 includes comments/newlines/ifdefs after tokens, but
+we don't want them at the end of something.
+Find a noncomment C2 token followed by comment C2 tokens, followed
+by context T2 whitespace or Cocci2 whitespace *)
+let cleanup_comment_trailers toks =
+  let nonc2_whitespace toks =
+    let min_or_space t = is_minus t || is_space t in
+    match Common.drop_while min_or_space toks with
+      t::_ -> is_newline t || cocci2newline t
+    | _ -> false in
+  let c2whitespace = function
+      C2 (s,_) ->
+	s = ""
+      || List.mem (String.get s 0) ['\n';' ';'\t';'#']
+      || (String.length s > 1 && List.mem (String.sub s 0 2) ["//";"/*"])
+      | _ -> false in
+  let notnl = function
+      C2 (s,_) -> not(s <> "" && String.get s 0 = '\n')
+    | _ -> failwith "impossible" in
+  let rec loop acc = function
+      [] -> List.rev acc
+    | ((C2 _) as t)::xs when not(c2whitespace t) ->
+	let (ws,rest) = Common.span c2whitespace xs in
+	let (keep,drop) = Common.span notnl ws in
+	let ok = nonc2_whitespace rest in
+	if ok || drop = []
+	then loop ((List.rev (t :: keep)) @ acc) rest
+	else
+	  (* keep a newline *)
+	  loop ((List.rev (t :: (keep @ [List.hd drop]))) @ acc) rest
+    | x::xs -> loop (x::acc) xs in
+  loop [] toks
+
 let rec drop_space_at_endline = function
   | [] -> []
   | [x] -> [x]
@@ -1448,8 +1481,6 @@ let rec add_space xs =
     else x::(add_space (y::xs))
   | ((T2(_,Ctx,_,_)) as x)::((T2(_,Ctx,_,_)) as y)::xs -> (* don't touch *)
       x :: (add_space (y :: xs))
-  | x::y::xs when c2newline x && (is_newline y || cocci2newline y) ->
-      add_space (y :: xs)
   | x::y::xs -> (* not boundary, not sure if it is possible *)
     let sx = str_of_token2 x in
     let sy = str_of_token2 y in
@@ -2693,7 +2724,8 @@ let pp_program2 xs outfile  =
 	      (fun x -> is_expanded x || is_comma x || is_fake2 x || is_minus x)
           else
             begin
-              (* phase2: can now start to filter and adjust *)
+	      (* phase2: can now start to filter and adjust *)
+	      let toks = cleanup_comment_trailers toks in
 	      let toks = check_danger toks in
 	      let toks = fix_slash_slash toks in
 	      let toks = paren_then_brace toks in
