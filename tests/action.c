@@ -2,9 +2,9 @@
  {
  if (x)
    {
-   action(el);
+   action(el, 1);
    return;
    }
  code();
- action(el);
+ action(el, 1);
  }

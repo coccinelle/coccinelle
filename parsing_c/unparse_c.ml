@@ -607,6 +607,26 @@ let is_minusable_comment = function
     )
   | _ -> false
 
+let is_minusable_comment_nonl = function
+  | (T2 (t,_b,_i,_h)) ->
+    (match t with
+    | Parser_c.TCommentSpace _ -> true (* only whitespace *)
+    (* patch: coccinelle *)
+    | Parser_c.TComment _ when !Flag_parsing_c.keep_comments -> false
+    | Parser_c.TComment _
+    | Parser_c.TCommentCpp (Token_c.CppAttr, _)
+    | Parser_c.TCommentCpp (Token_c.CppMacro, _) -> true
+    | Parser_c.TCommentCpp (Token_c.CppIfDirective _, _) -> true
+    | Parser_c.TCommentCpp (Token_c.CppDirective, _) -> true
+    (*
+    | Parser_c.TCommentMisc _
+    | Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError, _) ->
+      false
+    *)
+    | _ -> false
+    )
+  | _ -> false
+
 let is_minusable_comment_nocpp = function
   | (T2 (t,_b,_i,_h)) ->
     (match t with
@@ -675,6 +695,10 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let minus_or_comment_or_fake x =
     is_minus x || is_minusable_comment x || is_fake2 x in
 
+  let minus_or_comment_or_fake_nonl x =
+    is_minus x || (is_minusable_comment x && not (is_newline x))
+  || is_fake2 x in
+
   let minus_or_comment_nocpp x =
     is_minus x || is_minusable_comment_nocpp x in
 
@@ -696,6 +720,24 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	  else loop xs in
     loop lst in
 
+  (* nl followed by only removed code followed by nl removes the
+     second nl *)
+  let rec drop_trailing_nl = function
+      (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x) ::
+      ((T2(_,Min adj1,_,_)::_) as xs) ->
+	let (minus_list,rest) =
+	  Common.span minus_or_comment_or_fake_nonl xs in
+	let rest = drop_trailing_nl rest in
+	(match rest with
+	  ((T2(Parser_c.TCommentNewline c,_b,_i,_h)) as y)::rest ->
+	    let y = set_minus_comment_or_plus adj1 y in
+	    x :: minus_list @ y :: rest
+	| _ -> x :: minus_list @ rest)
+    | x :: xs -> x :: drop_trailing_nl xs
+    | [] -> [] in
+
+  let xs = drop_trailing_nl xs in
+
   (* new idea: collects regions not containing non-space context code
   if two adjacent minus tokens satisfy common_adj then delete
   all spaces, comments etc between them
@@ -704,6 +746,16 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   if the region contain no plus code and is both preceded and followed
   by a newline, delete the initial newline. *)
 
+  let rec adjust_around_minus = function
+    | [] -> []
+    | ((T2(_,Min adj1,_,_)) as t1)::xs ->
+      let (minus_list,rest) = span_not_context (t1::xs) in
+      let (minus_list,rest) = drop_trailing_plus minus_list rest in
+      let contains_plus = exists_before_end is_plus minus_list in
+      adjust_within_minus contains_plus minus_list
+      @ adjust_around_minus rest
+    | x::xs -> x :: adjust_around_minus xs
+(*
   let rec adjust_around_minus = function
     | [] -> []
     | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
@@ -750,6 +802,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       C2("\n", None)::adjust_around_minus (t1::t2::xs)
     | x::xs ->
       x :: adjust_around_minus xs
+*)
   and adjust_within_minus cp (* contains plus *) = function
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let not_minus = function T2(_,Min _,_,_) -> false | _ -> true in
@@ -859,7 +912,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
    let (_,ok,rest) = loop 0 xs in
    (ok,rest)
   and not_context = function
-    | (T2(_,Ctx,_,_) as x) -> is_minusable_comment x
+    | (T2(_,Ctx,_,_) as x) -> is_minusable_comment_nonl x
     | _ -> true
   and not_context_newline = function
     | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> false
@@ -2675,6 +2728,7 @@ let pp_program2 xs outfile  =
           else
             begin
 	      (* phase2: can now start to filter and adjust *)
+	      simple_print_all_tokens2 "toks" toks;
 	      let toks = cleanup_comment_trailers toks in
 	      let toks = check_danger toks in
 	      let toks = fix_slash_slash toks in
@@ -2684,6 +2738,7 @@ let pp_program2 xs outfile  =
 		 the same reason, cannot actually remove the minus tokens. *)
 	      let toks = drop_line toks in
               let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
+	      simple_print_all_tokens2 "toks2" toks2;
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
               let toks = adjust_before_semicolon toks in(*before remove minus*)
