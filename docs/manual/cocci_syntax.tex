@@ -312,13 +312,13 @@ or a variable.  It is the name of something rather than an expression that
 has a value.  But an identifier can be used in the position of an
 expression as well, where it represents a variable.
 
-The {\bf list} modifier allows to match over multiple elements of a given kind
-in a row and store them as one metavariable. It is possible to specify its
-length. If no length element is provided then the list will be the longest
-possible. If an integer length is provided, then only lists of the given length
-are matched. If an id is provided, then it will store the length of the matched
-list. This id can be used to ensure other lists have the same length, or can be
-manipulated in script code.
+The {\bf list} modifier allows to match over multiple (including zero)
+elements of a given kind in a row and store them as one metavariable. It is
+possible to specify its length. If no length element is provided then the
+list will be the longest possible. If an integer length is provided, then
+only lists of the given length are matched. If an id is provided, then it
+will store the length of the matched list. This id can be used to ensure
+other lists have the same length, or can be manipulated in script code.
 
 An {\bf identifier list} is only used for the parameter list of a macro. It
 matches multiple identifiers in a row and stores them as one metavariable.
