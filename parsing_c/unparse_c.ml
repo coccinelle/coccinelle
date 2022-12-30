@@ -724,7 +724,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
      second nl *)
   let rec drop_trailing_nl = function
       (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x) ::
-      ((T2(_,Min adj1,_,_)::_) as xs) ->
+      (((Fake2(_,Min adj1)|T2(_,Min adj1,_,_))::_) as xs) ->
 	let (minus_list,rest) =
 	  Common.span minus_or_comment_or_fake_nonl xs in
 	let rest = drop_trailing_nl rest in
@@ -748,7 +748,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 
   let rec adjust_around_minus = function
     | [] -> []
-    | ((T2(_,Min adj1,_,_)) as t1)::xs ->
+    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let (minus_list,rest) = span_not_context (t1::xs) in
       let (minus_list,rest) = drop_trailing_plus minus_list rest in
       let contains_plus = exists_before_end is_plus minus_list in
