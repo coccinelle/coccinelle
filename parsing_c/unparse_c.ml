@@ -311,10 +311,10 @@ let get_fakeInfo_and_tokens celem toks =
   List.rev !toks_out
 
 (* Fake nodes that have BEFORE code or are - should be moved over any
-subsequent whitespace and newlines, but not any comments starting in column
-0 or the last newline, to get as close to the affected code as possible.
-Similarly, fake nodes that have AFTER code should be moved backwards.  No
-fake nodes should have both before and after code. *)
+subsequent whitespace and newlines, but not the last newline, to get as
+close to the affected code as possible.  Similarly, fake nodes that have
+AFTER code should be moved backwards.  No fake nodes should have both
+before and after code. *)
 
 let displace_fake_nodes toks =
   let is_fake = function Fake1 _ -> true | _ -> false in
@@ -323,9 +323,7 @@ let displace_fake_nodes toks =
     (* patch: cocci    *)
     | T1(Parser_c.TCommentNewline _)
     | T1(Parser_c.TCommentCpp _) -> true
-    | T1(Parser_c.TComment i) ->
-	(* column 0 is the leftmost column. *)
-	Ast_c.col_of_info i > 0
+    | T1(Parser_c.TComment i) -> true
     | _ -> false in
   let rec loop toks =
     let fake_info =
