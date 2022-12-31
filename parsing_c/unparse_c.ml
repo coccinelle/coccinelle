@@ -317,7 +317,7 @@ AFTER code should be moved backwards.  No fake nodes should have both
 before and after code. *)
 
 let displace_fake_nodes toks =
-  let is_fake = function Fake1 _ -> true | _ -> false in
+  let is_fake = function Fake1(_,Ast_c.Before) -> true | _ -> false in
   let is_whitespace_or_noncol0_comment = function
     | T1(Parser_c.TCommentSpace _)
     (* patch: cocci    *)
