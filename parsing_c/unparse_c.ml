@@ -686,12 +686,8 @@ let is_expanded = function
   | _ -> false
 
 let remove_minus_and_between_and_expanded_and_fake1 xs =
-
   (* get rid of expanded tok *)
   let xs = xs +> exclude is_expanded in
-
-  let minus_or_comment_or_fake x =
-    is_minus x || is_minusable_comment x || is_fake2 x in
 
   let minus_or_comment_or_fake_nonl x =
     is_minus x || (is_minusable_comment x && not (is_newline x))
@@ -753,54 +749,6 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       adjust_within_minus contains_plus minus_list
       @ adjust_around_minus rest
     | x::xs -> x :: adjust_around_minus xs
-(*
-  let rec adjust_around_minus = function
-    | [] -> []
-    | (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
-      ((T2(_,Min adj1,_,_)) as t1)::xs ->
-	(* don't want to drop newline if - and + code mixed, but do want to
-	   drop a trailing newline that is before + code *)
-      let (minus_list,rest) = span_not_context (t1::xs) in
-      let (minus_list,rest) = drop_trailing_plus minus_list rest in
-      let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = exists_before_end is_plus pre_minus_list in
-      let x =
-        match List.rev minus_list with
-        | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
-          when List.for_all minus_or_comment_or_fake minus_list ->
-          set_minus_comment_or_plus adj1 x
-        | _ -> x in
-      x :: adjust_within_minus contains_plus minus_list
-         @ adjust_around_minus rest
-    | ((Fake2(_,Min _)) as t0)::
-      (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x)::
-      ((T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span_not_context (t1::xs) in
-      let (minus_list,rest) = drop_trailing_plus minus_list rest in
-      let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = exists_before_end is_plus pre_minus_list in
-      let x =
-        match List.rev minus_list with
-        | (T2(Parser_c.TCommentNewline c,_b,_i,_h))::rest
-          when List.for_all minus_or_comment_or_fake minus_list ->
-          set_minus_comment_or_plus adj1 x
-        | _ -> x in
-      t0 :: x :: adjust_within_minus contains_plus minus_list
-         @ adjust_around_minus rest
-    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span_not_context (t1::xs) in
-      let (minus_list,rest) = drop_trailing_plus minus_list rest in
-      let (pre_minus_list,_) = span not_context_newline minus_list in
-      let contains_plus = exists_before_end is_plus pre_minus_list in
-      adjust_within_minus contains_plus minus_list
-      @ adjust_around_minus rest
-    | (T2(Parser_c.TCommentSpace info, b, c, d))::
-      (T2(Parser_c.TOBrace _, Min _,_,_) as t1)::
-      (T2(Parser_c.TCommentNewline _,_,_,_) as t2)::xs ->
-      C2("\n", None)::adjust_around_minus (t1::t2::xs)
-    | x::xs ->
-      x :: adjust_around_minus xs
-*)
   and adjust_within_minus cp (* contains plus *) = function
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
       let not_minus = function T2(_,Min _,_,_) -> false | _ -> true in
@@ -927,40 +875,63 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   (* get rid of fake tok *)
   let xs = xs +> exclude is_fake2 in
 
-  (* this drops blank lines after a brace introduced by removing code *)
-  let minus_or_comment_nonl = function
-    | T2(_,Min adj,_,_) -> true
-    | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> false
-    | x -> is_minusable_comment x in
+  (* When we remove some lines at the beginning of a block, we should remove
+     all surrounding blank lines.  Likewise when we remove lines at the end
+     of a function *)
+  let obrace = function
+      (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "{"
+    | _ -> false in
 
-  let rec adjust_after_brace = function
-    | [] -> []
-    | ((T2(_,Ctx,_,_)) as x)::((T2(_,Min adj,_,_)::_) as xs)
-      when str_of_token2 x = "{" ->
-      let (between_minus,rest) = span minus_or_comment_nonl xs in
-      let (newlines,rest) = span is_noncomment_whitespace rest in
+  let rec adjust_after_brace brace = function
+      x::xs when brace x ->
+	let skip tok =
+	  is_minus tok || is_comment_or_space tok || is_newline tok in
+	let (spaces,rest) = Common.span skip xs in
+	(* break at line boundaries *)
+	let rec get_lines acc = function
+	    x::xs ->
+	      if is_newline x
+	      then
+		let (spaces,extra) = get_lines [] xs in
+		((List.rev (x::acc)) :: spaces,extra)
+	      else get_lines (x::acc) xs
+	  | [] -> ([],List.rev acc) in
+	let (spaces,extra) = get_lines [] spaces in
+	if List.exists (List.exists is_minus) spaces
+	then
+	  (* minusify the all blank lines *)
+	  let spaces =
+	    List.map
+	      (function line ->
+		List.map
+		  (function tok ->
+		    if is_minus tok
+		    then tok
+		    else set_minus_comment ([],Ast_cocci.ALLMINUS) tok)
+		  line)
+	      spaces in
+	  (* unminusify the last newline, which has the proper spaces for
+	     the coming context/added code *)
+	  let spaces =
+	    match List.rev spaces with
+	      s::ss ->
+		(match List.rev s with
+		  T2(a,Min _,b,c)::rest ->
+		    List.rev(List.rev(T2(a,Ctx,b,c)::rest)::ss)
+		| _ -> spaces)
+	    | _ -> spaces in
+	  x :: (List.concat spaces) @ extra
+	  @ adjust_after_brace brace rest
+	else x :: adjust_after_brace brace xs
+    | x::xs -> x :: adjust_after_brace brace xs
+    | [] -> [] in
 
-      let (drop_newlines,last_newline) =
-        let rec loop = function
-          | [] -> ([],[])
-          | ((T2(Parser_c.TCommentNewline _,_b,_i,_h)) as x) :: rest ->
-            (List.rev rest,[x])
-          | x::xs ->
-            let (drop_newlines,last_newline) = loop xs in
-            (drop_newlines,x::last_newline) in
-        loop (List.rev newlines) in
-      x :: between_minus
-         @ List.map (set_minus_comment adj) drop_newlines
-         @ last_newline
-         @ adjust_after_brace rest
-    | x::xs -> x :: (adjust_after_brace xs) in
-
-  let xs = adjust_after_brace xs in
+  let xs = adjust_after_brace obrace xs in
 
   (* search backwards from context } over spaces until reaching a newline.
-  then go back over all minus code until reaching some context or + code.
-  get rid of all intervening spaces, newlines, and comments that are alone
-  on a line. input is reversed *)
+     then go back over all minus code until reaching some context or + code.
+     get rid of all intervening spaces, newlines, and comments that are alone
+     on a line. input is reversed *)
 
   let rec span_minus_or_comment_nocpp xs =
     let (pre,rest) = span (function x -> not(is_newline x)) xs in
@@ -973,24 +944,11 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       | _ -> ([],xs)
     else ([],xs) in
 
-  let rec adjust_before_brace = function
-    | [] -> []
-    | ((T2(t,Ctx,_,_)) as x)::xs
-      when str_of_token2 x = "}" || is_newline_or_comment x ->
-      let (outer_spaces,rest) = span is_space xs in
-      x :: outer_spaces @
-      (match rest with
-      | ((T2 (Parser_c.TCommentNewline _,Ctx,_i,_h)) as h) ::
-        (* the rest of this code is the same as from_newline below
-        but merging them seems to be error prone... *)
-        ((T2 (t, Min adj, idx, hint)) as m) :: rest ->
-        let (spaces,rest) = span_minus_or_comment_nocpp rest in
-        h :: m ::
-        (List.map (set_minus_comment adj) spaces) @
-        (adjust_before_brace rest)
-      | _ -> adjust_before_brace rest
-      )
-    | x::xs -> x :: (adjust_before_brace xs) in
+  let cbrace = function
+      (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "}"
+    | _ -> false in
+
+  let adjust_before_brace = adjust_after_brace cbrace in
 
   let from_newline = function
     | ((T2 (t, Min adj, idx, hint)) as m) :: rest ->
@@ -2726,7 +2684,6 @@ let pp_program2 xs outfile  =
           else
             begin
 	      (* phase2: can now start to filter and adjust *)
-	      simple_print_all_tokens2 "toks" toks;
 	      let toks = cleanup_comment_trailers toks in
 	      let toks = check_danger toks in
 	      let toks = fix_slash_slash toks in
@@ -2736,7 +2693,6 @@ let pp_program2 xs outfile  =
 		 the same reason, cannot actually remove the minus tokens. *)
 	      let toks = drop_line toks in
               let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
-	      simple_print_all_tokens2 "toks2" toks2;
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
               let toks = adjust_before_semicolon toks in(*before remove minus*)
