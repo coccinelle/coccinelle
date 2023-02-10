@@ -10,7 +10,7 @@ RUN opam init --disable-sandboxing --auto-setup --dot-profile=/home/ci/.bash_env
 SHELL ["/bin/bash", "-c"]
 ENV BASH_ENV /home/ci/.bash_env
 ARG ocaml_version
-RUN opam switch create $ocaml_version
+RUN opam update && opam switch create $ocaml_version
 # TODO Sadly, ocamlfind looks to be a dependency for Coccinelle
 # (needed for parmap bundle)
 RUN opam install --yes ocamlfind
