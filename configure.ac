@@ -542,7 +542,7 @@ AS_IF([test "$MAKE_stdcompat"],
   AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-current))
 
 AS_IF([test "$MAKE_parmap"],
-  AC_CONFIG_SUBDIRS(bundles/parmap/parmap))
+  AC_CONFIG_SUBDIRS(bundles/parmap))
 
 AS_IF([test "$MAKE_pcre"],
   [AS_IF([test "x$OCAMLATLEAST4030" = xno  ],

@@ -1,9 +1,5 @@
 log*
 *~
 _build
-Makefile
-configure
-config.h
-config.log
-config.status
-bytearray.ml
+.merlin
+parmap.install

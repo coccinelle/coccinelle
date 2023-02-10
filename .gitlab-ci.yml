@@ -54,6 +54,22 @@ prepare opensuse/leap docker image with 4.09.0:
     distribution: opensuse-leap
     ocaml_version: 4.09.0
 
+prepare opensuse/leap docker image with 4.14.1:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: opensuse-leap-4.14.1
+    distribution: opensuse-leap
+    ocaml_version: 4.14.1
+
+prepare opensuse/leap docker image with 5.0.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: opensuse-leap-5.0.0
+    distribution: opensuse-leap
+    ocaml_version: 5.0.0
+
 prepare debian docker image with 3.12.1:
   <<: *prepare_docker_image_def
   stage: prepare environment images
@@ -61,6 +77,22 @@ prepare debian docker image with 3.12.1:
     image_name: debian-3.12.1
     distribution: debian
     ocaml_version: 3.12.1
+
+prepare debian docker image with 4.14.1:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: debian-4.14.1
+    distribution: debian
+    ocaml_version: 4.14.1
+
+prepare debian docker image with 5.0.0:
+  <<: *prepare_docker_image_def
+  stage: prepare environment images
+  variables:
+    image_name: debian-5.0.0
+    distribution: debian
+    ocaml_version: 5.0.0
 
 # Note: "yes" should be quoted in variable values (yes is parsed as a keyword)
 
@@ -118,6 +150,16 @@ build with debian 4.09:
   variables:
     from: debian-4.09.0
 
+build with debian 4.14:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.14.1
+
+build with debian 5.0:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-5.0.0
+
 build with debian 4.09 with menhir:
   <<: *build_coccinelle_def
   variables:
@@ -138,10 +180,20 @@ build with debian 4.09 with all dependencies:
   variables:
     from: debian-4.09.0-all-dependencies
 
-build with opensuse/leap:
+build with opensuse/leap 4.09:
   <<: *build_coccinelle_def
   variables:
     from: opensuse-leap-4.09.0
+
+build with opensuse/leap 4.14:
+  <<: *build_coccinelle_def
+  variables:
+    from: opensuse-leap-4.14.1
+
+build with opensuse/leap 5.0:
+  <<: *build_coccinelle_def
+  variables:
+    from: opensuse-leap-5.0.0
 
 clone reference scores:
   stage: clone reference scores
@@ -182,6 +234,16 @@ test with debian 4.09:
   variables:
     from: debian-4.09.0
 
+test with debian 4.14:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.14.1
+
+test with debian 5.0:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-5.0.0
+
 test with debian 4.09 with menhir:
   <<: *test_coccinelle_def
   variables:
@@ -208,10 +270,20 @@ test with debian 4.09 without python:
     from: debian-4.09.0
     configure_options: --disable-python
 
-test with opensuse/leap:
+test with opensuse/leap 4.09:
   <<: *test_coccinelle_def
   variables:
     from: opensuse-leap-4.09.0
+
+test with opensuse/leap 4.14:
+  <<: *test_coccinelle_def
+  variables:
+    from: opensuse-leap-4.14.1
+
+test with opensuse/leap 5.0:
+  <<: *test_coccinelle_def
+  variables:
+    from: opensuse-leap-5.0.0
 
 push reference scores:
   stage: .post

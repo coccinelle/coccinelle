@@ -13,15 +13,15 @@ CAMLprim value ml_marshal_to_bigarray(value v, value flags)
 {
   char *buf;
   long len;
-  output_value_to_malloc(v, flags, &buf, &len);
-  return alloc_bigarray(BIGARRAY_UINT8 | BIGARRAY_C_LAYOUT | BIGARRAY_MANAGED,
-                        1, buf, &len);
+  caml_output_value_to_malloc(v, flags, &buf, &len);
+  return caml_ba_alloc(CAML_BA_UINT8 | CAML_BA_C_LAYOUT | CAML_BA_MANAGED,
+                       1, buf, &len);
 }
 
 CAMLprim value ml_marshal_to_bigarray_buffer(value b, value ofs,
                                              value v, value flags)
 {
-  struct caml_bigarray *b_arr = Bigarray_val(b);
+  struct caml_ba_array *b_arr = Caml_ba_array_val(b);
   return Val_long(caml_output_value_to_block(v, flags, Array_data (b_arr, ofs),
 					     b_arr->dim[0] - Long_val(ofs)));
 }
@@ -29,16 +29,16 @@ CAMLprim value ml_marshal_to_bigarray_buffer(value b, value ofs,
 
 CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
 {
-  struct caml_bigarray *b_arr = Bigarray_val(b);
-  return input_value_from_block (Array_data (b_arr, ofs),
-                                 b_arr->dim[0] - Long_val(ofs));
+  struct caml_ba_array *b_arr = Caml_ba_array_val(b);
+  return caml_input_value_from_block (Array_data (b_arr, ofs),
+                                      b_arr->dim[0] - Long_val(ofs));
 }
 
 CAMLprim value ml_blit_string_to_bigarray
 (value s, value i, value a, value j, value l)
 {
-  char *src = String_val(s) + Int_val(i);
-  char *dest = Array_data(Bigarray_val(a), j);
+  const char *src = String_val(s) + Int_val(i);
+  char *dest = Array_data(Caml_ba_array_val(a), j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
@@ -46,8 +46,8 @@ CAMLprim value ml_blit_string_to_bigarray
 CAMLprim value ml_blit_bigarray_to_string
 (value a, value i, value s, value j, value l)
 {
-  char *src = Array_data(Bigarray_val(a), i);
-  char *dest = String_val(s) + Long_val(j);
+  char *src = Array_data(Caml_ba_array_val(a), i);
+  char *dest = &Byte(String_val(s), Long_val(j));
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
@@ -57,7 +57,7 @@ CAMLprim value ml_blit_floatarray_to_bigarray
 {
   int w = 8;
   char *src = Bp_val(fa) + Long_val(i)*w;
-  char *dest = Floatarray_data(Bigarray_val(a), j);
+  char *dest = Floatarray_data(Caml_ba_array_val(a), j);
   memcpy(dest, src, Long_val(l)*w);
   return Val_unit;
 }
@@ -66,7 +66,7 @@ CAMLprim value ml_blit_bigarray_to_floatarray
 (value a, value i, value fa, value j, value l)
 {
   int w = 8;
-  char *src = Floatarray_data(Bigarray_val(a), i);
+  char *src = Floatarray_data(Caml_ba_array_val(a), i);
   char *dest = Bp_val(fa) + Long_val(j)*w;
   memcpy(dest, src, Long_val(l)*w);
   return Val_unit;

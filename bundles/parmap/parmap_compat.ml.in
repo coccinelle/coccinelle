@@ -1,0 +1,6 @@
+@BEGIN_FROM_4_06_0@
+let map_file = Unix.map_file
+@END_FROM_4_06_0@
+@BEGIN_BEFORE_4_06_0@
+let map_file = Bigarray.Genarray.map_file
+@END_BEFORE_4_06_0@

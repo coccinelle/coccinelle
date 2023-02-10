@@ -6,7 +6,7 @@ else
 fi
 aclocal -I setup
 autoconf -Wall
-( cd bundles/parmap/parmap && \
-  autoheader && aclocal -I m4 && autoconf -Wall )
+( cd bundles/parmap && \
+  autoheader && aclocal && autoconf -Wall )
 ( cd bundles/stdcompat/stdcompat-current && \
   autoheader && aclocal && automake && autoconf -Wall )

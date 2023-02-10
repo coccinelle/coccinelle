@@ -35,14 +35,14 @@ let unsafe_blit_to_string a i s j l =
   done
 *)
 
+@BEGIN_FROM_4_02_0@
 external unsafe_blit_from_string : string -> int -> t -> int -> int -> unit
-  = "ml_blit_string_to_bigarray"
-  @BEGIN_FROM_4_02_0@
-    [@@noalloc]
-  @END_FROM_4_02_0@
-  @BEGIN_BEFORE_4_02_0@
-    "noalloc"
-  @END_BEFORE_4_02_0@
+  = "ml_blit_string_to_bigarray" [@@noalloc]
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+external unsafe_blit_from_string : string -> int -> t -> int -> int -> unit
+  = "ml_blit_string_to_bigarray" "noalloc"
+@END_BEFORE_4_02_0@
 
 (*
 external unsafe_blit_to_bytes : t -> int -> bytes -> int -> int -> unit
@@ -66,18 +66,11 @@ let of_string s =
   unsafe_blit_from_string s 0 a 0 l;
   a
 
-let array1_map_file fd kind layout shared dim =
-@BEGIN_FROM_4_06_0@
-  Bigarray.array1_of_genarray
-    (Unix.map_file fd kind layout shared [| dim |])
-@END_FROM_4_06_0@
-@BEGIN_BEFORE_4_06_0@
-  Bigarray.Array1.map_file fd kind layout shared dim
-@END_BEFORE_4_06_0@
-
 let mmap_of_string fd s =
   let l = String.length s in
-  let ba = array1_map_file fd Bigarray.char Bigarray.c_layout true l in
+  let ba = Stdcompat.(
+    Bigarray.array1_of_genarray @@
+    Parmap_compat.map_file fd Bigarray.char Bigarray.c_layout true [|l|]) in
   unsafe_blit_from_string s 0 ba 0 l;
   ba
 (*
@@ -120,26 +113,23 @@ external marshal_to_buffer : t -> int -> 'a -> Marshal.extern_flags list -> int
 external unmarshal : t -> int -> 'a
   = "ml_unmarshal_from_bigarray"
 
+@BEGIN_FROM_4_02_0@
 external unsafe_blit_from_floatarray : float array -> int -> tf -> int -> int -> unit
-  = "ml_blit_floatarray_to_bigarray"
-  @BEGIN_FROM_4_02_0@
-    [@@noalloc]
-  @END_FROM_4_02_0@
-  @BEGIN_BEFORE_4_02_0@
-    "noalloc"
-  @END_BEFORE_4_02_0@
+  = "ml_blit_floatarray_to_bigarray" [@@noalloc]
 
 external unsafe_blit_to_floatarray : tf -> int -> float array -> int -> int -> unit
-  = "ml_blit_bigarray_to_floatarray"
-  @BEGIN_FROM_4_02_0@
-    [@@noalloc]
-  @END_FROM_4_02_0@
-  @BEGIN_BEFORE_4_02_0@
-    "noalloc"
-  @END_BEFORE_4_02_0@
+  = "ml_blit_bigarray_to_floatarray" [@@noalloc]
+@END_FROM_4_02_0@
+@BEGIN_BEFORE_4_02_0@
+external unsafe_blit_from_floatarray : float array -> int -> tf -> int -> int -> unit
+  = "ml_blit_floatarray_to_bigarray" "noalloc"
+
+external unsafe_blit_to_floatarray : tf -> int -> float array -> int -> int -> unit
+  = "ml_blit_bigarray_to_floatarray" "noalloc"
+@END_BEFORE_4_02_0@
 
 let to_floatarray a l =
-  let fa = Obj.obj (Obj.new_block Obj.double_array_tag l) in
+  let fa = Stdcompat.Array.create_float l in
   unsafe_blit_to_floatarray a 0 fa 0 l;
   fa
 

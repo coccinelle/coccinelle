@@ -1,8 +1,8 @@
 # This Makefile serves as a wrapper to bundle the
 # parmap package without modifications.
 
-PACKAGE_DIR=parmap
-MODULES=bytearray parmap_utils setcore parmap
+PACKAGE_DIR=parmap/src
+MODULES=parmap_compat bytearray parmap_utils setcore parmap
 OBJS=$(MODULES)
 INTERFACES=$(OBJS)
 C_OBJS=bytearray setcore

@@ -29,7 +29,7 @@ You *need*  to run your  program *on a single multicore  machine*;  repeat after
 `Parmap`  _is   not meant_ to   run  on a cluster,  see   one of the  many available
 (re)implementations of the map-reduce schema for that.
 
-By forking the parent process  on a sigle  machine, the children get access, for
+By forking the parent process  on a single machine, the children get access, for
 free, to all the data structures already built, even the imperative ones, and as
 far as your computation  inside the map/fold  does not produce side effects that
 need  to be  preserved, the  final result will   be the same  as  performing the
@@ -65,16 +65,28 @@ need to load the `.cmxs` modules in it; an example is given in `example/topnat.m
 If the number of chunks is equal to the number of cores, it is easy to preserve
 the order of the elements of the sequence passed to the map/fold operations, so
 the result will be a list with the same order as if the sequential function would
-be applied to the input. This is what the `parmap`, `parmafold` and `parfold` functions
+be applied to the input. This is what the `parmap`, `parmapfold` and `parfold` functions
 do when the chunksize argument is not used.
 
 If the user specifies a chunksize that is different from the number of cores,
-there is no general way to preserve the ordering, so the result of calling
-`Parmap.parmap f l` are not necessarily in the same order as `List.map f l`.
+the current implementation for `parmap`, `parmapi`, `array_parmap` and
+`array_parmapi` by default does not guarantee the preservation of the order
+of the results. If the `keeporder` parameter is set to true, an alternative
+implementation is used, that tags the chunks and reorders them at the end, so the result of
+calling `Parmap.parmap f l` is the same as `List.map f l`. Depending on the
+nature of your workload (in particular, number of chunks and size of the results),
+this may be way more efficient than implementing a sorting mechanism yourself, but
+may also end up using up to twice the space and time of the default implementation:
+there is a tradeoff, and it is up to the user to choose the solution that better suits him/her.
 
-In general, using little chunksize helps in balancing the load among the workers,
-and provides better speed, at the price of losing the ordering: there is a
-tradeoff, and it is up to the user to choose the solution that better suits him/her.
+No reordering logic is implemented for `parmapfold`, `parfold` and their
+variants, as performing these operations in parallel only make sense if the
+order is irrelevant.
+
+In general, using little chunksize helps in balancing the load among the
+workers, and provides better speed, but incurs a little overhead for tagging and
+reordering the chunks: there is a tradeoff, and it is up to the user to choose
+the solution that better suits him/her.
 
 ## Fast map on arrays and on float arrays
 
@@ -102,13 +114,14 @@ function must perform.
         # let d = Unix.gettimeofday() in ignore(Array.create 10000000 0.); Unix.gettimeofday() -. d;;
         - : float = 0.0501301288604736328
     ```
- 2. create a shared memory area 
 
- 3. possibly copy the result array to the shared memory area
+ 2. create a shared memory area,
 
- 4. perform the computation in the children writing the result in the shared memory area
+ 3. possibly copy the result array to the shared memory area,
 
- 5. possibly copy the result back to the OCaml array
+ 4. perform the computation in the children writing the result in the shared memory area,
+
+ 5. possibly copy the result back to the OCaml array.
 
 All implementations need to do 1, 2 and 4; steps 3 and/or 5 may be omitted depending on
 what the user wants to do with the result.
@@ -118,3 +131,19 @@ The `array_float_parmap` performs steps 1, 2, 4 and 5. It is possible to share s
 array and the shared memory buffer, and passing them as optional parameters to the
 `array_float_parmap` function: this may save a significant amount of time if the
 array is very large.
+
+## Install 
+
+### With opam
+
+```
+opam install parmap
+```
+
+### From source
+
+```
+make
+make install
+make test
+```
