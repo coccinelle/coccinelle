@@ -49,7 +49,7 @@ let same_input_file file1 file2 =
     (* could also use physical equality [file1 == file2] *)
 
 let compare_input_files file1 file2 =
-  Pervasives.compare file1.input_file_index file2.input_file_index
+  Stdcompat.compare file1.input_file_index file2.input_file_index
     (* Ideally, this function should NOT be used, as it reflects the
        order of the input files on the command line. As of 2016/08/25,
        it is used by [UnparameterizedPrinter], for lack of a better

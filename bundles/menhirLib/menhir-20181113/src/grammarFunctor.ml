@@ -390,9 +390,9 @@ module Terminal = struct
         " "
         (fun f -> String.iter f w)
 
-    (* [Pervasives.compare] implements a lexicographic ordering on strings. *)
+    (* [Stdcompat.compare] implements a lexicographic ordering on strings. *)
     let compare i1 i2 =
-      Pervasives.compare (decode i1) (decode i2)
+      Stdcompat.compare (decode i1) (decode i2)
 
   end
 

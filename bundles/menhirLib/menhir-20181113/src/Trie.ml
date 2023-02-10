@@ -196,7 +196,7 @@ module Make (X : sig end) = struct
     !c
 
   let compare t1 t2 =
-    Pervasives.compare t1.identity t2.identity
+    Stdcompat.compare t1.identity t2.identity
 
   let source t =
     t.source

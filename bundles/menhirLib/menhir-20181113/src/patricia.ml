@@ -566,7 +566,7 @@ module Make (X : Endianness.S) = struct
         | None ->
             raise (Got 1)
         | Some (key2, data2) ->
-            let c = Pervasives.compare key1 key2 in
+            let c = Stdcompat.compare key1 key2 in
             if c <> 0 then
               raise (Got c)
             else
@@ -939,7 +939,7 @@ module Domain = struct
         | None ->
             raise (Got 1)
         | Some x2 ->
-            let c = Pervasives.compare x1 x2 in
+            let c = Stdcompat.compare x1 x2 in
             if c <> 0 then
               raise (Got c)
       ) s1;

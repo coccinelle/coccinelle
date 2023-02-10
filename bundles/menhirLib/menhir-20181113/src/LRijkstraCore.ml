@@ -400,7 +400,7 @@ end = struct
         (* Compare the two positions first. This can be done without going
            through [Trie.decode], by directly comparing the two integer
            identities. *)
-        let c = Pervasives.compare (identity fact1) (identity fact2) in
+        let c = Stdcompat.compare (identity fact1) (identity fact2) in
         assert (c = Trie.compare (position fact1) (position fact2));
         if c <> 0 then c else
         let z = lookahead fact1 in
