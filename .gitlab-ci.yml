@@ -220,3 +220,52 @@ push reference scores:
         git commit -m "reference scores for commit $CI_COMMIT_SHORT_SHA" &&
         git push
       || true
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST: registry.gitlab.inria.fr
+  TF_STATE_NAME: pipeline-${CI_PIPELINE_ID}
+  TF_ROOT: ${CI_PROJECT_DIR}/ci
+  TF_VAR_CI_PIPELINE_ID: ${CI_PIPELINE_ID}
+
+trace-cmd-create-runner:
+  image: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+  needs: []
+  tags:
+    - linux
+    - small
+  script:
+    - cd "${TF_ROOT}"
+    - cp $SSH_PRIVATE_KEY id_rsa
+    - gitlab-terraform plan -var runner_count=1
+    - gitlab-terraform apply
+
+trace-cmd-build-and-test:
+  needs: [trace-cmd-create-runner]
+  tags:
+    - terraform
+  script:
+    - sudo apt-get update
+    - sudo apt-get install --yes autoconf automake unzip aspcud opam trace-cmd rsync git mercurial darcs build-essential sudo vim curl libpython3-dev
+    - opam init --auto-setup
+    - opam switch create 5.0.0
+    - opam install --yes ocamlfind stdcompat pyml menhir parmap
+    - sudo trace-cmd start -p function_graph
+    - eval $(opam env) && ./autogen && ./configure && make
+    - ./spatch.opt --batch_mode -testall
+    - sudo trace-cmd extract
+  artifacts:
+    paths:
+      - trace.dat
+
+trace-cmd-clean:
+  image: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+  needs: [trace-cmd-build-and-test]
+  tags:
+    - linux
+    - small
+  script:
+    - cd "${TF_ROOT}"
+    - cp $SSH_PRIVATE_KEY id_rsa
+    - gitlab-terraform plan -var runner_count=0
+    - gitlab-terraform apply
+  when: always

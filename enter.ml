@@ -807,6 +807,8 @@ let other_options = [
     "   do not update the score file when -testall succeeds";
     "--relax-include-path", Arg.Set Inc.relax_include_path,
     " ";
+    "--batch_mode", Arg.Set _batch_mode,
+    " no interactivity"
   ];
 
   "action mode",
