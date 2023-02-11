@@ -28,23 +28,23 @@ variable "SSH_PUBLIC_KEY" {
   type = string
 }
 
-variable "runner_count" {
-  type = number
+variable "template" {
+  type = string
+  default = "ubuntu-20.04-lts"
 }
 
 resource "cloudstack_instance" "custom_instance" {
-  count            = var.runner_count
   name             = "coccinelle-pipeline-${var.CI_PIPELINE_ID}"
   service_offering = "Custom"
-  template         = "ubuntu-20.04-cloudinit"
+  template         = var.template
   zone             = "zone-ci"
   details = {
-    cpuNumber = 4
+    cpuNumber = 2
     memory    = 2048
   }
   expunge = true
   user_data = templatefile("cloud-init.sh.tftpl", {
-    index              = count.index
+    CI_PIPELINE_ID     = var.CI_PIPELINE_ID
     REGISTRATION_TOKEN = var.REGISTRATION_TOKEN
     SSH_PUBLIC_KEY     = var.SSH_PUBLIC_KEY
   })

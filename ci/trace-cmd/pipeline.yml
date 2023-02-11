@@ -1,0 +1,85 @@
+# Workaround for child pipeline to work in merge requests
+# See: https://gitlab.com/gitlab-org/gitlab/-/issues/222370#note_662695503
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+    - if: $CI_COMMIT_BRANCH
+
+stages:
+  - create-runner
+  - install-template
+  - create-template
+  - build-and-test
+  - clean
+
+variables:
+  CI_TEMPLATE_REGISTRY_HOST: registry.gitlab.inria.fr
+  TF_STATE_NAME: pipeline-${CI_PARENT_PIPELINE_ID}
+  TF_ROOT: ${CI_PROJECT_DIR}/ci/trace-cmd
+  TF_VAR_CI_PIPELINE_ID: ${CI_PARENT_PIPELINE_ID}
+
+create-runner:
+  stage: create-runner
+  image: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+  tags:
+    - linux
+    - small
+  script:
+    - cd "${TF_ROOT}"
+    - cp $SSH_PRIVATE_KEY id_rsa
+    - |
+      if [ "$rebuild_template" = "True" ]; then
+        gitlab-terraform plan
+      else
+        gitlab-terraform plan -var template=coccinelle-trace-cmd
+      fi
+    - gitlab-terraform apply
+
+install-template:
+  extends: .runner-tags
+  stage: install-template
+  rules:
+    - if: $rebuild_template == "True"
+  script:
+    - cd "${TF_ROOT}"
+    - sh prepare-template.sh
+
+create-template:
+  stage: create-template
+  rules:
+    - if: $rebuild_template == "True"
+  image: "registry.gitlab.inria.fr/inria-ci/docker/python3-cloudstack"
+  tags:
+    - linux
+    - small
+  script:
+    - cd "${TF_ROOT}"
+    - python3 create-template.py
+
+build-and-test:
+  extends: .runner-tags
+  stage: build-and-test
+  script:
+    - sudo trace-cmd start -p function_graph
+    - eval $(opam env) && ./autogen && ./configure && make
+    - ./spatch.opt --batch_mode -testall
+    - sudo trace-cmd extract
+    # trace.dat is owned by root:root and xz tries to reproduce user and group
+    - sudo chown gitlab-runner:gitlab-runner trace.dat
+    - xz --extreme -9 trace.dat
+  artifacts:
+    paths:
+      - trace.dat.xz
+
+clean:
+  stage: clean
+  image: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+  tags:
+    - linux
+    - small
+  script:
+    - cd "${TF_ROOT}"
+    - cp $SSH_PRIVATE_KEY id_rsa
+    - gitlab-terraform destroy
+    - 'curl --user "gitlab-ci-token:$CI_JOB_TOKEN" --request DELETE "$CI_API_V4_URL/projects/$CI_PROJECT_ID/terraform/state/$TF_STATE_NAME"'
+  when: always

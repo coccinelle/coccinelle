@@ -1,11 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 (
   echo 'ci ALL=(ALL) NOPASSWD:ALL' >/etc/sudoers.d/90-ci
   echo 'gitlab-runner ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers.d/90-ci
   mkdir -p -m 700 ~ci/.ssh
   echo "${SSH_PUBLIC_KEY}" >> ~ci/.ssh/authorized_keys
+  chown -R ci:ci ~ci/.ssh
   curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
   apt-get update
   apt-get install --yes gitlab-runner
-  gitlab-runner register --non-interactive --tag-list terraform,runner-${index} --executor shell --url https://gitlab.inria.fr --registration-token ${REGISTRATION_TOKEN}
-) >/root/log.txt 2>&1
+  gitlab-runner register --non-interactive --tag-list terraform,pipeline-${CI_PIPELINE_ID} --executor shell --url https://gitlab.inria.fr --registration-token ${REGISTRATION_TOKEN}
+) >>/root/log.txt 2>&1
