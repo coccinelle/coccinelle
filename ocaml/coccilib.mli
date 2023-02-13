@@ -1178,7 +1178,6 @@ module Visitor_c :
       ktype : (Ast_c.fullType -> unit) * visitor_c -> Ast_c.fullType -> unit;
       kdecl :
         (Ast_c.declaration -> unit) * visitor_c -> Ast_c.declaration -> unit;
-      konedecl : (Ast_c.onedecl -> unit) * visitor_c -> Ast_c.onedecl -> unit;
       konedecl_opt : bool -> (Ast_c.onedecl -> unit) * visitor_c ->
 	Ast_c.onedecl -> unit;
       kparam :

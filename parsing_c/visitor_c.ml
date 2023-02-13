@@ -240,7 +240,6 @@ type visitor_c =
    ktype:      (fullType    -> unit) * visitor_c -> fullType    -> unit;
 
    kdecl:      (declaration -> unit) * visitor_c -> declaration -> unit;
-   konedecl:   (onedecl -> unit)      * visitor_c -> onedecl -> unit;
    konedecl_opt: bool -> (onedecl -> unit) * visitor_c -> onedecl -> unit;
    kparam:  (parameterType -> unit)      * visitor_c -> parameterType -> unit;
    kdef:       (definition  -> unit) * visitor_c -> definition  -> unit;
@@ -273,7 +272,6 @@ let default_visitor_c =
     kstatement      = (fun (k,_) st -> k st);
     ktype           = (fun (k,_) t  -> k t);
     kdecl           = (fun (k,_) d  -> k d);
-    konedecl        = (fun (k,_) d  -> k d);
     konedecl_opt    = (fun _ (k,_) d  -> k d);
     kparam          = (fun (k,_) d  -> k d);
     kdef            = (fun (k,_) d  -> k d);
