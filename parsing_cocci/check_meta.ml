@@ -17,7 +17,12 @@ module VT0 = Visitor_ast0_types
 (* all fresh identifiers *)
 let fresh_table = (Hashtbl.create(51) : (Ast.meta_name, unit) Hashtbl.t)
 
-let warning s = Printf.fprintf stderr "warning: %s\n" s
+let warning line s =
+  let line =
+    if line > 0
+    then Printf.sprintf "line %d: " line
+    else "" in
+  Printf.eprintf "warning: %s%s\n" line s
 
 let promote name = (name,(),Ast0.default_info(),(),None,-1)
 
@@ -82,25 +87,20 @@ let rec ident context old_metas table minus i =
       let rl = info.Ast0.pos_info.Ast0.line_start in
       let is_plus i =
  	match Ast0.get_mcodekind i with Ast0.PLUS _ -> true | _ -> false in
-      let err =
-	if List.exists (function x -> x = name) old_metas
-	    && (minus || is_plus i)
-	then
-	  begin
-	    warning
-	      (Printf.sprintf
-		 "line %d: %s, previously declared as a metavariable, is used as an identifier" rl name);
-	    true
-	  end
-	else false in
-      (match context with
-	ID ->
-	  if not (is_ifdef name) && minus &&
-	    not err(* warn only once per id *) && not info.Ast0.isSymbolIdent
-	  then
-	    warning
-	      (Printf.sprintf "line %d: should %s be a metavariable?" rl name)
-      | _ -> ())
+      if List.exists (function x -> x = name) old_metas
+	  && (minus || is_plus i)
+      then
+	warning rl
+	  (Printf.sprintf
+	     "%s, previously declared as a metavariable, is used as an identifier" name)
+      else
+	(match context with
+	  ID ->
+	    if not (is_ifdef name) && minus && not info.Ast0.isSymbolIdent
+	    then
+	      warning rl
+		(Printf.sprintf "should %s be a metavariable?" name)
+	| _ -> ())
   | Ast0.MetaId(name,cstr,seedval,_) ->
       check_table table minus name;
       constraints table minus cstr;
@@ -805,7 +805,7 @@ let check_all_marked rname err table after_err =
 	if not (!cell)
 	then
 	  let (_,name) = name in
-	  warning
+	  warning (-1)
 	    (Printf.sprintf "%s: %s %s not used %s" rname err name after_err))
     table
 
