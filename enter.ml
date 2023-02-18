@@ -859,7 +859,6 @@ let check_include_path () =
   then
     let path = Str.matched_group 1 opt in
     Inc.include_path:= path::!Inc.include_path
-  else ()
 
 let rec arg_parse_no_fail ~current l f msg argv =
   try
