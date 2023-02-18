@@ -1584,7 +1584,7 @@ in
 
 let if_open_brace  = function "{" | "else" -> true | _ -> false in
 
-(* boolean result indicates whether an indent is needed *)
+(* boolean result indicates whether a newline is needed *)
 let pp_any = function
   (* assert: normally there is only CONTEXT NOTHING tokens in any *)
     Ast.FullTypeTag(x) -> fullType x; false
@@ -1607,7 +1607,7 @@ let pp_any = function
   | Ast.LogicalOpTag(x) -> logicalOp x unknown unknown; false
 
   | Ast.InitTag(x) -> initialiser false x; false
-  | Ast.DeclarationTag(x) -> declaration x; false
+  | Ast.DeclarationTag(x) -> declaration x; true
   | Ast.FieldTag(x) -> field x; false
   | Ast.EnumDeclTag(x) -> enum_decl x; false
 
@@ -1615,7 +1615,7 @@ let pp_any = function
   | Ast.IncFileTag(x) -> inc_file x unknown unknown; false
 
   | Ast.Rule_elemTag(x) -> rule_elem "" x; false
-  | Ast.StatementTag(x) -> statement "" x; false
+  | Ast.StatementTag(x) -> statement "" x; true
   | Ast.ForInfoTag(x) -> forinfo x; false
   | Ast.CaseLineTag(x) -> case_line "" x; false
   | Ast.StringFragmentTag(x) -> string_fragment x; false
@@ -1717,7 +1717,7 @@ in
       (* print a newline at the beginning, if needed *)
       newline_before();
       (* print a newline before each of the rest *)
-      let rec loop leading_newline indent_needed space_after = function
+      let rec loop leading_newline space_after = function
 	  [] -> ()
 	| x::xs ->
 	    (if leading_newline then force_newline());
@@ -1753,17 +1753,17 @@ in
 		    Ast.EComma _ -> false (* due to hint *)
 		  | _ -> true)
 	      |	t -> true in
-	    let (indent_needed,space_after) =
-	      let rec loop space_after indent_needed = function
-		  [] -> (indent_needed,space_after)
+	    let space_after =
+	      let rec loop space_after inner_newline_needed = function
+		  [] -> space_after
 		| x::xs ->
-		    (if indent_needed (* for open brace *)
+		    (if inner_newline_needed
 		    then force_newline()
 		    else if space_after && space_needed_before x
 		    then pr_space());
-		    let indent_needed = pp_any x in
+		    let inner_newline_needed = pp_any x in
 		    let space_after = space_needed_after x in
-		    loop space_after indent_needed xs in
+		    loop space_after inner_newline_needed xs in
 	      loop space_after false x in
 	    let newline_needed =
 	      (* tokens don't group into multiline terms, so may need to avoid
@@ -1775,8 +1775,8 @@ in
 		  (* should never be followed by a newline *)
 		  false
 	      |	_ -> true in
-	    loop newline_needed indent_needed (not newline_needed && space_after) xs in
-      loop false false false (x::xs);
+	    loop newline_needed (not newline_needed && space_after) xs in
+      loop false false (x::xs);
       (* print a newline at the end, if needed *)
       newline_after()
 
