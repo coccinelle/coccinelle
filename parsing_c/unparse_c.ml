@@ -883,8 +883,11 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "{"
     | _ -> false in
 
+  (* remove newly blank lines *)
   let rec adjust_after_brace brace = function
       x::xs when brace x ->
+	(* keep initial spaces *)
+	let (start_space,xs) = Common.span is_space xs in
 	let skip tok =
 	  is_minus tok || is_comment_or_space tok || is_newline tok in
 	let (spaces,rest) = Common.span skip xs in
@@ -921,13 +924,13 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 		    List.rev(List.rev(T2(a,Ctx,b,c)::rest)::ss)
 		| _ -> spaces)
 	    | _ -> spaces in
-	  x :: (List.concat spaces) @ extra
+	  x :: start_space @ (List.concat spaces) @ extra
 	  @ adjust_after_brace brace rest
-	else x :: adjust_after_brace brace xs
+	else x :: start_space @ adjust_after_brace brace xs
     | x::xs -> x :: adjust_after_brace brace xs
     | [] -> [] in
 
-  let xs = adjust_after_brace obrace xs in
+    let xs = adjust_after_brace obrace xs in
 
   (* search backwards from context } over spaces until reaching a newline.
      then go back over all minus code until reaching some context or + code.
