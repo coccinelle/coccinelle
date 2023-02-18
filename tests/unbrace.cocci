@@ -5,7 +5,6 @@
  identifier I1;
  expression E0;
  iterator name list_for_each_entry;
- symbol list;
 @@
 - LIST_HEAD (E0);
 - int I1;
