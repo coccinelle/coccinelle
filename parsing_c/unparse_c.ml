@@ -962,7 +962,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       when TH.str_of_tok t0 = "" ->
       (* This is for the case of a #define that is completely deleted,
       because a #define has a strange EOL token at the end.
-      We hope there i no other kind of token that is represented by
+      We hope there is no other kind of token that is represented by
       "", but it seems like changing the kind of token might break
       the end of entity recognition in the C parser.
       See parsing_hacks.ml *)
