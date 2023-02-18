@@ -1,4 +1,7 @@
-@disable add_signed@ identifier func;@@
+@disable add_signed@
+identifier func;
+symbol i;
+@@
 func (...) { 
 - const int i;
 + float i;
@@ -8,7 +11,10 @@ func (...) {
   ...
 }
 
-@disable add_signed@ identifier func;@@
+@disable add_signed@
+identifier func;
+symbol i;
+@@
 func (...) {
   const volatile
 -int
