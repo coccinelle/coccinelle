@@ -715,22 +715,23 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     loop lst in
 
   (* nl followed by only removed code followed by nl removes the
-     second nl *)
-  let rec drop_trailing_nl = function
+     first nl *)
+  let rec drop_starting_nl = function
       (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x) ::
       (((Fake2(_,Min adj1)|T2(_,Min adj1,_,_))::_) as xs) ->
 	let (minus_list,rest) =
 	  Common.span minus_or_comment_or_fake_nonl xs in
-	let rest = drop_trailing_nl rest in
+	let rest = drop_starting_nl rest in
 	(match rest with
 	  ((T2(Parser_c.TCommentNewline c,_b,_i,_h)) as y)::rest ->
-	    let y = set_minus_comment_or_plus adj1 y in
+	    let (x,y) =
+	      (set_minus_comment_or_plus adj1 x,y) in
 	    x :: minus_list @ y :: rest
 	| _ -> x :: minus_list @ rest)
-    | x :: xs -> x :: drop_trailing_nl xs
+    | x :: xs -> x :: drop_starting_nl xs
     | [] -> [] in
 
-  let xs = drop_trailing_nl xs in
+  let xs = drop_starting_nl xs in
 
   (* new idea: collects regions not containing non-space context code
   if two adjacent minus tokens satisfy common_adj then delete
