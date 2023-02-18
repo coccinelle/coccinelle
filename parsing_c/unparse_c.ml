@@ -1272,7 +1272,8 @@ let fix_slash_slash toks =
   let rec loop acc = function
       t0::rest when is_slash_slash t0 ->
 	(match Common.drop_while is_minus rest with
-	  t1::_ when existing_or_added_newline t1 -> loop (t0::acc) rest
+	  [] -> loop (t0::acc) rest
+	| t1::_ when existing_or_added_newline t1 -> loop (t0::acc) rest
 	| _ -> loop (C2("\n",None)::(t0::acc)) rest)
     | x::xs -> loop (x::acc) xs
     | [] -> List.rev acc in
