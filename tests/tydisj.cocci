@@ -4,7 +4,7 @@ typedef uint64_t;
 identifier f;
 position p;
 expression E;
-type T;
+symbol a;
 {int,unsigned,long,unsigned long} i;
 @@
 

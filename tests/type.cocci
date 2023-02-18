@@ -1,5 +1,6 @@
 @@
 type T;
+symbol x;
 @@
 
   foo(...) {
