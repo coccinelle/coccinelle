@@ -884,10 +884,12 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | _ -> false in
 
   (* remove newly blank lines *)
-  let rec adjust_after_brace brace = function
+  let rec adjust_after_brace brace changer = function
       x::xs when brace x ->
 	(* keep initial spaces *)
-	let (start_space,xs) = Common.span is_space xs in
+	let ctx_sp tok =
+	  not(is_minus tok) && is_comment_or_space tok in
+	let (start_space,xs) = Common.span ctx_sp xs in
 	let skip tok =
 	  is_minus tok || is_comment_or_space tok || is_newline tok in
 	let (spaces,rest) = Common.span skip xs in
@@ -917,20 +919,24 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	  (* unminusify the last newline, which has the proper spaces for
 	     the coming context/added code *)
 	  let spaces =
-	    match List.rev spaces with
+	    (* if from { want to unminus the last nl
+	       if from } want to unminus the first nl *)
+	    let changer1 = if changer then List.rev else (fun x -> x) in
+	    let changer2 = if changer then List.rev else (fun x -> x) in
+	    match changer1 spaces with
 	      s::ss ->
-		(match List.rev s with
+		(match changer2 s with
 		  T2(a,Min _,b,c)::rest ->
-		    List.rev(List.rev(T2(a,Ctx,b,c)::rest)::ss)
+		    changer1(changer2(T2(a,Ctx,b,c)::rest)::ss)
 		| _ -> spaces)
 	    | _ -> spaces in
 	  x :: start_space @ (List.concat spaces) @ extra
-	  @ adjust_after_brace brace rest
-	else x :: start_space @ adjust_after_brace brace xs
-    | x::xs -> x :: adjust_after_brace brace xs
+	  @ adjust_after_brace brace changer rest
+	else x :: start_space @ adjust_after_brace brace changer xs
+    | x::xs -> x :: adjust_after_brace brace changer xs
     | [] -> [] in
 
-    let xs = adjust_after_brace obrace xs in
+  let xs = adjust_after_brace obrace true xs in
 
   (* search backwards from context } over spaces until reaching a newline.
      then go back over all minus code until reaching some context or + code.
@@ -952,7 +958,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "}"
     | _ -> false in
 
-  let adjust_before_brace = adjust_after_brace cbrace in
+  let adjust_before_brace = adjust_after_brace cbrace false in
 
   let from_newline = function
     | ((T2 (t, Min adj, idx, hint)) as m) :: rest ->
