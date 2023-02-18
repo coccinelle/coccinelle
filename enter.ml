@@ -1572,8 +1572,6 @@ let main arglist =
 
     let args = ref [] in
 
-    (* Gc.set {(Gc.get ()) with Gc.stack_limit = 1024 * 1024};*)
-
     let arg_parse =
       let speclist = Arg.align all_options in
       let anon_fun = (fun x -> args := x::!args) in
