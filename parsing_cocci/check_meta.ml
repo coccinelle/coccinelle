@@ -77,30 +77,37 @@ let dots fn d = List.iter fn (Ast0.unwrap d)
 
 type context = ID | FIELD | FN | GLOBAL
 
+let warned = ref ([] : string list)
+
 (* heuristic for distinguishing ifdef variables from undeclared metavariables*)
 let is_ifdef name =
   String.length name > 2 && Stdcompat.String.uppercase_ascii name = name
 
 let rec ident context old_metas table minus i =
   match Ast0.unwrap i with
-    Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) ->
+    Ast0.Id((name,_,info,_,_,_) : string Ast0.mcode) when not (List.mem name !warned) ->
       let rl = info.Ast0.pos_info.Ast0.line_start in
       let is_plus i =
  	match Ast0.get_mcodekind i with Ast0.PLUS _ -> true | _ -> false in
       if List.exists (function x -> x = name) old_metas
 	  && (minus || is_plus i)
       then
-	warning rl
-	  (Printf.sprintf
-	     "%s, previously declared as a metavariable, is used as an identifier" name)
+	begin
+	  warned := name :: !warned;
+	  warning rl
+	    (Printf.sprintf
+	       "%s, previously declared as a metavariable, is used as an identifier" name)
+	end
       else
 	(match context with
 	  ID ->
+	    warned := name :: !warned;
 	    if not (is_ifdef name) && minus && not info.Ast0.isSymbolIdent
 	    then
 	      warning rl
 		(Printf.sprintf "should %s be a metavariable?" name)
 	| _ -> ())
+  | Ast0.Id _ -> ()
   | Ast0.MetaId(name,cstr,seedval,_) ->
       check_table table minus name;
       constraints table minus cstr;
@@ -823,6 +830,7 @@ let check_both_marked rname required optional =
     optional
 
 let check_meta rname old_metas inherited_metavars metavars minus plus =
+  warned := [];
   let old_metas =
     List.map (function (_,x) -> x) (List.map Ast.get_meta_name old_metas) in
   let (fresh,other) =
