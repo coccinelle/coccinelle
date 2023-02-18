@@ -1,1 +1,1 @@
-static const char *const str = "...";
+static const char * const str = "...";
