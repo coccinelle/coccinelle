@@ -4,15 +4,6 @@ let get_cocci_files arglist =
     let len = String.length arg in
     if len >= 6 && String.sub arg (len - 6) 6 = ".cocci"
     then cocci_files := arg :: !cocci_files in
-  let rec get_cocci_files = function
-    | [] -> ()
-    | f::fs when Sys.is_directory f ->
-        let filenames = Sys.readdir f in
-        let filespaths = Array.map (Filename.concat f) filenames in
-        get_cocci_files (Array.to_list filespaths @ fs)
-    | filename::fs ->
-        add_if_cocci_file filename;
-        get_cocci_files fs in
   let rec find_cocci_files = function
     | [] -> ()
     | "--cocci-file"::filename::args
@@ -29,10 +20,6 @@ let get_cocci_files arglist =
             cocci_files := filename :: !cocci_files
           else
             Printf.fprintf stderr "ERROR: File %s does not exist\n" filename;
-        find_cocci_files args
-    | "--testall"::args
-    | "--test-spacing"::args ->
-        get_cocci_files ["tests"];
         find_cocci_files args
     | arg::args
       (* this pattern supposes no one tries to do manipulations like

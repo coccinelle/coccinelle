@@ -1715,7 +1715,12 @@ let main arglist =
         let score_file = if !expected_score_file <> ""
                          then !expected_score_file
                          else "tests/SCORE_expected.sexp" in
-        Testing.testall (fun _ -> run_profile testing_profile)
+        Testing.testall
+	  (fun file ->
+	    run_profile testing_profile;
+	    let cocci_args =
+	      Cocci_args.read_args [file] +> normalize_args in
+	    arg_parse cocci_args "in the cocci file")
 	  score_file !allow_update_score_file
 
     | []  when !test_spacing ->
@@ -1724,7 +1729,12 @@ let main arglist =
         let score_file = if !expected_spacing_score_file <> ""
                          then !expected_spacing_score_file
                          else "tests/SCORE_spacing_expected.sexp" in
-        Testing.test_spacing (fun _ -> run_profile testing_profile)
+        Testing.test_spacing
+	  (fun file ->
+	    run_profile testing_profile;
+	    let cocci_args =
+	      Cocci_args.read_args [file] +> normalize_args in
+	    arg_parse cocci_args "in the cocci file")
 	   score_file !allow_update_score_file
 
     | [] when !test_regression_okfailed ->

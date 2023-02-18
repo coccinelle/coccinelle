@@ -199,12 +199,13 @@ let testall_bis setup extra_test expected_score_file update_score_file =
 
   begin
     expected_result_files +> List.iter (fun res ->
-      setup();
       let x =
         if res =~ "\\(.*\\).res"
 	then matched1 res
 	else raise (Impossible 164) in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
+      let cocci_file = "tests/" ^ base ^ ".cocci" in
+      setup cocci_file;
       let cfile      = "tests/" ^ x ^ ".c" in
       let cfile      =
         let cppfile = "tests/" ^ x ^ ".cpp" in
@@ -219,7 +220,6 @@ let testall_bis setup extra_test expected_score_file update_score_file =
             Flag.c_plus_plus := Flag.Off;
             cfile
           end in
-      let cocci_file = "tests/" ^ base ^ ".cocci" in
       let expected = "tests/" ^ res in
       let out = base ^ out_suffix in
       let expected_out = "tests/" ^ out in
