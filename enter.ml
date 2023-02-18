@@ -855,9 +855,10 @@ let arg_align2 xs =
 let check_include_path () =
   let opt = Array.get Sys.argv !Arg.current in
   let is_include_re = Str.regexp "-I\\(.*\\)" in
-  if Str.string_match is_include_re opt 0 then
+  if Str.string_match is_include_re opt 0
+  then
     let path = Str.matched_group 1 opt in
-	Inc.include_path:= path::!Inc.include_path
+    Inc.include_path:= path::!Inc.include_path
   else ()
 
 let rec arg_parse_no_fail ~current l f msg argv =
