@@ -8,8 +8,8 @@ identifier x, y;
 + type x = y;
 
 @@
-type t
+type t;
 identifier x;
 @@
-- t x = 2
-+ auto y = 2
+- t x = 2;
++ auto y = 2;
