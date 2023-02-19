@@ -1,4 +1,4 @@
-#define main foo(); 
+#define main foo();
 
 int main() { foo(); }
 
