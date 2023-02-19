@@ -973,7 +973,6 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     then before @ List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) xs
     else before @ xs in
 
-simple_print_all_tokens2 "before" xs;
   let xs = remove_starting_newlines xs in
 
   let cleanup_ifdefs toks =
