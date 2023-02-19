@@ -722,9 +722,11 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	  Common.span minus_or_comment_or_fake_nonl xs in
 	let rest = drop_starting_nl rest in
 	(match rest with
-	  ((T2(Parser_c.TCommentNewline c,_b,_i,_h)) as y)::rest ->
-	    let (x,y) =
-	      (set_minus_comment_or_plus adj1 x,y) in
+	  [] ->
+	    let x = set_minus_comment_or_plus adj1 x in
+	    x :: minus_list @ rest
+	| ((T2(Parser_c.TCommentNewline c,_b,_i,_h)) as y)::rest ->
+	    let x = set_minus_comment_or_plus adj1 x in
 	    x :: minus_list @ y :: rest
 	| _ -> x :: minus_list @ rest)
     | x :: xs -> x :: drop_starting_nl xs
