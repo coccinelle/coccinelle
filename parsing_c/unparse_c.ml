@@ -963,7 +963,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 
   let xs = List.rev (from_inner_newline revxs) in
 
-  (* when something is entirely removed, remove the trailing newline *)
+  (* when something is entirely removed, remove the starting newlines *)
   let remove_starting_newlines xs =
     (* before is comments trailing from the previous function *)
     let (before,xs) =
