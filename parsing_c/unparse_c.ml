@@ -663,7 +663,9 @@ let set_minus_comment adj = function
     | Parser_c.TCommentCpp (Token_c.CppDirective, _) ->
       pr2 (Printf.sprintf "%d: ERASING_COMMENTS: %s"
         (TH.line_of_tok t) str)
-    | _ -> raise (Impossible 137)
+    | _ ->
+	if str <> "" (* allow removing an empty token at the end of a #define *)
+	then raise (Impossible 137)
     );
     T2 (t, Min adj, idx, hint)
     (* patch: coccinelle *)
@@ -692,9 +694,6 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let minus_or_comment_or_fake_nonl x =
     is_minus x || (is_minusable_comment x && not (is_newline x))
   || is_fake2 x in
-
-  let minus_or_comment_nocpp x =
-    is_minus x || is_minusable_comment_nocpp x in
 
   let common_adj (index1,adj1) (index2,adj2) =
     let same_adj = (* same adjacency info *)
@@ -884,104 +883,66 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | _ -> false in
 
   (* remove newly blank lines *)
-  let rec adjust_after_brace brace changer = function
-      x::xs when brace x ->
-	(* keep initial spaces *)
-	let ctx_sp tok =
-	  not(is_minus tok) && is_comment_or_space tok in
-	let (start_space,xs) = Common.span ctx_sp xs in
-	let skip tok =
-	  is_minus tok || is_comment_or_space tok || is_newline tok in
-	let (spaces,rest) = Common.span skip xs in
-	(* break at line boundaries *)
-	let rec get_lines acc = function
-	    x::xs ->
-	      if is_newline x
-	      then
-		let (spaces,extra) = get_lines [] xs in
-		((List.rev (x::acc)) :: spaces,extra)
-	      else get_lines (x::acc) xs
-	  | [] -> ([],List.rev acc) in
-	let (spaces,extra) = get_lines [] spaces in
-	if List.exists (List.exists is_minus) spaces
-	then
-	  (* minusify the all blank lines *)
-	  let spaces =
-	    List.map
-	      (function line ->
-		List.map
-		  (function tok ->
-		    if is_minus tok
-		    then tok
-		    else set_minus_comment ([],Ast_cocci.ALLMINUS) tok)
-		  line)
-	      spaces in
-	  (* unminusify the last newline, which has the proper spaces for
-	     the coming context/added code *)
-	  let spaces =
-	    (* if from { want to unminus the last nl
-	       if from } want to unminus the first nl *)
-	    let changer1 = if changer then List.rev else (fun x -> x) in
-	    let changer2 = if changer then List.rev else (fun x -> x) in
-	    match changer1 spaces with
-	      s::ss ->
-		(match changer2 s with
-		  T2(a,Min _,b,c)::rest ->
-		    changer1(changer2(T2(a,Ctx,b,c)::rest)::ss)
-		| _ -> spaces)
-	    | _ -> spaces in
-	  x :: start_space @ (List.concat spaces) @ extra
-	  @ adjust_after_brace brace changer rest
-	else x :: start_space @ adjust_after_brace brace changer xs
-    | x::xs -> x :: adjust_after_brace brace changer xs
+  let rec adjust_after_brace = function
+      x::xs when obrace x ->
+	(* keep initial spaces and minus code *)
+	let (spaces,rest) =
+	  Common.span
+	    (fun tok -> not(is_minus tok) && (is_newline tok || is_comment_or_space tok))
+	    xs in
+	let (remline,rest) = Common.span is_minus rest in
+	let front = spaces @ remline in
+	(match rest with
+	  (T2 (Parser_c.TCommentNewline _,Ctx,_i,_h)) :: _ when remline <> [] ->
+	    let (newlines,rest) =
+	      Common.span (fun x -> not (is_minus x) && is_newline x) rest in
+	    (match List.rev newlines with
+	      firstnewline::restnewlines ->
+		let newlines =
+		  List.rev(firstnewline :: List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) restnewlines) in
+		x :: front @ newlines @ (adjust_after_brace rest)
+	    | _ -> failwith "not possible")
+	| _ -> x :: front @ adjust_after_brace rest)
+    | x::xs -> x :: adjust_after_brace xs
     | [] -> [] in
 
-  let xs = adjust_after_brace obrace true xs in
+  let xs = adjust_after_brace xs in
 
   (* search backwards from context } over spaces until reaching a newline.
      then go back over all minus code until reaching some context or + code.
      get rid of all intervening spaces, newlines, and comments that are alone
      on a line. input is reversed *)
 
-  let rec span_minus_or_comment_nocpp xs =
-    let (pre,rest) = span (function x -> not(is_newline x)) xs in
-    if List.for_all minus_or_comment_nocpp pre
-    then
-      match rest with
-	((T2 (Parser_c.TCommentNewline _,(Min _|Ctx),_i,_h)) as x)::rest ->
-	  let (spaces,rest) = span_minus_or_comment_nocpp rest in
-	  (pre@x::spaces,rest)
-      | _ -> ([],xs)
-    else ([],xs) in
-
   let cbrace = function
       (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "}"
     | _ -> false in
 
-  let adjust_before_brace = adjust_after_brace cbrace false in
+  (* remove newly blank lines *)
+  let entirely_removed xs =
+    let (minlines,xs) = Common.span is_minus xs in
+    minlines <> [] &&
+    (match xs with
+      (T2 (Parser_c.TCommentNewline _,_,_i,_h))::_ -> true
+    | _ -> false) in
 
-  let from_newline = function
-    | ((T2 (t, Min adj, idx, hint)) as m) :: rest ->
-      let (spaces,rest) = span_minus_or_comment_nocpp rest in
-      m ::
-      (List.map (set_minus_comment adj) spaces) @
-      (adjust_before_brace rest)
-    | ((T2 (t0,Ctx, idx0,h0)) as m0) ::
-      ((T2 (t,Min adj,idx,h)) as m) :: rest
-      when TH.str_of_tok t0 = "" ->
-      (* This is for the case of a #define that is completely deleted,
-      because a #define has a strange EOL token at the end.
-      We hope there is no other kind of token that is represented by
-      "", but it seems like changing the kind of token might break
-      the end of entity recognition in the C parser.
-      See parsing_hacks.ml *)
-      let (spaces,rest) = span_minus_or_comment_nocpp rest in
-      m0 :: m ::
-      (List.map (set_minus_comment adj) spaces) @
-      (adjust_before_brace rest)
-    | rest -> adjust_before_brace rest in
+  let rec adjust_before_brace = function
+      x::xs when cbrace x ->
+	(* collect trailing newlines *)
+	let (trailing,before) =
+	  Common.span (fun x -> not(is_minus x) && is_newline x) xs in
+	if entirely_removed before
+	then
+	  match trailing with
+	    keep::negate ->
+	      let trailing =
+		keep :: List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) negate in
+	      x :: trailing @ (adjust_before_brace before)
+	  | _ -> x :: trailing @ (adjust_before_brace before)
+	else x :: trailing @ (adjust_before_brace before)
+    | x::xs -> x :: adjust_before_brace xs
+    | [] -> [] in
 
-  let revxs = from_newline (List.rev xs) in
+  let revxs = adjust_before_brace (List.rev xs) in
 
   (* remove all blank lines before a removed newline *)
   let rec from_inner_newline = function
@@ -999,6 +960,21 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | [] -> [] in
 
   let xs = List.rev (from_inner_newline revxs) in
+
+  (* when something is entirely removed, remove the trailing newline *)
+  let remove_starting_newlines xs =
+    (* before is comments trailing from the previous function *)
+    let (before,xs) =
+      Common.span (fun x -> not(is_newline x)) xs in
+    let is_nothing = function (* trailing character in a #define *)
+	T2 (t0,Ctx, idx0,h0) -> TH.str_of_tok t0 = ""
+      | _ -> false in
+    if List.for_all (fun x -> is_minus x || is_newline x || is_nothing x || is_minusable_comment_nocpp x) xs
+    then before @ List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) xs
+    else before @ xs in
+
+simple_print_all_tokens2 "before" xs;
+  let xs = remove_starting_newlines xs in
 
   let cleanup_ifdefs toks =
     (* TODO: these functions are horrid, but using tokens caused circularity *)
