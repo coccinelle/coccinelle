@@ -981,7 +981,24 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
       (adjust_before_brace rest)
     | rest -> adjust_before_brace rest in
 
-  let xs = List.rev (from_newline (List.rev xs)) in
+  let revxs = from_newline (List.rev xs) in
+
+  (* remove all blank lines before a removed newline *)
+  let rec from_inner_newline = function
+    | ((T2 (Parser_c.TCommentNewline _,Min adj,_i,_h)) as m) :: rest ->
+	let (spaces,rest) =
+	  Common.span (fun x -> is_newline x || is_minusable_comment_nocpp x) rest in
+	let (keepers,spaces) =
+	  Common.span (fun x -> not(is_newline x)) (List.rev spaces) in
+	let keepers = List.rev keepers in
+	let spaces = List.rev spaces in
+	m ::
+	(List.map (set_minus_comment adj) spaces) @
+	keepers @ (from_inner_newline rest)
+    | x::rest -> x :: from_inner_newline rest
+    | [] -> [] in
+
+  let xs = List.rev (from_inner_newline revxs) in
 
   let cleanup_ifdefs toks =
     (* TODO: these functions are horrid, but using tokens caused circularity *)
