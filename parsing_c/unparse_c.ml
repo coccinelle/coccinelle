@@ -717,169 +717,67 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	  else loop xs in
     loop lst in
 
-  (* nl followed by only removed code followed by nl removes the
-     first nl *)
-  let rec drop_starting_nl = function
-      (T2(Parser_c.TCommentNewline c,_b,_i,_h) as x) ::
-      (((Fake2(_,Min adj1)|T2(_,Min adj1,_,_))::_) as xs) ->
-	let (minus_list,rest) =
-	  Common.span minus_or_comment_or_fake_nonl xs in
-	let rest = drop_starting_nl rest in
-	(match rest with
-	  [] ->
-	    let x = set_minus_comment_or_plus adj1 x in
-	    x :: minus_list @ rest
-	| ((T2(Parser_c.TCommentNewline c,_b,_i,_h)) as y)::rest ->
-	    let x = set_minus_comment_or_plus adj1 x in
-	    x :: minus_list @ y :: rest
-	| _ -> x :: minus_list @ rest)
-    | x :: xs -> x :: drop_starting_nl xs
-    | [] -> [] in
-
-  let xs = drop_starting_nl xs in
-
-  (* new idea: collects regions not containing non-space context code
-  if two adjacent minus tokens satisfy common_adj then delete
-  all spaces, comments etc between them
-  if two adjacent minus tokens do not satisfy common_adj only delete
-  the spaces between them if there are no comments, etc.
-  if the region contain no plus code and is both preceded and followed
-  by a newline, delete the initial newline. *)
-
+  (* if two minus tokens have the same adjacency, delete the non-newline whitespace
+     in between. newlines require knowing whether there is added code, and will be
+     dealt with later *)
   let rec adjust_around_minus = function
-    | [] -> []
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let (minus_list,rest) = span_not_context (t1::xs) in
-      let (minus_list,rest) = drop_trailing_plus minus_list rest in
-      let contains_plus = exists_before_end is_plus minus_list in
-      adjust_within_minus contains_plus minus_list
-      @ adjust_around_minus rest
+	let (space_or_plus,rest) = Common.span (fun x -> is_whitespace x || all_coccis x) xs in
+	let set_minus x = if is_whitespace x then set_minus_comment adj1 x else x in
+	(match rest with
+	  (Fake2(_,Min adj2) | T2(_,Min adj2,_,_))::xs2
+	  when common_adj adj1 adj2 ->
+	    t1 ::
+	    List.map set_minus space_or_plus @
+	    adjust_around_minus rest
+	| [] -> t1 :: List.map set_minus space_or_plus
+	| _ ->  t1 :: space_or_plus @ adjust_around_minus rest)
     | x::xs -> x :: adjust_around_minus xs
-  and adjust_within_minus cp (* contains plus *) = function
-    | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-      let not_minus = function T2(_,Min _,_,_) -> false | _ -> true in
-      let (not_minus_list,rest) = span not_minus xs in
-      t1 ::
-      (match rest with
-      | ((Fake2(_,Min adj2) | T2(_,Min adj2,_,_)) as t2)::xs ->
-	  let newcp =
-	    if List.exists context_newline not_minus_list
-	    then
-	      let (pre_minus_list,_) = span not_context_newline rest in
-	      List.exists is_plus pre_minus_list
-	    else cp in
-          let different_blocks =
-            (* If the two minus tokens are not part of the same rule application
-             * then we want to keep the tokens in between them *)
-            match xs with
-            | Cocci2 _ :: _ ->
-              (* If we have a plus before (`cp`) and after (`Cocci2`) newlines
-               * then they belong to different rule applications because plus
-               * tokens are always attached to the first item of the minus
-               * list. Thus, we want to keep the newline in between them.
-               *
-               * Note: using `exists` instead of `for_all` accounts for
-               * cases where trailing spaces and comments exist in the input.
-               * I am unsure if we want to actually keep the potential comments
-               * and trailing spaces because they could be related to the
-               * deleted code. Something that could be done is to simply replace
-               * the not_minus_list with a single newline token if we choose to
-               * get rid of them *)
-                cp && List.exists is_newline not_minus_list
-            | _ ->
-              (* If the two tokens are not adjacent then they are not part of
-               * the same minus block. Adjacency is determined from the matched
-               * pattern (rule), making it unable to distinguish two contiguous
-               * applications of the same rule, hence the necessary above case *)
-                not (common_adj adj1 adj2)
-          in
-
-
-        if not different_blocks
-            || (not cp && List.for_all is_whitespace_or_fake not_minus_list)
-        then
-          (List.map (set_minus_comment_or_plus adj1) not_minus_list)
-          @ (adjust_within_minus (cp || newcp) (t2::xs))
-        else
-          not_minus_list
-	  @ (adjust_within_minus newcp (t2::xs))
-      | _ ->
-        if cp
-        then xs
-        else
-          (* remove spaces after removed stuff, eg a comma after a
-          function argument *)
-          (let (spaces,rest) = span is_space xs in
-          (List.map (set_minus_comment_or_plus adj1) spaces)
-          @ rest)
-      )
-    | xs -> failwith "should always start with minus"
-  and drop_trailing_plus minus_list rest =
-    let rec loop acc = function
-	x::xs ->
-	  if is_plus x
-	  then loop (x::acc) xs
-	  else
-	    if is_newline x
-	    then (List.rev (x::xs), acc@rest)
-	    else (minus_list,rest) (*do nothing if the + code is not after nl*)
-      | _ -> failwith "not possible - always at least one - token" in
-    loop [] (List.rev minus_list)
-  and span_not_context xs =
-   (* like span not_context xs, but have to parse ifdefs *)
-   let rec loop seen_ifdefs = function
-       [] -> (0,[],[])
-     | ((T2(Parser_c.TCommentCpp (Token_c.CppIfDirective ifd, _),_,_,_)) as x)
-       ::xs when not_context x ->
-	 let fail _ = (0,[],x::xs) in
-	 (match ifd with
-	   Token_c.IfDef | Token_c.IfDef0 ->
-	     let (seen_end,ok,rest) = loop (seen_ifdefs+1) xs in
-	     if seen_end > 0
-	     then (seen_end-1,x::ok,rest)
-	     else fail()
-	 | Token_c.Else ->
-	     if seen_ifdefs > 0
-	     then
-	       let (seen_end,ok,rest) = loop seen_ifdefs xs in
-	       if seen_end > 0
-	       then (seen_end,x::ok,rest)
-	       else fail()
-	     else fail()
-	 | Token_c.Endif ->
-	     if seen_ifdefs > 0
-	     then
-	       let (seen_end,ok,rest) = loop (seen_ifdefs-1) xs in
-	       (seen_end+1,x::ok,rest)
-	     else fail()
-	 | Token_c.Other ->
-	     let (seen_end,ok,rest) = loop seen_ifdefs xs in
-	     (seen_end, x :: ok, rest))
-     | x :: xs ->
-	 if not_context x
-	 then
-	   let (seen_end,ok,rest) = loop seen_ifdefs xs in
-	   (seen_end,x::ok, rest)
-	 else (0,[],x::xs) in
-   let (_,ok,rest) = loop 0 xs in
-   (ok,rest)
-  and not_context = function
-    | (T2(_,Ctx,_,_) as x) -> is_minusable_comment_nonl x
-    | _ -> true
-  and not_context_newline = function
-    | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> false
-    | _ -> true
-  and context_newline = function
-    | T2(Parser_c.TCommentNewline _,Ctx,_,_) -> true
-    | _ -> false
-  and is_plus = function
-    | C2 _ | Comma _ | Cocci2 _ -> true
-    | _ -> false in
+    | [] -> [] in
 
   let xs = adjust_around_minus xs in
 
   (* get rid of fake tok *)
   let xs = xs +> exclude is_fake2 in
+
+  (* space preceded by only removed code preceded by space removes the
+     preceding spaces, up to and including the final newline *)
+  let rec drop_preceeding_whitespace = function
+      ((T2(c,Ctx,_,_)) as x) ::
+      ((T2(_,Min adj1,_,_)::_) as xs)
+      when is_whitespace x || TH.is_eom c ->
+	let (minus_list,rest) = Common.span is_minus xs in
+	(match rest with
+	  (T2(_,Ctx,_i,_h) as y) :: prev when is_whitespace y ->
+	    let rest = drop_preceeding_whitespace rest in
+	    let (spaces,prev) = Common.span is_whitespace rest in
+	    let (todrop,keepers) =
+	      Common.span (fun x -> not (is_newline x)) spaces in
+	    let (todrop,keepers) =
+	      match keepers with
+		n::keepers when is_newline n ->
+		  (todrop @ [n], keepers)
+	      | _ -> (todrop,keepers) in
+	    let todrop = List.map (set_minus_comment_or_plus adj1) todrop in
+	    x :: minus_list @ todrop @ keepers @ prev
+	| _ -> x :: minus_list @ drop_preceeding_whitespace rest)
+    | x::xs -> x :: drop_preceeding_whitespace xs
+    | [] -> [] in
+
+  let xs = List.rev(drop_preceeding_whitespace (List.rev xs)) in
+
+  (* if we remove what is at the very beginning, we have to remove any whitespace
+     after it *)
+  let drop_starting_whitespace = function
+      ((T2(_,Min adj1,_,_)) as x)::rest ->
+	let (minus_list,rest) =
+	  Common.span is_minus (x::rest) in
+	let (spaces,rest) =
+	  Common.span is_whitespace rest in
+	minus_list @ List.map (set_minus_comment_or_plus adj1) spaces @ rest
+    | l -> l in
+
+  let xs = drop_starting_whitespace xs in
 
   (* When we remove some lines at the beginning of a block, we should remove
      all surrounding blank lines.  Likewise when we remove lines at the end
