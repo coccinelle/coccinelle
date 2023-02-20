@@ -5,6 +5,7 @@
  *)
 
 module Ast0 = Ast0_cocci
+module Ast = Ast_cocci
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 
@@ -15,22 +16,28 @@ let redo (_,_,_,mc,_,_) stm =
   match mc with
     Ast0.CONTEXT _ ->
       (match Ast0.unwrap stm with
-	Ast0.Seq((a,b,c,mc_lbrace,d,ctr),body,rbrace) ->
+	Ast0.Seq((a,b,c,mc_lbrace,d,adj),body,rbrace) ->
 	  (match mc_lbrace with
 	    Ast0.MINUS _ ->
 	      (* subtract 1 in case -1 is used for some unknown values *)
-	      let ctr = -1 * ctr - 1 in
-	      Ast0.rewrap stm (Ast0.Seq((a,b,c,mc_lbrace,d,ctr),body,rbrace))
+	      let adj = { adj with Ast.counter = -1 * adj.Ast.counter - 1 } in
+	      Ast0.rewrap stm (Ast0.Seq((a,b,c,mc_lbrace,d,adj),body,rbrace))
 	  | _ -> stm)
       |	_ -> stm)
   | _ -> stm
 
 let compute_adjacency p =
+  let prev = ref { Ast.counter = 0; Ast.ender = false } in
   let counter = ref 0 in
-  let mcode (a,b,c,d,e,_) = (a,b,c,d,e,!counter) in
+  let get_adj _ =
+    let adj = { Ast.counter = !counter; Ast.ender = false } in
+    prev := adj;
+    adj in
+  let mcode (a,b,c,d,e,_) = (a,b,c,d,e,get_adj()) in
   let string_mcode ((str,_,info,mc,_,_) as x) =
     match str with
       "..." | "<..." | "...>" | "<+..." | "...+>" ->
+	(!prev).Ast.ender <- true;
 	(match mc with
 	  Ast0.MINUS _ -> mcode x
 	| Ast0.CONTEXT _ -> counter := !counter + 1; x
@@ -43,20 +50,28 @@ let compute_adjacency p =
       (match Ast0.unwrap s with
 	Ast0.IfThen(iff,lp,exp,rp,branch,(info,mc,_)) ->
 	  let branch = redo rp branch in
-	  Ast0.IfThen(iff,lp,exp,rp,branch,(info,mc,!counter))
+	  Ast0.IfThen(iff,lp,exp,rp,branch,(info,mc,get_adj()))
       | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,mc,_)) ->
 	  let branch1 = redo rp branch1 in
 	  let branch2 = redo els branch2 in
-	  Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,mc,!counter))
+	  let adj = { Ast.counter = !counter; Ast.ender = false } in
+	  prev := adj;
+	  Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(info,mc,get_adj()))
       | Ast0.While(wh,lp,exp,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
-	  Ast0.While(wh,lp,exp,rp,body,(info,mc,!counter))
+	  let adj = { Ast.counter = !counter; Ast.ender = false } in
+	  prev := adj;
+	  Ast0.While(wh,lp,exp,rp,body,(info,mc,get_adj()))
       | Ast0.For(fr,lp,first,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
-	  Ast0.For(fr,lp,first,rp,body,(info,mc,!counter))
+	  let adj = { Ast.counter = !counter; Ast.ender = false } in
+	  prev := adj;
+	  Ast0.For(fr,lp,first,rp,body,(info,mc,get_adj()))
       | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
-	  Ast0.Iterator(nm,lp,args,rp,body,(info,mc,!counter))
+	  let adj = { Ast.counter = !counter; Ast.ender = false } in
+	  prev := adj;
+	  Ast0.Iterator(nm,lp,args,rp,body,(info,mc,get_adj()))
       | s -> s) in
   let fn =
     V0.rebuilder

@@ -2537,7 +2537,8 @@ module Ast_cocci :
         REPLACEMENT of 'a list list * count
       | NOREPLACEMENT
     and 'a mcode = 'a * info * mcodekind * meta_pos list
-    and adjacency = Ast_cocci.adjacency = ALLMINUS | ADJ of int
+    and adj = Ast_cocci.adj = { counter : int; mutable ender : bool; }
+    and adjacency = Ast_cocci.adjacency = ALLMINUS | ADJ of adj
     and mcodekind =
       Ast_cocci.mcodekind =
         MINUS of pos * int list * adjacency * anything replacement
@@ -3351,10 +3352,9 @@ module Ast0_cocci :
       strings_after : (Ast_cocci.added_string * position_info) list;
       isSymbolIdent : bool;
     }
-    type adjacency = int
-    type fake_mcode = info * mcodekind * adjacency
+    type fake_mcode = info * mcodekind * Ast_cocci.adj
     type 'a mcode =
-        'a * arity * info * mcodekind * anything list ref * adjacency
+        'a * arity * info * mcodekind * anything list ref * Ast_cocci.adj
     and 'a wrap =
       'a Ast0_cocci.wrap = {
       node : 'a;

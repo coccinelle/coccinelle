@@ -106,6 +106,10 @@ let str_of_token2 = function
   | Unindent_cocci2 _
   | EatSpace2 -> ""
 
+let adj2c = function
+    Ast_cocci.ADJ(adj) -> string_of_int adj.Ast_cocci.counter
+  | _ -> "AM"
+
 let print_token2 = function
   | T2 (t,b,_,_) ->
     let t_str =
@@ -119,8 +123,7 @@ let print_token2 = function
     let b_str =
       match b with
       | Min (index,adj) ->
-        Printf.sprintf "-.%d[%s]"
-          (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
+        Printf.sprintf "-.%s[%s]" (adj2c adj)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
     (*let d_str =
@@ -135,8 +138,7 @@ let print_token2 = function
     let b_str =
       match b with
       | Min (index,adj) ->
-        Printf.sprintf "-%d[%s]"
-          (match adj with Ast_cocci.ADJ n -> n | _ -> -1)
+        Printf.sprintf "-%s[%s]" (adj2c adj)
           (String.concat " " (List.map string_of_int index))
       | Ctx -> "" in
     (*let d_str =
@@ -698,7 +700,9 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let common_adj (index1,adj1) (index2,adj2) =
     let same_adj = (* same adjacency info *)
       match (adj1,adj2) with
-      | (Ast_cocci.ADJ adj1,Ast_cocci.ADJ adj2) -> adj1 = adj2
+      | (Ast_cocci.ADJ adj1,Ast_cocci.ADJ adj2) ->
+	  adj1.Ast_cocci.counter = adj2.Ast_cocci.counter &&
+	  not adj1.Ast_cocci.ender
       | (Ast_cocci.ALLMINUS,_) | (_,Ast_cocci.ALLMINUS) -> true in
     same_adj &&
     (* non-empty intersection of witness trees *)

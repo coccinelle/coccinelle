@@ -133,7 +133,7 @@ and strip =
       Ast0.mcodekind = ref  (Ast0.PLUS Ast.ONE)} in
   let mcode (mc,_,_,_,_,_) =
     (mc,Ast0.NONE,Ast0.default_info(),Ast0.PLUS Ast.ONE,
-     ref [],-1) in
+     ref [],{Ast.counter = -1; Ast.ender = false}) in
 
   (* need a case for everything that has an unvisited component and can be in
      a function prototype. *)
@@ -437,7 +437,8 @@ let no_names dec =
 			  (* use the mcodekind of an atomic minused thing *)
 			  Ast0.get_mcode_mcodekind lp in
 			let pdots =
-			  ("...",Ast0.NONE,info,mcodekind,ref [],-1) in
+			  ("...",Ast0.NONE,info,mcodekind,ref [],
+			   {Ast.counter = -1; Ast.ender = false}) in
 			[Ast0.rewrap params (Ast0.Pdots(pdots))]),
 		      va,rp,sem))))
       |	_ -> dec)

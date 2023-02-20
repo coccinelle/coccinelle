@@ -33,7 +33,7 @@ type isomorphism =
 let strip_info =
   let mcode (term,_,_,_,_,_) =
     (term,Ast0.NONE,Ast0.default_info(),Ast0.PLUS Ast.ONE,
-     ref [],-1) in
+     ref [],{Ast.counter = 0; Ast.ender = false}) in
   let donothing r k e =
     let x = k e in
     {(Ast0.wrap (Ast0.unwrap x)) with

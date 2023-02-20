@@ -34,13 +34,11 @@ type info = { pos_info : position_info;  whitespace : string;
 	      strings_after : (Ast_cocci.added_string * position_info) list;
 	      isSymbolIdent : bool; (* is the token a symbol identifier or not *) }
 
-type adjacency = int
-
-type fake_mcode = info * mcodekind * adjacency
+type fake_mcode = info * mcodekind * Ast_cocci.adj
 
 type 'a mcode =
     'a * arity * info * mcodekind * anything list ref (* pos, - only *) *
-      adjacency (* adjacency_index *)
+      Ast_cocci.adj (* adjacency_index *)
 
 and 'a wrap =
     { node : 'a;

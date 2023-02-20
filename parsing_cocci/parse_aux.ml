@@ -67,31 +67,33 @@ let clt2mcode_ext str isSymbol = function
     (Data.MINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws) ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,
+       {Ast.counter = -1; Ast.ender = false})
   | (Data.OPTMINUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)->
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,-1)
+       Ast0.MINUS(ref(Ast.NOREPLACEMENT,Ast0.default_token_info)),ref pos,
+       {Ast.counter = -1; Ast.ender = false})
   | (Data.PLUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)        ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.PLUS(Ast.ONE),ref pos,-1)
+       Ast0.PLUS(Ast.ONE),ref pos,{Ast.counter = -1; Ast.ender = false})
   | (Data.PLUSPLUS,line,lline,llineend,offset,col,strbef,straft,pos,ws)    ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
-       Ast0.PLUS(Ast.MANY),ref pos,-1)
+       Ast0.PLUS(Ast.MANY),ref pos,{Ast.counter = -1; Ast.ender = false})
   | (Data.CONTEXT,line,lline,llineend,offset,col,strbef,straft,pos,ws)     ->
       (str,Ast0.NONE,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos,-1)
+       ref pos,{Ast.counter = -1; Ast.ender = false})
   | (Data.OPT,line,lline,llineend,offset,col,strbef,straft,pos,ws)         ->
       (str,Ast0.OPT,
        make_info line lline llineend offset col strbef straft isSymbol ws,
        Ast0.CONTEXT(ref(Ast.NOTHING,
 			Ast0.default_token_info,Ast0.default_token_info)),
-       ref pos,-1)
+       ref pos,{Ast.counter = -1; Ast.ender = false})
 
 let clt2mcode name clt = clt2mcode_ext name false clt
 let id3name   (name, _, clt) = name
@@ -521,7 +523,9 @@ let meta_dparam_list name =
 let exp_stm exp pv =
   Ast0.wrap(Ast0.ExprStatement (exp, clt2mcode ";" pv))
 
-let make_fake_mcode _ = (Ast0.default_info(),Ast0.context_befaft(),-1)
+let make_fake_mcode _ =
+  (Ast0.default_info(),Ast0.context_befaft(),
+   {Ast.counter = -1; Ast.ender = false})
 
 let ifthen iff lp tst rp thn =
   Ast0.wrap(Ast0.IfThen(clt2mcode "if" iff,

@@ -42,13 +42,11 @@ type info = { pos_info : position_info;
 (* adjacency index is incremented when we skip over dots or nest delimiters
 it is used in deciding how much to remove, when two adjacent code tokens are
 removed. *)
-type adjacency = int
-
-type fake_mcode = info * mcodekind * adjacency
+type fake_mcode = info * mcodekind * Ast.adj
 
 type 'a mcode =
     'a * arity * info * mcodekind * anything list ref (* pos, - only *) *
-      adjacency (* adjacency_index *)
+      Ast.adj (* adjacency_index *)
 (* int ref is an index *)
 and 'a wrap =
     { node : 'a;
@@ -817,10 +815,12 @@ let fresh_index _ = let cur = !index_counter in index_counter := cur + 1; cur
 (* this function is a rather minimal attempt.  the problem is that information
 has been lost.  but since it is only used for metavariable types in the isos,
 perhaps it doesn't matter *)
-let make_mcode x = (x,NONE,default_info(),context_befaft(),ref [],-1)
-let make_mcode_info x info = (x,NONE,info,context_befaft(),ref [],-1)
+let make_mcode x =
+  (x,NONE,default_info(),context_befaft(),ref [],{Ast.counter = -1; Ast.ender = false})
+let make_mcode_info x info =
+  (x,NONE,info,context_befaft(),ref [],{Ast.counter = -1; Ast.ender = false})
 and make_minus_mcode x =
-  (x,NONE,default_info(),minus_befaft(),ref [],-1)
+  (x,NONE,default_info(),minus_befaft(),ref [],{Ast.counter = -1; Ast.ender = false})
 
 (* --------------------------------------------------------------------- *)
 

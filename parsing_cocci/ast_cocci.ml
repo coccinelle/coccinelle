@@ -61,7 +61,8 @@ replacements with certainty.  Anyway, iteration doesn't seem to be needed
 on - code for the moment.  Although it may be confusing that there can be
 iterated addition of code before context code where the context code is
 immediately followed by removed code. *)
-and adjacency = ALLMINUS | ADJ of int
+and adj = { counter : int; mutable ender : bool; }
+and adjacency = ALLMINUS | ADJ of adj
 and mcodekind =
     MINUS       of pos * int list * adjacency * anything replacement
   | CONTEXT     of pos * anything befaft

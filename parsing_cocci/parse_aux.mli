@@ -219,7 +219,7 @@ val exp_stm :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
   string -> Ast0_cocci.base_statement Ast0_cocci.wrap
-val make_fake_mcode : 'a -> Ast0_cocci.info * Ast0_cocci.mcodekind * int
+val make_fake_mcode : 'a -> Ast0_cocci.info * Ast0_cocci.mcodekind * Ast_cocci.adj
 val ifthen :
   Data.clt -> Data.clt ->
   Ast0_cocci.expression ->
