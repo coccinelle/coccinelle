@@ -539,6 +539,7 @@ let is_newline_or_comment = function
 
 let is_newline = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+  | T2(c,_,_,_) -> TH.is_eom c
   | _ -> false
 
 let c2newline = function
