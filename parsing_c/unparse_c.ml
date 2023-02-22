@@ -507,6 +507,11 @@ let is_space = function
   | T2(Parser_c.TCommentSpace _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
 
+let is_passed = function
+  | T2(Parser_c.TCommentCpp (Token_c.CppPassingCosWouldGetError,_),_b,_i,_h) -> true
+  | T2(Parser_c.TCommentCpp (Token_c.CppMacro,_),_b,_i,_h) -> true
+  | _ -> false
+
 let is_comment = function
   | T2(Parser_c.TComment _,_b,_i,_h) -> true (* only whitespace *)
   | _ -> false
@@ -710,8 +715,9 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
      dealt with later *)
   let rec adjust_around_minus = function
     | ((Fake2(_,Min adj1) | T2(_,Min adj1,_,_)) as t1)::xs ->
-	let (space_or_plus,rest) = Common.span (fun x -> is_whitespace x || all_coccis x) xs in
-	let set_minus x = if is_whitespace x then set_minus_comment adj1 x else x in
+	let (space_or_plus,rest) =
+	  Common.span (fun x -> is_whitespace x || is_passed x || all_coccis x) xs in
+	let set_minus x = if not (all_coccis x) then set_minus_comment adj1 x else x in
 	(match rest with
 	  (Fake2(_,Min adj2) | T2(_,Min adj2,_,_))::xs2
 	  when common_adj adj1 adj2 ->
