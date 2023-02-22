@@ -694,10 +694,6 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   (* get rid of expanded tok *)
   let xs = xs +> exclude is_expanded in
 
-  let minus_or_comment_or_fake_nonl x =
-    is_minus x || (is_minusable_comment x && not (is_newline x))
-  || is_fake2 x in
-
   let common_adj (index1,adj1) (index2,adj2) =
     let same_adj = (* same adjacency info *)
       match (adj1,adj2) with
@@ -708,15 +704,6 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     same_adj &&
     (* non-empty intersection of witness trees *)
     not ((inter_set index1 index2) = []) in
-
-  let exists_before_end fn lst =
-    let rec loop = function
-	[] -> false
-      | x::xs ->
-	  if fn x
-	  then List.exists (function x -> not (fn x)) xs
-	  else loop xs in
-    loop lst in
 
   (* if two minus tokens have the same adjacency, delete the non-newline whitespace
      in between. newlines require knowing whether there is added code, and will be
