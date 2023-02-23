@@ -559,7 +559,7 @@ and pp_string_format (e,ii) =
 	 (unit -> unit) option -> (storage * il) option ->
 	   fullType -> attribute list ->  unit) =
     fun ident sto ft endattrs ->
-      pp_base_type ft  sto;
+      pp_base_type ft sto;
       (match (ident, Ast_c.unwrap_typeC ft) with
 	(Some _,_) | (_,Pointer _) -> pr_space()
       |	_ -> ());
