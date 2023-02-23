@@ -560,9 +560,22 @@ and pp_string_format (e,ii) =
 	   fullType -> attribute list ->  unit) =
     fun ident sto ft endattrs ->
       pp_base_type ft sto;
-      (match (ident, Ast_c.unwrap_typeC ft) with
-	(Some _,_) | (_,Pointer _) -> pr_space()
-      |	_ -> ());
+      let hastype =
+	match (Ast_c.unwrap_typeC ft,sto) with
+	  (NoType,(None|Some((NoSto,false),[]))) ->
+	    false
+	| (FunctionType((_,_,(NoType,_)),_),
+	   (None|Some((NoSto,false),[]))) ->
+	    false
+	| (FunctionType((_,_,(_,[ity])),_),
+	   (None|Some((NoSto,false),[]))) ->
+	    str_of_info ity <> ""
+	| _ -> true in
+      (if hastype
+      then
+	match (ident, Ast_c.unwrap_typeC ft) with
+	  (Some _,_) | (_,Pointer _) -> pr_space()
+	| _ -> ());
       pp_type_with_ident_rest ident ft [] endattrs
 
 
