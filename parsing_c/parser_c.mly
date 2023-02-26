@@ -1568,7 +1568,7 @@ abstract_declarator:
  | pointer                            { $1 }
  |         direct_abstract_declarator { $1 }
  | pointer direct_abstract_declarator
-     { fun x -> x +> $2 +> $1 }
+     { fun x -> x +> $1 +> $2 }
 
 direct_abstract_declarator:
  | TOPar abstract_declarator TCPar /*(* forunparser: old: $2 *)*/
