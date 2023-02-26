@@ -1262,6 +1262,23 @@ let paren_then_brace toks =
     | _ -> xs in
   search_paren toks
 
+let newline_before_else toks =
+  let rec loop = function (* reversed toks *)
+      ((Cocci2("else",ln,lcol,rcol,hint)) as e)::rest ->
+	let (minus_space_list,rest) =
+	  Common.span (fun x -> is_minus x || is_space x) rest in
+	(match rest with
+	  (T2(Parser_c.TCommentNewline _,Ctx,_,_)) :: _ ->
+	    e :: minus_space_list @ loop rest
+	| (T2(Parser_c.TCBrace _,Ctx,_,_)) :: _ ->
+	    e :: minus_space_list @ loop rest
+	| ((T2 _) as x) :: rest ->
+	    e :: minus_space_list @ (C2("\n",None)) :: x :: loop rest
+	| _ -> e :: minus_space_list @ loop rest)
+    | x :: xs -> x :: loop xs
+    | [] -> [] in
+  List.rev(loop(List.rev toks))
+
 let is_ident_like s = s ==~ regexp_alpha
 let is_int_like s = s ==~ regexp_int
 
@@ -2642,6 +2659,7 @@ let pp_program2 xs outfile  =
 	      let toks = check_danger toks in
 	      let toks = fix_slash_slash toks in
 	      let toks = paren_then_brace toks in
+	      let toks = newline_before_else toks in
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
