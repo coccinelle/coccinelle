@@ -6,10 +6,10 @@ int foo(int i) {
       foo();
       z = 4;
       foo();
+    }
+    foo();
   }
-  foo();
-  } // we don't want that it add both foo on the } and on the endif
+  foo(); // we don't want that it add both foo on the } and on the endif
     // (note: but need correct endif accrochage)
-  foo();
 
 }
