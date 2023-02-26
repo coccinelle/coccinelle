@@ -573,9 +573,15 @@ and pp_string_format (e,ii) =
 	| _ -> true in
       (if hastype
       then
-	match (ident, Ast_c.unwrap_typeC ft) with
-	  (Some _,_) | (_,Pointer _) -> pr_space()
-	| _ -> ());
+	if ident <> None
+	then pr_space()
+	else
+	  let rec ptrfront ft =
+	    match Ast_c.unwrap_typeC ft with
+	      Pointer _ -> pr_space()
+	    | Array(_,t) -> ptrfront t
+	    | _ -> () (* doesn't start with * *) in
+	  ptrfront ft);
       pp_type_with_ident_rest ident ft [] endattrs
 
 
