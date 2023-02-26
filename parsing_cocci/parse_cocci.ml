@@ -1018,6 +1018,7 @@ exception Irrelevant
 let find_function_names l =
   let is_ident = function
       (PC.TIdent(_,clt),info)
+    | (PC.TSymId(_,clt),info)
     | (PC.TMeta(_,_,_,clt),info)
     | (PC.TMetaId(_,_,_,_,clt),info)
     | (PC.TMetaFunc(_,_,_,clt),info)

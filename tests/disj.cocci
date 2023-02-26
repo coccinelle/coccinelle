@@ -1,4 +1,5 @@
 @@
+symbol disj_id1, disj_id2;
 @@
 - int \(disj_id1\|disj_id2\);
 + int disj_id3;
@@ -14,6 +15,7 @@
 + disj_expr(3)
 
 @@
+symbol disj_type;
 @@
 - \(int\|char\) disj_type;
 + bool disj_type;
