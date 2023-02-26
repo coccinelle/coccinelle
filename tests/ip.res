@@ -4,15 +4,16 @@ void GetInfoDestTV(short sNoFo)
     printf("one");
   else {
     trace("ifelel");
-  if(sNoFo == 2)
-    printf("two");
-  else {
-    trace("ifelel");
-  if(sNoFo == 2)
-    printf("three");
-  else
-    {
-    trace("ifelel");
-    printf("other");
-}}}
+    if(sNoFo == 2)
+      printf("two");
+    else {
+      trace("ifelel");
+      if(sNoFo == 2)
+        printf("three");
+      else {
+        trace("ifelel");
+        printf("other");
+      }
+    }
+  }
 }
