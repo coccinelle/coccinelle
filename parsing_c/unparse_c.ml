@@ -734,6 +734,48 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   (* get rid of fake tok *)
   let xs = xs +> exclude is_fake2 in
 
+  let rec line_end_removed = function
+      x::rest when is_newline x ->
+	let onlyspaces x =
+	  is_whitespace x && not (is_newline x) && not (is_minus x) in
+	(* skip spaces *)
+	let (spaces,rest) = Common.span onlyspaces rest in
+	(* skip minus *)
+	let (minus_list,rest) =
+	  Common.span (fun x -> is_minus x && not (is_newline x)) rest in
+	if minus_list <> []
+	then
+	  (* skip more spaces *)
+	  let (prespaces,rest) = Common.span onlyspaces rest in
+	  let minusify =
+	    List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) in
+	  x :: spaces @ minus_list @ minusify prespaces @
+	  line_end_removed rest
+	else x :: spaces @ line_end_removed rest
+    | x::xs -> x :: line_end_removed xs
+    | [] -> [] in
+
+  let xs = List.rev(line_end_removed (List.rev xs)) in
+
+  (* drop trailing spaces, working forwards *)
+  let rec inner_region_removed = function
+      ((T2(_,Ctx,_,_)) as x) :: ((T2(_,Min _,_,_)) as y) :: rest ->
+        let (minus_list,rest) = Common.span is_minus (y::rest) in
+	let minusify =
+	  List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) in
+	let rest = inner_region_removed rest in
+	let (spaces,rest) =
+	  Common.span
+	    (fun x ->
+	      is_whitespace x && not(is_minus x) &&
+	      not(is_newline x))
+	    rest in
+	x :: minus_list @ minusify spaces @ rest
+    | x::xs -> x :: inner_region_removed xs
+    | [] -> [] in
+
+  let xs = inner_region_removed xs in
+
   (* whole line removed,
   drop initial newline and preceeding comments, input is reversed *)
   let rec line_removed = function
@@ -764,49 +806,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
     | x:: xs -> x :: line_removed xs
     | [] -> [] in
 
-  let revxs = line_removed (List.rev xs) in
-
-  let rec line_end_removed = function
-      x::rest when is_newline x ->
-	let onlyspaces x =
-	  is_whitespace x && not (is_newline x) && not (is_minus x) in
-	(* skip spaces *)
-	let (spaces,rest) = Common.span onlyspaces rest in
-	(* skip minus *)
-	let (minus_list,rest) =
-	  Common.span (fun x -> is_minus x && not (is_newline x)) rest in
-	if minus_list <> []
-	then
-	  (* skip more spaces *)
-	  let (prespaces,rest) = Common.span onlyspaces rest in
-	  let minusify =
-	    List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) in
-	  x :: spaces @ minus_list @ minusify prespaces @
-	  line_end_removed rest
-	else x :: spaces @ line_end_removed rest
-    | x::xs -> x :: line_end_removed xs
-    | [] -> [] in
-
-  let xs = List.rev (line_end_removed revxs) in
-
-  (* drop trailing spaces, working forwards *)
-  let rec inner_region_removed = function
-      ((T2(_,Ctx,_,_)) as x) :: ((T2(_,Min _,_,_)) as y) :: rest ->
-        let (minus_list,rest) = Common.span is_minus (y::rest) in
-	let minusify =
-	  List.map (set_minus_comment ([],Ast_cocci.ALLMINUS)) in
-	let rest = inner_region_removed rest in
-	let (spaces,rest) =
-	  Common.span
-	    (fun x ->
-	      is_whitespace x && not(is_minus x) &&
-	      not(is_newline x))
-	    rest in
-	x :: minus_list @ minusify spaces @ rest
-    | x::xs -> x :: inner_region_removed xs
-    | [] -> [] in
-
-  let xs = inner_region_removed xs in
+  let xs = List.rev (line_removed (List.rev xs)) in
 
   (* special case for the very beginning of the file that
      has no preceeding newlines *)
