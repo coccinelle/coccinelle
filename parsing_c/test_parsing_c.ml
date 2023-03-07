@@ -35,7 +35,7 @@ let get_files path =
       (if !Flag.include_headers
       then
         "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
-        ^"-o name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
+        ^"-o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
       else
         "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
   else
