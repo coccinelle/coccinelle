@@ -1248,25 +1248,33 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
            * the macro has no type and so we infer its type from its
            * body (and one day later maybe from its use).
            *)
-          (match defval with
-          (* can try to optimize and recurse only when the define body
-           * is simple ?
-           *)
+	  do_in_new_scope (fun () ->
+	    (* prevent macro-declared variables from leaking out *)
+	    (match defkind with
+	      DefineFunc (params,ii) ->
+		List.iter
+		  (function ((id,ii),commaii) ->
+		    let local = Ast_c.LocalVar (List.hd ii).pinfo in
+		    let bind =
+		      VarOrFunc (id,(Lib.al_type (mk_ty NoType []),local)) in
+		    add_binding bind true)
+		  params
+	    | _ -> ());
+	    match defval with
+            (* can try to optimize and recurse only when the define body
+             * is simple ?
+             *)
 
-          | DefineExpr expr ->
-	      (* prevent macro-declared variables from leaking out *)
-	      do_in_new_scope (fun () ->
+            | DefineExpr expr ->
 		if is_simple_expr expr
-             (* even if not need_annotate_body, still recurse*)
+                (* even if not need_annotate_body, still recurse*)
 		then k directive
 		else
                   if need_annotate_body
-                  then k directive)
-          | _ ->
-	      do_in_new_scope (fun () ->
+                  then k directive
+	    | _ ->
 		if need_annotate_body
-		then k directive)
-          );
+		then k directive);
 
           add_binding (Macro (s, (defkind, defval) )) true;
 
