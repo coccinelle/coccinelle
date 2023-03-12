@@ -34,6 +34,10 @@ create-runner:
         gitlab-terraform plan -var template=coccinelle-trace-cmd
       fi
     - gitlab-terraform apply
+  artifacts:
+    paths:
+      - "${TF_ROOT}"
+  resource_group: trace-cmd-vm
 
 install-template:
   extends: .runner-tags
@@ -43,6 +47,7 @@ install-template:
   script:
     - cd "${TF_ROOT}"
     - sh prepare-template.sh
+  dependencies: []
 
 create-template:
   stage: create-template
@@ -55,6 +60,8 @@ create-template:
   script:
     - cd "${TF_ROOT}"
     - python3 create-template.py
+  dependencies: []
+  resource_group: trace-cmd-vm
 
 build-and-test:
   extends: .runner-tags
@@ -70,10 +77,14 @@ build-and-test:
   artifacts:
     paths:
       - trace.dat.xz
+  dependencies: []
+  resource_group: trace-cmd-vm
 
 clean:
   stage: clean
   image: "$CI_TEMPLATE_REGISTRY_HOST/gitlab-org/terraform-images/releases/1.1:v0.43.0"
+  variables:
+    GIT_STRATEGY: none
   tags:
     - linux
     - small
@@ -83,3 +94,5 @@ clean:
     - gitlab-terraform destroy
     - 'curl --user "gitlab-ci-token:$CI_JOB_TOKEN" --request DELETE "$CI_API_V4_URL/projects/$CI_PROJECT_ID/terraform/state/$TF_STATE_NAME"'
   when: always
+  dependencies: [create-runner]
+  resource_group: trace-cmd-vm
