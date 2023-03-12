@@ -4527,8 +4527,7 @@ and compatible_typeC a (b,local) =
 
   let rec loop tya tyb =
     match A.unwrap tya, tyb with
-    | _, (qua, attra, (B.NoType, _)) ->
-	failwith "compatible_type: matching with NoType"
+    | _, (qua, attra, (B.NoType, _)) -> fail
   (* for metavariables of type expression *^* *)
   (* must be before the general BaseType case *)
     | A.BaseType (A.Unknown, _) , _ -> ok
