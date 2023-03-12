@@ -738,7 +738,7 @@ let make_info_def = Type_c.make_info_def
 (*****************************************************************************)
 
 let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
-  let ret_of_functinotype typ =
+  let ret_of_functiontype typ =
     let rec loop = function
     | FunctionType (ret, _) -> Some ret
     (* can be function pointer, C have an iso for that,
@@ -824,7 +824,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
             let tyinfo = make_info_fix (typ, local) in
             Ast_c.set_type_expr e1 tyinfo;
 
-            (match ret_of_functinotype typ with
+            (match ret_of_functiontype typ with
             | Some ret -> make_info_def ret
             | None -> Type_c.noTypeHere
             )
@@ -883,7 +883,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 
         (Ast_c.get_type_expr e1) +> Type_c.do_with_type (fun typ ->
           (* copy paste of above *)
-          (match ret_of_functinotype typ with
+          (match ret_of_functiontype typ with
           | Some ret -> make_info_def ret
           | None -> Type_c.noTypeHere
           )
