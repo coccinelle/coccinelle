@@ -1180,7 +1180,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	(let (opttypb,_testb) = !opttypb in
 	match opttypa, opttypb with
         | None, _ -> return ((),())
-        | Some _, Some ((_,_,(NoType,_)),_) ->
+        | Some _, Some ((_,_,(B.NoType,_)),_) ->
             pr2_once ("Missing type information. Certainly a pb in " ^
                       "annotate_typer.ml");
             fail

@@ -189,12 +189,12 @@ let noTypeHere =
 let do_with_type f (t,_test) =
   match t with
   | None -> noTypeHere
-  | Some ((_,_,(NoType,_)),_) -> noTypeHere
+  | Some ((_,_,(Ast_c.NoType,_)),_) -> noTypeHere
   | Some (t,_local) -> f t
 
 let get_opt_type e =
   match Ast_c.get_type_expr e with
-  | Some ((_,_,(NoType,_)),_), _test -> None
+  | Some ((_,_,(Ast_c.NoType,_)),_), _test -> None
   | Some (t,_), _test -> Some t
   | None, _test -> None
 
