@@ -394,7 +394,7 @@ Turning on cocci-mode runs the hook `cocci-mode-hook'."
 ; put cursor before a parse error coccinelle message and it will
 ; open the corresponding file and go to corresponding line.
 (fset 'cocci-goto-next-error
-   [?\C-s ?F ?i ?l ?e right right ?\C-  ?\C-s ?" left ?\M-w ?\C-x ?\C-f S-insert return ?\C-\M-l C-right right C-S-right C-insert ?\C-\M-l ?\M-g S-insert return])
+   [?\C-s ?F ?i ?l ?e right right ?\C-  ?\C-s ?\" left ?\M-w ?\C-x ?\C-f S-insert return ?\C-\M-l C-right right C-S-right C-insert ?\C-\M-l ?\M-g S-insert return])
 ;"
 
 ;; Provide
