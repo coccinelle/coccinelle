@@ -299,12 +299,27 @@ let get_fakeInfo_and_tokens celem toks =
       front::rest when not(is_origin (List.hd front)) (*might not be orig*)
 	  -> (front,rest)
     | all -> ([],all) in
-  let tcompare l1 l2 =
-    match (l1,l2) with
-      (t1::_,t2::_) ->
-	compare (Ast_c.info_to_fixpos t1) (Ast_c.info_to_fixpos t2)
-    | _ -> failwith "not possible" in
-  let printed_toks = List.concat (front :: (List.sort tcompare rest)) in
+  let tcompare t1 t2 = compare (Ast_c.info_to_fixpos t1) (Ast_c.info_to_fixpos t2) in
+  let collected_by_file =
+    let rec loop cur curfile acc = function
+	x::xs ->
+	  let f = Ast_c.file_of_info x in
+	  if f = curfile
+	  then loop (x::cur) curfile acc xs
+	  else
+	    let cur =
+	      if curfile = ""
+	      then List.rev cur
+	      else (List.sort tcompare cur) in
+	    loop [x] f (cur :: acc) xs
+      | [] ->
+	  let cur =
+	    if curfile = ""
+	    then List.rev cur
+	    else (List.sort tcompare cur) in
+	  List.concat(List.rev(cur :: acc)) in
+    List.map (loop [] "" []) rest in
+  let printed_toks = List.concat (front :: collected_by_file) in
   List.iter pr_elem printed_toks;
 
   if  (!toks_in <> [])
