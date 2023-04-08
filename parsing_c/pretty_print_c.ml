@@ -79,6 +79,7 @@ let mk_pretty_printers
     ~pr_elem ~pr_space
     ~pr_nl ~pr_indent ~pr_outdent ~pr_unindent
  =
+  let rec redo pr_elem =
   let start_block () = pr_nl(); pr_indent() in
   let end_block   () = pr_unindent(); pr_nl() in
   let pr_text s = pr_elem (Ast_c.fakeInfo Ast_c.After +> Ast_c.rewrap_str s) in
@@ -224,10 +225,12 @@ let mk_pretty_printers
     if !Flag_parsing_c.pretty_print_type_info
     then begin
       pr_text "/*";
+      let alt =
+	redo (fun x -> pr_text (Ast_c.str_of_info x)) in
       !typ +>
       (fun (ty,_test) -> ty +>
 	Common.do_option
-	  (fun (x,l) -> pp_type x;
+	  (fun (x,l) -> alt.ty x;
 	    let s = match l with
 	      Ast_c.LocalVar _ -> ", local"
 	    | _ -> "" in
@@ -1691,7 +1694,8 @@ and pp_init (init, iinit) =
     format     = pp_string_format;
     flow       = pp_flow;
     name       = pp_name;
-  }
+  } in
+  redo pr_elem
 
 (*****************************************************************************)
 
