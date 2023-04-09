@@ -823,3 +823,6 @@ do {									\
 #define g_autoqueue(TypeName) GQueue*
 #define g_auto(TypeName) TypeName
 #define g_autofree
+
+// found in task_struct
+#define randomized_struct_fields_start
