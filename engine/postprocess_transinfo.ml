@@ -55,6 +55,9 @@ let string2val str = Lib_engine.NormalMetaVal(Ast_c.MetaIdVal str)
 (* ----------------------------------------------------------------------- *)
 (* Get values for fresh variables *)
 
+let paramsmap_find_opt key m =
+  try Some(ParamsMap.find key m) with Not_found -> None
+
 let process_tree inherited_env l =
   let (all_fresh,local_freshs,new_triples) =
     List.fold_left
@@ -125,7 +128,7 @@ let process_tree inherited_env l =
                              (string_of_list (get_meta_names params)))
                           )
                   params in
-              match ParamsMap.find_opt args !res with
+              match paramsmap_find_opt args !res with
 		Some x -> x
 	      | None ->
 		  let fresh_id =
