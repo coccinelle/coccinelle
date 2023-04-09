@@ -18,7 +18,7 @@ module Ast = Ast_cocci
 module ParamsType =
   struct
     type t = Ast_c.metavars_binding
-    let compare = Stdlib.compare
+    let compare = Stdcompat.Stdlib.compare
   end
 
 module ParamsMap = Map.Make(ParamsType)
