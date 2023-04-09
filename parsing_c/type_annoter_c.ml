@@ -817,17 +817,18 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           Visitor_c.vk_argument bigf e
         );
         let s = Ast_c.str_of_name ident in
+
+	let get_return_type typ local =
+          (* set type for ident *)
+          let tyinfo = make_info_fix (typ, local) in
+          Ast_c.set_type_expr e1 tyinfo;
+
+          (match ret_of_functiontype typ with
+          | Some ret -> make_info_def ret
+          | None -> Type_c.noTypeHere) in
+
         (match lookup_opt_env lookup_var s with
-        | Some (typ,local) ->
-
-            (* set type for ident *)
-            let tyinfo = make_info_fix (typ, local) in
-            Ast_c.set_type_expr e1 tyinfo;
-
-            (match ret_of_functiontype typ with
-            | Some ret -> make_info_def ret
-            | None -> Type_c.noTypeHere
-            )
+        | Some (typ,local) -> get_return_type typ local
         | None  ->
 
             (match lookup_opt_env lookup_macro s with
@@ -871,7 +872,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
                   f s [IC.CacheVarFunc]
                   (fun () ->
                      match lookup_opt_env lookup_var s with
-                       Some (typ, local) -> make_info_fix (typ, local)
+                       Some (typ, local) -> get_return_type typ local
                      | None -> Type_c.noTypeHere)
                   (fun () -> Type_c.noTypeHere)
             )
