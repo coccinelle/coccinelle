@@ -658,7 +658,7 @@ and field d =
     Ast.MetaField(name,_,_,_)
   | Ast.MetaFieldList(name,_,_,_,_) ->
       mcode print_meta name
-  | Ast.Field(ty,id,bf,sem) ->
+  | Ast.Field(ty,id,bf,endattr,sem) ->
       begin
 	match id with
 	  None -> fullType ty
@@ -668,6 +668,7 @@ and field d =
 	mcode print_string c;
 	expression e in
       print_option bitfield bf;
+      print_attribute_list endattr;
       mcode print_string sem
 
 and annotated_field arity d =

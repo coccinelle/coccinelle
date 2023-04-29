@@ -1266,18 +1266,18 @@ struct_decl_one:
 	Ast0_cocci.wrap
 	  (Ast0_cocci.ConjField(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
     | t=ctype_only_signable d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
-	 { let (id,fn) = d in
-	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,Parse_aux.clt2mcode ";" pv)) }
+	 { let (id,fn,endar) = d in
+	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,endar,Parse_aux.clt2mcode ";" pv)) }
     | t=ctype_only_non_signable d=direct_decl_option(type_ident) pv=TPtVirg
-	 { let (id,fn) = d in
-	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,None,Parse_aux.clt2mcode ";" pv)) }
+	 { let (id,fn,endar) = d in
+	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,None,endar,Parse_aux.clt2mcode ";" pv)) }
     | cv=const_vol_attr_list i=pure_ident_or_symbol
       d=direct_decl_option(type_ident)
 	 bf=struct_bitfield?
 	 pv=TPtVirg
-	 { let (id,fn) = d in
+	 { let (id,fn,endar) = d in
 	 let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) [] in
-	 Ast0_cocci.wrap(Ast0_cocci.Field(fn idtype,id,bf,Parse_aux.clt2mcode ";" pv)) }
+	 Ast0_cocci.wrap(Ast0_cocci.Field(fn idtype,id,bf,endar,Parse_aux.clt2mcode ";" pv)) }
 
 struct_bitfield:
    c=TDotDot e=expr { (Parse_aux.clt2mcode ":" c, e) }
@@ -2050,10 +2050,10 @@ direct_abstract_d:
 
 
 direct_decl_option(ident_type):
-      { (None, function x -> x) }
-  | d=direct_declarator(ident_type)
+      { (None, (function x -> x), []) }
+  | d=direct_declarator(ident_type) endar=attr_list
       { let (id,fn) = d in
-        (Some id, fn) }
+        (Some id, fn, endar) }
 
 d_ident:
   type_ident list(array_dec)

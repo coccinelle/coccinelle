@@ -449,10 +449,10 @@ let rec field_pos decl snp
   | Ast0.Fdots _
   | Ast0.MetaField _
   | Ast0.MetaFieldList _
-  | Ast0.Field(_, None, _, _) -> None
-  | Ast0.Field(ty, Some id, bf, sem) ->
+  | Ast0.Field(_, None, _, _, _) -> None
+  | Ast0.Field(ty, Some id, bf, endattr, sem) ->
       let _ = type_pos ty snp in (* sanity check *)
-      let constructor ~id = Ast0.Field(ty, Some id, bf, sem) in
+      let constructor ~id = Ast0.Field(ty, Some id, bf, endattr, sem) in
       id_wrap ~id ~constructor snp
   | Ast0.OptField(dec) ->
       let constructor ~item = Ast0.OptField item in

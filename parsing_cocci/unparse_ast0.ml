@@ -500,7 +500,7 @@ and field d =
 	Ast0.MetaField(name,_,_)
       | Ast0.MetaFieldList(name,_,_,_) ->
 	  mcode print_meta name
-      | Ast0.Field(ty,id,bf,sem) ->
+      | Ast0.Field(ty,id,bf,endattr,sem) ->
 	  begin
 	    match id with
 	      None -> typeC ty
@@ -510,6 +510,7 @@ and field d =
 	    mcode print_string c;
 	    expression e in
 	  Common.do_option bitfield bf;
+          print_attribute_list endattr;
 	  mcode print_string sem
       | Ast0.DisjField(_,fields,_,_) ->
 	  do_disj fields field "|"

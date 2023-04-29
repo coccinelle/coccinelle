@@ -273,7 +273,7 @@ and base_field =
   | MetaField  of Ast_cocci.meta_name mcode * constraints *
 	pure (* structure fields *)
   | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
-  | Field     of typeC * ident option * bitfield option * string mcode (* ; *)
+  | Field     of typeC * ident option * bitfield option * attr list * string mcode (* ; *)
   | DisjField   of string mcode * field list * string mcode list *
 	          string mcode
   | ConjField   of string mcode * field list * string mcode list *

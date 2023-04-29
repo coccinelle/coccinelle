@@ -2868,7 +2868,7 @@ module Ast_cocci :
     and annotated_decl = base_annotated_decl wrap
     and base_field =
       Ast_cocci.base_field =
-        Field of fullType * ident option * bitfield option * string mcode
+        Field of fullType * ident option * bitfield option * attr list * string mcode
       | MetaField of meta_name mcode * constraints * keep_binding * inherited
       | MetaFieldList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
@@ -3526,7 +3526,7 @@ module Ast0_cocci :
         MetaField of Ast_cocci.meta_name mcode * constraints * pure
       | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints *
           pure
-      | Field of typeC * ident option * bitfield option * string mcode
+      | Field of typeC * ident option * bitfield option * attr list * string mcode
       | DisjField of string mcode * field list * string mcode list *
           string mcode
       | ConjField of string mcode * field list * string mcode list *

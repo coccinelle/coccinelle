@@ -746,11 +746,12 @@ and field d =
     | Ast0.MetaFieldList(name,lenname,cstr,_) ->
 	let cstr' = constraints cstr in
 	Ast.MetaFieldList(mcode name,do_lenname lenname,cstr',unitary,false)
-    | Ast0.Field(ty,id,bf,sem) ->
+    | Ast0.Field(ty,id,bf,endattr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_field d in
 	let bitfield (c, e) = (mcode c, expression e) in
 	let bf = Common.map_option bitfield bf in
-	Ast.Field(typeC allminus ty,Common.map_option ident id, bf, mcode sem)
+	let endattr = List.map attribute endattr in
+	Ast.Field(typeC allminus ty,Common.map_option ident id, bf, endattr, mcode sem)
     | Ast0.ConjField(_,_,_,_)
     | Ast0.DisjField(_,_,_,_)
     | Ast0.OptField(_)

@@ -1083,7 +1083,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
-	    (Ast0.Field(tya,ida,bfa,sc1),Ast0.Field(tyb,idb,bfb,sc)) ->
+	    (Ast0.Field(tya,ida,bfa,endattra,sc1),Ast0.Field(tyb,idb,bfb,endattrb,sc)) ->
 	      let match_option_ident ida idb =
 		match ida, idb with
 		  Some ida, Some idb -> [match_ident ida idb]
@@ -1097,7 +1097,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		| None, None -> [] in
 	      conjunct_many_bindings
 		([check_mcode sc1 sc;
-		  match_typeC tya tyb]
+		  match_typeC tya tyb; match_attributes endattra endattrb]
 		 @ match_option_ident ida idb
 		 @ match_bitfield bfa bfb)
 	  | (Ast0.DisjField(_,declsa,_,_),_)

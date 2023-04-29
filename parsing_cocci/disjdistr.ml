@@ -392,11 +392,11 @@ and disjfield d =
   match Ast.unwrap d with
     Ast.MetaField(_,_,_,_)
   | Ast.MetaFieldList(_,_,_,_,_) -> [d]
-  | Ast.Field(ty,id,bf,sem) ->
+  | Ast.Field(ty,id,bf,endattr,sem) ->
       let disjbf (c, e) = List.map (fun e -> (c, e)) (disjexp e) in
       disjmult3 (disjty ty) (disjoption disjident id) (disjoption disjbf bf)
 	(fun ty id bf ->
-	  Ast.rewrap d (Ast.Field(ty,id,bf,sem)))
+	  Ast.rewrap d (Ast.Field(ty,id,bf,endattr,sem)))
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with

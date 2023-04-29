@@ -417,7 +417,7 @@ and annotated_decl = base_annotated_decl wrap
 (* Field declaration *)
 
 and base_field =
-    Field of fullType * ident option * bitfield option * string mcode (* ; *)
+    Field of fullType * ident option * bitfield option * attr list * string mcode (* ; *)
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited

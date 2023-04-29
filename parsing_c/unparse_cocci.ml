@@ -1082,7 +1082,7 @@ and field d =
 	    Ast_c.MetaFieldListVal(_,f) ->
 	      print_between force_newline pretty_print_c.Pretty_print_c.field f
 	  | _ -> error name d "field list value expected")
-  | Ast.Field(ty,id,bf,sem) ->
+  | Ast.Field(ty,id,bf,endattr,sem) ->
       begin
 	match id with
 	  None -> fullType ty
@@ -1092,6 +1092,7 @@ and field d =
 	mcode print_string c;
 	expression e in
       Common.do_option bitfield bf;
+      print_attribute_list endattr;
       mcode print_string sem
 
 and annotated_field d =

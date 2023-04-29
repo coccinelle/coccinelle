@@ -455,11 +455,16 @@ let classify is_minus all_marked table code =
 	  disj_cases e starter decls r.VT0.combiner_rec_field ender
       | Ast0.Fdots(dots,whencode) ->
 	  k (Ast0.rewrap e (Ast0.Fdots(dots,None)))
-      | Ast0.Field(ty,id,bf,sem) ->
+      | Ast0.Field(ty,id,bf,endattr,sem) ->
 	  let bitfield (_c, e) = r.VT0.combiner_rec_expression e in
 	  bind (r.VT0.combiner_rec_typeC ty)
 	    (bind (Common.default option_default r.VT0.combiner_rec_ident id)
-	       (bind (Common.default option_default bitfield bf) (mcode sem)))
+	       (bind (Common.default option_default bitfield bf)
+                  (bind
+                     (List.fold_right bind
+                        (List.map r.VT0.combiner_rec_attribute endattr)
+                        option_default)
+		     (mcode sem))))
       |	_ -> k e) in
 
   let enum_decl r k e =
@@ -862,7 +867,9 @@ let equal_field d1 d2 =
      (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
   | (Ast0.MetaFieldList(name1,_,_,_),Ast0.MetaFieldList(name2,_,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Field(_,_,_bf1,sem1),Ast0.Field(_,_,_bf2,sem2)) ->
+  | (Ast0.Field(_,_,_bf1,endattr1,sem1),Ast0.Field(_,_,_bf2,endattr2,sem2)) ->
+      (List.length endattr1) = (List.length endattr2) &&
+      List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode sem1 sem2
   | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptField(_),Ast0.OptField(_)) -> true

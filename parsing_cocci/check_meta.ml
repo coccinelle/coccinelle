@@ -374,11 +374,12 @@ and field context old_metas table minus d =
       check_table table minus name;
       check_len table minus len;
       constraints table minus cstr
-  | Ast0.Field(ty,id,bf,sem) ->
+  | Ast0.Field(ty,id,bf,endattr,sem) ->
       typeC old_metas table minus ty;
       Common.do_option (ident context old_metas table minus) id;
       let bitfield (c, e) = expression context old_metas table minus e in
-      Common.do_option bitfield bf
+      Common.do_option bitfield bf;
+      List.iter (attribute old_metas table minus) endattr
   | Ast0.DisjField(_,decls,_,_)
   | Ast0.ConjField(_,decls,_,_) ->
       List.iter (field ID old_metas table minus) decls

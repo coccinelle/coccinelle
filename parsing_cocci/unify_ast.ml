@@ -488,11 +488,13 @@ and unify_field d1 d2 =
     (Ast.MetaField(_,_,_,_),_) | (_,Ast.MetaField(_,_,_,_)) -> true
   | (Ast.MetaFieldList(_,_,_,_,_),_) | (_,Ast.MetaFieldList(_,_,_,_,_)) ->
       true
-  | (Ast.Field(ft1,id1,bf1,s1),Ast.Field(ft2,id2,bf2,s2)) ->
-      let unify_bitfield (c1, e1) (c2, e2) =
+  | (Ast.Field(ft1,id1,bf1,endattr1,s1),Ast.Field(ft2,id2,bf2,endattr2,s2)) ->
+      (List.length endattr1 = List.length endattr2) &&
+      List.for_all2 unify_attribute endattr1 endattr2 &&
+      (let unify_bitfield (c1, e1) (c2, e2) =
 	unify_mcode c1 c2 && unify_expression e1 e2 in
       unify_fullType ft1 ft2 && unify_option unify_ident id1 id2 &&
-      unify_option unify_bitfield bf1 bf2
+      unify_option unify_bitfield bf1 bf2)
 
 and unify_annotated_field d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
