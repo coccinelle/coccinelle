@@ -743,6 +743,15 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind ([ty_id_n] @ bf_n @ [endattr_n;sem_n]),
 	     Ast0.Field(ty,id,bf,endattr,sem))
+	| Ast0.MacroDeclField(name,lp,args,rp,attr,sem) ->
+	    let (name_n,name) = ident name in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (args_n,args) = expression_dots args in
+	    let (rp_n,rp) = string_mcode rp in
+	    let (attr_n,attr) = map_split_bind attribute attr in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [name_n;lp_n;args_n;rp_n;attr_n;sem_n],
+	     Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
 	| Ast0.DisjField(starter,decls,mids,ender) ->
 	    do_disj starter decls mids ender field
 	      (fun starter decls mids ender ->

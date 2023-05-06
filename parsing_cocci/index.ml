@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 193, also unused: 8-9, 15, 42, 46, 59
+(* current max is 193, also unused: 8-9, 15, 42, 46
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -134,6 +134,7 @@ let field d =
   | Ast0.MetaField(name,_,_) -> [149]
   | Ast0.MetaFieldList(name,_,_,_) -> [152]
   | Ast0.Field(ty,id,_bf,_endattr,sem) -> [55]
+  | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) -> [59]
   | Ast0.DisjField(_,decls,_,_) -> [189] (* added after *)
   | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
   | Ast0.Fdots(dots,whencode) -> [133]

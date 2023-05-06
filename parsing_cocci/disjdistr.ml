@@ -397,6 +397,10 @@ and disjfield d =
       disjmult3 (disjty ty) (disjoption disjident id) (disjoption disjbf bf)
 	(fun ty id bf ->
 	  Ast.rewrap d (Ast.Field(ty,id,bf,endattr,sem)))
+  | Ast.MacroDeclField(name,lp,args,rp,attr,sem) ->
+      disjmult2 (disjident name) (disjdots disjexp args)
+	(fun name args ->
+	  Ast.rewrap d (Ast.MacroDeclField(name,lp,args,rp,attr,sem)))
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with

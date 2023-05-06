@@ -670,6 +670,12 @@ and field d =
       print_option bitfield bf;
       print_attribute_list endattr;
       mcode print_string sem
+  | Ast.MacroDeclField(name,lp,args,rp,attr,sem) ->
+      ident name; mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp;
+      print_attribute_list attr;
+      mcode print_string sem
 
 and annotated_field arity d =
   match Ast.unwrap d with

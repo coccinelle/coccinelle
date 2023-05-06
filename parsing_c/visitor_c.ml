@@ -674,9 +674,10 @@ and vk_struct_field = fun bigf field ->
         vk_struct_fieldkinds bigf onefield_multivars;
           iif iiptvirg;
     | EmptyField info -> iif [info]
-    | MacroDeclField ((s, args),ii) ->
+    | MacroDeclField ((s, args, attrs),ii) ->
         iif ii;
         vk_argument_list bigf args;
+        attrs +> List.iter (vk_attribute bigf)
 
     | CppDirectiveStruct directive ->
         vk_cpp_directive bigf directive
@@ -1737,11 +1738,11 @@ and vk_struct_field_s = fun bigf field ->
         (FieldDeclList
            (vk_struct_fieldkinds_s bigf onefield_multivars, iif iiptvirg))
   | EmptyField info -> EmptyField (vk_info_s bigf info)
-  | MacroDeclField ((s, args),ii) ->
+  | MacroDeclField ((s, args, attrs),ii) ->
       MacroDeclField
         ((s,
-          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)
-         ),
+          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+          attrs +> List.map (vk_attribute_s bigf)),
          iif ii)
 
   | CppDirectiveStruct directive ->

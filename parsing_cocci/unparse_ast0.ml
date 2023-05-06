@@ -512,6 +512,12 @@ and field d =
 	  Common.do_option bitfield bf;
           print_attribute_list endattr;
 	  mcode print_string sem
+      | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) ->
+	  ident name; mcode print_string_box lp;
+	  let _ = dots (function _ -> ()) expression args in
+	  close_box(); mcode print_string rp;
+          print_attribute_list attr;
+	  mcode print_string sem
       | Ast0.DisjField(_,fields,_,_) ->
 	  do_disj fields field "|"
       | Ast0.ConjField(_,fields,_,_) ->

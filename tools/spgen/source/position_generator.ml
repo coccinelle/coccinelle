@@ -454,6 +454,9 @@ let rec field_pos decl snp
       let _ = type_pos ty snp in (* sanity check *)
       let constructor ~id = Ast0.Field(ty, Some id, bf, endattr, sem) in
       id_wrap ~id ~constructor snp
+  | Ast0.MacroDeclField (id,lp,ed,rp,attr,sem) ->
+      let constructor ~id = Ast0.MacroDeclField (id, lp, ed, rp, attr, sem) in
+      id_wrap ~id ~constructor snp
   | Ast0.OptField(dec) ->
       let constructor ~item = Ast0.OptField item in
       item_wrap ~item:dec ~item_posfn:field_pos ~constructor snp

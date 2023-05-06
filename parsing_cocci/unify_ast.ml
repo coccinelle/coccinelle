@@ -495,6 +495,15 @@ and unify_field d1 d2 =
 	unify_mcode c1 c2 && unify_expression e1 e2 in
       unify_fullType ft1 ft2 && unify_option unify_ident id1 id2 &&
       unify_option unify_bitfield bf1 bf2)
+  | (Ast.MacroDeclField(n1,lp1,args1,rp1,attr1,sem1),
+     Ast.MacroDeclField(n2,lp2,args2,rp2,attr2,sem2)) ->
+       if (List.length attr1 = List.length attr2) &&
+         List.for_all2 unify_attribute attr1 attr2
+       then
+	 unify_ident n1 n2 &&
+	 unify_dots unify_expression edots args1 args2
+       else false
+  | _ -> false
 
 and unify_annotated_field d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with

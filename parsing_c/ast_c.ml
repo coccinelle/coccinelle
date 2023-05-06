@@ -263,7 +263,7 @@ and fullType = typeQualifier * attribute list * typeC
            | ConstructDestructField of c_plus_plus_constructor
 
             (* cppext: *)
-           | MacroDeclField of (string * argument wrap2 list)
+           | MacroDeclField of (string * argument wrap2 list * attribute list)
                                wrap (* optional ';'*)
 
             (* cppext: *)

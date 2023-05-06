@@ -2035,11 +2035,11 @@ struct_decl2:
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
     * the rule are slightly different.
     *)*/
- | identifier TOPar macro_argument_list TCPar TPtVirg
-     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeBeforeInfo()]) }
+ | identifier TOPar macro_argument_list TCPar attributes_opt TPtVirg
+     { MacroDeclField ((fst $1, $3, $5), [snd $1;$2;$4;$6;fakeBeforeInfo()]) }
 
- | TMacroDecl TOPar macro_argument_list TCPar TPtVirg
-     { MacroDeclField ((fst $1, $3), [snd $1;$2;$4;$5;fakeBeforeInfo()]) }
+ | TMacroDecl TOPar macro_argument_list TCPar attributes_opt TPtVirg
+     { MacroDeclField ((fst $1, $3, $5), [snd $1;$2;$4;$6;fakeBeforeInfo()]) }
 
  /*(* cppext: *)*/
  | cpp_directive

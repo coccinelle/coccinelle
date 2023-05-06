@@ -834,7 +834,7 @@ and pp_string_format (e,ii) =
     | DeclarationField(FieldDeclList(onefield_multivars,_)) ->
 	failwith "wrong number of tokens"
 
-    | MacroDeclField ((s, es), ii)  ->
+    | MacroDeclField ((s, es, attrs), ii)  ->
         let (iis, lp, rp, iiend, ifakestart) =
           Common.tuple_of_list5 ii in
                  (* iis::lp::rp::iiend::ifakestart::iisto
@@ -845,6 +845,7 @@ and pp_string_format (e,ii) =
 	pr_elem lp;
 	pp_arg_list es;
 	pr_elem rp;
+	pp_attributes attrs;
 	pr_elem iiend;
 
 

@@ -1,0 +1,3 @@
+struct x {
+  DECL(x);
+};

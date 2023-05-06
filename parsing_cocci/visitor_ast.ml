@@ -562,7 +562,15 @@ let combiner bind option_default
 	  let lbf = Common.default [] bitfield bf in
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let lsem = string_mcode sem in
-	  multibind ([lid] @ lbf @ [lendattr; lsem]) in
+	  multibind ([lid] @ lbf @ [lendattr; lsem])
+      | Ast.MacroDeclField(name,lp,args,rp,attr,sem) ->
+	  let lname = ident name in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  let lattr = multibind (List.map attribute attr) in
+	  let lsem = string_mcode sem in
+	  multibind [lname; llp; largs; lrp; lattr; lsem] in
     fieldfn all_functions k d
 
   and annotated_field d =
@@ -1600,7 +1608,15 @@ let rebuilder
 	    let lbf = Common.map_option bitfield bf in
 	    let lendattr = List.map attribute endattr in
 	    let lsem = string_mcode sem in
-	    Ast.Field(lty, lid, lbf, lendattr, lsem)) in
+	    Ast.Field(lty, lid, lbf, lendattr, lsem)
+	| Ast.MacroDeclField(name,lp,args,rp,attr,sem) ->
+	    let lname = ident name in
+	    let llp = string_mcode lp in
+	    let largs = expression_dots args in
+	    let lrp = string_mcode rp in
+	    let lattr = List.map attribute attr in
+	    let lsem = string_mcode sem in
+	    Ast.MacroDeclField(lname, llp, largs, lrp, lattr, lsem)) in
     fieldfn all_functions k d
 
   and annotated_field d =

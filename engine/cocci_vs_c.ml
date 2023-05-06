@@ -3458,8 +3458,34 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	| _,B.EmptyField _iifield ->
 	    fail
 
-	| _,B.MacroDeclField ((sb,ebs),ii) -> fail
+	| A.MacroDeclField (sa,lpa,eas,rpa,attrsa,enda),
+	    B.MacroDeclField ((sb,ebs,attrsb),ii) ->
 
+	      let (iisb, lpb, rpb, iiendb, iifakestart, iistob) =
+		(match ii with
+		| iisb::lpb::rpb::iiendb::iifakestart::iisto ->
+		    (iisb,lpb,rpb,iiendb, iifakestart,iisto)
+		| _ -> raise (Impossible 26)) in
+	      X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+		ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
+		attribute_list allminus attrsa attrsb >>= (fun attrsa attrsb ->
+		tokenf lpa lpb >>= (fun lpa lpb ->
+		tokenf rpa rpb >>= (fun rpa rpb ->
+		tokenf enda iiendb >>= (fun enda iiendb ->
+		arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+		let eas = A.rewrap eas easunwrap in
+
+		return (
+		((A.FElem
+		    (mckstart,allminus,
+		     (A.MacroDeclField (sa,lpa,eas,rpa,attrsa,enda))
+		       +> A.rewrap ifa)
+		    +> A.rewrap fa),
+		 (B.MacroDeclField ((sb,ebs,attrsb),
+				    [iisb;lpb;rpb;iiendb;iifakestart] @ iistob)))
+		   ))))))))
+
+        | _,B.MacroDeclField ((sb,ebs,attrs),ii) -> fail
 	| _,B.CppDirectiveStruct directive -> fail
 	| _,B.IfdefStruct directive -> fail
 	| _,B.FunctionField _ -> fail

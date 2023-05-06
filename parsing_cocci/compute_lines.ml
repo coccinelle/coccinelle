@@ -865,6 +865,15 @@ and field d =
       let endattr = List.map attribute endattr in
       let sem = normal_mcode sem in
       mkres d (Ast0.Field(ty,id,bf,endattr,sem)) ty (promote_mcode sem)
+  | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) ->
+      let name = ident name in
+      let lp = normal_mcode lp in
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      let attr = List.map attribute attr in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
+	name (promote_mcode sem)
   | Ast0.DisjField(starter,decls,mids,ender) ->
       do_disj d starter decls mids ender field
 	(fun starter decls mids ender ->

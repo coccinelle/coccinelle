@@ -437,6 +437,10 @@ and annotated_decl = base_annotated_decl wrap
 
 and base_field =
     Field of fullType * ident option * bitfield option * attr list * string mcode (* ; *)
+  | MacroDeclField of
+	ident (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) *
+        attr list * string mcode (* ; *)
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited

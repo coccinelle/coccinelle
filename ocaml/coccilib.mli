@@ -101,7 +101,7 @@ module Ast_c :
       | PrivateLabel of info list
       | DeclField of declaration (* C++ *)
       | ConstructDestructField of c_plus_plus_constructor
-      | MacroDeclField of (string * argument wrap2 list) wrap
+      | MacroDeclField of (string * argument wrap2 list * attribute list) wrap
       | CppDirectiveStruct of cpp_directive
       | IfdefStruct of ifdef_directive
     and field_declaration =
@@ -2869,6 +2869,8 @@ module Ast_cocci :
     and base_field =
       Ast_cocci.base_field =
         Field of fullType * ident option * bitfield option * attr list * string mcode
+      | MacroDeclField of ident * string mcode *
+          expression dots * string mcode * attr list * string mcode
       | MetaField of meta_name mcode * constraints * keep_binding * inherited
       | MetaFieldList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
@@ -3527,6 +3529,8 @@ module Ast0_cocci :
       | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints *
           pure
       | Field of typeC * ident option * bitfield option * attr list * string mcode
+      | MacroDeclField of ident * string mcode *
+          expression dots * string mcode * attr list * string mcode
       | DisjField of string mcode * field list * string mcode list *
           string mcode
       | ConjField of string mcode * field list * string mcode list *

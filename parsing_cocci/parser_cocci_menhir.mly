@@ -1265,6 +1265,10 @@ struct_decl_one:
 	{ let (mids,code) = t in
 	Ast0_cocci.wrap
 	  (Ast0_cocci.ConjField(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
+    | d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
+	ar=attr_list p=TPtVirg
+	{ Ast0_cocci.wrap(Ast0_cocci.MacroDeclField(d,Parse_aux.clt2mcode "(" o,e,
+				  Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode ";" p)) }
     | t=ctype_only_signable d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn,endar) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,endar,Parse_aux.clt2mcode ";" pv)) }

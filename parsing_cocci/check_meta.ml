@@ -380,6 +380,10 @@ and field context old_metas table minus d =
       let bitfield (c, e) = expression context old_metas table minus e in
       Common.do_option bitfield bf;
       List.iter (attribute old_metas table minus) endattr
+  | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) ->
+      ident GLOBAL old_metas table minus name;
+      dots (expression ID old_metas table minus) args;
+      List.iter (attribute old_metas table minus) attr
   | Ast0.DisjField(_,decls,_,_)
   | Ast0.ConjField(_,decls,_,_) ->
       List.iter (field ID old_metas table minus) decls

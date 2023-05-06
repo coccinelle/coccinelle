@@ -70,7 +70,7 @@ and field =
   | PrivateLabel of info list (* C++ *)
   | DeclField of declaration (* C++ *)
   | ConstructDestructField of c_plus_plus_constructor
-  | MacroDeclField of (string * argument wrap2 list) wrap
+  | MacroDeclField of (string * argument wrap2 list * attribute list) wrap
   | CppDirectiveStruct of cpp_directive
   | IfdefStruct of ifdef_directive
 and field_declaration = FieldDeclList of fieldkind wrap2 list wrap

@@ -287,6 +287,9 @@ and base_field =
 	pure (* structure fields *)
   | MetaFieldList of Ast_cocci.meta_name mcode * listlen * constraints * pure
   | Field     of typeC * ident option * bitfield option * attr list * string mcode (* ; *)
+  | MacroDeclField of ident (* name *) * string mcode (* ( *) *
+        expression dots * string mcode (* ) *) *
+        attr list * string mcode (* ; *)
   | DisjField   of string mcode * field list * string mcode list *
 	          string mcode
   | ConjField   of string mcode * field list * string mcode list *

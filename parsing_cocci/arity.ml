@@ -737,6 +737,18 @@ and field tgt decl =
       let endattr = List.map (attribute arity) endattr in
       let sem = mcode sem in
       make_field decl tgt arity (Ast0.Field(ty,id,bf,endattr,sem))
+  | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) ->
+      let arity =
+	all_same true tgt (mcode2line lp)
+	  (List.map mcode2arity ([lp;rp;sem])) in
+      let name = ident false arity name in
+      let lp = mcode lp in
+      let args = dots (expression arity) args in
+      let rp = mcode rp in
+      let attr = List.map (attribute arity) attr in
+      let sem = mcode sem in
+      make_field decl tgt arity
+	(Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
   | Ast0.DisjField(starter,decls,mids,ender) ->
       let decls = List.map (field tgt) decls in
       (match List.rev decls with

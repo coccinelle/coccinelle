@@ -1100,6 +1100,15 @@ let match_maker checks_needed context_required whencode_allowed =
 		  match_typeC tya tyb; match_attributes endattra endattrb]
 		 @ match_option_ident ida idb
 		 @ match_bitfield bfa bfb)
+	  | (Ast0.MacroDeclField(namea,lp1,argsa,rp1,attra,sc1),
+	     Ast0.MacroDeclField(nameb,lp,argsb,rp,attrb,sc)) ->
+	       conjunct_many_bindings
+		 [match_ident namea nameb;
+		   check_mcode lp1 lp; check_mcode rp1 rp;
+		   check_mcode sc1 sc;
+		   match_dots match_expr is_elist_matcher do_elist_match
+                     argsa argsb;
+                   match_attributes attra attrb]
 	  | (Ast0.DisjField(_,declsa,_,_),_)
 	  | (Ast0.ConjField(_,declsa,_,_),_) ->
 	      failwith "not allowed in the pattern of an isomorphism"

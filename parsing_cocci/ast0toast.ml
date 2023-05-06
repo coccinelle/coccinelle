@@ -752,6 +752,15 @@ and field d =
 	let bf = Common.map_option bitfield bf in
 	let endattr = List.map attribute endattr in
 	Ast.Field(typeC allminus ty,Common.map_option ident id, bf, endattr, mcode sem)
+    | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) ->
+	(* this would seem to need allminus... *)
+	let name = ident name in
+	let lp = mcode lp in
+	let args = dots expression args in
+	let rp = mcode rp in
+	let attr = List.map attribute attr in
+	let sem = mcode sem in
+	Ast.MacroDeclField(name,lp,args,rp,attr,sem)
     | Ast0.ConjField(_,_,_,_)
     | Ast0.DisjField(_,_,_,_)
     | Ast0.OptField(_)

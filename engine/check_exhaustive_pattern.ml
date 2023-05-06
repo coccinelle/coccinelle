@@ -88,6 +88,7 @@ let dumb_astcocci_initialiser = function (* seems same as the above *)
 
 let dumb_astcocci_field = function
     A.Field (typa, sa, _bf, _endattr, _)     -> ()
+  | A.MacroDeclField(fn, _, eas, _, _, _) -> ()
   | A.MetaField _ -> ()
   | A.MetaFieldList _ -> ()
 
