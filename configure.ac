@@ -368,6 +368,7 @@ AS_IF([test "x$enable_pcre_syntax" != "xno"],
     AC_SUBST([enable_pcre_syntax], [no])
   ],
   [dnl
+    AS_IF([test "x$enable_pcre" = "xno"], [AC_SUBST([enable_pcre], [local])])
     AC_CHECK_COCCI_EXTPKG([pcre])  dnl  will set $enable_pcre to 'yes', 'no', or 'local'
     AS_IF([test "x$enable_pcre" = "xyes"],
     [dnl
