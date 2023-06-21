@@ -81,3 +81,6 @@ description-pak
 /bundles/parmap/parmap/src/parmap_compat.ml
 /bundles/parmap/setcore_stubs.h.in
 /bundles/parmap/configure
+/bundles/parmap/parmap/src/setcore_stubs.h
+/bundles/parmap/parmap/src/bytearray.ml
+/bundles/parmap/parmap/src/parmap.ml
