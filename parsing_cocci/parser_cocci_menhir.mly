@@ -1313,6 +1313,9 @@ enum_val:
  | TInt
      { let (x,clt) = $1 in
      Ast0_cocci.wrap(Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Int x) clt)) }
+ | lp=TOPar t=ctype rp=TCPar e=enum_val
+      { Ast0_cocci.wrap(Ast0_cocci.Cast (Parse_aux.clt2mcode "(" lp, t,
+                             Parse_aux.clt2mcode ")" rp, e)) }
  | TMeta { tmeta_to_exp $1 }
  | TEllipsis { Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." $1,None)) }
  | TMetaConst
