@@ -27,6 +27,7 @@ Makefile.config
 Makefile.override
 Makefile.local
 result
+setup/Makefile.in
 
 globals/config.ml
 python/pycocci.ml
