@@ -5,7 +5,7 @@ else
 	unset MAKE_COCCI_RELEASE
 fi
 aclocal -I setup
-autoconf -Wall
+autoconf -Wall && automake
 ( cd bundles/parmap && \
   autoheader && aclocal && autoconf -Wall )
 ( cd bundles/stdcompat/stdcompat-current && \
