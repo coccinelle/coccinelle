@@ -67,6 +67,7 @@ let string_rep_binding ctr = function
     (Some nm,Ast.MetaPosDecl _) -> print_match ctr nm "Pos"
   | (Some nm,Ast.MetaComDecl _) -> print_match ctr nm "Com"
   | (Some nm,Ast.MetaListlenDecl _) -> print_match ctr nm "Int"
+  | (Some nm,Ast.MetaFreshIdDecl _) -> ""
   | (Some nm,_) (* strings for everything else *) ->
       print_match ctr nm "Str"
   | (None,_) -> ""
@@ -309,10 +310,7 @@ let prepare coccifile code =
   let add_fresh_id_rules prev
       (self, (script_name, lang, params, pos, body)) =
     if lang = "ocaml"
-    then
-      let kind = Ast_cocci.MetaIdDecl (Ast_cocci.NONE, self) in
-      let self = (self, kind) in
-      (script_name, self::params, body) :: prev
+    then (script_name, params, body) :: prev
     else prev in
   let fresh_id_rules =
     List.fold_left add_fresh_id_rules [] !Data.fresh_id_scripts in
