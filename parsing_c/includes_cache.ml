@@ -173,7 +173,7 @@ let cache_name_visitor file =
                   Ast_c.v_storage = strg} ->
                   (* Cache typedefs/variables/functions *)
                     let exp_type =
-                      match (fst strg) with
+                      match (fst3 strg) with
                         Ast_c.StoTypedef -> CacheTypedef
                       | _ -> CacheVarFunc in
                     add_to_name_cache
@@ -214,7 +214,7 @@ let get_type_visitor file l =
                   (* Cache typedefs/variables/functions *)
                     let f _ =
                       let s = Ast_c.str_of_name n in
-                      match (fst strg) with
+                      match (fst3 strg) with
                         Ast_c.StoTypedef ->
                           add_to_ret (RetTypeDef(s, typ))
                       | Ast_c.NoSto

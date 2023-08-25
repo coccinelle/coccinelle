@@ -328,13 +328,16 @@ module Ast_c :
         NoInit
       | ValInit of info * initialiser
       | ConstrInit of argument wrap2 list wrap
-    and storage = storagebis * bool
+    and storage = storagebis * bool * align
     and storagebis =
       Ast_c.storagebis =
         NoSto
       | StoTypedef
       | Sto of storageClass
     and storageClass = Ast_c.storageClass = Auto | Static | Register | Extern
+    and align =
+      Ast_c.align =
+        NoAlign | Align of argument
     and local_decl = Ast_c.local_decl = LocalDecl | NotLocalDecl
     and initialiser = initialiserbis wrap
     and initialiserbis =
@@ -766,6 +769,7 @@ module Parser_c :
       | Tregister of Ast_c.info
       | Textern of Ast_c.info
       | Tstatic of Ast_c.info
+      | Talignas of Ast_c.info
       | Ttypedef of Ast_c.info
       | Tconst of Ast_c.info
       | Tvolatile of Ast_c.info

@@ -178,7 +178,7 @@ let is_start_of_something = function
   | Tchar _  | Tshort _ | Tint _ | Tdouble _ |  Tfloat _ | Tlong _
   | Tunsigned _ | Tsigned _ | Tvoid _ | Tsize_t _ | Tssize_t _ | Tptrdiff_t _
   | TautoType _
-  | Tauto _ | Tregister _ | Textern _ | Tstatic _
+  | Tauto _ | Tregister _ | Textern _ | Tstatic _ | Talignas _
   | Tconst _ | Tvolatile _
   | Ttypedef _
   | Tstruct _ | Tunion _ | Tcpp_struct _ | Tcpp_union _ | Tclass _ | Tenum _ | Tdecimal _
@@ -425,6 +425,7 @@ let info_of_tok = function
   | Tregister            (i) -> i
   | Textern              (i) -> i
   | Tstatic              (i) -> i
+  | Talignas             (i) -> i
   | Tconst               (i) -> i
   | Tvolatile            (i) -> i
 
@@ -619,6 +620,7 @@ let visitor_info_of_tok f = function
   | Tregister            (i) -> Tregister            (f i)
   | Textern              (i) -> Textern              (f i)
   | Tstatic              (i) -> Tstatic              (f i)
+  | Talignas             (i) -> Talignas             (f i)
   | Tconst               (i) -> Tconst               (f i)
   | Tvolatile            (i) -> Tvolatile            (f i)
 
@@ -758,6 +760,7 @@ let string_of_token = function
   | Tregister _ -> "Tregister"
   | Textern _ -> "Textern"
   | Tstatic _ -> "Tstatic"
+  | Talignas _ -> "Talignas"
   | Ttypedef _ -> "Ttypedef"
   | Tconst _ -> "Tconst"
   | Tvolatile _ -> "Tvolatile"

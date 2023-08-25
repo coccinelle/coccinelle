@@ -163,6 +163,7 @@ let keyword_table = Common.hash_of_list [
   "register", (fun ii -> Tregister ii);
   "extern",   (fun ii -> Textern ii);
   "static",   (fun ii -> Tstatic ii);
+  "alignas",  (fun ii -> Talignas ii);
 
   "const",    (fun ii -> Tconst ii);
   "volatile", (fun ii -> Tvolatile ii);
@@ -427,10 +428,10 @@ rule token = parse
    *  il y'a 1 #elif  sans rien  apres
    *  il y'a 1 #error sans rien  apres
    *  il y'a 2  mov dede, #xxx    qui genere du coup exn car
-   *  entouré par des #if 0
+   *  entourï¿½ par des #if 0
    *  => make as for comment, call a comment_cpp that when #endif finish the
    *   comment and if other cpp stuff raise exn
-   *  il y'a environ 10  #if(xxx)  ou le ( est collé direct
+   *  il y'a environ 10  #if(xxx)  ou le ( est collï¿½ direct
    *  il y'a des include"" et include<
    *  il y'a 1 ` (derriere un #ifndef linux)
    *)

@@ -565,13 +565,13 @@ and pp_string_format (e,ii) =
       pp_base_type ft sto;
       let hastype =
 	match (Ast_c.unwrap_typeC ft,sto) with
-	  (NoType,(None|Some((NoSto,false),[]))) ->
+	  (NoType,(None|Some((NoSto,false,NoAlign),[]))) ->
 	    false
 	| (FunctionType((_,_,(NoType,_)),_),
-	   (None|Some((NoSto,false),[]))) ->
+	   (None|Some((NoSto,false,NoAlign),[]))) ->
 	    false
 	| (FunctionType((_,_,(_,[ity])),_),
-	   (None|Some((NoSto,false),[]))) ->
+	   (None|Some((NoSto,false,NoAlign),[]))) ->
 	    str_of_info ity <> ""
 	| _ -> true in
       (if hastype

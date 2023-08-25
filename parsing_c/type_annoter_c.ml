@@ -1310,7 +1310,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 	    let local =
 	      match (sto,local) with
 	      | (_,Ast_c.NotLocalDecl) -> Ast_c.NotLocalVar
-	      |	((Ast_c.Sto Ast_c.Static, _), Ast_c.LocalDecl) ->
+	      |	((Ast_c.Sto Ast_c.Static, _, _), Ast_c.LocalDecl) ->
 		  (match Ast_c.info_of_type t with
 		    (* if there is no info about the type it must not be
 		       present, so we don't know what the variable is *)
@@ -1339,7 +1339,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
 
               match sto with
-              | StoTypedef, _inline ->
+              | StoTypedef, _inline, _align ->
                   add_binding (TypeDef (s,Lib.al_type t)) true;
               | _ ->
                   add_binding (VarOrFunc (s, (Lib.al_type t, local))) true;

@@ -61,6 +61,7 @@ type shortLong      = Short  | Long | LongLong
 
 type decl = {
   storageD: storagebis wrap;
+  alignD: align wrap;
   typeD: ((sign option) * (shortLong option) * (typeCbis option)) wrap;
   qualifD: typeQualifierbis wrap;
   inlineD: bool             wrap;
@@ -71,6 +72,7 @@ type decl = {
 
 let nullDecl = {
   storageD = NoSto, [];
+  alignD = NoAlign, [];
   typeD = (None, None, None), [];
   qualifD = nullQualif;
   inlineD = false, [];
@@ -82,6 +84,12 @@ let addStorageD  = function
   | ((x,ii), ({storageD = (y, ii2)} as v)) ->
       if x = y then warning [ii] "duplicate storage classes" v
       else warning [ii] "multiple storage classes, keeping the second" v
+      
+let addAlignD  = function
+  |  ((x,ii), ({alignD = (NoAlign,[])} as v)) -> {v with alignD = (x, ii) }
+  |  ((x,ii), ({alignD = (y, ii2)} as v)) ->
+      if x = y then warning ii "duplicate align classes" v
+      else warning ii "multiple align classes, keeping the second" v
 
 let addInlineD  = function
   | ((true,ii), ({inlineD = (false,[])} as v)) -> { v with inlineD=(true,[ii])}
@@ -182,6 +190,7 @@ let addQualifD (qu, ({qualifD = v} as x)) =
 let (fixDeclSpecForDecl: (attribute list * decl) -> (fullType * (storage wrap)))  = function
  (attrs,
   {storageD = (st,iist);
+  alignD = (al,iial);
   qualifD = (qu,iiq);
   typeD = (ty,iit);
   inlineD = (inline,iinl);
@@ -235,7 +244,7 @@ let (fixDeclSpecForDecl: (attribute list * decl) -> (fullType * (storage wrap)))
    )
    in
    ((qu, iiq), attrs, (ty', iit')),
-   ((st, inline),iist @ iinl)
+   ((st, inline, al),iist @ iinl @ iial)
 
 
 let fixDeclSpecForParam = function ((attrs,{storageD = (st,iist)}) as r) ->
@@ -269,7 +278,7 @@ let fixDeclSpecForMacroDecl = function (attrs,d) ->
 
 let fixDeclSpecForFuncDef x =
   let (returnType,storage) = fixDeclSpecForDecl x in
-  (match fst (unwrap storage) with
+  (match fst3 (unwrap storage) with
   | StoTypedef ->
       raise (Semantic ("function definition declared 'typedef'", fake_pi))
   | _ -> (returnType, storage)
@@ -556,7 +565,7 @@ let args_to_params l pb =
 %token <Ast_c.info>
        Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong Tunsigned Tsigned
        Tvoid Tsize_t Tssize_t Tptrdiff_t TautoType
-       Tauto Tregister Textern Tstatic
+       Tauto Tregister Textern Tstatic Talignas
        Ttypedef
        Tconst Tvolatile
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
@@ -1184,7 +1193,7 @@ iteration:
        DeclList (
          (id_list +> List.map (fun ((((name,f),endattrs), ini), iivirg) ->
            let s = str_of_name name in
-	   if fst (unwrap storage) = StoTypedef
+	   if fst3 (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
            {v_namei = Some (name, ini);
             v_type = f returnType;
@@ -1761,7 +1770,7 @@ decl2:
        DeclList (
          ($2 +> List.map (fun ((attrs, ((name,f),endattrs), ini), iivirg) ->
            let s = str_of_name name in
-	   if fst (unwrap storage) = StoTypedef
+	   if fst3 (unwrap storage) = StoTypedef
 	   then LP.add_typedef s;
            {v_namei = Some (name, ini);
             v_type = f returnType;
@@ -1816,9 +1825,11 @@ decl_spec2:
  | type_spec          { ([], addTypeD ($1,nullDecl)) }
  | type_qualif        { ([], {nullDecl with qualifD  = (fst $1, [snd $1]) }) }
  | Tinline            { ([], {nullDecl with inlineD = (true, [$1]) }) }
+ | align_class_prod   { ([], {nullDecl with alignD = (fst $1, snd $1) }) }
  | attribute          { ([$1], nullDecl) }
  | storage_class_spec decl_spec2 { (fst $2, addStorageD ($1, snd $2)) }
  | type_qualif        decl_spec2 { (fst $2, addQualifD  ($1, snd $2)) }
+ | align_class_prod   decl_spec2 { (fst $2, addAlignD   ($1, snd $2)) }
  | Tinline            decl_spec2 { (fst $2, addInlineD ((true, $1), snd $2)) }
  | attribute          decl_spec2 { ($1::(fst $2), snd $2) }
  | type_spec          decl_spec2 { (fst $2, addTypeD    ($1, snd $2)) }
@@ -1827,6 +1838,9 @@ decl_spec2:
    *  decl_list is ambiguous ? (no cos have ';' between decl)
    *)*/
 
+align_class_prod:
+ Talignas TOPar argument TCPar
+ {  Ast_c.Align($3), [$1;$2;$4] }
 
 storage_class_spec_nt:
  | Tstatic      { Sto Static,  $1 }
@@ -2093,7 +2107,7 @@ field_declaration:
  | decl_spec struct_declarator_list TPtVirg
      {
        let (returnType,storage) = fixDeclSpecForDecl $1 in
-       (if fst (unwrap storage) <> NoSto
+       (if fst3 (unwrap storage) <> NoSto
        then
 	 raise
 	   (Semantic
@@ -2113,7 +2127,7 @@ field_declaration:
      {
        (* gccext: allow empty elements if it is a structdef or enumdef *)
        let (returnType,storage) = fixDeclSpecForDecl $1 in
-       (if fst (unwrap storage) <> NoSto
+       (if fst3 (unwrap storage) <> NoSto
        then
 	 raise
 	   (Semantic
@@ -2129,7 +2143,7 @@ field_declaration:
      { let ty = ([], addTypeD ($1, nullDecl)) in
        let decl = [(fun x -> BitField (None, x, $2, $3)),[]] in
        let (returnType,storage) = fixDeclSpecForDecl ty in
-       (if fst (unwrap storage) <> NoSto
+       (if fst3 (unwrap storage) <> NoSto
        then
 	 raise
 	   (Semantic
@@ -2148,7 +2162,7 @@ simple_field_declaration:
  | decl_spec declaratorsfd_list TPtVirg
      {
        let (returnType,storage) = fixDeclSpecForDecl $1 in
-       (if fst (unwrap storage) <> NoSto
+       (if fst3 (unwrap storage) <> NoSto
        then
 	 raise
 	   (Semantic
@@ -2169,7 +2183,7 @@ simple_field_declaration:
      { let ty = ([], addTypeD ($1, nullDecl)) in
        let decl = [(fun x -> BitField (None, x, $2, $3)),[]] in
        let (returnType,storage) = fixDeclSpecForDecl ty in
-       (if fst (unwrap storage) <> NoSto
+       (if fst3 (unwrap storage) <> NoSto
        then
 	 raise
 	   (Semantic
@@ -2337,13 +2351,13 @@ ctor_dtor:
      let id = RegularName (mk_string_wrap $1) in
      let ret = mk_ty NoType [] in
      let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
-     let storage = ((NoSto,false),[]) in
+     let storage = ((NoSto,false,NoAlign),[]) in
      (id, ty, storage, [], []) }
  | Tconstructorname topar parameter_type_list tcpar TDotDot constr_extra_list {
      let id = RegularName (mk_string_wrap $1) in
      let ret = mk_ty NoType [] in
      let ty = mk_ty (FunctionType (ret, $3)) [$2;$4] in
-     let storage = ((NoSto,false),[]) in
+     let storage = ((NoSto,false,NoAlign),[]) in
      (id, ty, storage, [$5], $6) }
 
 constr_extra:
@@ -2589,7 +2603,7 @@ cpp_other:
 	 let ty =
 	   fixOldCDecl (mk_ty (FunctionType (ret, paramlist)) [$2;$4]) in
 	 let attrs = Ast_c.noattr in
-	 let sto = (NoSto, false), [] in
+	 let sto = (NoSto, false, NoAlign), [] in
 	 let iistart = Ast_c.fakeBeforeInfo() in
 	 Declaration(
 	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
@@ -2618,7 +2632,7 @@ cpp_other:
        warning [$2] "type defaults to 'int'"
 	 (mk_ty defaultInt [fakeAfterInfo()]) in
      let ty = mk_ty (FunctionType (ret, paramlist)) [$2;$4] in
-     let sto = (NoSto, false), [] in
+     let sto = (NoSto, false, NoAlign), [] in
      (id, fixOldCDecl ty, sto, [], []) in
    let fundef = fixFunc ((fninfo, []), $5, None) in
    Definition fundef

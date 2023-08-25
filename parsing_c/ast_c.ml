@@ -602,9 +602,10 @@ and declaration =
      and v_init =
        NoInit | ValInit of info * initialiser
      | ConstrInit of argument wrap2 (* , *) list wrap
-     and storage       = storagebis * bool (* gccext: inline or not *)
+     and storage       = storagebis * bool (* gccext: inline or not *) * align
      and storagebis    = NoSto | StoTypedef | Sto of storageClass
      and storageClass  = Auto  | Static | Register | Extern
+     and align         = NoAlign | Align of argument
 
      and local_decl = LocalDecl | NotLocalDecl
 

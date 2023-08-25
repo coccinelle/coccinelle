@@ -249,7 +249,7 @@ let type_of_decl decl =
       (* todo? for other xs ? *)
       | (x,ii2)::xs ->
           let {v_namei = _var; v_type = v_type;
-               v_storage = (_storage,_inline)} = x in
+               v_storage = (_storage,_inline,_align)} = x in
 
           (* TODO normalize ? what if nested structure definition ? *)
           v_type
@@ -271,7 +271,7 @@ let structdef_of_decl decl =
       (* todo? for other xs ? *)
       | (x,ii2)::xs ->
           let {v_namei = var; v_type = v_type;
-               v_storage = (storage,inline)} = x in
+               v_storage = (storage,inline,align)} = x in
 
           (match Ast_c.unwrap_typeC v_type with
           | Ast_c.StructUnion (su, _must_be_some, base_classes, fields) ->

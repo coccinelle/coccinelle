@@ -2415,7 +2415,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         | _ -> raise (Impossible 26)
         ) in
         storage_optional_allminus allminus
-          stoa ((stob, false), iistob) >>= (fun stoa ((stob, _), iistob) ->
+          stoa ((stob, false, B.NoAlign), iistob) >>= (fun stoa ((stob, _, _), iistob) ->
 	attribute_list allminus preattrsa preattrsb >>= (fun preattrsa preattrsb ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
 	ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
@@ -2476,7 +2476,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         |  _ -> raise (Impossible 28)
         ) in
         storage_optional_allminus allminus
-          stoa ((stob, false), iistob) >>= (fun stoa ((stob, _), iistob) ->
+          stoa ((stob, false, B.NoAlign), iistob) >>= (fun stoa ((stob, _, _), iistob) ->
 	attribute_list allminus preattrsa preattrsb >>= (fun preattrsa preattrsb ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
@@ -2523,7 +2523,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
  | A.TyDecl (tya0, ptvirga),
    ({B.v_namei = Some (nameidb, B.NoInit);
      B.v_type = typb0;
-     B.v_storage = (B.StoTypedef, inl);
+     B.v_storage = (B.StoTypedef, inl, align);
      B.v_local = local;
      B.v_attr = []; (* no var, so attrs in type *)
      B.v_endattr = [];
@@ -2595,7 +2595,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 			        +> A.rewrap decla,
 			       (({B.v_namei = Some (nameidb, B.NoInit);
 				  B.v_type = typb0;
-				  B.v_storage = (B.StoTypedef, inl);
+				  B.v_storage = (B.StoTypedef, inl, align);
 				  B.v_local = local;
 				  B.v_attr = [];
 				  B.v_endattr = [];
@@ -2627,7 +2627,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                      (A.TyDecl (tya0, ptvirga)) +> A.rewrap decla,
                      (({B.v_namei = Some (nameidb, B.NoInit);
                         B.v_type = typb0;
-                        B.v_storage = (B.StoTypedef, inl);
+                        B.v_storage = (B.StoTypedef, inl, align);
                         B.v_local = local;
                         B.v_attr = [];
                         B.v_endattr = [];
@@ -2647,11 +2647,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    )
 
    | A.UnInit (stoa, typa, ida, endattra, ptvirga),
-     ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_);}, iivirg)
+     ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_,_);}, iivirg)
      -> fail
 
    | A.Init (stoa, typa, ida, endattra, eqa, inia, ptvirga),
-     ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_);}, iivirg)
+     ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_,_);}, iivirg)
        -> fail
 
 
@@ -2787,7 +2787,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_type_bis = typbbis;
      }, iivirg)  ->
 
-       if stob = (B.NoSto, false)
+       if stob = (B.NoSto, false, B.NoAlign)
        then
          fullType typa typb >>= (fun typa typb ->
          tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
@@ -2841,7 +2841,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | A.Typedef (stoa, typa, ida, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
-       B.v_storage = (B.StoTypedef,inline);
+       B.v_storage = (B.StoTypedef,inline,align);
        B.v_local = local;
        B.v_attr = attrs;
        B.v_endattr = endattrs;
@@ -2896,7 +2896,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            (A.Typedef (stoa, typa, ida, ptvirga)) +> A.rewrap decla,
            (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
-              B.v_storage = (B.StoTypedef,inline);
+              B.v_storage = (B.StoTypedef,inline,align);
               B.v_local = local;
               B.v_attr = attrs;
               B.v_endattr = endattrs;
@@ -4240,7 +4240,7 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
   (* "iso-by-absence" for storage, and return type. *)
   X.optional_storage_flag (fun optional_storage ->
   match stoa, stob with
-  | None, (stobis, inline) ->
+  | None, (stobis, inline, align) ->
       let do_minus () =
         if allminus
         then
@@ -4260,7 +4260,7 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
           do_minus()
       )
 
-  | Some x, ((stobis, inline)) ->
+  | Some x, ((stobis, inline, align)) ->
       if equal_storage (term x) stobis
       then
 	let rec loop acc = function
@@ -4273,7 +4273,7 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
 		     match with *)
 		  tokenf x i1 >>= (fun x i1 ->
 		    let rebuilt = (List.rev acc) @ i1 :: iistob in
-		    return (Some x,  ((stobis, inline), rebuilt)))
+		    return (Some x,  ((stobis, inline, align), rebuilt)))
 	      |	_ -> loop (i1::acc) iistob) in
 	loop [] iistob
       else fail
@@ -4283,7 +4283,7 @@ and inline_optional_allminus allminus inla (stob, iistob) =
   (* "iso-by-absence" for storage, and return type. *)
   X.optional_storage_flag (fun optional_storage ->
   match inla, stob with
-  | None, (stobis, inline) ->
+  | None, (stobis, inline, align) ->
       let do_minus () =
         if allminus
         then
@@ -4305,7 +4305,7 @@ and inline_optional_allminus allminus inla (stob, iistob) =
 	else fail (* inline not in SP and present in C code *)
       else do_minus()
 
-  | Some x, ((stobis, inline)) ->
+  | Some x, ((stobis, inline, align)) ->
       if inline
       then
 	let rec loop acc = function
@@ -4318,7 +4318,7 @@ and inline_optional_allminus allminus inla (stob, iistob) =
 		     match with *)
 		  tokenf x i1 >>= (fun x i1 ->
 		    let rebuilt = (List.rev acc) @ i1 :: iistob in
-		    return (Some x,  ((stobis, inline), rebuilt)))
+		    return (Some x,  ((stobis, inline, align), rebuilt)))
 	      |	_ -> loop (i1::acc) iistob) in
 	loop [] iistob
       else fail (* SP has inline, but the C code does not *)

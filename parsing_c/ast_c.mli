@@ -238,9 +238,10 @@ and v_init =
     NoInit
   | ValInit of info * initialiser
   | ConstrInit of argument wrap2 list wrap
-and storage = storagebis * bool
+and storage = storagebis * bool * align
 and storagebis = NoSto | StoTypedef | Sto of storageClass
 and storageClass = Auto | Static | Register | Extern
+and align = NoAlign | Align of argument
 and local_decl = LocalDecl | NotLocalDecl
 and initialiser = initialiserbis wrap
 and initialiserbis =
