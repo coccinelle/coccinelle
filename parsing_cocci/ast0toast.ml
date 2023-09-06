@@ -648,6 +648,13 @@ and base_typeC allminus t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
+and alignas (Ast0.Align(align,lpar,expr,rpar)) = 
+  let align = mcode align in
+  let lpar = mcode lpar in
+  let expr = expression expr in
+  let rpar = mcode rpar in
+  Ast.Align(align,lpar,expr,rpar)
+
 and declaration d =
   rewrap d (do_isos (Ast0.get_iso d))
     (match Ast0.unwrap d with
@@ -655,8 +662,9 @@ and declaration d =
 	Ast.MetaDecl(mcode name,constraints cstr,unitary,false)
     | Ast0.AsDecl(decl,asdecl) ->
 	Ast.AsDecl(declaration decl,declaration asdecl)
-    | Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
+    | Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	let al = get_option alignas al in
 	let stg = get_option mcode stg in
 	let ty = typeC allminus ty in
 	let id = ident id in
@@ -664,11 +672,12 @@ and declaration d =
 	let eq = mcode eq in
 	let ini = initialiser ini in
 	let sem = mcode sem in
-	Ast.Init(stg,ty,id,endattr,eq,ini,sem)
-    | Ast0.UnInit(stg,ty,id,endattr,sem) ->
+	Ast.Init(al,stg,ty,id,endattr,eq,ini,sem)
+    | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
+	let al = get_option alignas al in
 	let endattr = List.map attribute endattr in
-	Ast.UnInit(get_option mcode stg,typeC allminus ty,ident id,endattr,
+	Ast.UnInit(al,get_option mcode stg,typeC allminus ty,ident id,endattr,
 		   mcode sem)
     | Ast0.FunProto(fi,name,lp,params,va,rp,sem) ->
 	  let fi = List.map fninfo fi in

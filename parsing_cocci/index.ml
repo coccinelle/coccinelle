@@ -117,8 +117,8 @@ let typeC t =
 let declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> [148]
-  | Ast0.Init(stg,ty,id,endattr,eq,exp,sem) -> [54]
-  | Ast0.UnInit(stg,ty,id,endattr,sem) -> [55]
+  | Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem) -> [54]
+  | Ast0.UnInit(al,stg,ty,id,endattr,sem) -> [55]
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) -> [132]
   | Ast0.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) -> [137]
   | Ast0.MacroDeclInit(stg,preattr,name,lp,args,rp,attr,eq,ini,sem) -> [157]

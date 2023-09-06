@@ -554,7 +554,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	disj_union_all (List.map r.V.combiner_declaration decls)
     | Ast.OptDecl(decl) -> option_default
     (* need things with explicit names too *)
-    | Ast.Init(_,_,_,endattr,_,_,_) | Ast.UnInit(_,_,_,endattr,_) ->
+    | Ast.Init(_,_,_,_,endattr,_,_,_) | Ast.UnInit(_,_,_,_,endattr,_) ->
 	List.fold_left bind (k d)
 	  (List.map r.V.combiner_attribute endattr)
     | _ -> k d in

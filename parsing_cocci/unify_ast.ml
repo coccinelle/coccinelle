@@ -399,24 +399,28 @@ and unify_typeC t1 t2 =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
+and unify_alignas (Ast.Align(al1,lp1,expr1,rp1)) (Ast.Align(al2,lp2,expr2,rp2)) =
+      unify_expression expr1 expr2
+
 and unify_declaration d1 d2 =
   match (Ast.unwrap d1,Ast.unwrap d2) with
     (Ast.MetaDecl(_,_,_,_),_) | (_,Ast.MetaDecl(_,_,_,_)) -> true
-  | (Ast.Init(stg1,ft1,id1,endattr1,eq1,i1,s1),
-     Ast.Init(stg2,ft2,id2,endattr2,eq2,i2,s2)) ->
+  | (Ast.Init(al1,stg1,ft1,id1,endattr1,eq1,i1,s1),
+     Ast.Init(al2,stg2,ft2,id2,endattr2,eq2,i2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2 &&
          (List.length endattr1 = List.length endattr2) &&
-         List.for_all2 unify_attribute endattr1 endattr2
+         List.for_all2 unify_attribute endattr1 endattr2 
       then
+      	bool_unify_option unify_alignas al1 al2 &&
 	unify_fullType ft1 ft2 &&
 	unify_ident id1 id2 &&
 	unify_initialiser i1 i2
       else false
-  | (Ast.UnInit(stg1,ft1,id1,endattr1,s1),Ast.UnInit(stg2,ft2,id2,endattr2,s2)) ->
+  | (Ast.UnInit(al1,stg1,ft1,id1,endattr1,s1),Ast.UnInit(al2,stg2,ft2,id2,endattr2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2 &&
          (List.length endattr1 = List.length endattr2) &&
          List.for_all2 unify_attribute endattr1 endattr2
-      then unify_fullType ft1 ft2 && unify_ident id1 id2
+      then bool_unify_option unify_alignas al1 al2 && unify_fullType ft1 ft2 && unify_ident id1 id2
       else false
   | (Ast.FunProto(fi1,nm1,lp1,params1,va1,rp1,sem1),
      Ast.FunProto(fi2,nm2,lp2,params2,va2,rp2,sem2)) ->

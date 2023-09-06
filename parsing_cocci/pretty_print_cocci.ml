@@ -598,13 +598,15 @@ and declaration d =
       mcode print_meta name
   | Ast.AsDecl(decl,asdecl) -> declaration decl; print_string "@";
       declaration asdecl
-  | Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
+  | Ast.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+      print_option alignas al;
       print_option (mcode storage) stg;
       print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       print_string " "; mcode print_string eq;
       print_string " "; initialiser ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,id,endattr,sem) ->
+  | Ast.UnInit(al,stg,ty,id,endattr,sem) ->
+      print_option alignas al;
       print_option (mcode storage) stg;
       print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
@@ -642,6 +644,12 @@ and declaration d =
   | Ast.DisjDecl(decls) -> print_disj_list declaration decls "|"
   | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
+
+and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+  mcode print_string align;
+  mcode print_string lpar;
+  expression expr;
+  mcode print_string rpar
 
 and annotated_decl arity d =
   match Ast.unwrap d with

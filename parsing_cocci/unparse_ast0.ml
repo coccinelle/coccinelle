@@ -432,6 +432,11 @@ and print_named_type ty id =
       print_parentype (lp,ty,rp) (function _ -> ident id)
   | _ -> typeC ty; ident id
 
+and alignas (Ast0.Align(align,lpar,expr,rpar)) = 
+  mcode print_string align;
+  mcode print_string lpar;
+  expression expr;
+  mcode print_string rpar
 
 and declaration d =
   print_context d
@@ -439,14 +444,16 @@ and declaration d =
       match Ast0.unwrap d with
 	Ast0.MetaDecl(name,_,_) ->
 	  mcode print_meta name
-      |	Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
+      |	Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+	  print_option alignas al;
 	  print_option (mcode U.storage) stg;
 	  print_named_type ty id;
           print_attribute_list endattr;
 	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
 	  mcode print_string sem
-      | Ast0.UnInit(stg,ty,id,endattr,sem) ->
+      | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
+	  print_option alignas al;
 	  print_option (mcode U.storage) stg; print_named_type ty id;
           print_attribute_list endattr;
 	  mcode print_string sem

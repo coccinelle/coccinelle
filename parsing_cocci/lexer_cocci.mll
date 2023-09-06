@@ -310,6 +310,7 @@ let id_tokens lexbuf =
       | Flag.Off -> Tauto linetype end
   | "register" ->   Tregister linetype
   | "extern" ->     Textern   linetype
+  | "alignas" ->    Talignas  linetype
   | "static" ->     Tstatic   linetype
   | "inline" ->     Tinline   linetype
   | "typedef" ->    Ttypedef  linetype

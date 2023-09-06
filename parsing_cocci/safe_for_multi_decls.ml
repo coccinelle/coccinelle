@@ -116,6 +116,9 @@ let attribute a =
     Ast.Attribute(attr) -> attr_arg attr
   | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> mcode () attr_
 
+let alignas (Ast.Align(al,lp,_,rp)) = 
+  mcode () al || mcode () lp || mcode () rp
+
 let decl r k e =
   let e = k e in
   match all_removed_decl e with
@@ -123,8 +126,12 @@ let decl r k e =
   | Ast.NoStorage -> {e with Ast.safe_for_multi_decls = Ast.NoStorage}
   | Ast.Unsafe ->
       match Ast.unwrap e with
-	Ast.Init(stg,ty,_,endattr,_,_,sem)
-      | Ast.UnInit(stg,ty,_,endattr,sem) ->
+	Ast.Init(al,stg,ty,_,endattr,_,_,sem)
+      | Ast.UnInit(al,stg,ty,_,endattr,sem) ->
+      	  let al_modif = 
+      	    match al with
+      	      Some al -> alignas al
+      	    | None -> false in
 	  let stg_modif =
 	    match stg with
 	      Some stg -> mcode () stg
@@ -132,7 +139,7 @@ let decl r k e =
 	  let endattr_modif = List.exists attribute endattr in
 	  let ft_modif = contains_modif ty in
 	  let sem_modif = mcode () sem in
-	  if not(stg_modif || endattr_modif || ft_modif || sem_modif)
+	  if not(al_modif || stg_modif || endattr_modif || ft_modif || sem_modif)
 	  then {e with Ast.safe_for_multi_decls = Ast.Safe}
 	  else e
       | _ -> e

@@ -406,6 +406,14 @@ let classify is_minus all_marked table code =
 	  disj_cases e starter expr_list r.VT0.combiner_rec_expression ender
       |	_ -> k e) in
 
+  (* (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
+      equal_mcode lp1 lp2 && equal_mcode rp1 rp2 *)
+          
+  let alignas r (Ast0.Align(al,lp,exp,rp)) = 
+  	bind (mcode al)
+  	  (bind (mcode lp)
+	    (bind (r.VT0.combiner_rec_expression exp)
+	      (mcode rp))) in
 
   (* not clear why we have the next cases, since DisjDecl and
   as it only comes from isos *)
@@ -425,26 +433,28 @@ let classify is_minus all_marked table code =
 	   term structure.  In (all?) other such cases, we visit the terms
 	   using rebuilder, which just visits the subterms, rather than
 	   reordering their components. *)
-      |	Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
-	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
-	    (bind (r.VT0.combiner_rec_typeC ty)
-               (bind (r.VT0.combiner_rec_ident id)
-                  (bind
-                     (List.fold_right bind
-                        (List.map r.VT0.combiner_rec_attribute endattr)
-                        option_default)
-                     (bind (mcode eq)
-                        (bind (r.VT0.combiner_rec_initialiser ini)
-                           (mcode sem))))))
-      | Ast0.UnInit(stg,ty,id,endattr,sem) ->
-	  bind (match stg with Some stg -> mcode stg | _ -> option_default)
-	    (bind (r.VT0.combiner_rec_typeC ty)
-               (bind (r.VT0.combiner_rec_ident id)
-                  (bind
-                     (List.fold_right bind
-                        (List.map r.VT0.combiner_rec_attribute endattr)
-                        option_default)
-                     (mcode sem))))
+      |	Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+      	  bind (match al with Some al -> alignas r al | _ -> option_default)
+	    (bind (match stg with Some stg -> mcode stg | _ -> option_default)
+	      (bind (r.VT0.combiner_rec_typeC ty)
+                 (bind (r.VT0.combiner_rec_ident id)
+                    (bind
+                       (List.fold_right bind
+                          (List.map r.VT0.combiner_rec_attribute endattr)
+                          option_default)
+                       (bind (mcode eq)
+                          (bind (r.VT0.combiner_rec_initialiser ini)
+                             (mcode sem)))))))
+      | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
+          bind (match al with Some al -> alignas r al | _ -> option_default)
+	    (bind (match stg with Some stg -> mcode stg | _ -> option_default)
+	      (bind (r.VT0.combiner_rec_typeC ty)
+                 (bind (r.VT0.combiner_rec_ident id)
+                    (bind
+                       (List.fold_right bind
+                          (List.map r.VT0.combiner_rec_attribute endattr)
+                          option_default)
+                       (mcode sem)))))
       |	_ -> k e) in
 
   let field r k e =
@@ -812,13 +822,13 @@ let equal_declaration d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaDecl(name1,_,_),Ast0.MetaDecl(name2,_,_)) ->
       equal_mcode name1 name2
-  | (Ast0.Init(stg1,_,_,endattr1,eq1,_,sem1),
-     Ast0.Init(stg2,_,_,endattr2,eq2,_,sem2)) ->
+  | (Ast0.Init(_,stg1,_,_,endattr1,eq1,_,sem1),
+     Ast0.Init(_,stg2,_,_,endattr2,eq2,_,sem2)) ->
       equal_option stg1 stg2 &&
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode eq1 eq2 && equal_mcode sem1 sem2
-  | (Ast0.UnInit(stg1,_,_,endattr1,sem1),Ast0.UnInit(stg2,_,_,endattr2,sem2)) ->
+  | (Ast0.UnInit(_,stg1,_,_,endattr1,sem1),Ast0.UnInit(_,stg2,_,_,endattr2,sem2)) ->
       equal_option stg1 stg2 &&
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&

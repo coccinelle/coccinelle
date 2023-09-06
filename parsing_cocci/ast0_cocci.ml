@@ -250,9 +250,9 @@ and base_declaration =
        they don't match the same thing at all.  Consider whether there
        should be a separate type for fields, as in the C AST *)
   | AsDecl        of declaration * declaration
-  | Init of Ast.storage mcode option * typeC * ident *
+  | Init of alignas option * Ast.storage mcode option * typeC * ident *
         attr list * string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit of Ast.storage mcode option * typeC * ident *
+  | UnInit of alignas option * Ast.storage mcode option * typeC * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
@@ -278,6 +278,9 @@ and base_declaration =
   | OptDecl    of declaration
 
 and declaration = base_declaration wrap
+
+and alignas = Align of string mcode (* alignas *) * string mcode (* ( *)
+					* expression * string mcode (* ) *)
 
 (* --------------------------------------------------------------------- *)
 (* Field declaration *)

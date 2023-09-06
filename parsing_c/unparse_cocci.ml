@@ -995,6 +995,12 @@ and ft_space ty =
       if isptr then () else pr_space()
   | _ -> pr_space()
 
+and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+  mcode print_string align;
+  mcode print_string lpar;
+  expression expr;
+  mcode print_string rpar
+
 and declaration d =
   match Ast.unwrap d with
     Ast.MetaDecl(name,_,_,_) ->
@@ -1006,14 +1012,16 @@ and declaration d =
 
   | Ast.AsDecl(decl,asdecl) -> declaration decl
 
-  | Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
+  | Ast.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+      print_option alignas al;
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       pr_space(); mcode print_string eq;
       pr_space(); initialiser true ini; mcode print_string sem
-  | Ast.UnInit(stg,ty,id,endattr,sem) ->
+  | Ast.UnInit(al,stg,ty,id,endattr,sem) ->
+      print_option alignas al;
       print_option (mcode storage) stg;
       print_option (function _ -> pr_space()) stg;
       print_named_type ty (fun _ -> ident id);

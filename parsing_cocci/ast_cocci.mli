@@ -379,9 +379,9 @@ and const_vol = Const | Volatile
    split out into multiple declarations of a single variable each. *)
 
 and base_declaration =
-  | Init of storage mcode option * fullType * ident *
+  | Init of alignas option * storage mcode option * fullType * ident *
         attr list * string mcode (*=*) * initialiser * string mcode (*;*)
-  | UnInit of storage mcode option * fullType * ident *
+  | UnInit of alignas option * storage mcode option * fullType * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
 	fninfo list * ident (* name *) *
@@ -406,6 +406,9 @@ and base_declaration =
   | OptDecl    of declaration
 
 and declaration = base_declaration wrap
+
+and alignas = Align of string mcode (* alignas *) * string mcode (* ( *)
+					* expression * string mcode (* ) *)
 
 and base_annotated_decl =
     DElem of mcodekind (* before the decl *) * bool (* true if all minus *) *

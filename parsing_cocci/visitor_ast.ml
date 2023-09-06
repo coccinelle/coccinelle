@@ -467,6 +467,14 @@ let combiner bind option_default
 	   let lid = ident id in
 	   bind lty lid
 
+  and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+    let lalign = string_mcode align in
+    let llp = string_mcode lpar in
+    let lexpr = expression expr in
+    let lrp = string_mcode rpar in
+    multibind [lalign; llp; lexpr; lrp]
+    
+
   and declaration d =
     let k d =
       match Ast.unwrap d with
@@ -476,20 +484,22 @@ let combiner bind option_default
 	  let ldecl = declaration decl in
 	  let lasdecl = declaration asdecl in
 	  bind ldecl lasdecl
-      |	Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
+      |	Ast.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+          let lal = get_option alignas al in
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let leq = string_mcode eq in
 	  let lini = initialiser ini in
 	  let lsem = string_mcode sem in
-          multibind [lstg; lid; lendattr; leq; lini; lsem]
-      | Ast.UnInit(stg,ty,id,endattr,sem) ->
+          multibind [lal; lstg; lid; lendattr; leq; lini; lsem]
+      | Ast.UnInit(al,stg,ty,id,endattr,sem) ->
+	  let lal = get_option alignas al in
 	  let lstg = get_option storage_mcode stg in
 	  let lid = named_type ty id in
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let lsem = string_mcode sem in
-          multibind [lstg; lid; lendattr; lsem]
+          multibind [lal; lstg; lid; lendattr; lsem]
       | Ast.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	  let lfi = List.map fninfo fi in
 	  let lname = ident name in
@@ -1506,6 +1516,13 @@ let rebuilder
 	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
     tyfn all_functions k ty
 
+  and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+    let lalign = string_mcode align in
+    let llp = string_mcode lpar in
+    let lexpr = expression expr in
+    let lrp = string_mcode rpar in
+    alignas(Ast.Align(lalign,llp,lexpr,lrp))
+
   and declaration d =
     let k d =
       Ast.rewrap d
@@ -1516,7 +1533,8 @@ let rebuilder
 	    let ldecl = declaration decl in
 	    let lasdecl = declaration asdecl in
 	    Ast.AsDecl(ldecl, lasdecl)
-	| Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
+	| Ast.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+	    let lal = get_option alignas al in
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
 	    let lid = ident id in
@@ -1524,14 +1542,15 @@ let rebuilder
 	    let leq = string_mcode eq in
 	    let lini = initialiser ini in
 	    let lsem = string_mcode sem in
-	    Ast.Init(lstg, lty, lid, lendattr, leq, lini, lsem)
-	| Ast.UnInit(stg,ty,id,endattr,sem) ->
+	    Ast.Init(lal, lstg, lty, lid, lendattr, leq, lini, lsem)
+	| Ast.UnInit(al,stg,ty,id,endattr,sem) ->
+	    let lal = get_option alignas al in
 	    let lstg = get_option storage_mcode stg in
 	    let lty = fullType ty in
 	    let lid = ident id in
 	    let lendattr = List.map attribute endattr in
 	    let lsem = string_mcode sem in
-	    Ast.UnInit(lstg, lty, lid, lendattr, lsem)
+	    Ast.UnInit(lal, lstg, lty, lid, lendattr, lsem)
 	| Ast.FunProto(fi,name,lp,params,va,rp,sem) ->
 	    let lfi = List.map fninfo fi in
 	    let lname = ident name in

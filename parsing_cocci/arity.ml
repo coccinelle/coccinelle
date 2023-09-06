@@ -605,11 +605,12 @@ and declaration tgt decl =
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_decl decl tgt arity (Ast0.MetaDecl(name,cstr,pure))
-  | Ast0.Init(stg,ty,id,endattr,eq,exp,sem) ->
+  | Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   (List.map mcode2arity [eq;sem])) in
+      let al = get_option (alignas tgt) al in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false arity id in
@@ -617,18 +618,19 @@ and declaration tgt decl =
       let eq = mcode eq in
       let exp = initialiser arity exp in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.Init(stg,ty,id,endattr,eq,exp,sem))
-  | Ast0.UnInit(stg,ty,id,endattr,sem) ->
+      make_decl decl tgt arity (Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem))
+  | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)
 	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
 	   [mcode2arity sem]) in
+      let al = get_option (alignas tgt) al in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
       let id = ident false arity id in
       let endattr = List.map (attribute arity) endattr in
       let sem = mcode sem in
-      make_decl decl tgt arity (Ast0.UnInit(stg,ty,id,endattr,sem))
+      make_decl decl tgt arity (Ast0.UnInit(al,stg,ty,id,endattr,sem))
   | Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
     let tokens = match va with
       | None -> [lp1;rp1;sem]
@@ -710,6 +712,18 @@ and declaration tgt decl =
       Ast0.rewrap decl res
   | Ast0.OptDecl(_) | Ast0.AsDecl _ ->
       failwith "unexpected code"
+
+and alignas tgt (Ast0.Align(align,lp,expr,rp)) =
+      let exp_same = all_same false tgt in
+      let arity = exp_same (mcode2line align) 
+        [mcode2arity align; mcode2arity lp; mcode2arity rp] in
+      let align = mcode align in
+      let lp = mcode lp in
+      let expr = expression tgt expr in
+      let rp = mcode rp in
+      if tgt = arity
+      then Ast0.Align(align,lp,expr,rp)
+      else failwith "tgt must be None"
 
 (* --------------------------------------------------------------------- *)
 (* Field declaration *)

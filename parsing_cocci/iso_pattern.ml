@@ -987,6 +987,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | _ -> return false
 	else return_false (ContextRequired (Ast0.TypeCTag t))
 
+  and alignas_equal (Ast0.Align(al1,lp1,expr1,rp1)) (Ast0.Align(al,lp,expr,rp)) =
+      conjunct_many_bindings
+        [check_mcode al1 al; check_mcode lp1 lp; check_mcode rp1 rp;
+          match_expr expr1 expr]
+
   and match_decl pattern d =
     match Ast0.unwrap pattern with
       Ast0.MetaDecl(name,_,pure) ->
@@ -997,24 +1002,26 @@ let match_maker checks_needed context_required whencode_allowed =
 	if not(checks_needed) || not(context_required) || is_context d
 	then
 	  match (up,Ast0.unwrap d) with
-	    (Ast0.Init(stga,tya,ida,endattra,eq1,inia,sc1),
-	     Ast0.Init(stgb,tyb,idb,endattrb,eq,inib,sc)) ->
+	    (Ast0.Init(ala,stga,tya,ida,endattra,eq1,inia,sc1),
+	     Ast0.Init(alb,stgb,tyb,idb,endattrb,eq,inib,sc)) ->
 	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_many_bindings
 		   [check_mcode eq1 eq; check_mcode sc1 sc;
+		     match_option alignas_equal ala alb;
 		     match_option check_mcode stga stgb;
 		     match_typeC tya tyb;
                      match_ident ida idb;
                      match_attributes endattra endattrb;
 		     match_init inia inib]
 	       else return false
-	  | (Ast0.UnInit(stga,tya,ida,endattra,sc1),
-	     Ast0.UnInit(stgb,tyb,idb,endattrb,sc)) ->
+	  | (Ast0.UnInit(ala,stga,tya,ida,endattra,sc1),
+	     Ast0.UnInit(alb,stgb,tyb,idb,endattrb,sc)) ->
 	      if bool_match_option mcode_equal stga stgb
 	      then
 		conjunct_many_bindings
-		  [check_mcode sc1 sc; match_option check_mcode stga stgb;
+		  [check_mcode sc1 sc; match_option alignas_equal ala alb;
+		    match_option check_mcode stga stgb;
                     match_typeC tya tyb;
                     match_ident ida idb; match_attributes endattra endattrb]
 	      else return false

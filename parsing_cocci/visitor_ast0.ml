@@ -630,6 +630,14 @@ let visitor mode bind option_default
            let (id_n,id) = typeC id in
              ((bind ty_n id_n, ty), id)
 
+  and alignas (Ast0.Align(align,lpar,expr,rpar)) = 
+    let (lalign_n,lalign) = string_mcode align in
+    let (llp_n,llp) = string_mcode lpar in
+    let (lexpr_n,lexpr) = expression expr in
+    let (lrp_n,lrp) = string_mcode rpar in
+    (multibind [lalign_n; llp_n; lexpr_n; lrp_n],
+    Ast0.Align(lalign,llp,lexpr,lrp))
+
   and declaration d =
     let k d =
       rewrap d
@@ -637,22 +645,24 @@ let visitor mode bind option_default
 	  Ast0.MetaDecl(name,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaDecl(name,constraints,pure))
-	| Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
+	| Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+	    let (al_n,al) = get_option alignas al in
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_ma_id_n,ty),id) = named_type ty id in
 	    let (endattr_n,endattr) = map_split_bind attribute endattr in
 	    let (eq_n,eq) = string_mcode eq in
 	    let (ini_n,ini) = initialiser ini in
 	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [stg_n;ty_ma_id_n;endattr_n;eq_n;ini_n;sem_n],
-	     Ast0.Init(stg,ty,id,endattr,eq,ini,sem))
-	| Ast0.UnInit(stg,ty,id,endattr,sem) ->
+	    (multibind [al_n;stg_n;ty_ma_id_n;endattr_n;eq_n;ini_n;sem_n],
+	     Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem))
+	| Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
+	    let (al_n,al) = get_option alignas al in
 	    let (stg_n,stg) = get_option storage_mcode stg in
 	    let ((ty_ma_id_n,ty),id) = named_type ty id in
 	    let (endattr_n,endattr) = map_split_bind attribute endattr in
 	    let (sem_n,sem) = string_mcode sem in
-            (multibind [stg_n;ty_ma_id_n;endattr_n;sem_n],
-	     Ast0.UnInit(stg,ty,id,endattr,sem))
+            (multibind [al_n;stg_n;ty_ma_id_n;endattr_n;sem_n],
+	     Ast0.UnInit(al,stg,ty,id,endattr,sem))
 	| Ast0.FunProto(fi,name,lp1,params,va,rp1,sem) ->
 	    let (fi_n,fi) = map_split_bind fninfo fi in
 	    let (name_n,name) = ident name in

@@ -719,38 +719,54 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
+and alignas (Ast0.Align(al,lp,expr,rp)) = 
+      let al = normal_mcode al in
+      let lp = normal_mcode lp in
+      let expr = expression expr in
+      let rp = normal_mcode rp in
+      (Ast0.Align(al,lp,expr,rp), al)
+
 and declaration d =
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,a,b) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres d (Ast0.MetaDecl(name,a,b)) ln ln
-  | Ast0.Init(stg,ty,id,endattr,eq,exp,sem) ->
+  | Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem) ->
       let ty = typeC ty in
       let id = ident id in
       let endattr = List.map attribute endattr in
       let eq = normal_mcode eq in
       let exp = initialiser exp in
       let sem = normal_mcode sem in
-      (match stg with
-	None ->
-	  mkres d (Ast0.Init(stg,ty,id,endattr,eq,exp,sem)) ty (promote_mcode sem)
-      | Some x ->
+      (match (al,stg) with
+	(None,None) ->
+	  mkres d (Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem)) ty (promote_mcode sem)
+      | (None,Some x)  ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.Init(stg,ty,id,endattr,eq,exp,sem))
+	  mkres d (Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem))
+	    (promote_mcode x) (promote_mcode sem)
+      | (Some al, _) ->
+          let (al,x) = alignas al in
+          mkres d (Ast0.Init(Some al,stg,ty,id,endattr,eq,exp,sem))
 	    (promote_mcode x) (promote_mcode sem))
-  | Ast0.UnInit(stg,ty,id,endattr,sem) ->
+  | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
       let ty = typeC ty in
       let id = ident id in
       let endattr = List.map attribute endattr in
       let sem = normal_mcode sem in
-      (match stg with
-	None ->
-	  mkres d (Ast0.UnInit(stg,ty,id,endattr,sem)) ty (promote_mcode sem)
-      | Some x ->
+      (match (al,stg) with
+	(None,None) ->
+	  mkres d (Ast0.UnInit(al,stg,ty,id,endattr,sem)) ty (promote_mcode sem)
+      | (None,Some x)  ->
 	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.UnInit(stg,ty,id,endattr,sem))
+	  mkres d (Ast0.UnInit(al,stg,ty,id,endattr,sem))
+	    (promote_mcode x) (promote_mcode sem)
+      | (Some al, _) ->
+          let (al,x) = alignas al in
+          mkres d (Ast0.UnInit(Some al,stg,ty,id,endattr,sem))
 	    (promote_mcode x) (promote_mcode sem))
+      
   | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
       let fninfo =
 	List.map

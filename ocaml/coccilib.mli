@@ -335,8 +335,8 @@ module Ast_c :
       | StoTypedef
       | Sto of storageClass
     and storageClass = Ast_c.storageClass = Auto | Static | Register | Extern
-    and align =
-      Ast_c.align =
+    and align = 
+      Ast_c.align = 
         NoAlign | Align of argument
     and local_decl = Ast_c.local_decl = LocalDecl | NotLocalDecl
     and initialiser = initialiserbis wrap
@@ -2847,9 +2847,9 @@ module Ast_cocci :
     and const_vol = Ast_cocci.const_vol = Const | Volatile
     and base_declaration =
       Ast_cocci.base_declaration =
-        Init of storage mcode option * fullType * ident *
+        Init of alignas option * storage mcode option * fullType * ident *
             attr list * string mcode * initialiser * string mcode
-      | UnInit of storage mcode option * fullType * ident *
+      | UnInit of alignas option * storage mcode option * fullType * ident *
             attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
@@ -2866,6 +2866,10 @@ module Ast_cocci :
       | AsDecl of declaration * declaration
       | OptDecl of declaration
     and declaration = base_declaration wrap
+    and alignas = 
+      Ast_cocci.alignas =
+      Align of string mcode (* alignas *) * string mcode (* ( *)
+					* expression * string mcode (* ) *)
     and base_annotated_decl =
       Ast_cocci.base_annotated_decl =
         DElem of mcodekind * bool * declaration
@@ -3508,9 +3512,9 @@ module Ast0_cocci :
       Ast0_cocci.base_declaration =
         MetaDecl of Ast_cocci.meta_name mcode * constraints * pure
       | AsDecl of declaration * declaration
-      | Init of Ast_cocci.storage mcode option * typeC * ident *
+      | Init of alignas option * Ast_cocci.storage mcode option * typeC * ident *
           attr list * string mcode * initialiser * string mcode
-      | UnInit of Ast_cocci.storage mcode option * typeC * ident *
+      | UnInit of alignas option * Ast_cocci.storage mcode option * typeC * ident *
           attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
           (string mcode * string mcode) option * string mcode * string mcode
@@ -3527,6 +3531,10 @@ module Ast0_cocci :
           string mcode
       | OptDecl of declaration
     and declaration = base_declaration wrap
+    and alignas = 
+      Ast0_cocci.alignas = 
+      Align of string mcode (* alignas *) * string mcode (* ( *)
+					* expression * string mcode (* ) *)
     and base_field =
       Ast0_cocci.base_field =
         MetaField of Ast_cocci.meta_name mcode * constraints * pure
