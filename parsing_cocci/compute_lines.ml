@@ -719,7 +719,7 @@ and typeC t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and alignas (Ast0.Align(al,lp,expr,rp)) = 
+and alignas (Ast0.Align(al,lp,expr,rp)) =
       let al = normal_mcode al in
       let lp = normal_mcode lp in
       let expr = expression expr in
@@ -766,7 +766,7 @@ and declaration d =
           let (al,x) = alignas al in
           mkres d (Ast0.UnInit(Some al,stg,ty,id,endattr,sem))
 	    (promote_mcode x) (promote_mcode sem))
-      
+
   | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
       let fninfo =
 	List.map

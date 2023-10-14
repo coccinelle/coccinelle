@@ -630,7 +630,7 @@ let visitor mode bind option_default
            let (id_n,id) = typeC id in
              ((bind ty_n id_n, ty), id)
 
-  and alignas (Ast0.Align(align,lpar,expr,rpar)) = 
+  and alignas (Ast0.Align(align,lpar,expr,rpar)) =
     let (lalign_n,lalign) = string_mcode align in
     let (llp_n,llp) = string_mcode lpar in
     let (lexpr_n,lexpr) = expression expr in

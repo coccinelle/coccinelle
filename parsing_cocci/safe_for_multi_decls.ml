@@ -116,7 +116,7 @@ let attribute a =
     Ast.Attribute(attr) -> attr_arg attr
   | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> mcode () attr_
 
-let alignas (Ast.Align(al,lp,_,rp)) = 
+let alignas (Ast.Align(al,lp,_,rp)) =
   mcode () al || mcode () lp || mcode () rp
 
 let decl r k e =
@@ -128,10 +128,10 @@ let decl r k e =
       match Ast.unwrap e with
 	Ast.Init(al,stg,ty,_,endattr,_,_,sem)
       | Ast.UnInit(al,stg,ty,_,endattr,sem) ->
-      	  let al_modif = 
-      	    match al with
-      	      Some al -> alignas al
-      	    | None -> false in
+	  let al_modif =
+	    match al with
+	      Some al -> alignas al
+	    | None -> false in
 	  let stg_modif =
 	    match stg with
 	      Some stg -> mcode () stg

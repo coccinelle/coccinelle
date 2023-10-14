@@ -432,7 +432,7 @@ and print_named_type ty id =
       print_parentype (lp,ty,rp) (function _ -> ident id)
   | _ -> typeC ty; ident id
 
-and alignas (Ast0.Align(align,lpar,expr,rpar)) = 
+and alignas (Ast0.Align(align,lpar,expr,rpar)) =
   mcode print_string align;
   mcode print_string lpar;
   expression expr;

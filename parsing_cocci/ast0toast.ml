@@ -648,7 +648,7 @@ and base_typeC allminus t =
 (* Even if the Cocci program specifies a list of declarations, they are
    split out into multiple declarations of a single variable each. *)
 
-and alignas (Ast0.Align(align,lpar,expr,rpar)) = 
+and alignas (Ast0.Align(align,lpar,expr,rpar)) =
   let align = mcode align in
   let lpar = mcode lpar in
   let expr = expression expr in

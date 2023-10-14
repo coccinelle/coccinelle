@@ -715,7 +715,7 @@ and declaration tgt decl =
 
 and alignas tgt (Ast0.Align(align,lp,expr,rp)) =
       let exp_same = all_same false tgt in
-      let arity = exp_same (mcode2line align) 
+      let arity = exp_same (mcode2line align)
         [mcode2arity align; mcode2arity lp; mcode2arity rp] in
       let align = mcode align in
       let lp = mcode lp in

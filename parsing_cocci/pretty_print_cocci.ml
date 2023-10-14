@@ -645,7 +645,7 @@ and declaration d =
   | Ast.ConjDecl(decls) -> print_disj_list declaration decls "&"
   | Ast.OptDecl(decl) -> print_string "?"; declaration decl
 
-and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+and alignas (Ast.Align(align,lpar,expr,rpar)) =
   mcode print_string align;
   mcode print_string lpar;
   expression expr;

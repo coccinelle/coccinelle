@@ -467,13 +467,12 @@ let combiner bind option_default
 	   let lid = ident id in
 	   bind lty lid
 
-  and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+  and alignas (Ast.Align(align,lpar,expr,rpar)) =
     let lalign = string_mcode align in
     let llp = string_mcode lpar in
     let lexpr = expression expr in
     let lrp = string_mcode rpar in
     multibind [lalign; llp; lexpr; lrp]
-    
 
   and declaration d =
     let k d =
@@ -1516,7 +1515,7 @@ let rebuilder
 	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
     tyfn all_functions k ty
 
-  and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+  and alignas (Ast.Align(align,lpar,expr,rpar)) =
     let lalign = string_mcode align in
     let llp = string_mcode lpar in
     let lexpr = expression expr in

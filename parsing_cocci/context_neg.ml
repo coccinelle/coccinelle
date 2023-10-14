@@ -408,10 +408,10 @@ let classify is_minus all_marked table code =
 
   (* (Ast0.FunCall(_,lp1,_,rp1),Ast0.FunCall(_,lp2,_,rp2)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2 *)
-          
-  let alignas r (Ast0.Align(al,lp,exp,rp)) = 
-  	bind (mcode al)
-  	  (bind (mcode lp)
+
+  let alignas r (Ast0.Align(al,lp,exp,rp)) =
+	bind (mcode al)
+	  (bind (mcode lp)
 	    (bind (r.VT0.combiner_rec_expression exp)
 	      (mcode rp))) in
 
@@ -434,7 +434,7 @@ let classify is_minus all_marked table code =
 	   using rebuilder, which just visits the subterms, rather than
 	   reordering their components. *)
       |	Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
-      	  bind (match al with Some al -> alignas r al | _ -> option_default)
+	  bind (match al with Some al -> alignas r al | _ -> option_default)
 	    (bind (match stg with Some stg -> mcode stg | _ -> option_default)
 	      (bind (r.VT0.combiner_rec_typeC ty)
                  (bind (r.VT0.combiner_rec_ident id)

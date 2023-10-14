@@ -409,9 +409,9 @@ and unify_declaration d1 d2 =
      Ast.Init(al2,stg2,ft2,id2,endattr2,eq2,i2,s2)) ->
       if bool_unify_option unify_mcode stg1 stg2 &&
          (List.length endattr1 = List.length endattr2) &&
-         List.for_all2 unify_attribute endattr1 endattr2 
+         List.for_all2 unify_attribute endattr1 endattr2
       then
-      	bool_unify_option unify_alignas al1 al2 &&
+	bool_unify_option unify_alignas al1 al2 &&
 	unify_fullType ft1 ft2 &&
 	unify_ident id1 id2 &&
 	unify_initialiser i1 i2

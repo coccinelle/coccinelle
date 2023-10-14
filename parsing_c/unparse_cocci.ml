@@ -995,7 +995,7 @@ and ft_space ty =
       if isptr then () else pr_space()
   | _ -> pr_space()
 
-and alignas (Ast.Align(align,lpar,expr,rpar)) = 
+and alignas (Ast.Align(align,lpar,expr,rpar)) =
   mcode print_string align;
   mcode print_string lpar;
   expression expr;

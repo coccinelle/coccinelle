@@ -335,8 +335,8 @@ module Ast_c :
       | StoTypedef
       | Sto of storageClass
     and storageClass = Ast_c.storageClass = Auto | Static | Register | Extern
-    and align = 
-      Ast_c.align = 
+    and align =
+      Ast_c.align =
         NoAlign | Align of argument
     and local_decl = Ast_c.local_decl = LocalDecl | NotLocalDecl
     and initialiser = initialiserbis wrap
@@ -2866,7 +2866,7 @@ module Ast_cocci :
       | AsDecl of declaration * declaration
       | OptDecl of declaration
     and declaration = base_declaration wrap
-    and alignas = 
+    and alignas =
       Ast_cocci.alignas =
       Align of string mcode (* alignas *) * string mcode (* ( *)
 					* expression * string mcode (* ) *)
@@ -3531,8 +3531,8 @@ module Ast0_cocci :
           string mcode
       | OptDecl of declaration
     and declaration = base_declaration wrap
-    and alignas = 
-      Ast0_cocci.alignas = 
+    and alignas =
+      Ast0_cocci.alignas =
       Align of string mcode (* alignas *) * string mcode (* ( *)
 					* expression * string mcode (* ) *)
     and base_field =
