@@ -212,22 +212,26 @@ and left_declaration d =
   modif_before d ||
   match Ast0.unwrap d with
     Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
-  | Ast0.Init(Some(Align(a,lp,e,rp)),stg,ty,id,endattr,eq,ini,sem) -> modif_before_mcode a
+  | Ast0.Init(Some(Ast0.Align(a,lp,e,rp)),stg,ty,id,endattr,eq,ini,sem) ->
+      modif_before_mcode a
   | Ast0.Init(None,Some stg,ty,id,endattr,eq,ini,sem) -> modif_before_mcode stg
   | Ast0.Init(None,None,ty,id,endattr,eq,ini,sem) -> left_typeC ty
-  | Ast0.UnInit(Some(Align(a,lp,e,rp)),stg,ty,id,endattr,sem) -> modif_before_mcode a
+  | Ast0.UnInit(Some(Ast0.Align(a,lp,e,rp)),stg,ty,id,endattr,sem) ->
+      modif_before_mcode a
   | Ast0.UnInit(None,Some stg,ty,id,endattr,sem) -> modif_before_mcode stg
   | Ast0.UnInit(None,None,ty,id,endattr,sem) -> left_typeC ty
   | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       (* should not be nested in anything anyway *)
       false
-  | Ast0.MacroDecl(Some stg,preattr,name,lp,args,rp,attr,sem) -> modif_before_mcode stg
+  | Ast0.MacroDecl(Some stg,preattr,name,lp,args,rp,attr,sem) ->
+      modif_before_mcode stg
   | Ast0.MacroDecl(None,[],name,lp,args,rp,attr,sem) -> left_ident name
   | Ast0.MacroDecl(None,preattr::_,name,lp,args,rp,attr,sem) ->
       left_attr preattr
   | Ast0.MacroDeclInit(Some stg,preattr,name,lp,args,rp,attr,eq,ini,sem) ->
       modif_before_mcode stg
-  | Ast0.MacroDeclInit(None,[],name,lp,args,rp,attr,eq,ini,sem) -> left_ident name
+  | Ast0.MacroDeclInit(None,[],name,lp,args,rp,attr,eq,ini,sem) ->
+      left_ident name
   | Ast0.MacroDeclInit(None,preattr::_,name,lp,args,rp,attr,eq,ini,sem) ->
       left_attr preattr
   | Ast0.TyDecl(ty,sem) -> left_typeC ty
