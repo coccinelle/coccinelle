@@ -270,20 +270,20 @@ let rec left_decl decl =
       call_right right_mcode name decl
 	(function name -> Ast0.MetaDecl(name,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
-  | Ast0.Init(Some(Align(align,lp,e,rp)),stg,ty,id,endattr,eq,ini,sem) ->
+  | Ast0.Init(Some(Ast0.Align(align,lp,e,rp)),stg,ty,id,endattr,eq,ini,sem) ->
       call_right left_mcode align decl
 	(function align ->
-	  Ast0.Init(Some(Align(align,lp,e,rp)),stg,ty,id,endattr,eq,ini,sem))
+	  Ast0.Init(Some(Ast0.Align(align,lp,e,rp)),stg,ty,id,endattr,eq,ini,sem))
   | Ast0.Init(None,Some stg,ty,id,endattr,eq,ini,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.Init(None,Some stg,ty,id,endattr,eq,ini,sem))
   | Ast0.Init(None,None,ty,id,endattr,eq,ini,sem) ->
       call_right left_ty ty decl
 	(function ty -> Ast0.Init(None,None,ty,id,endattr,eq,ini,sem))
-  | Ast0.UnInit(Some(Align(align,lp,e,rp)),stg,ty,id,endattr,sem) ->
+  | Ast0.UnInit(Some(Ast0.Align(align,lp,e,rp)),stg,ty,id,endattr,sem) ->
       call_right left_mcode align decl
 	(function align ->
-	  Ast0.UnInit(Some(Align(align,lp,e,rp)),stg,ty,id,endattr,sem))
+	  Ast0.UnInit(Some(Ast0.Align(align,lp,e,rp)),stg,ty,id,endattr,sem))
   | Ast0.UnInit(None,Some stg,ty,id,endattr,sem) ->
       call_right left_mcode stg decl
 	(function stg -> Ast0.UnInit(None,Some stg,ty,id,endattr,sem))
