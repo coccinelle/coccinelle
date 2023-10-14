@@ -21,6 +21,20 @@ let disjmult3 e1 e2 e3 k =
 	      e2))
        e1)
 
+let disjmult4 e1 e2 e3 e4 k =
+  List.concat
+    (List.map
+       (function e1 ->
+	 List.concat
+	   (List.map
+	      (function e2 ->
+		List.concat
+		  (List.map
+		     (function e3 -> List.map (function e4 -> k e1 e2 e3 e4) e4)
+		     e3))
+	      e2))
+       e1)
+
 let rec disjmult f = function
     [] -> [[]]
   | x::xs ->
@@ -346,20 +360,26 @@ and disjfninfo = function
   | Ast.FType(ty) -> List.map (function ty -> Ast.FType(ty)) (disjty ty)
   | fi -> [fi]
 
+and disjalign = function
+    None -> [None]
+  | Some(Ast.Align(a,lp,e,rp)) ->
+      let e = disjexp e in
+      List.map (function e -> Some(Ast.Align(a,lp,e,rp))) e
+
 and disjdecl d =
   match Ast.unwrap d with
     Ast.MetaDecl(_,_,_,_) -> [d]
   | Ast.AsDecl(decl,asdecl) ->
       let decl = disjdecl decl in
       List.map (function decl -> Ast.rewrap d (Ast.AsDecl(decl,asdecl))) decl
-  | Ast.Init(stg,ty,id,endattr,eq,ini,sem) ->
-      disjmult3 (disjty ty) (disjident id) (disjini ini)
-	(fun ty id ini ->
-	  Ast.rewrap d (Ast.Init(stg,ty,id,endattr,eq,ini,sem)))
-  | Ast.UnInit(stg,ty,id,endattr,sem) ->
-      disjmult2 (disjty ty) (disjident id)
-	(fun ty id ->
-	  Ast.rewrap d (Ast.UnInit(stg,ty,id,endattr,sem)))
+  | Ast.Init(align,stg,ty,id,endattr,eq,ini,sem) ->
+      disjmult4 (disjalign align) (disjty ty) (disjident id) (disjini ini)
+	(fun al ty id ini ->
+	  Ast.rewrap d (Ast.Init(al,stg,ty,id,endattr,eq,ini,sem)))
+  | Ast.UnInit(align,stg,ty,id,endattr,sem) ->
+      disjmult3 (disjalign align) (disjty ty) (disjident id)
+	(fun al ty id ->
+	  Ast.rewrap d (Ast.UnInit(al,stg,ty,id,endattr,sem)))
   | Ast.FunProto(fninfo,name,lp1,params,va,rp1,sem) ->
       disjmult2 (disjmult disjfninfo fninfo) (disjident name)
 	(fun fninfo name ->

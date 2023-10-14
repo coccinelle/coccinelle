@@ -125,6 +125,7 @@ let token2c (tok,_) add_clt =
   | PC.Tunsigned(clt) -> add_clt "unsigned" clt
   | PC.Tsigned(clt) -> add_clt "signed" clt
   | PC.TautoType(clt) -> add_clt "auto" clt
+  | PC.Talignas(clt) -> add_clt "alignas" clt
   | PC.Tstatic(clt) -> add_clt "static" clt
   | PC.Tinline(clt) -> add_clt "inline" clt
   | PC.Ttypedef(clt) -> add_clt "typedef" clt
@@ -336,7 +337,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.Tstruct(clt) | PC.Tclass(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
-  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt)
+  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Talignas(clt) | PC.Tstatic(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt)
   | PC.Tauto(clt) | PC.Tregister(clt) | PC.TAttrArg(_,clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
@@ -427,7 +428,8 @@ let get_clt (tok,_) =
   | PC.Tstruct(clt) | PC.Tclass(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
-  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Tstatic(clt) | PC.Ttypedef(clt)
+  | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Talignas(clt) | PC.Tstatic(clt)
+  | PC.Ttypedef(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt) | PC.Tconst(clt) | PC.Tvolatile(clt) | PC.TAttrArg(_,clt)
 
@@ -595,6 +597,7 @@ let update_clt (tok,x) clt =
   | PC.Tunsigned(_) -> (PC.Tunsigned(clt),x)
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.TautoType(_) -> (PC.TautoType(clt),x)
+  | PC.Talignas(_) -> (PC.Talignas(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
   | PC.Tinline(_) -> (PC.Tinline(clt),x)
   | PC.Ttypedef(_) -> (PC.Ttypedef(clt),x)
@@ -909,7 +912,8 @@ let split_token ((tok,_) as t) =
   | PC.Tstruct(clt) | PC.Tclass(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
-  | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
+  | PC.Talignas(clt) | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt)
+  | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.TAttrArg(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
   | PC.TAttr_(clt) -> split t clt
@@ -1241,6 +1245,7 @@ let detect_types in_meta_decls l =
     | (PC.TPtVirg(_),_) | (PC.TOBrace(_),_) | (PC.TOInit(_),_)
     | (PC.TCBrace(_),_)
     | (PC.TPure,_) | (PC.TContext,_)
+    | (PC.Talignas(_),_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
     | (PC.Tinline(_),_) | (PC.Ttypedef(_),_)
     | (PC.Tattr(_),_) | (PC.TAttrArg(_),_) -> true
@@ -1346,7 +1351,8 @@ let token2line (tok,_) =
   | PC.Tstruct(clt) | PC.Tclass(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
-  | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt) | PC.Textern(clt)
+  | PC.Talignas(clt) | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt)
+  | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
   | PC.Tvolatile(clt) | PC.TAttrArg(_,clt)
 

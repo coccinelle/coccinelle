@@ -316,7 +316,8 @@ and declaration context old_metas table minus d =
       check_table table minus name;
       constraints table minus cstr
   | Ast0.AsDecl(decl,asdecl) -> failwith "not generated yet"
-  | Ast0.Init(stg,ty,id,endattr,eq,ini,sem) ->
+  | Ast0.Init(algn,stg,ty,id,endattr,eq,ini,sem) ->
+      alignas ID old_metas table minus algn;
       typeC old_metas table minus ty;
       ident context old_metas table minus id;
       List.iter (attribute old_metas table minus) endattr;
@@ -330,7 +331,8 @@ and declaration context old_metas table minus d =
 	    failwith "complex initializer specification not allowed in - code"
 	  else*)
 	    initialiser old_metas table minus ini)
-  | Ast0.UnInit(stg,ty,id,endattr,sem) ->
+  | Ast0.UnInit(algn,stg,ty,id,endattr,sem) ->
+      alignas ID old_metas table minus algn;
       typeC old_metas table minus ty;
       ident context old_metas table minus id;
       List.iter (attribute old_metas table minus) endattr
@@ -361,6 +363,10 @@ and declaration context old_metas table minus d =
       List.iter (declaration ID old_metas table minus) decls
   | Ast0.OptDecl(_) ->
       failwith "unexpected code"
+
+and alignas context old_metas table minus = function
+    None -> ()
+  | Some(Align(a,lp,e,rp)) -> expression context old_metas table minus e
 
 (* --------------------------------------------------------------------- *)
 (* Field declaration *)

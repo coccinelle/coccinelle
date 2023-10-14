@@ -2415,7 +2415,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         | _ -> raise (Impossible 26)
         ) in
         storage_optional_allminus allminus
-          stoa ((stob, false, B.NoAlign), iistob) >>= (fun stoa ((stob, _, _), iistob) ->
+          None stoa ((stob, false, B.NoAlign), iistob) >>= (fun (_,stoa) ((stob, _, _), iistob) ->
 	attribute_list allminus preattrsa preattrsb >>= (fun preattrsa preattrsb ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
 	ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
@@ -2476,7 +2476,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
         |  _ -> raise (Impossible 28)
         ) in
         storage_optional_allminus allminus
-          stoa ((stob, false, B.NoAlign), iistob) >>= (fun stoa ((stob, _, _), iistob) ->
+          None stoa ((stob, false, B.NoAlign), iistob) >>= (fun (_,stoa) ((stob, _, _), iistob) ->
 	attribute_list allminus preattrsa preattrsb >>= (fun preattrsa preattrsb ->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
         ident DontKnow sa (sb, iisb) >>= (fun sa (sb, iisb) ->
@@ -2646,18 +2646,18 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
    | _ -> fail
    )
 
-   | A.UnInit (stoa, typa, ida, endattra, ptvirga),
+   | A.UnInit (align, stoa, typa, ida, endattra, ptvirga),
      ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_,_);}, iivirg)
      -> fail
 
-   | A.Init (stoa, typa, ida, endattra, eqa, inia, ptvirga),
+   | A.Init (align, stoa, typa, ida, endattra, eqa, inia, ptvirga),
      ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_,_);}, iivirg)
        -> fail
 
 
 
     (* could handle iso here but handled in standard.iso *)
-   | A.UnInit (stoa, typa, ida, endattrsa, ptvirga),
+   | A.UnInit (align, stoa, typa, ida, endattrsa, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
        B.v_type = typb;
        B.v_storage = stob;
@@ -2670,10 +2670,10 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
        fullType typa typb >>= (fun typa typb ->
        attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
-       storage_optional_allminus allminus stoa (stob, iistob) >>=
-        (fun stoa (stob, iistob) ->
+       storage_optional_allminus allminus align stoa (stob, iistob) >>=
+        (fun (align, stoa) (stob, iistob) ->
          return (
-           (A.UnInit (stoa, typa, ida, endattrsa, ptvirga)) +>  A.rewrap decla,
+           (A.UnInit (align, stoa, typa, ida, endattrsa, ptvirga)) +>  A.rewrap decla,
            (({B.v_namei = Some (nameidb, B.NoInit);
               B.v_type = typb;
               B.v_storage = stob;
@@ -2685,7 +2685,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 	    iiptvirgb,iistob)
          ))))))
 
-   | A.Init (stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
+   | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
        B.v_type = typb;
        B.v_storage = stob;
@@ -2699,11 +2699,11 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        tokenf eqa iieqb >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
        attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
-       storage_optional_allminus allminus stoa (stob, iistob) >>=
-       (fun stoa (stob, iistob) ->
+       storage_optional_allminus allminus align stoa (stob, iistob) >>=
+       (fun (align, stoa) (stob, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
-           (A.Init (stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
+           (A.Init (align,stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
            (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
               B.v_type = typb;
               B.v_storage = stob;
@@ -2715,7 +2715,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            iiptvirgb,iistob)
          ))))))))
 
-   | A.Init (stoa, typa, ida, endattra, eqa, inia, ptvirga),
+   | A.Init (align, stoa, typa, ida, endattra, eqa, inia, ptvirga),
      ({B.v_namei = Some(nameidb, B.ConstrInit _);
        B.v_type = typb;
        B.v_storage = stob;
@@ -2756,7 +2756,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
         inline_optional_allminus allminus
           inla (stob, iistob) >>= (fun inla (stob, iistob) ->
         storage_optional_allminus allminus
-          stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
+          None stoa (stob, iistob) >>= (fun (_,stoa) (stob, iistob) ->
         fullType_optional_allminus allminus tya tyb >>= (fun tya tyb ->
 	let fninfoa = put_fninfo stoa tya inla in
         parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb >>=
@@ -4236,32 +4236,32 @@ and minusize_list iixs =
      return ((), List.rev ys)
    )
 
-and storage_optional_allminus allminus stoa (stob, iistob) =
+and storage_optional_allminus allminus aligna stoa (stob, iistob) =
   (* "iso-by-absence" for storage, and return type. *)
   X.optional_storage_flag (fun optional_storage ->
-  match stoa, stob with
-  | None, (stobis, inline, align) ->
+  match aligna, stoa, stob with
+  | None, None, (stobis, inline, align) ->
       let do_minus () =
         if allminus
         then
           minusize_list iistob >>= (fun () iistob ->
-            return (None, (stob, iistob))
+            return ((None, None), (stob, iistob))
           )
-        else return (None, (stob, iistob))
+        else return ((None, None), (stob, iistob))
       in
 
-      (match optional_storage, stobis with
-      | false, B.NoSto -> do_minus ()
-      | false, _ -> fail
-      | true, B.NoSto -> do_minus ()
-      | true, _ ->
+      (match optional_storage, stobis, align with
+      | false, B.NoSto, B.NoAlign -> do_minus ()
+      | false, _, _ -> fail
+      | true, B.NoSto, B.NoAlign -> do_minus ()
+      | true, _, _ ->
           if !FlagM.show_misc
           then pr2_once "USING optional_storage builtin isomorphism";
           do_minus()
       )
 
-  | Some x, ((stobis, inline, align)) ->
-      if equal_storage (term x) stobis
+  | None, Some x, (stobis, inline, align) ->
+      if equal_storage (term x) stobis && (optional_storage || align = B.NoAlign)
       then
 	let rec loop acc = function
 	    [] -> fail
@@ -4272,12 +4272,46 @@ and storage_optional_allminus allminus stoa (stob, iistob) =
 		  (* not very elegant, but tokenf doesn't know what token to
 		     match with *)
 		  tokenf x i1 >>= (fun x i1 ->
-		    let rebuilt = (List.rev acc) @ i1 :: iistob in
-		    return (Some x,  ((stobis, inline, align), rebuilt)))
+		    if allminus
+		    then
+		      minusize_list acc >>= (fun () acc ->
+		      minusize_list iistob >>= (fun () iistob ->
+		      let rebuilt = (List.rev acc) @ i1 :: iistob in
+		      return ((None, Some x), ((stobis, inline, align), rebuilt))))
+		    else
+		      let rebuilt = (List.rev acc) @ i1 :: iistob in
+		      return ((None, Some x), ((stobis, inline, align), rebuilt)))
 	      |	_ -> loop (i1::acc) iistob) in
 	loop [] iistob
       else fail
-  )
+  | Some(A.Align(a,lp,e,rp)), None, (stobis, inline, B.Align align)
+    when optional_storage || stobis = B.NoSto ->
+      argument e align >>= (fun e align ->
+	let rec loop acc = function
+	    [] -> fail
+	  | i1::iistob ->
+	      let str = B.str_of_info i1 in
+	      (match str with
+		"static" | "extern" | "auto" | "register" | "inline" ->
+		  loop (i1::acc) iistob
+	      |	_ ->
+		  (match iistob with
+		    blp::brp::iistob ->
+		      tokenf a i1 >>= (fun a i1 ->
+		      tokenf lp blp >>= (fun lp blp ->
+		      tokenf rp brp >>= (fun rp brp ->
+			if allminus
+			then
+			  minusize_list acc >>= (fun () acc ->
+		          minusize_list iistob >>= (fun () iistob ->
+			  let rebuilt = (List.rev acc) @ i1 :: blp :: brp :: iistob in
+			  return ((Some(A.Align(a,lp,e,rp)), None), ((stobis, inline, B.Align align), rebuilt))))
+			else
+			  let rebuilt = (List.rev acc) @ i1 :: blp :: brp :: iistob in
+			  return ((Some(A.Align(a,lp,e,rp)), None), ((stobis, inline, B.Align align), rebuilt)))))
+		  | _ -> fail)) in
+	loop [] iistob)
+  | _ -> fail) (* not supporting the case with both alignas and storage in the semantic patch *)
 
 and inline_optional_allminus allminus inla (stob, iistob) =
   (* "iso-by-absence" for storage, and return type. *)
@@ -5211,7 +5245,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           inline_optional_allminus allminus
             inla (stob, iistob) >>= (fun inla (stob, iistob) ->
           storage_optional_allminus allminus
-            stoa (stob, iistob) >>= (fun stoa (stob, iistob) ->
+            None stoa (stob, iistob) >>= (fun (_,stoa) (stob, iistob) ->
           attribute_list allminus endattras endattrs >>= (fun endattras endattrs ->
               (
                 if isvaargs

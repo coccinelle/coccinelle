@@ -60,7 +60,7 @@ f(...);
 f << s.f;
 @@
 
-if not (List.mem f !local) && String.lowercase f = f then inc f
+if not (List.mem f !local) (*&& Stdcompat.String.lowercase_ascii f = f*) then inc f
 
 @finalize:ocaml@
 tbls << merge.tbl;

@@ -1680,9 +1680,9 @@ fninfo_nt:
 
 
 alignas: Talignas TOPar eexpr TCPar
-	  { Ast0_cocci.Alignas(Parse_aux.clt2mcode "alignas" $1,
-			       Parse_aux.clt2mcode "(" $2, $3,
-			       Parse_aux.clt2mcode ")" $4) }
+	  { Ast0_cocci.Align(Parse_aux.clt2mcode "alignas" $1,
+			     Parse_aux.clt2mcode "(" $2, $3,
+			     Parse_aux.clt2mcode ")" $4) }
 storage:
          s=Tstatic      { Parse_aux.clt2mcode Ast_cocci.Static s }
        | s=Tauto
