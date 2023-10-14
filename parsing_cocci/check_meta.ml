@@ -366,7 +366,7 @@ and declaration context old_metas table minus d =
 
 and alignas context old_metas table minus = function
     None -> ()
-  | Some(Align(a,lp,e,rp)) -> expression context old_metas table minus e
+  | Some(Ast0.Align(a,lp,e,rp)) -> expression context old_metas table minus e
 
 (* --------------------------------------------------------------------- *)
 (* Field declaration *)
