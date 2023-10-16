@@ -158,7 +158,7 @@ module Ast_c :
       | Infix of expression * fixOp
       | Unary of expression * unaryOp
       | Binary of expression * binaryOp * expression
-      | ArrayAccess of expression * expression
+      | ArrayAccess of expression * argument wrap2 list
       | RecordAccess of expression * name
       | RecordPtAccess of expression * name
       | SizeOfExpr of expression
@@ -2649,7 +2649,7 @@ module Ast_cocci :
       | Unary of expression * unaryOp mcode
       | Binary of expression * binaryOp * expression
       | Nested of expression * binaryOp * expression
-      | ArrayAccess of expression * string mcode * expression * string mcode
+      | ArrayAccess of expression * string mcode * expression dots * string mcode
       | RecordAccess of expression * string mcode * ident
       | RecordPtAccess of expression * string mcode * ident
       | Cast of string mcode * fullType * string mcode * expression
@@ -3416,7 +3416,7 @@ module Ast0_cocci :
       | Binary of expression * binaryOp * expression
       | Nested of expression * binaryOp * expression
       | Paren of string mcode * expression * string mcode
-      | ArrayAccess of expression * string mcode * expression * string mcode
+      | ArrayAccess of expression * string mcode * expression dots * string mcode
       | RecordAccess of expression * string mcode * ident
       | RecordPtAccess of expression * string mcode * ident
       | Cast of string mcode * typeC * string mcode * expression

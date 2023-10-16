@@ -352,7 +352,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | Unary          of expression * unaryOp
   | Binary         of expression * binaryOp * expression
 
-  | ArrayAccess    of expression * expression
+  | ArrayAccess    of expression * argument wrap2 (* , *) list
 
   (* field ident access *)
   | RecordAccess   of expression * name

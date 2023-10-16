@@ -141,8 +141,11 @@ let mk_pretty_printers
     | Binary   (e1, op, e2),    [] ->
         pp_expression e1; pr_space(); pr_binaryOp op; pr_space(); pp_expression e2
 
-    | ArrayAccess    (e1, e2),   [i1;i2] ->
-        pp_expression e1; pr_elem i1; pp_expression e2; pr_elem i2
+    | ArrayAccess (e, es), [i1;i2] ->
+        pp_expression e; pr_elem i1;
+        pp_arg_list es;
+        pr_elem i2
+
     | RecordAccess   (e, name),     [i1] ->
         pp_expression e; pr_elem i1; pp_name name;
     | RecordPtAccess (e, name),     [i1] ->

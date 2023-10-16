@@ -167,13 +167,12 @@ let visitor mode bind option_default
 	    let (exp_n,exp) = expression exp in
 	    let (rp_n,rp) = string_mcode rp in
 	    (multibind [lp_n;exp_n;rp_n], Ast0.Paren(lp,exp,rp))
-	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	    let (exp1_n,exp1) = expression exp1 in
+	| Ast0.ArrayAccess(fn,lb,args,rb) ->
+	    let (fn_n,fn) = expression fn in
 	    let (lb_n,lb) = string_mcode lb in
-	    let (exp2_n,exp2) = expression exp2 in
+	    let (args_n,args) = expression_dots args in
 	    let (rb_n,rb) = string_mcode rb in
-	    (multibind [exp1_n;lb_n;exp2_n;rb_n],
-	     Ast0.ArrayAccess(exp1,lb,exp2,rb))
+	    (multibind [fn_n;lb_n;args_n;rb_n], Ast0.FunCall(fn,lb,args,rb))
 	| Ast0.RecordAccess(exp,pt,field) ->
 	    let (exp_n,exp) = expression exp in
 	    let (pt_n,pt) = string_mcode pt in

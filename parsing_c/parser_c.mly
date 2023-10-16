@@ -949,7 +949,7 @@ unary_op:
 
 postfix_expr:
  | primary_expr               { $1 }
- | postfix_expr TOCro expr TCCro
+ | postfix_expr TOCro argument_list_ne TCCro
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
  | postfix_expr TOPar argument_list TCPar
      { mk_e(FunCall ($1, $3)) [$2;$4] }
@@ -1271,7 +1271,7 @@ exec_ident:
      { function prev ->
        let fld = RegularName (mk_string_wrap $2) in
        $3 (mk_e(RecordPtAccess   (prev,fld)) [$1]) }
- | TOCro expr TCCro exec_ident
+ | TOCro argument_list_ne TCCro exec_ident
      { function prev ->
        $4 (mk_e(ArrayAccess   (prev,$2)) [$1;$3]) }
 

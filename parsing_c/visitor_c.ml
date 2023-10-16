@@ -317,8 +317,7 @@ let rec vk_expr = fun bigf expr ->
     | Infix    (e, op) -> exprf e
     | Unary    (e, op) -> exprf e
     | Binary   (e1, op, e2) -> exprf e1; vk_binaryOp bigf op; exprf  e2
-
-    | ArrayAccess    (e1, e2) -> exprf e1; exprf e2;
+    | ArrayAccess    (e, es)   -> exprf e; vk_argument_list bigf es
     | RecordAccess   (e, name) -> exprf e; vk_name bigf name
     | RecordPtAccess (e, name) -> exprf e; vk_name bigf name
 
@@ -1295,7 +1294,11 @@ let rec vk_expr_s = fun bigf expr ->
         let e2 = exprf e2 in
         Binary (e1, op, e2)
 
-      | ArrayAccess    (e1, e2)  -> ArrayAccess (exprf e1, exprf e2)
+      | ArrayAccess (e, es) ->
+          ArrayAccess (exprf e,
+                  es +> List.map (fun (e,ii) ->
+                    vk_argument_s bigf e, iif ii
+                  ))
       | RecordAccess   (e, name) -> RecordAccess (exprf e, vk_name_s bigf name)
       | RecordPtAccess (e, name) -> RecordPtAccess (exprf e, vk_name_s bigf name)
 

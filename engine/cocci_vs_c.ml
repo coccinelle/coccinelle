@@ -1510,15 +1510,16 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       loop eb
 
   (* todo?: handle some isomorphisms here ?  (with pointers = Unary Deref) *)
-  | A.ArrayAccess (ea1, ia1, ea2, ia2),((B.ArrayAccess (eb1, eb2), typ),ii) ->
+  | A.ArrayAccess (ea1, ia1, eas, ia2),((B.ArrayAccess (eb1, ebs), typ),ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in
       expression ea1 eb1 >>= (fun ea1 eb1 ->
-      expression ea2 eb2 >>= (fun ea2 eb2 ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+      arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+        let eas = A.rewrap eas easunwrap in
         return (
-          ((A.ArrayAccess (ea1, ia1, ea2, ia2))) +> wa,
-          ((B.ArrayAccess (eb1, eb2),typ), [ib1;ib2])
+          ((A.ArrayAccess (ea1, ia1, eas, ia2))) +> wa,
+          ((B.ArrayAccess (eb1, ebs),typ), [ib1;ib2])
         )))))
 
   (* todo?: handle some isomorphisms here ? *)

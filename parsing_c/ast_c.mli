@@ -112,7 +112,7 @@ and expressionbis =
   | Infix of expression * fixOp
   | Unary of expression * unaryOp
   | Binary of expression * binaryOp * expression
-  | ArrayAccess of expression * expression
+  | ArrayAccess of expression * argument wrap2 (* , *) list
   | RecordAccess of expression * name
   | RecordPtAccess of expression * name
   | SizeOfExpr of expression

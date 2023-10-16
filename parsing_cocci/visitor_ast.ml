@@ -184,12 +184,12 @@ let combiner bind option_default
 	  let lexp = expression exp in
 	  let lrp = string_mcode rp in
 	  multibind [llp; lexp; lrp]
-      | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-	  let lexp1 = expression exp1 in
+      | Ast.ArrayAccess(fn,lb,args,rb) ->
+	  let lfn = expression fn in
 	  let llb = string_mcode lb in
-	  let lexp2 = expression exp2 in
+	  let largs = expression_dots args in
 	  let lrb = string_mcode rb in
-	  multibind [lexp1; llb; lexp2; lrb]
+	  multibind [lfn; llb; largs; lrb]
       | Ast.RecordAccess(exp,pt,field) ->
 	  let lexp = expression exp in
 	  let lpt = string_mcode pt in
@@ -1274,12 +1274,12 @@ let rebuilder
 	    let lexp = expression exp in
 	    let lrp = string_mcode rp in
 	    Ast.Paren(llp, lexp, lrp)
-	| Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-	    let lexp1 = expression exp1 in
+	| Ast.ArrayAccess(fn,lb,args,rb) ->
+	    let lfn = expression fn in
 	    let llb = string_mcode lb in
-	    let lexp2 = expression exp2 in
+	    let largs = expression_dots args in
 	    let lrb = string_mcode rb in
-	    Ast.ArrayAccess(lexp1, llb, lexp2, lrb)
+	    Ast.ArrayAccess(lfn, llb, largs, lrb)
 	| Ast.RecordAccess(exp,pt,field) ->
 	    let lexp = expression exp in
 	    let lpt = string_mcode pt in

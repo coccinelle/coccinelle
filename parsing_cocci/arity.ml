@@ -180,10 +180,10 @@ let rec top_expression opt_allowed tgt expr =
       let str = dots (string_fragment arity) str in
       let rq = mcode rq in
       make_exp expr tgt arity (Ast0.StringConstant(lq,str,rq,isWchar))
-  | Ast0.FunCall(fn,lp,args,rp) -> (* TODO FunCall(fn,args) *)
+  | Ast0.FunCall(fn,lb,args,rb) -> (* TODO FunCall(fn,args) *)
       let fn = expression tgt fn in
-      let (lp,args,rp) = arg_list tgt (lp,args,rp) in
-      make_exp expr tgt tgt (Ast0.FunCall(fn,lp,args,rp))
+      let (lb,args,rb) = arg_list tgt (lb,args,rb) in
+      make_exp expr tgt tgt (Ast0.FunCall(fn,lb,args,rb))
   | Ast0.Assignment(left,op,right,simple) ->
       let arity = exp_same (mcodeassignOp2line op) [mcodeassignOp2arity op] in
       let left = expression arity left in
@@ -233,13 +233,10 @@ let rec top_expression opt_allowed tgt expr =
       let exp = expression arity exp in
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.Paren(lp,exp,rp))
-  | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-      let arity = exp_same (mcode2line lb) [mcode2arity lb; mcode2arity rb] in
-      let exp1 = expression arity exp1 in
-      let lb = mcode lb in
-      let exp2 = expression arity exp2 in
-      let rb = mcode rb in
-      make_exp expr tgt arity (Ast0.ArrayAccess(exp1,lb,exp2,rb))
+  | Ast0.ArrayAccess(fn,lb,args,rb) -> (* TODO ArrayAccess(fn,args) *)
+      let fn = expression tgt fn in
+      let (lb,args,rb) = arg_list tgt (lb,args,rb) in
+      make_exp expr tgt tgt (Ast0.ArrayAccess(fn,lb,args,rb))
   | Ast0.RecordAccess(exp,pt,field) ->
       let arity = exp_same (mcode2line pt) [mcode2arity pt] in
       let exp = expression arity exp in

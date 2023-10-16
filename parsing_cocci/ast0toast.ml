@@ -433,8 +433,12 @@ and expression e =
 	Ast.Nested(expression left,binaryOp op,expression right)
     | Ast0.Paren(lp,exp,rp) ->
 	Ast.Paren(mcode lp,expression exp,mcode rp)
-    | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	Ast.ArrayAccess(expression exp1,mcode lb,expression exp2,mcode rb)
+    | Ast0.ArrayAccess(fn,lb,args,rb) ->
+	let fn = expression fn in
+	let lb = mcode lb in
+	let args = dots expression args in
+	let rb = mcode rb in
+	Ast.ArrayAccess(fn,lb,args,rb)
     | Ast0.RecordAccess(exp,pt,field) ->
 	Ast.RecordAccess(expression exp,mcode pt,ident field)
     | Ast0.RecordPtAccess(exp,ar,field) ->

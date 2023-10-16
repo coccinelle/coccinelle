@@ -214,8 +214,9 @@ and unify_expression e1 e2 =
       unify_binaryOp_mcode op1 op2 &&
       unify_expression l1 l2 &&
       unify_expression r1 r2
-  | (Ast.ArrayAccess(ar1,lb1,e1,rb1),Ast.ArrayAccess(ar2,lb2,e2,rb2)) ->
-      unify_expression ar1 ar2 && unify_expression e1 e2
+  | (Ast.ArrayAccess(f1,lb1,args1,rb1),Ast.ArrayAccess(f2,lb2,args2,rb2)) ->
+      unify_expression f1 f2 &&
+      unify_dots unify_expression edots args1 args2
   | (Ast.RecordAccess(e1,d1,fld1),Ast.RecordAccess(e2,d2,fld2)) ->
       unify_expression e1 e2 && unify_ident fld1 fld2
   | (Ast.RecordPtAccess(e1,pt1,fld1),Ast.RecordPtAccess(e2,pt2,fld2)) ->

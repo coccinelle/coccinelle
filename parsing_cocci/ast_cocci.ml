@@ -192,7 +192,7 @@ and base_expression =
   | Unary          of expression * unaryOp mcode
   | Binary         of expression * binaryOp * expression
   | Nested         of expression * binaryOp * expression
-  | ArrayAccess    of expression * string mcode (* [ *) * expression *
+  | ArrayAccess    of expression * string mcode (* [ *) * expression dots *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident

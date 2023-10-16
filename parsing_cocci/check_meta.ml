@@ -194,9 +194,9 @@ and expression context old_metas table minus e =
       expression ID old_metas table minus right
   | Ast0.Paren(lp,exp,rp) ->
       expression ID old_metas table minus exp
-  | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-      expression ID old_metas table minus exp1;
-      expression ID old_metas table minus exp2
+  | Ast0.ArrayAccess(fn,lb,args,rb) ->
+      expression FN old_metas table minus fn;
+      dots (expression ID old_metas table minus) args
   | Ast0.RecordAccess(exp,pt,field) ->
       expression ID old_metas table minus exp;
       ident FIELD old_metas table minus field

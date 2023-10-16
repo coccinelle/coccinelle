@@ -347,10 +347,10 @@ let rec expression_pos exp snp
       let c ~exp ~mc = Ast0.Paren (mc, exp, rp) in
       let alt() = mcode_wrap ~mc:lp ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~mc:lp) ~alt snp
-  | Ast0.ArrayAccess(exp1, lb, exp2, rb) ->
-      let c ~exp1 ~exp2 ~mc = Ast0.ArrayAccess(exp1, mc, exp2, rb) in
-      let alt() = mcode_wrap ~mc:lb ~constructor:(c ~exp1 ~exp2) snp in
-      exp_wrap2 ~exp1 ~exp2 ~constructor:(c ~mc:lb) ~alt snp
+  | Ast0.ArrayAccess(exp, lb, expdots, rb) ->
+      let c ~exp ~mc = Ast0.ArrayAccess(exp, mc, expdots, rb) in
+      let alt() = mcode_wrap ~mc:lb ~constructor:(c ~exp) snp in
+      exp_wrap ~exp ~constructor:(c ~mc:lb) ~alt snp
   | Ast0.RecordAccess(exp, stop, id) ->
       let c ~exp ~id = Ast0.RecordAccess(exp, stop, id) in
       let alt() = id_wrap ~id ~constructor:(c ~exp) snp in

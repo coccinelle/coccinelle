@@ -214,8 +214,9 @@ let rec expression e =
       | Ast0.Paren(lp,exp,rp) ->
 	  mcode print_string_box lp; expression exp; close_box();
 	  mcode print_string rp
-      | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-	  expression exp1; mcode print_string_box lb; expression exp2;
+      | Ast0.ArrayAccess(fn,lb,args,rb) ->
+	  expression fn; mcode print_string_box lb;
+	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rb
       | Ast0.RecordAccess(exp,pt,field) ->
 	  expression exp; mcode print_string pt; ident field

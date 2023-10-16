@@ -707,9 +707,9 @@ let match_maker checks_needed context_required whencode_allowed =
 		     match_dots match_frag is_strlist_matcher do_nolist_match
 		       stra strb]
 	       else return false
-	  | (Ast0.FunCall(fna,lp1,argsa,rp1),Ast0.FunCall(fnb,lp,argsb,rp)) ->
+	  | (Ast0.FunCall(fna,lb1,argsa,rb1),Ast0.FunCall(fnb,lb,argsb,rb)) ->
 	      conjunct_many_bindings
-		[check_mcode lp1 lp; check_mcode rp1 rp; match_expr fna fnb;
+		[check_mcode lb1 lb; check_mcode rb1 rb; match_expr fna fnb;
 		  match_dots match_expr is_elist_matcher do_elist_match
 		    argsa argsb]
 	  | (Ast0.Assignment(lefta,opa,righta,_),
@@ -759,11 +759,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	  | (Ast0.Paren(lp1,expa,rp1),Ast0.Paren(lp,expb,rp)) ->
 	      conjunct_many_bindings
 		[check_mcode lp1 lp; check_mcode rp1 rp; match_expr expa expb]
-	  | (Ast0.ArrayAccess(exp1a,lb1,exp2a,rb1),
-	     Ast0.ArrayAccess(exp1b,lb,exp2b,rb)) ->
-	       conjunct_many_bindings
-		 [check_mcode lb1 lb; check_mcode rb1 rb;
-		   match_expr exp1a exp1b; match_expr exp2a exp2b]
+	  | (Ast0.ArrayAccess(expa,lb1,argsa,rb1),Ast0.ArrayAccess(expb,lb,argsb,rb)) ->
+	      conjunct_many_bindings
+		[check_mcode lb1 lb; check_mcode rb1 rb; match_expr expa expb;
+		  match_dots match_expr is_elist_matcher do_elist_match
+		    argsa argsb]
 	  | (Ast0.RecordAccess(expa,opa,fielda),
 	     Ast0.RecordAccess(expb,op,fieldb))
 	  | (Ast0.RecordPtAccess(expa,opa,fielda),

@@ -2497,7 +2497,7 @@ unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef $1 }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }
- | postfix_expr(r,pe) TOCro eexpr TCCro
+ | postfix_expr(r,pe) TOCro eexpr_list TCCro
      { Ast0_cocci.wrap(Ast0_cocci.ArrayAccess ($1,Parse_aux.clt2mcode "[" $2,$3,
 				       Parse_aux.clt2mcode "]" $4)) }
  | postfix_expr(r,pe) TDot   type_ident
@@ -3280,6 +3280,13 @@ aexpr_without_ctype:
 
 eexpr_list_option:
     empty_list_start(aexpr,TEllipsis)
+      { Ast0_cocci.wrap
+	  ($1
+	     (fun _ d -> Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." d,None)))
+	     (fun c -> Ast0_cocci.EComma c)) }
+
+eexpr_list:
+    nonempty_list_start(aexpr,TEllipsis)
       { Ast0_cocci.wrap
 	  ($1
 	     (fun _ d -> Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." d,None)))

@@ -117,7 +117,7 @@ and base_expression =
   | Nested         of expression * binaryOp * expression
   | Paren          of string mcode (* ( *) * expression *
                       string mcode (* ) *)
-  | ArrayAccess    of expression * string mcode (* [ *) * expression *
+  | ArrayAccess    of expression * string mcode (* [ *) * expression dots *
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident

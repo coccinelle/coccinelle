@@ -231,10 +231,10 @@ and disjexp e =
   | Ast.Paren(lp,exp,rp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.Paren(lp,exp,rp))) exp
-  | Ast.ArrayAccess(exp1,lb,exp2,rb) ->
-      disjmult2 (disjexp exp1) (disjexp exp2)
-	(function exp1 -> function exp2 ->
-	  Ast.rewrap e (Ast.ArrayAccess(exp1,lb,exp2,rb)))
+  | Ast.ArrayAccess(fn,lb,args,rb) ->
+      disjmult2 (disjexp fn) (disjdots disjexp args)
+	(function fn -> function args ->
+	  Ast.rewrap e (Ast.ArrayAccess(fn,lb,args,rb)))
   | Ast.RecordAccess(exp,pt,field) ->
       disjmult2 (disjexp exp) (disjident field)
 	(fun exp field -> Ast.rewrap e (Ast.RecordAccess(exp,pt,field)))

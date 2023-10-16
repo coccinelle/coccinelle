@@ -409,12 +409,12 @@ let rec expression e =
       let rp = normal_mcode rp in
       mkres e (Ast0.Paren(lp,expression exp,rp))
 	(promote_mcode lp) (promote_mcode rp)
-  | Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
-      let exp1 = expression exp1 in
+  | Ast0.ArrayAccess(fn,lb,args,rb) ->
+      let fn = expression fn in
       let lb = normal_mcode lb in
-      let exp2 = expression exp2 in
+      let args = dots is_exp_dots (Some(promote_mcode lb)) expression args in
       let rb = normal_mcode rb in
-      mkres e (Ast0.ArrayAccess(exp1,lb,exp2,rb)) exp1 (promote_mcode rb)
+      mkres e (Ast0.ArrayAccess(fn,lb,args,rb)) fn (promote_mcode rb)
   | Ast0.RecordAccess(exp,pt,field) ->
       let exp = expression exp in
       let pt = normal_mcode pt in
