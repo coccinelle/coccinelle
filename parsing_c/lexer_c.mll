@@ -775,6 +775,7 @@ rule token = parse
 
 
   | '[' { TOCro(tokinfo lexbuf) }   | ']' { TCCro(tokinfo lexbuf) }
+  | "[[" { TOCroCro(tokinfo lexbuf) }   | "]]" { TCCroCro(tokinfo lexbuf) }
   | '(' { TOPar(tokinfo lexbuf)   } | ')' { TCPar(tokinfo lexbuf)   }
   | '{' { TOBrace(tokinfo lexbuf) } | '}' { TCBrace(tokinfo lexbuf) }
 

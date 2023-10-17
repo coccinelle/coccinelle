@@ -1223,9 +1223,15 @@ let visitor mode bind option_default
 	    let (args_n,args) = expression_dots args in
             let (rp1_n,rp1) = string_mcode rp1 in
             let (rp2_n,rp2) = string_mcode rp2 in
-            (multibind [attr_n;lp1_n;lp2_n;rp1_n;rp2_n],
-            Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))) in
-              attributefn all_functions k a
+            (multibind [attr_n;lp1_n;lp2_n;args_n;rp1_n;rp2_n],
+            Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))
+        | Ast0.CxxAttribute(lb1,args,rb1) ->
+            let (lb1_n,lb1) = string_mcode lb1 in
+	    let (args_n,args) = expression_dots args in
+            let (rb1_n,rb1) = string_mcode rb1 in
+            (multibind [lb1_n;args_n;rb1_n],
+            Ast0.CxxAttribute(lb1,args,rb1))) in
+    attributefn all_functions k a
 
   and attr_arg a =
     let k a =

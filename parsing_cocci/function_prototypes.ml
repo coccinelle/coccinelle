@@ -239,7 +239,9 @@ let right_attach_attr strings attr =
     (match Ast0.unwrap attr with
       Ast0.Attribute(arg) -> Ast0.Attribute(right_attach_attr_args strings arg)
     | Ast0.GccAttribute(attr,lp1,lp2,args,rp2,rp1) ->
-	Ast0.GccAttribute(attr,lp1,lp2,args,rp2,right_attach_mcode strings rp1))
+	Ast0.GccAttribute(attr,lp1,lp2,args,rp2,right_attach_mcode strings rp1)
+    | Ast0.CxxAttribute(lb1,args,rb1) ->
+	Ast0.CxxAttribute(lb1,args,right_attach_mcode strings rb1))
 
 let rec attach_right strings ty =
   Ast0.rewrap ty

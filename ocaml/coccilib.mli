@@ -130,7 +130,9 @@ module Ast_c :
     }
     and attribute = attributebis wrap
     and attributebis = Ast_c.attributebis =
-	Attribute of attr_arg | GccAttribute of argument wrap2 list
+	Attribute of attr_arg
+      | GccAttribute of argument wrap2 list
+      | CxxAttribute of argument wrap2 list
     and attr_arg = attr_arg_bis wrap
     and attr_arg_bis =
       Ast_c.attr_arg_bis =
@@ -717,6 +719,8 @@ module Parser_c :
       | TCBrace of Ast_c.info
       | TOCro of Ast_c.info
       | TCCro of Ast_c.info
+      | TOCroCro of Ast_c.info
+      | TCCroCro of Ast_c.info
       | TDot of Ast_c.info
       | TComma of Ast_c.info
       | TNoComma of Ast_c.info
@@ -3028,6 +3032,7 @@ module Ast_cocci :
         Attribute of Ast_cocci.attr_arg
       | GccAttribute of string mcode * string mcode * string mcode *
                         expression dots * string mcode * string mcode
+      | CxxAttribute of string mcode * expression dots * string mcode
     and attr = base_attr wrap
     and base_attr_arg =
       Ast_cocci.base_attr_arg =
@@ -3689,6 +3694,7 @@ module Ast0_cocci :
         Attribute of Ast0_cocci.attr_arg
       | GccAttribute of string mcode * string mcode * string mcode *
                         expression dots * string mcode * string mcode
+      | CxxAttribute of string mcode * expression dots * string mcode
     and attr = base_attr wrap
     and base_attr_arg =
       Ast0_cocci.base_attr_arg =

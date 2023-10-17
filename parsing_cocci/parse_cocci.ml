@@ -288,6 +288,8 @@ let token2c (tok,_) add_clt =
   | PC.TCBrace(clt) -> add_clt "}" clt
   | PC.TOCro(clt) -> add_clt "[" clt
   | PC.TCCro(clt) -> add_clt "]" clt
+  | PC.TOCroCro(clt) -> add_clt "[[" clt
+  | PC.TCCroCro(clt) -> add_clt "]]" clt
   | PC.TOInit(clt) -> add_clt "{" clt
 
   | PC.TPtrOp(clt) -> add_clt "->" clt
@@ -395,6 +397,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TCPar(clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+  | PC.TOCroCro(clt) | PC.TCCroCro(clt)
   | PC.TOInit(clt)
 
   | PC.TPtrOp(clt)
@@ -485,6 +488,7 @@ let get_clt (tok,_) =
   | PC.TCPar(clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+  | PC.TOCroCro(clt) | PC.TCCroCro(clt)
   | PC.TOInit(clt)
 
   | PC.TPtrOp(clt)
@@ -726,6 +730,8 @@ let update_clt (tok,x) clt =
   | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
   | PC.TOCro(_) -> (PC.TOCro(clt),x)
   | PC.TCCro(_) -> (PC.TCCro(clt),x)
+  | PC.TOCroCro(_) -> (PC.TOCroCro(clt),x)
+  | PC.TCCroCro(_) -> (PC.TCCroCro(clt),x)
   | PC.TOInit(_) -> (PC.TOInit(clt),x)
 
   | PC.TPtrOp(_) -> (PC.TPtrOp(clt),x)
@@ -984,6 +990,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOInit(clt) -> split t clt
   | PC.TOCro(clt) | PC.TCCro(clt) -> split t clt
+  | PC.TOCroCro(clt) | PC.TCCroCro(clt) -> split t clt
 
   | PC.TPtrOp(clt) -> split t clt
 
@@ -1038,11 +1045,13 @@ let find_function_names l =
       (PC.TOBrace(_),info) -> true
     | (PC.TOPar(_),info) -> true
     | (PC.TOCro(_),info) -> true
+    | (PC.TOCroCro(_),info) -> true
     | _ -> false in
   let is_cbrace = function
       (PC.TCBrace(_),info) -> true
     | (PC.TCPar(_),info) -> true
     | (PC.TCCro(_),info) -> true
+    | (PC.TCCroCro(_),info) -> true
     | _ -> false in
   let rec split acc = function
       [] | [_] -> raise Irrelevant
@@ -1405,6 +1414,7 @@ let token2line (tok,_) =
   | PC.TCPar0(_,clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
+  | PC.TOCroCro(clt) | PC.TCCroCro(clt)
   | PC.TOInit(clt)
 
   | PC.TPtrOp(clt)

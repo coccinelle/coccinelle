@@ -1,0 +1,5 @@
+@@
+@@
+- [[lucky]]
++ [[fortunate]]
+ int variable;

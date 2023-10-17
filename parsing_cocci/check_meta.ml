@@ -614,6 +614,7 @@ and attribute old_metas table minus x =
     Ast0.Attribute(arg) ->
       attr_arg old_metas table minus arg
   | Ast0.GccAttribute _ -> ()
+  | Ast0.CxxAttribute _ -> ()
 
 and attr_arg old_metas table minus x =
   match Ast0.unwrap x with

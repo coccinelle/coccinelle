@@ -759,6 +759,8 @@ and unify_attribute attr1 attr2 =
       unify_attr_arg arg1 arg2
   | (Ast.GccAttribute(_,_,_,args1,_,_),Ast.GccAttribute(_,_,_,args2,_,_)) ->
       unify_dots unify_expression edots args1 args2
+  | (Ast.CxxAttribute(_,args1,_),Ast.CxxAttribute(_,args2,_)) ->
+      unify_dots unify_expression edots args1 args2
   | _ -> false
 
 and unify_attr_arg arg1 arg2 =

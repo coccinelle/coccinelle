@@ -1533,7 +1533,12 @@ let match_maker checks_needed context_required whencode_allowed =
 		 [check_mcode attr_1 attr_2; check_mcode lp11 lp21;
 		   check_mcode lp21 lp22; check_mcode rp11 rp21; check_mcode rp21 rp22;
 		   match_dots match_expr is_elist_matcher do_elist_match args1 args2]
-	  | _ -> return false
+    | (Ast0.CxxAttribute(lb1,args1,rb1),
+       Ast0.CxxAttribute(lb2,args2,rb2)) ->
+	       conjunct_many_bindings
+		 [check_mcode lb1 lb2; check_mcode rb1 rb2;
+		   match_dots match_expr is_elist_matcher do_elist_match args1 args2]
+    | _ -> return false
 
   and match_attributes a1 a2 =
     match_list match_attribute

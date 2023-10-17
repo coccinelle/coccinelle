@@ -1268,7 +1268,12 @@ and attribute a =
 	let args = dots expression args in
 	let rp1 = mcode rp1 in
 	let rp2 = mcode rp2 in
-	Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))
+	Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2)
+    | Ast0.CxxAttribute(lb1,args,rb1) ->
+	let lb1 = mcode lb1 in
+	let args = dots expression args in
+	let rb1 = mcode rb1 in
+	Ast.CxxAttribute(lb1,args,rb1))
 
 and attr_arg a =
   rewrap a no_isos

@@ -99,6 +99,9 @@ val make_attr:
 val make_gcc_attr:
   Data.clt -> Data.clt -> Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
   Data.clt -> Data.clt -> Ast0_cocci.attr
+val make_cxx_attr:
+  Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
+  Data.clt -> Ast0_cocci.attr
 val top_dots : 'a -> 'a Ast0_cocci.wrap
 val pointerify :
   Ast0_cocci.typeC ->

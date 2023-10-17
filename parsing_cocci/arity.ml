@@ -1374,6 +1374,13 @@ and attribute tgt attr =
       let rp1 = mcode rp1 in
       let rp2 = mcode rp2 in
       make_attribute attr tgt arity (Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))
+  | Ast0.CxxAttribute(lb1,args,rb1) ->
+      let arity =
+        all_same false tgt (mcode2line lb1) [mcode2arity lb1;mcode2arity rb1] in
+      let lb1 = mcode lb1 in
+      let args = dots (expression arity) args in
+      let rb1 = mcode rb1 in
+      make_attribute attr tgt arity (Ast0.CxxAttribute(lb1,args,rb1))
 
 and make_attr_arg =
   make_opt

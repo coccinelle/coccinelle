@@ -547,7 +547,7 @@ let args_to_params l pb =
  *)
 */
 
-%token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro
+%token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro TCCroCro
 %token <Ast_c.info> TDot TComma TNoComma TPtrOp
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
@@ -1441,6 +1441,7 @@ attr_arg:
 
 attribute_gcc:
  | Tattribute tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
+ | tdouble_ocro_cxx_attr argument_list tdouble_ccro_cxx_attr { CxxAttribute $2, $1@$3 }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
@@ -2744,6 +2745,8 @@ tcpar: TCPar
 
 tdouble_opar_gcc_attr: TOPar TOPar { LP.push_context LP.InGccAttribute; [$1;$2] }
 tdouble_cpar_gcc_attr: TCPar TCPar { LP.pop_context (); [$1;$2] }
+tdouble_ocro_cxx_attr: TOCroCro { LP.push_context LP.InGccAttribute; [$1] }
+tdouble_ccro_cxx_attr: TCCroCro { LP.pop_context (); [$1] }
 
 
 /*(*************************************************************************)*/

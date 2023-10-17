@@ -246,6 +246,9 @@ and left_attribute attr =
   | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) ->
       call_right left_mcode attr_ attr
         (function attr_ -> Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2))
+  | Ast0.CxxAttribute(lb1,arg,rb1) ->
+      call_right left_mcode lb1 attr
+        (function lb1 -> Ast0.CxxAttribute(lb1,arg,rb1))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

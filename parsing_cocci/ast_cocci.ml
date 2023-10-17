@@ -651,6 +651,8 @@ and base_attr =
   | GccAttribute of string mcode (* __attribute__ *) *
                     string mcode (* ( *) * string mcode (* ( *) *
                     expression dots * string mcode (* ) *) * string mcode (* ) *)
+  | CxxAttribute of string mcode (* [[ *) *
+                    expression dots * string mcode (* ]] *)
 
 and attr = base_attr wrap
 

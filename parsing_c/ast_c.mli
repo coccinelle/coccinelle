@@ -89,7 +89,10 @@ and parameterType = {
 and typeQualifier = typeQualifierbis wrap
 and typeQualifierbis = { const : bool; volatile : bool; restrict : bool; }
 and attribute = attributebis wrap
-and attributebis = Attribute of attr_arg | GccAttribute of argument wrap2 list
+and attributebis =
+    Attribute of attr_arg
+  | GccAttribute of argument wrap2 list
+  | CxxAttribute of argument wrap2 list
 and attr_arg = attr_arg_bis wrap
 and attr_arg_bis = MacroAttr of string | MacroAttrArgs of string * argument wrap2 (* , *) list
 and expression = (expressionbis * exp_info ref) wrap3

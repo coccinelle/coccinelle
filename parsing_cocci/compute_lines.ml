@@ -1015,6 +1015,13 @@ and attribute attr =
       let ln1 = promote_mcode attr_ in
       let ln2 = promote_mcode rp2 in
       mkres attr (Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2)) ln1 ln2
+  | Ast0.CxxAttribute(lb1,args,rb1) ->
+      let lb1 = normal_mcode lb1 in
+      let args = dots is_exp_dots (Some(promote_mcode lb1)) expression args in
+      let rb1 = normal_mcode rb1 in
+      let ln1 = promote_mcode lb1 in
+      let ln2 = promote_mcode rb1 in
+      mkres attr (Ast0.CxxAttribute(lb1,args,rb1)) ln1 ln2
 
 and attr_arg arg =
   match Ast0.unwrap arg with

@@ -543,6 +543,8 @@ and vk_attribute = fun bigf attr ->
   | Attribute s, ii -> iif ii; vk_attr_arg bigf s
   | GccAttribute args, ii ->
       vk_argument_list bigf args; iif ii
+  | CxxAttribute args, ii ->
+      vk_argument_list bigf args; iif ii
 
 and vk_attr_arg = fun bigf name ->
   let iif ii = vk_ii bigf ii in
@@ -1588,6 +1590,9 @@ and vk_attribute_s = fun bigf attr ->
       Attribute (vk_attr_arg_s bigf s), iif ii
   | GccAttribute args, ii ->
       GccAttribute (args +> List.map (fun (e,ii) ->
+        vk_argument_s bigf e, iif ii)), iif ii
+  | CxxAttribute args, ii ->
+      CxxAttribute (args +> List.map (fun (e,ii) ->
         vk_argument_s bigf e, iif ii)), iif ii
 
 and vk_attr_arg_s = fun bigf name ->

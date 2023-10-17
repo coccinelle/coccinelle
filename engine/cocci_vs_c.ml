@@ -4460,6 +4460,20 @@ and attribute = fun allminus ea eb ->
 	    A.rewrap ea (A.GccAttribute(attr_,lp1,lp2,argsa,rp1,rp2)),
             (B.GccAttribute argsb,ib)
             ))))))))
+  | A.CxxAttribute(lb1,argsa,rb1), (B.CxxAttribute argsb, ii) ->
+      let (ib1, ib2) = tuple_of_list2 ii in
+      tokenf lb1 ib1 >>= (fun lb1 ib1 ->
+      tokenf rb1 ib2 >>= (fun rb1 ib2 ->
+      arguments (seqstyle argsa) (A.unwrap argsa) argsb >>=
+	(fun argsaunwrap argsb ->
+          let argsa = A.rewrap argsa argsaunwrap in
+	  (if allminus
+          then minusize_list [ib1;ib2]
+          else return ((), [ib1;ib2])) >>= (fun _ ib ->
+	    return (
+	    A.rewrap ea (A.CxxAttribute(lb1,argsa,rb1)),
+            (B.CxxAttribute argsb,ib)
+            )))))
   | _ -> fail
 
 and attr_arg = fun allminus ea eb ->
