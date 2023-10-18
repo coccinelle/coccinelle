@@ -121,15 +121,10 @@ let mk_pretty_printers
 	pr_elem i1;
 	s +> (List.iter pp_string_fragment);
 	pr_elem i2
-    | FunCall (e, es), [i1;i2]
-    | TemplateCall (e, es), [i1;i2] ->
+    | FunCall  (e, es),     [i1;i2] ->
         pp_expression e; pr_elem i1;
 	pp_arg_list es;
         pr_elem i2
-    | CudaCall (e, es), [i1;i2;i3;i4;i5;i6] ->
-        pp_expression e; pr_elem i1; pr_elem i2; pr_elem i3;
-	pp_arg_list es;
-        pr_elem i4; pr_elem i5; pr_elem i6
 
     | CondExpr (e1, e2, e3),    [i1;i2]    ->
         pp_expression e1; pr_space(); pr_elem i1; pr_space();
@@ -220,7 +215,7 @@ let mk_pretty_printers
         pp_name name;
         pr_elem i3; (* ) *)
 
-    | (Ident (_) | Constant _ | StringConstant _ | FunCall (_,_) | TemplateCall (_,_) | CudaCall (_,_)
+    | (Ident (_) | Constant _ | StringConstant _ | FunCall (_,_)
     | CondExpr (_,_,_) | Sequence (_,_) | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)

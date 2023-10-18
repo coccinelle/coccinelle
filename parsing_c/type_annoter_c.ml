@@ -808,9 +808,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
      * Also as I don't want a warning on the Ident that are a FunCall,
      * easier to have a rule separate from the Ident rule.
      *)
-    | FunCall (e1, args)
-    | TemplateCall (e1, args)
-    | CudaCall (e1, args) ->
+    | FunCall (e1, args) ->
      (match Ast_c.unwrap_expr e1 with
      | Ident (ident) ->
         (* recurse *)

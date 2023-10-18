@@ -154,8 +154,6 @@ module Ast_c :
       | Constant of constant
       | StringConstant of string_fragment list * string * isWchar
       | FunCall of expression * argument wrap2 list
-      | TemplateCall of expression * argument wrap2 list
-      | CudaCall of expression * argument wrap2 list
       | CondExpr of expression * expression option * expression
       | Sequence of expression * expression
       | Assignment of expression * assignOp * expression

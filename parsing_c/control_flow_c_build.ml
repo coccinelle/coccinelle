@@ -463,9 +463,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
         | None -> "empty;"
         | Some e ->
             (match Ast_c.unwrap_expr e with
-            | FunCall (e, _args)
-            | TemplateCall (e, _args)
-            | CudaCall (e, _args) ->
+            | FunCall (e, _args) ->
                 (match Ast_c.unwrap_expr e with
                 | Ident namef ->
                     Ast_c.str_of_name namef ^ "(...)"

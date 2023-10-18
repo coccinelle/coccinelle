@@ -991,11 +991,7 @@ primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
  | identifier_cpp TTemplateStart argument_list TTemplateEnd
      { let fn = mk_e(Ident  ($1)) [] in
-       mk_e(TemplateCall (fn, $3)) [$2;$4] }
- | identifier_cpp TTemplateStart TTemplateStart TTemplateStart argument_list 
-                TTemplateEnd TTemplateEnd TTemplateEnd
-     { let fn = mk_e(Ident  ($1)) [] in
-       mk_e(CudaCall (fn, $5)) [$2;$3;$4;$6;$7;$8] }
+       mk_e(FunCall (fn, $3)) [$2;$4] }
  | primary_expr_without_ident { $1 }
 
 string_fragments:
