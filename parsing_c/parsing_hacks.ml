@@ -3028,6 +3028,13 @@ let convert_templates toks =
 	pdepth = tok1_pdepth && pdepth = tok2_pdepth &&
 	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2
     | _ -> false in
+  let top3 stack pdepth tdepth =
+    match stack with
+      (tok1,tok1_pdepth,tok1_tdepth)::(tok2,tok2_pdepth,tok2_tdepth)::
+      (tok3,tok3_pdepth,tok3_tdepth)::rest ->
+	pdepth = tok1_pdepth && pdepth = tok2_pdepth && pdepth = tok3_pdepth &&
+	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2 && tdepth = tok3_tdepth + 3
+    | _ -> false in
   let success a s i1 b i2 c i3 xs =
     b.TV.tok <- TTemplateStart i2;
     c.TV.tok <- i3;
@@ -3075,6 +3082,16 @@ let convert_templates toks =
       let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl stack) in
       success ident s i1 inf i2 c (TTemplateEndTemplateEnd i3) rest;
       loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
+  (* another possible end point *)
+  | (({TV.tok = TSup3 i3}) as c) :: rest when top3 stack pdepth tdepth ->
+      rebuild := true;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
+      success ident s i1 inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl stack) in
+      success ident s i1 inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl (List.tl stack)) in
+      success ident s i1 inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
+      loop (List.tl (List.tl (List.tl stack))) pdepth (tdepth-3) rest
   (* something else *)
   | _::rest -> loop stack pdepth tdepth rest in
   loop [] 0 0 tokens2;
@@ -3112,6 +3129,11 @@ let convert_templates toks =
 	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
 	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
 	       t2 :: t1 :: prev
+	   | TTemplateEndTemplateEndTemplateEnd i3 ->
+	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
+	       let t3 = TTemplateEnd (copy_tok i3 ">" 2) in
+	       t3 :: t2 :: t1 :: prev
 	   | x -> x :: prev)
 	 [] tokens2)
   else Common.acc_map (fun x -> x.TV.tok) tokens2

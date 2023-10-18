@@ -573,7 +573,8 @@ let args_to_params l pb =
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
-       TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd Tfinal
+       TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd
+       TTemplateEndTemplateEndTemplateEnd Tfinal
 
 /*(* C99 *)*/
 %token <Ast_c.info>

@@ -474,6 +474,7 @@ let info_of_tok = function
   | TTemplateEnd         (i) -> i
   | TTemplateEndSup      (i) -> i
   | TTemplateEndTemplateEnd (i) -> i
+  | TTemplateEndTemplateEndTemplateEnd (i) -> i
   | Tfinal               (i) -> i
   | Tdefined             (i) -> i
   | TOParCplusplusInit   (i) -> i
@@ -674,6 +675,7 @@ let visitor_info_of_tok f = function
   | TTemplateEnd         (i) -> TTemplateEnd         (f i)
   | TTemplateEndSup      (i) -> TTemplateEndSup      (f i)
   | TTemplateEndTemplateEnd (i) -> TTemplateEndTemplateEnd (f i)
+  | TTemplateEndTemplateEndTemplateEnd (i) -> TTemplateEndTemplateEndTemplateEnd (f i)
   | Tfinal               (i) -> Tfinal               (f i)
   | Tdefined             (i) -> Tdefined             (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
@@ -811,6 +813,7 @@ let string_of_token = function
   | TTemplateEnd _ -> "TTemplateEnd"
   | TTemplateEndSup _ -> "TTemplateEndSup"
   | TTemplateEndTemplateEnd _ -> "TTemplateEndTemplateEnd"
+  | TTemplateEndTemplateEndTemplateEnd _ -> "TTemplateEndTemplateEndTemplateEnd"
   | Tfinal _ -> "Tfinal"
   | Tdefined _ -> "Tdefined"
   | TOParCplusplusInit _ -> "TOParCplusplusInit"
