@@ -895,10 +895,10 @@ let arg_parse2 ~current l f msg argv argv_location =
 let short_usage () =
  begin
   Common.short_usage usage_msg ~short_opt:short_options;
-  pr2 "";
-  pr2 "Example of use:";
-  pr2 "  ./spatch --sp-file foo.cocci foo.c -o /tmp/newfoo.c";
-  pr2 "";
+  pr "";
+  pr "Example of use:";
+  pr "  ./spatch --sp-file foo.cocci foo.c -o /tmp/newfoo.c";
+  pr "";
  end
 
 

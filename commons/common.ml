@@ -1507,7 +1507,7 @@ let parse_options options usage_msg argv =
 
 
 let usage usage_msg options  =
-  Arg.usage (Arg.align options) usage_msg
+  pr (Arg.usage_string (Arg.align options) usage_msg)
 
 
 (* for coccinelle *)
