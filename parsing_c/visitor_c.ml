@@ -305,7 +305,9 @@ let rec vk_expr = fun bigf expr ->
     | Ident (name) -> vk_name bigf name
     | Constant (c) -> ()
     | StringConstant(s,os,w) -> vk_string_fragments bigf s
-    | FunCall  (e, es)         ->
+    | FunCall (e, es)
+    | TemplateCall (e, es)
+    | CudaCall (e, es) ->
         exprf e;
         vk_argument_list bigf es
     | CondExpr (e1, e2, e3)    ->
@@ -1280,6 +1282,16 @@ let rec vk_expr_s = fun bigf expr ->
 	  StringConstant(s +> (List.map (vk_string_fragment_s bigf)),os,w)
       | FunCall  (e, es)         ->
           FunCall (exprf e,
+                  es +> List.map (fun (e,ii) ->
+                    vk_argument_s bigf e, iif ii
+                  ))
+      | TemplateCall  (e, es)         ->
+          TemplateCall (exprf e,
+                  es +> List.map (fun (e,ii) ->
+                    vk_argument_s bigf e, iif ii
+                  ))
+      | CudaCall  (e, es)         ->
+          CudaCall (exprf e,
                   es +> List.map (fun (e,ii) ->
                     vk_argument_s bigf e, iif ii
                   ))

@@ -424,6 +424,8 @@ let rec expression e =
     | Ast_c.Constant (c) -> primary
     | Ast_c.StringConstant (c,os,w) -> primary
     | Ast_c.FunCall  (e, es) -> postfix
+    | Ast_c.TemplateCall  (e, es) -> postfix
+    | Ast_c.CudaCall  (e, es) -> postfix
     | Ast_c.CondExpr (e1, e2, e3) -> cond
     | Ast_c.Sequence (e1, e2) -> top
     | Ast_c.Assignment (e1, op, e2) -> assign

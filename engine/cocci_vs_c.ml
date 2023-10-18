@@ -1748,6 +1748,8 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | _, ((B.New _,_),_)
   | _, ((B.Delete _,_),_)
   | _, ((B.Defined _,_),_)
+  | _, ((B.TemplateCall _,_),_)
+  | _, ((B.CudaCall _,_),_)
     -> fail
 
 

@@ -340,6 +340,8 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | Constant       of constant
   | StringConstant of string_fragment list * string (*src string*) * isWchar
   | FunCall        of expression * argument wrap2 (* , *) list
+  | TemplateCall   of expression * argument wrap2 (* , *) list
+  | CudaCall       of expression * argument wrap2 (* , *) list
   (* gccext: x ? /* empty */ : y <=> x ? x : y;  hence the 'option' below *)
   | CondExpr       of expression * expression option * expression
 
