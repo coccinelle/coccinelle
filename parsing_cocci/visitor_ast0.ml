@@ -1170,7 +1170,10 @@ let visitor mode bind option_default
 	    (s_n, Ast0.PragmaString(s))
 	| Ast0.PragmaDots (dots) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    (dots_n,Ast0.PragmaDots dots)) in
+	    (dots_n,Ast0.PragmaDots dots)
+	| MetaPragmaInfo (name, c, pure) ->
+          let (name_n,name) = meta_mcode name in
+          (name_n,Ast0.MetaPragmaInfo(name, c, pure))) in
     k pi
 
   (* not parameterizable for now... *)

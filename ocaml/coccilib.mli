@@ -3014,6 +3014,7 @@ module Ast_cocci :
       Ast_cocci.base_pragmainfo =
         PragmaString of string mcode
       | PragmaDots of string mcode
+      | MetaPragmaInfo of Ast_cocci.meta_name mcode * constraints * pure
     and pragmainfo = base_pragmainfo wrap
     and forinfo =
       Ast_cocci.forinfo =
@@ -3676,6 +3677,7 @@ module Ast0_cocci :
       Ast0_cocci.base_pragmainfo =
         PragmaString of string mcode
       | PragmaDots of string mcode
+      | MetaPragmaInfo of Ast_cocci.meta_name mcode * constraints * pure
     and pragmainfo = base_pragmainfo wrap
     and base_forinfo =
       Ast0_cocci.base_forinfo =

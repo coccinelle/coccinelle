@@ -110,6 +110,10 @@ val add_binaryOp_meta:
     (Ast_cocci.meta_name ->
       Ast0_cocci.constraints -> Ast0_cocci.pure -> unit) ref
 
+val add_pragmainfo_meta:
+    (Ast_cocci.meta_name ->
+      Ast0_cocci.constraints -> Ast0_cocci.pure -> unit) ref
+
 val add_type_name: (string -> unit) ref
 val add_attribute: (string -> unit) ref
 val add_attribute_meta: cstr_meta_type ref

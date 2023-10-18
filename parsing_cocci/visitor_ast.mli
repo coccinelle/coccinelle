@@ -66,6 +66,7 @@ val combiner :
       ((Ast_cocci.string_format,'a) ccode) ->
       ((Ast_cocci.assignOp,'a) ccode) ->
       ((Ast_cocci.binaryOp,'a) ccode) ->
+      ((Ast_cocci.pragmainfo,'a) ccode) ->
       ((Ast_cocci.fullType,'a) ccode) ->
       ((Ast_cocci.typeC,'a) ccode) ->
       ((Ast_cocci.initialiser,'a) ccode) ->

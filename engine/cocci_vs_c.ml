@@ -689,6 +689,8 @@ module type PARAM =
       (A.meta_name A.mcode, B.assignOp) matcher
     val distrf_binaryOp :
       (A.meta_name A.mcode, B.binaryOp) matcher
+    val distrf_pragma_info :
+      (A.meta_name A.mcode, B.info) matcher
     val distrf_args :
       (A.meta_name A.mcode, (Ast_c.argument, Ast_c.il) either list) matcher
     val distrf_type :
@@ -5639,6 +5641,16 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	    A.PragmaDots(mcode) +> wp,
 	    rest_iidb
 	  ))
+      | A.MetaPragmaInfo(mv, c, pure) ->
+	  let mv' = B.MetaPragmaInfoVal rest in
+	  check_constraints c mv mv'
+	    (fun () ->
+	      let max_min _ = rest_iidb in
+	      X.envf keep inherited (mv,mv',max_min)
+		(fun () -> X.distrf_pragma_info mv rest_iidb >>=
+		  (fun mv rest_iidb ->
+		    return (A.MetaPragmaInfo(mv,c,keep,inherited) +> A.rewrap opa,
+			    rest_iidb))))
       ) >>= (fun pragmainfoa rest_iidb ->
         return (
 	  A.Pragma(prga,ida,pragmainfoa),

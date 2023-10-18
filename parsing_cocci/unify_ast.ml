@@ -732,8 +732,11 @@ and unify_rule_elem re1 re2 =
 
 and unify_pragmainfo pi1 pi2 =
   match (Ast.unwrap pi1,Ast.unwrap pi2) with
-      (Ast.PragmaString(s1),Ast.PragmaString(s2)) -> unify_mcode s1 s2
-    | (Ast.PragmaDots(_),_) | (_,Ast.PragmaDots(_)) -> true
+    (Ast.PragmaString(s1),Ast.PragmaString(s2)) -> unify_mcode s1 s2
+  | (Ast.MetaPragmaInfo(mv1,_,_,_), Ast.MetaPragmaInfo(mv2,_,_,_)) ->
+      unify_mcode mv1 mv2
+  | (Ast.PragmaDots(_),_) | (_,Ast.PragmaDots(_)) -> true
+  | _ -> false
 
 and unify_fninfo patterninfo cinfo =
   let patterninfo = List.sort compare patterninfo in
@@ -795,7 +798,7 @@ and subexp f =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing expr
+      donothing expr donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing in
@@ -811,8 +814,8 @@ and subtype f =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing fullType
-      donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      fullType  donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing in
   recursor.V.combiner_rule_elem

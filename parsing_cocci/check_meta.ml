@@ -585,8 +585,12 @@ and statement old_metas table minus s =
 
 and pragmainfo old_metas table minus pi =
   match Ast0.unwrap pi with
-      Ast0.PragmaString(s) -> ()
-    | Ast0.PragmaDots (dots) -> ()
+    Ast0.PragmaString(s) -> ()
+  | Ast0.PragmaDots (dots) -> ()
+  | Ast0.MetaPragmaInfo (name,cstr,_) ->
+      check_table table minus name;
+      constraints table minus cstr
+
 
 and define_param old_metas table minus p =
   match Ast0.unwrap p with

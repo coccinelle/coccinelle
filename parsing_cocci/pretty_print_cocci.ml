@@ -920,8 +920,9 @@ and forinfo = function
 
 and pragmainfo pi =
   match Ast.unwrap pi with
-      Ast.PragmaString(s) -> mcode print_string s
-    | Ast.PragmaDots (dots) -> mcode print_string dots
+    Ast.PragmaString(s) -> mcode print_string s
+  | Ast.PragmaDots (dots) -> mcode print_string dots
+  | Ast.MetaPragmaInfo(metavar,_,_,_) -> mcode print_meta metavar
 
 and print_define_parameters params =
   match Ast.unwrap params with

@@ -63,6 +63,7 @@ let token2c (tok,_) add_clt =
   | PC.TOperator -> "operator"
   | PC.TBinary -> "binary"
   | PC.TAssignment -> "assignment"
+  | PC.TPragmaInfo -> "pragmainfo"
   | PC.TInitialiser -> "initialiser"
   | PC.TSymbol -> "symbol"
   | PC.TDeclaration -> "declaration"
@@ -151,7 +152,7 @@ let token2c (tok,_) add_clt =
   | PC.TUndef(clt,_) -> add_clt "#undef" clt
   | PC.TDefine(clt,_) -> add_clt "#define" clt
   | PC.TDefineParam(clt,_,_,_) -> add_clt "#define_param" clt
-  | PC.TPragma(clt,ident,rest,rest_clt) -> add_clt "#pragma" clt
+  | PC.TPragma(clt,ident,rest_ident,rest,rest_clt) -> add_clt "#pragma" clt
   | PC.TCppEscapedNewline(clt) -> add_clt "\\" clt
   | PC.TMinusFile(s,clt) -> add_clt (pr "--- %s" s) clt
   | PC.TPlusFile(s,clt) -> add_clt (pr "+++ %s" s) clt
@@ -228,6 +229,7 @@ let token2c (tok,_) add_clt =
   | PC.TMeta(_,_,_,clt) -> add_clt "meta" clt
   | PC.TMetaAssignOp(_,_,_,clt) -> add_clt "metaassignop" clt
   | PC.TMetaBinaryOp(_,_,_,clt) -> add_clt "metabinaryop" clt
+  | PC.TMetaPragmaInfo(_,_,_,clt) -> add_clt "metapragmainfo" clt
   | PC.TMetaParam(_,_,_,clt) -> add_clt "parammeta" clt
   | PC.TMetaParamList(_,_,_,_,clt) -> add_clt "paramlistmeta" clt
   | PC.TMetaConst(_,_,_,_,clt) -> add_clt "constmeta" clt
@@ -349,7 +351,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
-  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt,_,_,_)
+  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt,_,_,_,_)
   | PC.TDefineParam(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
@@ -378,7 +380,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt,_) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
-  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
@@ -442,7 +444,7 @@ let get_clt (tok,_) =
 
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
-  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt,_,_,_)
+  | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TPragma(clt,_,_,_,_)
   | PC.TDefineParam(clt,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TMinusFile(_,clt) | PC.TPlusFile(_,clt)
 
@@ -471,7 +473,7 @@ let get_clt (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaErr(_,_,_,clt)
   | PC.TMetaExp(_,_,_,_,clt,_) | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
-  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
   | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
@@ -578,6 +580,7 @@ let get_clt (tok,_) =
   | PC.TBinary -> failwith "No clt attached to token TBinary"
   | PC.TAttribute -> failwith "No clt attached to token TAttribute"
   | PC.TAssignment -> failwith "No clt attached to token TAssignment"
+  | PC.TPragmaInfo -> failwith "No clt attached to token TPragmaInfo"
   | PC.TArobArob -> failwith "No clt attached to token TArobArob"
   | PC.TArob -> failwith "No clt attached to token TArob"
   | PC.TAnalysis -> failwith "No clt attached to token TAnalysis"
@@ -625,7 +628,7 @@ let update_clt (tok,x) clt =
   | PC.TUndef(_,a) -> (PC.TUndef(clt,a),x)
   | PC.TDefine(_,a) -> (PC.TDefine(clt,a),x)
   | PC.TDefineParam(_,a,b,c) -> (PC.TDefineParam(clt,a,b,c),x)
-  | PC.TPragma(_,a,b,c) -> (PC.TPragma(clt,a,b,c),x)
+  | PC.TPragma(_,a,b,c,d) -> (PC.TPragma(clt,a,b,c,d),x)
   | PC.TCppEscapedNewline(_) -> (PC.TCppEscapedNewline(clt),x)
   | PC.TMinusFile(s,_) -> (PC.TMinusFile(s,clt),x)
   | PC.TPlusFile(s,_) -> (PC.TPlusFile(s,clt),x)
@@ -693,6 +696,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaId(a,b,c,d,_)    -> (PC.TMetaId(a,b,c,d,clt),x)
   | PC.TMetaAssignOp(a,b,c,_)    -> (PC.TMetaAssignOp(a,b,c,clt),x)
   | PC.TMetaBinaryOp(a,b,c,_)    -> (PC.TMetaBinaryOp(a,b,c,clt),x)
+  | PC.TMetaPragmaInfo(a,b,c,_)    -> (PC.TMetaPragmaInfo(a,b,c,clt),x)
   | PC.TMetaType(a,b,c,_)    -> (PC.TMetaType(a,b,c,clt),x)
   | PC.TMetaInit(a,b,c,_)    -> (PC.TMetaInit(a,b,c,clt),x)
   | PC.TMetaInitList(a,b,c,d,_) -> (PC.TMetaInitList(a,b,c,d,clt),x)
@@ -831,6 +835,7 @@ let update_clt (tok,x) clt =
   | PC.TBinary -> assert false
   | PC.TAttribute -> assert false
   | PC.TAssignment -> assert false
+  | PC.TPragmaInfo -> assert false
   | PC.TArobArob -> assert false
   | PC.TArob -> assert false
   | PC.TAnalysis -> assert false
@@ -903,7 +908,7 @@ let split t clt =
 let split_token ((tok,_) as t) =
   match tok with
     PC.TMetavariable | PC.TIdentifier | PC.TOperator
-  | PC.TBinary | PC.TAssignment
+  | PC.TBinary | PC.TAssignment | PC.TPragmaInfo
   | PC.TConstant | PC.TExpression | PC.TIdExpression
   | PC.TDeclaration | PC.TField
   | PC.TStatement | PC.TPosition | PC.TComments | PC.TFormat | PC.TAnalysis
@@ -937,7 +942,7 @@ let split_token ((tok,_) as t) =
       split t clt
   | PC.TInclude(clt) -> split t clt
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
-  | PC.TCppEscapedNewline(clt) | PC.TPragma(clt,_,_,_) ->
+  | PC.TCppEscapedNewline(clt) | PC.TPragma(clt,_,_,_,_) ->
       split t clt
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
@@ -951,7 +956,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaExp(_,_,_,_,clt,_)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
-  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaParam(_,_,_,clt) | PC.TMetaParamList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
@@ -1283,6 +1288,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaLocalIdExp(_,_,_,_,_),_)
     | (PC.TMetaAssignOp(_,_,_,_),_)
     | (PC.TMetaBinaryOp(_,_,_,_),_)
+    | (PC.TMetaPragmaInfo(_,_,_,_),_)
     | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_,_),_)
     | (PC.TMetaType(_,_,_,_),_)
@@ -1398,7 +1404,7 @@ let token2line (tok,_) =
   | PC.TMetaConst(_,_,_,_,clt) | PC.TMetaExp(_,_,_,_,clt,_)
   | PC.TMetaIdExp(_,_,_,_,clt)
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
-  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt)
+  | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
   | PC.TMetaInit(_,_,_,clt) | PC.TMetaInitList(_,_,_,_,clt)
@@ -1427,7 +1433,7 @@ let token2line (tok,_) =
   | PC.TPtrOp(clt)
 
   | PC.TUndef(clt,_) | PC.TDefine(clt,_) | PC.TDefineParam(clt,_,_,_)
-  | PC.TPragma(clt,_,_,_) | PC.TCppEscapedNewline(clt)
+  | PC.TPragma(clt,_,_,_,_) | PC.TCppEscapedNewline(clt)
   | PC.TIncludeL(_,clt) | PC.TIncludeNL(_,clt) | PC.TIncludeAny(_,clt)
   | PC.TInclude(clt)
 
@@ -1444,7 +1450,7 @@ let rec insert_line_end = function
   | (((PC.TUndef(clt,_),q) as x)::xs)
   | (((PC.TDefine(clt,_),q) as x)::xs)
   | (((PC.TDefineParam(clt,_,_,_),q) as x)::xs)
-  | (((PC.TPragma(clt,_,_,_),q) as x)::xs) ->
+  | (((PC.TPragma(clt,_,_,_,_),q) as x)::xs) ->
       x::(find_line_end false (token2line x) clt q xs)
   | x::xs -> x::(insert_line_end xs)
 
@@ -2764,7 +2770,7 @@ let contains_modifs ast =
     | Ast.MINUS _ | Ast.PLUS _ -> true in
   let recursor = Visitor_ast.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode
+      mcode mcode mcode donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing

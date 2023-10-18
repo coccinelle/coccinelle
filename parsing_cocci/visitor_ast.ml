@@ -56,8 +56,8 @@ let combiner bind option_default
     inc_file_mcodefn
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
     enumdecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
-    paramfn define_paramfn declfn
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
+    ftfn tyfn initfn paramfn define_paramfn declfn
     annotated_declfn fieldfn annotated_fieldfn enum_declfn rulefn stmtfn
     casefn attributefn attr_argfn topfn anyfn =
   let multibind l =
@@ -865,8 +865,9 @@ let combiner bind option_default
     let k pi =
       match Ast.unwrap pi with
 	Ast.PragmaString(s) -> string_mcode s
-      | Ast.PragmaDots (dots) -> string_mcode dots in
-    k pi
+      | Ast.PragmaDots (dots) -> string_mcode dots
+      | Ast.MetaPragmaInfo (mv,_,_,_) -> meta_mcode mv in
+    pragmainfofn all_functions k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -1946,7 +1947,8 @@ let rebuilder
       Ast.rewrap pi
 	(match Ast.unwrap pi with
 	  Ast.PragmaString(s) -> Ast.PragmaString(string_mcode s)
-	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)) in
+	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)
+        | Ast.MetaPragmaInfo (mv,x,y,z) -> Ast.MetaPragmaInfo ((meta_mcode mv),x,y,z)) in
     k pi
 
   (* not parameterizable for now... *)

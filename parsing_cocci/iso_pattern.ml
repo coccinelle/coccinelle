@@ -2530,6 +2530,8 @@ let get_name bindings = function
       (nm,function nm -> Ast.MetaBinaryOperatorDecl(ar,nm))
   | Ast.MetaAssignmentOperatorDecl(ar,nm) ->
       (nm,function nm -> Ast.MetaAssignmentOperatorDecl(ar,nm))
+  | Ast.MetaPragmaInfoDecl(ar,nm) ->
+      (nm,function nm -> Ast.MetaPragmaInfoDecl(ar,nm))
   | Ast.MetaConstDecl(ar,nm,ty) ->
       (nm,function nm -> Ast.MetaConstDecl(ar,nm,ty))
   | Ast.MetaErrDecl(ar,nm) ->

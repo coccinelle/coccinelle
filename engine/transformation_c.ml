@@ -644,6 +644,9 @@ module XTRANS = struct
   let distribute_mck_binaryOp (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_binaryOp_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
+  let distribute_mck_pragma_info (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_info_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
   let distribute_mck_args (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
     Visitor_c.vk_args_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
 
@@ -770,6 +773,7 @@ module XTRANS = struct
   let distrf_e    = distrf (Lib_parsing_c.ii_of_expr,  distribute_mck_expr)
   let distrf_assignOp = distrf (Lib_parsing_c.ii_of_assignOp, distribute_mck_assignOp)
   let distrf_binaryOp = distrf (Lib_parsing_c.ii_of_binaryOp, distribute_mck_binaryOp)
+  let distrf_pragma_info = distrf ((fun x -> x), distribute_mck_pragma_info)
   let distrf_args = distrf (Lib_parsing_c.ii_of_args,  distribute_mck_args)
   let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)

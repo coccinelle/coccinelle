@@ -1404,8 +1404,13 @@ and rule_elem arity re =
 
 and pragmainfo pi =
   match Ast.unwrap pi with
-      Ast.PragmaString(s) -> mcode print_string s
-    | Ast.PragmaDots (dots) -> mcode print_string dots
+    Ast.PragmaString(s) -> mcode print_string s
+  | Ast.PragmaDots (dots) -> mcode print_string dots
+  | Ast.MetaPragmaInfo(name,_,_,_) ->
+      handle_metavar name (function
+        | Ast_c.MetaPragmaInfoVal(rest) ->
+	    List.iter (mcode print_string) (List.map snd rest)
+        | _ -> error name re "pragma info value expected")
 
 and forinfo = function
     Ast.ForExp(e1,sem1,e2,sem2,e3) ->

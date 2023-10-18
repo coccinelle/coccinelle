@@ -379,6 +379,7 @@ and metavar_binding_kind =
   | MetaFragListVal of string_fragment list
   | MetaAssignOpVal of assignOp
   | MetaBinaryOpVal of binaryOp
+  | MetaPragmaInfoVal of info list
   | MetaPosVal of (Ast_cocci.fixpos * Ast_cocci.fixpos)
   | MetaPosValList of
       (Common.filename * string * (posl * posl) option * posl * posl) list

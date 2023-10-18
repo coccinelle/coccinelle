@@ -105,6 +105,7 @@ and metavar =
   | MetaParamListDecl of arity * meta_name (*name*) * list_len (*len*)
   | MetaBinaryOperatorDecl of arity * meta_name
   | MetaAssignmentOperatorDecl of arity * meta_name
+  | MetaPragmaInfoDecl of arity * meta_name
   | MetaConstDecl of
       arity * meta_name (* name *) * fullType list option
   | MetaErrDecl of arity * meta_name (* name *)
@@ -626,6 +627,7 @@ and base_rule_elem =
 and base_pragmainfo =
     PragmaString of string mcode
   | PragmaDots of string mcode
+  | MetaPragmaInfo of meta_name mcode * constraints * keep_binding * inherited
 
 and pragmainfo = base_pragmainfo wrap
 
@@ -935,6 +937,7 @@ let get_meta_name = function
   | MetaParamListDecl(_ar,nm,nm1) -> nm
   | MetaBinaryOperatorDecl(_,name) -> name
   | MetaAssignmentOperatorDecl(_,name) -> name
+  | MetaPragmaInfoDecl(_,name) -> name
   | MetaConstDecl(_ar,nm,_ty) -> nm
   | MetaErrDecl(_ar,nm) -> nm
   | MetaExpDecl(_ar,nm,_ty,_bitfield) -> nm

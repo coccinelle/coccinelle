@@ -790,8 +790,9 @@ and statement arity s =
 
 and pragmainfo pi =
   match Ast0.unwrap pi with
-      Ast0.PragmaString(s) -> mcode print_string s
-    | Ast0.PragmaDots(dots) -> mcode print_string dots
+    Ast0.PragmaString(s) -> mcode print_string s
+  | Ast0.PragmaDots(dots) -> mcode print_string dots
+  | Ast0.MetaPragmaInfo(name,_,_) -> mcode print_meta name
 
 and print_define_parameters params =
   match Ast0.unwrap params with

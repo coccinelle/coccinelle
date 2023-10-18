@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 193, also unused: 8-9, 15
+(* current max is 193, also unused: 9, 15
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -218,6 +218,7 @@ and pragmainfo pi =
   match Ast0.unwrap pi with
     Ast0.PragmaString(s) -> [163]
   | Ast0.PragmaDots (dots) -> [164]
+  | Ast0.MetaPragmaInfo(_,_,_) -> [8]
 
 let case_line c =
   match Ast0.unwrap c with

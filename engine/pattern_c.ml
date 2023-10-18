@@ -318,6 +318,7 @@ module XMATCH = struct
   let distrf_e              = distrf Lib_parsing_c.ii_of_expr
   let distrf_assignOp       = distrf Lib_parsing_c.ii_of_assignOp
   let distrf_binaryOp       = distrf Lib_parsing_c.ii_of_binaryOp
+  let distrf_pragma_info    = distrf (fun x -> x)
   let distrf_args           = distrf Lib_parsing_c.ii_of_args
   let distrf_type           = distrf Lib_parsing_c.ii_of_type
   let distrf_param          = distrf Lib_parsing_c.ii_of_param

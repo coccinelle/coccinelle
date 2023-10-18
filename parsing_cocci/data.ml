@@ -130,6 +130,10 @@ let add_binaryOp_meta:
     (Ast.meta_name -> Ast0.constraints -> Ast0.pure -> unit) ref =
   ref uninitialized_add_meta
 
+let add_pragmainfo_meta:
+    (Ast.meta_name -> Ast0.constraints -> Ast0.pure -> unit) ref =
+  ref uninitialized_add_meta
+
 let add_type_name: (string -> unit) ref = ref uninitialized_add_meta
 let add_attribute: (string -> unit) ref = ref uninitialized_add_meta
 let add_attribute_meta: cstr_meta_type ref = ref uninitialized_add_meta

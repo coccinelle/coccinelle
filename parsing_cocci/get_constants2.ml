@@ -516,6 +516,21 @@ let do_get_constants constants keywords env (neg_pos,_) =
       Ast.MetaFormat(name,_,_,_) -> bind (k ft) (minherited name)
     | _ -> k ft in
 
+  let binary r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaBinary(name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
+
+  let assign r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaAssign(name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
+
+  let pragma_info r k ft =
+    match Ast.unwrap ft with
+      Ast.MetaPragmaInfo(name,_,_,_) -> bind (k ft) (minherited name)
+    | _ -> k ft in
+
   let fullType r k ft =
     match Ast.unwrap ft with
       Ast.DisjType(decls) ->
@@ -658,7 +673,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
-    ident expression string_fragment string_format donothing donothing
+    ident expression string_fragment string_format assign binary pragma_info
     fullType typeC initialiser parameter define_parameter declaration donothing
     field ann_field donothing rule_elem statement donothing attribute attr_arg
     donothing donothing
@@ -730,7 +745,7 @@ let all_context =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
     initialiser donothing donothing donothing donothing donothing donothing
     donothing rule_elem statement donothing donothing donothing donothing
     donothing

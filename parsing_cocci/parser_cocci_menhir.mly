@@ -139,7 +139,14 @@ let tmeta_to_binaryOp (name,cstr,pure,clt) =
      (TMetaBinaryOp(name,cstr,pure,clt))
      (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
   Ast0_cocci.wrap
-    (Ast0_cocci.MetaBinary(Parse_aux.clt2mcode name clt,cstr, pure),clt)
+    (Ast0_cocci.MetaBinary(Parse_aux.clt2mcode name clt,cstr, pure))
+
+let tmeta_to_pragmainfo (name,cstr,pure,clt) =
+  (coerce_tmeta "a pragma info" name
+     (TMetaPragmaInfo(name,cstr,pure,clt))
+     (function TMetaPragmaInfo(_,_,_,_) -> true | _ -> false));
+  Ast0_cocci.wrap
+    (Ast0_cocci.MetaPragmaInfo(Parse_aux.clt2mcode name clt,cstr, pure))
 
 let tmeta_to_statement (name,cstr,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,cstr,pure,clt))
@@ -217,7 +224,7 @@ let inline_id aft = function
 
 %token TIdentifier TExpression TStatement TFunction TType TParameter
 %token TIdExpression TInitialiser TDeclaration TField TMetavariable TSymbol
-%token TOperator TBinary TAssignment
+%token TOperator TBinary TAssignment TPragmaInfo
 %token Tlist TFresh TConstant TError TWords TWhy0 TPlus0
 %token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TComments TAnalysis
@@ -251,7 +258,7 @@ let inline_id aft = function
 %token <Parse_aux.cstrinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.cstrinfo>        TMetaIterator TMetaDeclarer
 %token <Parse_aux.assignOpinfo>  TMetaAssignOp TMetaType
-%token <Parse_aux.binaryOpinfo>  TMetaBinaryOp
+%token <Parse_aux.binaryOpinfo>  TMetaBinaryOp TMetaPragmaInfo
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.cstrinfo>          TMetaParam TMetaStm
 %token <Parse_aux.cstrinfo>          TMetaInit TMetaDecl TMetaField TMeta
@@ -277,7 +284,7 @@ let inline_id aft = function
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
 %token <Data.clt * token> TDefine TUndef
-%token <Data.clt * token * string * Data.clt> TPragma
+%token <Data.clt * token * token * string * Data.clt> TPragma
 %token <Data.clt> TCppEscapedNewline TInclude
 %token <Data.clt * token * int * int> TDefineParam
 %token <string * Data.clt> TMinusFile TPlusFile
@@ -646,6 +653,14 @@ metadec:
 	(fun arity name pure check_meta constraints ->
 	  let tok = check_meta(Ast_cocci.MetaAssignmentOperatorDecl(arity,name)) in
 	  !Data.add_assignOp_meta name constraints pure; tok)
+        ids }
+| ar=arity TPragmaInfo
+    ids=comma_list(pure_ident_or_meta_ident_with_constraints)
+    TMPtVirg
+    { Parse_aux.create_metadec_with_constraints ar Ast0_cocci.Impure
+	(fun arity name pure check_meta constraints ->
+	  let tok = check_meta(Ast_cocci.MetaPragmaInfoDecl(arity,name)) in
+	  !Data.add_pragmainfo_meta name constraints pure; tok)
         ids }
 
 %inline bitfield:
@@ -1494,14 +1509,27 @@ includes:
 	| _ -> b in
       $1 (Ast0_cocci.wrap body) }
 | TPragma TLineEnd
-    { let (clt,ident,rest,rest_clt) = $1 in
-      let aft = Parse_aux.get_aft clt in (* move stuff after the pragma to the ident *)
+    { let (clt,ident,rest_ident,rest,rest_clt) = $1 in
+      let aft = Parse_aux.get_aft clt in
+      (* move stuff after the pragma to the ident *)
       let body =
-      if rest = "..."
-      then Ast0_cocci.wrap(Ast0_cocci.PragmaDots(Parse_aux.clt2mcode "..." rest_clt))
-      else Ast0_cocci.wrap(Ast0_cocci.PragmaString(Parse_aux.clt2mcode rest rest_clt)) in
-      Ast0_cocci.wrap(Ast0_cocci.Pragma(Parse_aux.clt2mcode "#pragma" clt, inline_id aft ident,
-			    body)) }
+	match rest_ident with
+	  TIdent _ ->
+	    if rest = "..."
+	    then
+	      Ast0_cocci.wrap
+		(Ast0_cocci.PragmaDots(Parse_aux.clt2mcode "..." rest_clt))
+	    else
+	      Ast0_cocci.wrap
+		(Ast0_cocci.PragmaString(Parse_aux.clt2mcode rest rest_clt))
+	| TMeta x -> tmeta_to_pragmainfo x
+	| TMetaPragmaInfo(mv, cstrt, pure, clt) ->
+	    let op' = Parse_aux.clt2mcode mv clt in
+	    Ast0_cocci.wrap (Ast0_cocci.MetaPragmaInfo (op', cstrt, pure))
+	| _ -> failwith "unexpected pragma token" in
+      Ast0_cocci.wrap
+	(Ast0_cocci.Pragma
+	   (Parse_aux.clt2mcode "#pragma" clt, inline_id aft ident,body)) }
 
 defineop:
   TDefine
@@ -3478,6 +3506,7 @@ never_used: TDirective { () }
   | TAnalysis          { () }
   | TWhitespace        { () }
   | TCppEscapedNewline { () }
+  | TMetaPragmaInfo    { () } // only occurs inside TPragma
 
 script_meta_main:
     py=pure_ident TMPtVirg

@@ -442,6 +442,7 @@ and base_statement =
 and base_pragmainfo =
     PragmaString of string mcode
   | PragmaDots of string mcode
+  | MetaPragmaInfo of Ast_cocci.meta_name mcode * constraints * pure
 
 and pragmainfo = base_pragmainfo wrap
 

@@ -1298,6 +1298,10 @@ and pragmainfo tgt pi =
       let arity = all_same false tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in
       make_pragma pi tgt arity (Ast0.PragmaDots (dots))
+  | Ast0.MetaPragmaInfo(name,constraints,pure)  ->
+      let arity = all_same false tgt (mcode2line name) [mcode2arity name] in
+      let name = mcode name in
+      make_pragma pi tgt arity (Ast0.MetaPragmaInfo(name,constraints,pure))
 
 and define_parameters tgt params =
   match Ast0.unwrap params with

@@ -1210,7 +1210,10 @@ and pragmainfo pi =
   rewrap pi no_isos
     (match Ast0.unwrap pi with
       Ast0.PragmaString(s) -> Ast.PragmaString(mcode s)
-    | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots))
+    | Ast0.PragmaDots (dots) -> Ast.PragmaDots (mcode dots)
+    | Ast0.MetaPragmaInfo(mv, cstr, _) ->
+	let cstr' = constraints cstr in
+	Ast.MetaPragmaInfo(mcode mv, cstr', unitary, false))
 
 and define_parameters p =
   rewrap p no_isos

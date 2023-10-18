@@ -210,6 +210,7 @@ let id_tokens lexbuf =
   | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
   | "binary" when in_meta ->   check_arity_context_linetype s; TBinary
   | "assignment" when in_meta ->   check_arity_context_linetype s; TAssignment
+  | "pargmainfo" when in_meta ->   check_arity_context_linetype s; TPragmaInfo
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
   | "generated" when in_rule_name && not (!Flag.make_hrule = None) ->
       check_arity_context_linetype s; TGenerated
@@ -531,6 +532,10 @@ let init _ = (* per file, first .cocci then iso *)
   Data.add_binaryOp_meta :=
     (fun name constraints pure ->
       let fn clt = TMetaBinaryOp (name, constraints, pure, clt) in
+      Hashtbl.replace metavariables (get_name name) fn);
+  Data.add_pragmainfo_meta :=
+    (fun name constraints pure ->
+      let fn clt = TMetaPragmaInfo (name, constraints, pure, clt) in
       Hashtbl.replace metavariables (get_name name) fn);
   Data.add_type_name :=
     (function name ->
@@ -873,6 +878,9 @@ rule token = parse
 	        (* why pos here but not above? *)
 		  (arity,line,lline,llend,offset+off1,col+off1,strbef,straft,
 		   pos,wss1),
+                check_var rest
+		  (arity,line,lline,llend,offset+off2,col+off2,strbef,straft,
+		   pos,wss2),
 		rest,
 		(arity,line,lline,llend,offset+off2,col+off2,strbef,straft,
 		 pos,wss2)) }

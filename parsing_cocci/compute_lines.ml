@@ -1508,13 +1508,17 @@ and leftfninfo fninfo name bef = (* cases on what is leftmost *)
 and pragmainfo pi =
   match Ast0.unwrap pi with
     Ast0.PragmaString(s) ->
-      let s = bad_mcode s in
+      let s = normal_mcode s in
       let ln = promote_mcode s in
       mkres pi (Ast0.PragmaString(s)) ln ln
   | Ast0.PragmaDots(dots) ->
       let dots = bad_mcode dots in
       let ln = promote_mcode dots in
       mkres pi (Ast0.PragmaDots(dots)) ln ln
+  | Ast0.MetaPragmaInfo(mv0, c, pure) ->
+      let mv0 = normal_mcode mv0 in
+      let ln = promote_mcode mv0 in
+      mkres pi (Ast0.MetaPragmaInfo(mv0, c, pure)) ln ln
 
 and case_line c =
   match Ast0.unwrap c with
