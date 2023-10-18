@@ -1367,15 +1367,19 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
        * ... could match type.
        *)
       let (ib1, ib2) = tuple_of_list2 ii in
-      expression ea eb >>= (fun ea eb ->
-      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-      arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
-        let eas = A.rewrap eas easunwrap in
-        return (
-          ((A.FunCall (ea, ia1, eas, ia2)) +> wa,
-          ((B.FunCall (eb, ebs),typ), [ib1;ib2])
-        ))))))
+      if A.unwrap_mcode ia1 = B.str_of_info ib1 &&
+         A.unwrap_mcode ia2 = B.str_of_info ib2
+      then
+        expression ea eb >>= (fun ea eb ->
+        tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+        arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+          let eas = A.rewrap eas easunwrap in
+          return (
+            ((A.FunCall (ea, ia1, eas, ia2)) +> wa,
+            ((B.FunCall (eb, ebs),typ), [ib1;ib2])
+          ))))))
+      else fail
 
   | A.Assignment (ea1, opa, ea2, simple),
       ((B.Assignment (eb1, opb, eb2), typ),ii) ->

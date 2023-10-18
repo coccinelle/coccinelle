@@ -558,7 +558,7 @@ let args_to_params l pb =
 
 %token <Ast_c.info> TPtVirg
 %token <Ast_c.info>
-       TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInfEq TSupEq
+       TOrLog TAndLog TOr TXor TAnd  TEqEq TNotEq TInf TSup TInf3 TSup3 TInfEq TSupEq
        TShl TShr
        TPlus TMinus TMul TDiv TMod  TMax TMin
 
@@ -990,6 +990,9 @@ primary_expr_without_ident:
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
  | identifier_cpp TTemplateStart argument_list TTemplateEnd
+     { let fn = mk_e(Ident  ($1)) [] in
+       mk_e(FunCall (fn, $3)) [$2;$4] }
+ | identifier_cpp TInf3 argument_list TSup3
      { let fn = mk_e(Ident  ($1)) [] in
        mk_e(FunCall (fn, $3)) [$2;$4] }
  | primary_expr_without_ident { $1 }

@@ -801,6 +801,10 @@ rule token = parse
 		     TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">"            { start_line true;
 		     TLogOp(Ast.Sup,get_current_line_type lexbuf) }
+  | "<<<"          { start_line true;
+		     TInf3(get_current_line_type lexbuf) }
+  | ">>>"          { start_line true;
+		     TSup3(get_current_line_type lexbuf) }
 
   | "&&"           { start_line true; TAndLog (get_current_line_type lexbuf) }
   | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }

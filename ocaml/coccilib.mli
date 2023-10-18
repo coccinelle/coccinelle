@@ -745,6 +745,8 @@ module Parser_c :
       | TNotEq of Ast_c.info
       | TInf of Ast_c.info
       | TSup of Ast_c.info
+      | TInf3 of Ast_c.info
+      | TSup3 of Ast_c.info
       | TInfEq of Ast_c.info
       | TSupEq of Ast_c.info
       | TShl of Ast_c.info
