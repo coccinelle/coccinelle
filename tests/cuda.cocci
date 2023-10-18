@@ -1,4 +1,5 @@
 @@
+identifier kernel;
 @@
 
 + // CUDA follows

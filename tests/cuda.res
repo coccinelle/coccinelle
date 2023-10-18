@@ -15,6 +15,7 @@ int main()
 {
        dim3 blockDim(16, 16, 1);
        dim3 gridDim(8, 8, 1);
+       // CUDA follows
        kernel_2<<< gridDim, blockDim, 0 >>>();
        kernel_1< gridDim, blockDim, 0 >();
        f();

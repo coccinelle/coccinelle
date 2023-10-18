@@ -2533,9 +2533,9 @@ primary_expr(recurser,primary_extra):
    func_ident   { Ast0_cocci.wrap(Ast0_cocci.Ident($1)) }
  | func_ident TInf3 eexpr_list TSup3
      { let fn = Ast0_cocci.wrap(Ast0_cocci.Ident($1)) in
-       Ast0_cocci.wrap(Ast0_cocci.FunCall(fn,Parse_aux.clt2mcode "(" $2,
+       Ast0_cocci.wrap(Ast0_cocci.FunCall(fn,Parse_aux.clt2mcode "<<<" $2,
 			      $3,
-			      Parse_aux.clt2mcode ")" $4)) }
+			      Parse_aux.clt2mcode ">>>" $4)) }
  | TAndLog ident
      { let op = Parse_aux.clt2mcode Ast_cocci.GetRefLabel $1 in
      Ast0_cocci.wrap(Ast0_cocci.Unary(Ast0_cocci.wrap(Ast0_cocci.Ident($2)), op)) }

@@ -398,6 +398,8 @@ let info_of_tok = function
   | TNotEq               (i) -> i
   | TInf                 (i) -> i
   | TSup                 (i) -> i
+  | TInf3                (i) -> i
+  | TSup3                (i) -> i
   | TInfEq               (i) -> i
   | TSupEq               (i) -> i
   | TShl                 (i) -> i
@@ -596,6 +598,8 @@ let visitor_info_of_tok f = function
   | TNotEq               (i) -> TNotEq               (f i)
   | TInf                 (i) -> TInf                 (f i)
   | TSup                 (i) -> TSup                 (f i)
+  | TInf3                (i) -> TInf3                (f i)
+  | TSup3                (i) -> TSup3                (f i)
   | TInfEq               (i) -> TInfEq               (f i)
   | TSupEq               (i) -> TSupEq               (f i)
   | TShl                 (i) -> TShl                 (f i)
@@ -739,6 +743,8 @@ let string_of_token = function
   | TNotEq _ -> "TNotEq"
   | TInf _ -> "TInf"
   | TSup _ -> "TSup"
+  | TInf3 _ -> "TInf3"
+  | TSup3 _ -> "TSup3"
   | TInfEq _ -> "TInfEq"
   | TSupEq _ -> "TSupEq"
   | TShl _ -> "TShl"
