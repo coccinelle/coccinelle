@@ -743,6 +743,11 @@ and print_attribute attr =
       mcode print_string_box lb1;
       dots (function _ -> ()) arg_expression args;
       close_box(); mcode print_string_box rb1
+  | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+      mcode print_string_box lb1; mcode print_string usng;
+      ident atnm; mcode print_string dotdot; pr_space();
+      dots (function _ -> ()) expression args; close_box();
+      mcode print_string_box rb1
 
 and print_attr_arg arg =
   match Ast.unwrap arg with

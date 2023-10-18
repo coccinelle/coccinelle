@@ -473,6 +473,9 @@ and base_attr =
                     expression dots * string mcode (* ) *) * string mcode (* ) *)
   | CxxAttribute of string mcode (* [[ *) *
                     expression dots * string mcode (* ]] *)
+  | CxxAttributeUsing of string mcode (* [[ *) * string mcode (* using *) *
+                    ident * string mcode (* : *) *
+                    expression dots * string mcode (* ]] *)
 
 and attr = base_attr wrap
 

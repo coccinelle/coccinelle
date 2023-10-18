@@ -615,6 +615,7 @@ and attribute old_metas table minus x =
       attr_arg old_metas table minus arg
   | Ast0.GccAttribute _ -> ()
   | Ast0.CxxAttribute _ -> ()
+  | Ast0.CxxAttributeUsing (lb1,usng,atnm,dotdot,args,rb1) -> ident GLOBAL old_metas table minus atnm
 
 and attr_arg old_metas table minus x =
   match Ast0.unwrap x with

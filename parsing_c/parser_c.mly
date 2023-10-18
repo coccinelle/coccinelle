@@ -571,7 +571,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete Tdefined TOParCplusplusInit Tnamespace
+       Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd Tfinal
 
@@ -1442,6 +1442,8 @@ attr_arg:
 attribute_gcc:
  | Tattribute tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
  | tdouble_ocro_cxx_attr argument_list tdouble_ccro_cxx_attr { CxxAttribute $2, $1@$3 }
+ | tdouble_ocro_cxx_attr Tusing ident_cpp TDotDot argument_list tdouble_ccro_cxx_attr
+   { CxxAttributeUsing ($3,$5), $1@($2::$4::$6) }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* Declarator, right part of a type + second part of decl (the ident)  *)*/

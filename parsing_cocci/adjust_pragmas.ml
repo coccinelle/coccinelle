@@ -249,6 +249,9 @@ and left_attribute attr =
   | Ast0.CxxAttribute(lb1,arg,rb1) ->
       call_right left_mcode lb1 attr
         (function lb1 -> Ast0.CxxAttribute(lb1,arg,rb1))
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,arg,rb1) ->
+      call_right left_mcode lb1 attr
+        (function lb1 -> Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,arg,rb1))
 
 let left_fundecl name fninfo =
   let fncall_right processor data cont =

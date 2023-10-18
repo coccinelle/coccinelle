@@ -994,7 +994,15 @@ let combiner bind option_default
           let llb1 = string_mcode lb1 in
 	  let largs = expression_dots args in
           let lrb1 = string_mcode rb1 in
-          multibind [llb1;largs;lrb1] in
+          multibind [llb1;largs;lrb1]
+      | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+          let llb1 = string_mcode lb1 in
+          let lusng = string_mcode usng in
+	  let latnm = ident atnm in
+          let ldotdot = string_mcode dotdot in
+	  let largs = expression_dots args in
+          let lrb1 = string_mcode rb1 in
+          multibind [llb1;lusng;latnm;ldotdot;largs;lrb1] in
     attributefn all_functions k a
 
   and attr_arg a =
@@ -2081,7 +2089,15 @@ let rebuilder
             let lb1 = string_mcode lb1 in
 	    let largs = expression_dots args in
             let rb1 = string_mcode rb1 in
-            Ast.CxxAttribute(lb1,largs,rb1)) in
+            Ast.CxxAttribute(lb1,largs,rb1)
+        | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+            let lb1 = string_mcode lb1 in
+            let usng = string_mcode usng in
+            let latnm = ident atnm in
+            let dotdot = string_mcode dotdot in
+            let largs = expression_dots args in
+            let rb1 = string_mcode rb1 in
+            Ast.CxxAttributeUsing(lb1,usng,latnm,dotdot,largs,rb1)) in
     attributefn all_functions k a
 
   and attr_arg a =

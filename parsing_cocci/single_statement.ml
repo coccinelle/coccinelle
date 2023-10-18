@@ -176,6 +176,8 @@ and left_attr a =
       modif_before_mcode attr
   | Ast0.CxxAttribute(lb1,exps,rb2) ->
       modif_before_mcode lb1
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,exps,rb2) ->
+      modif_before_mcode lb1
 
 and left_typeC t =
   modif_before t ||

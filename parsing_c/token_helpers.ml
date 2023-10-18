@@ -463,6 +463,7 @@ let info_of_tok = function
   | Ttypeof              (i) -> i
   | Tnew                 (i) -> i
   | Tdelete              (i) -> i
+  | Tusing               (i) -> i
   | Tprivate             (i) -> i
   | Tprotected           (i) -> i
   | Tpublic              (i) -> i
@@ -660,6 +661,7 @@ let visitor_info_of_tok f = function
   | Ttypeof              (i) -> Ttypeof              (f i)
   | Tnew                 (i) -> Tnew                 (f i)
   | Tdelete              (i) -> Tdelete              (f i)
+  | Tusing               (i) -> Tusing               (f i)
   | Tprivate             (i) -> Tprivate             (f i)
   | Tprotected           (i) -> Tprotected           (f i)
   | Tpublic              (i) -> Tpublic              (f i)
@@ -794,6 +796,7 @@ let string_of_token = function
   | Tsizeof _ -> "Tsizeof"
   | Tnew _ -> "Tnew"
   | Tdelete _ -> "Tdelete"
+  | Tusing  _ -> "Tusing"
   | Tprivate _ -> "Tprivate"
   | Tprotected _ -> "Tprotected"
   | Tpublic _ -> "Tpublic"

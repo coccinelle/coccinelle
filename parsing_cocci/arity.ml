@@ -1382,6 +1382,17 @@ and attribute tgt attr =
       let rb1 = mcode rb1 in
       make_attribute attr tgt arity (Ast0.CxxAttribute(lb1,args,rb1))
 
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+      let arity =
+        all_same false tgt (mcode2line lb1) [mcode2arity lb1;mcode2arity rb1] in
+      let lb1 = mcode lb1 in
+      let usng = mcode usng in
+      let atnm = ident false arity atnm in
+      let dotdot = mcode dotdot in
+      let args = dots (expression arity) args in
+      let rb1 = mcode rb1 in
+      make_attribute attr tgt arity (Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1))
+
 and make_attr_arg =
   make_opt
     (function x -> failwith "opt not allowed for attr_arg")

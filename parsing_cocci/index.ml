@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 193, also unused: 8-9, 15, 42
+(* current max is 193, also unused: 8-9, 15
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -238,6 +238,7 @@ let attribute a =
     Ast0.Attribute(attr) -> [39]
   | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> [162]
   | Ast0.CxxAttribute(lb1,arg,rb1) -> [46]
+  | Ast0.CxxAttributeUsing(lb1,usng,dotdot,atnm,arg,rb1) -> [42]
 
 let attr_arg a =
   match Ast0.unwrap a with

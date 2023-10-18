@@ -4474,6 +4474,23 @@ and attribute = fun allminus ea eb ->
 	    A.rewrap ea (A.CxxAttribute(lb1,argsa,rb1)),
             (B.CxxAttribute argsb,ib)
             )))))
+  | A.CxxAttributeUsing(lb1,usng,atnma,dotdot,argsa,rb1), (B.CxxAttributeUsing (atnmb,argsb), ii) ->
+      let (ib1, ib2, ib3, ib4) = tuple_of_list4 ii in
+      tokenf lb1 ib1 >>= (fun lb1 ib1 ->
+      tokenf usng ib2 >>= (fun usng ib2 ->
+      tokenf dotdot ib3 >>= (fun dotdot ib3 ->
+      tokenf rb1 ib4 >>= (fun rb1 ib4 ->
+      ident_cpp DontKnow atnma atnmb >>= (fun atnma atnmb ->
+      arguments (seqstyle argsa) (A.unwrap argsa) argsb >>=
+	(fun argsaunwrap argsb ->
+          let argsa = A.rewrap argsa argsaunwrap in
+	  (if allminus
+          then minusize_list [ib1;ib2;ib3;ib4]
+          else return ((), [ib1;ib2;ib3;ib4])) >>= (fun _ ib ->
+	    return (
+	    A.rewrap ea (A.CxxAttributeUsing(lb1,usng,atnma,dotdot,argsa,rb1)),
+            (B.CxxAttributeUsing (atnmb,argsb),ib)
+            ))))))))
   | _ -> fail
 
 and attr_arg = fun allminus ea eb ->

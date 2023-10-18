@@ -1230,7 +1230,16 @@ let visitor mode bind option_default
 	    let (args_n,args) = expression_dots args in
             let (rb1_n,rb1) = string_mcode rb1 in
             (multibind [lb1_n;args_n;rb1_n],
-            Ast0.CxxAttribute(lb1,args,rb1))) in
+            Ast0.CxxAttribute(lb1,args,rb1))
+        | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+            let (lb1_n,lb1) = string_mcode lb1 in
+            let (usng_n,usng) = string_mcode usng in
+	    let (atnm_n,atnm) = ident atnm in
+            let (dotdot_n,dotdot) = string_mcode dotdot in
+	    let (args_n,args) = expression_dots args in
+            let (rb1_n,rb1) = string_mcode rb1 in
+            (multibind [lb1_n;usng_n;atnm_n;dotdot_n;args_n;rb1_n],
+            Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1))) in
     attributefn all_functions k a
 
   and attr_arg a =

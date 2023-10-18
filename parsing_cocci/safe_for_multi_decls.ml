@@ -116,6 +116,7 @@ let attribute a =
     Ast.Attribute(attr) -> attr_arg attr
   | Ast.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> mcode () attr_
   | Ast.CxxAttribute(lb1,arg,rb1) -> mcode () lb1
+  | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,arg,rb1) -> mcode () lb1
 
 let alignas (Ast.Align(al,lp,_,rp)) =
   mcode () al || mcode () lp || mcode () rp

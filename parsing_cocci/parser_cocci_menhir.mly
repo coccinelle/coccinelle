@@ -222,7 +222,7 @@ let inline_id aft = function
 %token TPure TContext TGenerated TFormat TLocal TGlobal
 %token TTypedef TAttribute TDeclarer TIterator TName TPosition TComments TAnalysis
 %token TPosAny
-%token TUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
+%token TIsoUsing TDisable TExtends TDepends TOn TEver TNever TExists TForall
 %token TFile TIn
 %token TInitialize TFinalize TNothing TVirtual TMerge
 %token<string> TRuleName
@@ -233,6 +233,7 @@ let inline_id aft = function
 %token<Data.clt> Tvoid Tstruct Tunion Tenum Tclass
 %token<Data.clt> Tunsigned Tsigned
 %token<Data.clt> TautoType
+%token<Data.clt> TUsing
 
 %token<Data.clt> Talignas Tstatic Tauto Tregister Textern Tinline Ttypedef
 %token<Data.clt> Tconst Tvolatile
@@ -468,7 +469,7 @@ dep:
       else Ast0_cocci.FileIn(Filename.concat !Flag.dir nm) }
 
 choose_iso:
-  TUsing separated_nonempty_list(TComma,TString) { List.map Parse_aux.id3name $2 }
+  TIsoUsing separated_nonempty_list(TComma,TString) { List.map Parse_aux.id3name $2 }
 
 disable:
   TDisable separated_nonempty_list(TComma,pure_ident) { List.map Parse_aux.id2name $2 }
@@ -490,8 +491,8 @@ include_main:
 
 incl:
   TIncludeL           { let (x,_) = $1 in Data.Include(x) }
-| TUsing TString      { Data.Iso(Common.Left(Parse_aux.id3name $2)) }
-| TUsing TPathIsoFile { Data.Iso(Common.Right $2) }
+| TIsoUsing TString      { Data.Iso(Common.Left(Parse_aux.id3name $2)) }
+| TIsoUsing TPathIsoFile { Data.Iso(Common.Right $2) }
 | TVirtual ids=comma_list(pure_ident)
     { let names = List.map Parse_aux.id2name ids in
       Iteration.parsed_virtual_rules :=
@@ -3563,6 +3564,8 @@ attr:
     { Parse_aux.make_gcc_attr $1 $2 $3 $4 $5 $6 }
  | TOCroCro eexpr_list_option TCCroCro
     { Parse_aux.make_cxx_attr $1 $2 $3 }
+ | TOCroCro TUsing ident TDotDot eexpr_list_option TCCroCro
+    { Parse_aux.make_cxx_attr_using $1 $2 $3 $4 $5 $6 }
 
 attr_arg:
    Tattr { Ast0_cocci.wrap (Ast0_cocci.MacroAttr(Parse_aux.clt2mcode (fst $1) (snd $1))) }
@@ -3607,6 +3610,7 @@ anything: /* used for script code */
  | TAnalysis { "analysis" }
  | TPosAny { "any" }
  | TUsing { "using" }
+ | TIsoUsing { "using" }
  | TDisable { "disable" }
  | TExtends { "extends" }
  | TDepends { "depends" }

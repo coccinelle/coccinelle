@@ -833,6 +833,13 @@ and print_attribute a =
       mcode print_string_box lb1;
       let _ = dots (function _ -> ()) expression args in
       close_box(); mcode print_string_box rb1
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+      mcode print_string_box lb1;
+      mcode print_string usng;
+      ident atnm;
+      mcode print_string dotdot;
+      let _ = dots (function _ -> ()) expression args in
+      close_box(); mcode print_string_box rb1
 
 and print_attr_arg a =
   match Ast0.unwrap a with

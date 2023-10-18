@@ -1273,7 +1273,15 @@ and attribute a =
 	let lb1 = mcode lb1 in
 	let args = dots expression args in
 	let rb1 = mcode rb1 in
-	Ast.CxxAttribute(lb1,args,rb1))
+	Ast.CxxAttribute(lb1,args,rb1)
+    | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+	let lb1 = mcode lb1 in
+	let usng = mcode usng in
+	let atnm = ident atnm in
+	let dotdot = mcode dotdot in
+	let args = dots expression args in
+	let rb1 = mcode rb1 in
+	Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1))
 
 and attr_arg a =
   rewrap a no_isos

@@ -87,7 +87,7 @@ let token2c (tok,_) add_clt =
   | PC.TIterator -> "iterator"
   | PC.TName -> "name"
   | PC.TRuleName str -> "rule_name-"^str
-  | PC.TUsing -> "using"
+  | PC.TIsoUsing -> "using"
   | PC.TVirtual -> "virtual"
   | PC.TMerge -> "merge"
   | PC.TPathIsoFile str -> "path_iso_file-"^str
@@ -125,6 +125,7 @@ let token2c (tok,_) add_clt =
   | PC.Tunsigned(clt) -> add_clt "unsigned" clt
   | PC.Tsigned(clt) -> add_clt "signed" clt
   | PC.TautoType(clt) -> add_clt "auto" clt
+  | PC.TUsing(clt) ->  add_clt "using" clt
   | PC.Talignas(clt) -> add_clt "alignas" clt
   | PC.Tstatic(clt) -> add_clt "static" clt
   | PC.Tinline(clt) -> add_clt "inline" clt
@@ -431,6 +432,7 @@ let get_clt (tok,_) =
   | PC.Tstruct(clt) | PC.Tclass(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
+  | PC.TUsing(clt)
   | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Talignas(clt) | PC.Tstatic(clt)
   | PC.Ttypedef(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
@@ -509,7 +511,7 @@ let get_clt (tok,_) =
   | PC.TWhitespace _ -> failwith "No clt attached to token TWhitespace"
   | PC.TVirtual -> failwith "No clt attached to token TVirtual"
   | PC.TMerge -> failwith "No clt attached to token TMerge"
-  | PC.TUsing -> failwith "No clt attached to token TUsing"
+  | PC.TIsoUsing -> failwith "No clt attached to token TIsoUsing"
   | PC.TUnderscore -> failwith "No clt attached to token TUnderscore"
   | PC.TTypedef -> failwith "No clt attached to token TTypedef"
   | PC.TType -> failwith "No clt attached to token TType"
@@ -601,6 +603,7 @@ let update_clt (tok,x) clt =
   | PC.Tunsigned(_) -> (PC.Tunsigned(clt),x)
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.TautoType(_) -> (PC.TautoType(clt),x)
+  | PC.TUsing(_) -> (PC.TUsing(clt),x)
   | PC.Talignas(_) -> (PC.Talignas(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
   | PC.Tinline(_) -> (PC.Tinline(clt),x)
@@ -757,7 +760,7 @@ let update_clt (tok,x) clt =
   | PC.TWhitespace _ -> assert false
   | PC.TVirtual -> assert false
   | PC.TMerge -> assert false
-  | PC.TUsing -> assert false
+  | PC.TIsoUsing -> assert false
   | PC.TUnderscore -> assert false
   | PC.TTypedef -> assert false
   | PC.TType -> assert false
@@ -905,7 +908,7 @@ let split_token ((tok,_) as t) =
   | PC.TAttribute
   | PC.TType | PC.TParameter | PC.TLocal | PC.TGlobal | PC.Tlist | PC.TFresh
   | PC.TCppConcatOp | PC.TPure
-  | PC.TContext | PC.TRuleName(_) | PC.TUsing | PC.TVirtual | PC.TMerge
+  | PC.TContext | PC.TRuleName(_) | PC.TIsoUsing | PC.TVirtual | PC.TMerge
   | PC.TDisable
   | PC.TExtends | PC.TPathIsoFile(_)
   | PC.TDepends | PC.TOn | PC.TFile | PC.TIn
@@ -922,7 +925,7 @@ let split_token ((tok,_) as t) =
   | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.TAttrArg(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
-  | PC.TAttr_(clt) -> split t clt
+  | PC.TAttr_(clt) | PC.TUsing(clt) -> split t clt
 
   | PC.TDirective(_,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)

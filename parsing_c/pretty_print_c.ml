@@ -1274,6 +1274,9 @@ and pp_init (init, iinit) =
     | CxxAttribute(args), ii ->
         let (i1,i2) = Common.tuple_of_list2 ii in
         pr_elem i1; pp_arg_list args; pr_elem i2
+    | CxxAttributeUsing(atnm, args), ii ->
+        let (i1,i2,i3,i4) = Common.tuple_of_list4 ii in
+        pr_elem i1; pr_elem i2; pp_name atnm; pr_elem i3; pp_arg_list args; pr_elem i4
 
   and pp_attr_arg (e,ii) =
     match (e,ii) with

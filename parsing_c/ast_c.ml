@@ -313,6 +313,7 @@ and attribute = attributebis wrap
     | Attribute of attr_arg
     | GccAttribute of argument wrap2 list
     | CxxAttribute of argument wrap2 list
+    | CxxAttributeUsing of name * argument wrap2 list
 
 and attr_arg = attr_arg_bis wrap
   and attr_arg_bis =
@@ -1401,6 +1402,8 @@ let s_of_attr attr =
       let (attr_,_,_,_,_) = Common.tuple_of_list5 ii in
       str_of_info attr_ ^ "((" ^ "args... (not supported to show)" ^ "))"
   | (CxxAttribute a, ii) ->
+      "[[ args... (not supported to show) ]]"
+  | (CxxAttributeUsing (atnm,args), ii) ->
       "[[ args... (not supported to show) ]]" in
   attr
   +> List.map get_attr

@@ -162,6 +162,9 @@ let make_gcc_attr attr_ lp1 lp2 arg rp1 rp2 =
 let make_cxx_attr lb1 arg rb1 =
   Ast0.wrap(Ast0.CxxAttribute(clt2mcode "[[" lb1, arg, clt2mcode "]]" rb1))
 
+let make_cxx_attr_using lb1 usng atnm dotdot arg rb1 =
+  Ast0.wrap(Ast0.CxxAttributeUsing(clt2mcode "[[" lb1, clt2mcode "using" usng, atnm, clt2mcode ":" dotdot, arg, clt2mcode "]]" rb1))
+
 let top_dots l = Ast0.wrap l
 
 (* here the offset is that of the first in the sequence of *s, not that of

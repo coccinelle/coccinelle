@@ -249,7 +249,9 @@ let id_tokens lexbuf =
   | "words" when in_meta ->      check_context_linetype s; TWords
   | "symbol" when in_meta ->     check_arity_context_linetype s; TSymbol
 
-  | "using" when in_rule_name || in_prolog ->  check_context_linetype s; TUsing
+  | "using" when in_rule_name || in_prolog ->
+     check_context_linetype s; TIsoUsing
+  | "using" -> start_line true; TUsing linetype
   | "virtual" when in_prolog || in_rule_name || in_meta ->
       (* don't want to allow virtual as a rule name *)
       check_context_linetype s; TVirtual
