@@ -498,6 +498,7 @@ module Ast_c :
       | MetaFragListVal of string_fragment list
       | MetaAssignOpVal of assignOp
       | MetaBinaryOpVal of binaryOp
+      | MetaPragmaInfoVal of info
       | MetaPosVal of (Ast_cocci.fixpos * Ast_cocci.fixpos)
       | MetaPosValList of
           (Common.filename * string * (posl * posl) option * posl * posl)
@@ -2589,6 +2590,7 @@ module Ast_cocci :
       | MetaParamListDecl of arity * meta_name * list_len
       | MetaBinaryOperatorDecl of arity * meta_name
       | MetaAssignmentOperatorDecl of arity * meta_name
+      | MetaPragmaInfoDecl of arity * meta_name
       | MetaConstDecl of arity * meta_name * fullType list option
       | MetaErrDecl of arity * meta_name
       | MetaExpDecl of arity * meta_name * fullType list option *
@@ -3014,7 +3016,8 @@ module Ast_cocci :
       Ast_cocci.base_pragmainfo =
         PragmaString of string mcode
       | PragmaDots of string mcode
-      | MetaPragmaInfo of Ast_cocci.meta_name mcode * constraints * pure
+      | MetaPragmaInfo of meta_name mcode * constraints * keep_binding *
+          inherited
     and pragmainfo = base_pragmainfo wrap
     and forinfo =
       Ast_cocci.forinfo =

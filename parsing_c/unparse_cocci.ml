@@ -1408,9 +1408,8 @@ and pragmainfo pi =
   | Ast.PragmaDots (dots) -> mcode print_string dots
   | Ast.MetaPragmaInfo(name,_,_,_) ->
       handle_metavar name (function
-        | Ast_c.MetaPragmaInfoVal(rest) ->
-	    List.iter (mcode print_string) (List.map snd rest)
-        | _ -> error name re "pragma info value expected")
+        | Ast_c.MetaPragmaInfoVal(rest) -> print_text (Ast_c.str_of_info rest)
+        | _ -> error name pi "pragma info value expected")
 
 and forinfo = function
     Ast.ForExp(e1,sem1,e2,sem2,e3) ->

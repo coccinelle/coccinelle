@@ -211,6 +211,8 @@ let equal_metavarval valu valu' =
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
   | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
   | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
+  | Ast_c.MetaPragmaInfoVal a, Ast_c.MetaPragmaInfoVal b ->
+      Lib_parsing_c.al_info a = Lib_parsing_c.al_info b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -290,7 +292,7 @@ let equal_metavarval valu valu' =
       |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaParamVal _
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
-      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
+      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _ | B.MetaPragmaInfoVal _
       |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttrArgVal _
     ), _
       -> raise (Impossible 16)
@@ -305,6 +307,8 @@ let equal_inh_metavarval valu valu'=
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
   | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> equal_unwrap a b
   | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> equal_unwrap a b
+  | Ast_c.MetaPragmaInfoVal a, Ast_c.MetaPragmaInfoVal b ->
+      Lib_parsing_c.al_inh_info a = Lib_parsing_c.al_inh_info b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
   | Ast_c.MetaLocalFuncVal a, Ast_c.MetaLocalFuncVal b ->
       (* do something more ? *)
@@ -395,7 +399,7 @@ let equal_inh_metavarval valu valu'=
       |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaParamVal _
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
-      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _
+      |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _ | B.MetaPragmaInfoVal _
       |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttrArgVal _
     ), _
       -> raise (Impossible 17)
@@ -5641,8 +5645,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	    A.PragmaDots(mcode) +> wp,
 	    rest_iidb
 	  ))
-      | A.MetaPragmaInfo(mv, c, pure) ->
-	  let mv' = B.MetaPragmaInfoVal rest in
+      | A.MetaPragmaInfo(mv, c, keep, inherited) ->
+	  let mv' = B.MetaPragmaInfoVal rest_iidb in
 	  check_constraints c mv mv'
 	    (fun () ->
 	      let max_min _ = rest_iidb in

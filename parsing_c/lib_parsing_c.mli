@@ -28,6 +28,7 @@ val al_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
 val al_node : Control_flow_c.node -> Control_flow_c.node
 val al_program : Ast_c.toplevel list -> Ast_c.toplevel list
+val al_info : Ast_c.info -> Ast_c.info
 val al_ii : Ast_c.info list -> Ast_c.info list
 val strip_inh_info_visitor : 'a -> Visitor_c.visitor_c_s
 val al_inh_expr : Ast_c.expression -> Ast_c.expression
@@ -48,6 +49,8 @@ val al_inh_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
 val al_inh_attribute : Ast_c.attribute -> Ast_c.attribute
 val al_inh_attr_arg : Ast_c.attr_arg -> Ast_c.attr_arg
+val al_inh_info : Ast_c.info -> Ast_c.info
+val al_inh_ii : Ast_c.info list -> Ast_c.info list
 val semi_strip_info_visitor : Visitor_c.visitor_c_s
 val semi_al_expr : Ast_c.expression -> Ast_c.expression
 val semi_al_declaration : Ast_c.declaration -> Ast_c.declaration

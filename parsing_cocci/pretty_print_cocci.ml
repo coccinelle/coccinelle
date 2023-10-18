@@ -1138,6 +1138,9 @@ let unparse_cocci_mv rule = function
   | Ast.MetaAssignmentOperatorDecl(_,(r,n)) -> (* missing constraints *)
       print_string "assignment operator "; print_name rule r n;
       print_string ";"
+  | Ast.MetaPragmaInfoDecl(_,(r,n)) -> (* missing constraints *)
+      print_string "pragmainfo "; print_name rule r n;
+      print_string ";"
   | Ast.MetaParamListDecl(_,(r,n),len) ->
       print_string "parameter list"; print_listlen rule len;
       print_name rule r n; print_string ";"

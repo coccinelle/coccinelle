@@ -92,6 +92,7 @@ let al_attr_arg  x = Visitor_c.vk_attr_arg_s  (strip_info_visitor()) x
 let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
 let al_program  x = List.map (Visitor_c.vk_toplevel_s (strip_info_visitor())) x
+let al_info  x = Visitor_c.vk_info_s (strip_info_visitor()) x
 let al_ii    x = Visitor_c.vk_ii_s (strip_info_visitor()) x
 
 
@@ -151,6 +152,8 @@ let al_inh_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_inh_info_visitor()) x
 let al_inh_attribute x = Visitor_c.vk_attribute_s (strip_inh_info_visitor()) x
 let al_inh_attr_arg  x = Visitor_c.vk_attr_arg_s  (strip_inh_info_visitor()) x
+let al_inh_info      x = Visitor_c.vk_info_s (strip_inh_info_visitor()) x
+let al_inh_ii        x = Visitor_c.vk_ii_s (strip_inh_info_visitor()) x
 
 
 

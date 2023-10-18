@@ -136,7 +136,7 @@ let get_function_name rule env =
       donothing donothing donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing
+      donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with
@@ -237,7 +237,7 @@ let print_extra_typedefs pr env =
       match vl with
 	Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
       | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
-      | Ast_c.MetaLocalFuncVal(_) -> ()
+      | Ast_c.MetaPragmaInfoVal(_) | Ast_c.MetaLocalFuncVal(_) -> ()
       | Ast_c.MetaExprVal(exp,_,_,_) -> Visitor_c.vk_expr bigf exp
       | Ast_c.MetaExprListVal(args,_) -> Visitor_c.vk_argument_list bigf args
       | Ast_c.MetaParamVal(param,_) -> Visitor_c.vk_param bigf param
@@ -289,7 +289,7 @@ let rename argids env =
        match vl with
 	 Ast_c.MetaIdVal(_) | Ast_c.MetaFuncVal(_)
        | Ast_c.MetaAssignOpVal(_) | Ast_c.MetaBinaryOpVal(_)
-       | Ast_c.MetaLocalFuncVal(_) -> vl
+       | Ast_c.MetaPragmaInfoVal(_) | Ast_c.MetaLocalFuncVal(_) -> vl
        | Ast_c.MetaExprVal(exp,original,c,ty) ->
 	   Ast_c.MetaExprVal(Visitor_c.vk_expr_s bigf exp,
 			     Visitor_c.vk_expr_s bigf original,c,ty)
@@ -408,6 +408,8 @@ let pp_meta_decl pr env decl =
       no_arity ar; pr "binary operator "; pp_name name; pr ";\n"
   | Ast.MetaAssignmentOperatorDecl(ar, name) ->
       no_arity ar; pr "assignment operator "; pp_name name; pr ";\n"
+  | Ast.MetaPragmaInfoDecl(ar, name) ->
+      no_arity ar; pr "pragmainfo "; pp_name name; pr ";\n"
   | Ast.MetaConstDecl(ar, name, types) ->
       no_arity ar; pr "constant "; print_types pr env types;
       pp_name name; pr ";\n"
