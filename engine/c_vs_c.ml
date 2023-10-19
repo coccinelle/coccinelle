@@ -272,7 +272,13 @@ and typeC tya tyb =
           return (StructUnion (sua, saopt, base_classesa, List.rev stx), iix)
         )) tin)
 
-
+  | (TemplateType(namea, argsa), TemplateType(nameb, argsb)) ->
+      let sa = Ast_c.str_of_name namea in
+      let sb = Ast_c.str_of_name nameb in
+      sa = sb >&&>
+      let argsa = Lib_parsing_c.al_arguments argsa in
+      let argsb = Lib_parsing_c.al_arguments argsb in
+      argsa = argsb >&&> return (TemplateType(namea, argsa), iix)
 
   (* choose the lub.
    * subtil: in the return must put iia, not iix, and in following case
@@ -289,10 +295,23 @@ and typeC tya tyb =
         return (TypeName (name, Some x), iib) (* subtil: *)
       )
 
-  | _, _ -> fail
-
-
-
+  | (BaseType _, _) | (_, BaseType _)
+  | (Pointer _, _) | (_, Pointer _)
+  | (Array _, _) | (_, Array _)
+  | (Decimal _, _) | (_, Decimal _)
+  | (FunctionType _, _) | (_, FunctionType _)
+  | (EnumDef _, _) | (_, EnumDef _)
+  | (StructUnion _, _) | (_, StructUnion _)
+  | (EnumName _, _) | (_, EnumName _)
+  | (StructUnionName _, _) | (_, StructUnionName _)
+  | (TypeName _, _) | (_, TypeName _)
+  | (FieldType _, _) | (_, FieldType _)
+  | (ParenType _, _) | (_, ParenType _)
+  | (TypeOfExpr _, _) | (_, TypeOfExpr _)
+  | (TypeOfType _, _) | (_, TypeOfType _)
+  | (AutoType, _) | (_, AutoType)
+  | (TemplateType _, _) | (_, TemplateType _)
+  | (NoType, _) -> fail
 end
 
 module XEQ = struct
