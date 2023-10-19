@@ -1183,7 +1183,8 @@ let rebuilder
     storage_mcode inc_file_mcode
     expdotsfn paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
     enumdecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn ftfn tyfn initfn
+    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
+    ftfn tyfn initfn
     paramfn define_paramfn declfn annotated_declfn fieldfn annotated_fieldfn
     enum_declfn rulefn stmtfn casefn attributefn attr_argfn topfn anyfn =
   let get_option f = function
@@ -1941,7 +1942,6 @@ let rebuilder
 	Ast.ForRange (decl,exp) in
     k fi
 
-  (* not parameterizable for now... *)
   and pragmainfo pi =
     let k pi =
       Ast.rewrap pi
@@ -1949,7 +1949,7 @@ let rebuilder
 	  Ast.PragmaString(s) -> Ast.PragmaString(string_mcode s)
 	| Ast.PragmaDots (dots) -> Ast.PragmaDots(string_mcode dots)
         | Ast.MetaPragmaInfo (mv,x,y,z) -> Ast.MetaPragmaInfo ((meta_mcode mv),x,y,z)) in
-    k pi
+    pragmainfofn all_functions k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =

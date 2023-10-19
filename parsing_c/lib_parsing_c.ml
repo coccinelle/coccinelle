@@ -193,6 +193,7 @@ let semi_al_string_fragments =
   Visitor_c.vk_string_fragments_s semi_strip_info_visitor
 let semi_al_attribute = Visitor_c.vk_attribute_s semi_strip_info_visitor
 let semi_al_attr_arg  = Visitor_c.vk_attr_arg_s semi_strip_info_visitor
+let semi_al_info  = Visitor_c.vk_info_s semi_strip_info_visitor
 
 let semi_al_program =
   List.map (Visitor_c.vk_toplevel_s semi_strip_info_visitor)

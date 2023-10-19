@@ -102,6 +102,8 @@ module type PARAM =
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.assignOp) matcher
     val distrf_binaryOp :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.binaryOp) matcher
+    val distrf_pragma_info :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.info) matcher
     val distrf_args :
       (Ast_cocci.meta_name Ast_cocci.mcode,
       (Ast_c.argument, Ast_c.il) Common.either list)

@@ -152,6 +152,7 @@ val rebuilder :
     (Ast_cocci.string_format rcode) ->
     (Ast_cocci.assignOp rcode) ->
     (Ast_cocci.binaryOp rcode) ->
+    (Ast_cocci.pragmainfo rcode) ->
     (Ast_cocci.fullType rcode) ->
     (Ast_cocci.typeC rcode) ->
     (Ast_cocci.initialiser rcode) ->

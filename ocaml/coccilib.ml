@@ -55,6 +55,7 @@ type param_type =
 		 Token_c.comment_like_token list) list
   | AssignOp of Ast_c.assignOp
   | BinaryOp of Ast_c.binaryOp
+  | PragmaInfo of Ast_c.info
   | Str of string
   | Type of Ast_c.fullType
   | Init of Ast_c.initialiser

@@ -144,6 +144,7 @@ let strip x =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+      do_nothing
       decl_or_field do_absolutely_nothing decl_or_field do_absolutely_nothing
       do_nothing rule_elem
       do_nothing do_nothing do_nothing do_nothing do_nothing do_absolutely_nothing in

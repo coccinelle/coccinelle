@@ -19,6 +19,7 @@ let stringrep = function
   Ast_c.MetaIdVal        s -> s
 | Ast_c.MetaAssignOpVal op -> call_pretty Pretty_print_c.pp_assignOp_gen op
 | Ast_c.MetaBinaryOpVal op -> call_pretty Pretty_print_c.pp_binaryOp_gen op
+| Ast_c.MetaPragmaInfoVal v -> Ast_c.str_of_info v
 | Ast_c.MetaFuncVal      s -> s
 | Ast_c.MetaLocalFuncVal s -> s
 | Ast_c.MetaExprVal      (_,expr,_,_) -> exprrep expr

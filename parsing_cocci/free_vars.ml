@@ -405,9 +405,9 @@ let collect_saved =
 	Ast.MetaBinary(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
-  let astfvpragmainfo recursor k bop =
-    bind (k bop)
-      (match Ast.unwrap bop with
+  let astfvpragmainfo recursor k v =
+    bind (k v)
+      (match Ast.unwrap v with
 	Ast.MetaPragmaInfo(name,_,Ast.Saved,_) -> [metaid name]
       | _ -> option_default) in
 
@@ -836,6 +836,14 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap ft (Ast.MetaBinary(name,constraints,unitary,inherited))
     | _ -> ft in
 
+  let pragmainfo r k ft =
+    let ft = k ft in
+    match Ast.unwrap ft with
+      Ast.MetaPragmaInfo(name,constraints,_,_) ->
+	let (unitary,inherited) = classify name in
+	Ast.rewrap ft (Ast.MetaPragmaInfo(name,constraints,unitary,inherited))
+    | _ -> ft in
+
   let typeC r k e =
     let e = k e in
     match Ast.unwrap e with
@@ -944,7 +952,7 @@ let classify_variables metavar_decls minirules used_after =
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
       ident expression string_fragment string_format assignop binaryop
-      donothing typeC
+      pragmainfo donothing typeC
       init param define_param decl donothing field donothing donothing
       rule_elem donothing donothing donothing attr_arg donothing donothing in
 
@@ -1131,7 +1139,7 @@ let astfvs metavars bound =
     donothing donothing astfvstatement_dots donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
     astfvrule_elem astfvstatement astfvcase_line donothing donothing astfvtoplevel
     donothing
 

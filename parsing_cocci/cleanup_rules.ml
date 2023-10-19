@@ -123,6 +123,14 @@ let binaryOp r k op =
       k op
   | _ -> k op
 
+let pragmainfo r k op =
+  match Ast.unwrap op with
+    Ast.MetaPragmaInfo(name,_,_,_) ->
+      (if List.mem (get_rule name) !dropped
+      then set_failed !drop_stack);
+      k op
+  | _ -> k op
+
 let fullType r k ft =
   match Ast.unwrap ft with
     Ast.DisjType(decls) ->
@@ -260,7 +268,7 @@ let do_cleanup =
     donothing donothing donothing donothing donothing
     donothing donothing (* dots *)
     ident expression string_fragment string_format assignOp
-    binaryOp fullType typeC initialiser parameterTypeDef define_param
+    binaryOp pragmainfo fullType typeC initialiser parameterTypeDef define_param
     declaration donothing field ann_field donothing
     rule_elem statement donothing donothing attr_arg donothing donothing
 

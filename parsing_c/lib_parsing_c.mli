@@ -76,6 +76,7 @@ val semi_al_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
 val semi_al_attribute : Ast_c.attribute -> Ast_c.attribute
 val semi_al_attr_arg  : Ast_c.attr_arg -> Ast_c.attr_arg
+val semi_al_info  : Ast_c.info -> Ast_c.info
 val semi_al_program : Ast_c.toplevel list -> Ast_c.toplevel list
 val real_strip_info_visitor : 'a -> Visitor_c.visitor_c_s
 val real_al_expr : Ast_c.expression -> Ast_c.expression

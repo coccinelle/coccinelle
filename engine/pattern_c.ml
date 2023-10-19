@@ -318,7 +318,7 @@ module XMATCH = struct
   let distrf_e              = distrf Lib_parsing_c.ii_of_expr
   let distrf_assignOp       = distrf Lib_parsing_c.ii_of_assignOp
   let distrf_binaryOp       = distrf Lib_parsing_c.ii_of_binaryOp
-  let distrf_pragma_info    = distrf (fun x -> x)
+  let distrf_pragma_info    = distrf (fun x -> [x])
   let distrf_args           = distrf Lib_parsing_c.ii_of_args
   let distrf_type           = distrf Lib_parsing_c.ii_of_type
   let distrf_param          = distrf Lib_parsing_c.ii_of_param
@@ -417,6 +417,12 @@ module XMATCH = struct
 	      success(Ast_c.MetaAssignOpVal op)
           | Ast_c.MetaBinaryOpVal op      ->
 	      success(Ast_c.MetaBinaryOpVal op)
+          | Ast_c.MetaPragmaInfoVal pi      ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_info pi
+		else Lib_parsing_c.semi_al_info pi in
+	      success(Ast_c.MetaPragmaInfoVal stripped)
           | Ast_c.MetaFuncVal a      ->
 	      success(Ast_c.MetaFuncVal a)
           | Ast_c.MetaLocalFuncVal a ->

@@ -210,7 +210,7 @@ let id_tokens lexbuf =
   | "operator" when in_meta ->   check_arity_context_linetype s; TOperator
   | "binary" when in_meta ->   check_arity_context_linetype s; TBinary
   | "assignment" when in_meta ->   check_arity_context_linetype s; TAssignment
-  | "pargmainfo" when in_meta ->   check_arity_context_linetype s; TPragmaInfo
+  | "pragmainfo" when in_meta ->   check_arity_context_linetype s; TPragmaInfo
   | "constant"  when in_meta ->  check_arity_context_linetype s; TConstant
   | "generated" when in_rule_name && not (!Flag.make_hrule = None) ->
       check_arity_context_linetype s; TGenerated

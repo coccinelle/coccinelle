@@ -113,7 +113,7 @@ let update_for_all_rule_elems cstr minirules =
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
       donothing rule_elem donothing donothing donothing donothing
       donothing donothing in
   List.map v.V.rebuilder_top_level minirules

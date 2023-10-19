@@ -60,6 +60,7 @@ let ast_binding vl = function
 	  Coccilib.Str id
       | Ast_c.MetaAssignOpVal op -> Coccilib.AssignOp op
       | Ast_c.MetaBinaryOpVal op -> Coccilib.BinaryOp op
+      | Ast_c.MetaPragmaInfoVal v -> Coccilib.PragmaInfo v
       | Ast_c.MetaExprVal(_,expr,_,_) -> Coccilib.Expr expr
       | Ast_c.MetaExprListVal(_,arglist) -> Coccilib.ExprList arglist
       | Ast_c.MetaParamVal(_,param) -> Coccilib.Param param

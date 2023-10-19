@@ -2401,7 +2401,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing donothing in
+		donothing donothing donothing donothing donothing donothing
+		donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->
@@ -5647,13 +5648,15 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	  ))
       | A.MetaPragmaInfo(mv, c, keep, inherited) ->
 	  let mv' = B.MetaPragmaInfoVal rest_iidb in
+	  let check_constraints cstr mida idb =
+	    X.check_constraints (A.unwrap_mcode mida) idb cstr in
 	  check_constraints c mv mv'
 	    (fun () ->
-	      let max_min _ = rest_iidb in
+	      let max_min _ = [rest_iidb] in
 	      X.envf keep inherited (mv,mv',max_min)
 		(fun () -> X.distrf_pragma_info mv rest_iidb >>=
 		  (fun mv rest_iidb ->
-		    return (A.MetaPragmaInfo(mv,c,keep,inherited) +> A.rewrap opa,
+		    return (A.MetaPragmaInfo(mv,c,keep,inherited) +> A.rewrap pragmainfoa,
 			    rest_iidb))))
       ) >>= (fun pragmainfoa rest_iidb ->
         return (
