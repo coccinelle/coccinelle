@@ -3068,13 +3068,7 @@ let convert_templates toks =
       let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
       success ident s i1 inf i2 c (TTemplateEnd i3) rest;
       loop (List.tl stack) pdepth (tdepth-1) rest
-  (* another possible end point *)
-  | (({TV.tok = TShr i3}) as c) :: rest when top1 stack pdepth tdepth ->
-      rebuild := true;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
-      success ident s i1 inf i2 c (TTemplateEndSup i3) rest;
-      loop (List.tl stack) pdepth (tdepth-1) rest
-  (* another possible end point *)
+  (* another possible end point, more constraining Shr case first *)
   | (({TV.tok = TShr i3}) as c) :: rest when top2 stack pdepth tdepth ->
       rebuild := true;
       let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
@@ -3082,6 +3076,12 @@ let convert_templates toks =
       let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl stack) in
       success ident s i1 inf i2 c (TTemplateEndTemplateEnd i3) rest;
       loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
+  (* another possible end point, Shr that is template + > *)
+  | (({TV.tok = TShr i3}) as c) :: rest when top1 stack pdepth tdepth ->
+      rebuild := true;
+      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
+      success ident s i1 inf i2 c (TTemplateEndSup i3) rest;
+      loop (List.tl stack) pdepth (tdepth-1) rest
   (* another possible end point *)
   | (({TV.tok = TSup3 i3}) as c) :: rest when top3 stack pdepth tdepth ->
       rebuild := true;
