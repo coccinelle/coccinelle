@@ -2044,6 +2044,10 @@ let lookahead2 ~pass next before =
       t
 
   (* c++ hacks *)
+  | TIdent(s,i1)::_,TEq _ :: _ :: Ttypename _ :: _
+      when !Flag.c_plus_plus <> Flag.Off ->
+	msg_typedef s i1 1; LP.add_typedef_root s i1;
+	TypedefIdent (s,i1)
   | TIdent(s,i1)::TTemplateStart i2::_,_
       when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context()) [LP.InParameter;LP.InStruct]) ->
 	msg_typedef s i1 1; LP.add_typedef_root s i1;
