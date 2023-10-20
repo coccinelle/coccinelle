@@ -574,7 +574,7 @@ let args_to_params l pb =
        Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd
-       TTemplateEndTemplateEndTemplateEnd Tfinal
+       TTemplateEndTemplateEndTemplateEnd Tfinal Ttypename
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -1701,12 +1701,22 @@ parameter_decl_arg: /* more tolerant */
        }
      }
 
+template_parameter_decl2:
+   Ttypename ident { failwith "bad" }
+ | Ttypename ident TEq type_spec { failwith "bad" }
+ | Tclass ident { failwith "bad" }
+ | Tclass ident TEq type_spec { failwith "bad" }
+ | type_spec2_without_braces declaratori { failwith "bad" }
+ | Tconst type_spec2_without_braces declaratori { failwith "bad" }
+ | Ttemplate TInf template_parameter_list TSup template_parameter_decl2
+     { failwith "bad" }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
 /*(*----------------------------*)*/
 
 parameter_decl: parameter_decl2 { et "param" ();  $1 }
+template_parameter_decl: template_parameter_decl2 { et "param" ();  $1 }
 
 declaratorp:
  /*(* gccext: *)*/
@@ -2662,7 +2672,7 @@ cpp_other:
 /*(*************************************************************************)*/
 
 external_declaration:
- | Ttemplate TInf parameter_list TSup external_declaration
+ | Ttemplate TInf template_parameter_list TSup external_declaration
      { TemplateDefinition($3,$5,[$1;$2;$4]) }
  | function_definition               { Definition $1 }
  | decl                              { Declaration ($1 Ast_c.NotLocalDecl) }
@@ -2863,6 +2873,10 @@ declaratorsfd_list:
 parameter_list:
  | parameter_decl                       { [$1, []] }
  | parameter_list TComma parameter_decl { $1 @ [$3,  [$2]] }
+
+template_parameter_list:
+ | template_parameter_decl                                { [$1, []] }
+ | template_parameter_list TComma template_parameter_decl { $1 @ [$3,  [$2]] }
 
 taction_list_ne:
  | TAction                 { [$1] }

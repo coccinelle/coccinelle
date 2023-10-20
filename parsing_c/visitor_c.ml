@@ -845,10 +845,34 @@ and vk_toplevel = fun bigf p ->
     | TemplateDefinition(params,defn,ii) ->
 	iif ii;
 	params +> List.iter (fun (param,iicomma) ->
-          vk_param bigf param;
+          vk_template_param bigf param;
           iif iicomma);
 	vk_toplevel bigf defn
   in f (k, bigf) p
+
+and vk_template_param = fun bigf param ->
+  let iif ii =  vk_ii bigf ii in
+  let k = function
+      TypeNameParam((nm,tyopt),ii) ->
+	iif ii;
+	vk_name bigf nm;
+	do_option (vk_type bigf) tyopt
+    | ClassNameParam((nm,tyopt),ii) ->
+	iif ii;
+	vk_name bigf nm;
+	do_option (vk_type bigf) tyopt
+    | VarNameParam((ty,name,expopt),ii) ->
+	iif ii;
+	vk_type bigf ty;
+	vk_name bigf name;
+	do_option (vk_expr bigf) expopt
+    | TemplateParam((params,temp_param),ii) ->
+	iif ii;
+	params +> List.iter (fun (param,iicomma) ->
+          vk_template_param bigf param;
+          iif iicomma);
+	vk_template_param bigf temp_param in
+  k param
 
 and vk_program = fun bigf xs ->
   xs +> List.iter (vk_toplevel bigf)
@@ -1903,10 +1927,31 @@ and vk_toplevel_s = fun bigf p ->
     | TemplateDefinition(params,defn,ii) ->
 	TemplateDefinition
 	  (params +> List.map (fun (param, iicomma) ->
-            (vk_param_s bigf param, iif iicomma)),
+            (vk_template_param_s bigf param, iif iicomma)),
 	   vk_toplevel_s bigf defn,
 	   iif ii)
   in f (k, bigf) p
+
+and vk_template_param_s = fun bigf param ->
+  let iif ii =  vk_ii_s bigf ii in
+  let k = function
+      TypeNameParam((nm,tyopt),ii) ->
+	TypeNameParam((vk_name_s bigf nm,fmap (vk_type_s bigf) tyopt),
+		      iif ii)
+    | ClassNameParam((nm,tyopt),ii) ->
+	ClassNameParam((vk_name_s bigf nm,fmap (vk_type_s bigf) tyopt),
+		       iif ii)
+    | VarNameParam((ty,name,expopt),ii) ->
+	VarNameParam((vk_type_s bigf ty,vk_name_s bigf name,
+		      fmap (vk_expr_s bigf) expopt),
+		     iif ii)
+    | TemplateParam((params,temp_param),ii) ->
+	let params =
+	  params +> List.map (fun (param,iicomma) ->
+	    (vk_template_param_s bigf param, iif iicomma)) in
+	TemplateParam((params,vk_template_param_s bigf temp_param),
+		      iif ii) in
+  k param
 
 and vk_program_s : visitor_c_s -> toplevel list -> toplevel list =
       fun bigf ast -> List.rev (List.rev_map (vk_toplevel_s bigf) ast)

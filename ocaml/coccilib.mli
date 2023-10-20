@@ -468,7 +468,13 @@ module Ast_c :
       | NotParsedCorrectly of il
       | FinalDef of info
       | Namespace of toplevel list * il
-      | TemplateDefinition of parameterType wrap2 list * toplevel * il
+      | TemplateDefinition of templateParameterType wrap2 list * toplevel * il
+    and templateParameterType =
+      Ast_c.templateParameterType =
+	TypeNameParam of (name * fullType option) wrap
+      | ClassNameParam of (name * fullType option) wrap
+      | VarNameParam of (fullType * name * expression option) wrap
+      | TemplateParam of (templateParameterType wrap2 list * templateParameterType) wrap
     and program = toplevel list
     and metavars_binding =
         (Ast_cocci.meta_name, metavar_binding_kind) Common.assoc
@@ -819,6 +825,7 @@ module Parser_c :
       | TTemplateEndTemplateEnd of Ast_c.info
       | TTemplateEndTemplateEndTemplateEnd of Ast_c.info
       | Tfinal of Ast_c.info
+      | Ttypename of Ast_c.info
       | Trestrict of Ast_c.info
       | Tasm of Ast_c.info
       | Tattribute of Ast_c.info

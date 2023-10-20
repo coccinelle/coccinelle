@@ -836,7 +836,13 @@ and toplevel =
 
   (* c++ *)
   | Namespace of toplevel list * il
-  | TemplateDefinition of parameterType wrap2 list * toplevel * il
+  | TemplateDefinition of templateParameterType wrap2 list * toplevel * il
+
+and templateParameterType =
+    TypeNameParam of (name * fullType option) wrap
+  | ClassNameParam of (name * fullType option) wrap
+  | VarNameParam of (fullType * name * expression option) wrap
+  | TemplateParam of (templateParameterType wrap2 list * templateParameterType) wrap
 
 (* ------------------------------------------------------------------------- *)
 and program = toplevel list

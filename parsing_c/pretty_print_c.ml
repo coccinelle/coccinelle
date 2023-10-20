@@ -1488,12 +1488,27 @@ and pp_init (init, iinit) =
     | TemplateDefinition(params,defn,ii) ->
 	let (i1,i2,i3) = Common.tuple_of_list3 ii in
 	pr_elem i1; pr_space(); pr_elem i2;
-	pp_param_list params; pr_elem i3; pr_nl();
+	pp_template_param_list params; pr_elem i3; pr_nl();
 	pp_toplevel defn
-    | (MacroTop _) | (Namespace _) -> raise (Impossible 120) in
+    | (MacroTop _) | (Namespace _) -> raise (Impossible 120)
 
+  and pp_template_param_list paramst = pp_list pp_template_param paramst
 
-
+  and pp_template_param = function
+      TypeNameParam((nm,tyopt),ii)
+    | ClassNameParam((nm,tyopt),ii) ->
+	pr_elem (List.hd ii); pp_name nm;
+	(match tyopt with
+	  None -> ()
+	| Some ty -> pr_elem (List.nth ii 1); pp_type ty)
+    | VarNameParam((ty,nm,expopt),ii) ->
+	pp_type_with_ident (Some (function _ -> pp_name nm))
+	  None ty []
+    | TemplateParam((params,tmp),ii) ->
+	let (i1,i2,i3) = Common.tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pr_elem i2;
+	pp_template_param_list params; pr_elem i3; pr_space();
+	pp_template_param tmp in
 
   let pp_flow n =
     match F.unwrap n  with
