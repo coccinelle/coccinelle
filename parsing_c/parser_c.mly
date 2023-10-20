@@ -912,6 +912,29 @@ arith_expr:
  | arith_expr TAndLog arith_expr { mk_e(Binary ($1, (Logical AndLog, [$2]), $3)) [] }
  | arith_expr TOrLog  arith_expr { mk_e(Binary ($1, (Logical OrLog, [$2]), $3)) [] }
 
+/* TSup is confused with the > of a template: TODO */
+arith_expr_nosup:
+ | cast_expr                     { $1 }
+ | arith_expr_nosup TMul    arith_expr_nosup { mk_e(Binary ($1, (Arith Mul,[$2]), $3)) [] }
+ | arith_expr_nosup TDiv    arith_expr_nosup { mk_e(Binary ($1, (Arith Div, [$2]), $3)) [] }
+ | arith_expr_nosup TMin    arith_expr_nosup { mk_e(Binary ($1, (Arith Min, [$2]), $3)) [] }
+ | arith_expr_nosup TMax    arith_expr_nosup { mk_e(Binary ($1, (Arith Max, [$2]), $3)) [] }
+ | arith_expr_nosup TMod    arith_expr_nosup { mk_e(Binary ($1, (Arith Mod, [$2]), $3)) [] }
+ | arith_expr_nosup TPlus   arith_expr_nosup { mk_e(Binary ($1, (Arith Plus, [$2]), $3)) [] }
+ | arith_expr_nosup TMinus  arith_expr_nosup { mk_e(Binary ($1, (Arith Minus, [$2]), $3)) [] }
+ | arith_expr_nosup TShl    arith_expr_nosup { mk_e(Binary ($1, (Arith DecLeft, [$2]), $3)) [] }
+ | arith_expr_nosup TShr    arith_expr_nosup { mk_e(Binary ($1, (Arith DecRight, [$2]), $3)) [] }
+ | arith_expr_nosup TInf    arith_expr_nosup { mk_e(Binary ($1, (Logical Inf, [$2]), $3)) [] }
+ | arith_expr_nosup TInfEq  arith_expr_nosup { mk_e(Binary ($1, (Logical InfEq, [$2]), $3)) [] }
+ | arith_expr_nosup TSupEq  arith_expr_nosup { mk_e(Binary ($1, (Logical SupEq, [$2]), $3)) [] }
+ | arith_expr_nosup TEqEq   arith_expr_nosup { mk_e(Binary ($1, (Logical Eq, [$2]), $3)) [] }
+ | arith_expr_nosup TNotEq  arith_expr_nosup { mk_e(Binary ($1, (Logical NotEq, [$2]), $3)) [] }
+ | arith_expr_nosup TAnd    arith_expr_nosup { mk_e(Binary ($1, (Arith And, [$2]), $3)) [] }
+ | arith_expr_nosup TOr     arith_expr_nosup { mk_e(Binary ($1, (Arith Or, [$2]), $3)) [] }
+ | arith_expr_nosup TXor    arith_expr_nosup { mk_e(Binary ($1, (Arith Xor, [$2]), $3)) [] }
+ | arith_expr_nosup TAndLog arith_expr_nosup { mk_e(Binary ($1, (Logical AndLog, [$2]), $3)) [] }
+ | arith_expr_nosup TOrLog  arith_expr_nosup { mk_e(Binary ($1, (Logical OrLog, [$2]), $3)) [] }
+
 cast_expr:
  | unary_expr                        { $1 }
  | topar2 type_name tcpar2 cast_expr
@@ -1718,28 +1741,32 @@ template_parameter_decl2:
        let ds = ([], addTypeD ($4, nullDecl)) in
        let ((returnType,_hasreg), _iihasreg) = fixDeclSpecForParam ds in
        ClassNameParam((id,Some returnType),[$1;$3]) }
- | type_spec2_without_braces declaratori
+ | type_spec2_without_braces declaratorp
      { let ds = ([], addTypeD ($1, nullDecl)) in
-       let (returnType,_storage) = fixDeclSpecForDecl ds in
-       VarNameParam((returnType,$2,None),[]) }
- | type_spec2_without_braces declaratori TEq expr
+       let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
+       let (name, ftyp) = snd $2 in
+       VarNameParam((ftyp returnType,name,None),[]) }
+ | type_spec2_without_braces declaratorp TEq arith_expr_nosup // not assign_expr b/c of > conflict
      { let ds = ([], addTypeD ($1, nullDecl)) in
-       let (returnType,_storage) = fixDeclSpecForDecl ds in
-       VarNameParam((returnType,$2,Some $3),[]) }
- | Tconst type_spec2_without_braces declaratori
+       let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
+       let (name, ftyp) = snd $2 in
+       VarNameParam((ftyp returnType,name,Some $4),[$3]) }
+ | Tconst type_spec2_without_braces declaratorp
      { let ty  = ([], addTypeD ($2,nullDecl)) in
        let cst = {const=true  ; volatile=false; restrict=false}, $1 in
-       let ty  = (fst ty, addQualifD  (cst, snd ty)) in
-       let (returnType,_storage) = fixDeclSpecForDecl ty in
-       VarNameParam((returnType,$3,Some),[]) }
- | Tconst type_spec2_without_braces declaratori TEq expr
+       let ds  = (fst ty, addQualifD  (cst, snd ty)) in
+       let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
+       let (name, ftyp) = snd $3 in
+       VarNameParam((ftyp returnType,name,None),[]) }
+ | Tconst type_spec2_without_braces declaratorp TEq arith_expr_nosup
      { let ty  = ([], addTypeD ($2,nullDecl)) in
        let cst = {const=true  ; volatile=false; restrict=false}, $1 in
-       let ty  = (fst ty, addQualifD  (cst, snd ty)) in
-       let (returnType,_storage) = fixDeclSpecForDecl ty in
-       VarNameParam((returnType,$3,Some $4),[]) }
+       let ds  = (fst ty, addQualifD  (cst, snd ty)) in
+       let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
+       let (name, ftyp) = snd $3 in
+       VarNameParam((ftyp returnType,name,Some $5),[$4]) }
  | Ttemplate TInf template_parameter_list TSup template_parameter_decl2
-     { failwith "bad" }
+     { TemplateParam(($3,$5),[$1;$2;$4]) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
