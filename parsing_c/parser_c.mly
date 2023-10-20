@@ -1702,12 +1702,42 @@ parameter_decl_arg: /* more tolerant */
      }
 
 template_parameter_decl2:
-   Ttypename ident { failwith "bad" }
- | Ttypename ident TEq type_spec { failwith "bad" }
- | Tclass ident { failwith "bad" }
- | Tclass ident TEq type_spec { failwith "bad" }
- | type_spec2_without_braces declaratori { failwith "bad" }
- | Tconst type_spec2_without_braces declaratori { failwith "bad" }
+   Ttypename ident
+     { let id = RegularName (mk_string_wrap $2) in
+       TypeNameParam((id,None),[$1]) }
+ | Ttypename ident TEq type_spec
+     { let id = RegularName (mk_string_wrap $2) in
+       let ds = ([], addTypeD ($4, nullDecl)) in
+       let ((returnType,_hasreg), _iihasreg) = fixDeclSpecForParam ds in
+       TypeNameParam((id,Some returnType),[$1;$3]) }
+ | Tclass ident
+     { let id = RegularName (mk_string_wrap $2) in
+       ClassNameParam((id,None),[$1]) }
+ | Tclass ident TEq type_spec
+     { let id = RegularName (mk_string_wrap $2) in
+       let ds = ([], addTypeD ($4, nullDecl)) in
+       let ((returnType,_hasreg), _iihasreg) = fixDeclSpecForParam ds in
+       ClassNameParam((id,Some returnType),[$1;$3]) }
+ | type_spec2_without_braces declaratori
+     { let ds = ([], addTypeD ($1, nullDecl)) in
+       let (returnType,_storage) = fixDeclSpecForDecl ds in
+       VarNameParam((returnType,$2,None),[]) }
+ | type_spec2_without_braces declaratori TEq expr
+     { let ds = ([], addTypeD ($1, nullDecl)) in
+       let (returnType,_storage) = fixDeclSpecForDecl ds in
+       VarNameParam((returnType,$2,Some $3),[]) }
+ | Tconst type_spec2_without_braces declaratori
+     { let ty  = ([], addTypeD ($2,nullDecl)) in
+       let cst = {const=true  ; volatile=false; restrict=false}, $1 in
+       let ty  = (fst ty, addQualifD  (cst, snd ty)) in
+       let (returnType,_storage) = fixDeclSpecForDecl ty in
+       VarNameParam((returnType,$3,Some),[]) }
+ | Tconst type_spec2_without_braces declaratori TEq expr
+     { let ty  = ([], addTypeD ($2,nullDecl)) in
+       let cst = {const=true  ; volatile=false; restrict=false}, $1 in
+       let ty  = (fst ty, addQualifD  (cst, snd ty)) in
+       let (returnType,_storage) = fixDeclSpecForDecl ty in
+       VarNameParam((returnType,$3,Some $4),[]) }
  | Ttemplate TInf template_parameter_list TSup template_parameter_decl2
      { failwith "bad" }
 
