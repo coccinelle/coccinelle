@@ -1071,6 +1071,18 @@ let find_function_names l =
     | ((PC.TCPar(_),_) as t1) :: ((PC.TPtVirg(_),_) as t2) :: rest ->
 	(List.rev (t1::acc),(t2::rest))
     | x::xs -> split (x::acc) xs in
+  let is_ctx tok =
+    match fst tok with
+      (* toks that start the next rule *)
+      PC.EOF | PC.TArob | PC.TArobArob | PC.TOPar0 _ | PC.TCPar0 _
+    | PC.TMid0 _ | PC.TAnd0 _ | PC.TStrict _ | PC.TAny _
+    | PC.TWhen _ | PC.TWhenTrue _ | PC.TWhenFalse _ -> false
+    | _ ->
+	let (d,_,_,_,_,_,_,_,_,_) = get_clt tok in
+	List.mem d [D.CONTEXT;D.OPT] in
+  let is_pls tok =
+    let (d,_,_,_,_,_,_,_,_,_) = get_clt tok in
+    List.mem d [D.PLUS;D.PLUSPLUS] in
   let rec balanced_name level = function
       [] -> raise Irrelevant
     | (PC.TCPar0(_),_)::rest ->
@@ -1178,6 +1190,12 @@ let find_function_names l =
               (match aft with
                 (PC.TPtVirg(_),_)::_
                  when not(is_permissible_proto acc) -> raise Irrelevant
+	      | (((PC.TPtVirg(_),_)|(PC.TOBrace(_),_)) as a)::rest
+		  when is_pls a && List.exists is_ctx acc &&
+		       List.exists is_ctx rest ->
+		    (* new prototype or function cannot have context code
+		       both before and after it *)
+		    raise Irrelevant
               | _ ->
 	      (match rest with
 		(PC.TOPar(_),_)::_ ->
