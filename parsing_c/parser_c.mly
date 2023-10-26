@@ -1467,13 +1467,16 @@ attr_arg:
      { MacroAttrArgs (fst $1,$3),[snd $1;$2;$4] }
 
 attribute_gcc:
- | Tattribute tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr { GccAttribute $3, [$1]@$2@$4 }
- | tdouble_ocro_cxx_attr argument_list tdouble_ccro_cxx_attr { CxxAttribute $2, $1@$3 }
- | tdouble_ocro_cxx_attr Tusing ident_cpp TDotDot argument_list tdouble_ccro_cxx_attr
-   { CxxAttributeUsing ($3,$5), $1@($2::$4::$6) }
+ | Tattribute tdouble_opar_gcc_attr argument_list tdouble_cpar_gcc_attr
+     { GccAttribute $3, [$1]@$2@$4 }
+ | tdouble_ocro_cxx_attr argument_list tdouble_ccro_cxx_attr
+     { CxxAttribute $2, $1@$3 }
+ | tdouble_ocro_cxx_attr Tusing ident_cpp TDotDot argument_list
+     tdouble_ccro_cxx_attr
+     { CxxAttributeUsing ($3,$5), $1@($2::$4::$6) }
 
 /*(*-----------------------------------------------------------------------*)*/
-/*(* Declarator, right part of a type + second part of decl (the ident)  *)*/
+/*(* Declarator, right part of a type + second part of decl (the ident)    *)*/
 /*(*-----------------------------------------------------------------------*)*/
 
 /*
@@ -1746,7 +1749,8 @@ template_parameter_decl2:
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
        let (name, ftyp) = snd $2 in
        VarNameParam((ftyp returnType,name,None),[]) }
- | type_spec2_without_braces declaratorp TEq arith_expr_nosup // not assign_expr b/c of > conflict
+ | type_spec2_without_braces declaratorp TEq arith_expr_nosup
+     // not assign_expr b/c of > conflict
      { let ds = ([], addTypeD ($1, nullDecl)) in
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
        let (name, ftyp) = snd $2 in
@@ -1867,7 +1871,8 @@ decl2:
 	 ((NoSto, [], fst $1, $3, $5, true),
           (snd $1::$2::$4::$6::fakeBeforeInfo()::[])) }
 
- | TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq initialize TPtVirg
+ | TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq
+     initialize TPtVirg
      { function _ ->
        MacroDeclInit
 	 ((NoSto, [], fst $1, $3, $5, $7),
@@ -1881,7 +1886,8 @@ decl2:
           (snd $2::$3::$5::$7::fakeBeforeInfo()::stoii)) }
 
  | decl_spec
-     TMacroDecl TOPar macro_argument_list TCPar attributes_opt teq initialize TPtVirg
+     TMacroDecl TOPar macro_argument_list TCPar
+     attributes_opt teq initialize TPtVirg
      { function _ ->
        let (attrs,(sto,stoii)) = fixDeclSpecForMacroDecl $1 in
        MacroDeclInit
@@ -2088,11 +2094,12 @@ s_or_u_spec2:
      { StructUnion (fst $1, Some (fst $2), [], $4),  [snd $1;snd $2;$3;$5]  }
  | struct_or_union ident tobrace_struct struct_decl_list_gcc tcbrace_struct
      { StructUnion (fst $1, Some (fst $2), [], $4),  [snd $1;snd $2;$3;$5]  }
- | cpp_struct_or_union       TDotDot base_classes tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
+ | cpp_struct_or_union TDotDot base_classes tobrace_struct
+     cpp_struct_decl_list_gcc tcbrace_struct
      { StructUnion (fst $1, None, $3, $5), [snd $1;$2;$4;$6] }
- | cpp_struct_or_union       tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
+ | cpp_struct_or_union tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
      { StructUnion (fst $1, None, [], $3), [snd $1;$2;$4] }
- | struct_or_union       tobrace_struct struct_decl_list_gcc tcbrace_struct
+ | struct_or_union tobrace_struct struct_decl_list_gcc tcbrace_struct
      { StructUnion (fst $1, None, [], $3), [snd $1;$2;$4] }
  | struct_or_union ident
      { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
@@ -2188,7 +2195,7 @@ field_declaration:
 	      ("field_declaration: case 1: parsing don't allow this",
 	       Ast_c.parse_info_of_info $3)));
 
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$3;iistart])
@@ -2208,7 +2215,7 @@ field_declaration:
 	      ("field_declaration: case 2: parsing don't allow this",
 	       Ast_c.parse_info_of_info $2)));
 
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
        FieldDeclList ([(Simple (None, returnType, Ast_c.noattr)) , []], [$2;iistart])
      }
  | simple_type dotdot const_expr2 TPtVirg
@@ -2224,7 +2231,7 @@ field_declaration:
 	      ("field_declaration: case 3: parsing don't allow this",
 	       Ast_c.parse_info_of_info $2)));
 
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
        FieldDeclList (decl +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$4;iistart])
@@ -2243,7 +2250,7 @@ simple_field_declaration:
 	      ("simple_field_declaration: parsing don't allow this",
 	       Ast_c.parse_info_of_info $3)));
 
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
        FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$3;iistart])
@@ -2264,7 +2271,7 @@ simple_field_declaration:
 	      ("field_declaration: case 3: parsing don't allow this",
 	       Ast_c.parse_info_of_info $2)));
 
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallelism with DeclList *)
+       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
        FieldDeclList (decl +> (List.map (fun (f, iivirg) ->
          f returnType, iivirg))
                          ,[$4;iistart])
@@ -2312,7 +2319,8 @@ cpp_struct_decl_list_gcc:
 /*(* enum *)*/
 /*(*************************************************************************)*/
 enum_spec:
- | enum_ident enum_base tobrace_enum enumerator_list gcc_comma_opt_struct tcbrace_enum
+ | enum_ident enum_base tobrace_enum enumerator_list gcc_comma_opt_struct
+     tcbrace_enum
      {
       let (ty, td) = Common.default (None, []) (function x -> x) $2 in
       let (enumname, ii) = $1 in
@@ -2489,13 +2497,15 @@ cpp_directive:
 
  | TDefine TIdentDefine define_val TDefEOL
      { let name = fst $2 in
-       Define ((name, [$1; snd $2;$4]), (DefineVar, ($3 (Ast_c.is_fake $1) (Left name)))) }
+       Define ((name, [$1; snd $2;$4]),
+	       (DefineVar, ($3 (Ast_c.is_fake $1) (Left name)))) }
 
  /*
  (* The TOParDefine is introduced to avoid ambiguity with previous rules.
   * A TOParDefine is a TOPar that was just next to the ident.
   *)*/
- | TDefine TIdentDefine TOParDefine call_param_define_list TCPar define_val TDefEOL
+ | TDefine TIdentDefine TOParDefine call_param_define_list TCPar define_val
+     TDefEOL
      { LP.restore_typedef_state();
        Data.clear_define_params();
        let name = fst $2 in
