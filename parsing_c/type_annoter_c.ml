@@ -1281,7 +1281,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
 
       |	Pragma((name,rest), ii) -> ()
 
-      | OtherDirective _ -> ()
+      | OtherDirective _ | UsingTypename _ | UsingMember _ -> ()
     );
 
     (* ------------------------------------------------------------ *)

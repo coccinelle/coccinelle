@@ -295,6 +295,9 @@ and cpp_directive =
   | Include of includ
   | Pragma of (name * string wrap list) wrap
   | OtherDirective of il
+  | UsingTypename of (name * fullType) wrap
+  | UsingMember of name wrap
+
 and define = string wrap * (define_kind * define_val)
 and define_kind =
     DefineVar

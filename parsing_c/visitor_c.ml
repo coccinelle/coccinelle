@@ -924,6 +924,13 @@ and vk_cpp_directive bigf directive =
 	iif ii
     | OtherDirective (ii) ->
         iif ii
+    | UsingTypename((name,def),ii) ->
+	vk_name bigf name;
+	vk_type bigf def;
+	iif ii
+    | UsingMember(name,ii) ->
+	vk_name bigf name;
+	iif ii
   in f (k, bigf) directive
 
 
@@ -1990,6 +1997,10 @@ and vk_cpp_directive_s = fun bigf top ->
 		rest +> List.map (fun (str,ii) -> (str,iif ii))),
 	       iif ii)
     | OtherDirective (ii) -> OtherDirective (iif ii)
+    | UsingTypename((name,def),ii) ->
+	UsingTypename((vk_name_s bigf name,vk_type_s bigf def),iif ii)
+    | UsingMember(name,ii) ->
+	UsingMember(vk_name_s bigf name,iif ii)
 
   in f (k, bigf) top
 
