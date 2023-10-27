@@ -1441,6 +1441,22 @@ and pp_init (init, iinit) =
     | OtherDirective (ii) ->
 	List.iter pr_elem ii
 
+    | UsingTypename((name,def),ii) ->
+	let (iusing,ieq,itypename,iptvirg) =
+	  match ii with
+	    [iusing;ieq;itypename;iptvirg] ->
+	      let itypename _ = pr_elem itypename; pr_space() in
+	      (iusing,ieq,itypename,iptvirg)
+	  | [iusing;ieq;iptvirg] -> (iusing,ieq,(fun _ -> ()),iptvirg)
+	  | _ -> failwith "UsingTypename: wrong number of elements" in
+	pr_elem iusing; pr_space(); pp_name name; pr_space();
+	pr_elem ieq;  pr_space(); itypename();
+	pp_type def; pr_elem iptvirg
+    | UsingMember(name,ii) ->
+	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
+	pr_elem iusing; pr_space(); pp_name name;
+	pr_elem iptvirg
+
   and pp_define_param_list dparams =
     pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams
 
