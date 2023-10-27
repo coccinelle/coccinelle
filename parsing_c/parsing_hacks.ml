@@ -2062,12 +2062,12 @@ let lookahead2 ~pass next before =
 	TIdent (s,i1)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::TypedefIdent _::_
-      when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->
+      when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   (* yy xx{   and in function *)
   | TOBrace i1::_,              TIdent(s,i2)::TypedefIdent _::_
-      when !Flag.c_plus_plus <> Flag.Off && (LP.current_context () = (LP.InFunction)) ->
+      when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
         pr2_cpp("constructed_object: "  ^s);
         TOBraceCplusplusInit i1
   | TOPar i1::_,              TIdent(s,i2)::ptr
