@@ -2790,7 +2790,7 @@ base_class_name:
 
 base_classes:
    base_class { [$1,[]] }
- | base_classes TComma base_class { ($3,  [$2])::$1 }
+ | base_classes TComma base_class { $1 @ [$3,    [$2]] }
 
 /*(*************************************************************************)*/
 /*(* some generic workarounds *)*/
