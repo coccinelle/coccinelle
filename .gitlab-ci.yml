@@ -296,26 +296,26 @@ push reference scores:
         git push
       || true
 
-trace-cmd-check-changed:
-  stage: trace-cmd
-  image: "registry.gitlab.inria.fr/inria-ci/docker/python3-cloudstack"
-  tags:
-    - linux
-    - small
-  rules:
-    - if: $CLOUDSTACK_API_KEY
-  script:
-    - cd ci/trace-cmd
-    - python3 check-template-changed.py > ../../trace-cmd-config.yml
-  artifacts:
-    paths: [trace-cmd-config.yml]
-
-trace-cmd:
-  stage: trace-cmd
-  needs: [trace-cmd-check-changed]
-  rules:
-    - if: $CLOUDSTACK_API_KEY
-  trigger:
-    include:
-      - artifact: trace-cmd-config.yml
-        job: trace-cmd-check-changed
+#trace-cmd-check-changed:
+#  stage: trace-cmd
+#  image: "registry.gitlab.inria.fr/inria-ci/docker/python3-cloudstack"
+#  tags:
+#    - linux
+#    - small
+#  rules:
+#    - if: $CLOUDSTACK_API_KEY
+#  script:
+#    - cd ci/trace-cmd
+#    - python3 check-template-changed.py > ../../trace-cmd-config.yml
+#  artifacts:
+#    paths: [trace-cmd-config.yml]
+#
+#trace-cmd:
+#  stage: trace-cmd
+#  needs: [trace-cmd-check-changed]
+#  rules:
+#    - if: $CLOUDSTACK_API_KEY
+#  trigger:
+#    include:
+#      - artifact: trace-cmd-config.yml
+#        job: trace-cmd-check-changed
