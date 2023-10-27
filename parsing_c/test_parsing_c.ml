@@ -219,7 +219,7 @@ let test_parse_i xs =
 (* local function that is parametrized by whether to launch gv *)
 let local_test_cfg launchgv file =
   let (file, specific_func) =
-    if file =~ "\\(.*\\.c\\):\\(.*\\)"
+    if file =~ "\\(.*\\.c\\):\\(.*\\)" || file =~ "\\(.*\\.cpp\\):\\(.*\\)"
     then
       let (a,b) = matched2 file in
       a, Some b
@@ -227,7 +227,8 @@ let local_test_cfg launchgv file =
       file, None
   in
 
-  if not (file =~ ".*\\.c")
+  if not (file =~ ".*\\.c" ||
+          (!Flag.c_plus_plus = Flag.Off && file =~ ".*\\.cpp"))
   then pr2 "warning: seems not a .c file";
 
   (* no point to parse format strings *)
