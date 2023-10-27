@@ -3067,6 +3067,11 @@ let convert_templates toks =
   | (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: (* no space *)
     (({TV.tok = TInf i2}) as b) :: rest ->
       loop (((a,s,i1,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+  | (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: sp ::
+    (({TV.tok = TInf i2}) as b) :: ((notsp::_) as rest)
+    (* allow one space or newline before < if none after *)
+    when TH.is_space sp.TV.tok && not(TH.is_space notsp.TV.tok) ->
+      loop (((a,s,i1,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
   (* one possible end point *)
   | (({TV.tok = TSup i3}) as c) :: rest when top1 stack pdepth tdepth ->
       let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
