@@ -571,7 +571,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
+       Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit TOBraceCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd
        TTemplateEndTemplateEndTemplateEnd Tfinal Ttypename
@@ -1982,6 +1982,8 @@ init_declarator2:
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
  /* C++ only */
  | declaratori TOParCplusplusInit macro_argument_list TCPar
+     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
+ | declaratori TOBraceCplusplusInit macro_argument_list TCBrace
      { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
 
 /*(*-----------------------------------------------------------------------*)*/
