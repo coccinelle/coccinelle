@@ -222,6 +222,7 @@ type node = node1 * string
   | Include of includ
 
   | PragmaHeader of (name * string wrap list) wrap
+  | TemplateHeader of templateParameterType wrap2 list wrap
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il
@@ -384,7 +385,8 @@ let extract_fullstatement node =
   | Include _
   | DefineHeader _ | DefineType _ | DefineAttr _ | DefineExpr _
   | DefineDoWhileZeroHeader _
-  | DefineInit _ | DefineTodo | PragmaHeader _ | MacroTop _
+  | DefineInit _ | DefineTodo | PragmaHeader _ | TemplateHeader _
+  | MacroTop _
       -> None
 
   | IfdefHeader _ | IfdefElse _ | IfdefEndif _

@@ -1617,6 +1617,11 @@ and pp_init (init, iinit) =
 	pp_name name; pr_space();
 	pr_elem irest; pr_elem ieol
 
+    | F.TemplateHeader(params,ii) ->
+	let (itmp,ileft,iright) = Common.tuple_of_list3 ii in
+	pr_elem itmp; pr_elem ileft;
+	pp_template_param_list params; pr_elem iright; pr_nl()
+
     | F.Include ({i_include = (s, ii);} as a) ->
 	pp_directive (Include a)
 

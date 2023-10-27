@@ -1073,6 +1073,11 @@ and vk_node = fun bigf node ->
 	vk_name bigf id;
 	rest +> List.iter (fun (str,ii) -> iif ii);
 	iif ii
+    | F.TemplateHeader(params,ii) ->
+	iif ii;
+	params +> List.iter (fun (param,iicomma) ->
+          vk_template_param bigf param;
+          iif iicomma)
 
     | F.Include {i_include = (s, ii);} -> iif ii;
 
@@ -2165,6 +2170,11 @@ and vk_node_s = fun bigf node ->
 	F.PragmaHeader((vk_name_s bigf id,
 			rest +> List.map (fun (str,ii) -> (str,iif ii))),
 		       iif ii)
+    | F.TemplateHeader(params,ii) ->
+	F.TemplateHeader
+	  (params +> List.map (fun (param, iicomma) ->
+            (vk_template_param_s bigf param, iif iicomma)),
+	   iif ii)
 
     | F.Include {i_include = (s, ii);
                  i_rel_pos = h_rel_pos;

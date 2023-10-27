@@ -1404,14 +1404,14 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
   let topi = !g +> add_node TopNode lbl_0 "[top]" in
 
-  let do_definition ((defbis,_) as def) =
+  let do_definition topi ((defbis,_) as def) =
     let _funcs = defbis.f_name in
     let _c = defbis.f_body in
       (* if !Flag.show_misc then pr2 ("build info function " ^ funcs); *)
     aux_definition topi def;
     [(outer_e,Some !g)] in
 
-  let do_decl elem str =
+  let do_decl topi elem str =
     let ei =   !g +> add_node elem    lbl_0 str in
     let endi = !g +> add_node EndNode lbl_0 "[end]" in
 
@@ -1427,15 +1427,15 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 	else [] in
       self @ List.concat (List.map (do_ast_to_control_flow false) defs)
 
-  | Ast_c.Definition def -> do_definition def
+  | Ast_c.Definition def -> do_definition topi def
 
   | Ast_c.Declaration decl ->
-      do_decl (Control_flow_c.Decl decl) "decl"
+      do_decl topi (Control_flow_c.Decl decl) "decl"
   | Ast_c.CppTop (Ast_c.Include inc) ->
-      do_decl (Control_flow_c.Include inc) "#include"
+      do_decl topi (Control_flow_c.Include inc) "#include"
   | Ast_c.MacroTop (s, args, ii) ->
       let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
-      do_decl (Control_flow_c.ExprStatement (st, (Some e, ii))) "macrotoplevel"
+      do_decl topi (Control_flow_c.ExprStatement (st, (Some e, ii))) "macrotoplevel"
 
   | Ast_c.CppTop (Ast_c.Define ((id,ii), (defkind, defval)))  ->
       let s =
@@ -1529,6 +1529,15 @@ let specialdeclmacro_to_stmt (s, args, ii) =
       !g#add_arc ((topi, ei),Direct);
       !g#add_arc ((ei, endi),Direct);
       [(outer_e,Some !g)]
+
+  | Ast_c.TemplateDefinition(tmp,top,ii) ->
+      let headeri = !g+>add_node (TemplateHeader (tmp,ii)) lbl_0 "template" in
+      !g#add_arc ((topi, headeri),Direct);
+      (match top with
+      | Ast_c.Definition def -> do_definition headeri def
+      | Ast_c.Declaration decl ->
+	  do_decl headeri (Control_flow_c.Decl decl) "decl"
+      | _ -> failwith "unexpected template body")
 
   | _ -> if isouter then [(outer_e,None)] else []
 
