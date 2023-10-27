@@ -1272,6 +1272,24 @@ write
   \end{tabular}
 \end{center}
 
+It is also not possible to factorize common added code out over a
+disjunction.  The following semantic patch rule is thus not allowed.
+
+\begin{center}
+\begin{lstlisting}[language=Cocci]
+@@
+@@
+
+(
+-foo();
+|
+-abc();
+-def();
+)
++ newcode();
+\end{lstlisting}
+\end{center}
+
 Some kinds of terms can only appear in + code.  These include comments,
 ifdefs, and attributes (\texttt{\_\_attribute\_\_((...))}).
 
