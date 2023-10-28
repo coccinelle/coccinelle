@@ -248,10 +248,12 @@ let member_env lookupf env =
 
 (* ------------------------------------------------------------ *)
 
-let lookup_var s env =
+let rec lookup_var s env =
   match env with
   | [] -> raise Not_found
-  | env :: _ -> StringMap.find s env.var_or_func
+  | env :: rest ->
+      try StringMap.find s env.var_or_func
+      with _ -> lookup_var s rest
 
 let member_env_lookup_var s env =
   match env with
@@ -608,7 +610,7 @@ let _notyped_var = Hashtbl.create 101
 let new_scope() =
   match !_scoped_env with
   | hd :: _ ->
-      _scoped_env := { hd with level = succ hd.level; } :: !_scoped_env
+      _scoped_env := { hd with level = succ hd.level; var_or_func = StringMap.empty; } :: !_scoped_env
   | [] ->
       _scoped_env := [ empty_frame ]
 let del_scope() =
@@ -1378,7 +1380,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           add_binding (StructUnionNameDef (s, ((su, structType'),ii')))  true;
 
           if need_annotate_body
-          then k typ (* todo: restrict ? new scope so use do_in_scope ? *)
+          then do_in_new_scope (fun () -> k typ) (* todo: restrict ? new scope so use do_in_scope ? *)
 
       | EnumDef (sopt, base, enums) ->
 
