@@ -1010,6 +1010,10 @@ postfix_expr:
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
  | postfix_expr TOPar argument_list TCPar
      { mk_e(FunCall ($1, $3)) [$2;$4] }
+ | postfix_expr TTemplateStart argument_list TTemplateEnd
+     { mk_e(FunCall ($1, $3)) [$2;$4] }
+ | postfix_expr TInf3 argument_list TSup3
+     { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
  | postfix_expr TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
  | postfix_expr TInc          { mk_e(Postfix ($1, Inc)) [$2] }
@@ -1044,12 +1048,6 @@ primary_expr_without_ident:
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
- | identifier_cpp TTemplateStart argument_list TTemplateEnd
-     { let fn = mk_e(Ident  ($1)) [] in
-       mk_e(FunCall (fn, $3)) [$2;$4] }
- | identifier_cpp TInf3 argument_list TSup3
-     { let fn = mk_e(Ident  ($1)) [] in
-       mk_e(FunCall (fn, $3)) [$2;$4] }
  | primary_expr_without_ident { $1 }
 
 string_fragments:
