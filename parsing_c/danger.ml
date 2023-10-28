@@ -35,12 +35,9 @@ let undanger_onedecl (onedecl,_ii) =
       Visitor_c.vk_name undanger name;
       (match iniopt with
         Ast_c.NoInit -> ()
-      |	Ast_c.ValInit(iini,init) ->
-	  nodanger iini;
-	  Visitor_c.vk_ini undanger init
-      |	Ast_c.ConstrInit((init,(ii : Ast_c.info list))) ->
-	  List.iter (Visitor_c.vk_info undanger) ii;
-	  Visitor_c.vk_argument_list undanger init);
+      |	Ast_c.ValInit(init,iini) ->
+	  List.iter nodanger iini;
+	  Visitor_c.vk_ini undanger init);
       undanger_type onedecl.Ast_c.v_type;
   | None -> ()
 

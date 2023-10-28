@@ -329,8 +329,7 @@ module Ast_c :
     and v_init =
       Ast_c.v_init =
         NoInit
-      | ValInit of info * initialiser
-      | ConstrInit of argument wrap2 list wrap
+      | ValInit of initialiser wrap
     and storage = storagebis * bool * align
     and storagebis =
       Ast_c.storagebis =

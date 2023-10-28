@@ -1124,11 +1124,10 @@ and pp_string_format (e,ii) =
 	      returnType endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(iini,init) ->
+	    | Ast_c.ValInit(init,[iini]) ->
 		pr_space(); pr_elem iini; pr_space(); pp_init init
-	    | Ast_c.ConstrInit((init,[lp;rp])) ->
-		pr_elem lp; pp_arg_list init; pr_elem rp
-	    | Ast_c.ConstrInit _ -> raise (Impossible 112))
+	    | Ast_c.ValInit(init,[]) -> pr_space(); pp_init init
+	    | Ast_c.ValInit _ -> raise (Impossible 112))
 	| None -> pp_type returnType
 	);
 
@@ -1147,11 +1146,10 @@ and pp_string_format (e,ii) =
 	      returnType attrs endattrs;
 	    (match iniopt with
 	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(iini,init) ->
+	    | Ast_c.ValInit(init,[iini]) ->
 		pr_space(); pr_elem iini; pr_space(); pp_init init
-	    | Ast_c.ConstrInit((init,[lp;rp])) ->
-		pr_elem lp; pp_arg_list init; pr_elem rp
-	    | Ast_c.ConstrInit _ -> raise (Impossible 113));
+	    | Ast_c.ValInit(init,[]) -> pr_space(); pp_init init
+	    | Ast_c.ValInit _ -> raise (Impossible 113));
 
 
 	| x -> raise (Impossible 114)

@@ -999,10 +999,8 @@ postfix_expr:
  | postfix_expr TDec          { mk_e(Postfix ($1, Dec)) [$2] }
 
  /*(* gccext: also called compound literals *)*/
- | topar2 type_name tcpar2 TOBrace TCBrace
-     { mk_e(Constructor ($2, (InitList [], [$4;$5]))) [$1;$3] }
- | topar2 type_name tcpar2 TOBrace initialize_list gcc_comma_opt_struct TCBrace
-     { mk_e(Constructor ($2, (InitList (List.rev $5),[$4;$7] @ snd $6))) [$1;$3] }
+ | topar2 type_name tcpar2 TOBrace outer_initialize_list TCBrace
+     { mk_e(Constructor ($2, ($5 $4 $6))) [$1;$3] }
 
 primary_expr_without_ident:
  | TInt
@@ -1979,12 +1977,12 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
- | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
+ | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
  /* C++ only */
- | declaratori topar_ini_cxx macro_argument_list tcpar_ini
-     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
- | declaratori tobrace_ini_cxx macro_argument_list tcbrace_ini
-     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
+ | declaratori topar_ini_cxx valinit tcpar_ini
+     { (Ast_c.noattr, $1, $3 $2 $4) }
+ | declaratori tobrace_ini_cxx valinit tcbrace_ini
+     { (Ast_c.noattr, $1, $3 $2 $4) }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* declarators (right part of type and variable). *)*/
@@ -1996,17 +1994,17 @@ init_declarator2:
 init_declarator_attrs2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
  | attributes declaratori       { ($1, $2, NoInit) }
- | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
- | attributes declaratori teq initialize   { ($1, $2, ValInit($3, $4)) }
+ | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
+ | attributes declaratori teq initialize   { ($1, $2, ValInit($4, [$3])) }
  /* C++ only */
- | declaratori topar_ini_cxx macro_argument_list tcpar_ini
-     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
- | attributes declaratori topar_ini_cxx macro_argument_list tcpar_ini
-     { ($1, $2, ConstrInit($4,[$3;$5])) }
- | declaratori tobrace_ini_cxx macro_argument_list tcbrace_ini
-     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
- | attributes declaratori tobrace_ini_cxx macro_argument_list tcbrace_ini
-     { ($1, $2, ConstrInit($4,[$3;$5])) }
+ | declaratori topar_ini_cxx valinit tcpar_ini
+     { (Ast_c.noattr, $1, $3 $2 $4) }
+ | attributes declaratori topar_ini_cxx valinit tcpar_ini
+     { ($1, $2, $4 $3 $5) }
+ | declaratori tobrace_ini_cxx valinit tcbrace_ini
+     { (Ast_c.noattr, $1, $3 $2 $4) }
+ | attributes declaratori tobrace_ini_cxx valinit tcbrace_ini
+     { ($1, $2, $4 $3 $5) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
@@ -2038,17 +2036,15 @@ gcc_asm_decl:
 initialize:
  | assign_expr
      { InitExpr $1,                [] }
- | tobrace_ini initialize_list gcc_comma_opt_struct  tcbrace_ini
-     { InitList (List.rev $2),     [$1;$4] @ snd $3 }
- | tobrace_ini tcbrace_ini
-     { InitList [],       [$1;$2] } /*(* gccext: *)*/
+ | tobrace_ini outer_initialize_list  tcbrace_ini
+     { $2 $1 $3 }
 
 
 /*
 (* opti: This time we use the weird order of non-terminal which requires in
  * the "caller" to do a List.rev cos quite critical. With this weird order it
  * allows yacc to use a constant stack space instead of exploding if we would
- * do a  'initialize2 Tcomma initialize_list'.
+ * do a  'initialize2 Tcomma initialize_list
  *)
 */
 initialize_list:
@@ -2056,14 +2052,20 @@ initialize_list:
  | initialize_list TComma initialize2   { ($3, [$2])::$1 }
  | initialize_list TNoComma initialize2 { ($3, [$2])::$1 }
 
+outer_initialize_list:
+   /* empty */ { fun lb rb -> InitList [], [lb;rb] }
+ | initialize_list gcc_comma_opt_struct
+     { fun lb rb -> InitList (List.rev $1),   [lb;rb] @ snd $2 }
+
+valinit:
+  outer_initialize_list { fun lb rb -> ValInit($1 lb rb,[]) }
+
 /*(* gccext: condexpr and no assign_expr cos can have ambiguity with comma *)*/
 initialize2:
  | cond_expr
      { InitExpr $1,   [] }
- | tobrace_ini initialize_list gcc_comma_opt_struct tcbrace_ini
-     { InitList (List.rev $2),   [$1;$4] @ snd $3 }
- | tobrace_ini tcbrace_ini
-     { InitList [],  [$1;$2]  }
+ | tobrace_ini outer_initialize_list tcbrace_ini
+     { $2 $1 $3 }
 
  /*(* gccext: labeled elements, a.k.a designators *)*/
  | designator_list TEq initialize2
@@ -2610,10 +2612,11 @@ define_val:
 
  | function_definition { fun _ _ -> DefineFunction $1 }
 
- | TOBraceDefineInit initialize_list gcc_comma_opt_struct TCBrace comma_opt
+ | TOBraceDefineInit outer_initialize_list TCBrace comma_opt
     { fun isfake -> function Left name | Right name ->
-      (if not isfake && $5 <> [] then Data.add_special_name name Data.CommaInit);
-      DefineInit (InitList (List.rev $2), [$1;$4] @ snd $3 @ $5) }
+      (if not isfake && $4 <> [] then Data.add_special_name name Data.CommaInit);
+      let (init,ii) = $2 $1 $3 in
+      DefineInit (init, ii @ $4) }
 
  /*(* note: had a conflict before when were putting TInt instead of expr *)*/
  | Tdo statement Twhile TOPar expr TCPar

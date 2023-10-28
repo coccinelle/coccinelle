@@ -1351,11 +1351,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
                     (* int x = sizeof(x) is legal so need process ini *)
 		    match iniopt with
 		      Ast_c.NoInit -> ()
-		    | Ast_c.ValInit(iini,init) -> Visitor_c.vk_ini bigf init
-		    | Ast_c.ConstrInit((args,_)) ->
-			args +> List.iter (fun (e,ii) ->
-			  Visitor_c.vk_argument bigf e
-			)
+		    | Ast_c.ValInit(init,iini) -> Visitor_c.vk_ini bigf init
                   end
             );
           );

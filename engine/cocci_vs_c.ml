@@ -559,7 +559,7 @@ let one_initialisation_to_affectation x =
   match var with
   | Some (name, iniopt) ->
       (match iniopt with
-      | B.ValInit (iini, (B.InitExpr e, ii_empty2)) ->
+      | B.ValInit ((B.InitExpr e, ii_empty2),[iini]) ->
 	  let local =
 	    match local with
 	      Ast_c.NotLocalDecl -> Ast_c.NotLocalVar
@@ -2698,7 +2698,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          ))))))
 
    | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
-     ({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
+     ({B.v_namei = Some(nameidb, B.ValInit (inib, [iieqb]));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -2716,7 +2716,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
            (A.Init (align,stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some(nameidb, B.ValInit (iieqb, inib));
+           (({B.v_namei = Some(nameidb, B.ValInit (inib, [iieqb]));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
@@ -2727,8 +2727,8 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            iiptvirgb,iistob)
          ))))))))
 
-   | A.Init (align, stoa, typa, ida, endattra, eqa, inia, ptvirga),
-     ({B.v_namei = Some(nameidb, B.ConstrInit _);
+   | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
+     ({B.v_namei = Some(nameidb, B.ValInit (inib, []));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;

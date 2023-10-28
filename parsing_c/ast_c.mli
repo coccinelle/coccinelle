@@ -240,8 +240,7 @@ and onedecl = {
 }
 and v_init =
     NoInit
-  | ValInit of info * initialiser
-  | ConstrInit of argument wrap2 list wrap
+  | ValInit of initialiser wrap
 and storage = storagebis * bool * align
 and storagebis = NoSto | StoTypedef | Sto of storageClass
 and storageClass = Auto | Static | Register | Extern
