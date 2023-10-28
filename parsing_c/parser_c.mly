@@ -1789,7 +1789,7 @@ template_parameter_decl2:
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
        let (name, ftyp) = snd $3 in
        VarNameParam((ftyp returnType,name,Some $5),[$4]) }
- | Ttemplate TInf template_parameter_list TSup template_parameter_decl2
+ | Ttemplate TTemplateStart template_parameter_list TTemplateEnd template_parameter_decl2
      { TemplateParam(($3,$5),[$1;$2;$4]) }
 
 /*(*----------------------------*)*/
@@ -2770,7 +2770,7 @@ cpp_other:
 /*(*************************************************************************)*/
 
 external_declaration:
- | Ttemplate TInf template_parameter_list TSup external_declaration
+ | Ttemplate TTemplateStart template_parameter_list TTemplateEnd external_declaration
      { TemplateDefinition($3,$5,[$1;$2;$4]) }
  | function_definition               { Definition $1 }
  | decl                              { Declaration ($1 Ast_c.NotLocalDecl) }
@@ -2977,8 +2977,12 @@ parameter_list:
  | parameter_list TComma parameter_decl { $1 @ [$3,  [$2]] }
 
 template_parameter_list:
+ | /* empty */ { [] }
+ | template_parameter_list_ne { $1 }
+
+template_parameter_list_ne:
  | template_parameter_decl                                { [$1, []] }
- | template_parameter_list TComma template_parameter_decl { $1 @ [$3,  [$2]] }
+ | template_parameter_list_ne TComma template_parameter_decl { $1 @ [$3,  [$2]] }
 
 taction_list_ne:
  | TAction                 { [$1] }

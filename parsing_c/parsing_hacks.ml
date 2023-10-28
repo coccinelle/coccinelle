@@ -3044,7 +3044,7 @@ let convert_templates toks =
 	pdepth = tok1_pdepth && pdepth = tok2_pdepth && pdepth = tok3_pdepth &&
 	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2 && tdepth = tok3_tdepth + 3
     | _ -> false in
-  let success a s i1 b i2 c i3 xs =
+  let success a repl b i2 c i3 xs =
     b.TV.tok <- TTemplateStart i2;
     c.TV.tok <- i3;
     let comment_or_space_or_and x =
@@ -3054,9 +3054,9 @@ let convert_templates toks =
 	TAnd _ -> true
       | _ -> false) in
     let (_,tmp) = span comment_or_space_or_and xs in
-    (match tmp with
-      {TV.tok = TIdent(_,_)} :: xs ->
-	a.TV.tok <- TypedefIdent(s,i1)
+    (match tmp, repl with
+      {TV.tok = TIdent(_,_)} :: xs, Some (s,i1) ->
+        a.TV.tok <- TypedefIdent(s,i1)
     | _ -> ()) in
   let rec loop stack pdepth tdepth = function
     [] -> ()
@@ -3071,40 +3071,47 @@ let convert_templates toks =
   (* start point *)
   | (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: (* no space *)
     (({TV.tok = TInf i2}) as b) :: rest ->
-      loop (((a,s,i1,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+      loop (((a,Some(s,i1),b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
   | (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: sp ::
     (({TV.tok = TInf i2}) as b) :: ((notsp::_) as rest)
     (* allow one space or newline before < if none after *)
     when TH.is_space sp.TV.tok && not(TH.is_space notsp.TV.tok) ->
-      loop (((a,s,i1,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+      loop (((a,Some(s,i1),b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+  | (({TV.tok = Ttemplate(i1)}) as a) :: rest ->
+      let (skipped,rest) =
+	span (fun x -> let tok = x.TV.tok in TH.is_just_comment_or_space tok) rest in
+      (match rest with
+	(({TV.tok = TInf i2}) as b)::rest ->
+	  loop (((a,None,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+      | _ -> failwith "need < after template")
   (* one possible end point *)
   | (({TV.tok = TSup i3}) as c) :: rest when top1 stack pdepth tdepth ->
-      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
-      success ident s i1 inf i2 c (TTemplateEnd i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEnd i3) rest;
       loop (List.tl stack) pdepth (tdepth-1) rest
   (* another possible end point, more constraining Shr case first *)
   | (({TV.tok = TShr i3}) as c) :: rest when top2 stack pdepth tdepth ->
       rebuild := true;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
-      success ident s i1 inf i2 c (TTemplateEndTemplateEnd i3) rest;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl stack) in
-      success ident s i1 inf i2 c (TTemplateEndTemplateEnd i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEndTemplateEnd i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
+      success ident repl inf i2 c (TTemplateEndTemplateEnd i3) rest;
       loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
   (* another possible end point, Shr that is template + > *)
   | (({TV.tok = TShr i3}) as c) :: rest when top1 stack pdepth tdepth ->
       rebuild := true;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
-      success ident s i1 inf i2 c (TTemplateEndSup i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEndSup i3) rest;
       loop (List.tl stack) pdepth (tdepth-1) rest
   (* another possible end point *)
   | (({TV.tok = TSup3 i3}) as c) :: rest when top3 stack pdepth tdepth ->
       rebuild := true;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd stack in
-      success ident s i1 inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl stack) in
-      success ident s i1 inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
-      let ((ident,s,i1,inf,i2),_,_) = List.hd (List.tl (List.tl stack)) in
-      success ident s i1 inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
+      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd (List.tl (List.tl stack)) in
+      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3) rest;
       loop (List.tl (List.tl (List.tl stack))) pdepth (tdepth-3) rest
   (* something else *)
   | _::rest -> loop stack pdepth tdepth rest in
