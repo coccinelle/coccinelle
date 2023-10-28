@@ -1981,9 +1981,9 @@ init_declarator2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
  /* C++ only */
- | declaratori TOParCplusplusInit macro_argument_list TCPar
+ | declaratori topar_ini_cxx macro_argument_list tcpar_ini
      { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
- | declaratori TOBraceCplusplusInit macro_argument_list TCBrace
+ | declaratori tobrace_ini_cxx macro_argument_list tcbrace_ini
      { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
 
 /*(*-----------------------------------------------------------------------*)*/
@@ -1999,9 +1999,13 @@ init_declarator_attrs2:
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($2, $3)) }
  | attributes declaratori teq initialize   { ($1, $2, ValInit($3, $4)) }
  /* C++ only */
- | declaratori TOParCplusplusInit macro_argument_list TCPar
+ | declaratori topar_ini_cxx macro_argument_list tcpar_ini
      { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
- | attributes declaratori TOParCplusplusInit macro_argument_list TCPar
+ | attributes declaratori topar_ini_cxx macro_argument_list tcpar_ini
+     { ($1, $2, ConstrInit($4,[$3;$5])) }
+ | declaratori tobrace_ini_cxx macro_argument_list tcbrace_ini
+     { (Ast_c.noattr, $1, ConstrInit($3,[$2;$4])) }
+ | attributes declaratori tobrace_ini_cxx macro_argument_list tcbrace_ini
      { ($1, $2, ConstrInit($4,[$3;$5])) }
 
 /*(*----------------------------*)*/
@@ -2841,7 +2845,11 @@ tobrace_enum: TOBrace { LP.push_context LP.InEnum; $1 }
 tcbrace_enum: TCBrace { LP.pop_context (); $1 }
 
 tobrace_ini: TOBrace { LP.push_context LP.InInitializer; $1 }
+tobrace_ini_cxx: TOBraceCplusplusInit { LP.push_context LP.InInitializer; $1 }
 tcbrace_ini: TCBrace { LP.pop_context (); $1 }
+
+topar_ini_cxx: TOParCplusplusInit { LP.push_context LP.InInitializer; $1 }
+tcpar_ini: TCPar { LP.pop_context (); $1 }
 
 tobrace_struct: TOBrace { LP.push_context LP.InStruct; $1}
 tcbrace_struct: TCBrace { LP.pop_context (); $1 }
