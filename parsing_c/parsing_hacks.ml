@@ -2061,12 +2061,12 @@ let lookahead2 ~pass next before =
 	(match x with TMul _ -> false (* fun ptr *) | _ -> true) ->
 	TIdent (s,i1)
   (* yy xx(   and in function *)
-  | TOPar i1::_,              TIdent(s,i2)::(TypedefIdent _|TTemplateEnd _)::_
+  | TOPar i1::_,              TIdent(s,i2)::(TypedefIdent _|TTemplateEnd _|TautoType _)::_
       when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   (* yy xx{   and in function *)
-  | TOBrace i1::_,              TIdent(s,i2)::(TypedefIdent _|TTemplateEnd _)::_
+  | TOBrace i1::_,              TIdent(s,i2)::(TypedefIdent _|TTemplateEnd _|TautoType _)::_
       when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
         pr2_cpp("constructed_object: "  ^s);
         TOBraceCplusplusInit i1

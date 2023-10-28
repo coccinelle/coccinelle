@@ -274,6 +274,7 @@ module Ast_c :
       | ForExp of
 	  expression option wrap * exprStatement wrap * exprStatement wrap
       | ForRange of declaration * expression
+      | ForRangeInit of declaration * initialiser
     and selection =
       Ast_c.selection =
         If of expression * statement * statement

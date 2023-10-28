@@ -523,6 +523,7 @@ and statement = statementbis wrap3
     | ForExp of
 	expression option wrap * exprStatement wrap * exprStatement wrap
     | ForRange of declaration * expression
+    | ForRangeInit of declaration * initialiser
 
  (* for Switch, need check that all elements in the compound start
   * with a case:, otherwise unreachable code.

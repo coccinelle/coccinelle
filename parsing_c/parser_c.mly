@@ -328,6 +328,23 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
       (* gcc say parse error but don't see why *)
       raise (Semantic ("seems this is not a function", fake_pi))
 
+let create_decls decl_spec init_decl_list ender local =
+  let (returnType,storage) = fixDeclSpecForDecl decl_spec in
+  let iistart = Ast_c.fakeBeforeInfo() in
+  DeclList (
+  (init_decl_list +> List.map (fun ((attrs, ((name,f),endattrs), ini), iivirg) ->
+    let s = str_of_name name in
+    if fst3 (unwrap storage) = StoTypedef
+    then LP.add_typedef s;
+    {v_namei = Some (name, ini);
+      v_type = f returnType;
+      v_storage = unwrap storage;
+      v_local = local;
+      v_attr = attrs; (* extra attrs as compared to the common type *)
+      v_endattr = endattrs;
+      v_type_bis = ref None},
+    iivirg)), (ender::iistart::snd storage))
+  
 
 (* For fake info added at the end of a conditional or iteration, to have the
 correct position information *)
@@ -1227,27 +1244,16 @@ iteration:
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(Some $5, [])),$7), [$1;$2;$6] }
  | Tfor TOPar decl_spec declaratori TDotDot expr TCPar cpp_ifdef_statement
      { let decl = (* should share with code in decl2 *)
-       let (returnType,storage) = fixDeclSpecForDecl $3 in
-       let iistart = Ast_c.fakeBeforeInfo() in
-       let di = ($4, NoInit) in
-       let id_list = [di,[]] in
-       DeclList (
-         (id_list +> List.map (fun ((((name,f),endattrs), ini), iivirg) ->
-           let s = str_of_name name in
-	   if fst3 (unwrap storage) = StoTypedef
-	   then LP.add_typedef s;
-           {v_namei = Some (name, ini);
-            v_type = f returnType;
-            v_storage = unwrap storage;
-            v_local = Ast_c.LocalDecl;
-            v_attr = fst $3;
-            v_endattr = endattrs;
-            v_type_bis = ref None;
-           },
-           iivirg
-         )
-         ),  ($5::iistart::snd storage)) in
+         let di = (fst $3, $4, NoInit) in
+         create_decls $3 [di,[]] $5 Ast_c.LocalDecl in
        For (ForRange(decl,$6),$8), [$1;$2;$7] }
+ | Tfor TOPar decl_spec declaratori TDotDot TOBrace outer_initialize_list TCBrace
+     TCPar cpp_ifdef_statement
+     { let decl = (* should share with code in decl2 *)
+         let di = (fst $3, $4, NoInit) in
+         create_decls $3 [di,[]] $5 Ast_c.LocalDecl in
+       let ini = $7 $6 $8 in
+       For (ForRangeInit(decl,ini),$10), [$1;$2;$9] }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
@@ -1855,27 +1861,7 @@ decl2:
                 },[]],
                 ($2::iistart::snd storage))
      }
- | decl_spec init_declarator_list TPtVirg
-     { function local ->
-       let (returnType,storage) = fixDeclSpecForDecl $1 in
-       let iistart = Ast_c.fakeBeforeInfo() in
-       DeclList (
-         ($2 +> List.map (fun ((attrs, ((name,f),endattrs), ini), iivirg) ->
-           let s = str_of_name name in
-	   if fst3 (unwrap storage) = StoTypedef
-	   then LP.add_typedef s;
-           {v_namei = Some (name, ini);
-            v_type = f returnType;
-            v_storage = unwrap storage;
-            v_local = local;
-	    v_attr = attrs; (* extra attrs as compared to the common type *)
-            v_endattr = endattrs;
-            v_type_bis = ref None;
-           },
-           iivirg
-         )
-         ),  ($3::iistart::snd storage))
-     }
+ | decl_spec init_declarator_list TPtVirg { create_decls $1 $2 $3 }
  /*(* cppext: *)*/
  /* using full decl spec allows too much,but avoids conflicts */
  | TMacroDecl TOPar macro_argument_list TCPar attributes_opt

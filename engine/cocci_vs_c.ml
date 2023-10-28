@@ -5466,6 +5466,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	    A.ForRange(decla, ea2),
 	    B.ForRange(declb, eb2)
 	    )))
+      |	(_, B.ForRangeInit(declb, eb2)) -> fail (* TODO *)
       |	_ -> fail)
 	>>=
       (fun firsta firstb ->

@@ -197,6 +197,7 @@ and declOrExpr =
   | ForExp of
       expression option wrap * exprStatement wrap * exprStatement wrap
   | ForRange of declaration * expression
+  | ForRangeInit of declaration * initialiser
 and selection =
     If of expression * statement * statement
   | Switch of expression * statement

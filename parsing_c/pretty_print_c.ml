@@ -403,7 +403,11 @@ and pp_string_format (e,ii) =
 	  | ForRange(decl,exp) ->
 	      pp_decl decl;
 	      pr_space();
-	      pp_expression exp);
+	      pp_expression exp
+	  | ForRangeInit(decl,ini) ->
+	      pp_decl decl;
+	      pr_space();
+	      pp_init ini);
           pr_elem i3;
           indent_if_needed st (function _ -> pp_statement st);
           pr_elem iifakend
@@ -1575,7 +1579,9 @@ and pp_init (init, iinit) =
 	    pr_space();
 	    pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
 	| ForRange (decl, exp) ->
-	    pp_decl decl; pr_space(); pp_expression exp);
+	    pp_decl decl; pr_space(); pp_expression exp
+	| ForRangeInit (decl, ini) ->
+	    pp_decl decl; pr_space(); pp_init ini);
 	pr_elem i3
 
     | F.MacroIterHeader (_s, ((s,es), ii)) ->
