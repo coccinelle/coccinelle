@@ -613,7 +613,7 @@ and vk_onedecl_opt process_type = fun bigf onedecl ->
       vk_name bigf name;
       (match iniopt with
 	Ast_c.NoInit -> ()
-      |	Ast_c.ValInit(init,iini) -> iif iini; vk_ini bigf init)
+      | Ast_c.ValInit(init,iini) -> iif iini; vk_ini bigf init)
     );
     endattrs +> List.iter (vk_attribute bigf)
   in f (k, bigf) onedecl
@@ -1699,7 +1699,7 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
         vk_name_s bigf name,
 	(match iniopt with
 	Ast_c.NoInit -> iniopt
-      |	Ast_c.ValInit(init,iini) ->
+      | Ast_c.ValInit(init,iini) ->
 	  Ast_c.ValInit(vk_ini_s bigf init, iif iini))
         ));
      v_type = if process_type then vk_type_s bigf t else t;
