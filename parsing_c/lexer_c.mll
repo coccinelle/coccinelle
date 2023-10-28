@@ -1216,7 +1216,7 @@ and comment = parse
       }
 
 and pragmabody = parse
-  | [^ '*' '\r' '\n']* '\\' [' ' '\t']* ('\n' | "\r\n")
+  | [^ '\r' '\n']* '\\' [' ' '\t']* ('\n' | "\r\n")
       { let l = String.length (Lexing.lexeme lexbuf) in
         let s = tok lexbuf in
         let info = Ast_c.rewrap_str s (tokinfo lexbuf) in
@@ -1227,7 +1227,7 @@ and pragmabody = parse
           Lexing.pos_bol = lcp.Lexing.pos_cnum - (l-1)
         };
         (s,info) :: pragmabody lexbuf }
-  | [^ '*' '\r' '\n']*
+  | [^ '\r' '\n']*
       { let s = tok lexbuf in
         let info = Ast_c.rewrap_str s (tokinfo lexbuf) in
 	[(s,info)] }
