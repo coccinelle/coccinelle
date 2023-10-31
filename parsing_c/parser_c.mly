@@ -564,7 +564,7 @@ let args_to_params l pb =
  *)
 */
 
-%token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro TCCroCro
+%token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro
 %token <Ast_c.info> TDot TComma TNoComma TPtrOp
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
@@ -2862,7 +2862,7 @@ tcpar: TCPar
 tdouble_opar_gcc_attr: TOPar TOPar { LP.push_context LP.InGccAttribute; [$1;$2] }
 tdouble_cpar_gcc_attr: TCPar TCPar { LP.pop_context (); [$1;$2] }
 tdouble_ocro_cxx_attr: TOCroCro { LP.push_context LP.InGccAttribute; [$1] }
-tdouble_ccro_cxx_attr: TCCroCro { LP.pop_context (); [$1] }
+tdouble_ccro_cxx_attr: TCCro TCCro { LP.pop_context (); [$1;$2] }
 
 
 /*(*************************************************************************)*/

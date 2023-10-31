@@ -731,7 +731,6 @@ module Parser_c :
       | TOCro of Ast_c.info
       | TCCro of Ast_c.info
       | TOCroCro of Ast_c.info
-      | TCCroCro of Ast_c.info
       | TDot of Ast_c.info
       | TComma of Ast_c.info
       | TNoComma of Ast_c.info
@@ -3052,10 +3051,10 @@ module Ast_cocci :
         Attribute of Ast_cocci.attr_arg
       | GccAttribute of string mcode * string mcode * string mcode *
                         expression dots * string mcode * string mcode
-      | CxxAttribute of string mcode * expression dots * string mcode
+      | CxxAttribute of string mcode * expression dots * string mcode * string mcode
       | CxxAttributeUsing of string mcode (* [[ *) * string mcode (* using *) *
                         ident * string mcode (* : *) *
-                        expression dots * string mcode (* ]] *)
+                        expression dots * string mcode (* ] *) * string mcode (* ] *)
     and attr = base_attr wrap
     and base_attr_arg =
       Ast_cocci.base_attr_arg =
@@ -3718,10 +3717,10 @@ module Ast0_cocci :
         Attribute of Ast0_cocci.attr_arg
       | GccAttribute of string mcode * string mcode * string mcode *
                         expression dots * string mcode * string mcode
-      | CxxAttribute of string mcode * expression dots * string mcode
+      | CxxAttribute of string mcode * expression dots * string mcode * string mcode
       | CxxAttributeUsing of string mcode (* [[ *) * string mcode (* using *) *
                         ident * string mcode (* : *) *
-                        expression dots * string mcode (* ]] *)
+                        expression dots * string mcode (* ] *) * string mcode (* ] *)
     and attr = base_attr wrap
     and base_attr_arg =
       Ast0_cocci.base_attr_arg =

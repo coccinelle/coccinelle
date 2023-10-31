@@ -485,15 +485,15 @@ and print_attribute attr =
       dots (function _ -> ()) expression args; close_box();
       mcode print_string_box rp1; close_box();
       mcode print_string_box rp2
-  | Ast.CxxAttribute(lb1,args,rb1) ->
+  | Ast.CxxAttribute(lb1,args,rb1,rb2) ->
       mcode print_string_box lb1;
       dots (function _ -> ()) expression args; close_box();
-      mcode print_string_box rb1
-  | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+      mcode print_string_box rb1; mcode print_string_box rb2
+  | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
       mcode print_string_box lb1; mcode print_string usng;
       ident atnm; mcode print_string dotdot;
       dots (function _ -> ()) expression args; close_box();
-      mcode print_string_box rb1
+      mcode print_string_box rb1; mcode print_string_box rb2
 
 and print_attr_arg arg =
   match Ast.unwrap arg with

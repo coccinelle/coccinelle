@@ -1378,24 +1378,30 @@ and attribute tgt attr =
       let rp1 = mcode rp1 in
       let rp2 = mcode rp2 in
       make_attribute attr tgt arity (Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))
-  | Ast0.CxxAttribute(lb1,args,rb1) ->
+  | Ast0.CxxAttribute(lb1,args,rb1,rb2) ->
       let arity =
-        all_same false tgt (mcode2line lb1) [mcode2arity lb1;mcode2arity rb1] in
+        all_same false tgt (mcode2line lb1)
+	  [mcode2arity lb1;mcode2arity rb1;mcode2arity rb2] in
       let lb1 = mcode lb1 in
       let args = dots (expression arity) args in
       let rb1 = mcode rb1 in
-      make_attribute attr tgt arity (Ast0.CxxAttribute(lb1,args,rb1))
+      let rb2 = mcode rb2 in
+      make_attribute attr tgt arity
+	(Ast0.CxxAttribute(lb1,args,rb1,rb2))
 
-  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
       let arity =
-        all_same false tgt (mcode2line lb1) [mcode2arity lb1;mcode2arity rb1] in
+        all_same false tgt (mcode2line lb1)
+	  [mcode2arity lb1;mcode2arity rb1;mcode2arity rb2] in
       let lb1 = mcode lb1 in
       let usng = mcode usng in
       let atnm = ident false arity atnm in
       let dotdot = mcode dotdot in
       let args = dots (expression arity) args in
       let rb1 = mcode rb1 in
-      make_attribute attr tgt arity (Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1))
+      let rb2 = mcode rb2 in
+      make_attribute attr tgt arity
+	(Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2))
 
 and make_attr_arg =
   make_opt

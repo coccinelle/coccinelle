@@ -991,19 +991,21 @@ let combiner bind option_default
           let lrp1 = string_mcode rp1 in
           let lrp2 = string_mcode rp2 in
           multibind [lattr_;llp1;llp2;largs;lrp1;lrp2]
-      | Ast.CxxAttribute(lb1,args,rb1) ->
+      | Ast.CxxAttribute(lb1,args,rb1,rb2) ->
           let llb1 = string_mcode lb1 in
 	  let largs = expression_dots args in
           let lrb1 = string_mcode rb1 in
-          multibind [llb1;largs;lrb1]
-      | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+          let lrb2 = string_mcode rb2 in
+          multibind [llb1;largs;lrb1;lrb2]
+      | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
           let llb1 = string_mcode lb1 in
           let lusng = string_mcode usng in
 	  let latnm = ident atnm in
           let ldotdot = string_mcode dotdot in
 	  let largs = expression_dots args in
           let lrb1 = string_mcode rb1 in
-          multibind [llb1;lusng;latnm;ldotdot;largs;lrb1] in
+          let lrb2 = string_mcode rb2 in
+          multibind [llb1;lusng;latnm;ldotdot;largs;lrb1;lrb2] in
     attributefn all_functions k a
 
   and attr_arg a =
@@ -2087,19 +2089,21 @@ let rebuilder
             let rp1 = string_mcode rp1 in
             let rp2 = string_mcode rp2 in
             Ast.GccAttribute(attr_,lp1,lp2,largs,rp1,rp2)
-        | Ast.CxxAttribute(lb1,args,rb1) ->
+        | Ast.CxxAttribute(lb1,args,rb1,rb2) ->
             let lb1 = string_mcode lb1 in
 	    let largs = expression_dots args in
             let rb1 = string_mcode rb1 in
-            Ast.CxxAttribute(lb1,largs,rb1)
-        | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+            let rb2 = string_mcode rb2 in
+            Ast.CxxAttribute(lb1,largs,rb1,rb2)
+        | Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
             let lb1 = string_mcode lb1 in
             let usng = string_mcode usng in
             let latnm = ident atnm in
             let dotdot = string_mcode dotdot in
             let largs = expression_dots args in
             let rb1 = string_mcode rb1 in
-            Ast.CxxAttributeUsing(lb1,usng,latnm,dotdot,largs,rb1)) in
+            let rb2 = string_mcode rb2 in
+            Ast.CxxAttributeUsing(lb1,usng,latnm,dotdot,largs,rb1,rb2)) in
     attributefn all_functions k a
 
   and attr_arg a =

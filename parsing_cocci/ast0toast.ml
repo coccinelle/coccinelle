@@ -1272,19 +1272,21 @@ and attribute a =
 	let rp1 = mcode rp1 in
 	let rp2 = mcode rp2 in
 	Ast.GccAttribute(attr_,lp1,lp2,args,rp1,rp2)
-    | Ast0.CxxAttribute(lb1,args,rb1) ->
+    | Ast0.CxxAttribute(lb1,args,rb1,rb2) ->
 	let lb1 = mcode lb1 in
 	let args = dots expression args in
 	let rb1 = mcode rb1 in
-	Ast.CxxAttribute(lb1,args,rb1)
-    | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+	let rb2 = mcode rb2 in
+	Ast.CxxAttribute(lb1,args,rb1,rb2)
+    | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
 	let lb1 = mcode lb1 in
 	let usng = mcode usng in
 	let atnm = ident atnm in
 	let dotdot = mcode dotdot in
 	let args = dots expression args in
 	let rb1 = mcode rb1 in
-	Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1))
+	let rb2 = mcode rb2 in
+	Ast.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2))
 
 and attr_arg a =
   rewrap a no_isos

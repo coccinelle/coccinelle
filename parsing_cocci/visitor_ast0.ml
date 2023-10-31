@@ -1228,21 +1228,23 @@ let visitor mode bind option_default
             let (rp2_n,rp2) = string_mcode rp2 in
             (multibind [attr_n;lp1_n;lp2_n;args_n;rp1_n;rp2_n],
             Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2))
-        | Ast0.CxxAttribute(lb1,args,rb1) ->
+        | Ast0.CxxAttribute(lb1,args,rb1,rb2) ->
             let (lb1_n,lb1) = string_mcode lb1 in
 	    let (args_n,args) = expression_dots args in
             let (rb1_n,rb1) = string_mcode rb1 in
-            (multibind [lb1_n;args_n;rb1_n],
-            Ast0.CxxAttribute(lb1,args,rb1))
-        | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+            let (rb2_n,rb2) = string_mcode rb2 in
+            (multibind [lb1_n;args_n;rb1_n;rb2_n],
+            Ast0.CxxAttribute(lb1,args,rb1,rb2))
+        | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
             let (lb1_n,lb1) = string_mcode lb1 in
             let (usng_n,usng) = string_mcode usng in
 	    let (atnm_n,atnm) = ident atnm in
             let (dotdot_n,dotdot) = string_mcode dotdot in
 	    let (args_n,args) = expression_dots args in
             let (rb1_n,rb1) = string_mcode rb1 in
-            (multibind [lb1_n;usng_n;atnm_n;dotdot_n;args_n;rb1_n],
-            Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1))) in
+            let (rb2_n,rb2) = string_mcode rb2 in
+            (multibind [lb1_n;usng_n;atnm_n;dotdot_n;args_n;rb1_n;rb2_n],
+            Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2))) in
     attributefn all_functions k a
 
   and attr_arg a =

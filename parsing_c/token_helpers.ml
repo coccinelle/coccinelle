@@ -375,7 +375,6 @@ let info_of_tok = function
   | TOCro                (i) -> i
   | TCCro                (i) -> i
   | TOCroCro             (i) -> i
-  | TCCroCro             (i) -> i
   | TDot                 (i) -> i
   | TComma               (i) -> i
   | TNoComma             (i) -> i
@@ -578,7 +577,6 @@ let visitor_info_of_tok f = function
   | TOCro                (i) -> TOCro                (f i)
   | TCCro                (i) -> TCCro                (f i)
   | TOCroCro             (i) -> TOCroCro                (f i)
-  | TCCroCro             (i) -> TCCroCro                (f i)
   | TDot                 (i) -> TDot                 (f i)
   | TComma               (i) -> TComma               (f i)
   | TNoComma             (i) -> TNoComma             (f i)
@@ -725,7 +723,6 @@ let string_of_token = function
   | TOCro _ -> "TOCro"
   | TCCro _ -> "TCCro"
   | TOCroCro _ -> "TOCroCro"
-  | TCCroCro _ -> "TCCroCro"
   | TDot _ -> "TDot"
   | TComma _ -> "TComma"
   | TNoComma _ -> "TNoComma"

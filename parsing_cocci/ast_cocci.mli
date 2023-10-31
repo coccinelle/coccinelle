@@ -633,10 +633,10 @@ and base_attr =
                     string mcode (* ( *) * string mcode (* ( *) *
                     expression dots * string mcode (* ) *) * string mcode (* ) *)
   | CxxAttribute of string mcode (* [[ *) *
-                    expression dots * string mcode (* ]] *)
+                    expression dots * string mcode (* ] *) * string mcode (* ] *)
   | CxxAttributeUsing of string mcode (* [[ *) * string mcode (* using *) *
                     ident * string mcode (* : *) *
-                    expression dots * string mcode (* ]] *)
+                    expression dots * string mcode (* ] *) * string mcode (* ] *)
 
 and attr = base_attr wrap
 

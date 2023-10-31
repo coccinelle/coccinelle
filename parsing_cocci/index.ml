@@ -238,8 +238,8 @@ let attribute a =
   match Ast0.unwrap a with
     Ast0.Attribute(attr) -> [39]
   | Ast0.GccAttribute(attr_,lp1,lp2,arg,rp1,rp2) -> [162]
-  | Ast0.CxxAttribute(lb1,arg,rb1) -> [46]
-  | Ast0.CxxAttributeUsing(lb1,usng,dotdot,atnm,arg,rb1) -> [42]
+  | Ast0.CxxAttribute(lb1,arg,rb1,rb2) -> [46]
+  | Ast0.CxxAttributeUsing(lb1,usng,dotdot,atnm,arg,rb1,rb2) -> [42]
 
 let attr_arg a =
   match Ast0.unwrap a with

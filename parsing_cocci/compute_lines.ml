@@ -1015,23 +1015,25 @@ and attribute attr =
       let ln1 = promote_mcode attr_ in
       let ln2 = promote_mcode rp2 in
       mkres attr (Ast0.GccAttribute(attr_,lp1,lp2,args,rp1,rp2)) ln1 ln2
-  | Ast0.CxxAttribute(lb1,args,rb1) ->
+  | Ast0.CxxAttribute(lb1,args,rb1,rb2) ->
       let lb1 = normal_mcode lb1 in
       let args = dots is_exp_dots (Some(promote_mcode lb1)) expression args in
       let rb1 = normal_mcode rb1 in
+      let rb2 = normal_mcode rb2 in
       let ln1 = promote_mcode lb1 in
-      let ln2 = promote_mcode rb1 in
-      mkres attr (Ast0.CxxAttribute(lb1,args,rb1)) ln1 ln2
-  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+      let ln2 = promote_mcode rb2 in
+      mkres attr (Ast0.CxxAttribute(lb1,args,rb1,rb2)) ln1 ln2
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
       let lb1 = normal_mcode lb1 in
       let usng = normal_mcode usng in
       let atnm = ident atnm in
       let dotdot = normal_mcode dotdot in
       let args = dots is_exp_dots (Some(promote_mcode dotdot)) expression args in
       let rb1 = normal_mcode rb1 in
+      let rb2 = normal_mcode rb2 in
       let ln1 = promote_mcode lb1 in
-      let ln2 = promote_mcode rb1 in
-      mkres attr (Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1)) ln1 ln2
+      let ln2 = promote_mcode rb2 in
+      mkres attr (Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2)) ln1 ln2
 
 and attr_arg arg =
   match Ast0.unwrap arg with

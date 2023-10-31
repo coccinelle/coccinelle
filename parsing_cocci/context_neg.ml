@@ -639,13 +639,14 @@ let equal_attribute a1 a2 =
       equal_mcode attr_1 attr_2 &&
       equal_mcode lp11 lp12 && equal_mcode lp21 lp22 &&
       equal_mcode rp11 rp12 && equal_mcode rp21 rp22
-  | (Ast0.CxxAttribute(lb11,arg1,rb11),
-     Ast0.CxxAttribute(lb12,arg2,rb12)) ->
-      equal_mcode lb11 lb12 && equal_mcode rb11 rb12
-  | (Ast0.CxxAttributeUsing(lb11,usng1,atnm1,dotdot1,arg1,rb11),
-     Ast0.CxxAttributeUsing(lb12,usng2,atnm2,dotdot2,arg2,rb12)) ->
+  | (Ast0.CxxAttribute(lb11,arg1,rb11,rb21),
+     Ast0.CxxAttribute(lb12,arg2,rb12,rb22)) ->
+      equal_mcode lb11 lb12 && equal_mcode rb11 rb12 && equal_mcode rb21 rb22
+  | (Ast0.CxxAttributeUsing(lb11,usng1,atnm1,dotdot1,arg1,rb11,rb21),
+     Ast0.CxxAttributeUsing(lb12,usng2,atnm2,dotdot2,arg2,rb12,rb22)) ->
       equal_mcode lb11 lb12 && equal_mcode usng1 usng2 &&
-      equal_mcode dotdot1 dotdot2 && equal_mcode rb11 rb12
+      equal_mcode dotdot1 dotdot2 && equal_mcode rb11 rb12 &&
+      equal_mcode rb21 rb22
   | _ -> false
 
 let equal_ident i1 i2 =

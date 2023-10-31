@@ -830,17 +830,19 @@ and print_attribute a =
       let _ = dots (function _ -> ()) expression args in
       close_box(); mcode print_string_box rp1;
       close_box(); mcode print_string_box rp2
-  | Ast0.CxxAttribute(lb1,args,rb1) ->
+  | Ast0.CxxAttribute(lb1,args,rb1,rb2) ->
       mcode print_string_box lb1;
       let _ = dots (function _ -> ()) expression args in
-      close_box(); mcode print_string_box rb1
-  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
+      close_box();
+      mcode print_string_box rb1; mcode print_string_box rb2
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
       mcode print_string_box lb1;
       mcode print_string usng;
       ident atnm;
       mcode print_string dotdot;
       let _ = dots (function _ -> ()) expression args in
-      close_box(); mcode print_string_box rb1
+      close_box();
+      mcode print_string_box rb1; mcode print_string_box rb2
 
 and print_attr_arg a =
   match Ast0.unwrap a with

@@ -740,7 +740,6 @@ rule token = parse
   | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
   | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
   | "[[" { start_line true; TOCroCro (get_current_line_type lexbuf)   }
-  | "]]" { start_line true; TCCroCro (get_current_line_type lexbuf)   }
   | '{' { start_line true; TOBrace (get_current_line_type lexbuf) }
   | '}' { start_line true; TCBrace (get_current_line_type lexbuf) }
 

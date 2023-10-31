@@ -308,7 +308,7 @@ let inline_id aft = function
 %token <Data.clt> TMul TTilde
 
 %token <Data.clt> TOBrace TCBrace TOInit
-%token <Data.clt> TOCro TCCro TOCroCro TCCroCro
+%token <Data.clt> TOCro TCCro TOCroCro
 
 %token <Data.clt> TPtrOp
 
@@ -3596,10 +3596,10 @@ attr:
    attr_arg { Parse_aux.make_attr $1 }
  | TAttr_ TOPar TOPar eexpr_list_option TCPar TCPar
     { Parse_aux.make_gcc_attr $1 $2 $3 $4 $5 $6 }
- | TOCroCro eexpr_list_option TCCroCro
-    { Parse_aux.make_cxx_attr $1 $2 $3 }
- | TOCroCro TUsing ident TDotDot eexpr_list_option TCCroCro
-    { Parse_aux.make_cxx_attr_using $1 $2 $3 $4 $5 $6 }
+ | TOCroCro eexpr_list_option TCCro TCCro
+    { Parse_aux.make_cxx_attr $1 $2 $3 $4 }
+ | TOCroCro TUsing ident TDotDot eexpr_list_option TCCro TCCro
+    { Parse_aux.make_cxx_attr_using $1 $2 $3 $4 $5 $6 $7 }
 
 attr_arg:
    Tattr { Ast0_cocci.wrap (Ast0_cocci.MacroAttr(Parse_aux.clt2mcode (fst $1) (snd $1))) }

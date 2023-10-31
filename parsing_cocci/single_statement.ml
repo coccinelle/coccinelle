@@ -174,9 +174,9 @@ and left_attr a =
     Ast0.Attribute(arg) -> left_attr_arg arg
   | Ast0.GccAttribute(attr,lp1,lp2,exps,rp2,rp1) ->
       modif_before_mcode attr
-  | Ast0.CxxAttribute(lb1,exps,rb2) ->
+  | Ast0.CxxAttribute(lb1,exps,rb1,rb2) ->
       modif_before_mcode lb1
-  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,exps,rb2) ->
+  | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,exps,rb1,rb2) ->
       modif_before_mcode lb1
 
 and left_typeC t =

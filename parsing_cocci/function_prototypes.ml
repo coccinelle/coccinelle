@@ -240,10 +240,10 @@ let right_attach_attr strings attr =
       Ast0.Attribute(arg) -> Ast0.Attribute(right_attach_attr_args strings arg)
     | Ast0.GccAttribute(attr,lp1,lp2,args,rp2,rp1) ->
 	Ast0.GccAttribute(attr,lp1,lp2,args,rp2,right_attach_mcode strings rp1)
-    | Ast0.CxxAttribute(lb1,args,rb1) ->
-	Ast0.CxxAttribute(lb1,args,right_attach_mcode strings rb1)
-    | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1) ->
-	Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,right_attach_mcode strings rb1))
+    | Ast0.CxxAttribute(lb1,args,rb1,rb2) ->
+	Ast0.CxxAttribute(lb1,args,rb1,right_attach_mcode strings rb2)
+    | Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,rb2) ->
+	Ast0.CxxAttributeUsing(lb1,usng,atnm,dotdot,args,rb1,right_attach_mcode strings rb2))
 
 let rec attach_right strings ty =
   Ast0.rewrap ty
