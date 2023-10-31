@@ -2,9 +2,9 @@
 int main()
 {
 	int n = 3;
-// FIXME: problem: notice the following does not match what's in the patch
-#pragma omp target ahiaahiaahiaahiaahiaahia
-#pragma omp teams distribute parallel for simd
+// notice the following does not match what's in the patch
+#pragma omp target map(tofrom: u[0:n*n], u_tmp[0:n*N])
+#pragma omp loop
 	for(int i=0;i<n;++i)
 	{}
 }
