@@ -5636,11 +5636,14 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
       let wp x = A.rewrap pragmainfoa x  in
       (match A.unwrap pragmainfoa with
 	A.PragmaString(sa) ->
-	  tokenf sa rest_iidb >>= (fun sa rest_iidb ->
-	  return(
-	    A.PragmaString(sa) +> wp,
-	    rest_iidb
-	  ))
+	  if A.unwrap_mcode sa = B.str_of_info rest_iidb
+	  then
+	    tokenf sa rest_iidb >>= (fun sa rest_iidb ->
+	    return(
+	      A.PragmaString(sa) +> wp,
+	      rest_iidb
+	    ))
+	  else fail
       | A.PragmaDots(mcode) ->
 	  tokenf mcode rest_iidb >>= (fun mcode rest_iidb ->
 	  return(
