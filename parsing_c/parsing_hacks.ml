@@ -3078,7 +3078,7 @@ let convert_templates toks =
       (match rest with
 	(({TV.tok = TInf i2}) as b)::rest ->
 	  loop (((a,None,b,i2),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
-      | _ -> failwith (Printf.sprintf "%d: need < after keyword template" (TH.line_of_tok a.TV.tok)))
+      | _ -> loop stack pdepth tdepth rest) (* just move on, template type name<...>(...) *)
   (* one possible end point *)
   | (({TV.tok = TSup i3}) as c) :: rest when top1 stack pdepth tdepth ->
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
