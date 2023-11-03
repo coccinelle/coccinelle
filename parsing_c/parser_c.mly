@@ -1509,6 +1509,10 @@ declarator:
  | pointer direct_d { (fst $2, fun x -> x +> $1 +> snd $2) }
  | direct_d         { $1 }
 
+declarator_fn:
+ | pointer direct_d_fn { (fst $2, fun x -> x +> $1 +> snd $2) }
+ | direct_d_fn         { $1 }
+
 /*(* so must do  int * const p; if the pointer is constant, not the pointee *)*/
 /* list from tmul is due to the parsing of && as AndLog */
 pointer:
@@ -1585,6 +1589,12 @@ direct_d:
      { (fst $1,fun x->(snd $1) (mk_ty (Array (None,x)) [$2;$3])) }
  | direct_d tocro const_expr tccro
      { (fst $1,fun x->(snd $1) (mk_ty (Array (Some $3,x)) [$2;$4])) }
+/* | direct_d topar parameter_type_list tcpar
+     { (fst $1,fun x->(snd $1)
+       (mk_ty (FunctionType (x, $3)) [$2;$4]))
+     }*/
+
+direct_d_fn:
  | direct_d topar parameter_type_list tcpar
      { (fst $1,fun x->(snd $1)
        (mk_ty (FunctionType (x, $3)) [$2;$4]))
@@ -1801,6 +1811,8 @@ declaratorp:
  /*(* gccext: *)*/
  | declarator attributes_opt
                { LP.add_ident (str_of_name (fst $1)); $2, $1 }
+ | declarator_fn attributes_opt
+               { LP.add_ident (str_of_name (fst $1)); $2, $1 }
 
 abstract_declaratorp:
  | abstract_declarator { $1 }
@@ -1860,6 +1872,7 @@ decl2:
                 ($2::iistart::snd storage))
      }
  | decl_spec init_declarator_list TPtVirg { create_decls $1 $2 $3 }
+ | decl_spec init_declarator_list_fn TPtVirg { create_decls $1 $2 $3 }
  /*(* cppext: *)*/
  /* using full decl spec allows too much,but avoids conflicts */
  | TMacroDecl TOPar macro_argument_list TCPar attributes_opt
@@ -1968,6 +1981,9 @@ init_declarator2:
  | declaratori tobrace_ini_cxx valinit tcbrace_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
 
+init_declarator_fn2:
+ | declaratori_fn                  { (Ast_c.noattr, $1, NoInit) }
+
 /*(*-----------------------------------------------------------------------*)*/
 /*(* declarators (right part of type and variable). *)*/
 /*(* This is a workaround for the following case: *)*/
@@ -1996,6 +2012,7 @@ init_declarator_attrs2:
 teq: TEq  { et "teq" (); $1 }
 
 init_declarator: init_declarator2  { dt "init" (); $1 }
+init_declarator_fn: init_declarator_fn2  { dt "init" (); $1 }
 
 init_declarator_attrs: init_declarator_attrs2 { dt "init_attrs" (); $1 }
 
@@ -2009,6 +2026,13 @@ declaratori:
      { LP.add_ident (str_of_name (fst $1)); $1, $2 }
  /*(* gccext: *)*/
  | declarator gcc_asm_decl
+     { LP.add_ident (str_of_name (fst $1)); $1, [] }
+
+declaratori_fn:
+ | declarator_fn attributes_opt
+     { LP.add_ident (str_of_name (fst $1)); $1, $2 }
+ /*(* gccext: *)*/
+ | declarator_fn gcc_asm_decl
      { LP.add_ident (str_of_name (fst $1)); $1, [] }
 
 gcc_asm_decl:
@@ -2291,6 +2315,10 @@ struct_declarator:
      { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
  | declarator dotdot const_expr2
      { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
+ | declarator_fn attributes_opt
+     { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
+ | declarator_fn dotdot const_expr2
+     { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
 
 declaratorsfd:
  | declaratori
@@ -2472,7 +2500,7 @@ as typedefs.  Unfortunately, doing something about this problem seems to
 introduce conflicts in the parser. */
 
 declaratorfd:
- | declarator attributes_opt
+ | declarator_fn attributes_opt
    { et "declaratorfd" (); $1, $2 }
 
 /*(*************************************************************************)*/
@@ -2964,6 +2992,9 @@ init_declarator_list:
  | init_declarator_list TComma cpp_directive_list init_declarator_attrs
      { $1 @ [$4, [$2]] }
  | init_declarator_list TComma init_declarator_attrs { $1 @ [$3, [$2]] }
+
+init_declarator_list_fn:
+ | init_declarator_fn                            { [$1,[]] }
 
 declaratorsfd_list:
  | declaratorsfd                            { [$1, []] }
