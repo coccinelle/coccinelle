@@ -1422,7 +1422,7 @@ and forinfo = function
       print_option expression e2; mcode print_string sem2;
       print_option expression e3
   | Ast.ForRange(ann_decl, exp) ->
-      annotated_decl ann_decl; expression exp
+      annotated_decl ann_decl; pr_space(); expression exp
 
 and print_define_parameters params =
   match Ast.unwrap params with
