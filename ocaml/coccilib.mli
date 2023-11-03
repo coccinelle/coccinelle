@@ -813,7 +813,6 @@ module Parser_c :
       | Tusing of Ast_c.info
       | Tdefined of Ast_c.info
       | TOParCplusplusInit of Ast_c.info
-      | TOBraceCplusplusInit of Ast_c.info
       | Tnamespace of Ast_c.info
       | Tcpp_struct of Ast_c.info
       | Tcpp_union of Ast_c.info

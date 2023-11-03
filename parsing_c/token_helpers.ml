@@ -478,7 +478,6 @@ let info_of_tok = function
   | Ttypename            (i) -> i
   | Tdefined             (i) -> i
   | TOParCplusplusInit   (i) -> i
-  | TOBraceCplusplusInit (i) -> i
 
   | EOF                  (i) -> i
   | Tnamespace           (i) -> i
@@ -680,7 +679,6 @@ let visitor_info_of_tok f = function
   | Ttypename            (i) -> Ttypename            (f i)
   | Tdefined             (i) -> Tdefined             (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
-  | TOBraceCplusplusInit (i) -> TOBraceCplusplusInit (f i)
   | EOF                  (i) -> EOF                  (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
   | TTODO _ -> failwith "fake token, should not occur"
@@ -819,7 +817,6 @@ let string_of_token = function
   | Ttypename _ -> "Ttypename"
   | Tdefined _ -> "Tdefined"
   | TOParCplusplusInit _ -> "TOParCplusplusInit"
-  | TOBraceCplusplusInit _ -> "TOBraceCplusplusInit"
   | Tnamespace _ -> "Tnamespace"
   | Trestrict _ -> "Trestrict"
   | Tasm _ -> "Tasm"

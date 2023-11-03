@@ -2065,11 +2065,6 @@ let lookahead2 ~pass next before =
       when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
-  (* yy xx{   and in function *)
-  | TOBrace i1::_,              TIdent(s,i2)::(TypedefIdent _|TTemplateEnd _|TautoType _)::_
-      when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
-        pr2_cpp("constructed_object: "  ^s);
-        TOBraceCplusplusInit i1
   | TOPar i1::_,              TIdent(s,i2)::ptr
       when !Flag.c_plus_plus <> Flag.Off
 	  && pointer ~followed_by:(function TypedefIdent _ -> true | _ -> false) ptr

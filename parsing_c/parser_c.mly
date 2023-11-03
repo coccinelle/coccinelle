@@ -588,7 +588,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
        Tgoto Tdefault
-       Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit TOBraceCplusplusInit Tnamespace
+       Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd
        TTemplateEndTemplateEndTemplateEnd Tfinal Ttypename
@@ -1978,7 +1978,7 @@ init_declarator2:
  /* C++ only */
  | declaratori topar_ini_cxx valinit tcpar_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
- | declaratori tobrace_ini_cxx valinit tcbrace_ini
+ | declaratori tobrace_ini valinit tcbrace_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
 
 init_declarator_fn2:
@@ -2001,9 +2001,9 @@ init_declarator_attrs2:
      { (Ast_c.noattr, $1, $3 $2 $4) }
  | attributes declaratori topar_ini_cxx valinit tcpar_ini
      { ($1, $2, $4 $3 $5) }
- | declaratori tobrace_ini_cxx valinit tcbrace_ini
+ | declaratori tobrace_ini valinit tcbrace_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
- | attributes declaratori tobrace_ini_cxx valinit tcbrace_ini
+ | attributes declaratori tobrace_ini valinit tcbrace_ini
      { ($1, $2, $4 $3 $5) }
 
 /*(*----------------------------*)*/
@@ -2860,7 +2860,6 @@ tobrace_enum: TOBrace { LP.push_context LP.InEnum; $1 }
 tcbrace_enum: TCBrace { LP.pop_context (); $1 }
 
 tobrace_ini: TOBrace { LP.push_context LP.InInitializer; $1 }
-tobrace_ini_cxx: TOBraceCplusplusInit { LP.push_context LP.InInitializer; $1 }
 tcbrace_ini: TCBrace { LP.pop_context (); $1 }
 
 topar_ini_cxx: TOParCplusplusInit { LP.push_context LP.InInitializer; $1 }
