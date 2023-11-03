@@ -1423,6 +1423,8 @@ and forinfo = function
       print_option expression e3
   | Ast.ForRange(ann_decl, exp) ->
       annotated_decl ann_decl; pr_space(); expression exp
+  | Ast.ForRangeInit(ann_decl, ini) ->
+      annotated_decl ann_decl; pr_space(); initialiser false ini
 
 and print_define_parameters params =
   match Ast.unwrap params with

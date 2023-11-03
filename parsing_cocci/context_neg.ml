@@ -993,6 +993,7 @@ let equal_statement s1 s2 =
 	 | (Ast0.ForDecl(_,_,_,sem21,_),Ast0.ForDecl(_,_,_,sem22,_)) ->
 	     equal_mcode sem21 sem22
 	 | (Ast0.ForRange(_,_,_),Ast0.ForRange(_,_,_)) -> true
+	 | (Ast0.ForRangeInit(_,_,_),Ast0.ForRangeInit(_,_,_)) -> true
 	 | _ -> false in
        equal_mcode fr1 fr2 && equal_mcode lp1 lp2 &&
        first && equal_mcode rp1 rp2

@@ -522,7 +522,10 @@ and statement old_metas table minus s =
 	  get_opt (expression ID old_metas table minus) exp3
       |	Ast0.ForRange (_,decl,exp) ->
 	  declaration ID old_metas table minus decl;
-	  expression ID old_metas table minus exp);
+	  expression ID old_metas table minus exp
+      |	Ast0.ForRangeInit (_,decl,ini) ->
+	  declaration ID old_metas table minus decl;
+	  initialiser old_metas table minus ini);
       statement old_metas table minus body
   | Ast0.Iterator(nm,lp,args,rp,body,_) ->
       ident GLOBAL old_metas table minus nm;

@@ -319,9 +319,9 @@ bind to that; not good for isomorphisms *)
 
   let forinfo r k s =
     match Ast0.unwrap s with
-      Ast0.ForDecl((info,bef),decl,e2,sem2,e3) ->
-	(Decl,info,bef)::(k s)
-    | Ast0.ForRange((info,bef),decl,e2) ->
+      Ast0.ForDecl((info,bef),_,_,_,_)
+    | Ast0.ForRange((info,bef),_,_)
+    | Ast0.ForRangeInit((info,bef),_,_) ->
 	(Decl,info,bef)::(k s)
     | _ -> k s in
 

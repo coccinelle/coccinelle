@@ -857,7 +857,11 @@ let combiner bind option_default
       | Ast.ForRange (decl,exp) ->
 	  let ldecl = annotated_decl decl in
 	  let lexp = expression exp in
-	  bind ldecl lexp in
+	  bind ldecl lexp
+      | Ast.ForRangeInit (decl,ini) ->
+	  let ldecl = annotated_decl decl in
+	  let lini = initialiser ini in
+	  bind ldecl lini in
     k fi
 
   (* not parameterisable, for now *)
@@ -1941,7 +1945,11 @@ let rebuilder
     | Ast.ForRange(decl,exp) ->
 	let decl = annotated_decl decl in
 	let exp = expression exp in
-	Ast.ForRange (decl,exp) in
+	Ast.ForRange (decl,exp)
+    | Ast.ForRangeInit(decl,ini) ->
+	let decl = annotated_decl decl in
+	let ini = initialiser ini in
+	Ast.ForRangeInit (decl,ini) in
     k fi
 
   and pragmainfo pi =

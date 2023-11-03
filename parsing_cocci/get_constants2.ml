@@ -726,9 +726,9 @@ let all_context =
       Ast.FunHeader(bef,_,_,_,_,_,_,_,_) -> bind (process_mcodekind bef) (k e)
     | Ast.Decl decl ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
-    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,e2,sem2,e3),rp) ->
-	bind (process_mcodekind (annotated_decl decl)) (k e)
-    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,e2),rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,_,_,_),rp)
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,_),rp)
+    | Ast.ForHeader(fr,lp,Ast.ForRangeInit(decl,_),rp) ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 

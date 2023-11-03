@@ -3036,6 +3036,7 @@ module Ast_cocci :
       | ForDecl of annotated_decl * expression option * string mcode (*;*) *
             expression option
       | ForRange of annotated_decl * expression
+      | ForRangeInit of annotated_decl * initialiser
     and fninfo =
       Ast_cocci.fninfo =
         FStorage of storage mcode
@@ -3701,6 +3702,8 @@ module Ast0_cocci :
             expression option
       | ForRange of (info * mcodekind) (* before the decl *) * declaration *
 	    expression
+      | ForRangeInit of (info * mcodekind) (* before the decl *) * declaration *
+	    initialiser
     and forinfo = base_forinfo wrap
     and fninfo =
       Ast0_cocci.fninfo =

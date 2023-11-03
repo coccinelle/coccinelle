@@ -1015,7 +1015,7 @@ and statement tgt stm =
 	  match Ast0.unwrap first with
 	    Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) -> sem1::sem2::mcodes
 	  | Ast0.ForDecl(bef,decl,exp2,sem2,exp3) -> sem2::mcodes
-	  | Ast0.ForRange(bef,decl,exp) -> mcodes in
+	  | Ast0.ForRange(bef,decl,_) | Ast0.ForRangeInit(bef,decl,_) -> mcodes in
 	stm_same (mcode2line fr) (List.map mcode2arity mcodes) in
       let fr = mcode fr in
       let lp = mcode lp in
@@ -1038,7 +1038,11 @@ and statement tgt stm =
 	| Ast0.ForRange(bef,decl,exp) ->
 	    let decl = declaration arity decl in
 	    let exp = expression arity exp in
-	    Ast0.rewrap first (Ast0.ForRange(bef,decl,exp)) in
+	    Ast0.rewrap first (Ast0.ForRange(bef,decl,exp))
+	| Ast0.ForRangeInit(bef,decl,ini) ->
+	    let decl = declaration arity decl in
+	    let ini = initialiser arity ini in
+	    Ast0.rewrap first (Ast0.ForRangeInit(bef,decl,ini)) in
       let rp = mcode rp in
       let body = statement arity body in
       make_rule_elem stm tgt arity

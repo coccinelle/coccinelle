@@ -679,6 +679,8 @@ and unify_rule_elem re1 re2 =
 	   unify_option unify_expression e31 e32
        | (Ast.ForRange(d1,e1),Ast.ForRange(d2,e2)) ->
 	   unify_annotated_decl d1 d2 && unify_expression e1 e2
+       | (Ast.ForRangeInit(d1,i1),Ast.ForRangeInit(d2,i2)) ->
+	   unify_annotated_decl d1 d2 && unify_initialiser i1 i2
        | _ -> false)
   | (Ast.IteratorHeader(nm1,lp1,args1,rp1),
      Ast.IteratorHeader(nm2,lp2,args2,rp2)) ->

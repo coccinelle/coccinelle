@@ -917,6 +917,8 @@ and forinfo = function
       print_option expression e3
   | Ast.ForRange(ann_decl, exp) ->
       annotated_decl "" ann_decl; print_space(); expression exp
+  | Ast.ForRangeInit(ann_decl, ini) ->
+      annotated_decl "" ann_decl; print_space(); initialiser ini
 
 and pragmainfo pi =
   match Ast.unwrap pi with

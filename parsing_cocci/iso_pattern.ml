@@ -1372,6 +1372,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		     conjunct_bindings
 		       (match_decl decla declb)
 		       (match_expr e2a e2b)
+		 | (Ast0.ForRangeInit (_,decla,i2a),Ast0.ForRangeInit (_,declb,i2b)) ->
+		     conjunct_bindings
+		       (match_decl decla declb)
+		       (match_init i2a i2b)
 		 | _ -> return false in
 	       conjunct_many_bindings
 		 [check_mcode f1 f; check_mcode lp1 lp; first;

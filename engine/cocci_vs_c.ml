@@ -5469,7 +5469,13 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	    A.ForRange(decla, ea2),
 	    B.ForRange(declb, eb2)
 	    )))
-      |	(_, B.ForRangeInit(declb, eb2)) -> fail (* TODO *)
+      |	(A.ForRangeInit(decla, ia2), B.ForRangeInit(declb, ib2)) ->
+	  annotated_decl decla declb >>= (fun decla declb ->
+	  initialiser ia2 ib2 >>= (fun ia2 ib2 ->
+	    return (
+	    A.ForRangeInit(decla, ia2),
+	    B.ForRangeInit(declb, ib2)
+	    )))
       |	_ -> fail)
 	>>=
       (fun firsta firstb ->

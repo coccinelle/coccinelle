@@ -1254,7 +1254,12 @@ let rec statement s =
 	      let decl = declaration decl in
 	      let (leftinfo,decl) = promote_to_statement_start decl bef in
 	      let exp = expression exp in
-	      mkres first (Ast0.ForRange ((leftinfo,bef),decl,exp)) decl exp in
+	      mkres first (Ast0.ForRange ((leftinfo,bef),decl,exp)) decl exp
+	  | Ast0.ForRangeInit((_,bef),decl,ini) ->
+	      let decl = declaration decl in
+	      let (leftinfo,decl) = promote_to_statement_start decl bef in
+	      let ini = initialiser ini in
+	      mkres first (Ast0.ForRangeInit ((leftinfo,bef),decl,ini)) decl ini in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let (rightinfo,right,body) = promote_to_statement_end body aft in

@@ -1254,6 +1254,10 @@ and forinfo fi =
       let decl = annotated_decl (Some bef) decl in
       let exp = expression exp in
       Ast.ForRange(decl,exp)
+  | Ast0.ForRangeInit ((_,bef),decl,ini) ->
+      let decl = annotated_decl (Some bef) decl in
+      let ini = initialiser ini in
+      Ast.ForRangeInit(decl,ini)
 
 and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)
