@@ -747,7 +747,7 @@ rule token = parse
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
   | ','            { start_line true; TComma (get_current_line_type lexbuf)  }
   | "......"   { start_line true; TVAEllipsis (get_current_line_type lexbuf) }
-  | ";"            { start_line true; TPtVirg (get_current_line_type lexbuf) }
+  | ";"            { start_line true; TPtVirg (";",get_current_line_type lexbuf) }
 
 
   | '*'            { pass_zero();
@@ -793,7 +793,7 @@ rule token = parse
   | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
   | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }
 
-  | ":"            { start_line true; TDotDot (get_current_line_type lexbuf) }
+  | ":"            { start_line true; TDotDot (":",get_current_line_type lexbuf) }
 
   | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
   | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
@@ -1120,7 +1120,7 @@ and metavariable_decl_token = parse
   | ">" { start_line true; TLogOp(Ast.Sup,get_current_line_type lexbuf) }
   | "&&" { start_line true; TAndLog (get_current_line_type lexbuf) }
   | "||" { start_line true; TOrLog (get_current_line_type lexbuf) }
-  | ":"  { start_line true; TDotDot (get_current_line_type lexbuf) }
+  | ":"  { start_line true; TDotDot (":",get_current_line_type lexbuf) }
   | "-="           { start_line true; mkassign Ast.Minus lexbuf }
   | "+="           { start_line true; mkassign Ast.Plus lexbuf }
   | "*="           { start_line true; mkassign Ast.Mul lexbuf }
