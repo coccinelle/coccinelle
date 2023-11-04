@@ -854,11 +854,7 @@ let combiner bind option_default
 	  let lsem2 = string_mcode sem2 in
 	  let le3 = get_option expression e3 in
 	  multibind [ldecl;le2;lsem2;le3]
-      | Ast.ForRange (decl,exp) ->
-	  let ldecl = annotated_decl decl in
-	  let lexp = expression exp in
-	  bind ldecl lexp
-      | Ast.ForRangeInit (decl,ini) ->
+      | Ast.ForRange (decl,ini) ->
 	  let ldecl = annotated_decl decl in
 	  let lini = initialiser ini in
 	  bind ldecl lini in
@@ -1942,14 +1938,10 @@ let rebuilder
 	let lsem2 = string_mcode sem2 in
 	let le3 = get_option expression e3 in
 	Ast.ForDecl (decl,le2,lsem2,le3)
-    | Ast.ForRange(decl,exp) ->
-	let decl = annotated_decl decl in
-	let exp = expression exp in
-	Ast.ForRange (decl,exp)
-    | Ast.ForRangeInit(decl,ini) ->
+    | Ast.ForRange(decl,ini) ->
 	let decl = annotated_decl decl in
 	let ini = initialiser ini in
-	Ast.ForRangeInit (decl,ini) in
+	Ast.ForRange (decl,ini) in
     k fi
 
   and pragmainfo pi =

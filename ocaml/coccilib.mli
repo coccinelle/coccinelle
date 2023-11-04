@@ -273,8 +273,7 @@ module Ast_c :
 	ForDecl of declaration * exprStatement wrap * exprStatement wrap
       | ForExp of
 	  expression option wrap * exprStatement wrap * exprStatement wrap
-      | ForRange of declaration * expression
-      | ForRangeInit of declaration * initialiser
+      | ForRange of declaration * initialiser
     and selection =
       Ast_c.selection =
         If of expression * statement * statement
@@ -3035,8 +3034,7 @@ module Ast_cocci :
             expression option
       | ForDecl of annotated_decl * expression option * string mcode (*;*) *
             expression option
-      | ForRange of annotated_decl * expression
-      | ForRangeInit of annotated_decl * initialiser
+      | ForRange of annotated_decl * initialiser
     and fninfo =
       Ast_cocci.fninfo =
         FStorage of storage mcode
@@ -3701,8 +3699,6 @@ module Ast0_cocci :
 	    expression option * string mcode (*;*) *
             expression option
       | ForRange of (info * mcodekind) (* before the decl *) * declaration *
-	    expression
-      | ForRangeInit of (info * mcodekind) (* before the decl *) * declaration *
 	    initialiser
     and forinfo = base_forinfo wrap
     and fninfo =

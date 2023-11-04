@@ -430,10 +430,7 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
 	    vk_decl bigf decl;
             statf (mk_st (ExprStatement (e2opt)) i2);
             statf (mk_st (ExprStatement (e3opt)) i3)
-	| ForRange(decl,exp) ->
-	    vk_decl bigf decl;
-	    vk_expr bigf exp
-	| ForRangeInit(decl,ini) ->
+	| ForRange(decl,ini) ->
 	    vk_decl bigf decl;
 	    vk_ini bigf ini);
         statf st;
@@ -1048,11 +1045,7 @@ and vk_node = fun bigf node ->
         decl  +> (vk_decl bigf);
         e2opt +> do_option (vk_expr bigf);
         e3opt +> do_option (vk_expr bigf);
-    | F.ForHeader (_st, ((ForRange(decl, exp)), ii)) ->
-        iif ii;
-        decl  +> (vk_decl bigf);
-	vk_expr bigf exp
-    | F.ForHeader (_st, ((ForRangeInit(decl, ini)), ii)) ->
+    | F.ForHeader (_st, ((ForRange(decl, ini)), ii)) ->
         iif ii;
         decl  +> (vk_decl bigf);
 	vk_ini bigf ini
@@ -1491,14 +1484,10 @@ and vk_statement_s = fun bigf st ->
 		| _ ->
 		    failwith
 		      "can't be here if iterator keep ExprStatement as is")
-	    | ForRange(decl,exp) ->
-		let decl = vk_decl_s bigf decl in
-		let exp = vk_expr_s bigf exp in
-		ForRange(decl,exp)
-	    | ForRangeInit(decl,ini) ->
+	    | ForRange(decl,ini) ->
 		let decl = vk_decl_s bigf decl in
 		let ini  = vk_ini_s bigf ini in
-		ForRangeInit(decl,ini) in
+		ForRange(decl,ini) in
 	  Iteration (For (first, statf st))
 
       | Iteration  (MacroIteration (s, es, st)) ->
@@ -2150,10 +2139,8 @@ and vk_node_s = fun bigf node ->
 	      ForDecl (vk_decl_s bigf decl,
                        (e2opt +> Common.map_option (vk_expr_s bigf), iif i2),
                        (e3opt +> Common.map_option (vk_expr_s bigf), iif i3))
-	  | ForRange (decl, exp) ->
-	      ForRange (vk_decl_s bigf decl, vk_expr_s bigf exp)
-	  | ForRangeInit (decl, ini) ->
-	      ForRangeInit (vk_decl_s bigf decl, vk_ini_s bigf ini) in
+	  | ForRange (decl, ini) ->
+	      ForRange (vk_decl_s bigf decl, vk_ini_s bigf ini) in
 
         F.ForHeader (st, (first, iif ii))
 

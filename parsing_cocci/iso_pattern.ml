@@ -1368,11 +1368,7 @@ let match_maker checks_needed context_required whencode_allowed =
 			 match_option match_expr e2a e2b;
 			 check_mcode sc2a sc2b;
 			 match_option match_expr e3a e3b]
-		 | (Ast0.ForRange (_,decla,e2a),Ast0.ForRange (_,declb,e2b)) ->
-		     conjunct_bindings
-		       (match_decl decla declb)
-		       (match_expr e2a e2b)
-		 | (Ast0.ForRangeInit (_,decla,i2a),Ast0.ForRangeInit (_,declb,i2b)) ->
+		 | (Ast0.ForRange (_,decla,i2a),Ast0.ForRange (_,declb,i2b)) ->
 		     conjunct_bindings
 		       (match_decl decla declb)
 		       (match_init i2a i2b)

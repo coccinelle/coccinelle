@@ -559,15 +559,9 @@ let forloop2 fr lp decl e2 sc2 e3 rp s =
   Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,first,
 		     clt2mcode ")" rp,s,make_fake_mcode()))
 
-let forloop3 fr lp decl e2 rp s =
+let forloop3 fr lp decl i2 rp s =
   let bef = (Ast0.default_info(),Ast0.context_befaft()) in
-  let first = Ast0.wrap(Ast0.ForRange (bef,decl,e2)) in
-  Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,first,
-		     clt2mcode ")" rp,s,make_fake_mcode()))
-
-let forloop4 fr lp decl i2 rp s =
-  let bef = (Ast0.default_info(),Ast0.context_befaft()) in
-  let first = Ast0.wrap(Ast0.ForRangeInit (bef,decl,i2)) in
+  let first = Ast0.wrap(Ast0.ForRange (bef,decl,i2)) in
   Ast0.wrap(Ast0.For(clt2mcode "for" fr,clt2mcode "(" lp,first,
 		     clt2mcode ")" rp,s,make_fake_mcode()))
 

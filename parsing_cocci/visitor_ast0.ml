@@ -1154,14 +1154,10 @@ let visitor mode bind option_default
 	    let (e3_n,e3) = get_option expression e3 in
 	    (multibind [decl_n;e2_n;sem2_n;e3_n],
 	     Ast0.ForDecl (bef,decl,e2,sem2,e3))
-	| Ast0.ForRange (bef,decl,exp) ->
-	    let (decl_n,decl) = declaration decl in
-	    let (exp_n,exp) = expression exp in
-	    (multibind [decl_n;exp_n],Ast0.ForRange (bef,decl,exp))
-	| Ast0.ForRangeInit (bef,decl,ini) ->
+	| Ast0.ForRange (bef,decl,ini) ->
 	    let (decl_n,decl) = declaration decl in
 	    let (ini_n,ini) = initialiser ini in
-	    (multibind [decl_n;ini_n],Ast0.ForRangeInit (bef,decl,ini))) in
+	    (multibind [decl_n;ini_n],Ast0.ForRange (bef,decl,ini))) in
     forinfofn all_functions k fi
 
   (* not parameterizable for now... *)

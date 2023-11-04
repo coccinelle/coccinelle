@@ -520,10 +520,7 @@ and statement old_metas table minus s =
 	  declaration ID old_metas table minus decl;
 	  get_opt (expression ID old_metas table minus) exp2;
 	  get_opt (expression ID old_metas table minus) exp3
-      |	Ast0.ForRange (_,decl,exp) ->
-	  declaration ID old_metas table minus decl;
-	  expression ID old_metas table minus exp
-      |	Ast0.ForRangeInit (_,decl,ini) ->
+      |	Ast0.ForRange (_,decl,ini) ->
 	  declaration ID old_metas table minus decl;
 	  initialiser old_metas table minus ini);
       statement old_metas table minus body

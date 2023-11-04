@@ -5462,19 +5462,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
              A.ForDecl(decla, ea2opt, ia4, ea3opt),
              B.ForDecl(declb, (eb2opt,[ib4]), (eb3opt,ib4vide))
              )))))
-      |	(A.ForRange(decla, ea2), B.ForRange(declb, eb2)) ->
-	  annotated_decl decla declb >>= (fun decla declb ->
-	  expression ea2 eb2 >>= (fun ea2 eb2 ->
-	    return (
-	    A.ForRange(decla, ea2),
-	    B.ForRange(declb, eb2)
-	    )))
-      |	(A.ForRangeInit(decla, ia2), B.ForRangeInit(declb, ib2)) ->
+      |	(A.ForRange(decla, ia2), B.ForRange(declb, ib2)) ->
 	  annotated_decl decla declb >>= (fun decla declb ->
 	  initialiser ia2 ib2 >>= (fun ia2 ib2 ->
 	    return (
-	    A.ForRangeInit(decla, ia2),
-	    B.ForRangeInit(declb, ib2)
+	    A.ForRange(decla, ia2),
+	    B.ForRange(declb, ib2)
 	    )))
       |	_ -> fail)
 	>>=

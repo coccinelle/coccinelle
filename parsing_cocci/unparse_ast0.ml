@@ -685,9 +685,7 @@ and statement arity s =
 	      declaration decl;
 	      print_option expression e2; mcode print_string sem2;
 	      print_option expression e3
-	  | Ast0.ForRange (_,decl,exp) ->
-	      declaration decl; print_string " "; expression exp
-	  | Ast0.ForRangeInit (_,decl,ini) ->
+	  | Ast0.ForRange (_,decl,ini) ->
 	      declaration decl; print_string " "; initialiser ini);
 	  close_box();
 	  mcode print_string rp; print_string " "; statement arity body;
@@ -962,9 +960,7 @@ let rec unparse_anything x =
 	  declaration decl;
 	  print_option expression e2; mcode print_string sem2;
 	  print_option expression e3
-      | Ast0.ForRange (_,decl,exp) ->
-	  declaration decl; expression exp
-      | Ast0.ForRangeInit (_,decl,ini) ->
+      | Ast0.ForRange (_,decl,ini) ->
 	  declaration decl; initialiser ini)
   | Ast0.CaseLineTag(d)  -> case_line "" d
   | Ast0.StringFragmentTag(d)  -> string_fragment d

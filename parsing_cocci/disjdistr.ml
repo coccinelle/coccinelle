@@ -494,23 +494,14 @@ let rec disj_rule_elem r k re =
 		    (function e3 ->
 		      let first = Ast.ForDecl(decl,e2,sem2,e3) in
 		      Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))))
-      | Ast.ForRange(decl,e2) ->
+      | Ast.ForRange(decl,i2) ->
 	  generic_orify_rule_elem anndisjdecl re decl
 	    (function decl ->
-	      let first = Ast.ForRange(decl,e2) in
-	      let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
-	      generic_orify_rule_elem disjexp re e2
-		(function e2 ->
-		  let first = Ast.ForRange(decl,e2) in
-		  Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp))))
-      | Ast.ForRangeInit(decl,i2) ->
-	  generic_orify_rule_elem anndisjdecl re decl
-	    (function decl ->
-	      let first = Ast.ForRangeInit(decl,i2) in
+	      let first = Ast.ForRange(decl,i2) in
 	      let re = Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)) in
 	      generic_orify_rule_elem disjini re i2
 		(function i2 ->
-		  let first = Ast.ForRangeInit(decl,i2) in
+		  let first = Ast.ForRange(decl,i2) in
 		  Ast.rewrap re (Ast.ForHeader(fr,lp,first,rp)))))
   | Ast.IteratorHeader(whl,lp,args,rp) ->
       generic_orify_rule_elem (disjdots disjexp) re args

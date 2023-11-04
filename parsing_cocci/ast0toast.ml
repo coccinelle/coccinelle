@@ -1250,14 +1250,10 @@ and forinfo fi =
       let sem2 = mcode sem2 in
       let exp3 = get_option expression exp3 in
       Ast.ForDecl(decl,exp2,sem2,exp3)
-  | Ast0.ForRange ((_,bef),decl,exp) ->
-      let decl = annotated_decl (Some bef) decl in
-      let exp = expression exp in
-      Ast.ForRange(decl,exp)
-  | Ast0.ForRangeInit ((_,bef),decl,ini) ->
+  | Ast0.ForRange ((_,bef),decl,ini) ->
       let decl = annotated_decl (Some bef) decl in
       let ini = initialiser ini in
-      Ast.ForRangeInit(decl,ini)
+      Ast.ForRange(decl,ini)
 
 and fninfo = function
     Ast0.FStorage(stg) -> Ast.FStorage(mcode stg)

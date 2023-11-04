@@ -915,9 +915,7 @@ and forinfo = function
       annotated_decl "" ann_decl;
       print_option expression e2; mcode print_string sem2;
       print_option expression e3
-  | Ast.ForRange(ann_decl, exp) ->
-      annotated_decl "" ann_decl; print_space(); expression exp
-  | Ast.ForRangeInit(ann_decl, ini) ->
+  | Ast.ForRange(ann_decl, ini) ->
       annotated_decl "" ann_decl; print_space(); initialiser ini
 
 and pragmainfo pi =

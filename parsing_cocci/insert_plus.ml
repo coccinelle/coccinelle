@@ -320,8 +320,7 @@ bind to that; not good for isomorphisms *)
   let forinfo r k s =
     match Ast0.unwrap s with
       Ast0.ForDecl((info,bef),_,_,_,_)
-    | Ast0.ForRange((info,bef),_,_)
-    | Ast0.ForRangeInit((info,bef),_,_) ->
+    | Ast0.ForRange((info,bef),_,_) ->
 	(Decl,info,bef)::(k s)
     | _ -> k s in
 

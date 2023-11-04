@@ -727,8 +727,7 @@ let all_context =
     | Ast.Decl decl ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,_,_,_),rp)
-    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,_),rp)
-    | Ast.ForHeader(fr,lp,Ast.ForRangeInit(decl,_),rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,_),rp) ->
 	bind (process_mcodekind (annotated_decl decl)) (k e)
     | _ -> k e in
 

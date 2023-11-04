@@ -616,8 +616,7 @@ and forinfo =
         expression option
   | ForDecl of annotated_decl * expression option * string mcode (*;*) *
         expression option
-  | ForRange of annotated_decl * expression
-  | ForRangeInit of annotated_decl * initialiser
+  | ForRange of annotated_decl * initialiser
 
 and fninfo =
     FStorage of storage mcode

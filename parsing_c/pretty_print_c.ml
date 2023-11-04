@@ -400,11 +400,7 @@ and pp_string_format (e,ii) =
               assert (il3 = []);
 	      pr_space();
               pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
-	  | ForRange(decl,exp) ->
-	      pp_decl decl;
-	      pr_space();
-	      pp_expression exp
-	  | ForRangeInit(decl,ini) ->
+	  | ForRange(decl,ini) ->
 	      pp_decl decl;
 	      pr_space();
 	      pp_init ini);
@@ -1579,9 +1575,7 @@ and pp_init (init, iinit) =
 	    assert (il3 = []);
 	    pr_space();
 	    pp_statement (Ast_c.mk_st (ExprStatement e3opt) il3)
-	| ForRange (decl, exp) ->
-	    pp_decl decl; pr_space(); pp_expression exp
-	| ForRangeInit (decl, ini) ->
+	| ForRange (decl, ini) ->
 	    pp_decl decl; pr_space(); pp_init ini);
 	pr_elem i3
 

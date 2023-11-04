@@ -85,8 +85,7 @@ let contains_modif =
     | Ast.Decl decl ->
 	bind (mcode r ((),(),annotated_decl decl,[])) res
     | Ast.ForHeader(fr,lp,Ast.ForDecl(decl,_,_,_),rp)
-    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,_),rp)
-    | Ast.ForHeader(fr,lp,Ast.ForRangeInit(decl,_),rp) ->
+    | Ast.ForHeader(fr,lp,Ast.ForRange(decl,_),rp) ->
 	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let init r k i =

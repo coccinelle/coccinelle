@@ -474,11 +474,8 @@ let forinfo_pos f snp
   | Ast0.ForDecl (bef,decl,expo1,sem,expo2) ->
       let constructor ~item = Ast0.ForDecl(bef,item,expo1,sem,expo2) in
       item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor snp
-  | Ast0.ForRange (bef,decl,expo) ->
-      let constructor ~item = Ast0.ForRange(bef,item,expo) in
-      item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor snp
-  | Ast0.ForRangeInit (bef,decl,inio) ->
-      let constructor ~item = Ast0.ForRangeInit(bef,item,inio) in
+  | Ast0.ForRange (bef,decl,inio) ->
+      let constructor ~item = Ast0.ForRange(bef,item,inio) in
       item_wrap ~item:decl ~item_posfn:declaration_pos ~constructor snp
 
 let rec statement_pos s snp
