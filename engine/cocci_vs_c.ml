@@ -5767,6 +5767,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
     F.DefineType _|F.DefineExpr _|F.DefineInit _|F.DefineTodo|
     F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
+    F.UsingTypenameHeader (_, _)|F.UsingMemberHeader (_, _)|
     F.ReturnExpr (_, _)|F.Return (_, _)|
     F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|

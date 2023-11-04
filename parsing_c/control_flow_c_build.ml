@@ -1247,6 +1247,22 @@ and aux_statement_list starti (xi, newxi) statxs =
 	!g +> add_arc_opt (starti, ei);
 	Some ei
 
+    | Ast_c.CppDirectiveStmt (Ast_c.UsingTypename ((id,ty),ii)) ->
+	let elem = UsingTypenameHeader ((id,ty),ii) in
+	let str = "using" in
+	let ei =   !g +> add_node elem    lbl_0 str in
+
+	!g +> add_arc_opt (starti, ei);
+	Some ei
+
+    | Ast_c.CppDirectiveStmt (Ast_c.UsingMember (id,ii)) ->
+	let elem = UsingMemberHeader (id,ii) in
+	let str = "using" in
+	let ei =   !g +> add_node elem    lbl_0 str in
+
+	!g +> add_arc_opt (starti, ei);
+	Some ei
+
     | Ast_c.CppDirectiveStmt directive ->
         pr2_once ("ast_to_flow: filter a directive");
         starti

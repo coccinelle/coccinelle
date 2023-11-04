@@ -1080,6 +1080,12 @@ and vk_node = fun bigf node ->
 	vk_name bigf id;
 	rest +> List.iter (fun (str,ii) -> iif ii);
 	iif ii
+    | F.UsingTypenameHeader ((id,ty),ii) ->
+	vk_name bigf id; vk_type bigf ty;
+	iif ii
+    | F.UsingMemberHeader (id,ii) ->
+	vk_name bigf id;
+	iif ii
     | F.TemplateHeader(params,ii) ->
 	iif ii;
 	params +> List.iter (fun (param,iicomma) ->
@@ -2178,6 +2184,11 @@ and vk_node_s = fun bigf node ->
 	F.PragmaHeader((vk_name_s bigf id,
 			rest +> List.map (fun (str,ii) -> (str,iif ii))),
 		       iif ii)
+    | F.UsingTypenameHeader ((id,ty),ii) ->
+	F.UsingTypenameHeader((vk_name_s bigf id, vk_type_s bigf ty),
+			      iif ii)
+    | F.UsingMemberHeader (id,ii) ->
+	F.UsingMemberHeader(vk_name_s bigf id, iif ii)
     | F.TemplateHeader(params,ii) ->
 	F.TemplateHeader
 	  (params +> List.map (fun (param, iicomma) ->
