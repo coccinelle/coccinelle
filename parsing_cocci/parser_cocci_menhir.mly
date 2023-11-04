@@ -1788,7 +1788,7 @@ statement:
 | TFor TOPar one_decl_var(TPtVirg) option(eexpr) TPtVirg
     option(eexpr) TCPar single_statement
     { Parse_aux.forloop2 $1 $2 $3 $4 (snd $5) $6 $7 $8 }
-| TFor TOPar one_decl_var(TDotDot) eexpr TCPar single_statement
+| TFor TOPar one_decl_var(TDotDot) initialize TCPar single_statement
     { Parse_aux.forloop3 $1 $2 $3 $4 $5 $6 }
 | TWhile TOPar eexpr TCPar single_statement
     { Parse_aux.whileloop $1 $2 $3 $4 $5 }
@@ -2112,43 +2112,40 @@ array_dec: l=TOCro i=option(eexpr) r=TCCro { (l,i,r) }
 initialize:
     eexpr
       { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
-  | TOBrace initialize_list TCBrace
+  | initialize_meta_or_list(TOBrace) { $1 }
+
+initialize_meta_or_list(lb):
+  | TMetaInit
+      {let (nm,cstr,pure,clt) = $1 in
+      Ast0_cocci.wrap(Ast0_cocci.MetaInit(Parse_aux.clt2mcode nm clt,cstr,pure)) }
+  | initialize_metalist_or_list(lb) { $1 }
+
+initialize_metalist_or_list(lb):
+  | lb initialize_list TCBrace
     { if Parse_aux.struct_initializer $2
     then
       let il = Parse_aux.drop_dot_commas $2 in
       Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,il,Parse_aux.clt2mcode "}" $3,false))
     else
       Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,$2,Parse_aux.clt2mcode "}" $3,true)) }
-  | TMetaInit
-      {let (nm,cstr,pure,clt) = $1 in
-      Ast0_cocci.wrap(Ast0_cocci.MetaInit(Parse_aux.clt2mcode nm clt,cstr,pure)) }
+  | TMetaInitList
+      {let (nm,lenname,cstr,pure,clt) = $1 in
+      let nm = Parse_aux.clt2mcode nm clt in
+      let lenname = Parse_aux.dolen clt lenname in
+      Ast0_cocci.wrap(Ast0_cocci.MetaInitList(nm,lenname,cstr,pure)) }
 
 initialize2:
   /*arithexpr and not eexpr because can have ambiguity with comma*/
   /*dots and nests probably not allowed at top level, haven't looked into why*/
   arith_expr(eexpr,invalid) { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
 | nest_expressions_only     { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
-| TOBrace initialize_list TCBrace
-    { if Parse_aux.struct_initializer $2
-    then
-      let il = Parse_aux.drop_dot_commas $2 in
-      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,il,Parse_aux.clt2mcode "}" $3,false))
-    else
-      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,$2,Parse_aux.clt2mcode "}" $3,true)) }
+  | initialize_meta_or_list(TOBrace) { $1 }
            /* gccext:, labeled elements */
 | nonempty_list(designator) TEq initialize2
     /*can we have another of these on the rhs?*/
     { Ast0_cocci.wrap(Ast0_cocci.InitGccExt($1,Parse_aux.clt2mcode "=" $2,$3)) }
 | mident TDotDot initialize2
     { Ast0_cocci.wrap(Ast0_cocci.InitGccName($1,Parse_aux.clt2mcode ":" (snd $2),$3)) } /*in old kernel*/
-| TMetaInit
-    {let (nm,cstr,pure,clt) = $1 in
-    Ast0_cocci.wrap(Ast0_cocci.MetaInit(Parse_aux.clt2mcode nm clt,cstr,pure)) }
-| TMetaInitList
-    {let (nm,lenname,cstr,pure,clt) = $1 in
-    let nm = Parse_aux.clt2mcode nm clt in
-    let lenname = Parse_aux.dolen clt lenname in
-    Ast0_cocci.wrap(Ast0_cocci.MetaInitList(nm,lenname,cstr,pure)) }
 
 designator:
  | TDot type_ident
@@ -2551,18 +2548,9 @@ postfix_expr(r,pe):
 			      Parse_aux.clt2mcode ")" $4)) }
  /*(* gccext: also called compound literals *)
    empty case causes conflicts */
- | TOPar ctype TCPar TOBrace initialize_list TCBrace
-     { let init =
-       if Parse_aux.struct_initializer $5
-       then
-	 let il = Parse_aux.drop_dot_commas $5 in
-	 Ast0_cocci.wrap
-	   (Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $4,il,Parse_aux.clt2mcode "}" $6,false))
-       else
-	 Ast0_cocci.wrap
-	   (Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $4,$5,Parse_aux.clt2mcode "}" $6,true)) in
-     Ast0_cocci.wrap
-       (Ast0_cocci.Constructor(Parse_aux.clt2mcode "(" $1, $2, Parse_aux.clt2mcode ")" $3, init)) }
+ | TOPar ctype TCPar initialize_metalist_or_list(TOBrace)
+     { Ast0_cocci.wrap
+	 (Ast0_cocci.Constructor(Parse_aux.clt2mcode "(" $1, $2, Parse_aux.clt2mcode ")" $3, $4)) }
 
 primary_expr(recurser,primary_extra):
    func_ident   { Ast0_cocci.wrap(Ast0_cocci.Ident($1)) }
@@ -3182,17 +3170,7 @@ toplevel_after_stm:
 | expr toplevel_after_exp            { (Ast0_cocci.wrap(Ast0_cocci.Exp($1)))::$2 }
 
 top_init:
-  TOInit initialize_list TCBrace
-    { if Parse_aux.struct_initializer $2
-    then
-      let il = Parse_aux.drop_dot_commas $2 in
-      Ast0_cocci.wrap
-	(Ast0_cocci.InitList
-	   (Parse_aux.clt2mcode "{" $1,il,Parse_aux.clt2mcode "}" $3,false))
-    else
-      Ast0_cocci.wrap
-	(Ast0_cocci.InitList
-	   (Parse_aux.clt2mcode "{" $1,$2,Parse_aux.clt2mcode "}" $3,true)) }
+  initialize_metalist_or_list(TOInit) { $1 }
 
 /* ------------------------------------------------------------------------ */
 /* Plus top level */

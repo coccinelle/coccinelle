@@ -1240,18 +1240,11 @@ iteration:
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(None, [])),$6),    [$1;$2;$5]}
  | Tfor TOPar decl expr_statement expr TCPar cpp_ifdef_statement
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(Some $5, [])),$7), [$1;$2;$6] }
- | Tfor TOPar decl_spec declaratori TDotDot expr TCPar cpp_ifdef_statement
+ | Tfor TOPar decl_spec declaratori TDotDot initialize TCPar cpp_ifdef_statement
      { let decl = (* should share with code in decl2 *)
          let di = (fst $3, $4, NoInit) in
          create_decls $3 [di,[]] $5 Ast_c.LocalDecl in
        For (ForRange(decl,$6),$8), [$1;$2;$7] }
- | Tfor TOPar decl_spec declaratori TDotDot TOBrace outer_initialize_list TCBrace
-     TCPar cpp_ifdef_statement
-     { let decl = (* should share with code in decl2 *)
-         let di = (fst $3, $4, NoInit) in
-         create_decls $3 [di,[]] $5 Ast_c.LocalDecl in
-       let ini = $7 $6 $8 in
-       For (ForRangeInit(decl,ini),$10), [$1;$2;$9] }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list TCPar cpp_ifdef_statement
      { MacroIteration (fst $1, $3, $5), [snd $1;$2;$4] }
