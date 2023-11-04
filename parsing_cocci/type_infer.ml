@@ -472,7 +472,16 @@ let rec propagate_types env =
 	    let dummy =
 	      Ast0.rewrap first (Ast0.ForExp (None,sem,None,sem,Some e2)) in
 	    (propagate_types newenv).VT0.combiner_rec_statement
-	      (Ast0.rewrap s (Ast0.For(a,b,dummy,e,f,g))))
+	      (Ast0.rewrap s (Ast0.For(a,b,dummy,e,f,g)))
+	| Ast0.ForRangeInit (_,decl,i2) ->
+	    let newenv = (process_decl env decl)@env in
+	    let sem = Ast0_cocci.make_mcode ";" in
+	    let dummy =
+	      Ast0.rewrap first (Ast0.ForExp (None,sem,None,sem,None)) in
+	    bind
+	      ((propagate_types newenv).VT0.combiner_rec_initialiser i2)
+	      ((propagate_types newenv).VT0.combiner_rec_statement
+		 (Ast0.rewrap s (Ast0.For(a,b,dummy,e,f,g)))))
     | Ast0.Switch(_,_,exp,_,_,decls,cases,_) ->
 	let senv = process_statement_list r env (Ast0.unwrap decls) in
 	let res =
