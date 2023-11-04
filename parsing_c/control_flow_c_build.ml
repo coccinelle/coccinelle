@@ -1546,6 +1546,26 @@ let specialdeclmacro_to_stmt (s, args, ii) =
       !g#add_arc ((ei, endi),Direct);
       [(outer_e,Some !g)]
 
+    | Ast_c.CppTop (Ast_c.UsingTypename ((id,ty),ii)) ->
+	let elem = UsingTypenameHeader ((id,ty),ii) in
+	let str = "using" in
+	let ei =   !g +> add_node elem    lbl_0 str in
+	let endi = !g +> add_node EndNode lbl_0 "[end]" in
+
+	!g#add_arc ((topi, ei),Direct);
+	!g#add_arc ((ei, endi),Direct);
+	[(outer_e,Some !g)]
+
+    | Ast_c.CppTop (Ast_c.UsingMember (id,ii)) ->
+	let elem = UsingMemberHeader (id,ii) in
+	let str = "using" in
+	let ei =   !g +> add_node elem    lbl_0 str in
+	let endi = !g +> add_node EndNode lbl_0 "[end]" in
+
+	!g#add_arc ((topi, ei),Direct);
+	!g#add_arc ((ei, endi),Direct);
+	[(outer_e,Some !g)]
+
   | Ast_c.TemplateDefinition(tmp,top,ii) ->
       let headeri = !g+>add_node (TemplateHeader (tmp,ii)) lbl_0 "template" in
       !g#add_arc ((topi, headeri),Direct);
