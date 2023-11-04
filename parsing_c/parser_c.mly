@@ -898,28 +898,15 @@ cpp_initialiser_opt:
 
 cpp_type:
    TOPar simple_type TCPar { (fixSimpleTypeForCPPType $2, [$1;$3]) }
- | simple_type { (fixSimpleTypeForCPPType $1, []) }
- | identifier_cpp
-     { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
-       (fixSimpleTypeForCPPType st, []) }
- | identifier_cpp TTemplateStart argument_list TTemplateEnd
-     { let st = (Right3 (TemplateType($1,$3)), [$2;$4]) in
-       (fixSimpleTypeForCPPType st, []) }
+ | cpp_type_noparen { ($1,[]) }
 
-cpp_type_name:
+cpp_type_noparen:
+ | simple_type { fixSimpleTypeForCPPType $1 }
  | identifier_cpp
      { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
        fixSimpleTypeForCPPType st }
  | identifier_cpp TTemplateStart argument_list TTemplateEnd
      { let st = (Right3 (TemplateType($1,$3)), [$2;$4]) in
-       fixSimpleTypeForCPPType st }
- | TypedefIdent
-     { let name = RegularName (mk_string_wrap $1) in
-       let st = Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
-       fixSimpleTypeForCPPType st }
- | TypedefIdent TTemplateStart argument_list TTemplateEnd
-     { let name = RegularName (mk_string_wrap $1) in
-       let st = Right3 (TemplateType (name, $3)),[$2;$4] in
        fixSimpleTypeForCPPType st }
 
 arith_expr:
@@ -2550,20 +2537,20 @@ cpp_directive:
  | TCppDirectiveOther { OtherDirective ([$1]) }
 
  /* C++ */
- | Tusing TIdent TEq Ttypename cpp_type_name TPtVirg
+ | Tusing TIdent TEq Ttypename cpp_type_noparen TPtVirg
      { let (s,i1) = $2 in
        LP.add_typedef_root s i1;
        let name = RegularName (mk_string_wrap $2) in
        UsingTypename ((name, $5), [$1;$3;$4;$6]) }
- | Tusing TIdent TEq cpp_type_name TPtVirg
+ | Tusing TIdent TEq cpp_type_noparen TPtVirg
      { let (s,i1) = $2 in
        LP.add_typedef_root s i1;
        let name = RegularName (mk_string_wrap $2) in
        UsingTypename ((name, $4), [$1;$3;$5]) }
- | Tusing TypedefIdent TEq Ttypename cpp_type_name TPtVirg
+ | Tusing TypedefIdent TEq Ttypename cpp_type_noparen TPtVirg
      { let name = RegularName (mk_string_wrap $2) in
        UsingTypename ((name, $5), [$1;$3;$4;$6]) }
- | Tusing TypedefIdent TEq cpp_type_name TPtVirg
+ | Tusing TypedefIdent TEq cpp_type_noparen TPtVirg
      { let name = RegularName (mk_string_wrap $2) in
        UsingTypename ((name, $4), [$1;$3;$5]) }
  | Tusing identifier_cpp TPtVirg
