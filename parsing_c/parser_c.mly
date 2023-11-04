@@ -2113,19 +2113,19 @@ gcc_comma_opt_struct:
 /*(*************************************************************************)*/
 
 s_or_u_spec2:
- | cpp_struct_or_union ident TDotDot base_classes tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
-     { StructUnion (fst $1, Some (fst $2), $4, $6),  [snd $1;snd $2;$3;$5;$7]  }
- | cpp_struct_or_union ident tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
-     { StructUnion (fst $1, Some (fst $2), [], $4),  [snd $1;snd $2;$3;$5]  }
+ | cpp_struct_or_union ident TDotDot base_classes optfinal tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
+     { StructUnion (fst $1, Some (fst $2), $4, $5, $7),  [snd $1;snd $2;$3;$6;$8]  }
+ | cpp_struct_or_union ident optfinal tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
+     { StructUnion (fst $1, Some (fst $2), [], $3, $5),  [snd $1;snd $2;$4;$6]  }
  | struct_or_union ident tobrace_struct struct_decl_list_gcc tcbrace_struct
-     { StructUnion (fst $1, Some (fst $2), [], $4),  [snd $1;snd $2;$3;$5]  }
+     { StructUnion (fst $1, Some (fst $2), [], None, $4),  [snd $1;snd $2;$3;$5]  }
  | cpp_struct_or_union TDotDot base_classes tobrace_struct
      cpp_struct_decl_list_gcc tcbrace_struct
-     { StructUnion (fst $1, None, $3, $5), [snd $1;$2;$4;$6] }
+     { StructUnion (fst $1, None, $3, None, $5), [snd $1;$2;$4;$6] }
  | cpp_struct_or_union tobrace_struct cpp_struct_decl_list_gcc tcbrace_struct
-     { StructUnion (fst $1, None, [], $3), [snd $1;$2;$4] }
+     { StructUnion (fst $1, None, [], None, $3), [snd $1;$2;$4] }
  | struct_or_union tobrace_struct struct_decl_list_gcc tcbrace_struct
-     { StructUnion (fst $1, None, [], $3), [snd $1;$2;$4] }
+     { StructUnion (fst $1, None, [], None, $3), [snd $1;$2;$4] }
  | struct_or_union ident
      { StructUnionName (fst $1, fst $2), [snd $1;snd $2] }
  | cpp_struct_or_union ident
@@ -2208,6 +2208,10 @@ c_plus_plus_constructor_decl:
 post_constructor:
   Tfinal      { (true, [$1]) }
 | /* empty */ { (false, []) }
+
+optfinal:
+  Tfinal      { Some $1 }
+| /* empty */ { None }
 
 field_declaration:
  | decl_spec struct_declarator_list TPtVirg

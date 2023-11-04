@@ -208,9 +208,10 @@ and typeC tya tyb =
 
   | AutoType, AutoType -> return (AutoType, iix)
 
-  | StructUnion (sua, saopt, base_classesa, sta),
-      StructUnion (sub, sbopt, base_classesb, stb) ->
+  | StructUnion (sua, saopt, base_classesa, optfinala, sta),
+      StructUnion (sub, sbopt, base_classesb, optfinalb, stb) ->
       (sua = sub && saopt = sbopt && base_classesa = base_classesb &&
+       same_optfinal optfinala optfinalb &&
        List.length sta = List.length stb)
       >&&>
       (function tin ->
@@ -269,7 +270,7 @@ and typeC tya tyb =
 
         ) (return [])
         >>= (fun stx ->
-          return (StructUnion (sua, saopt, base_classesa, List.rev stx), iix)
+          return (StructUnion (sua, saopt, base_classesa, optfinala, List.rev stx), iix)
         )) tin)
 
   | (TemplateType(namea, argsa), TemplateType(nameb, argsb)) ->
@@ -312,6 +313,13 @@ and typeC tya tyb =
   | (AutoType, _) | (_, AutoType)
   | (TemplateType _, _) | (_, TemplateType _)
   | (NoType, _) -> fail
+
+(* token doesn't matter, only presence or absence *)
+and same_optfinal optfinala optfinalb =
+  match optfinala, optfinalb with
+    Some _, Some _ -> true
+  | None, None -> true
+  | _ -> false
 end
 
 module XEQ = struct

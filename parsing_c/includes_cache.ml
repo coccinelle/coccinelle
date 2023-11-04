@@ -180,7 +180,7 @@ let cache_name_visitor file =
                       (Ast_c.str_of_name name) (file, exp_type)
                | {Ast_c.v_namei = None; Ast_c.v_type = (q,a,typ)} ->
                     (match (Ast_c.unwrap typ) with
-                      Ast_c.StructUnion (_, Some n, _, def) ->
+                      Ast_c.StructUnion (_, Some n, _, _, def) ->
                         (* Cache field names *)
                         cache_struct_fields n def
                     | Ast_c.EnumDef(_, base, def) ->
@@ -224,7 +224,7 @@ let get_type_visitor file l =
                     f ()
                | {Ast_c.v_namei = None; Ast_c.v_type = (q,a,typ)} ->
                    (match (Ast_c.unwrap typ) with
-                     Ast_c.StructUnion (su, snameopt, _, def) ->
+                     Ast_c.StructUnion (su, snameopt, _, _, def) ->
                        (match snameopt with
                          Some s ->
                            let def' = Lib.al_fields def in

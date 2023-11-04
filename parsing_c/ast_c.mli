@@ -35,7 +35,8 @@ and typeCbis =
   | FunctionType of functionType
   | EnumDef of fullType * fullType option * enumType
   | StructUnion of
-      structUnion * string option * base_class wrap2 list (* C++ *) * structType
+      structUnion * string option * base_class wrap2 list (* C++ *) *
+	info option (* C++, final *) * structType
   | EnumName of structUnion option * string option
   | StructUnionName of structUnion * string
   | TypeName of name * fullType option

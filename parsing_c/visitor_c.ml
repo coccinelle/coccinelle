@@ -514,8 +514,9 @@ and vk_type = fun bigf t ->
 	do_option (vk_type bigf) baset;
 	vk_enum_fields bigf enumt
 
-    | StructUnion (sopt, _su, base_classes, fields) ->
+    | StructUnion (sopt, _su, base_classes, optfinal, fields) ->
 	vk_base_class_list bigf base_classes;
+	do_option (vk_info bigf) optfinal;
         vk_struct_fields bigf fields
 
     | StructUnionName (s, structunion) -> ()
@@ -1595,9 +1596,10 @@ and vk_type_s = fun bigf t ->
           EnumDef (vk_type_s bigf sen,
 		   fmap (function baset -> baset) baset,
 		   vk_enum_fields_s bigf enumt)
-      | StructUnion (sopt, su, base_classes, fields) ->
+      | StructUnion (sopt, su, base_classes, optfinal, fields) ->
           StructUnion (sopt, su,
 		       vk_base_class_list_s bigf base_classes,
+		       map_option (vk_info_s bigf) optfinal,
 		       vk_struct_fields_s bigf fields)
 
 

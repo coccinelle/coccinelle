@@ -63,7 +63,8 @@ module Ast_c :
       | Decimal of constExpression * constExpression option
       | FunctionType of functionType
       | EnumDef of fullType * fullType option * enumType
-      | StructUnion of structUnion * string option * base_class wrap2 list * structType
+      | StructUnion of structUnion * string option * base_class wrap2 list *
+	    info option * structType
       | EnumName of structUnion option * string option
       | StructUnionName of structUnion * string
       | TypeName of name * fullType option
