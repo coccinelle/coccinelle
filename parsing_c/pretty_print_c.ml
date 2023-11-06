@@ -1635,6 +1635,22 @@ and pp_init (init, iinit) =
 	pp_name name; pr_space();
 	pr_elem irest; pr_elem ieol
 
+    | F.UsingTypenameHeader((name,def),ii) ->
+	let (iusing,ieq,itypename,iptvirg) =
+	  match ii with
+	    [iusing;ieq;itypename;iptvirg] ->
+	      let itypename _ = pr_elem itypename; pr_space() in
+	      (iusing,ieq,itypename,iptvirg)
+	  | [iusing;ieq;iptvirg] -> (iusing,ieq,(fun _ -> ()),iptvirg)
+	  | _ -> failwith "UsingTypename: wrong number of elements" in
+	pr_elem iusing; pr_space(); pp_name name; pr_space();
+	pr_elem ieq;  pr_space(); itypename();
+	pp_type def; pr_elem iptvirg
+    | F.UsingMemberHeader(name,ii) ->
+	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
+	pr_elem iusing; pr_space(); pp_name name;
+	pr_elem iptvirg
+
     | F.TemplateHeader(params,ii) ->
 	let (itmp,ileft,iright) = Common.tuple_of_list3 ii in
 	pr_elem itmp; pr_elem ileft;
