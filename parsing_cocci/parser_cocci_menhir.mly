@@ -296,7 +296,7 @@ let inline_id aft = function
 %token <string * string (*n*) * string (*p*) * Data.clt> TDecimalCst
 
 %token <Data.clt> TOrLog
-%token <Data.clt> TAndLog
+%token <string * Data.clt> TAndLog
 %token <Data.clt> TOr
 %token <Data.clt> TXor
 %token <string * Data.clt> TAnd
@@ -2365,7 +2365,7 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TXor    arith_expr_bis
       { Parse_aux.arith_op Ast_cocci.Xor $1 $2 $3 }
   | arith_expr(r,pe) TAndLog arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.AndLog $1 $2 $3 }
+      { Parse_aux.logic_op Ast_cocci.AndLog $1 (snd $2) $3 }
   | arith_expr(r,pe) TOrLog  arith_expr_bis
       { Parse_aux.logic_op Ast_cocci.OrLog $1 $2 $3 }
   | arith_expr(r,pe) TMetaBinaryOp  arith_expr_bis
@@ -2403,7 +2403,7 @@ arith_expr_bis:
   | arith_expr_bis TXor    arith_expr_bis
       { Parse_aux.arith_op Ast_cocci.Xor $1 $2 $3 }
   | arith_expr_bis TAndLog arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.AndLog $1 $2 $3 }
+      { Parse_aux.logic_op Ast_cocci.AndLog $1 (snd $2) $3 }
 // no OrLog because it is left associative and this is for
 // a right argument, not sure why not the same problem for AndLog
 
@@ -2561,7 +2561,7 @@ primary_expr(recurser,primary_extra):
 			      $3,
 			      Parse_aux.clt2mcode ">>>" $4)) }
  | TAndLog ident
-     { let op = Parse_aux.clt2mcode Ast_cocci.GetRefLabel $1 in
+     { let op = Parse_aux.clt2mcode Ast_cocci.GetRefLabel (snd $1) in
      Ast0_cocci.wrap(Ast0_cocci.Unary(Ast0_cocci.wrap(Ast0_cocci.Ident($2)), op)) }
  | TInt
      { let (x,clt) = $1 in
@@ -2917,7 +2917,7 @@ binary_operator:
 | TOr { mkarithop (Ast_cocci.Or,$1) }
 | TXor { mkarithop (Ast_cocci.Xor,$1) }
 | TLogOp { mklogop $1 }
-| TAndLog { mklogop (Ast_cocci.AndLog,$1) }
+| TAndLog { mklogop (Ast_cocci.AndLog,(snd $1)) }
 | TOrLog { mklogop (Ast_cocci.OrLog,$1) }
 
 assignment_operator:
@@ -3378,7 +3378,7 @@ token:
   | TXor { Parse_aux.clt2mcode "+" $1 }
   | TAnd { Parse_aux.clt2mcode (fst $1) (snd $1) }
   | TOrLog { Parse_aux.clt2mcode "||" $1 }
-  | TAndLog { Parse_aux.clt2mcode "&&" $1 }
+  | TAndLog { Parse_aux.clt2mcode (fst $1) (snd $1) }
   | TOBrace { Parse_aux.clt2mcode "{" $1 }
   | TCBrace { Parse_aux.clt2mcode "}" $1 }
   | TOCro { Parse_aux.clt2mcode "[" $1 }
@@ -3724,7 +3724,7 @@ anything: /* used for script code */
  | TDecimalCst { let (x,_,_,_) = $1 in x }
 
  | TOrLog { "||" }
- | TAndLog { "&&" }
+ | TAndLog { fst $1 }
  | TOr { "|" }
  | TXor { "^" }
  | TAnd { (fst $1) }

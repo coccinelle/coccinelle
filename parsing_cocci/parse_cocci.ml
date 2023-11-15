@@ -192,7 +192,7 @@ let token2c (tok,_) add_clt =
   | PC.TDecimalCst(x,len,prc,clt) -> add_clt x clt
 
   | PC.TOrLog(clt) -> add_clt "||" clt
-  | PC.TAndLog(clt) -> add_clt "&&" clt
+  | PC.TAndLog(_,clt) -> add_clt "&&" clt
   | PC.TOr(clt) -> add_clt "|" clt
   | PC.TXor(clt) -> add_clt "^" clt
   | PC.TAnd (_,clt) -> add_clt "&" clt
@@ -367,7 +367,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
 
-  | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
+  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
@@ -459,7 +459,7 @@ let get_clt (tok,_) =
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
 
-  | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
+  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
@@ -663,7 +663,7 @@ let update_clt (tok,x) clt =
   | PC.TDecimalCst(s,l,p,_) -> (PC.TDecimalCst(s,l,p,clt),x)
 
   | PC.TOrLog(_) -> (PC.TOrLog(clt),x)
-  | PC.TAndLog(_) -> (PC.TAndLog(clt),x)
+  | PC.TAndLog(s,_) -> (PC.TAndLog(s,clt),x)
   | PC.TOr(_) -> (PC.TOr(clt),x)
   | PC.TXor(_) -> (PC.TXor(clt),x)
   | PC.TAnd (s,_) -> (PC.TAnd (s,clt),x)
@@ -989,7 +989,7 @@ let split_token ((tok,_) as t) =
   | PC.TDecimalCst(_,_,_,clt) ->
       split t clt
 
-  | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
+  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
@@ -1406,7 +1406,7 @@ let token2line (tok,_) =
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
 
-  | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
+  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)

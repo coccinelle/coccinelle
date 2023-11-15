@@ -810,7 +810,7 @@ rule token = parse
   | ">>>"          { start_line true;
 		     TSup3(get_current_line_type lexbuf) }
 
-  | "&&"           { start_line true; TAndLog (get_current_line_type lexbuf) }
+  | "&&"           { start_line true; TAndLog ("&&", get_current_line_type lexbuf) }
   | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }
 
   | ">>"           { start_line true;
@@ -1118,7 +1118,7 @@ and metavariable_decl_token = parse
   | ">=" { start_line true; TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<" { start_line true; TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">" { start_line true; TLogOp(Ast.Sup,get_current_line_type lexbuf) }
-  | "&&" { start_line true; TAndLog (get_current_line_type lexbuf) }
+  | "&&" { start_line true; TAndLog ("^^", get_current_line_type lexbuf) }
   | "||" { start_line true; TOrLog (get_current_line_type lexbuf) }
   | ":"  { start_line true; TDotDot (":",get_current_line_type lexbuf) }
   | "-="           { start_line true; mkassign Ast.Minus lexbuf }
