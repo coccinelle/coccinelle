@@ -214,7 +214,7 @@ let token2c (tok,_) add_clt =
   | PC.TShROp(op,clt) -> add_clt ">>" clt
   | PC.TPlus(clt) -> add_clt "+" clt
   | PC.TMinus(clt) -> add_clt "-" clt
-  | PC.TMul(clt) -> add_clt "*" clt
+  | PC.TMul(_,clt) -> add_clt "*" clt
   | PC.TDmOp(op,clt) ->
       add_clt
 	(match op with
@@ -371,7 +371,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
-  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
@@ -463,7 +463,7 @@ let get_clt (tok,_) =
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
-  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) | PC.TTildeExclEq(clt)
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
@@ -676,7 +676,7 @@ let update_clt (tok,x) clt =
   | PC.TShROp(op,_) -> (PC.TShROp(op,clt),x)
   | PC.TPlus(_) -> (PC.TPlus(clt),x)
   | PC.TMinus(_) -> (PC.TMinus(clt),x)
-  | PC.TMul(_) -> (PC.TMul(clt),x)
+  | PC.TMul(s,_) -> (PC.TMul(s,clt),x)
   | PC.TDmOp(op,_) -> (PC.TDmOp(op,clt),x)
   | PC.TTilde (_) -> (PC.TTilde (clt),x)
 
@@ -993,7 +993,7 @@ let split_token ((tok,_) as t) =
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
   | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
-  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOInit(clt) -> split t clt
@@ -1409,7 +1409,7 @@ let token2line (tok,_) =
   | PC.TOrLog(clt) | PC.TAndLog(clt) | PC.TOr(clt) | PC.TXor(clt)
   | PC.TAnd (clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
-  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(clt)
+  | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
   | PC.TDmOp(_,clt) | PC.TTilde (clt)
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)

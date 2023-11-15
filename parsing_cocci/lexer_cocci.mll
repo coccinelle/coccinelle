@@ -753,7 +753,7 @@ rule token = parse
   | '*'            { pass_zero();
 		     if !current_line_started
 		     then
-		       (start_line true; TMul (get_current_line_type lexbuf))
+		       (start_line true; TMul ("*", get_current_line_type lexbuf))
 		     else
 		       (patch_or_match MATCH;
 			add_current_line_type D.MINUS; token lexbuf) }
@@ -1098,7 +1098,7 @@ and metavariable_decl_token = parse
   | '*'            { pass_zero();
 		     if !current_line_started
 		     then
-		       (start_line true; TMul (get_current_line_type lexbuf))
+		       (start_line true; TMul ("*", get_current_line_type lexbuf))
 		     else
 		       (patch_or_match MATCH;
 			add_current_line_type D.MINUS;

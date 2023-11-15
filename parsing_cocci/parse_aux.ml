@@ -178,7 +178,7 @@ let pointerify ty m =
   List.fold_left
     (function inner ->
       function cur ->
-	Ast0.wrap(Ast0.Pointer(inner,clt2mcode "*" cur)))
+	Ast0.wrap(Ast0.Pointer(inner, clt2mcode (fst cur) (snd cur) )))
     ty m
 
 let ty_pointerify ty m =
@@ -191,7 +191,7 @@ let make_cv cvbefore ty cvafter =
     [],[] -> ty
   | _ -> Ast0.wrap (Ast0.ConstVol(cvbefore,ty,cvafter))
 
-let make_ctype_and_ptr (cv1, ty, cv2, m) =
+let make_ctype_and_ptr (cv1, ty, cv2, (m : ((string *Data.clt) * Ast0_cocci.cvattr list) list)) =
   List.fold_left
     (fun prev (star,cvattrs) ->
       make_cv [] (pointerify prev [star]) cvattrs)

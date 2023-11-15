@@ -305,7 +305,8 @@ let inline_id aft = function
 %token <Ast_cocci.arithOp * Data.clt>   TShLOp TShROp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod TMin TMax */
 %token <Data.clt> TPlus TMinus
-%token <Data.clt> TMul TTilde
+%token <Data.clt> TTilde
+%token <string * Data.clt> TMul
 
 %token <Data.clt> TOBrace TCBrace TOInit
 %token <Data.clt> TOCro TCCro TOCroCro
@@ -2340,7 +2341,7 @@ cond_expr(r,pe):
 arith_expr(r,pe):
     cast_expr(r,pe)                         { $1 }
   | arith_expr(r,pe) TMul    arith_expr_bis
-    { Parse_aux.arith_op Ast_cocci.Mul $1 $2 $3 }
+    { Parse_aux.arith_op Ast_cocci.Mul $1 (snd $2) $3 }
   | arith_expr(r,pe) TDmOp    arith_expr_bis
       { let (op,clt) = $2 in Parse_aux.arith_op op $1 clt $3 }
   | arith_expr(r,pe) TPlus   arith_expr_bis
@@ -2378,7 +2379,7 @@ arith_expr(r,pe):
 arith_expr_bis:
     cast_expr(eexpr,dot_expressions)                         { $1 }
   | arith_expr_bis TMul    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.Mul $1 $2 $3 }
+      { Parse_aux.arith_op Ast_cocci.Mul $1 (snd $2) $3 }
   | arith_expr_bis TDmOp    arith_expr_bis
       { let (op,clt) = $2 in Parse_aux.arith_op op $1 clt $3 }
   | arith_expr_bis TPlus   arith_expr_bis
@@ -2522,7 +2523,7 @@ unary_expr_bis:
 					   None, t, None, None )) }
 */
 unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef $1 }
-	| TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef $1 }
+	| TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef (snd $1) }
 	| TPlus   { Parse_aux.clt2mcode Ast_cocci.UnPlus $1 }
 	| TMinus  { Parse_aux.clt2mcode Ast_cocci.UnMinus $1 }
 	| TTilde  { Parse_aux.clt2mcode Ast_cocci.Tilde $1 }
@@ -2904,7 +2905,7 @@ operator_constraint:
 
 binary_operator:
   TShLOp { mkarithop $1 } (* Ast_cocci.Arith Ast_cocci.DecLeft *)
-| TMul { mkarithop (Ast_cocci.Mul,$1) }
+| TMul { mkarithop (Ast_cocci.Mul,(snd $1)) }
 | TEqEq { mklogop (Ast_cocci.Eq,$1) }
 | TNotEq { mklogop (Ast_cocci.NotEq,$1) }
 | TSub { mklogop (Ast_cocci.InfEq,$1) }
@@ -3366,7 +3367,7 @@ exec_ident2:
 token:
     TPlus { Parse_aux.clt2mcode "+" $1 }
   | TMinus { Parse_aux.clt2mcode "-" $1 }
-  | TMul { Parse_aux.clt2mcode "*" $1 }
+  | TMul { Parse_aux.clt2mcode (fst $1) (snd $1) }
   | TEqEq { Parse_aux.clt2mcode "==" $1 }
   | TNotEq { Parse_aux.clt2mcode "!=" $1 }
   | TDmOp { Parse_aux.clt2mcode (arithOp(fst $1)) (snd $1) }
@@ -3744,7 +3745,7 @@ anything: /* used for script code */
        Ast_cocci.Div -> "/" | Ast_cocci.Mod -> "%" | _ -> failwith "bad op" }
  | TPlus { "+" }
  | TMinus { "-" }
- | TMul { "*" }
+ | TMul { (fst $1) }
  | TTilde { "~" }
 
  | TOCro {"[" }

@@ -109,14 +109,14 @@ val make_cxx_attr_using:
 val top_dots : 'a -> 'a Ast0_cocci.wrap
 val pointerify :
   Ast0_cocci.typeC ->
-  (Data.clt)
+  (string * Data.clt)
   list -> Ast0_cocci.typeC
 val ty_pointerify : Ast0_cocci.typeC -> 'a list -> Ast0_cocci.typeC
 val make_cv :
     Ast0_cocci.cvattr list -> Ast0_cocci.typeC -> Ast0_cocci.cvattr list -> Ast0_cocci.typeC
 val make_ctype_and_ptr :
     Ast0_cocci.cvattr list * Ast0_cocci.typeC * Ast0_cocci.cvattr list *
-       (Data.clt * Ast0_cocci.cvattr list) list -> Ast0_cocci.typeC
+       ((string *Data.clt) * Ast0_cocci.cvattr list) list -> Ast0_cocci.typeC
 val arrayify :
   Ast0_cocci.typeC ->
   ((Data.line_type * int * int * int * int * int *
