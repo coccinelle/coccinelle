@@ -299,7 +299,7 @@ let inline_id aft = function
 %token <Data.clt> TAndLog
 %token <Data.clt> TOr
 %token <Data.clt> TXor
-%token <Data.clt> TAnd
+%token <string * Data.clt> TAnd
 %token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq TSub
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShLOp TShROp  /* TShl TShr */
@@ -2359,7 +2359,7 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TNotEq  arith_expr_bis
       { Parse_aux.logic_op Ast_cocci.NotEq $1 $2 $3 }
   | arith_expr(r,pe) TAnd    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.And $1 $2 $3 }
+      { Parse_aux.arith_op Ast_cocci.And $1 (snd $2) $3 }
   | arith_expr(r,pe) TOr     arith_expr_bis
       { Parse_aux.arith_op Ast_cocci.Or $1 $2 $3 }
   | arith_expr(r,pe) TXor    arith_expr_bis
@@ -2397,7 +2397,7 @@ arith_expr_bis:
   | arith_expr_bis TNotEq  arith_expr_bis
       { Parse_aux.logic_op Ast_cocci.NotEq $1 $2 $3 }
   | arith_expr_bis TAnd    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.And $1 $2 $3 }
+      { Parse_aux.arith_op Ast_cocci.And $1 (snd $2) $3 }
   | arith_expr_bis TOr     arith_expr_bis
       { Parse_aux.arith_op Ast_cocci.Or $1 $2 $3 }
   | arith_expr_bis TXor    arith_expr_bis
@@ -2522,7 +2522,7 @@ unary_expr_bis:
       { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp,
 					   None, t, None, None )) }
 */
-unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef $1 }
+unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef (snd $1) }
 	| TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef (snd $1) }
 	| TPlus   { Parse_aux.clt2mcode Ast_cocci.UnPlus $1 }
 	| TMinus  { Parse_aux.clt2mcode Ast_cocci.UnMinus $1 }
@@ -2913,7 +2913,7 @@ binary_operator:
 | TMinus { mkarithop (Ast_cocci.Minus,$1) }
 | TDmOp { mkarithop $1 }
 | TShROp { mkarithop $1 }
-| TAnd { mkarithop (Ast_cocci.And,$1) }
+| TAnd { mkarithop (Ast_cocci.And,(snd $1)) }
 | TOr { mkarithop (Ast_cocci.Or,$1) }
 | TXor { mkarithop (Ast_cocci.Xor,$1) }
 | TLogOp { mklogop $1 }
@@ -3376,7 +3376,7 @@ token:
   | TLogOp { Parse_aux.clt2mcode (logicalOp(fst $1)) (snd $1) }
   | TOr { Parse_aux.clt2mcode "|" $1 }
   | TXor { Parse_aux.clt2mcode "+" $1 }
-  | TAnd { Parse_aux.clt2mcode "&" $1 }
+  | TAnd { Parse_aux.clt2mcode (fst $1) (snd $1) }
   | TOrLog { Parse_aux.clt2mcode "||" $1 }
   | TAndLog { Parse_aux.clt2mcode "&&" $1 }
   | TOBrace { Parse_aux.clt2mcode "{" $1 }
@@ -3727,7 +3727,7 @@ anything: /* used for script code */
  | TAndLog { "&&" }
  | TOr { "|" }
  | TXor { "^" }
- | TAnd { "&" }
+ | TAnd { (fst $1) }
  | TEqEq { "==" }
  | TNotEq { "!=" }
  | TTildeEq { "=~" }

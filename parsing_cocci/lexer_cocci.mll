@@ -819,7 +819,7 @@ rule token = parse
 		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
 
   | "&"            { if not (!col_zero)
-                     then (start_line true; TAnd(get_current_line_type lexbuf))
+                     then (start_line true; TAnd("&", get_current_line_type lexbuf))
                      else (start_line true;
 	                   check_context_linetype (tok lexbuf);
 		           TAnd0 ("&",get_current_line_type lexbuf))}
@@ -1112,7 +1112,7 @@ and metavariable_decl_token = parse
   | "/" { start_line true; TDmOp (Ast.Div,get_current_line_type lexbuf) }
   | "%" { start_line true; TDmOp (Ast.Mod,get_current_line_type lexbuf) }
   | ">>" { start_line true; TShROp(Ast.DecRight,get_current_line_type lexbuf) }
-  | "&" { start_line true; TAnd (get_current_line_type lexbuf) }
+  | "&" { start_line true; TAnd ("&", get_current_line_type lexbuf) }
   | "|" {  (start_line true; TOr(get_current_line_type lexbuf)) }
   | "^" { start_line true; TXor(get_current_line_type lexbuf) }
   | ">=" { start_line true; TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
