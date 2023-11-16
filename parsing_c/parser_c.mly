@@ -1525,38 +1525,10 @@ tmul:
        raise (Semantic("& not allowed in C types, try -c++ option", i)) }
  | TAndLog
      { if !Flag.c_plus_plus <> Flag.Off
-     then
-       (* split the token *)
-       let copy_pinfo offset = function
-	   Ast_c.OriginTok {
-	   Common.charpos = cp;
-	   Common.str     = str;
-	   Common.line    = line;
-	   Common.column  = col;
-	   Common.file = fl } ->
-	     Ast_c.OriginTok {
-	     Common.charpos = cp+offset;
-	     Common.str     = "&";
-	     Common.line    = line;
-	     Common.column  = col+offset;
-	     Common.file = fl }
-	 | _ -> failwith "unexpected && tok" in
-       let t1 =
-	 { pinfo = copy_pinfo 0 $1.pinfo;
-	   cocci_tag = ref Ast_c.emptyAnnot;
-	   annots_tag = Token_annot.empty;
-	   comments_tag = ref Ast_c.emptyComments;
-	   danger = ref NoDanger } in
-       let t2 =
-	 { pinfo = copy_pinfo 1 $1.pinfo;
-	   cocci_tag = ref Ast_c.emptyAnnot;
-	   annots_tag = Token_annot.empty;
-	   comments_tag = ref Ast_c.emptyComments;
-	   danger = ref NoDanger } in
-       [t1;t2]
+     then [$1]
      else
        let i = Ast_c.parse_info_of_info $1 in
-       raise (Semantic("& not allowed in C types, try -c++ option", i)) }
+       raise (Semantic("&& not allowed in C types, try -c++ option", i)) }
 
 direct_d:
  | identifier_cpp

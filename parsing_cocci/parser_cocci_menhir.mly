@@ -1194,7 +1194,9 @@ cv1=const_vol t=ty cv2=const_vol_attr_list m=list(mul)
      (cv1,t,cv2,m) }
 
 full_ctype_and_ptr(ty):
-cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul) { (cv1, t, cv2, m) }
+  cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul) { (cv1, t, cv2,  m ) }
+| cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=TAnd      { (cv1, t, cv2, [(m,[])]) }
+| cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=TAndLog   { (cv1, t, cv2, [(m,[])]) }
 
 ctype:
   full_ctype_and_ptr(all_basic_types)

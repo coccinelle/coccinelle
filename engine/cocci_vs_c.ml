@@ -3931,12 +3931,15 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     (* todo? iso with array *)
     | A.Pointer (typa, iamult),            (B.Pointer typb, ii) ->
         let (ibmult) = tuple_of_list1 ii in
-        fullType typa typb >>= (fun typa typb ->
-        tokenf iamult ibmult >>= (fun iamult ibmult ->
-          return (
-            (A.Pointer (typa, iamult)) +> A.rewrap ta,
-            (B.Pointer typb, [ibmult])
-          )))
+        if (A.unwrap_mcode iamult = B.str_of_info ibmult)
+        then
+          fullType typa typb >>= (fun typa typb ->
+          tokenf iamult ibmult >>= (fun iamult ibmult ->
+            return (
+              (A.Pointer (typa, iamult)) +> A.rewrap ta,
+              (B.Pointer typb, [ibmult])
+            )))
+        else fail
 
     | A.ParenType (lpa, typa, rpa), (B.ParenType typb, ii) ->
         let (lpb, rpb) = tuple_of_list2 ii in
