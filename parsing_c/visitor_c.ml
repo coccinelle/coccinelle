@@ -931,6 +931,9 @@ and vk_cpp_directive bigf directive =
     | UsingMember(name,ii) ->
 	vk_name bigf name;
 	iif ii
+    | UsingNamespace(name,ii) ->
+	vk_name bigf name;
+	iif ii
   in f (k, bigf) directive
 
 
@@ -1084,6 +1087,9 @@ and vk_node = fun bigf node ->
 	vk_name bigf id; vk_type bigf ty;
 	iif ii
     | F.UsingMemberHeader (id,ii) ->
+	vk_name bigf id;
+	iif ii
+    | F.UsingNamespaceHeader (id,ii) ->
 	vk_name bigf id;
 	iif ii
     | F.TemplateHeader(params,ii) ->
@@ -2004,6 +2010,8 @@ and vk_cpp_directive_s = fun bigf top ->
 	UsingTypename((vk_name_s bigf name,vk_type_s bigf def),iif ii)
     | UsingMember(name,ii) ->
 	UsingMember(vk_name_s bigf name,iif ii)
+    | UsingNamespace(name,ii) ->
+	UsingNamespace(vk_name_s bigf name,iif ii)
 
   in f (k, bigf) top
 
@@ -2189,6 +2197,10 @@ and vk_node_s = fun bigf node ->
 			      iif ii)
     | F.UsingMemberHeader (id,ii) ->
 	F.UsingMemberHeader(vk_name_s bigf id, iif ii)
+
+    | F.UsingNamespaceHeader (id,ii) ->
+	F.UsingNamespaceHeader(vk_name_s bigf id, iif ii)
+
     | F.TemplateHeader(params,ii) ->
 	F.TemplateHeader
 	  (params +> List.map (fun (param, iicomma) ->

@@ -1458,6 +1458,10 @@ and pp_init (init, iinit) =
 	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
 	pr_elem iusing; pr_space(); pp_name name;
 	pr_elem iptvirg
+    | UsingNamespace(name,ii) ->
+	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
+	pr_elem iusing; pr_space(); pp_name name;
+	pr_elem iptvirg
 
   and pp_define_param_list dparams =
     pp_list (fun (s,iis) -> iis +> List.iter pr_elem) dparams
@@ -1647,6 +1651,10 @@ and pp_init (init, iinit) =
 	pr_elem ieq;  pr_space(); itypename();
 	pp_type def; pr_elem iptvirg
     | F.UsingMemberHeader(name,ii) ->
+	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
+	pr_elem iusing; pr_space(); pp_name name;
+	pr_elem iptvirg
+    | F.UsingNamespaceHeader(name,ii) ->
 	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
 	pr_elem iusing; pr_space(); pp_name name;
 	pr_elem iptvirg

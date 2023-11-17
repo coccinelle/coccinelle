@@ -2527,6 +2527,8 @@ cpp_directive:
        UsingTypename ((name, $4), [$1;$3;$5]) }
  | Tusing identifier_cpp TPtVirg
      { UsingMember ($2, [$1;$3]) }
+ | Tusing Tnamespace identifier_cpp TPtVirg
+     { UsingNamespace ($3, [$1;$4]) }
 
 pragma_strings:
    TPragmaString { [(fst $1, [snd $1])] }

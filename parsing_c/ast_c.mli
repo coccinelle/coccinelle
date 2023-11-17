@@ -297,6 +297,7 @@ and cpp_directive =
   | OtherDirective of il
   | UsingTypename of (name * fullType) wrap
   | UsingMember of name wrap
+  | UsingNamespace of name wrap
 
 and define = string wrap * (define_kind * define_val)
 and define_kind =
