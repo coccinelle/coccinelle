@@ -132,6 +132,7 @@ let rec right_statement s =
   | Ast0.TopId(id) -> None
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
+  | Ast0.UsingNamespace(usng,nmspc,name,sem) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
 	(function name -> Ast0.Include(inc,name))

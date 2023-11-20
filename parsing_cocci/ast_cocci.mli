@@ -592,6 +592,7 @@ and base_rule_elem =
   | Ty            of fullType (* only at top level *)
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
+  | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | MetaInclude   of string mcode (* #include *) * expression (* file *)
   | Undef         of string mcode (* #define *) * ident (* name *)

@@ -799,6 +799,12 @@ let combiner bind option_default
       | Ast.Ty(ty) -> fullType ty
       | Ast.TopId(ty) -> ident ty
       | Ast.TopInit(init) -> initialiser init
+      |	Ast.UsingNamespace(usng,nmspc,name,sem) ->
+          let lusng = string_mcode usng in
+          let lnmspc = string_mcode nmspc in
+          let lname = ident name in
+          let lsem = string_mcode sem in
+          multibind [lusng; lnmspc; lname; lsem]
       |	Ast.Include(inc,name) ->
 	  let linc = string_mcode inc in
 	  let lname = inc_file_mcode name in
@@ -1884,6 +1890,12 @@ let rebuilder
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.TopId(id) -> Ast.TopId(ident id)
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
+	| Ast.UsingNamespace(usng,nmspc,name,sem) ->
+	   let lusng = string_mcode usng in
+	   let lnmspc = string_mcode nmspc in
+	   let lname = ident name in
+	   let lsem = string_mcode sem in
+	   Ast.UsingNamespace(lusng, lnmspc, lname, lsem)
 	| Ast.Include(inc,name) ->
 	    let linc = string_mcode inc in
 	    let lname = inc_file_mcode name in

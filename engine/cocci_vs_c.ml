@@ -5532,6 +5532,16 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
 
+  | A.UsingNamespace (usnga, nmspca, namea, sema), F.UsingNamespaceHeader (nameb, ii) ->
+      let (usngb, nmspcb, semb) = tuple_of_list3 ii in
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      tokenf nmspca nmspcb >>= (fun nmspca nmspcb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingNamespace (usnga, nmspca, namea, sema),
+          F.UsingNamespaceHeader (nameb, [usngb;nmspcb;semb])
+        ) ))))
 
   | A.Include(incla,filea),
     F.Include {B.i_include = (fileb, ii);
@@ -5770,6 +5780,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
     F.DefineType _|F.DefineExpr _|F.DefineInit _|F.DefineTodo|
     F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
+    F.UsingNamespaceHeader(_, _)|
     F.UsingTypenameHeader (_, _)|F.UsingMemberHeader (_, _)|
     F.ReturnExpr (_, _)|F.Return (_, _)|
     F.MacroIterHeader (_, _)|

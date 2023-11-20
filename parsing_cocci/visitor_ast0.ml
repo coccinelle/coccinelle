@@ -1102,6 +1102,12 @@ let visitor mode bind option_default
 	    let (whn_n,whn) =
 	      map_split_bind (whencode statement_dots statement) whn in
 	    (bind d_n whn_n, Ast0.Dots(d,whn))
+	| Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+	    let (usng_n,usng) = string_mcode usng in
+	    let (nmspc_n,nmspc) = string_mcode nmspc in
+	    let (name_n,name) = ident name in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [usng_n;nmspc_n],Ast0.UsingNamespace(usng,nmspc,name,sem))
 	| Ast0.Include(inc,name) ->
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in

@@ -431,6 +431,7 @@ and base_statement =
 	string mcode (* { *) * statement dots *
 	string mcode (* } *) *
 	(info * mcodekind) (* after the function decl *)
+  | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
   | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode(* file *)
   | MetaInclude of string mcode (* #include *) * expression (* file *)
   | Undef of string mcode (* #define *) * ident (* name *)

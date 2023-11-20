@@ -3013,6 +3013,7 @@ module Ast_cocci :
       | Ty of fullType
       | TopId of ident
       | TopInit of initialiser
+      | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name *) * string mcode (*;*)
       | Include of string mcode * inc_file mcode
       | MetaInclude of string mcode * expression
       | Undef of string mcode * ident
@@ -3680,6 +3681,7 @@ module Ast0_cocci :
           parameter_list * (string mcode * string mcode) option *
           string mcode * attr list * string mcode * statement dots *
           string mcode * (info * mcodekind)
+      | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
       | Include of string mcode * Ast_cocci.inc_file mcode
       | MetaInclude of string mcode * expression
       | Undef of string mcode * ident

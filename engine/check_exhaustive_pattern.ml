@@ -51,6 +51,7 @@ let dumb_astcocci_rule_elem = function
  | A.DefineHeader _ -> ()
  | A.Undef _ -> ()
  | A.Pragma _ -> ()
+ | A.UsingNamespace _ -> ()
  | A.Include _ -> ()
  | A.MetaInclude _ -> ()
  | A.Default _ -> ()

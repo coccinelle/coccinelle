@@ -1228,6 +1228,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
       (* do error messages for type annotater only for the real body of the
        * file, not inside include.
        *)
+      | UsingNamespace _ -> ()
       | Include {i_content = opt} ->
           opt +> Common.do_option (fun (filename, program) ->
             Common.save_excursion Flag_parsing_c.verbose_type (fun () ->

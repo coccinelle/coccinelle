@@ -1447,6 +1447,12 @@ let rec statement s =
 	| Ast0.FType(ty)::_ -> mkres s res ty right
 	| Ast0.FInline(inline)::_ -> mkres s res (promote_mcode inline) right)
 
+    | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+	let usng = normal_mcode usng in
+	let nmspc = normal_mcode nmspc in
+	let name = ident name in
+	let sem = normal_mcode sem in
+	mkres s (Ast0.UsingNamespace(usng,nmspc,name,sem)) (promote_mcode usng) (promote_mcode sem)
     | Ast0.Include(inc,stm) ->
 	let inc = normal_mcode inc in
 	let stm = normal_mcode stm in

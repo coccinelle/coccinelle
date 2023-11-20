@@ -1361,6 +1361,11 @@ and rule_elem arity re =
   | Ast.Ty(ty) -> pr_arity arity; fullType ty
   | Ast.TopId(id) -> pr_arity arity; ident id
   | Ast.TopInit(init) -> initialiser false init
+  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
+      mcode print_string usng; print_text " ";
+      mcode print_string nmspc; print_text " ";
+      ident name; print_text " ";
+      mcode print_string sem;
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_text " "; mcode inc_file s
   | Ast.MetaInclude(inc,s) ->

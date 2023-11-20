@@ -1107,8 +1107,10 @@ and statement s =
                       body,
                       tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
                       ([],[],[],convert_allminus_mcodekind allminus aft))
+      |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
+        Ast.Atomic(rewrap_rule_elem s (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))
       |	Ast0.Include(inc,str) ->
-	  Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
+         Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.MetaInclude(inc,str) ->
 	  Ast.Atomic
 	    (rewrap_rule_elem s (Ast.MetaInclude(mcode inc,expression str)))

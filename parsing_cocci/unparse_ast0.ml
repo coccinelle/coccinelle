@@ -770,6 +770,11 @@ and statement arity s =
 	  List.iter
 	    (whencode (dots force_newline (statement "")) (statement ""))
 	    whn
+      | Ast0.UsingNamespace(usng,nmspc,s,sem) ->
+           mcode print_string usng; print_string " ";
+           mcode print_string nmspc; print_string " ";
+           ident s; print_string " ";
+           mcode print_string sem
       | Ast0.Include(inc,s) ->
 	  mcode print_string inc; print_string " "; mcode U.inc_file s
       | Ast0.MetaInclude(inc,s) ->

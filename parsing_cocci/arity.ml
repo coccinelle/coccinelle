@@ -1252,6 +1252,14 @@ and statement tgt stm =
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
 	(Ast0.FunDecl(bef,fi,name,lp,params,newva,rp,attrs,lbrace,body,rbrace,aft))
+  | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+      let arity =
+	all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity nmspc; mcode2arity sem] in
+      let usng = mcode usng in
+      let nmspc = mcode nmspc in
+      let name = ident false arity name in
+      let sem = mcode sem in
+      make_rule_elem stm tgt arity (Ast0.UsingNamespace(usng,nmspc,name,sem))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
