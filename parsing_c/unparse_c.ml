@@ -816,7 +816,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
 	      let todrop = List.rev todrop in
 	      x :: minusify minus_list @ minusify todrop @ keeper @ rest
 	  | [] -> x :: minusify minus_list
-	  | _ -> x :: minus_list @ line_removed rest
+	  | _ -> x :: minus_list @ rest
 	else x :: minus_list @ line_removed rest
     | x:: xs -> x :: line_removed xs
     | [] -> [] in
