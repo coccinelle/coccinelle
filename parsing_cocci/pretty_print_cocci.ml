@@ -889,6 +889,10 @@ and rule_elem arity re =
       mcode print_string eq  ; print_string " ";
       fullType ty;  print_string " ";
       mcode print_string sem;
+  | Ast.UsingMember(usng,name,sem) ->
+      mcode print_string usng; print_string " ";
+      ident name; print_string " ";
+      mcode print_string sem;
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_string " "; mcode inc_file s
   | Ast.MetaInclude(inc,s) ->

@@ -504,6 +504,9 @@ let rec statement_pos s snp
   | Ast0.UsingTypename (usngmc,namemc,mc,tymc,semmc) ->
       let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tymc, semmc) in
       mcode_wrap ~mc:mc ~constructor snp
+  | Ast0.UsingMember(usngmc,namemc,sem) ->
+      let constructor ~mc = Ast0.UsingMember(usngmc, namemc, mc) in
+      mcode_wrap ~mc:sem ~constructor snp
   | Ast0.Include (incmc,filemc) ->
       let constructor ~mc = Ast0.Include(incmc, mc) in
       mcode_wrap ~mc:filemc ~constructor snp

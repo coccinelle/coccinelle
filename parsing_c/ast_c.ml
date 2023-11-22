@@ -690,8 +690,8 @@ and cpp_directive =
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
   (* C++ *)
   | UsingTypename of (name * fullType) wrap
-  | UsingMember of name wrap
   | UsingNamespace of name wrap
+  | UsingMember of name wrap
 
 and define = string wrap (* #define s eol *) * (define_kind * define_val)
    and define_kind =

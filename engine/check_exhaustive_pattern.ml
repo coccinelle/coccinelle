@@ -53,6 +53,7 @@ let dumb_astcocci_rule_elem = function
  | A.Pragma _ -> ()
  | A.UsingNamespace _ -> ()
  | A.UsingTypename _ -> ()
+ | A.UsingMember _ -> ()
  | A.Include _ -> ()
  | A.MetaInclude _ -> ()
  | A.Default _ -> ()

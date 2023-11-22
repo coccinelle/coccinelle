@@ -538,6 +538,9 @@ let rec disj_rule_elem r k re =
         (fun (name,ty) ->
           Ast.rewrap re
             (Ast.UsingTypename(usng,name,eq,ty,sem)))
+  | Ast.UsingMember(usng,name,sem) ->
+      orify_rule_elem_id re name
+        (function name -> Ast.rewrap re (Ast.UsingMember(usng,name,sem)))
   | Ast.Include(inc,_) | Ast.MetaInclude(inc,_) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re

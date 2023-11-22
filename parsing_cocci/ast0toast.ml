@@ -1112,6 +1112,8 @@ and statement s =
       | Ast0.UsingTypename(usng,name,eq,ty,sem) ->
         let allminus = check_allminus.VT0.combiner_rec_statement s in
         Ast.Atomic(rewrap_rule_elem s (Ast.UsingTypename(mcode usng,ident name,mcode eq,typeC allminus ty,mcode sem)))
+      | Ast0.UsingMember(usng,name,sem) ->
+        Ast.Atomic(rewrap_rule_elem s (Ast.UsingMember(mcode usng,ident name,mcode sem)))
       |	Ast0.Include(inc,str) ->
          Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.MetaInclude(inc,str) ->

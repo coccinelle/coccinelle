@@ -1023,6 +1023,7 @@ let astfvs metavars bound =
     | Ast.TopInit _ -> "TopInit"
     | Ast.UsingNamespace _ -> "UsingNamespace"
     | Ast.UsingTypename _ -> "UsingTypename"
+    | Ast.UsingMember _ -> "UsingMember"
     | Ast.Include _ -> "Include"
     | Ast.MetaInclude _ -> "MetaInclude"
     | Ast.Undef _ -> "Undef"

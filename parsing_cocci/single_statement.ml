@@ -713,6 +713,7 @@ let rec statement dots_before dots_after s =
   | Ast0.Dots(d,whn) -> s
   | Ast0.UsingNamespace(usng,nmspc,name,sem) -> do_one s
   | Ast0.UsingTypename(usng,name,eq,ty,sem) -> do_one s
+  | Ast0.UsingMember(usng,name,sem) -> do_one s
   | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
   | Ast0.MetaInclude(inc,name) -> s (* doesn't affect the need for braces *)
   | Ast0.Undef(def,id) -> s (* same as include *)

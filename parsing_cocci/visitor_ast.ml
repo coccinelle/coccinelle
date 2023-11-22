@@ -812,6 +812,11 @@ let combiner bind option_default
           let lty = fullType ty in
           let lsem = string_mcode sem in
           multibind [lusng; lname; leq; lty; lsem]
+      | Ast.UsingMember(usng,name,sem) ->
+          let lusng = string_mcode usng in
+          let lname = ident name in
+          let lsem = string_mcode sem in
+          multibind [lusng; lname; lsem]
       |	Ast.Include(inc,name) ->
 	  let linc = string_mcode inc in
 	  let lname = inc_file_mcode name in
@@ -1910,6 +1915,11 @@ let rebuilder
 	   let lty = fullType ty in
 	   let lsem = string_mcode sem in
 	   Ast.UsingTypename(lusng, lname, leq, lty, lsem)
+	| Ast.UsingMember(usng,name,sem) ->
+	   let lusng = string_mcode usng in
+	   let lname = ident name in
+	   let lsem = string_mcode sem in
+	   Ast.UsingMember(lusng, lname, lsem)
 	| Ast.Include(inc,name) ->
 	    let linc = string_mcode inc in
 	    let lname = inc_file_mcode name in
