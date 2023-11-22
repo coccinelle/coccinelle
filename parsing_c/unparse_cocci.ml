@@ -1366,6 +1366,12 @@ and rule_elem arity re =
       mcode print_string nmspc; print_text " ";
       ident name; print_text " ";
       mcode print_string sem;
+  | Ast.UsingTypename(usng,name,eq,ty,sem) ->
+      mcode print_string usng; print_text " ";
+      ident name; print_text " ";
+      mcode print_string eq; print_text " ";
+      fullType ty; print_text " ";
+      mcode print_string sem;
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_text " "; mcode inc_file s
   | Ast.MetaInclude(inc,s) ->

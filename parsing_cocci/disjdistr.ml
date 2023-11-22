@@ -531,6 +531,13 @@ let rec disj_rule_elem r k re =
   | Ast.UsingNamespace(usng,nmspc,name,sem) ->
       orify_rule_elem_id re name
 	(function name -> Ast.rewrap re (Ast.UsingNamespace(usng,nmspc,name,sem)))
+  | Ast.UsingTypename(usng,name,eq,ty,sem) ->
+      generic_orify_rule_elem
+        (disjtwoelems disjident disjty) re
+        (name,ty)
+        (fun (name,ty) ->
+          Ast.rewrap re
+            (Ast.UsingTypename(usng,name,eq,ty,sem)))
   | Ast.Include(inc,_) | Ast.MetaInclude(inc,_) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re

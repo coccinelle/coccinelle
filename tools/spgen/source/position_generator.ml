@@ -501,6 +501,9 @@ let rec statement_pos s snp
   | Ast0.UsingNamespace (usngmc,mc,namemc,semmc) ->
       let constructor ~mc = Ast0.UsingNamespace(usngmc, mc, namemc, semmc) in
       mcode_wrap ~mc:mc ~constructor snp
+  | Ast0.UsingTypename (usngmc,namemc,mc,tymc,semmc) ->
+      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tymc, semmc) in
+      mcode_wrap ~mc:mc ~constructor snp
   | Ast0.Include (incmc,filemc) ->
       let constructor ~mc = Ast0.Include(incmc, mc) in
       mcode_wrap ~mc:filemc ~constructor snp

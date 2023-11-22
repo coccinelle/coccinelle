@@ -775,6 +775,12 @@ and statement arity s =
            mcode print_string nmspc; print_string " ";
            ident s; print_string " ";
            mcode print_string sem
+      | Ast0.UsingTypename(usng,name,eq,ty,sem) ->
+           mcode print_string usng; print_string " ";
+           ident name; print_string " ";
+           mcode print_string eq; print_string " ";
+           typeC ty; print_string " ";
+           mcode print_string sem
       | Ast0.Include(inc,s) ->
 	  mcode print_string inc; print_string " "; mcode U.inc_file s
       | Ast0.MetaInclude(inc,s) ->

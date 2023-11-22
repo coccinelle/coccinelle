@@ -133,9 +133,10 @@ let rec right_statement s =
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
   | Ast0.UsingNamespace(usng,nmspc,name,sem) -> None
+  | Ast0.UsingTypename(usng,name,eq,ty,sem) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
-	(function name -> Ast0.Include(inc,name))
+         (function name -> Ast0.Include(inc,name))
   | Ast0.MetaInclude(inc,name) ->
       None (* likely not correct, wait for pb in practice *)
   | Ast0.Undef(def,id) ->

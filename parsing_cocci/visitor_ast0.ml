@@ -1108,6 +1108,13 @@ let visitor mode bind option_default
 	    let (name_n,name) = ident name in
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [usng_n;nmspc_n],Ast0.UsingNamespace(usng,nmspc,name,sem))
+	| Ast0.UsingTypename(usng,name,eq,ty,sem) ->
+	    let (usng_n,usng) = string_mcode usng in
+	    let (name_n,name) = ident name in
+	    let (eq_n,eq) = string_mcode eq in
+	    let (ty_n,ty) = typeC ty in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [usng_n;name_n;eq_n;ty_n;sem_n],Ast0.UsingTypename(usng,name,eq,ty,sem))
 	| Ast0.Include(inc,name) ->
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in
