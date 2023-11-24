@@ -241,6 +241,7 @@ let inline_id aft = function
 %token<Data.clt> Tunsigned Tsigned
 %token<Data.clt> TautoType
 %token<Data.clt> TUsing
+%token<Data.clt> TNamespace
 
 %token<Data.clt> Talignas Tstatic Tauto Tregister Textern Tinline Ttypedef
 %token<Data.clt> Tconst Tvolatile
@@ -1537,6 +1538,21 @@ includes:
       Ast0_cocci.wrap
 	(Ast0_cocci.Pragma
 	   (Parse_aux.clt2mcode "#pragma" clt, inline_id aft ident,body)) }
+| TUsing TNamespace ident TPtVirg
+    {
+      Ast0_cocci.wrap
+        (Ast0_cocci.UsingNamespace (Parse_aux.clt2mcode "using" $1, Parse_aux.clt2mcode "namespace" $2, $3, Parse_aux.clt2mcode ";" (snd $4)))
+    }
+| TUsing ident TEq ctype TPtVirg
+    {
+      Ast0_cocci.wrap
+        (Ast0_cocci.UsingTypename (Parse_aux.clt2mcode "using" $1, $2, Parse_aux.clt2mcode "=" $3, $4, Parse_aux.clt2mcode ";" (snd $5)))
+    }
+| TUsing ident TPtVirg
+    {
+      Ast0_cocci.wrap
+        (Ast0_cocci.UsingMember (Parse_aux.clt2mcode "using" $1, $2, Parse_aux.clt2mcode ";" (snd $3)))
+    }
 
 defineop:
   TDefine
@@ -3633,6 +3649,7 @@ anything: /* used for script code */
  | TPosAny { "any" }
  | TUsing { "using" }
  | TIsoUsing { "using" }
+ | TNamespace { "namespace" }
  | TDisable { "disable" }
  | TExtends { "extends" }
  | TDepends { "depends" }

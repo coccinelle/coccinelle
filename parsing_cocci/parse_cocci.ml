@@ -127,6 +127,7 @@ let token2c (tok,_) add_clt =
   | PC.Tsigned(clt) -> add_clt "signed" clt
   | PC.TautoType(clt) -> add_clt "auto" clt
   | PC.TUsing(clt) ->  add_clt "using" clt
+  | PC.TNamespace(clt) -> add_clt "namespace" clt
   | PC.Talignas(clt) -> add_clt "alignas" clt
   | PC.Tstatic(clt) -> add_clt "static" clt
   | PC.Tinline(clt) -> add_clt "inline" clt
@@ -435,6 +436,7 @@ let get_clt (tok,_) =
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
   | PC.TUsing(clt)
+  | PC.TNamespace(clt)
   | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Talignas(clt) | PC.Tstatic(clt)
   | PC.Ttypedef(clt)
   | PC.Tinline(clt) | PC.Tattr(_,clt) | PC.Tauto(clt) | PC.Tregister(clt)
@@ -606,6 +608,7 @@ let update_clt (tok,x) clt =
   | PC.Tsigned(_) -> (PC.Tsigned(clt),x)
   | PC.TautoType(_) -> (PC.TautoType(clt),x)
   | PC.TUsing(_) -> (PC.TUsing(clt),x)
+  | PC.TNamespace(_) -> (PC.TNamespace(clt),x)
   | PC.Talignas(_) -> (PC.Talignas(clt),x)
   | PC.Tstatic(_) -> (PC.Tstatic(clt),x)
   | PC.Tinline(_) -> (PC.Tinline(clt),x)
@@ -931,6 +934,7 @@ let split_token ((tok,_) as t) =
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.TAttrArg(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
   | PC.TAttr_(clt) | PC.TUsing(clt) -> split t clt
+  | PC.TNamespace(clt) -> split t clt
 
   | PC.TDirective(_,_) -> ([],[t]) (* only allowed in + *)
   | PC.TPlusFile(s,clt) | PC.TMinusFile(s,clt)
