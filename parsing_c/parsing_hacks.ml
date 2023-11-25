@@ -3062,7 +3062,13 @@ let convert_templates toks =
   | {TV.tok = TCPar _} :: xs
   | {TV.tok = TCCro _} :: xs
   | {TV.tok = TCBrace _} :: xs ->
-      loop stack (max 0 (pdepth-1)) tdepth xs
+      let new_pdepth = max 0 (pdepth-1) in
+      let stack =
+	List.filter
+	  (* close paren before close > *)
+	  (fun (info,pdepth,tdepth) -> pdepth <= new_pdepth)
+	  stack in
+      loop stack new_pdepth tdepth xs
   (* start point *)
   | (({TV.tok = (TIdent(s,i1)|TypedefIdent(s,i1))}) as a) :: (* no space *)
     (({TV.tok = TInf i2}) as b) :: rest ->
