@@ -208,7 +208,8 @@ let collect_refs include_constraints =
   let astfvinit recursor k ty =
     bind (k ty)
       (match Ast.unwrap ty with
-	Ast.MetaInit(name,cstr,_,_) -> [metaid name]
+	Ast.MetaInit(name,cstr,_,_) ->
+	  bind (constraints cstr) [metaid name]
       | Ast.MetaInitList(name,len,cstr,_,_) ->
 	  bind (constraints cstr) (bind (listlen len) [metaid name])
       | _ -> option_default) in
