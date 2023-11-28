@@ -1896,14 +1896,14 @@ let fst = fst
 let double a = a,a
 let swap (x,y) = (y,x)
 
-
-let tuple_of_list1 = function [a] -> a | _ -> failwith "tuple_of_list1"
-let tuple_of_list2 = function [a;b] -> a,b | _ -> failwith "tuple_of_list2"
-let tuple_of_list3 = function [a;b;c] -> a,b,c | _ -> failwith "tuple_of_list3"
-let tuple_of_list4 = function [a;b;c;d] -> a,b,c,d | _ -> failwith "tuple_of_list4"
-let tuple_of_list5 = function [a;b;c;d;e] -> a,b,c,d,e | _ -> failwith "tuple_of_list5"
-let tuple_of_list6 = function [a;b;c;d;e;f] -> a,b,c,d,e,f | _ -> failwith "tuple_of_list6"
-let tuple_of_list7 = function [a;b;c;d;e;f;g] -> a,b,c,d,e,f,g | _ -> failwith "tuple_of_list7"
+let tol_error n l = Printf.sprintf "tuple_of_list%d: found %d elements, expected %d" n (List.length l) n
+let tuple_of_list1 = function [a] -> a | l -> failwith (tol_error 1 l)
+let tuple_of_list2 = function [a;b] -> a,b | l -> failwith (tol_error 2 l)
+let tuple_of_list3 = function [a;b;c] -> a,b,c | l -> failwith (tol_error 3 l)
+let tuple_of_list4 = function [a;b;c;d] -> a,b,c,d | l -> failwith (tol_error 4 l)
+let tuple_of_list5 = function [a;b;c;d;e] -> a,b,c,d,e | l -> failwith (tol_error 5 l)
+let tuple_of_list6 = function [a;b;c;d;e;f] -> a,b,c,d,e,f | l -> failwith (tol_error 6 l)
+let tuple_of_list7 = function [a;b;c;d;e;f;g] -> a,b,c,d,e,f,g | l -> failwith (tol_error 7 l)
 
 
 (*****************************************************************************)
