@@ -5533,6 +5533,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
         ))))
 
   | A.UsingNamespace (usnga, nmspca, namea, sema), F.UsingNamespaceHeader (nameb, ii) ->
+      assert ( (List.length ii) = 3);
       let (usngb, nmspcb, semb) = tuple_of_list3 ii in
       tokenf usnga usngb >>= (fun usnga usngb ->
       tokenf nmspca nmspcb >>= (fun nmspca nmspcb ->
