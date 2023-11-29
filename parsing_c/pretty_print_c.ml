@@ -1459,7 +1459,7 @@ and pp_init (init, iinit) =
 	pr_elem iusing; pr_space(); pp_name name;
 	pr_elem iptvirg
     | UsingNamespace(name,ii) ->
-	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
+	let (iusing,nmspc,iptvirg) = Common.tuple_of_list3 ii in
 	pr_elem iusing; pr_space(); pp_name name;
 	pr_elem iptvirg
 
