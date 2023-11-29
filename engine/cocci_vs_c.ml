@@ -5544,6 +5544,17 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.UsingNamespaceHeader (nameb, [usngb;nmspcb;semb])
         ) ))))
 
+  | A.UsingMember (usnga, namea, sema), F.UsingMemberHeader (nameb, ii) ->
+      assert ( (List.length ii) = 2);
+      let (usngb, semb) = tuple_of_list2 ii in
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingMember (usnga, namea, sema),
+          F.UsingMemberHeader (nameb, [usngb;semb])
+        ) )))
+
   | A.Include(incla,filea),
     F.Include {B.i_include = (fileb, ii);
                B.i_rel_pos = h_rel_pos;
