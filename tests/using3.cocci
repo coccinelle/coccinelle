@@ -1,5 +1,6 @@
 // namespace name = qualified-namespace;
 @@
-identifier i,j;
+identifier i;
+type t;
 @@
-- using i = j;
+- using i = t;
