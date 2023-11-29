@@ -1466,14 +1466,17 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 	match defkind with
 	  Ast_c.Undef -> "#undef " ^ id
 	| _ -> "#define " ^ id in
+      let (_,_,defeol) = tuple_of_list3 ii in
       let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s in
       !g#add_arc ((topi, headeri),Direct);
 
       let atomic_for_matching node txt =
         let ei   = !g +> add_node node lbl_0 txt in
+        let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
         let endi = !g +> add_node EndNode lbl_0 "[end]" in
         !g#add_arc ((headeri, ei) ,Direct);
-        !g#add_arc ((ei, endi) ,Direct) in
+        !g#add_arc ((ei, pri) ,Direct);
+        !g#add_arc ((pri, endi) ,Direct) in
 
       (match defval with
       | Ast_c.DefineExpr e -> atomic_for_matching (DefineExpr e) "defexpr"
@@ -1497,8 +1500,10 @@ let specialdeclmacro_to_stmt (s, args, ii) =
           let lasti = aux_statement (Some headeri , info) st in
           lasti +> do_option (fun lasti ->
             (* todo? if don't have a lasti ? no EndNode ? CTL will work ? *)
+            let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
             let endi = !g +> add_node EndNode lbl_0 "[end]" in
-            !g#add_arc ((lasti, endi), Direct)
+            !g#add_arc ((lasti, pri), Direct);
+            !g#add_arc ((pri, endi), Direct)
           )
 
 
@@ -1512,8 +1517,10 @@ let specialdeclmacro_to_stmt (s, args, ii) =
           !g#add_arc ((headeri, headerdoi), Direct);
           let lasti = aux_statement (Some headerdoi , info) st in
           lasti +> do_option (fun lasti ->
-            let endi = !g +> add_node EndNode lbl_0 "[end]" in
-            !g#add_arc ((lasti, endi), Direct)
+            let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
+            let endi = !g +> add_node EndNode  lbl_0 "[end]" in
+            !g#add_arc ((lasti, pri), Direct);
+            !g#add_arc ((pri, endi), Direct)
           )
 
       | Ast_c.DefineFunction def ->
@@ -1522,8 +1529,10 @@ let specialdeclmacro_to_stmt (s, args, ii) =
       | Ast_c.DefineText (s, s_ii) ->
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineEmpty ->
+          let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
           let endi = !g +> add_node EndNode lbl_0 "[end]" in
-          !g#add_arc ((headeri, endi),Direct);
+          !g#add_arc ((headeri, pri),Direct);
+          !g#add_arc ((pri, endi),Direct);
       | Ast_c.DefineMulti sts -> (* christia: todo *)
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineTodo ->
