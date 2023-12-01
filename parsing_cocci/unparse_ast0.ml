@@ -775,10 +775,11 @@ and statement arity s =
            mcode print_string nmspc; print_string " ";
            ident s; print_string " ";
            mcode print_string sem
-      | Ast0.UsingTypename(usng,name,eq,ty,sem) ->
+      | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
            mcode print_string usng; print_string " ";
            ident name; print_string " ";
            mcode print_string eq; print_string " ";
+	   print_option (mcode print_string) tn; print_string " ";
            typeC ty; print_string " ";
            mcode print_string sem
       | Ast0.UsingMember(usng,name,sem) ->

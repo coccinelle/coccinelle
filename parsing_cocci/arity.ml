@@ -1260,15 +1260,16 @@ and statement tgt stm =
       let name = ident false arity name in
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.UsingNamespace(usng,nmspc,name,sem))
-  | Ast0.UsingTypename(usng,name,eq,ty,sem) ->
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
       let arity =
-        all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity eq; mcode2arity sem] in
+        all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity eq; mcode2arity eq; mcode2arity eq; mcode2arity sem] in (* TODO : eq -> tn ... normal_mcode  ?*)
       let usng = mcode usng in
       let name = ident false arity name in
       let eq = mcode eq in
+      let tn = get_option mcode tn in
       let ty = typeC arity ty in
       let sem = mcode sem in
-      make_rule_elem stm tgt arity (Ast0.UsingTypename(usng,name,eq,ty,sem))
+      make_rule_elem stm tgt arity (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
   | Ast0.UsingMember(usng,name,sem) ->
       let arity =
         all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity sem] in

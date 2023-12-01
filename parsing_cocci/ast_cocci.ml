@@ -614,7 +614,7 @@ and base_rule_elem =
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
-  | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * fullType (*full_type*) * string mcode (*;*)
+  | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * string mcode option (*typename*) * fullType (*full_type*) * string mcode (*;*)
   | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | MetaInclude   of string mcode (* #include *) * expression (* file *)

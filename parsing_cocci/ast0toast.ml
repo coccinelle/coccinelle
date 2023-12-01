@@ -1109,9 +1109,9 @@ and statement s =
                       ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
         Ast.Atomic(rewrap_rule_elem s (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))
-      | Ast0.UsingTypename(usng,name,eq,ty,sem) ->
+      | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
         let allminus = check_allminus.VT0.combiner_rec_statement s in
-        Ast.Atomic(rewrap_rule_elem s (Ast.UsingTypename(mcode usng,ident name,mcode eq,typeC allminus ty,mcode sem)))
+        Ast.Atomic(rewrap_rule_elem s (Ast.UsingTypename(mcode usng,ident name,mcode eq,get_option mcode tn,typeC allminus ty,mcode sem)))
       | Ast0.UsingMember(usng,name,sem) ->
         Ast.Atomic(rewrap_rule_elem s (Ast.UsingMember(mcode usng,ident name,mcode sem)))
       |	Ast0.Include(inc,str) ->

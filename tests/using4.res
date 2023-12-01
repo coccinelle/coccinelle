@@ -1,5 +1,5 @@
-#include <vector>
+// TODO: FIXME: will use 'std::vector<int>::value_type;' once template support is improved
 int main()
 {
-	v_t i = 3;
+	s_t s;
 }

@@ -805,13 +805,14 @@ let combiner bind option_default
           let lname = ident name in
           let lsem = string_mcode sem in
           multibind [lusng; lnmspc; lname; lsem]
-      |	Ast.UsingTypename(usng,name,eq,ty,sem) ->
+      |	Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
           let lusng = string_mcode usng in
           let lname = ident name in
           let leq = string_mcode eq in
+          let ltn = get_option string_mcode tn in
           let lty = fullType ty in
           let lsem = string_mcode sem in
-          multibind [lusng; lname; leq; lty; lsem]
+          multibind [lusng; lname; leq; lty; ltn; lsem]
       | Ast.UsingMember(usng,name,sem) ->
           let lusng = string_mcode usng in
           let lname = ident name in
@@ -1908,13 +1909,14 @@ let rebuilder
 	   let lname = ident name in
 	   let lsem = string_mcode sem in
 	   Ast.UsingNamespace(lusng, lnmspc, lname, lsem)
-	| Ast.UsingTypename(usng,name,eq,ty,sem) ->
+	| Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
 	   let lusng = string_mcode usng in
 	   let lname = ident name in
 	   let leq = string_mcode eq in
+	   let ltn = get_option string_mcode tn in
 	   let lty = fullType ty in
 	   let lsem = string_mcode sem in
-	   Ast.UsingTypename(lusng, lname, leq, lty, lsem)
+	   Ast.UsingTypename(lusng, lname, leq, ltn, lty, lsem)
 	| Ast.UsingMember(usng,name,sem) ->
 	   let lusng = string_mcode usng in
 	   let lname = ident name in

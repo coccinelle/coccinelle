@@ -122,6 +122,7 @@ let token2c (tok,_) add_clt =
   | PC.Tstruct(clt) -> add_clt "struct" clt
   | PC.Tunion(clt) -> add_clt "union" clt
   | PC.Tclass(clt) -> add_clt "class" clt
+  | PC.Ttypename(clt) -> add_clt "typename" clt
   | PC.Tenum(clt) -> add_clt "enum" clt
   | PC.Tunsigned(clt) -> add_clt "unsigned" clt
   | PC.Tsigned(clt) -> add_clt "signed" clt
@@ -342,6 +343,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt) | PC.Tclass(clt)
+  | PC.Ttypename(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
   | PC.Tdecimal(clt) | PC.Texec(clt) | PC.Talignas(clt) | PC.Tstatic(clt)
@@ -433,6 +435,7 @@ let get_clt (tok,_) =
   | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt) | PC.Tclass(clt)
+  | PC.Ttypename(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
   | PC.TUsing(clt)
@@ -600,6 +603,7 @@ let update_clt (tok,x) clt =
   | PC.Tptrdiff_t(_) -> (PC.Tptrdiff_t(clt),x)
   | PC.Tstruct(_) -> (PC.Tstruct(clt),x)
   | PC.Tclass(_) -> (PC.Tclass(clt),x)
+  | PC.Ttypename(_) -> (PC.Ttypename(clt),x)
   | PC.Tunion(_) -> (PC.Tunion(clt),x)
   | PC.Tenum(_) -> (PC.Tenum(clt),x)
   | PC.Tdecimal(_) -> (PC.Tdecimal(clt),x)
@@ -927,6 +931,7 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt) | PC.Tclass(clt)
+  | PC.Ttypename(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
   | PC.Talignas(clt) | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt)
@@ -1238,6 +1243,8 @@ let detect_attr l =
 	t1::x::loop rest
     | ((PC.Tclass _,_) as t1)::x::rest ->
 	t1::x::loop rest 
+    | ((PC.Ttypename _,_) as t1)::x::rest ->
+	t1::x::loop rest
     | ((PC.Tunion _,_) as t1)::x::rest ->
 	t1::x::loop rest
     | ((PC.TIdent(nm,clt),info) as t1)::id::rest when is_id id ->
@@ -1388,6 +1395,7 @@ let token2line (tok,_) =
   | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt) | PC.Tclass(clt)
+  | PC.Ttypename(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
   | PC.Talignas(clt) | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt)

@@ -201,7 +201,7 @@ let statement s =
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.UsingNamespace(usng,nmspc,name,sem) -> [15]
-  | Ast0.UsingTypename(usng,name,eq,ty,sem) -> [9]
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) -> [9]
   | Ast0.UsingMember(usng,name,sem) -> [194]
   | Ast0.Include(inc,name) -> [118]
   | Ast0.MetaInclude(inc,name) -> [111]

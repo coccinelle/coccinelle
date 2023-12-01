@@ -883,10 +883,11 @@ and rule_elem arity re =
       mcode print_string nmspc; print_string " ";
       ident name; print_string " ";
       mcode print_string sem
-  | Ast.UsingTypename(usng,name,eq,ty,sem) ->
+  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
       mcode print_string usng; print_string " ";
       ident name; print_string " ";
       mcode print_string eq  ; print_string " ";
+      print_option (fun x -> mcode print_string x; print_string " ") tn;
       fullType ty;  print_string " ";
       mcode print_string sem;
   | Ast.UsingMember(usng,name,sem) ->

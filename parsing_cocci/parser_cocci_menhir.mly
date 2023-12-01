@@ -238,6 +238,7 @@ let inline_id aft = function
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
 %token<Data.clt> Tvoid Tstruct Tunion Tenum Tclass
+%token<Data.clt> Ttypename
 %token<Data.clt> Tunsigned Tsigned
 %token<Data.clt> TautoType
 %token<Data.clt> TUsing
@@ -1543,10 +1544,18 @@ includes:
       Ast0_cocci.wrap
         (Ast0_cocci.UsingNamespace (Parse_aux.clt2mcode "using" $1, Parse_aux.clt2mcode "namespace" $2, $3, Parse_aux.clt2mcode ";" (snd $4)))
     }
+| TUsing ident TEq Ttypename ctype TPtVirg
+    {
+      Ast0_cocci.wrap
+        (Ast0_cocci.UsingTypename (Parse_aux.clt2mcode "using" $1, $2,
+         Parse_aux.clt2mcode "=" $3, Some (Parse_aux.clt2mcode "typename" $4),
+         $5, Parse_aux.clt2mcode ";" (snd $6)))
+    }
 | TUsing ident TEq ctype TPtVirg
     {
       Ast0_cocci.wrap
-        (Ast0_cocci.UsingTypename (Parse_aux.clt2mcode "using" $1, $2, Parse_aux.clt2mcode "=" $3, $4, Parse_aux.clt2mcode ";" (snd $5)))
+        (Ast0_cocci.UsingTypename (Parse_aux.clt2mcode "using" $1, $2,
+         Parse_aux.clt2mcode "=" $3, None, $4, Parse_aux.clt2mcode ";" (snd $5)))
     }
 | TUsing ident TPtVirg
     {
@@ -3676,6 +3685,7 @@ anything: /* used for script code */
  | Tvoid { "void" }
  | Tstruct { "struct" }
  | Tclass { "class" }
+ | Ttypename { "typename" }
  | Tunion { "union" }
  | Tenum { "enum" }
  | Tunsigned { "unsigned" }

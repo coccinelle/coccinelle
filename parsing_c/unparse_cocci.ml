@@ -1366,10 +1366,12 @@ and rule_elem arity re =
       mcode print_string nmspc; print_text " ";
       ident name; print_text " ";
       mcode print_string sem;
-  | Ast.UsingTypename(usng,name,eq,ty,sem) ->
+  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
       mcode print_string usng; print_text " ";
       ident name; print_text " ";
       mcode print_string eq; print_text " ";
+      print_option (mcode print_string) tn;
+      print_text " ";
       fullType ty; print_text " ";
       mcode print_string sem;
   | Ast.UsingMember(usng,name,sem) ->

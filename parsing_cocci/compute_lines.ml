@@ -1453,13 +1453,14 @@ let rec statement s =
 	let name = ident name in
 	let sem = normal_mcode sem in
 	mkres s (Ast0.UsingNamespace(usng,nmspc,name,sem)) (promote_mcode usng) (promote_mcode sem)
-    | Ast0.UsingTypename(usng,name,eq,ty,sem) ->
+    | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
 	let usng = normal_mcode usng in
 	let name = ident name in
 	let eq = normal_mcode eq in
+	let tn = get_option normal_mcode tn in
 	let ty = typeC ty in
 	let sem = normal_mcode sem in
-	mkres s (Ast0.UsingTypename(usng,name,eq,ty,sem)) (promote_mcode usng) (promote_mcode sem)
+	mkres s (Ast0.UsingTypename(usng,name,eq,tn,ty,sem)) (promote_mcode usng) (promote_mcode sem)
     | Ast0.UsingMember(usng,name,sem) ->
 	let usng = normal_mcode usng in
 	let name = ident name in

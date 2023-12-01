@@ -5555,18 +5555,27 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.UsingMemberHeader (nameb, [usngb;semb])
         ) )))
 
-  | A.UsingTypename (usnga,namea,eqa,tya,sema), F.UsingTypenameHeader ((nameb,tyb), ii) ->
-        let (usngb, eqb, semb) = tuple_of_list3 ii in
-        tokenf usnga usngb >>= (fun usnga usngb ->
-        ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
-        tokenf eqa eqb >>= (fun eqa eqb ->
-        fullType tya tyb >>= (fun tya tyb ->
-        tokenf sema semb >>= (fun sema semb->
-          return (
-            A.UsingTypename (usnga, namea, eqa, tya, sema),
-            F.UsingTypenameHeader ((nameb,tyb), [usngb;eqb;semb])
-          ) )))))
-
+  | A.UsingTypename (usnga,namea,eqa,Some tna,tya,sema), F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; tnb; semb]) ->
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf eqa eqb >>= (fun eqa eqb ->
+      tokenf tna tnb >>= (fun tna tnb ->
+      fullType tya tyb >>= (fun tya tyb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingTypename (usnga, namea, eqa, Some tna, tya, sema),
+          F.UsingTypenameHeader ((nameb,tyb), [usngb;eqb;tnb;semb])
+        ) ))))))
+  | A.UsingTypename (usnga,namea,eqa,None,tya,sema), F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; semb]) ->
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf eqa eqb >>= (fun eqa eqb ->
+      fullType tya tyb >>= (fun tya tyb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingTypename (usnga, namea, eqa, None, tya, sema),
+          F.UsingTypenameHeader ((nameb,tyb), [usngb;eqb;semb])
+        ) )))))
   | A.Include(incla,filea),
     F.Include {B.i_include = (fileb, ii);
                B.i_rel_pos = h_rel_pos;

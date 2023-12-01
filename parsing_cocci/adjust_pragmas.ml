@@ -133,7 +133,7 @@ let rec right_statement s =
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
   | Ast0.UsingNamespace(usng,nmspc,name,sem) -> None
-  | Ast0.UsingTypename(usng,name,eq,ty,sem) -> None
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) -> None
   | Ast0.UsingMember(usng,name,sem) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s

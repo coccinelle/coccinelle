@@ -1454,6 +1454,7 @@ and pp_init (init, iinit) =
 	pr_elem iusing; pr_space(); pp_name name; pr_space();
 	pr_elem ieq;  pr_space(); itypename();
 	pp_type def; pr_elem iptvirg
+
     | UsingMember(name,ii) ->
 	let (iusing,iptvirg) = Common.tuple_of_list2 ii in
 	pr_elem iusing; pr_space(); pp_name name;
@@ -1646,7 +1647,7 @@ and pp_init (init, iinit) =
 	      let itypename _ = pr_elem itypename; pr_space() in
 	      (iusing,ieq,itypename,iptvirg)
 	  | [iusing;ieq;iptvirg] -> (iusing,ieq,(fun _ -> ()),iptvirg)
-	  | _ -> failwith "UsingTypename: wrong number of elements" in
+	  | _ -> failwith "UsingTypenameHeader: wrong number of elements" in
 	pr_elem iusing; pr_space(); pp_name name; pr_space();
 	pr_elem ieq;  pr_space(); itypename();
 	pp_type def; pr_elem iptvirg

@@ -3014,7 +3014,7 @@ module Ast_cocci :
       | TopId of ident
       | TopInit of initialiser
       | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name *) * string mcode (*;*)
-      | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * fullType (*full_type*) * string mcode (*;*)
+      | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * string mcode option (*typename*) * fullType (*full_type*) * string mcode (*;*)
       | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
       | Include of string mcode * inc_file mcode
       | MetaInclude of string mcode * expression
@@ -3684,7 +3684,7 @@ module Ast0_cocci :
           string mcode * attr list * string mcode * statement dots *
           string mcode * (info * mcodekind)
       | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
-      | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * typeC (*full_type*) * string mcode (*;*)
+      | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * string mcode option (*typename*) * typeC (*full_type*) * string mcode (*;*)
       | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
       | Include of string mcode * Ast_cocci.inc_file mcode
       | MetaInclude of string mcode * expression

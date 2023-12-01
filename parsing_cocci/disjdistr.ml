@@ -531,13 +531,13 @@ let rec disj_rule_elem r k re =
   | Ast.UsingNamespace(usng,nmspc,name,sem) ->
       orify_rule_elem_id re name
 	(function name -> Ast.rewrap re (Ast.UsingNamespace(usng,nmspc,name,sem)))
-  | Ast.UsingTypename(usng,name,eq,ty,sem) ->
+  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
       generic_orify_rule_elem
         (disjtwoelems disjident disjty) re
         (name,ty)
         (fun (name,ty) ->
           Ast.rewrap re
-            (Ast.UsingTypename(usng,name,eq,ty,sem)))
+            (Ast.UsingTypename(usng,name,eq,tn,ty,sem)))
   | Ast.UsingMember(usng,name,sem) ->
       orify_rule_elem_id re name
         (function name -> Ast.rewrap re (Ast.UsingMember(usng,name,sem)))

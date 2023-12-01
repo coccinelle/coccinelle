@@ -1,6 +1,6 @@
-#include <vector>
+// TODO: FIXME: will use 'std::vector<int>::value_type;' once template support is improved
 int main()
 {
-	using v_t = typename std::vector<int>::value_type;
-	v_t i = 3;
+	using s_t = typename std::string;
+	s_t s;
 }
