@@ -498,15 +498,15 @@ let rec statement_pos s snp
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
 
-  | Ast0.UsingNamespace (usngmc,mc,namemc,semmc) ->
+  | Ast0.UsingNamespace (usngmc,nmspcmc,namemc,semmc) ->
       let constructor ~mc = Ast0.UsingNamespace(usngmc, mc, namemc, semmc) in
-      mcode_wrap ~mc:mc ~constructor snp
-  | Ast0.UsingTypename (usngmc,namemc,mc,tnc,tymc,semmc) ->
-      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tnc, tymc, semmc) in
-      mcode_wrap ~mc:mc ~constructor snp
-  | Ast0.UsingMember(usngmc,namemc,sem) ->
+      mcode_wrap ~mc:nmspcmc ~constructor snp
+  | Ast0.UsingTypename (usngmc,namemc,eqmc,tnmc,tymc,semmc) ->
+      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tnmc, tymc, semmc) in
+      mcode_wrap ~mc:eqmc ~constructor snp
+  | Ast0.UsingMember(usngmc,namemc,semmc) ->
       let constructor ~mc = Ast0.UsingMember(usngmc, namemc, mc) in
-      mcode_wrap ~mc:sem ~constructor snp
+      mcode_wrap ~mc:semmc ~constructor snp
   | Ast0.Include (incmc,filemc) ->
       let constructor ~mc = Ast0.Include(incmc, mc) in
       mcode_wrap ~mc:filemc ~constructor snp

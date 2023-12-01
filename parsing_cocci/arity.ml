@@ -1261,8 +1261,14 @@ and statement tgt stm =
       let sem = mcode sem in
       make_rule_elem stm tgt arity (Ast0.UsingNamespace(usng,nmspc,name,sem))
   | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      let mclist =
+        [mcode2arity usng; mcode2arity eq; mcode2arity sem] in
+      let mclist =
+        match tn with
+         Some tn -> (mcode2arity tn) :: mclist
+       | None -> mclist in
       let arity =
-        all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity eq; mcode2arity eq; mcode2arity eq; mcode2arity sem] in (* TODO : eq -> tn ... normal_mcode  ?*)
+        all_same true tgt (mcode2line usng) mclist in
       let usng = mcode usng in
       let name = ident false arity name in
       let eq = mcode eq in

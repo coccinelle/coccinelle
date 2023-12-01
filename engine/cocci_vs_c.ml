@@ -5532,7 +5532,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
 
-  | A.UsingNamespace (usnga, nmspca, namea, sema), F.UsingNamespaceHeader (nameb, ii) ->
+  | A.UsingNamespace (usnga, nmspca, namea, sema),
+    F.UsingNamespaceHeader (nameb, ii) ->
       assert ( (List.length ii) = 3);
       let (usngb, nmspcb, semb) = tuple_of_list3 ii in
       tokenf usnga usngb >>= (fun usnga usngb ->
@@ -5555,7 +5556,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.UsingMemberHeader (nameb, [usngb;semb])
         ) )))
 
-  | A.UsingTypename (usnga,namea,eqa,Some tna,tya,sema), F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; tnb; semb]) ->
+  | A.UsingTypename (usnga,namea,eqa,Some tna,tya,sema),
+    F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; tnb; semb]) ->
       tokenf usnga usngb >>= (fun usnga usngb ->
       ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
       tokenf eqa eqb >>= (fun eqa eqb ->
@@ -5566,7 +5568,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           A.UsingTypename (usnga, namea, eqa, Some tna, tya, sema),
           F.UsingTypenameHeader ((nameb,tyb), [usngb;eqb;tnb;semb])
         ) ))))))
-  | A.UsingTypename (usnga,namea,eqa,None,tya,sema), F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; semb]) ->
+  | A.UsingTypename (usnga,namea,eqa,None,tya,sema),
+    F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; semb]) ->
       tokenf usnga usngb >>= (fun usnga usngb ->
       ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
       tokenf eqa eqb >>= (fun eqa eqb ->
