@@ -1108,12 +1108,16 @@ and statement s =
                       tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
                       ([],[],[],convert_allminus_mcodekind allminus aft))
       |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
-        Ast.Atomic(rewrap_rule_elem s (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))
+        Ast.Atomic(rewrap_rule_elem s
+          (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))
       | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
         let allminus = check_allminus.VT0.combiner_rec_statement s in
-        Ast.Atomic(rewrap_rule_elem s (Ast.UsingTypename(mcode usng,ident name,mcode eq,get_option mcode tn,typeC allminus ty,mcode sem)))
+        Ast.Atomic(rewrap_rule_elem s
+          (Ast.UsingTypename(mcode usng,ident name,mcode eq,get_option mcode tn,
+                             typeC allminus ty,mcode sem)))
       | Ast0.UsingMember(usng,name,sem) ->
-        Ast.Atomic(rewrap_rule_elem s (Ast.UsingMember(mcode usng,ident name,mcode sem)))
+        Ast.Atomic(rewrap_rule_elem s
+          (Ast.UsingMember(mcode usng,ident name,mcode sem)))
       |	Ast0.Include(inc,str) ->
          Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.MetaInclude(inc,str) ->
