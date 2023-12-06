@@ -133,7 +133,7 @@ and disjtypeC bty =
 	(function ty -> Ast.rewrap bty (Ast.TypeOfType(tf,lp,ty,rp))) ty
   | Ast.TemplateType(tn,lp,args,rp) ->
       disjmult2 (disjident tn) (disjdots disjexp args)
-	(function tn -> function args ->
+	(fun tn args ->
 	  Ast.rewrap bty (Ast.TemplateType(tn,lp,args,rp)))
   | Ast.TypeName(_) | Ast.AutoType(_) | Ast.MetaType(_,_,_,_) -> [bty]
 

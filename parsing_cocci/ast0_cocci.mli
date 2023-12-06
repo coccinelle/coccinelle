@@ -218,6 +218,8 @@ and base_typeC =
                        typeC * string mcode (* ) *)
   | TypeName        of string mcode
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
+  | TemplateType    of ident (* name *) * string mcode (* < *) *
+                       expression dots * string mcode (* > *)
   | MetaType        of Ast_cocci.meta_name mcode * constraints
 	* pure
   | AsType          of typeC * typeC (* as type, always metavar *)
@@ -226,8 +228,6 @@ and base_typeC =
   | ConjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
-  | TemplateType    of ident (* name *) * string mcode (* < *) *
-                       expression dots * string mcode (* > *)
 
 and typeC = base_typeC wrap
 

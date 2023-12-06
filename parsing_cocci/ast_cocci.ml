@@ -372,11 +372,11 @@ and base_typeC =
                        fullType * string mcode (* ) *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
+  | TemplateType    of ident (* name *) * string mcode (* < *) *
+        expression dots * string mcode (* > *)
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited
-  | TemplateType    of ident (* name *) * string mcode (* < *) *
-        expression dots * string mcode (* > *)
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap

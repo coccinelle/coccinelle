@@ -2837,9 +2837,9 @@ module Ast_cocci :
       | TypeOfType of string mcode * string mcode * fullType * string mcode
       | TypeName of string mcode
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
-      | MetaType of meta_name mcode * constraints * keep_binding * inherited
       | TemplateType of ident (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)
+      | MetaType of meta_name mcode * constraints * keep_binding * inherited
     and fullType = base_fullType wrap
     and typeC = base_typeC wrap
     and baseType =
@@ -3535,6 +3535,8 @@ module Ast0_cocci :
       | TypeOfType of string mcode * string mcode * typeC * string mcode
       | TypeName of string mcode
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
+      | TemplateType of ident (* name *) * string mcode (* < *) *
+            expression dots * string mcode (* > *)
       | MetaType of Ast_cocci.meta_name mcode * constraints * pure
       | AsType of typeC * typeC
       | DisjType of string mcode * typeC list * string mcode list *
@@ -3542,8 +3544,6 @@ module Ast0_cocci :
       | ConjType of string mcode * typeC list * string mcode list *
           string mcode
       | OptType of typeC
-      | TemplateType of ident (* name *) * string mcode (* < *) *
-            expression dots * string mcode (* > *)
     and typeC = base_typeC wrap
     and enum_base = string mcode (* : *) * typeC
     and base_declaration =
