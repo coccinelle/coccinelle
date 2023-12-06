@@ -375,6 +375,8 @@ and base_typeC =
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited
+  | TemplateType    of ident (* name *) * string mcode (* < *) *
+        expression dots * string mcode (* > *)
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap
@@ -1202,6 +1204,7 @@ let rec string_of_typeC ty =
   | TypeName (name) -> unwrap_mcode name ^ " "
   | AutoType _ -> "auto"
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
+  | TemplateType (name, _, args, _) -> string_of_ident name ^ "<" ^ "(* FIXME: TODO: args missing *)" ^ ">"
 and string_of_fullType ty =
   match unwrap ty with
     Type (_, cvbefore, ty', cvafter) ->
@@ -1217,6 +1220,7 @@ and string_of_fullType ty =
   | DisjType l -> String.concat "|" (List.map string_of_fullType l)
   | ConjType l -> String.concat "&" (List.map string_of_fullType l)
   | OptType ty -> string_of_fullType ty ^ "?"
+  (*| TemplateType (ty' , _, _, _) -> string_of_fullType ty' ^ "()"*)
 
 let typeC_of_fullType_opt ty =
   match unwrap ty with
@@ -1317,6 +1321,8 @@ and typeC_map tr ty =
       rewrap ty (EnumDef (fullType_map tr ty', base, s0, e, s1))
   | StructUnionDef (ty', s0, a, s1) ->
       rewrap ty (StructUnionDef (fullType_map tr ty', s0, a, s1))
+  | TemplateType (ty', s0, s1, s2) ->
+      rewrap ty (TemplateType (ty', s0, s1, s2))
 
 let rec fullType_fold tr ty v =
   match unwrap ty with
@@ -1349,7 +1355,7 @@ and typeC_fold tr ty v =
   | AutoType _ -> v
   | MetaType (name, cstr, keep, inherited) ->
       Common.default v (fun f -> f name cstr keep inherited v) tr.metaType
-
+  | TemplateType (_,_,e,_) -> v
 let fullType_iter tr ty =
   fullType_fold {
     baseType = Common.map_option (fun f ty' s0 () -> f ty' s0) tr.baseType;

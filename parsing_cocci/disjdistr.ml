@@ -131,6 +131,10 @@ and disjtypeC bty =
       let ty = disjty ty in
       List.map
 	(function ty -> Ast.rewrap bty (Ast.TypeOfType(tf,lp,ty,rp))) ty
+  | Ast.TemplateType(tn,lp,args,rp) ->
+      disjmult2 (disjident tn) (disjdots disjexp args)
+	(function tn -> function args ->
+	  Ast.rewrap bty (Ast.TemplateType(tn,lp,args,rp)))
   | Ast.TypeName(_) | Ast.AutoType(_) | Ast.MetaType(_,_,_,_) -> [bty]
 
 and anndisjdecl d =

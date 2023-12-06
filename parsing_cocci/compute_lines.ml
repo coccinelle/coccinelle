@@ -694,6 +694,12 @@ and typeC t =
       let name = normal_mcode name in
       let ln = promote_mcode name in
       mkres t (Ast0.TypeName(name)) ln ln
+  | Ast0.TemplateType(tn,lp,args,rp) ->
+      let tn = ident tn in
+      let lp = normal_mcode lp in
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      mkres t (Ast0.TemplateType(tn,lp,args,rp)) tn (promote_mcode rp)
   | Ast0.AutoType(auto) ->
       let auto = normal_mcode auto in
       let la = promote_mcode auto in

@@ -815,6 +815,10 @@ and typeC endattrs ty =
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
   | Ast.TypeName(name)-> mcode print_string name
+  | Ast.TemplateType(tn,lp,args,rp) ->
+      ident tn; mcode (print_string_with_hint StartBox) lp;
+      dots (function _ -> ()) arg_expression args;
+      mcode (print_string_with_hint EndBox) rp
   | Ast.AutoType(auto) -> mcode print_string auto
   | Ast.MetaType(name,_,_,_) ->
       handle_metavar name  (function

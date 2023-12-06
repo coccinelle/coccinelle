@@ -226,6 +226,8 @@ and base_typeC =
   | ConjType        of string mcode * typeC list * (* only after iso *)
                        string mcode list (* the |s *)  * string mcode
   | OptType         of typeC
+  | TemplateType    of ident (* name *) * string mcode (* < *) *
+                       expression dots * string mcode (* > *)
 
 and typeC = base_typeC wrap
 

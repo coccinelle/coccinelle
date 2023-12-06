@@ -451,6 +451,12 @@ let combiner bind option_default
 	  multibind [ltf; llp; lty; lrp]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.AutoType(auto) -> string_mcode auto
+      | Ast.TemplateType(name,lp,args,rp) ->
+	  let lname = ident name in
+	  let llp = string_mcode lp in
+	  let largs = expression_dots args in
+	  let lrp = string_mcode rp in
+	  multibind [lname; llp; largs; lrp]
       | Ast.MetaType(name,_,_,_) -> meta_mcode name in
     tyfn all_functions k ty
 
@@ -1548,7 +1554,9 @@ let rebuilder
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.AutoType(auto) -> Ast.AutoType(string_mcode auto)
 	| Ast.MetaType(name,cstr,keep,inherited) ->
-	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
+	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)
+        | Ast.TemplateType(name,lp,args,rp) ->
+	    Ast.TemplateType(ident name,string_mcode lp,expression_dots args,string_mcode rp)) in
     tyfn all_functions k ty
 
   and alignas (Ast.Align(align,lpar,expr,rpar)) =

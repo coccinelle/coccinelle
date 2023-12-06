@@ -592,6 +592,7 @@ and typeC allminus t =
     | Ast0.BaseType(_) | Ast0.Signed(_,_) | Ast0.Pointer(_,_)
     | Ast0.ParenType(_,_,_) | Ast0.FunctionType(_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
+    | Ast0.TemplateType(_,_,_,_)
     | Ast0.EnumName(_,_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
@@ -645,6 +646,12 @@ and base_typeC allminus t =
   | Ast0.MetaType(name,cstr,_) ->
       let cstr' = constraints cstr in
       Ast.MetaType(mcode name,cstr',unitary,false)
+  | Ast0.TemplateType(tn,lp,args,rp) ->
+      let tn = ident tn in
+      let lp = mcode lp in
+      let args = dots expression args in
+      let rp = mcode rp in
+      Ast.TemplateType(tn,lp,args,rp)
   | _ -> failwith "ast0toast: unexpected type"
 
 (* --------------------------------------------------------------------- *)

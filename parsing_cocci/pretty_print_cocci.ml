@@ -557,6 +557,11 @@ and typeC ty =
   | Ast.AutoType(auto) -> mcode print_string auto; print_string " "
   | Ast.MetaType(name,_,_,_) ->
       mcode print_meta name; print_string " "
+  | Ast.TemplateType(name,lp,args,rp) ->
+      ident name; print_string " ";
+      mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp
 
 and baseType ty = print_string (Ast.string_of_baseType ty ^ " ")
 

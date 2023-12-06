@@ -357,6 +357,8 @@ and base_typeC =
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
 	inherited
+  | TemplateType    of ident (* name *) * string mcode (* < *) *
+                       expression dots * string mcode (* > *)
 
 and fullType = base_fullType wrap
 and typeC = base_typeC wrap

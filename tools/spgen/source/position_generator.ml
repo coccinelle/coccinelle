@@ -243,6 +243,9 @@ let rec type_pos t snp
   | Ast0.OptType(t) ->
       let constructor ~item = Ast0.OptType(item) in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor snp
+  | Ast0.TemplateType(name, lp, dots, rp) ->
+      let constructor ~mc = Ast0.TemplateType(name, mc, dots, rp) in
+      mcode_wrap ~mc:lp ~constructor snp
 
 (* NB: if implementing disj generation, make sure that the statement dots in
  * the clist are generated in no_gen mode...

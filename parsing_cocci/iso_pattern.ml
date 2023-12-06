@@ -2018,6 +2018,7 @@ let instantiate bindings mv_bindings model =
                       | Ast0.Decimal(_, _, _, _, _, _)
                       | Ast0.EnumName(_, _, _)
                       | Ast0.StructUnionName (_, _)
+                      | Ast0.TemplateType _
                       | Ast0.TypeOfExpr(_, _, _, _)
                       | Ast0.TypeName _
                       | Ast0.AutoType _ -> ty

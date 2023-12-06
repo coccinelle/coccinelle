@@ -551,6 +551,11 @@ and top_typeC tgt opt_allowed typ =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_typeC typ tgt arity (Ast0.TypeName(name))
+  | Ast0.TemplateType(tn,lb,args,rb) ->
+      let arity =  all_same false tgt (mcode2line lb) [mcode2arity lb;mcode2arity rb] in
+      let tn = ident false arity tn in
+      let (lb,args,rb) = arg_list tgt (lb,args,rb) in
+      make_typeC typ tgt arity (Ast0.TemplateType(tn,lb,args,rb))
   | Ast0.AutoType(auto) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line auto) [mcode2arity auto] in

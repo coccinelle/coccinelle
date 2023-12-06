@@ -167,6 +167,7 @@ let dumb_astcocci_type = function
  | A.TypeOfType(tf, lp, ty, rp) -> ()
  | A.TypeName sa -> ()
  | A.AutoType _ -> ()
+ | A.TemplateType _ -> ()
 
 
 (* ------------------------------------------------------------------------- *)

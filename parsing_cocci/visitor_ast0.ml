@@ -441,7 +441,13 @@ let visitor mode bind option_default
 	| Ast0.AsType(ty,asty) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (asty_n,asty) = typeC asty in
-	    (bind ty_n asty_n, Ast0.AsType(ty,asty))) in
+	    (bind ty_n asty_n, Ast0.AsType(ty,asty))
+	| Ast0.TemplateType(tn,lp,args,rp) ->
+	    let (tn_n,tn) = ident tn in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (args_n,args) = expression_dots args in
+	    let (rp_n,rp) = string_mcode rp in
+	    (multibind [tn_n;lp_n;args_n;rp_n], Ast0.TemplateType(tn,lp,args,rp))) in
     tyfn all_functions k t
 
   (* returns ((bind value,original value),id) since id may have been updated*)
