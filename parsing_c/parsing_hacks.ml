@@ -2257,6 +2257,14 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 14; LP.add_typedef_root s i1;
       TypedefIdent (s, i1)
 
+  (*  xx * yy      AND  in for range *)
+  | (TIdent (s, i1)::ptr , TOPar _ :: Tfor _ :: _)
+    when !Flag.c_plus_plus <> Flag.Off &&
+         pointer ~followed_by:(function TIdent _ -> true | _ -> false) ptr &&
+        ok_typedef s ->
+      msg_typedef s i1 140; LP.add_typedef_root s i1;
+      TypedefIdent (s, i1)
+
   (* xx MM ( *)
   | (TIdent (s, i1)::TIdent (s2, i2)::TOPar _::_  , type_::_) when not_struct_enum before
       && ok_typedef s && is_macro s2 && is_type type_
