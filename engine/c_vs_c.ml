@@ -208,8 +208,8 @@ and typeC tya tyb =
 
   | AutoType, AutoType -> return (AutoType, iix)
 
-  | StructUnion (sua, saopt, base_classesa, optfinala, sta),
-      StructUnion (sub, sbopt, base_classesb, optfinalb, stb) ->
+  | StructUnion (sua, saopt, optfinala, base_classesa, sta),
+      StructUnion (sub, sbopt, optfinalb, base_classesb, stb) ->
       (sua = sub && saopt = sbopt && base_classesa = base_classesb &&
        same_optfinal optfinala optfinalb &&
        List.length sta = List.length stb)
@@ -270,7 +270,7 @@ and typeC tya tyb =
 
         ) (return [])
         >>= (fun stx ->
-          return (StructUnion (sua, saopt, base_classesa, optfinala, List.rev stx), iix)
+          return (StructUnion (sua, saopt, optfinala, base_classesa, List.rev stx), iix)
         )) tin)
 
   | (TemplateType(namea, argsa), TemplateType(nameb, argsb)) ->

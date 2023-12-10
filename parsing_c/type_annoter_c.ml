@@ -409,7 +409,7 @@ let rec type_unfold_one_step ty env =
   | Array (e, t)  -> ty
   | Decimal (len,prec_opt) -> ty
 
-  | StructUnion (sopt, su, base_classes, optfinal, fields) -> ty
+  | StructUnion (sopt, su, optfinal, base_classes, fields) -> ty
 
   | FunctionType t   -> ty
   | EnumDef  (ename, base, enumt) -> ty
@@ -421,7 +421,7 @@ let rec type_unfold_one_step ty env =
   | StructUnionName (su, s) ->
       (try
           let ((su,fields),ii) = lookup_structunion (su, s) env in
-          Ast_c.mk_ty (StructUnion (su, Some s, [], None, fields)) ii
+          Ast_c.mk_ty (StructUnion (su, Some s, None, [], fields)) ii
           (* old: +> Ast_c.rewrap_typeC ty
            * but must wrap with good ii, otherwise pretty_print_c
            * will be lost and raise some Impossible
@@ -484,7 +484,7 @@ let rec typedef_fix ty env =
 	Pointer (typedef_fix t env)  +> Ast_c.rewrap_typeC ty
     | Array (e, t) ->
 	Array (e, typedef_fix t env) +> Ast_c.rewrap_typeC ty
-    | StructUnion (su, sopt, base_classes, optfinal, fields) ->
+    | StructUnion (su, sopt, optfinal, base_classes, fields) ->
       (* normalize, fold.
 	 * todo? but what if correspond to a nested struct def ?
       *)
@@ -1040,7 +1040,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           | None -> Type_c.noTypeHere
           | Some t ->
               match unwrap_unfold_env t with
-              | StructUnion (su, sopt, base_classes, optfinal, fields) ->
+              | StructUnion (su, sopt, optfinal, base_classes, fields) ->
                   (try
                       (* todo: which env ? *)
                       make_info_def_fix
@@ -1374,7 +1374,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
        *)
       let (_q, _attr, tbis) = typ in
       match Ast_c.unwrap_typeC typ with
-      | StructUnion  (su, Some s, base_classes, optfinal, structType) ->
+      | StructUnion  (su, Some s, optfinal, base_classes, structType) ->
           let structType' = Lib.al_fields structType in
           let ii = Ast_c.get_ii_typeC_take_care tbis in
           let ii' = Lib.al_ii ii in

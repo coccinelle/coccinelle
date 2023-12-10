@@ -646,14 +646,15 @@ and pp_string_format (e,ii) =
       | (FunctionType (returnt, paramst), [i1;i2]) ->
           pp_base_type returnt sto
 
-      | (StructUnion (su, sopt, base_classes, optfinal, fields),iis) ->
+      | (StructUnion (su, sopt, optfinal, base_classes, fields),iis) ->
           print_sto_qu
 	    (fun _ ->
               (match sopt,iis with
               | Some s , [su;id;dotdot;lb;rb] ->
-		  pr_elem su; pr_space(); pr_elem id; pr_space(); pr_elem dotdot;
+		  pr_elem su; pr_space(); pr_elem id; pr_space();
+		  do_option pr_elem optfinal; pr_elem dotdot;
 		  pp_list pp_base_class base_classes; pr_space();
-		  do_option pr_elem optfinal; pr_elem lb
+		  pr_elem lb
               | Some s , [su;id;lb;rb] ->
 		  pr_elem su; pr_space(); pr_elem id; pr_space();
 		  do_option pr_elem optfinal; pr_elem lb;
@@ -903,7 +904,7 @@ and pp_string_format (e,ii) =
       | (NoType, iis)                           -> ()
       | (BaseType _, iis)                       -> print_ident ident
       | (EnumDef  (sopt, base, enumt), iis)     -> print_ident ident
-      | (StructUnion (_, sopt, base_classes, optfinal, fields),iis) -> print_ident ident
+      | (StructUnion (_, sopt, optfinal, base_classes, fields),iis) -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  (key, s), iis)               -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident

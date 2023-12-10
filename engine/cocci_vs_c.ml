@@ -535,7 +535,7 @@ and unsplit_initialiser_bis comma_before = function
 (* coupling: same in type_annotater_c.ml *)
 let structdef_to_struct_name ty =
   match ty with
-  | qu, attr, (B.StructUnion (su, sopt, base_classes, optfinal, fields), iis) ->
+  | qu, attr, (B.StructUnion (su, sopt, optfinal, base_classes, fields), iis) ->
       (match sopt,iis with
       | Some s , [i1;i2;i3;i4;i5] ->
           qu, attr, (B.StructUnionName (su, s), [i1;i2])
@@ -2549,7 +2549,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
      (match A.unwrap tya1, typb1 with
      | A.StructUnionDef(tya2, lba, declsa, rba),
-      (B.StructUnion (sub, sbopt, base_classes, optfinal, declsb), ii) ->
+      (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb), ii) ->
 
        let (iisub, iisbopt, lbb, rbb) =
          match sbopt with
@@ -2567,7 +2567,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        in
        let structnameb =
          structdef_to_struct_name
-           (Ast_c.nQ, [], (B.StructUnion (sub, sbopt, base_classes, optfinal, declsb), ii))
+           (Ast_c.nQ, [], (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb), ii))
        in
        let fake_typeb =
          Ast_c.nQ,[],((B.TypeName (nameidb, Some
@@ -2591,7 +2591,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		 let tya0 = A.Type(allminus, cvbefore, tya1, cvafter) +> A.rewrap tya0 in
 
 
-		 let typb1 = B.StructUnion (sub,sbopt,base_classes,optfinal,declsb),
+		 let typb1 = B.StructUnion (sub,sbopt,optfinal,base_classes,declsb),
                    [iisub] @ iisbopt @ [lbb;rbb] in
 		 let typb0 = ((qu, il), attrb, typb1) in
 
@@ -2631,7 +2631,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                match structnameb with
                | _nQ, [], (B.StructUnionName (sub, s), [iisub;iisbopt]) ->
 
-                   let typb1 = B.StructUnion (sub,sbopt,base_classes,optfinal,declsb),
+                   let typb1 = B.StructUnion (sub,sbopt,optfinal,base_classes,declsb),
                      [iisub;iisbopt;lbb;rbb] in
                    let typb0 = ((qu, il), attrb, typb1) in
 
@@ -4028,7 +4028,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
 
     | A.StructUnionDef(ty, lba, declsa, rba),
-     (B.StructUnion (sub, sbopt, base_classes, optfinal, declsb), ii) ->
+     (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb), ii) ->
 
        let (ii_sub_sb, lbb, rbb) =
 	 match ii with
@@ -4087,7 +4087,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
               return (
                 (A.StructUnionDef(ty, lba, declsa, rba)) +> A.rewrap ta,
-                (B.StructUnion (sub, sbopt, base_classes, optfinal, declsb),ii_sub_sb@[lbb;rbb])
+                (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb),ii_sub_sb@[lbb;rbb])
               )))))
 
 

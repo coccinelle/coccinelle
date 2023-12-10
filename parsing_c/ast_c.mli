@@ -34,9 +34,8 @@ and typeCbis =
   | Decimal of constExpression * constExpression option
   | FunctionType of functionType
   | EnumDef of fullType * fullType option * enumType
-  | StructUnion of
-      structUnion * string option * base_class wrap2 list (* C++ *) *
-	info option (* C++, final *) * structType
+  | StructUnion of structUnion * string option * info option (* C++, final *) *
+	base_class wrap2 list (* C++ *) * structType (* new scope *)
   | EnumName of structUnion option * string option
   | StructUnionName of structUnion * string
   | TypeName of name * fullType option
