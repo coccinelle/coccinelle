@@ -1142,7 +1142,7 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
         k expr; (* recurse to set the types-ref of sub expressions *)
         make_info_def (Lib.al_type ft)
 
-    | Unary (e, Not) ->
+    | Unary (e, Not) | Unary (e, Notpp) ->
         k expr; (* recurse to set the types-ref of sub expressions *)
 	(* the result of ! is always 0 or 1, not the argument type *)
         make_info_def (type_of_s "int")
@@ -1550,7 +1550,7 @@ let annotate_test_expressions prog =
     match e_term with
       Binary(e1,(Logical AndLog,_),e2)
     | Binary(e1,(Logical OrLog,_),e2) -> propagate_test e1; propagate_test e2
-    | Unary(e1,Not) -> propagate_test e1
+    | Unary(e1,Not) | Unary(e1,Notpp) -> propagate_test e1
     | ParenExpr(e) -> propagate_test e
     | FunCall(e,args) -> (* not very nice, but so painful otherwise *)
 	(match (unwrap e,args) with
@@ -1568,7 +1568,7 @@ let annotate_test_expressions prog =
 	CondExpr(e,_,_) -> propagate_test e
       |	Binary(e1,(Logical AndLog,_),e2)
       | Binary(e1,(Logical OrLog,_),e2) -> propagate_test e1; propagate_test e2
-      | Unary(e1,Not) -> propagate_test e1
+      | Unary(e1,Not) | Unary(e1,Notpp) -> propagate_test e1
       | _ -> ()
       );
       k expr

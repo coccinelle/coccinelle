@@ -144,7 +144,7 @@ let equal_unaryOp a b =
   | A.UnMinus  , B.UnMinus -> true
   | A.Tilde    , B.Tilde   -> true
   | A.Not      , B.Not     -> true
-  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
+  | _, (B.Not|B.Notpp|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
       false
 let equal_arithOp a b =
   match (A.unwrap_mcode a), b with

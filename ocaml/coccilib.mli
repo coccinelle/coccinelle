@@ -197,6 +197,7 @@ module Ast_c :
       | UnMinus
       | Tilde
       | Not
+      | Notpp
       | GetRefLabel
     and assignOpbis = Ast_c.assignOpbis = SimpleAssign | OpAssign of arithOp
     and assignOp = assignOpbis wrap
@@ -743,6 +744,7 @@ module Parser_c :
       | TWhy of Ast_c.info
       | TTilde of Ast_c.info
       | TBang of Ast_c.info
+      | TNot of Ast_c.info
       | TEllipsis of Ast_c.info
       | TDotDot of Ast_c.info
       | TPtVirg of Ast_c.info

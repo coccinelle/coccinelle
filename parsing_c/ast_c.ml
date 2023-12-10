@@ -410,7 +410,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
     and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
 
 
-  and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not
+  and unaryOp  = GetRef | DeRef | UnPlus |  UnMinus | Tilde | Not | Notpp
                  | GetRefLabel (* gccext: GetRefLabel, via &&label notation *)
   and assignOpbis = SimpleAssign | OpAssign of arithOp
   and assignOp = assignOpbis wrap

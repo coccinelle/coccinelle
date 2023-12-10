@@ -385,6 +385,7 @@ let info_of_tok = function
   | TWhy                 (i) -> i
   | TTilde               (i) -> i
   | TBang                (i) -> i
+  | TNot                 (i) -> i
   | TEllipsis            (i) -> i
   | TDotDot              (i) -> i
   | TPtVirg              (i) -> i
@@ -586,6 +587,7 @@ let visitor_info_of_tok f = function
   | TWhy                 (i) -> TWhy                 (f i)
   | TTilde               (i) -> TTilde               (f i)
   | TBang                (i) -> TBang                (f i)
+  | TNot                 (i) -> TNot                 (f i)
   | TEllipsis            (i) -> TEllipsis            (f i)
   | TDotDot              (i) -> TDotDot              (f i)
   | TPtVirg              (i) -> TPtVirg              (f i)
@@ -732,6 +734,7 @@ let string_of_token = function
   | TWhy _ -> "TWhy"
   | TTilde _ -> "TTilde"
   | TBang _ -> "TBang"
+  | TNot _ -> "TNot"
   | TEllipsis _ -> "TEllipsis"
   | TDotDot _ -> "TDotDot"
   | TPtVirg _ -> "TPtVirg"
