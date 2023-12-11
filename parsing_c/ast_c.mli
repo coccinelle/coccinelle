@@ -120,6 +120,7 @@ and expressionbis =
   | ArrayAccess of expression * argument wrap2 (* , *) list
   | RecordAccess of expression * name
   | RecordPtAccess of expression * name
+  | QualifiedAccess of fullType option * name
   | SizeOfExpr of expression
   | SizeOfType of fullType
   | Cast of fullType * expression

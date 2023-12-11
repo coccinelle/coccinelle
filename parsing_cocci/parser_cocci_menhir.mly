@@ -2610,6 +2610,8 @@ postfix_expr(r,pe):
  | postfix_expr(r,pe) TPtrOp type_ident
      { Ast0_cocci.wrap(Ast0_cocci.RecordPtAccess($1, Parse_aux.clt2mcode "->" $2,
 				     $3)) }
+ | postfix_expr(r,pe) TColonColon type_indent
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess($1, Parse_aux.clt2mcode "::" $2, $3)) }
  | postfix_expr(r,pe) TInc
      { Ast0_cocci.wrap(Ast0_cocci.Postfix ($1, Parse_aux.clt2mcode Ast_cocci.Inc $2)) }
  | postfix_expr(r,pe) TDec

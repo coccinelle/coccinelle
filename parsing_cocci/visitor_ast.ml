@@ -270,6 +270,11 @@ let combiner bind option_default mcode donothing
 	  let lar = string_mcode ar in
 	  let lfield = ident field in
 	  multibind [lexp; lar; lfield]
+      | Ast.QualifiedAccess(ty,coloncolon,field) ->
+      let lty = get_option fullType ty in
+      let lcoloncolon = string_mcode coloncolon in 
+      let lfield = ident field in
+      multibind [lty; lcoloncolon; lfield]
       | Ast.Cast(lp,ty,rp,exp) ->
 	  let llp = string_mcode lp in
 	  let lty = fullType ty in
@@ -1501,6 +1506,11 @@ let rebuilder mcode donothing
 	    let lar = string_mcode ar in
 	    let lfield = ident field in
 	    Ast.RecordPtAccess(lexp, lar, lfield)
+    | Ast.QualifiedAccess(ty,coloncolon,field) ->
+        let lty = get_option fullType ty in
+        let lcoloncolon = string_mcode coloncolon in
+        let lfield = ident field in
+        Ast.QualifiedAccess(lty,lcoloncolon,lfield)
 	| Ast.Cast(lp,ty,rp,exp) ->
 	    let llp = string_mcode lp in
 	    let lty = fullType ty in

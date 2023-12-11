@@ -249,6 +249,12 @@ let rec top_expression opt_allowed tgt expr =
       let ar = mcode ar in
       let field = ident false arity field in
       make_exp expr tgt arity (Ast0.RecordPtAccess(exp,ar,field))
+  | Ast0.QualifiedAccess(ty,coloncolon,field) ->
+      let arity = exp_same (mcode2line coloncolon) [mcode2arity coloncolon] in
+      let ty = get_option (typeC arity) ty in
+      let coloncolon = mcode coloncolon in 
+      let field = ident false arity field in
+      make_exp expr tgt arity (Ast0.QualifiedAccess(ty,coloncolon,field))
   | Ast0.Cast(lp,ty,rp,exp) ->
       let arity =
 	exp_same (mcode2line lp) (List.map mcode2arity ([lp;rp])) in

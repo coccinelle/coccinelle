@@ -184,6 +184,11 @@ let visitor mode bind option_default
 	    let (ar_n,ar) = string_mcode ar in
 	    let (field_n,field) = ident field in
 	    (multibind [exp_n;ar_n;field_n], Ast0.RecordPtAccess(exp,ar,field))
+    | Ast0.QualifiedAccess(ty,coloncolon,field) ->
+        let (ty_n,ty) = get_option typeC ty in
+        let (coloncolon_n,coloncolon) = string_mcode coloncolon in
+        let (field_n,field) = ident field in
+        (multibind [ty_n;coloncolon_n;field_n, Ast0.QualifiedAccess(ty,coloncolon,field)])
 	| Ast0.Cast(lp,ty,rp,exp) ->
 	    let (lp_n,lp) = string_mcode lp in
 	    let (ty_n,ty) = typeC ty in

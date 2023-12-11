@@ -453,6 +453,7 @@ let rec expression e =
     | Ast_c.ArrayAccess (e1, e2) -> postfix
     | Ast_c.RecordAccess (e, name) -> postfix
     | Ast_c.RecordPtAccess (e, name) -> postfix
+    | Ast_c.QualifiedAccess (t, name) -> postfix
     | Ast_c.SizeOfExpr (e) -> unary
     | Ast_c.SizeOfType (t) -> unary
     | Ast_c.Cast (t, e) -> cast
@@ -505,6 +506,8 @@ let rec expression e =
       loop exp postfix; mcode print_string pt; ident field
   | Ast.RecordPtAccess(exp,ar,field) ->
       loop exp postfix; mcode print_string ar; ident field
+  | Ast.QualifiedAccess(ty,coloncolon,field) ->
+     Common.do_option fullType ty; mcode print_string coloncolon; ident field 
   | Ast.Cast(lp,ty,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp; loop exp cast

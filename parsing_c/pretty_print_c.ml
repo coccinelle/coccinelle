@@ -152,7 +152,9 @@ let mk_pretty_printers
         pp_expression e; pr_elem i1; pp_name name;
     | RecordPtAccess (e, name),     [i1] ->
         pp_expression e; pr_elem i1; pp_name name;
-
+    | QualifiedAccess(typ, name),   [i1] ->
+        do_option pp_type typ; pr_elem i1; pp_name name
+            
     | SizeOfExpr  (e),     [i] ->
 	pr_elem i;
 	(match Ast_c.unwrap e with
@@ -224,7 +226,7 @@ let mk_pretty_printers
     | (Ident (_) | Constant _ | StringConstant _ | FunCall (_,_)
     | CondExpr (_,_,_) | Sequence (_,_) | Assignment (_,_,_)
     | Postfix (_,_) | Infix (_,_) | Unary (_,_) | Binary (_,_,_)
-    | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
+    | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_) | QualifiedAccess(_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
     | ParenExpr (_) | New (_) | Delete (_,_) | TemplateInst(_,_)

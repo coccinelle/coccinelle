@@ -221,6 +221,8 @@ and unify_expression e1 e2 =
       unify_expression e1 e2 && unify_ident fld1 fld2
   | (Ast.RecordPtAccess(e1,pt1,fld1),Ast.RecordPtAccess(e2,pt2,fld2)) ->
       unify_expression e1 e2 && unify_ident fld1 fld2
+  | (Ast.QualifiedAccess(ty1,coloncolon1,fld1),Ast.QualifiedAccess(ty2,coloncolon2,fld2)) ->
+      unify_option unify_fullType ty1 ty2 && unify_ident fld1 fld2
   | (Ast.Cast(lp1,ty1,rp1,e1),Ast.Cast(lp2,ty2,rp2,e2)) ->
       unify_fullType ty1 ty2 && unify_expression e1 e2
   | (Ast.SizeOfExpr(szf1,e1),Ast.SizeOfExpr(szf2,e2)) ->

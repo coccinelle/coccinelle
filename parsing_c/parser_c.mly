@@ -566,7 +566,7 @@ let args_to_params l pb =
 */
 
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro
-%token <Ast_c.info> TDot TComma TNoComma TPtrOp
+%token <Ast_c.info> TDot TColonColon TComma TNoComma TPtrOp
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
@@ -1069,6 +1069,7 @@ postfix_expr:
      { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
  | postfix_expr TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
+ | postfix_expr TColonColon ident_cpp { mk_e(QualifiedAccess ($1,$3)) [$2] }
  | postfix_expr TInc          { mk_e(Postfix ($1, Inc)) [$2] }
  | postfix_expr TDec          { mk_e(Postfix ($1, Dec)) [$2] }
 

@@ -245,6 +245,12 @@ and disjexp e =
   | Ast.RecordPtAccess(exp,ar,field) ->
       disjmult2 (disjexp exp) (disjident field)
 	(fun exp field -> Ast.rewrap e (Ast.RecordPtAccess(exp,ar,field)))
+  | Ast.QualifiedAccess(Some ty,coloncolon,field) ->
+      disjmult2 (disjty ty) (disjident field)
+    (fun ty field -> Ast.rewrap e (Ast.QualifiedAccess(Some ty,coloncolon,field)))
+  | Ast.QualifiedAccess(None,coloncolon,field) ->
+      disjmult (disjident field)
+    (fun field -> Ast.rewrap e (Ast.QualifiedAccess(None,coloncolon,field)))
   | Ast.Cast(lp,ty,rp,exp) ->
       disjmult2 (disjty ty) (disjexp exp)
 	(function ty -> function exp ->

@@ -363,6 +363,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | RecordAccess   of expression * name
   | RecordPtAccess of expression * name
   (* redundant normally, could replace it by DeRef RecordAcces *)
+  | QualifiedAccess of fullType option * name
 
   | SizeOfExpr     of expression
   | SizeOfType     of fullType
@@ -1498,6 +1499,8 @@ let get_local_ii_of_expr_inlining_ii_of_name e =
   | RecordAccess   (e, name), ii ->
       ii @ ii_of_name name
   | RecordPtAccess (e, name), ii ->
+      ii @ ii_of_name name
+  | QualifiedAccess (_typ, name), ii -> 
       ii @ ii_of_name name
   | _, ii -> ii
 

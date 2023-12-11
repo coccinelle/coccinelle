@@ -121,6 +121,7 @@ and base_expression =
 	              string mcode (* ] *)
   | RecordAccess   of expression * string mcode (* . *) * ident
   | RecordPtAccess of expression * string mcode (* -> *) * ident
+  | QualifiedAccess of fullType option * string mcode (* :: *) * ident
   | Cast           of string mcode (* ( *) * typeC *
                       string mcode (* ) *) * expression
   | SizeOfExpr     of string mcode (* sizeof *) * expression

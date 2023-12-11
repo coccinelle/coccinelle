@@ -320,6 +320,7 @@ let rec vk_expr = fun bigf expr ->
     | ArrayAccess    (e, es)   -> exprf e; vk_argument_list bigf es
     | RecordAccess   (e, name) -> exprf e; vk_name bigf name
     | RecordPtAccess (e, name) -> exprf e; vk_name bigf name
+    | QualifiedAccess(t, name) -> do_option(vk_type bigf) t; vk_name bigf name
 
     | SizeOfExpr  (e) -> exprf e
     | SizeOfType  (t) -> vk_type bigf t
@@ -1382,6 +1383,8 @@ let rec vk_expr_s = fun bigf expr ->
                   ))
       | RecordAccess   (e, name) -> RecordAccess (exprf e, vk_name_s bigf name)
       | RecordPtAccess (e, name) -> RecordPtAccess (exprf e, vk_name_s bigf name)
+      | QualifiedAccess(t, name) -> 
+          QualifiedAccess (map_option(vk_type_s bigf) t, vk_name_s bigf name)
 
       | SizeOfExpr  (e) -> SizeOfExpr (exprf e)
       | SizeOfType  (t) -> SizeOfType (vk_type_s bigf t)
