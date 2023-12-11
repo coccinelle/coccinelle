@@ -801,6 +801,9 @@ translation_unit:
  | translation_unit Tnamespace TIdent TOBrace translation_unit TCBrace
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        $1 @ [Namespace ($5, [$2; snd $3; $4; $6])] }
+ | translation_unit Tnamespace TOBrace translation_unit TCBrace
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
+       $1 @ [Namespace ($4, [$2; $3; $5])] }
 
 
 /*(*************************************************************************)*/

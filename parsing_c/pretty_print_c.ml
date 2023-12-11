@@ -1543,6 +1543,11 @@ and pp_init (init, iinit) =
 	pr_elem i1; pr_elem i2; pr_elem i3;
 	List.iter pp_toplevel tls;
 	pr_elem i4
+    | Namespace (tls, [i1; i2; i3]) ->
+	pr_elem i1; pr_elem i2;
+	List.iter pp_toplevel tls;
+	pr_elem i3
+
     | TemplateDefinition(params,defn,ii) ->
 	let (i1,i2,i3) = Common.tuple_of_list3 ii in
 	pr_elem i1; pr_space(); pr_elem i2;
