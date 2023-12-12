@@ -51,6 +51,16 @@ let get_minus_constants bind orbind =
 	     (List.map (function id -> ["."^id;"->"^id])
 		(r.V.combiner_ident fld)))
 	  (r.V.combiner_expression exp)
+    | Ast.QualifiedAccess(Some ty,_,fld) ->
+    bind
+	  (Common.union_all
+         (List.map (function id -> ["::"^id])
+		(r.V.combiner_ident fld)))
+	  (r.V.combiner_fullType ty)
+    | Ast.QualifiedACcess(None,_,fld) ->
+	  Common.union_all
+         (List.map (function id -> ["::"^id])
+	     (r.V.combiner_ident fld))
     | Ast.SizeOfExpr(sizeof,_) | Ast.SizeOfType(sizeof,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode sizeof]
     | Ast.Delete(delete,_) | Ast.DeleteArr(delete,_,_,_) ->
