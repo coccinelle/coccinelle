@@ -902,12 +902,6 @@ rule token = parse
    * thing a few time in linux and in glibc. No need look in keyword_table
    * here.
    *)
-  | (cplusplus_ident "::")+ "operator new"
-      {
-        let info = tokinfo lexbuf in
-        let s = tok lexbuf in
-        TIdent (s, info)
-      }
   | cplusplus_ident
       {
         let info = tokinfo lexbuf in
@@ -916,51 +910,6 @@ rule token = parse
         TIdent (s, info)
       }
 
-  | cplusplus_ident ("::~" cplusplus_ident) +
-
-      {
-        let info = tokinfo lexbuf in
-        let s = tok lexbuf in
-        if !Flag.c_plus_plus <> Flag.Off
-	then Tconstructorname (s, info)
-	else
-	  begin
-	    pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
-            TIdent (s, info)
-	  end
-      }
-
-  | (cplusplus_ident as first)
-    "::" (cplusplus_ident as second)
-    ("::" cplusplus_ident) *
-
-      {
-        let info = tokinfo lexbuf in
-        let s = tok lexbuf in
-        if !Flag.c_plus_plus <> Flag.Off
-	then
-	  begin
-	    if first = second
-	    then Tconstructorname (s, info)
-            else TIdent (s, info)
-	  end
-	else
-	  begin
-	    pr2_once "~ and :: not allowed in C identifiers, try -c++ option";
-	    TIdent (s, info)
-	  end
-      }
-
-   | "::" cplusplus_ident ("::" cplusplus_ident) *
-
-      {
-        let info = tokinfo lexbuf in
-        let s = tok lexbuf in
-        (if !Flag.c_plus_plus = Flag.Off
-	then
-	  pr2_once "~ and :: not allowed in C identifiers, try -c++ option");
-	TIdent (s, info)
-      }
 
   (* ----------------------------------------------------------------------- *)
   (* C constant *)
