@@ -709,8 +709,8 @@ let rec equal_expression e1 e2 =
       equal_mcode pt1 pt2
   | (Ast0.RecordPtAccess(_,ar1,_),Ast0.RecordPtAccess(_,ar2,_)) ->
       equal_mcode ar1 ar2
-  | (Ast0.QualifiedAccess(_,coloncolon1,_),Ast0.QualifiedAccess(_,coloncolon2)) ->
-      equal_mcode coloncolon1 coloncolcon2
+  | (Ast0.QualifiedAccess(_,coloncolon1,_),Ast0.QualifiedAccess(_,coloncolon2,_)) ->
+      equal_mcode coloncolon1 coloncolon2
   | (Ast0.Cast(lp1,_,rp1,_),Ast0.Cast(lp2,_,rp2,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
   | (Ast0.SizeOfExpr(szf1,_),Ast0.SizeOfExpr(szf2,_)) ->

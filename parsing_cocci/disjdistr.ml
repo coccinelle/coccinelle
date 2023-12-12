@@ -249,8 +249,8 @@ and disjexp e =
       disjmult2 (disjty ty) (disjident field)
     (fun ty field -> Ast.rewrap e (Ast.QualifiedAccess(Some ty,coloncolon,field)))
   | Ast.QualifiedAccess(None,coloncolon,field) ->
-      disjmult (disjident field)
-    (fun field -> Ast.rewrap e (Ast.QualifiedAccess(None,coloncolon,field)))
+      let field = disjident field in 
+      List.map (function field -> Ast.rewrap e (Ast.QualifiedAccess(None,coloncolon,field))) field
   | Ast.Cast(lp,ty,rp,exp) ->
       disjmult2 (disjty ty) (disjexp exp)
 	(function ty -> function exp ->

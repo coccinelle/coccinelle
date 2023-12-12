@@ -252,7 +252,7 @@ let rec expression e =
   | Ast.RecordPtAccess(exp,ar,field) ->
       expression exp; mcode print_string ar; ident field
   | Ast.QualifiedAccess(ty,coloncolon,field) ->
-      print_option typeC ty; mcode print_string coloncolon; ident field
+      print_option fullType ty; mcode print_string coloncolon; ident field
   | Ast.Cast(lp,ty,rp,exp) ->
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp; expression exp

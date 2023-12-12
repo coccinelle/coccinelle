@@ -433,7 +433,8 @@ and expression e =
     | Ast0.RecordPtAccess(exp,ar,field) ->
 	Ast.RecordPtAccess(expression exp,mcode ar,ident field)
     | Ast0.QualifiedAccess(ty,coloncolon,field) ->
-    Ast.QualifiedAccess(typeC ty,mcode coloncolon,ident field)
+        let allminus = check_allminus.VT0.combiner_rec_expression e in
+        Ast.QualifiedAccess(get_option (typeC allminus) ty,mcode coloncolon,ident field)
     | Ast0.Cast(lp,ty,rp,exp) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.Cast(mcode lp,typeC allminus ty,mcode rp,expression exp)
