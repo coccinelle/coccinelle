@@ -425,11 +425,17 @@ let rec expression e =
       let ar = normal_mcode ar in
       let field = ident field in
       mkres e (Ast0.RecordPtAccess(exp,ar,field)) exp field
-  | Ast0.QualifiedAccess(ty,coloncolon,field) ->
+  | Ast0.QualifiedAccess(None,coloncolon,field) ->
       let coloncolon = normal_mcode coloncolon in
       let field = ident field in
-      mkres e (Ast0.QualifiedAccess(typeC ty,coloncolon,field))
+      mkres e (Ast0.QualifiedAccess(None,coloncolon,field))
         (promote_mcode coloncolon) field
+  | Ast0.QualifiedAccess(Some ty,coloncolon,field) ->
+      let ty = typeC ty in
+      let coloncolon = normal_mcode coloncolon in
+      let field = ident field in
+      mkres e (Ast0.QualifiedAccess(Some ty,coloncolon,field))
+          ty field
   | Ast0.Cast(lp,ty,rp,exp) ->
       let lp = normal_mcode lp in
       let exp = expression exp in

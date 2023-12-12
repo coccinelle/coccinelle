@@ -204,7 +204,7 @@ and expression context old_metas table minus e =
       expression ID old_metas table minus exp;
       ident FIELD old_metas table minus field
   | Ast0.QualifiedAccess(ty,coloncolon,field) ->
-      get_opt (typeC old_metas table minus ty);
+      get_opt (typeC old_metas table minus) ty;
       ident FIELD old_metas table minus field
   | Ast0.Cast(lp,ty,rp,exp) ->
       typeC old_metas table minus ty;

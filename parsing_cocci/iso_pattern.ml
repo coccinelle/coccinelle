@@ -762,6 +762,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode opa op; match_expr expa expb;
 		   match_ident fielda fieldb]
+      | (Ast0.QualifiedAccess(tya,coloncolona,fielda),
+         Ast0.QualifiedAccess(tyb,coloncolonb,fieldb)) ->
+           conjunct_many_bindings
+             [match_option match_typeC tya tyb; check_mcode coloncolona coloncolonb;
+              match_ident fielda fieldb]
 	  | (Ast0.Cast(lp1,tya,rp1,expa),
              Ast0.Cast(lp,tyb,rp,expb)) ->
 	      conjunct_many_bindings
