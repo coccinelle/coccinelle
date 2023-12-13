@@ -317,13 +317,13 @@ let inline_id aft = function
 
 %token <string * Data.clt> TOBrace TCBrace TOCro TCCro TOCroCro TOInit
 
-%token <Data.clt> TPtrOp
+%token <Data.clt> TPtrOp TColonColon
 
 %token TMPtVirg TCppConcatOp
 %token <Data.clt> TEq TDot TComma
 %token <Ast_cocci.arithOp * Data.clt> TOpAssign
 
-%token <string * Data.clt> TColonColon TDotDot TPtVirg
+%token <string * Data.clt> TDotDot TPtVirg
 
 %token TIso TRightIso TIsoExpression TIsoStatement TIsoDeclaration TIsoType
 %token TIsoTopLevel TIsoArgExpression TIsoTestExpression TIsoToTestExpression
@@ -2605,14 +2605,13 @@ postfix_expr(r,pe):
      { Ast0_cocci.wrap(Ast0_cocci.ArrayAccess ($1,Parse_aux.tok2mcode $2,$3,
 				       Parse_aux.tok2mcode $4)) }
  | postfix_expr(r,pe) TDot   type_ident
-     { Ast0_cocci.wrap(Ast0_cocci.RecordAccess($1, Parse_aux.clt2mcode "." $2, $3)) }
+     { Ast0_cocci.wrap(Ast0_cocci.RecordAccess ($1, Parse_aux.clt2mcode "." $2, $3)) }
  | postfix_expr(r,pe) TPtrOp type_ident
-     { Ast0_cocci.wrap(Ast0_cocci.RecordPtAccess($1, Parse_aux.clt2mcode "->" $2,
-				     $3)) }
+     { Ast0_cocci.wrap(Ast0_cocci.RecordPtAccess ($1, Parse_aux.clt2mcode "->" $2, $3)) }
  | typedef_ident TColonColon type_ident
-     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess(Some $1, Parse_aux.clt2mcode "::" $2, $3)) }
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess ($1, Parse_aux.clt2mcode "::" $2, $3)) }
  | TColonColon type_ident
-     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess(None, Parse_aux.clt2mcode "::" $1, $2)) }
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess (None, Parse_aux.clt2mcode "::" $1, $2)) }
  | postfix_expr(r,pe) TInc
      { Ast0_cocci.wrap(Ast0_cocci.Postfix ($1, Parse_aux.clt2mcode Ast_cocci.Inc $2)) }
  | postfix_expr(r,pe) TDec
@@ -3830,6 +3829,7 @@ anything: /* used for script code */
 
  | TWhy { "?" }
  | TDotDot { fst $1 }
+ | TColonColon { "::" }
  | TBang { fst $1 }
  | TOPar { "(" }
  | TCPar { ")" }
