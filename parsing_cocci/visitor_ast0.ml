@@ -991,10 +991,9 @@ let visitor mode bind option_default
 	    let (lab_n,lab) = string_mcode lab in
 	    let (params_n,params) = template_parameter_dots params in
 	    let (rab_n,rab) = string_mcode rab in
-	    let (stmt_n,stmt) = statement stmt in (*FIXME*)
-	    (multibind [tmpkw_n;lab_n;rab_n],
-	     (*Ast0.TemplateDefinition(tmpkw_n,lab_n,params_n,rab_n,stmt_n))*)
-	     Ast0.TemplateDefinition(tmpkw_n,lab_n,params_n,rab_n,stmt)) (*FIXME*)
+	    let (stmt_n,stmt) = statement stmt in
+	    (multibind [tmpkw_n;lab_n;params_n;rab_n;stmt_n],
+	     Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt))
 	| Ast0.Decl(bef,decl) ->
 	    let (decl_n,decl) = declaration decl in
 	    (decl_n,Ast0.Decl(bef,decl))
@@ -1478,7 +1477,7 @@ let visitor mode bind option_default
 	  (param_n,Ast0.ParamTag(param))
       | Ast0.TemplateParamTag(param) ->
 	  let (param_n,param) = templateParameterTypeDef param in
-	  (param_n,Ast0.ParamTag(param))
+	  (param_n,Ast0.TemplateParamTag(param))
       | Ast0.InitTag(init) ->
 	  let (init_n,init) = initialiser init in
 	  (init_n,Ast0.InitTag(init))
@@ -1633,6 +1632,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.initialiser_list e in n);
       VT0.combiner_rec_parameter =
       (function e -> let (n,_) = r.VT0.parameter e in n);
+      VT0.combiner_rec_template_parameter =
+      (function e -> let (n,_) = r.VT0.template_parameter e in n);
       VT0.combiner_rec_parameter_list =
       (function e -> let (n,_) = r.VT0.parameter_list e in n);
       VT0.combiner_rec_template_parameter_list =
@@ -1843,8 +1844,12 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.initialiser_list e in e);
       VT0.rebuilder_rec_parameter =
       (function e -> let (_,e) = r.VT0.parameter e in e);
+      VT0.rebuilder_rec_template_parameter =
+      (function e -> let (_,e) = r.VT0.template_parameter e in e);
       VT0.rebuilder_rec_parameter_list =
       (function e -> let (_,e) = r.VT0.parameter_list e in e);
+      VT0.rebuilder_rec_template_parameter_list =
+      (function e -> let (_,e) = r.VT0.template_parameter_list e in e);
       VT0.rebuilder_rec_template_parameter_list =
       (function e -> let (_,e) = r.VT0.template_parameter_list e in e);
       VT0.rebuilder_rec_statement =

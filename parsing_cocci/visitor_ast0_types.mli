@@ -12,7 +12,9 @@ type 'n all_functions = {
   initialiser : (Ast0_cocci.initialiser, 'n) inout;
   initialiser_list : (Ast0_cocci.initialiser_list, 'n) inout;
   parameter : (Ast0_cocci.parameterTypeDef, 'n) inout;
+  template_parameter : (Ast0_cocci.templateParameterTypeDef,'n) inout;
   parameter_list : (Ast0_cocci.parameter_list, 'n) inout;
+  template_parameter_list : (Ast0_cocci.template_parameter_list,'n) inout;
   statement : (Ast0_cocci.statement, 'n) inout;
   forinfo : (Ast0_cocci.forinfo, 'n) inout;
   case_line : (Ast0_cocci.case_line, 'n) inout;
@@ -44,7 +46,9 @@ type 'n combiner_rec_functions = {
   combiner_rec_initialiser : (Ast0_cocci.initialiser, 'n) combiner_inout;
   combiner_rec_initialiser_list : (Ast0_cocci.initialiser_list, 'n) combiner_inout;
   combiner_rec_parameter : (Ast0_cocci.parameterTypeDef, 'n) combiner_inout;
+  combiner_rec_template_parameter : (Ast0_cocci.templateParameterTypeDef,'n) combiner_inout;
   combiner_rec_parameter_list : (Ast0_cocci.parameter_list, 'n) combiner_inout;
+  combiner_rec_template_parameter_list : (Ast0_cocci.template_parameter_list,'n) combiner_inout;
   combiner_rec_statement : (Ast0_cocci.statement, 'n) combiner_inout;
   combiner_rec_forinfo : (Ast0_cocci.forinfo, 'n) combiner_inout;
   combiner_rec_case_line : (Ast0_cocci.case_line, 'n) combiner_inout;
@@ -86,6 +90,7 @@ type 'n combiner_functions = {
   combiner_dotsexprfn : (Ast0_cocci.expression Ast0_cocci.dots, 'n) ccode;
   combiner_dotsinitfn : (Ast0_cocci.initialiser Ast0_cocci.dots, 'n) ccode;
   combiner_dotsparamfn : (Ast0_cocci.parameterTypeDef Ast0_cocci.dots, 'n) ccode;
+  combiner_dotstemplateparamfn : (Ast0_cocci.templateParameterTypeDef Ast0_cocci.dots, 'n) ccode;
   combiner_dotsstmtfn : (Ast0_cocci.statement Ast0_cocci.dots, 'n) ccode;
   combiner_dotsdeclfn : (Ast0_cocci.declaration Ast0_cocci.dots, 'n) ccode;
   combiner_dotsfieldfn : (Ast0_cocci.field Ast0_cocci.dots, 'n) ccode;
@@ -124,7 +129,9 @@ type rebuilder_rec_functions = {
   rebuilder_rec_initialiser : Ast0_cocci.initialiser rebuilder_inout;
   rebuilder_rec_initialiser_list : Ast0_cocci.initialiser_list rebuilder_inout;
   rebuilder_rec_parameter : Ast0_cocci.parameterTypeDef rebuilder_inout;
+  rebuilder_rec_template_parameter : Ast0_cocci.templateParameterTypeDef rebuilder_inout;
   rebuilder_rec_parameter_list : Ast0_cocci.parameter_list rebuilder_inout;
+  rebuilder_rec_template_parameter_list : Ast0_cocci.template_parameter_list rebuilder_inout;
   rebuilder_rec_statement : Ast0_cocci.statement rebuilder_inout;
   rebuilder_rec_forinfo : Ast0_cocci.forinfo rebuilder_inout;
   rebuilder_rec_case_line : Ast0_cocci.case_line rebuilder_inout;
@@ -163,6 +170,7 @@ type rebuilder_functions = {
   rebuilder_dotsexprfn : Ast0_cocci.expression Ast0_cocci.dots rcode;
   rebuilder_dotsinitfn : Ast0_cocci.initialiser Ast0_cocci.dots rcode;
   rebuilder_dotsparamfn : Ast0_cocci.parameterTypeDef Ast0_cocci.dots rcode;
+  rebuilder_dotstemplateparamfn : Ast0_cocci.templateParameterTypeDef Ast0_cocci.dots rcode;
   rebuilder_dotsstmtfn : Ast0_cocci.statement Ast0_cocci.dots rcode;
   rebuilder_dotsdeclfn : Ast0_cocci.declaration Ast0_cocci.dots rcode;
   rebuilder_dotsfieldfn : Ast0_cocci.field Ast0_cocci.dots rcode;
@@ -209,6 +217,8 @@ type 'n combiner_rebuilder_functions = {
   combiner_rebuilder_dotsinitfn : (Ast0_cocci.initialiser Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsparamfn :
     (Ast0_cocci.parameterTypeDef Ast0_cocci.dots, 'n) rccode;
+  combiner_rebuilder_dotstemplateparamfn :
+    (Ast0_cocci.templateParameterTypeDef Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsstmtfn : (Ast0_cocci.statement Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsdeclfn : (Ast0_cocci.declaration Ast0_cocci.dots, 'n) rccode;
   combiner_rebuilder_dotsfieldfn : (Ast0_cocci.field Ast0_cocci.dots, 'n) rccode;
