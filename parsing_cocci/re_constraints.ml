@@ -41,8 +41,8 @@ let disj_free re =
     V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing ident
-    expr donothing donothing donothing donothing donothing ty donothing
+    donothing donothing donothing donothing donothing donothing donothing donothing ident
+    expr donothing donothing donothing donothing donothing ty donothing donothing
     donothing donothing donothing decl donothing donothing ann_field donothing
     rule_elem statement donothing donothing donothing donothing donothing in
   try Hashtbl.find disj_free_table re
@@ -87,8 +87,8 @@ let ok_for_all_rule_elems cstr minirules =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing rule_elem donothing donothing donothing
       donothing donothing donothing in
@@ -112,7 +112,7 @@ let update_for_all_rule_elems cstr minirules =
       mcode mcode
       donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
       donothing rule_elem donothing donothing donothing donothing
       donothing donothing in

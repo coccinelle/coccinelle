@@ -569,7 +569,7 @@ let disj_all =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing
+    donothing donothing
     donothing donothing disj_rule_elem donothing donothing donothing donothing
     donothing donothing
 
@@ -587,7 +587,7 @@ let collect_all_isos =
     mcode mcode mcode mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
     doanything donothing doanything donothing donothing donothing donothing
     donothing donothing donothing doanything
 

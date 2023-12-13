@@ -496,8 +496,8 @@ and contains_only_minus =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode
-    dots dots dots dots dots dots dots dots dots
-    identifier expression donothing donothing typeC donothing donothing
+    dots dots dots dots dots dots dots dots dots dots
+    identifier expression donothing donothing typeC donothing donothing donothing
     declaration field donothing statement donothing case_line donothing
     donothing donothing donothing
 

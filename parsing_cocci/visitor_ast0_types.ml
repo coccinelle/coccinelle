@@ -124,6 +124,7 @@ type 'n combiner_functions =
    combiner_tyfn : (Ast0.typeC,'n) ccode;
    combiner_initfn : (Ast0.initialiser,'n) ccode;
    combiner_paramfn : (Ast0.parameterTypeDef,'n) ccode;
+   combiner_template_paramfn : (Ast0.templateParameterTypeDef,'n) ccode;
    combiner_declfn : (Ast0.declaration,'n) ccode;
    combiner_fieldfn : (Ast0.field,'n) ccode;
    combiner_enumdeclfn : (Ast0.enum_decl,'n) ccode;
@@ -217,6 +218,7 @@ type rebuilder_functions =
    rebuilder_tyfn : Ast0.typeC rcode;
    rebuilder_initfn : Ast0.initialiser rcode;
    rebuilder_paramfn : Ast0.parameterTypeDef rcode;
+   rebuilder_template_paramfn : Ast0.templateParameterTypeDef rcode;
    rebuilder_declfn : Ast0.declaration rcode;
    rebuilder_fieldfn : Ast0.field rcode;
    rebuilder_enumdeclfn : Ast0.enum_decl rcode;
@@ -269,6 +271,7 @@ type 'n combiner_rebuilder_functions =
    combiner_rebuilder_tyfn : (Ast0.typeC,'n) rccode;
    combiner_rebuilder_initfn : (Ast0.initialiser,'n) rccode;
    combiner_rebuilder_paramfn : (Ast0.parameterTypeDef,'n) rccode;
+   combiner_rebuilder_template_paramfn : (Ast0.templateParameterTypeDef,'n) rccode;
    combiner_rebuilder_declfn : (Ast0.declaration,'n) rccode;
    combiner_rebuilder_fieldfn : (Ast0.field,'n) rccode;
    combiner_rebuilder_enumdeclfn : (Ast0.enum_decl,'n) rccode;

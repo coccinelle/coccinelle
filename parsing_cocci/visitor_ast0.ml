@@ -1583,6 +1583,7 @@ let combiner_functions =
    VT0.combiner_dotsexprfn = (fun r k e -> k e);
    VT0.combiner_dotsinitfn = (fun r k e -> k e);
    VT0.combiner_dotsparamfn = (fun r k e -> k e);
+   VT0.combiner_dotstemplateparamfn = (fun r k e -> k e);
    VT0.combiner_dotsstmtfn = (fun r k e -> k e);
    VT0.combiner_dotsdeclfn = (fun r k e -> k e);
    VT0.combiner_dotsfieldfn = (fun r k e -> k e);
@@ -1596,6 +1597,7 @@ let combiner_functions =
    VT0.combiner_tyfn = (fun r k e -> k e);
    VT0.combiner_initfn = (fun r k e -> k e);
    VT0.combiner_paramfn = (fun r k e -> k e);
+   VT0.combiner_template_paramfn = (fun r k e -> k e);
    VT0.combiner_declfn = (fun r k e -> k e);
    VT0.combiner_fieldfn = (fun r k e -> k e);
    VT0.combiner_enumdeclfn = (fun r k e -> k e);
@@ -1698,6 +1700,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_dotsexprfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsinitfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsparamfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_dotstemplateparamfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsstmtfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_dotsfieldfn (dz r) (xk k) e, e))
@@ -1711,6 +1714,7 @@ let combiner bind option_default functions =
     (fun r k e -> (functions.VT0.combiner_tyfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_initfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_paramfn (dz r) (xk k) e, e))
+    (fun r k e -> (functions.VT0.combiner_template_paramfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_declfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_fieldfn (dz r) (xk k) e, e))
     (fun r k e -> (functions.VT0.combiner_enumdeclfn (dz r) (xk k) e, e))
@@ -1795,6 +1799,7 @@ let rebuilder_functions =
    VT0.rebuilder_dotsexprfn = (fun r k e -> k e);
    VT0.rebuilder_dotsinitfn = (fun r k e -> k e);
    VT0.rebuilder_dotsparamfn = (fun r k e -> k e);
+   VT0.rebuilder_dotstemplateparamfn = (fun r k e -> k e);
    VT0.rebuilder_dotsstmtfn = (fun r k e -> k e);
    VT0.rebuilder_dotsdeclfn = (fun r k e -> k e);
    VT0.rebuilder_dotsfieldfn = (fun r k e -> k e);
@@ -1808,6 +1813,7 @@ let rebuilder_functions =
    VT0.rebuilder_tyfn = (fun r k e -> k e);
    VT0.rebuilder_initfn = (fun r k e -> k e);
    VT0.rebuilder_paramfn = (fun r k e -> k e);
+   VT0.rebuilder_template_paramfn = (fun r k e -> k e);
    VT0.rebuilder_declfn = (fun r k e -> k e);
    VT0.rebuilder_fieldfn = (fun r k e -> k e);
    VT0.rebuilder_enumdeclfn = (fun r k e -> k e);
@@ -1848,8 +1854,6 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.template_parameter e in e);
       VT0.rebuilder_rec_parameter_list =
       (function e -> let (_,e) = r.VT0.parameter_list e in e);
-      VT0.rebuilder_rec_template_parameter_list =
-      (function e -> let (_,e) = r.VT0.template_parameter_list e in e);
       VT0.rebuilder_rec_template_parameter_list =
       (function e -> let (_,e) = r.VT0.template_parameter_list e in e);
       VT0.rebuilder_rec_statement =
@@ -1905,6 +1909,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_dotsexprfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsinitfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsparamfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_dotstemplateparamfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsstmtfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_dotsfieldfn (dz r) (xk k) e))
@@ -1918,6 +1923,7 @@ let rebuilder functions =
     (fun r k e -> ((),functions.VT0.rebuilder_tyfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_initfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_paramfn (dz r) (xk k) e))
+    (fun r k e -> ((),functions.VT0.rebuilder_template_paramfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_declfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_fieldfn (dz r) (xk k) e))
     (fun r k e -> ((),functions.VT0.rebuilder_enumdeclfn (dz r) (xk k) e))
@@ -2019,6 +2025,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_dotsexprfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsinitfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsparamfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_dotstemplateparamfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsstmtfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsdeclfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_dotsfieldfn = (fun r k e -> k e);
@@ -2032,6 +2039,7 @@ let combiner_rebuilder_functions =
    VT0.combiner_rebuilder_tyfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_initfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_paramfn = (fun r k e -> k e);
+   VT0.combiner_rebuilder_template_paramfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_declfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_fieldfn = (fun r k e -> k e);
    VT0.combiner_rebuilder_enumdeclfn = (fun r k e -> k e);
@@ -2062,6 +2070,7 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_dotsexprfn
     functions.VT0.combiner_rebuilder_dotsinitfn
     functions.VT0.combiner_rebuilder_dotsparamfn
+    functions.VT0.combiner_rebuilder_dotstemplateparamfn
     functions.VT0.combiner_rebuilder_dotsstmtfn
     functions.VT0.combiner_rebuilder_dotsdeclfn
     functions.VT0.combiner_rebuilder_dotsfieldfn
@@ -2075,6 +2084,7 @@ let combiner_rebuilder bind option_default functions =
     functions.VT0.combiner_rebuilder_tyfn
     functions.VT0.combiner_rebuilder_initfn
     functions.VT0.combiner_rebuilder_paramfn
+    functions.VT0.combiner_rebuilder_template_paramfn
     functions.VT0.combiner_rebuilder_declfn
     functions.VT0.combiner_rebuilder_fieldfn
     functions.VT0.combiner_rebuilder_enumdeclfn

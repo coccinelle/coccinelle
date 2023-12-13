@@ -45,7 +45,7 @@ let strip_info =
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -488,8 +488,8 @@ let match_maker checks_needed context_required whencode_allowed =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing
-      ident expression assignOp binaryOp typeC init param decl field donothing
+      donothing donothing donothing
+      ident expression assignOp binaryOp typeC init param donothing decl field donothing
       stmt donothing donothing donothing donothing attr_arg donothing in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
@@ -1720,8 +1720,8 @@ let make_minus =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    dots dots dots dots dots dots dots dots dots
-    donothing expression donothing donothing donothing initialiser donothing
+    dots dots dots dots dots dots dots dots dots dots
+    donothing expression donothing donothing donothing initialiser donothing donothing
     declaration field enum_decl statement donothing donothing donothing
     donothing donothing donothing
 
@@ -1811,10 +1811,10 @@ let rebuild_mcode start_line =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing statement donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -2311,9 +2311,9 @@ let instantiate bindings mv_bindings model =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    (dots elist) donothing (dots plist) (dots slist) donothing donothing
+    (dots elist) donothing (dots plist) donothing (dots slist) donothing donothing
     donothing donothing donothing
-    identfn exprfn donothing donothing tyfn initfn paramfn declfn fieldfn
+    identfn exprfn donothing donothing tyfn initfn paramfn donothing declfn fieldfn
     enumdeclfn stmtfn donothing donothing donothing donothing attr_argfn donothing
 
 (* --------------------------------------------------------------------- *)

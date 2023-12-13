@@ -186,10 +186,10 @@ let inline_mcodes =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
     do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing_end do_nothing_end do_nothing do_nothing
+    do_nothing do_nothing do_nothing do_nothing_end do_nothing_end do_nothing do_nothing
     do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 
 (* --------------------------------------------------------------------- *)
@@ -270,10 +270,10 @@ let check_allminus =
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing donothing
     donothing
     donothing ident expression donothing donothing typeC initialiser donothing
-    declaration field donothing statement donothing case_line donothing
+    donothing declaration field donothing statement donothing case_line donothing
     donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)

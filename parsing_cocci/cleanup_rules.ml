@@ -265,10 +265,10 @@ let do_cleanup =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
     donothing donothing (* dots *)
     ident expression string_fragment string_format assignOp
-    binaryOp pragmainfo fullType typeC initialiser parameterTypeDef define_param
+    binaryOp pragmainfo fullType typeC initialiser parameterTypeDef donothing define_param
     declaration donothing field ann_field donothing
     rule_elem statement donothing donothing attr_arg donothing donothing
 

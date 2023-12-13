@@ -210,8 +210,8 @@ let get_free checker t =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing
-      ident expression donothing donothing typeC donothing parameter
+      donothing donothing donothing
+      ident expression donothing donothing typeC donothing parameter donothing
       declaration field donothing statement donothing case_line donothing
       donothing attr_arg donothing in
 

@@ -104,6 +104,7 @@ type 'n combiner_functions = {
   combiner_tyfn : (Ast0_cocci.typeC, 'n) ccode;
   combiner_initfn : (Ast0_cocci.initialiser, 'n) ccode;
   combiner_paramfn : (Ast0_cocci.parameterTypeDef, 'n) ccode;
+  combiner_template_paramfn : (Ast0_cocci.templateParameterTypeDef, 'n) ccode;
   combiner_declfn : (Ast0_cocci.declaration, 'n) ccode;
   combiner_fieldfn : (Ast0_cocci.field, 'n) ccode;
   combiner_enumdeclfn : (Ast0_cocci.enum_decl,'n) ccode;
@@ -184,6 +185,7 @@ type rebuilder_functions = {
   rebuilder_tyfn : Ast0_cocci.typeC rcode;
   rebuilder_initfn : Ast0_cocci.initialiser rcode;
   rebuilder_paramfn : Ast0_cocci.parameterTypeDef rcode;
+  rebuilder_template_paramfn : Ast0_cocci.templateParameterTypeDef rcode;
   rebuilder_declfn : Ast0_cocci.declaration rcode;
   rebuilder_fieldfn : Ast0_cocci.field rcode;
   rebuilder_enumdeclfn : Ast0_cocci.enum_decl rcode;
@@ -232,6 +234,7 @@ type 'n combiner_rebuilder_functions = {
   combiner_rebuilder_tyfn : (Ast0_cocci.typeC, 'n) rccode;
   combiner_rebuilder_initfn : (Ast0_cocci.initialiser, 'n) rccode;
   combiner_rebuilder_paramfn : (Ast0_cocci.parameterTypeDef, 'n) rccode;
+  combiner_rebuilder_template_paramfn : (Ast0_cocci.templateParameterTypeDef, 'n) rccode;
   combiner_rebuilder_declfn : (Ast0_cocci.declaration, 'n) rccode;
   combiner_rebuilder_fieldfn : (Ast0_cocci.field, 'n) rccode;
   combiner_rebuilder_enumdeclfn : (Ast0_cocci.enum_decl,'n) rccode;
