@@ -30,6 +30,7 @@ type 'a combiner =
      combiner_enumdecl : Ast_cocci.enum_decl -> 'a;
      combiner_initialiser : Ast.initialiser -> 'a;
      combiner_parameter : Ast.parameterTypeDef -> 'a;
+     combiner_template_parameter : Ast.templateParameterTypeDef -> 'a;
      combiner_parameter_list : Ast.parameter_list -> 'a;
      combiner_rule_elem : Ast.rule_elem -> 'a;
      combiner_statement : Ast.statement -> 'a;
@@ -54,10 +55,10 @@ let combiner bind option_default
     unary_mcodefn arithop_mcodefn logicalop_mcodefn
     cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
     inc_file_mcodefn
-    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
+    expdotsfn paramdotsfn template_paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
     enumdecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
-    ftfn tyfn initfn paramfn define_paramfn declfn
+    ftfn tyfn initfn paramfn template_paramfn define_paramfn declfn
     annotated_declfn fieldfn annotated_fieldfn enum_declfn rulefn stmtfn
     casefn attributefn attr_argfn topfn anyfn =
   let multibind l =
@@ -95,6 +96,7 @@ let combiner bind option_default
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
+  (*and template_parameter_dots d = dotsfn template_paramdotsfn templateParameterTypeDef all_functions d*) (* FIXME: needed or not? *)
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
     dotsfn anndecldotsfn annotated_decl all_functions d
@@ -368,6 +370,7 @@ let combiner bind option_default
                  let lrp = string_mcode rp in
                  let llp3 = string_mcode lp3 in
                  let lparams = parameter_dots params in
+                 (* FIXME: what about template_parameter_dots, in the like of parameter_dots ? *)
                  let lrp3 = string_mcode rp3 in
                  multibind
                    ([ltyp;llp;lstar] @ lid @ larray @
@@ -705,6 +708,20 @@ let combiner bind option_default
       | Ast.OptParam(param) -> parameterTypeDef param in
     paramfn all_functions k p
 
+  and templateParameterTypeDef p =
+    let k p =
+	match Ast.unwrap p with
+          Ast.TypenameOrClassParam(tyorcl,id,Some(eq,ty)) ->
+	    multibind [string_mcode tyorcl;ident id;string_mcode eq;fullType ty] (* FIXME: not [eq;exp] ?*)
+        | Ast.TypenameOrClassParam(tyorcl,id,None) ->
+	    multibind [string_mcode tyorcl;ident id] (* FIXME: with None or not ?*)
+        | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
+	    multibind [fullType ty;ident id;string_mcode eq;expression exp] (* FIXME: not [eq;exp] ?*)
+        | Ast.VarNameParam(ty,id,None) ->
+	    multibind [fullType ty;ident id] (* FIXME: with None or not ?*)
+        in
+    template_paramfn all_functions k p
+
   and rule_elem re =
     let k re =
       match Ast.unwrap re with
@@ -996,7 +1013,14 @@ let combiner bind option_default
 	  let lwhn = multibind
 	    (List.map (whencode statement_dots statement) whn) in
 	  bind ld lwhn
-      | Ast.OptStm(stmt) -> statement stmt in
+      | Ast.OptStm(stmt) -> statement stmt
+      | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+	  let ltmpkw = string_mcode tmpkw in
+	  let llab = string_mcode lab in
+	  let lrab = string_mcode rab in
+	  let lstmt = statement stmt in
+	  (* FIXME -> let lparams = template_parameter_list params in *)
+          multibind [ltmpkw; llab;(*; lparams *) lrab; lstmt] in
     stmtfn all_functions k s
 
   and fninfo = function
@@ -1127,6 +1151,7 @@ let combiner bind option_default
       | Ast.DefParDotsTag(sd) -> define_param_dots sd
       | Ast.TypeCTag(ty) -> typeC ty
       | Ast.ParamTag(param) -> parameterTypeDef param
+      | Ast.TemplateParamTag(param) -> templateParameterTypeDef param
       | Ast.SgrepStartTag(tok) -> option_default
       | Ast.SgrepEndTag(tok) -> option_default in
     anyfn all_functions k a
@@ -1146,6 +1171,7 @@ let combiner bind option_default
       combiner_enumdecl = enum_decl;
       combiner_initialiser = initialiser;
       combiner_parameter = parameterTypeDef;
+      combiner_template_parameter = templateParameterTypeDef;
       combiner_parameter_list = parameter_dots;
       combiner_rule_elem = rule_elem;
       combiner_statement = statement;
@@ -1181,6 +1207,7 @@ type rebuilder =
       rebuilder_enumdecl : Ast_cocci.enum_decl inout;
       rebuilder_initialiser : Ast.initialiser inout;
       rebuilder_parameter : Ast.parameterTypeDef inout;
+      rebuilder_template_parameter : Ast.templateParameterTypeDef inout;
       rebuilder_parameter_list : Ast.parameter_list inout;
       rebuilder_statement : Ast.statement inout;
       rebuilder_case_line : Ast.case_line inout;
@@ -1208,11 +1235,11 @@ let rebuilder
     fix_mcode unary_mcode
     arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode
     storage_mcode inc_file_mcode
-    expdotsfn paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
+    expdotsfn paramdotsfn template_paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
     enumdecldotsfn initdotsfn
     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
     ftfn tyfn initfn
-    paramfn define_paramfn declfn annotated_declfn fieldfn annotated_fieldfn
+    paramfn template_paramfn define_paramfn declfn annotated_declfn fieldfn annotated_fieldfn
     enum_declfn rulefn stmtfn casefn attributefn attr_argfn topfn anyfn =
   let get_option f = function
       Some x -> Some (f x)
@@ -1227,6 +1254,7 @@ let rebuilder
 
   let rec expression_dots d = dotsfn expdotsfn expression all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
+  and template_parameter_dots d = dotsfn template_paramdotsfn templateParameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
     dotsfn anndecldotsfn annotated_decl all_functions d
@@ -1806,6 +1834,21 @@ let rebuilder
 	| Ast.OptParam(param) -> Ast.OptParam(parameterTypeDef param)) in
     paramfn all_functions k p
 
+  and templateParameterTypeDef p =
+    let k p =
+      Ast.rewrap p
+	(match Ast.unwrap p with
+          Ast.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+            Ast.TypenameOrClassParam(string_mcode tyorcl,ident id,Some (string_mcode eq,fullType ty))
+        | Ast.TypenameOrClassParam(tyorcl,id,None) ->
+            Ast.TypenameOrClassParam(string_mcode tyorcl,ident id,None)
+        | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
+            Ast.VarNameParam(fullType ty,ident id,Some (string_mcode eq,expression exp))
+        | Ast.VarNameParam(ty,id,None) ->
+            Ast.VarNameParam(fullType ty,ident id,None)
+        ) in
+    template_paramfn all_functions k p
+
   and rule_elem re =
     let k re =
       Ast.rewrap re
@@ -2110,7 +2153,15 @@ let rebuilder
 	    let ld = string_mcode d in
 	    let lwhn = List.map (whencode statement_dots statement) whn in
 	    Ast.Dots(ld, lwhn, bef, aft)
-	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)) in
+	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
+	| Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+	  let ltmpkw = string_mcode tmpkw in
+	  let llab = string_mcode lab in
+	  let lrab = string_mcode rab in
+	  let lstmt = statement stmt in
+	  let lparams = template_parameter_dots params in (* FIXME -> let lparams = template_parameter_list params in *)
+	  Ast.TemplateDefinition(ltmpkw,llab,lparams,lrab,lstmt)
+        ) in
     let s = stmtfn all_functions k s in
     (* better to do this after, in case there is an equality test on the whole
        statement, eg in free_vars.  equality test would require that this
@@ -2252,6 +2303,7 @@ let rebuilder
       | Ast.DefParDotsTag(sd) -> Ast.DefParDotsTag(define_param_dots sd)
       | Ast.TypeCTag(ty) -> Ast.TypeCTag(typeC ty)
       | Ast.ParamTag(param) -> Ast.ParamTag(parameterTypeDef param)
+      | Ast.TemplateParamTag(param) -> Ast.TemplateParamTag(templateParameterTypeDef param)
       | Ast.SgrepStartTag(tok) as x -> x
       | Ast.SgrepEndTag(tok) as x -> x in
     anyfn all_functions k a
@@ -2271,6 +2323,7 @@ let rebuilder
       rebuilder_enumdecl = enum_decl;
       rebuilder_initialiser = initialiser;
       rebuilder_parameter = parameterTypeDef;
+      rebuilder_template_parameter = templateParameterTypeDef;
       rebuilder_parameter_list = parameter_dots;
       rebuilder_rule_elem = rule_elem;
       rebuilder_statement = statement;

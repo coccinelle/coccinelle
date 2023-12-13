@@ -620,7 +620,20 @@ and parameterTypeDef p =
       |	Ast0.AsParam(p,asexp) -> parameterTypeDef p; print_string "@";
 	  expression asexp)
 
+and templateParameterTypeDef p =
+  print_context p
+    (function _ ->
+      match Ast0.unwrap p with
+        Ast0.TypenameOrClassParam(tyorcl,id,eqtyopt) ->
+          mcode print_string tyorcl;
+          ident id;
+          print_option (fun (eq,ty) -> mcode print_string eq; typeC ty) eqtyopt
+      | Ast0.VarNameParam(ty,id,eqexpopt) ->
+          print_named_type ty id;
+          print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt)
+
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
+and template_parameter_list l = dots (function _ -> ()) templateParameterTypeDef l
 and varargs va = match va with
   | None -> ()
   | Some (comma, ellipsis) ->
@@ -641,6 +654,12 @@ and statement arity s =
 	  print_string arity; mcode print_string lbrace; start_block();
 	  dots force_newline (statement arity) body;
 	  end_block(); print_string arity; mcode print_string rbrace
+      | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+	  print_string arity;
+          mcode print_string_box tmpkw;
+          mcode print_string_box lab;
+	  template_parameter_list params; close_box(); mcode print_string rab;
+	  statement arity stmt
       | Ast0.Decl(_,decl) ->
 	  print_string arity; declaration decl
       | Ast0.Seq(lbrace,body,rbrace) ->

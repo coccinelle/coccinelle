@@ -21,9 +21,9 @@ let visitor mode bind option_default
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn template_paramfn declfn fieldfn
     enumdeclfn
     stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn =
   let multibind l =
@@ -61,6 +61,7 @@ let visitor mode bind option_default
   let rec expression_dots d = dotsfn dotsexprfn expression all_functions d
   and initialiser_dots d = dotsfn dotsinitfn initialiser all_functions d
   and parameter_dots d = dotsfn dotsparamfn parameterTypeDef all_functions d
+  and template_parameter_dots d = dotsfn dotstemplateparamfn templateParameterTypeDef all_functions d
   and statement_dots d = dotsfn dotsstmtfn statement all_functions d
   and declaration_dots d = dotsfn dotsdeclfn declaration all_functions d
   and field_dots d = dotsfn dotsfieldfn field all_functions d
@@ -920,6 +921,34 @@ let visitor mode bind option_default
 	    (n,Ast0.OptParam(param))) in
     paramfn all_functions k p
 
+  and templateParameterTypeDef p =
+    let k p =
+      rewrap p
+	(match Ast0.unwrap p with
+          Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+	    let (tyorcl_n,tyorcl) = string_mcode tyorcl in
+	    let (id_n,id) = ident id in
+	    let (eq_n,eq) = string_mcode eq in
+	    let (ty_n,ty) = typeC ty in
+	    (bind tyorcl_n ty_n, Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)))
+        | Ast0.TypenameOrClassParam(tyorcl,id,None) ->
+	    let (tyorcl_n,tyorcl) = string_mcode tyorcl in
+	    let (id_n,id) = ident id in
+	    (bind tyorcl_n id_n, Ast0.TypenameOrClassParam(tyorcl,id,None))
+        | Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
+	    let (ty_n,ty) = typeC ty in
+	    let (id_n,id) = ident id in
+	    let (eq_n,eq) = string_mcode eq in
+	    let (exp_n,exp) = expression exp in
+	    (bind ty_n exp_n, Ast0.VarNameParam(ty,id,Some (eq,exp)))
+        | Ast0.VarNameParam(ty,id,None) ->
+	    let (ty_n,ty) = typeC ty in
+	    let (id_n,id) = ident id in
+	    (bind ty_n id_n, Ast0.VarNameParam(ty,id,None))
+        ) in
+    template_paramfn all_functions k p
+
+
   (* not done for combiner, because the statement is assumed to be already
      represented elsewhere in the code *)
   (* NOTE: This is not called for combiner_rebuilder.  This is ok for its
@@ -957,6 +986,15 @@ let visitor mode bind option_default
 	    (multibind
                [fi_n;name_n;lp_n;params_n;va_n;rp_n;attr_n;lbrace_n;body_n;rbrace_n],
 	     Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attr,lbrace,body,rbrace,aft))
+        | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+	    let (tmpkw_n,tmpkw) = string_mcode tmpkw in
+	    let (lab_n,lab) = string_mcode lab in
+	    let (params_n,params) = template_parameter_dots params in
+	    let (rab_n,rab) = string_mcode rab in
+	    let (stmt_n,stmt) = statement stmt in (*FIXME*)
+	    (multibind [tmpkw_n;lab_n;rab_n],
+	     (*Ast0.TemplateDefinition(tmpkw_n,lab_n,params_n,rab_n,stmt_n))*)
+	     Ast0.TemplateDefinition(tmpkw_n,lab_n,params_n,rab_n,stmt)) (*FIXME*)
 	| Ast0.Decl(bef,decl) ->
 	    let (decl_n,decl) = declaration decl in
 	    (decl_n,Ast0.Decl(bef,decl))
@@ -1438,6 +1476,9 @@ let visitor mode bind option_default
       | Ast0.ParamTag(param) ->
 	  let (param_n,param) = parameterTypeDef param in
 	  (param_n,Ast0.ParamTag(param))
+      | Ast0.TemplateParamTag(param) ->
+	  let (param_n,param) = templateParameterTypeDef param in
+	  (param_n,Ast0.ParamTag(param))
       | Ast0.InitTag(init) ->
 	  let (init_n,init) = initialiser init in
 	  (init_n,Ast0.InitTag(init))
@@ -1504,7 +1545,9 @@ let visitor mode bind option_default
       VT0.initialiser = initialiser;
       VT0.initialiser_list = initialiser_dots;
       VT0.parameter = parameterTypeDef;
+      VT0.template_parameter = templateParameterTypeDef;
       VT0.parameter_list = parameter_dots;
+      VT0.template_parameter_list = template_parameter_dots;
       VT0.statement = statement;
       VT0.forinfo = forinfo;
       VT0.case_line = case_line;
@@ -1592,6 +1635,8 @@ let combiner_dz r =
       (function e -> let (n,_) = r.VT0.parameter e in n);
       VT0.combiner_rec_parameter_list =
       (function e -> let (n,_) = r.VT0.parameter_list e in n);
+      VT0.combiner_rec_template_parameter_list =
+      (function e -> let (n,_) = r.VT0.template_parameter_list e in n);
       VT0.combiner_rec_statement =
       (function e -> let (n,_) = r.VT0.statement e in n);
       VT0.combiner_rec_forinfo =
@@ -1680,9 +1725,9 @@ let flat_combiner bind option_default
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn template_paramfn declfn fieldfn
     enumdeclfn
     stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn =
   let dz = combiner_dz in
@@ -1705,6 +1750,7 @@ let flat_combiner bind option_default
     (fun r k e -> (dotsexprfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsinitfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsparamfn (dz r) (xk k) e, e))
+    (fun r k e -> (dotstemplateparamfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsstmtfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsdeclfn (dz r) (xk k) e, e))
     (fun r k e -> (dotsfieldfn (dz r) (xk k) e, e))
@@ -1718,6 +1764,7 @@ let flat_combiner bind option_default
     (fun r k e -> (tyfn (dz r) (xk k) e, e))
     (fun r k e -> (initfn (dz r) (xk k) e, e))
     (fun r k e -> (paramfn (dz r) (xk k) e, e))
+    (fun r k e -> (template_paramfn (dz r) (xk k) e, e))
     (fun r k e -> (declfn (dz r) (xk k) e, e))
     (fun r k e -> (fieldfn (dz r) (xk k) e, e))
     (fun r k e -> (enumdeclfn (dz r) (xk k) e, e))
@@ -1798,6 +1845,8 @@ let rebuilder_dz r =
       (function e -> let (_,e) = r.VT0.parameter e in e);
       VT0.rebuilder_rec_parameter_list =
       (function e -> let (_,e) = r.VT0.parameter_list e in e);
+      VT0.rebuilder_rec_template_parameter_list =
+      (function e -> let (_,e) = r.VT0.template_parameter_list e in e);
       VT0.rebuilder_rec_statement =
       (function e -> let (_,e) = r.VT0.statement e in e);
       VT0.rebuilder_rec_forinfo =
@@ -1881,9 +1930,9 @@ let flat_rebuilder
     fix_mcode unary_mcode
     arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode
     storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn declfn fieldfn
+    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn template_paramfn declfn fieldfn
     enumdeclfn
     stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn =
   let dz = rebuilder_dz in
@@ -1907,6 +1956,7 @@ let flat_rebuilder
     (fun r k e -> ((),dotsexprfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsinitfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsparamfn (dz r) (xk k) e))
+    (fun r k e -> ((),dotstemplateparamfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsstmtfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsdeclfn (dz r) (xk k) e))
     (fun r k e -> ((),dotsfieldfn (dz r) (xk k) e))
@@ -1920,6 +1970,7 @@ let flat_rebuilder
     (fun r k e -> ((),tyfn (dz r) (xk k) e))
     (fun r k e -> ((),initfn (dz r) (xk k) e))
     (fun r k e -> ((),paramfn (dz r) (xk k) e))
+    (fun r k e -> ((),template_paramfn (dz r) (xk k) e))
     (fun r k e -> ((),declfn (dz r) (xk k) e))
     (fun r k e -> ((),fieldfn (dz r) (xk k) e))
     (fun r k e -> ((),enumdeclfn (dz r) (xk k) e))

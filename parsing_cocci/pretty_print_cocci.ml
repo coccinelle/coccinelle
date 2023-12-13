@@ -795,7 +795,19 @@ and parameterTypeDef p =
   | Ast.AsParam(p,asexp) ->
       parameterTypeDef p; print_string "@"; expression asexp
 
+and templateParameterTypeDef p =
+  match Ast.unwrap p with
+    Ast.TypenameOrClassParam(tyorcl,id,eqtyopt) ->
+      mcode print_string tyorcl;
+      ident id;
+      print_option (fun (eq,ty) -> mcode print_string eq; fullType ty) eqtyopt
+  | Ast.VarNameParam(ty,id,eqexpopt) ->
+      print_named_type ty (fun _ -> ident id);
+      print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
+
+and template_parameter_list l = dots (function _ -> ()) templateParameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -996,6 +1008,14 @@ and statement arity s =
       dots force_newline (statement arity) body;
       rule_elem arity rbrace;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])
+  | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+      mcode print_string tmpkw;
+      print_string " ";
+      mcode print_string lab;
+      print_string " ";
+      template_parameter_list params;
+      mcode print_string rab;
+      statement arity stmt;
   | Ast.Disj([stmt_dots]) (* useful why? *)
   | Ast.Conj([stmt_dots]) ->
       print_string arity;
@@ -1295,6 +1315,7 @@ let _ =
     | Ast.DefParDotsTag(x) -> dots (function _ -> ()) print_define_param x
     | Ast.TypeCTag(x) -> typeC x
     | Ast.ParamTag(x) -> parameterTypeDef x
+    | Ast.TemplateParamTag(x) -> templateParameterTypeDef x
     | Ast.SgrepStartTag(x) -> print_string x
     | Ast.SgrepEndTag(x) -> print_string x
 

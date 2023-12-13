@@ -449,6 +449,10 @@ and base_statement =
 	string mcode (* { *) * statement dots *
 	string mcode (* } *) *
 	(info * mcodekind) (* after the function decl *)
+  | TemplateDefinition of
+	string mcode (* template *) * string mcode (* < *) *
+        template_parameter_list * string mcode (* > *) *
+        statement
   | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
       ident (*name*) * string mcode (*;*)
   | UsingTypename of string mcode (*using*) * ident (*name*) *
@@ -463,6 +467,13 @@ and base_statement =
 	define_parameters (*params*) * statement dots
   | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
+
+and base_templateParameterTypeDef =
+    TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * typeC) option
+  | VarNameParam of typeC * ident (* name *) * (string mcode (* = *) * expression ) option
+  (* Note: TemplateParam not supported yet. *)
+and templateParameterTypeDef = base_templateParameterTypeDef wrap
+and template_parameter_list = templateParameterTypeDef dots
 
 and base_pragmainfo =
     PragmaString of string mcode
@@ -618,6 +629,7 @@ and anything =
   | TestExprTag of expression (* for isos *)
   | TypeCTag of typeC
   | ParamTag of parameterTypeDef
+  | TemplateParamTag of templateParameterTypeDef
   | InitTag of initialiser
   | DeclTag of declaration
   | FieldTag of field

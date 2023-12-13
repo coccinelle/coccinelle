@@ -612,6 +612,13 @@ and base_rule_elem =
   | AsRe          of rule_elem * rule_elem (* always { and MetaStmtList *)
   | DisjRuleElem  of rule_elem list
 
+and base_templateParameterTypeDef =
+    TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * fullType) option
+  | VarNameParam of fullType * ident (* name *) * (string mcode (* = *) * expression ) option
+  (* Note: TemplateParam not supported yet. *)
+and templateParameterTypeDef = base_templateParameterTypeDef wrap
+and template_parameter_list = templateParameterTypeDef dots
+
 and base_pragmainfo =
     PragmaString of string mcode
   | PragmaDots of string mcode
@@ -683,12 +690,19 @@ and base_statement =
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * rule_elem (* } *) * end_info (*exit*)
+  | TemplateDefinition of
+	string mcode (* template *) * string mcode (* < *) *
+        template_parameter_list * string mcode (* > *) *
+        statement
   | Define        of rule_elem (* header *) * statement dots
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
   | OptStm        of statement
+
+and templateParameterType =
+    TypeNameParam of (string mcode * typeC (*full_type*) option) wrap
 
 and ('a,'b) whencode =
     WhenNot of 'a
@@ -836,6 +850,7 @@ and anything =
   | DefParDotsTag       of define_param dots
   | TypeCTag            of typeC
   | ParamTag            of parameterTypeDef
+  | TemplateParamTag    of templateParameterTypeDef
   | SgrepStartTag       of string
   | SgrepEndTag         of string
 

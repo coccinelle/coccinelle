@@ -19,6 +19,7 @@ type 'a combiner =
      combiner_enumdecl : Ast_cocci.enum_decl -> 'a;
      combiner_initialiser : Ast_cocci.initialiser -> 'a;
      combiner_parameter : Ast_cocci.parameterTypeDef -> 'a;
+     combiner_template_parameter : Ast_cocci.templateParameterTypeDef -> 'a;
      combiner_parameter_list : Ast_cocci.parameter_list -> 'a;
      combiner_rule_elem : Ast_cocci.rule_elem -> 'a;
      combiner_statement : Ast_cocci.statement -> 'a;
@@ -55,6 +56,7 @@ val combiner :
       ((Ast_cocci.inc_file,'a) cmcode) ->
       ((Ast_cocci.expression Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.parameterTypeDef Ast_cocci.dots,'a) ccode) ->
+      ((Ast_cocci.templateParameterTypeDef Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.statement Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.annotated_decl Ast_cocci.dots,'a) ccode) ->
       ((Ast_cocci.annotated_field Ast_cocci.dots,'a) ccode) ->
@@ -71,6 +73,7 @@ val combiner :
       ((Ast_cocci.typeC,'a) ccode) ->
       ((Ast_cocci.initialiser,'a) ccode) ->
       ((Ast_cocci.parameterTypeDef,'a) ccode) ->
+      ((Ast_cocci.templateParameterTypeDef,'a) ccode) ->
       ((Ast_cocci.define_param,'a) ccode) ->
       ((Ast_cocci.declaration,'a) ccode) ->
       ((Ast_cocci.annotated_decl,'a) ccode) ->
@@ -103,6 +106,7 @@ type rebuilder =
       rebuilder_enumdecl : Ast_cocci.enum_decl inout;
       rebuilder_initialiser : Ast_cocci.initialiser inout;
       rebuilder_parameter : Ast_cocci.parameterTypeDef inout;
+      rebuilder_template_parameter : Ast_cocci.templateParameterTypeDef inout;
       rebuilder_parameter_list : Ast_cocci.parameter_list inout;
       rebuilder_statement : Ast_cocci.statement inout;
       rebuilder_case_line : Ast_cocci.case_line inout;
@@ -141,6 +145,7 @@ val rebuilder :
     (Ast_cocci.inc_file rmcode) ->
     (Ast_cocci.expression Ast_cocci.dots rcode) ->
     (Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
+    (Ast_cocci.templateParameterTypeDef Ast_cocci.dots rcode) ->
     (Ast_cocci.statement Ast_cocci.dots rcode) ->
     (Ast_cocci.annotated_decl Ast_cocci.dots rcode) ->
     (Ast_cocci.annotated_field Ast_cocci.dots rcode) ->
@@ -157,6 +162,7 @@ val rebuilder :
     (Ast_cocci.typeC rcode) ->
     (Ast_cocci.initialiser rcode) ->
     (Ast_cocci.parameterTypeDef rcode) ->
+    (Ast_cocci.templateParameterTypeDef rcode) ->
     (Ast_cocci.define_param rcode) ->
     (Ast_cocci.declaration rcode) ->
     (Ast_cocci.annotated_decl rcode) ->

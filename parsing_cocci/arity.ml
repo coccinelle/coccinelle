@@ -895,6 +895,10 @@ and make_param =
   make_opt
     (function x -> Ast0.OptParam x)
 
+and make_template_param =
+  make_opt
+    (function x -> failwith "opt not allowed here")
+
 and parameterTypeDef tgt param =
   let param_same = all_same true tgt in
   match Ast0.unwrap param with
@@ -938,7 +942,27 @@ and parameterTypeDef tgt param =
   | Ast0.OptParam(_) | Ast0.AsParam _ ->
       failwith "unexpected code"
 
+and templateParameterTypeDef tgt param =
+  let param_same = all_same true tgt in
+  match Ast0.unwrap param with
+    Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+      let arity = param_same (mcode2line tyorcl) [mcode2arity tyorcl; mcode2arity eq] in
+      let tyorcl = mcode tyorcl in
+      let id = ident true tgt id in
+      let eq = mcode eq in
+      let ty = top_typeC tgt true ty in
+      make_template_param param tgt arity (Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)))
+  | Ast0.TypenameOrClassParam(tyorcl,id,None) ->
+      let arity = param_same (mcode2line tyorcl) [mcode2arity tyorcl] in
+      let tyorcl = mcode tyorcl in
+      let id = ident true tgt id in
+      make_template_param param tgt arity (Ast0.TypenameOrClassParam(tyorcl,id,None))
+  | Ast0.VarNameParam(tyorcl,id,_) ->
+      failwith "unexpected code"
+
 and parameter_list tgt = dots (parameterTypeDef tgt)
+
+and template_parameter_list tgt = dots (templateParameterTypeDef tgt)
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -1257,6 +1281,13 @@ and statement tgt stm =
       let rbrace = mcode rbrace in
       make_rule_elem stm tgt arity
 	(Ast0.FunDecl(bef,fi,name,lp,params,newva,rp,attrs,lbrace,body,rbrace,aft))
+  | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+      let arity =
+	all_same true tgt (mcode2line lab)
+          (List.map mcode2arity [tmpkw;lab;rab]) in
+      let stmt = statement arity stmt in
+      let params = template_parameter_list arity params in
+      make_rule_elem stm tgt arity (Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt))
   | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
       let arity =
 	all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity nmspc; mcode2arity sem] in
