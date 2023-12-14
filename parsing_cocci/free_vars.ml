@@ -509,7 +509,7 @@ let collect_saved =
     donothing donothing donothing donothing donothing donothing donothing donothing
     astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary
     astfvpragmainfo donothing
-    astfvtypeC astfvinit astfvparam astfvdefine_param donothing astfvdecls donothing
+    astfvtypeC astfvinit astfvparam donothing astfvdefine_param astfvdecls donothing
     astfvfields donothing donothing astfvrule_elem donothing donothing
     donothing astfvattr_arg donothing donothing
 
@@ -950,10 +950,11 @@ let classify_variables metavar_decls minirules used_after =
   let fn = V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing
+      donothing donothing
       ident expression string_fragment string_format assignop binaryop
       pragmainfo donothing typeC
-      init param define_param decl donothing field donothing donothing
+      init param donothing define_param decl donothing field donothing donothing
       rule_elem donothing donothing donothing attr_arg donothing donothing in
 
   List.map fn.V.rebuilder_top_level minirules
@@ -1139,7 +1140,7 @@ let astfvs metavars bound =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing astfvstatement_dots donothing donothing donothing
+    donothing donothing donothing astfvstatement_dots donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing

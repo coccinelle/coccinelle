@@ -602,6 +602,7 @@ and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
+  | DotsTemplateParamTag of templateParameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
   | DotsFieldTag of field dots

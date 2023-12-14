@@ -742,12 +742,12 @@ let all_context =
   V.combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing
-    initialiser donothing donothing donothing donothing donothing donothing
-    donothing rule_elem statement donothing donothing donothing donothing
-    donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing initialiser
+    donothing donothing donothing donothing donothing donothing
+    donothing donothing rule_elem statement donothing donothing
+    donothing donothing donothing
 
 (* ------------------------------------------------------------------------ *)
 

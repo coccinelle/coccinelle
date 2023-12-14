@@ -37,25 +37,22 @@ let sequence_tokens =
   let donothing r k e = k e in
   let bind x y = x @ y in
   let option_default = [] in
-  V0.flat_combiner bind option_default
-    (mcode (function x -> MetaName (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Str (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Cst (Ast0.unwrap_mcode x)))
-    (mcode (function x -> SAOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> ArOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> FixOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> UnOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> ArOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> LogOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> CV (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Sign (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Struct (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Store (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Inc (Ast0.unwrap_mcode x)))
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+  V0.combiner bind option_default
+    {V0.combiner_functions with
+      VT0.combiner_meta_mcode = mcode (function x -> MetaName (Ast0.unwrap_mcode x));
+      VT0.combiner_string_mcode = mcode (function x -> Str (Ast0.unwrap_mcode x));
+      VT0.combiner_const_mcode = mcode (function x -> Cst (Ast0.unwrap_mcode x));
+      VT0.combiner_simpleAssign_mcode = mcode (function x -> SAOp (Ast0.unwrap_mcode x));
+      VT0.combiner_opAssign_mcode = mcode (function x -> ArOp (Ast0.unwrap_mcode x));
+      VT0.combiner_fix_mcode = mcode (function x -> FixOp (Ast0.unwrap_mcode x));
+      VT0.combiner_unary_mcode = mcode (function x -> UnOp (Ast0.unwrap_mcode x));
+      VT0.combiner_arithOp_mcode = mcode (function x -> ArOp (Ast0.unwrap_mcode x));
+      VT0.combiner_logicalOp_mcode = mcode (function x -> LogOp (Ast0.unwrap_mcode x));
+      VT0.combiner_cv_mcode = mcode (function x -> CV (Ast0.unwrap_mcode x));
+      VT0.combiner_sign_mcode = mcode (function x -> Sign (Ast0.unwrap_mcode x));
+      VT0.combiner_struct_mcode = mcode (function x -> Struct (Ast0.unwrap_mcode x));
+      VT0.combiner_storage_mcode = mcode (function x -> Store (Ast0.unwrap_mcode x));
+      VT0.combiner_inc_mcode = mcode (function x -> Inc (Ast0.unwrap_mcode x))}
 
 (* In general, we will get a list of lists:
 

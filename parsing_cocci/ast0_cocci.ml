@@ -615,6 +615,7 @@ and anything =
     DotsExprTag of expression dots
   | DotsInitTag of initialiser dots
   | DotsParamTag of parameterTypeDef dots
+  | DotsTemplateParamTag of templateParameterTypeDef dots
   | DotsStmtTag of statement dots
   | DotsDeclTag of declaration dots
   | DotsFieldTag of field dots
@@ -651,6 +652,7 @@ and anything =
 
 let dotsExpr x = DotsExprTag x
 let dotsParam x = DotsParamTag x
+let dotsTemplateParam x = DotsTemplateParamTag x
 let dotsInit x = DotsInitTag x
 let dotsStmt x = DotsStmtTag x
 let dotsDecl x = DotsDeclTag x

@@ -1811,10 +1811,10 @@ let rebuild_mcode start_line =
   V0.flat_rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing statement donothing
-    donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
+    statement donothing donothing donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -3043,12 +3043,12 @@ let rewrap =
   let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
   V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode
+    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
+    mcode mcode
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
+    donothing donothing donothing donothing donothing donothing donothing
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->
