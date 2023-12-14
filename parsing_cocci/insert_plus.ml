@@ -73,14 +73,14 @@ it *)
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
-      (donothing Ast0.dotsParam) (donothing Ast0.dotsStmt)
+      (donothing Ast0.dotsParam) (donothing Ast0.dotsTemplateParam) (donothing Ast0.dotsStmt)
       (donothing Ast0.dotsDecl) (donothing Ast0.dotsField)
       (donothing Ast0.dotsEnumDecl) (donothing Ast0.dotsCase)
       (donothing Ast0.dotsDefParam)
       (donothing Ast0.ident) expression  (donothing Ast0.assignOp)
       (donothing Ast0.binaryOp)
       (donothing Ast0.typeC) initialiser
-      (donothing Ast0.param) (donothing Ast0.decl)
+      (donothing Ast0.param) (donothing Ast0.template_param) (donothing Ast0.decl)
       (donothing Ast0.field) (donothing Ast0.enum_decl) statement
       (donothing Ast0.forinfo) (donothing Ast0.case_line)
       (donothing Ast0.string_fragment) (donothing Ast0.attr) (donothing Ast0.attr_arg)

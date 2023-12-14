@@ -1433,6 +1433,9 @@ let visitor mode bind option_default
       | Ast0.DotsParamTag(params) ->
 	  let (params_n,params) = parameter_dots params in
 	  (params_n,Ast0.DotsParamTag(params))
+      | Ast0.DotsTemplateParamTag(params) ->
+	  let (tparams_n,tparams) = template_parameter_dots params in
+	  (tparams_n,Ast0.DotsTemplateParamTag(tparams))
       | Ast0.DotsStmtTag(stmts) ->
 	  let (stmts_n,stmts) = statement_dots stmts in
 	  (stmts_n,Ast0.DotsStmtTag(stmts))
@@ -1476,8 +1479,8 @@ let visitor mode bind option_default
 	  let (param_n,param) = parameterTypeDef param in
 	  (param_n,Ast0.ParamTag(param))
       | Ast0.TemplateParamTag(param) ->
-	  let (param_n,param) = templateParameterTypeDef param in
-	  (param_n,Ast0.TemplateParamTag(param))
+	  let (tparam_n,tparam) = templateParameterTypeDef param in
+	  (tparam_n,Ast0.TemplateParamTag(tparam))
       | Ast0.InitTag(init) ->
 	  let (init_n,init) = initialiser init in
 	  (init_n,Ast0.InitTag(init))

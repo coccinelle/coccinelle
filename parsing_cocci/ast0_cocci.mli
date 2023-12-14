@@ -640,6 +640,7 @@ and anything =
 val dotsExpr : expression dots -> anything
 val dotsInit : initialiser dots -> anything
 val dotsParam : parameterTypeDef dots -> anything
+val dotsTemplateParam : templateParameterTypeDef dots -> anything
 val dotsStmt : statement dots -> anything
 val dotsDecl : declaration dots -> anything
 val dotsField : field dots -> anything
@@ -652,6 +653,7 @@ val assignOp : assignOp -> anything
 val binaryOp : binaryOp -> anything
 val typeC : typeC -> anything
 val param : parameterTypeDef -> anything
+val template_param : templateParameterTypeDef -> anything
 val ini : initialiser -> anything
 val decl : declaration -> anything
 val field : field -> anything

@@ -666,6 +666,7 @@ let assignOp x = AssignOpTag x
 let binaryOp x = BinaryOpTag x
 let typeC x = TypeCTag x
 let param x = ParamTag x
+let template_param x = TemplateParamTag x
 let ini x = InitTag x
 let decl x = DeclTag x
 let field x = FieldTag x
