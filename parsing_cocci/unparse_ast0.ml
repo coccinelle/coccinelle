@@ -961,6 +961,8 @@ let rec unparse_anything x =
       expression_dots d
   | Ast0.DotsParamTag(d) ->
       parameter_list d
+  | Ast0.DotsTemplateParamTag(d) ->
+      template_parameter_list d
   | Ast0.DotsInitTag(d) ->
       initialiser_list d
   | Ast0.DotsStmtTag(d) ->
@@ -981,6 +983,7 @@ let rec unparse_anything x =
       print_string ("BinaryOp: " ^ (Ast0.string_of_binaryOp d)); force_newline();
   | Ast0.TypeCTag(d) -> typeC d
   | Ast0.ParamTag(d) -> parameterTypeDef d
+  | Ast0.TemplateParamTag(d) -> templateParameterTypeDef d
   | Ast0.InitTag(d)  -> initialiser d
   | Ast0.DeclTag(d)  -> declaration d
   | Ast0.FieldTag(d)  -> field d

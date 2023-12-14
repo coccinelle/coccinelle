@@ -843,6 +843,7 @@ and anything =
   | Code                of top_level
   | ExprDotsTag         of expression dots
   | ParamDotsTag        of parameterTypeDef dots
+  | TemplateParamDotsTag of templateParameterTypeDef dots
   | StmtDotsTag         of statement dots
   | AnnDeclDotsTag      of annotated_decl dots
   | AnnFieldDotsTag     of annotated_field dots

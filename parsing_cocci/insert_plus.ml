@@ -112,6 +112,7 @@ let create_root_token_table minus =
 	    Ast0.DotsExprTag(d) -> Ast0.get_index d
 	  | Ast0.DotsInitTag(d) -> Ast0.get_index d
 	  | Ast0.DotsParamTag(d) -> Ast0.get_index d
+	  | Ast0.DotsTemplateParamTag(d) -> Ast0.get_index d
 	  | Ast0.DotsStmtTag(d) -> Ast0.get_index d
 	  | Ast0.DotsDeclTag(d) -> Ast0.get_index d
 	  | Ast0.DotsFieldTag(d) -> Ast0.get_index d
@@ -126,6 +127,7 @@ let create_root_token_table minus =
 	      failwith "not possible - iso only"
 	  | Ast0.TypeCTag(d) -> Ast0.get_index d
 	  | Ast0.ParamTag(d) -> Ast0.get_index d
+	  | Ast0.TemplateParamTag(d) -> Ast0.get_index d
 	  | Ast0.InitTag(d) -> Ast0.get_index d
 	  | Ast0.DeclTag(d) -> Ast0.get_index d
 	  | Ast0.FieldTag(d) -> Ast0.get_index d
@@ -240,6 +242,13 @@ bind to that; not good for isomorphisms *)
 	match Ast0.unwrap p with
 	  Ast0.PComma(comma) -> unfavored_mcode comma
 	| _ -> r.VT0.combiner_rec_parameter p)
+  k d in
+  let tpdots r k d =
+    dots
+      (function p ->
+	match Ast0.unwrap p with
+	  Ast0.TPComma(comma) -> unfavored_mcode comma
+	| _ -> r.VT0.combiner_rec_template_parameter p)
   k d in
   let dpdots r k d =
     dots
@@ -390,9 +399,9 @@ bind to that; not good for isomorphisms *)
   V0.flat_combiner bind option_default
     mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode
-    edots idots pdots sdots ddots fdots enumdots cdots dpdots
+    edots idots pdots tpdots sdots ddots fdots enumdots cdots dpdots
     ident expression do_nothing do_nothing
-    typeC initialiser param decl field do_nothing statement forinfo
+    typeC initialiser param do_nothing decl field do_nothing statement forinfo
     case_line do_nothing do_nothing do_nothing do_top
 
 
@@ -410,6 +419,9 @@ let call_collect_minus context_nodes :
       | Ast0.DotsParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_parameter_list e)
+      | Ast0.DotsTemplateParamTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).VT0.combiner_rec_template_parameter_list e)
       | Ast0.DotsStmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_statement_dots e)
@@ -448,6 +460,9 @@ let call_collect_minus context_nodes :
       | Ast0.ParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_parameter e)
+      | Ast0.TemplateParamTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_minus_join_points e).VT0.combiner_rec_template_parameter e)
       | Ast0.InitTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_minus_join_points e).VT0.combiner_rec_initialiser e)
@@ -571,6 +586,7 @@ let mk_code x             = Ast.Code (Ast0toast.top_level x)
 
 let mk_exprdots x  = Ast.ExprDotsTag (Ast0toast.expression_dots x)
 let mk_paramdots x = Ast.ParamDotsTag (Ast0toast.parameter_list x)
+let mk_templateparamdots x = Ast.TemplateParamDotsTag (Ast0toast.template_parameter_list x)
 let mk_stmtdots x  = Ast.StmtDotsTag (Ast0toast.statement_dots x)
 let mk_decldots x  = Ast.AnnDeclDotsTag (Ast0toast.declaration_dots x)
 let mk_fielddots x  = Ast.AnnFieldDotsTag (Ast0toast.field_dots x)
@@ -580,6 +596,7 @@ let mk_defpardots x= Ast.DefParDotsTag (Ast0toast.define_param_dots x)
 let mk_typeC x     = Ast.FullTypeTag (Ast0toast.typeC false x)
 let mk_init x      = Ast.InitTag (Ast0toast.initialiser x)
 let mk_param x     = Ast.ParamTag (Ast0toast.parameterTypeDef x)
+let mk_template_param x = Ast.TemplateParamTag (Ast0toast.templateParameterTypeDef x)
 
 let collect_plus_nodes root =
   let root_index = Ast0.get_index root in
@@ -680,12 +697,13 @@ let collect_plus_nodes root =
     (mcode mk_sign) (mcode mk_structUnion)
     (mcode mk_storage) (mcode mk_inc_file)
     (do_nothing mk_exprdots) initdots
-    (do_nothing mk_paramdots) stmt_dots (do_nothing mk_decldots)
+    (do_nothing mk_paramdots) (do_nothing mk_templateparamdots) stmt_dots (do_nothing mk_decldots)
     (do_nothing mk_fielddots) (do_nothing mk_enumdecldots)
     (do_nothing mk_casedots) (do_nothing mk_defpardots)
     (do_nothing mk_ident) (do_nothing mk_expression)
     (do_nothing mk_assignOp) (do_nothing mk_binaryOp)
-    (do_nothing mk_typeC) (do_nothing mk_init) (do_nothing mk_param)
+    (do_nothing mk_typeC) (do_nothing mk_init)
+    (do_nothing mk_param) (do_nothing mk_template_param)
     (do_nothing mk_declaration) (do_nothing mk_field)
     (do_nothing mk_enum_decl)
     stmt (do_nothing mk_forinfo) (do_nothing mk_case_line)
@@ -707,6 +725,9 @@ let call_collect_plus context_nodes :
       | Ast0.DotsParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_parameter_list e)
+      | Ast0.DotsTemplateParamTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).VT0.combiner_rec_template_parameter_list e)
       | Ast0.DotsStmtTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_statement_dots e)
@@ -748,6 +769,9 @@ let call_collect_plus context_nodes :
       | Ast0.ParamTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_parameter e)
+      | Ast0.TemplateParamTag(e) ->
+	  (Ast0.get_index e,
+	   (collect_plus_nodes e).VT0.combiner_rec_template_parameter e)
       | Ast0.DeclTag(e) ->
 	  (Ast0.get_index e,
 	   (collect_plus_nodes e).VT0.combiner_rec_declaration e)

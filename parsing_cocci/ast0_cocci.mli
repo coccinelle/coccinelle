@@ -455,6 +455,7 @@ and base_statement =
 and base_templateParameterTypeDef =
     TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * typeC) option
   | VarNameParam of typeC * ident (* name *) * (string mcode (* = *) * expression ) option
+  | TPComma of string mcode
   (* Note: TemplateParam not supported yet. *)
 and templateParameterTypeDef = base_templateParameterTypeDef wrap
 and template_parameter_list = templateParameterTypeDef dots

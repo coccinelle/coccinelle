@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 195, also unused: {none}
+(* current max is 197, also unused: {none}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -25,6 +25,7 @@ let dots d =
 let expression_dots x  = 1 :: dots x
 let initialiser_dots x = 2 :: dots x
 let parameter_dots x =   3 :: dots x
+let template_parameter_dots x =   196 :: dots x
 let statement_dots x =   4 :: dots x
 let declaration_dots x = 5 :: dots x
 let field_dots x = 8 :: dots x
@@ -170,9 +171,15 @@ let parameterTypeDef p =
   | Ast0.OptParam(param) -> [66]
   | Ast0.AsParam _ -> failwith "not possible"
 
+let templateParameterTypeDef p =
+  match Ast0.unwrap p with
+    Ast0.TypenameOrClassParam(tyorcl,id,eqtyopt) -> [198]
+  | Ast0.VarNameParam(ty,id,eqexpopt) -> [199]
+
 let statement s =
   match Ast0.unwrap s with
     Ast0.FunDecl(bef,fninfo,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) -> [68]
+  | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) -> [197]
   | Ast0.Decl(bef,decl) -> [69]
   | Ast0.Seq(lbrace,body,rbrace) -> [70]
   | Ast0.ExprStatement(exp,sem) -> [71]

@@ -7,6 +7,8 @@
 val expression_dots : Ast0_cocci.expression Ast0_cocci.dots -> int list
 val initialiser_dots : Ast0_cocci.initialiser Ast0_cocci.dots -> int list
 val parameter_dots : Ast0_cocci.parameterTypeDef Ast0_cocci.dots -> int list
+val template_parameter_dots :
+    Ast0_cocci.templateParameterTypeDef Ast0_cocci.dots -> int list
 val statement_dots : Ast0_cocci.statement Ast0_cocci.dots -> int list
 val declaration_dots : Ast0_cocci.declaration Ast0_cocci.dots -> int list
 val field_dots : Ast0_cocci.field Ast0_cocci.dots -> int list
@@ -23,6 +25,7 @@ val field : Ast0_cocci.field -> int list
 val enum_decl : Ast0_cocci.enum_decl -> int list
 val initialiser : Ast0_cocci.initialiser -> int list
 val parameterTypeDef : Ast0_cocci.parameterTypeDef -> int list
+val templateParameterTypeDef : Ast0_cocci.templateParameterTypeDef -> int list
 val statement : Ast0_cocci.statement -> int list
 val forinfo : Ast0_cocci.forinfo -> int list
 val pragmainfo : Ast0_cocci.pragmainfo -> int list

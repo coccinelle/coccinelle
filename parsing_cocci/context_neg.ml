@@ -24,6 +24,7 @@ let set_mcodekind x mcodekind =
     Ast0.DotsExprTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsInitTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsParamTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.DotsTemplateParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsStmtTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsDeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DotsFieldTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -38,6 +39,7 @@ let set_mcodekind x mcodekind =
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.ParamTag(d) -> Ast0.set_mcodekind d mcodekind
+  | Ast0.TemplateParamTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.DeclTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.FieldTag(d) -> Ast0.set_mcodekind d mcodekind
   | Ast0.EnumDeclTag(d) -> Ast0.set_mcodekind d mcodekind
@@ -61,6 +63,7 @@ let set_index x index =
     Ast0.DotsExprTag(d) -> Ast0.set_index d index
   | Ast0.DotsInitTag(d) -> Ast0.set_index d index
   | Ast0.DotsParamTag(d) -> Ast0.set_index d index
+  | Ast0.DotsTemplateParamTag(d) -> Ast0.set_index d index
   | Ast0.DotsStmtTag(d) -> Ast0.set_index d index
   | Ast0.DotsDeclTag(d) -> Ast0.set_index d index
   | Ast0.DotsFieldTag(d) -> Ast0.set_index d index
@@ -75,6 +78,7 @@ let set_index x index =
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Ast0.set_index d index
   | Ast0.ParamTag(d) -> Ast0.set_index d index
+  | Ast0.TemplateParamTag(d) -> Ast0.set_index d index
   | Ast0.InitTag(d) -> Ast0.set_index d index
   | Ast0.DeclTag(d) -> Ast0.set_index d index
   | Ast0.FieldTag(d) -> Ast0.set_index d index
@@ -97,6 +101,7 @@ let get_index = function
     Ast0.DotsExprTag(d) -> Index.expression_dots d
   | Ast0.DotsInitTag(d) -> Index.initialiser_dots d
   | Ast0.DotsParamTag(d) -> Index.parameter_dots d
+  | Ast0.DotsTemplateParamTag(d) -> Index.template_parameter_dots d
   | Ast0.DotsStmtTag(d) -> Index.statement_dots d
   | Ast0.DotsDeclTag(d) -> Index.declaration_dots d
   | Ast0.DotsFieldTag(d) -> Index.field_dots d
@@ -111,6 +116,7 @@ let get_index = function
       failwith "not possible - iso only"
   | Ast0.TypeCTag(d) -> Index.typeC d
   | Ast0.ParamTag(d) -> Index.parameterTypeDef d
+  | Ast0.TemplateParamTag(d) -> Index.templateParameterTypeDef d
   | Ast0.InitTag(d) -> Index.initialiser d
   | Ast0.DeclTag(d) -> Index.declaration d
   | Ast0.FieldTag(d) -> Index.field d
@@ -499,6 +505,19 @@ let classify is_minus all_marked table code =
                   option_default))
       |	_ -> k e) in
 
+  let template_param r k e =
+    compute_result Ast0.template_param e
+      (match Ast0.unwrap e with
+	Ast0.VarNameParam(ty,id,Some(eq,exp)) ->
+	  (* needed for the same reason as in the Init and UnInit cases *)
+	  bind (r.VT0.combiner_rec_typeC ty)
+            (bind (r.VT0.combiner_rec_ident id)
+	       (bind (mcode eq) (r.VT0.combiner_rec_expression exp)))
+      |	Ast0.VarNameParam(ty,id,None) ->
+	  (* needed for the same reason as in the Init and UnInit cases *)
+	  bind (r.VT0.combiner_rec_typeC ty) (r.VT0.combiner_rec_ident id)
+      |	_ -> k e) in
+
   let typeC r k e =
     compute_result Ast0.typeC e
       (match Ast0.unwrap e with
@@ -569,12 +588,13 @@ let classify is_minus all_marked table code =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
       (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
-      (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsStmt)
+      (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsTemplateParam)
+      (do_nothing Ast0.dotsStmt)
       (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsField)
       (do_nothing Ast0.dotsEnumDecl) (do_nothing Ast0.dotsCase)
       (do_nothing Ast0.dotsDefParam)
       ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
-      typeC initialiser param declaration field enum_decl
+      typeC initialiser param template_param declaration field enum_decl
       statement (do_nothing Ast0.forinfo) case_line string_fragment
       (do_nothing Ast0.attr) (do_nothing Ast0.attr_arg) (do_top Ast0.top) in
   combiner.VT0.combiner_rec_top_level code
@@ -960,6 +980,18 @@ let equal_parameterTypeDef p1 p2 =
   | (Ast0.OptParam(_),Ast0.OptParam(_)) -> true
   | _ -> false
 
+let equal_templateParameterTypeDef p1 p2 =
+  match (Ast0.unwrap p1,Ast0.unwrap p2) with
+    (Ast0.TypenameOrClassParam(tn1,_,Some(eq1,_)),
+     Ast0.TypenameOrClassParam(tn2,_,Some(eq2,_))) ->
+       equal_mcode tn1 tn2 && equal_mcode eq1 eq2
+  | (Ast0.TypenameOrClassParam(tn1,_,None),
+     Ast0.TypenameOrClassParam(tn2,_,None)) -> equal_mcode tn1 tn2
+  | (Ast0.VarNameParam(_,_,Some(eq1,_)),
+     Ast0.VarNameParam(_,_,Some(eq2,_))) -> equal_mcode eq1 eq2
+  | (Ast0.VarNameParam(_,_,None),Ast0.VarNameParam(_,_,None)) -> true
+  | _-> false
+
 let equal_statement s1 s2 =
   match (Ast0.unwrap s1,Ast0.unwrap s2) with
     (Ast0.FunDecl(_,fninfo1,_,lp1,_,_,rp1,_,lbrace1,_,rbrace1,_),
@@ -1085,6 +1117,8 @@ let root_equal e1 e2 =
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) -> dots equal_expression d1 d2
   | (Ast0.DotsParamTag(d1),Ast0.DotsParamTag(d2)) ->
       dots equal_parameterTypeDef d1 d2
+  | (Ast0.DotsTemplateParamTag(d1),Ast0.DotsTemplateParamTag(d2)) ->
+      dots equal_templateParameterTypeDef d1 d2
   | (Ast0.DotsStmtTag(d1),Ast0.DotsStmtTag(d2)) -> dots equal_statement d1 d2
   | (Ast0.DotsDeclTag(d1),Ast0.DotsDeclTag(d2)) -> dots equal_declaration d1 d2
   | (Ast0.DotsFieldTag(d1),Ast0.DotsFieldTag(d2)) -> dots equal_field d1 d2
@@ -1100,6 +1134,8 @@ let root_equal e1 e2 =
   | (Ast0.ArgExprTag(d),_) -> failwith "not possible - iso only"
   | (Ast0.TypeCTag(t1),Ast0.TypeCTag(t2)) -> equal_typeC t1 t2
   | (Ast0.ParamTag(p1),Ast0.ParamTag(p2)) -> equal_parameterTypeDef p1 p2
+  | (Ast0.TemplateParamTag(p1),Ast0.TemplateParamTag(p2)) ->
+      equal_templateParameterTypeDef p1 p2
   | (Ast0.InitTag(d1),Ast0.InitTag(d2)) -> equal_initialiser d1 d2
   | (Ast0.DeclTag(d1),Ast0.DeclTag(d2)) -> equal_declaration d1 d2
   | (Ast0.FieldTag(d1),Ast0.FieldTag(d2)) -> equal_field d1 d2
