@@ -934,7 +934,24 @@ and parameterTypeDef p =
     | Ast0.Pdots(dots) -> Ast.Pdots(mcode dots)
     | Ast0.OptParam(param) -> Ast.OptParam(parameterTypeDef param))
 
+and templateParameterTypeDef p =
+  let allminus = check_allminus.VT0.combiner_rec_template_parameter p in
+  rewrap p no_isos
+    (match Ast0.unwrap p with
+       Ast0.TypenameOrClassParam(tyorcl,id,None) -> Ast.TypenameOrClassParam(mcode tyorcl,ident id,None)
+    |  Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) -> Ast.TypenameOrClassParam(mcode tyorcl,ident id,Some (mcode eq,typeC allminus ty))
+    |  Ast0.VarNameParam(ty,id,None) ->
+       Ast.VarNameParam(typeC allminus ty,ident id,None)
+    |  Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
+       Ast.VarNameParam(typeC allminus ty,ident id,Some (mcode eq,expression exp))
+    |  Ast0.TPComma(cm) -> Ast.TPComma(mcode cm)
+    |  Ast0.TPDots(dots) -> Ast.TPDots(mcode dots)
+    (* Note: TemplateParam not supported yet. *)
+    )
+
 and parameter_list l = dots parameterTypeDef l
+
+and template_parameter_list l = dots templateParameterTypeDef l
 
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
@@ -1114,6 +1131,13 @@ and statement s =
                       body,
                       tokenwrap rbrace s (Ast.SeqEnd(rbrace)),
                       ([],[],[],convert_allminus_mcodekind allminus aft))
+      | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+	  let tmpkw = mcode tmpkw in
+	  let lab = mcode lab in
+	  let params = template_parameter_list params in (* ? *)
+	  let rab = mcode rab in
+          let stmt = statement seqible stmt in
+          Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt)
       |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
         Ast.Atomic(rewrap_rule_elem s
           (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))
@@ -1358,6 +1382,7 @@ and statement_dots l = dots statement l
 and anything = function
     Ast0.DotsExprTag(d) -> Ast.ExprDotsTag(expression_dots d)
   | Ast0.DotsParamTag(d) -> Ast.ParamDotsTag(parameter_list d)
+  | Ast0.DotsTemplateParamTag(d) -> failwith "TODO: FIXME: "
   | Ast0.DotsInitTag(d) -> failwith "not possible"
   | Ast0.DotsStmtTag(d) -> Ast.StmtDotsTag(statement_dots d)
   | Ast0.DotsDeclTag(d) -> Ast.AnnDeclDotsTag(declaration_dots d)
@@ -1373,6 +1398,7 @@ and anything = function
      failwith "only in isos, not converted to ast"
   | Ast0.TypeCTag(d) -> Ast.FullTypeTag(typeC false d)
   | Ast0.ParamTag(d) -> Ast.ParamTag(parameterTypeDef d)
+  | Ast0.TemplateParamTag(d) -> Ast.TemplateParamTag(templateParameterTypeDef d)
   | Ast0.InitTag(d) -> Ast.InitTag(initialiser d)
   | Ast0.DeclTag(d) -> Ast.DeclarationTag(declaration d)
   | Ast0.FieldTag(d) -> Ast.FieldTag(field d)

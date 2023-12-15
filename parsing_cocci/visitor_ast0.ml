@@ -945,6 +945,12 @@ let visitor mode bind option_default
 	    let (ty_n,ty) = typeC ty in
 	    let (id_n,id) = ident id in
 	    (bind ty_n id_n, Ast0.VarNameParam(ty,id,None))
+        | Ast0.TPComma(comma) ->
+	    let (comma_n,comma) = string_mcode comma in
+	    (comma_n, Ast0.TPComma(comma))
+        | Ast0.TPDots(dots) ->
+	    let (dots_n,dots) = string_mcode dots in
+	    (dots_n, Ast0.TPComma(dots))
         ) in
     template_paramfn all_functions k p
 

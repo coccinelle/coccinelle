@@ -96,7 +96,7 @@ let combiner bind option_default
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
-  (*and template_parameter_dots d = dotsfn template_paramdotsfn templateParameterTypeDef all_functions d*) (* FIXME: needed or not? *)
+  and template_parameter_dots d = dotsfn template_paramdotsfn templateParameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
     dotsfn anndecldotsfn annotated_decl all_functions d
@@ -719,6 +719,10 @@ let combiner bind option_default
 	    multibind [fullType ty;ident id;string_mcode eq;expression exp] (* FIXME: not [eq;exp] ?*)
         | Ast.VarNameParam(ty,id,None) ->
 	    multibind [fullType ty;ident id] (* FIXME: with None or not ?*)
+        | Ast.TPComma(comma) ->
+	    string_mcode comma
+        | Ast.TPDots(dots) ->
+	    string_mcode dots
         in
     template_paramfn all_functions k p
 
@@ -1144,6 +1148,7 @@ let combiner bind option_default
       | Ast.Code(cd) -> top_level cd
       | Ast.ExprDotsTag(ed) -> expression_dots ed
       | Ast.ParamDotsTag(pd) -> parameter_dots pd
+      | Ast.TemplateParamDotsTag(pd) -> template_parameter_dots pd
       | Ast.StmtDotsTag(sd) -> statement_dots sd
       | Ast.AnnDeclDotsTag(sd) -> annotated_decl_dots sd
       | Ast.AnnFieldDotsTag(sd) -> annotated_field_dots sd
@@ -1846,6 +1851,10 @@ let rebuilder
             Ast.VarNameParam(fullType ty,ident id,Some (string_mcode eq,expression exp))
         | Ast.VarNameParam(ty,id,None) ->
             Ast.VarNameParam(fullType ty,ident id,None)
+        | Ast.TPComma(comma) ->
+            Ast.TPComma(string_mcode comma)
+        | Ast.TPDots(dots) ->
+            Ast.TPDots(string_mcode dots)
         ) in
     template_paramfn all_functions k p
 
@@ -2296,6 +2305,7 @@ let rebuilder
       | Ast.Code(cd) -> Ast.Code(top_level cd)
       | Ast.ExprDotsTag(ed) -> Ast.ExprDotsTag(expression_dots ed)
       | Ast.ParamDotsTag(pd) -> Ast.ParamDotsTag(parameter_dots pd)
+      | Ast.TemplateParamDotsTag(pd) -> Ast.TemplateParamDotsTag(template_parameter_dots pd)
       | Ast.StmtDotsTag(sd) -> Ast.StmtDotsTag(statement_dots sd)
       | Ast.AnnDeclDotsTag(sd) -> Ast.AnnDeclDotsTag(annotated_decl_dots sd)
       | Ast.AnnFieldDotsTag(sd) -> Ast.AnnFieldDotsTag(annotated_field_dots sd)

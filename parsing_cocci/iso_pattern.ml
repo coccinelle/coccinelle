@@ -3057,6 +3057,8 @@ let rec rewrap_anything = function
       Ast0.DotsInitTag(rewrap.VT0.rebuilder_rec_initialiser_list d)
   | Ast0.DotsParamTag(d) ->
       Ast0.DotsParamTag(rewrap.VT0.rebuilder_rec_parameter_list d)
+  | Ast0.DotsTemplateParamTag(d) -> (*FIXME*)
+      Ast0.DotsTemplateParamTag(rewrap.VT0.rebuilder_rec_template_parameter_list d)
   | Ast0.DotsStmtTag(d) ->
       Ast0.DotsStmtTag(rewrap.VT0.rebuilder_rec_statement_dots d)
   | Ast0.DotsDeclTag(d) ->
@@ -3082,6 +3084,8 @@ let rec rewrap_anything = function
   | Ast0.TypeCTag(d) -> Ast0.TypeCTag(rewrap.VT0.rebuilder_rec_typeC d)
   | Ast0.InitTag(d) -> Ast0.InitTag(rewrap.VT0.rebuilder_rec_initialiser d)
   | Ast0.ParamTag(d) -> Ast0.ParamTag(rewrap.VT0.rebuilder_rec_parameter d)
+  | Ast0.TemplateParamTag(d) ->
+      Ast0.TemplateParamTag(rewrap.VT0.rebuilder_rec_template_parameter d)
   | Ast0.DeclTag(d) -> Ast0.DeclTag(rewrap.VT0.rebuilder_rec_declaration d)
   | Ast0.FieldTag(d) -> Ast0.FieldTag(rewrap.VT0.rebuilder_rec_field d)
   | Ast0.EnumDeclTag(d) ->

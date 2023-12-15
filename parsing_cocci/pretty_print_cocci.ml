@@ -804,6 +804,8 @@ and templateParameterTypeDef p =
   | Ast.VarNameParam(ty,id,eqexpopt) ->
       print_named_type ty (fun _ -> ident id);
       print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+  | Ast.TPComma(comma) -> mcode print_string comma; force_newline()
+  | Ast.TPDots(dots) -> mcode print_string dots; force_newline()
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
@@ -1308,6 +1310,7 @@ let _ =
     | Ast.Code(x) -> let _ = top_level x in ()
     | Ast.ExprDotsTag(x) -> dots (function _ -> ()) expression x
     | Ast.ParamDotsTag(x) -> parameter_list x
+    | Ast.TemplateParamDotsTag(x) -> dots (function _ -> ()) templateParameterTypeDef x
     | Ast.StmtDotsTag(x) -> dots (function _ -> ()) (statement "") x
     | Ast.AnnDeclDotsTag(x) -> dots (function _ -> ()) (annotated_decl "") x
     | Ast.AnnFieldDotsTag(x) -> dots (function _ -> ()) (annotated_field "") x

@@ -959,6 +959,14 @@ and templateParameterTypeDef tgt param =
       make_template_param param tgt arity (Ast0.TypenameOrClassParam(tyorcl,id,None))
   | Ast0.VarNameParam(tyorcl,id,_) ->
       failwith "unexpected code"
+  | Ast0.TPComma(cm) ->
+      let arity = param_same (mcode2line cm) [mcode2arity cm] in
+      let cm = mcode cm in
+      make_template_param param tgt arity (Ast0.TPComma(cm))
+  | Ast0.TPDots(dots) ->
+      let arity = param_same (mcode2line dots) [mcode2arity dots] in
+      let dots = mcode dots in
+      make_template_param param tgt arity (Ast0.TPComma(dots))
 
 and parameter_list tgt = dots (parameterTypeDef tgt)
 

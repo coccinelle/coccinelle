@@ -74,6 +74,7 @@ let rec right_decl d =
 let rec right_statement s =
   match Ast0.unwrap s with
     Ast0.FunDecl(bef,fi,name,lp,params,va,rp,attrs,lbrace,body,rbrace,aft) -> None
+  | Ast0.TemplateDefinition(_,_,_,_,_) -> None
   | Ast0.Decl(bef,decl) ->
       call_right right_decl decl s
 	(function decl -> Ast0.Decl(bef,decl))

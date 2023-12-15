@@ -1065,6 +1065,11 @@ and is_param_dots p =
     Ast0.Pdots(_) -> true
   | _ -> false
 
+and is_template_param_dots p =
+  match Ast0.unwrap p with
+    Ast0.TPDots(_) -> true
+  | _ -> false
+
 and parameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.Param(ty,Some id,attr) ->
@@ -1105,7 +1110,31 @@ and parameterTypeDef p =
       mkres p (Ast0.OptParam(res)) res res
   | Ast0.AsParam _ -> failwith "not possible"
 
+and templateParameterTypeDef p =
+    (match Ast0.unwrap p with
+       Ast0.TypenameOrClassParam(tyorcl,id,None) ->
+       let ln = promote_mcode tyorcl in
+       mkres p (Ast0.TypenameOrClassParam(normal_mcode tyorcl,ident id,None)) ln ln
+    |  Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+       let ln = promote_mcode tyorcl in
+       mkres p (Ast0.TypenameOrClassParam(normal_mcode tyorcl,ident id,Some (normal_mcode eq,typeC ty))) ln ln
+    |  Ast0.VarNameParam(ty,id,None) ->
+       let ty = typeC ty in
+       mkres p (Ast0.VarNameParam(ty,ident id,None)) ty ty
+    |  Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
+       let ty = typeC ty in
+       mkres p (Ast0.VarNameParam(typeC ty,ident id,Some (normal_mcode eq,expression exp))) ty ty
+    |  Ast0.TPComma(cm) ->
+       let ln = promote_mcode cm in
+       mkres p (Ast0.TPComma(normal_mcode cm)) ln ln
+    |  Ast0.TPDots(dots) ->
+       let ln = promote_mcode dots in
+       mkres p (Ast0.TPDots(normal_mcode dots )) ln ln
+    (* Note: TemplateParam not supported yet. *)
+    )
+
 and parameter_list prev = dots is_param_dots prev parameterTypeDef
+and template_parameter_list prev = dots is_template_param_dots prev templateParameterTypeDef
 
 (* for export *)
 let parameter_dots x = dots is_param_dots None parameterTypeDef x
@@ -1453,6 +1482,13 @@ let rec statement s =
 	| Ast0.FType(ty)::_ -> mkres s res ty right
 	| Ast0.FInline(inline)::_ -> mkres s res (promote_mcode inline) right)
 
+    | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+	let tmpkw = normal_mcode tmpkw in
+	let lab = normal_mcode lab in
+	let params = template_parameter_list (Some(promote_mcode lab)) params in
+	let rab = normal_mcode rab in
+	mkres s (Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt))
+          (promote_mcode tmpkw) (statement stmt)
     | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
 	let usng = normal_mcode usng in
 	let nmspc = normal_mcode nmspc in

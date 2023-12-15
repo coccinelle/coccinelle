@@ -630,7 +630,11 @@ and templateParameterTypeDef p =
           print_option (fun (eq,ty) -> mcode print_string eq; typeC ty) eqtyopt
       | Ast0.VarNameParam(ty,id,eqexpopt) ->
           print_named_type ty id;
-          print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt)
+          print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+      | Ast0.TPComma(cm) ->
+          mcode print_string cm
+      | Ast0.TPDots(dots) ->
+          mcode print_string dots)
 
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 and template_parameter_list l = dots (function _ -> ()) templateParameterTypeDef l

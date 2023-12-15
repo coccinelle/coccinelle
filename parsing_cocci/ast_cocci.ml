@@ -636,6 +636,8 @@ and base_rule_elem =
 and base_templateParameterTypeDef =
     TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * fullType) option
   | VarNameParam of fullType * ident (* name *) * (string mcode (* = *) * expression ) option
+  | TPComma of string mcode
+  | TPDots of string mcode (* ... *)
   (* Note: TemplateParam not supported yet. *)
 and templateParameterTypeDef = base_templateParameterTypeDef wrap
 and template_parameter_list = templateParameterTypeDef dots
@@ -1026,6 +1028,7 @@ and tag2c = function
   | Code _ -> "Code"
   | ExprDotsTag _ -> "ExprDotsTag"
   | ParamDotsTag _ -> "ParamDotsTag"
+  | TemplateParamDotsTag _ -> "TemplateParamDotsTag"
   | StmtDotsTag _ -> "StmtDotsTag"
   | AnnDeclDotsTag _ -> "AnnDeclDotsTag"
   | AnnFieldDotsTag _ -> "AnnFieldDotsTag"

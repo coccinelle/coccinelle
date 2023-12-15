@@ -635,6 +635,9 @@ let rec statement dots_before dots_after s =
 	(Ast0.FunDecl(x,fninfo,name,lp,params,va,rp,attrs,lbrace,
 		      statement_dots false true body,
 		      rbrace,y))
+  | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+      Ast0.rewrap s
+        (Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt)) (* FIXME: check *)
   | Ast0.Decl(_,_) -> s
   | Ast0.Seq(lbrace,body,rbrace) ->
       Ast0.rewrap s
