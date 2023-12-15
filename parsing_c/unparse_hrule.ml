@@ -133,10 +133,10 @@ let get_function_name rule env =
     (V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing donothing
       donothing expression donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing).V.combiner_top_level
       rule in
   match names with

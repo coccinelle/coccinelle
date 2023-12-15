@@ -1275,11 +1275,9 @@ let reevaluate_contextness =
       mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode
       donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing stmt
-      donothing
-      donothing donothing
-      donothing donothing donothing in
+      donothing donothing donothing donothing donothing donothing donothing
+      donothing donothing donothing donothing donothing donothing donothing
+      stmt donothing donothing donothing donothing donothing donothing in
   res.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)
