@@ -716,7 +716,8 @@ rule token = parse
 	  if !current_line_started
 	  then (start_line true; TWhy (get_current_line_type lexbuf))
           else (add_current_line_type D.OPT; token lexbuf) }
-  | "!" { start_line true; TBang (tok lexbuf,get_current_line_type lexbuf) }
+  | "!" | "not"
+      { start_line true; TBang (tok lexbuf,get_current_line_type lexbuf) }
   | "(" { if not !col_zero
 	  then (start_line true; TOPar (get_current_line_type lexbuf))
           else
