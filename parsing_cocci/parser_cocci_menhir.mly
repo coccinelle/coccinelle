@@ -280,8 +280,8 @@ let inline_id aft = function
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
-%token <Data.clt> TWhy TBang TOPar TCPar TInf3 TSup3
-%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0
+%token <Data.clt> TWhy TOPar TCPar TInf3 TSup3
+%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0 TBang
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
@@ -2554,7 +2554,7 @@ unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef (snd $1) }
 	| TPlus   { Parse_aux.clt2mcode Ast_cocci.UnPlus $1 }
 	| TMinus  { Parse_aux.clt2mcode Ast_cocci.UnMinus $1 }
 	| TTilde  { Parse_aux.clt2mcode Ast_cocci.Tilde $1 }
-	| TBang   { Parse_aux.clt2mcode Ast_cocci.Not $1 }
+	| TBang   { Parse_aux.clt2mcode (Ast_cocci.Not (fst $1)) (snd $1) }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }
@@ -3412,7 +3412,7 @@ token:
   | TCCro { Parse_aux.clt2mcode "]" $1 }
   | TEq { Parse_aux.clt2mcode "=" $1 }
   | TWhy { Parse_aux.clt2mcode "?" $1 }
-  | TBang { Parse_aux.clt2mcode "!" $1 }
+  | TBang { Parse_aux.clt2mcode (fst $1) (snd $1) }
   | TOPar { Parse_aux.clt2mcode "(" $1 }
   | TCPar { Parse_aux.clt2mcode ")" $1 }
   | TIf { Parse_aux.clt2mcode "if" $1 }

@@ -41,7 +41,7 @@ let set_test_poss =
 	| _ -> e)
     | Ast0.Unary(e1,op) ->
 	(match Ast0.unwrap_mcode op with
-	  Ast.Not -> Ast0.rewrap e (Ast0.Unary(process_exp e1,op))
+	  Ast.Not _ -> Ast0.rewrap e (Ast0.Unary(process_exp e1,op))
 	| _ -> e)
     | _ -> e in
 

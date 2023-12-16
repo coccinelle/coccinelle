@@ -569,7 +569,8 @@ let args_to_params l pb =
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
-%token <Ast_c.info> TWhy  TTilde TBang TNot
+%token <Ast_c.info> TWhy TTilde
+%token <string * Ast_c.info> TBang
 %token <Ast_c.info> TEllipsis
 %token <Ast_c.info> TDotDot
 
@@ -985,8 +986,7 @@ unary_op:
  | TPlus  { UnPlus,     $1 }
  | TMinus { UnMinus,    $1 }
  | TTilde { Tilde,      $1 }
- | TBang  { Not,        $1 }
- | TNot   { Notpp,      $1 }
+ | TBang  { Not(fst $1),snd $1 }
  /*(* gccext: have that a lot in old kernel to get address of local label.
     * cf gcc manual "local labels as values".
     *)*/
@@ -1346,7 +1346,7 @@ token:
 /*| TPtrOp  { $1 }
   | TDot    { $1 }*/
   | TWhy    { $1 }
-  | TBang   { $1 }
+  | TBang   { snd $1 }
   | TComma  { $1 }
 /*  | TIdent  { snd $1 }*/
   | TypedefIdent { snd $1 }

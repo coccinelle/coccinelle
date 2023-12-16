@@ -139,7 +139,7 @@ and constant =
   | Float of (string * floatType)
   | DecimalConst of (string * string * string)
 and isWchar = IsWchar | IsUchar | Isuchar | Isu8char | IsChar
-and unaryOp = GetRef | DeRef | UnPlus | UnMinus | Tilde | Not | Notpp | GetRefLabel
+and unaryOp = GetRef | DeRef | UnPlus | UnMinus | Tilde | Not of string | GetRefLabel
 and assignOpbis = SimpleAssign | OpAssign of arithOp
 and assignOp = assignOpbis wrap
 and fixOp = Dec | Inc

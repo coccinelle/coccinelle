@@ -281,7 +281,7 @@ let token2c (tok,_) add_clt =
 
   | PC.TWhy(clt)   -> add_clt "?" clt
   | PC.TDotDot(s,clt)-> add_clt s clt
-  | PC.TBang(clt)  -> add_clt "!" clt
+  | PC.TBang(s,clt)  -> add_clt s clt
   | PC.TOPar(clt)  -> add_clt "paren (" clt
   | PC.TOPar0(s,clt) -> add_clt "paren0 (" clt
   | PC.TInf3(clt) -> add_clt "<<<" clt
@@ -400,7 +400,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 *)
 
-  | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(clt) | PC.TOPar(clt)
+  | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(_,clt) | PC.TOPar(clt)
   | PC.TCPar(clt) | PC.TInf3(clt) | PC.TSup3(clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
@@ -493,7 +493,7 @@ let get_clt (tok,_) =
   | PC.TWhen(clt) | PC.TWhenTrue(clt) | PC.TWhenFalse(clt)
   | PC.TAny(clt) | PC.TStrict(clt) | PC.TEllipsis(clt)
 
-  | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(clt) | PC.TOPar(clt)
+  | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(_,clt) | PC.TOPar(clt)
   | PC.TCPar(clt) | PC.TInf3(clt) | PC.TSup3(clt)
 
   | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
@@ -731,7 +731,7 @@ let update_clt (tok,x) clt =
 
   | PC.TWhy(_)   -> (PC.TWhy(clt),x)
   | PC.TDotDot(s,_)   -> (PC.TDotDot(s,clt),x)
-  | PC.TBang(_)  -> (PC.TBang(clt),x)
+  | PC.TBang(s,_)  -> (PC.TBang(s,clt),x)
   | PC.TOPar(_)  -> (PC.TOPar(clt),x)
   | PC.TInf3(_)  -> (PC.TInf3(clt),x)
   | PC.TSup3(_)  -> (PC.TSup3(clt),x)
@@ -988,7 +988,7 @@ let split_token ((tok,_) as t) =
       ([t],[t])
 
   | PC.TWhy(clt)  | PC.TDotDot(_,clt)
-  | PC.TBang(clt) | PC.TOPar(clt) | PC.TOPar0(_,clt) | PC.TInf3(clt) | PC.TSup3(clt)
+  | PC.TBang(_,clt) | PC.TOPar(clt) | PC.TOPar0(_,clt) | PC.TInf3(clt) | PC.TSup3(clt)
   | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar(clt) | PC.TCPar0(_,clt) ->
       split t clt
 
@@ -1447,7 +1447,7 @@ let token2line (tok,_) =
   | PC.TOEllipsis(clt) | PC.TCEllipsis(clt)
   | PC.TPOEllipsis(clt) | PC.TPCEllipsis(clt)
 
-  | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(clt) | PC.TOPar(clt)
+  | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(_,clt) | PC.TOPar(clt)
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
   | PC.TCPar0(_,clt)
 

@@ -2039,7 +2039,7 @@ let instantiate bindings mv_bindings model =
 	     added to the original one, and when there is nothing added to
 	     the expression into which we are doing the propagation.  This
 	     may be too conservative. *)
-	  Ast.Not ->
+	  Ast.Not str ->
 	    let was_meta =
 	      (* k e doesn't change the outer structure of the term,
 		 only the metavars *)
@@ -2091,7 +2091,8 @@ let instantiate bindings mv_bindings model =
 		if nomodif (Ast0.get_mcodekind e)
 		then
 		  match Ast0.unwrap res with
-		    Ast0.Unary(e1,op) when get_op op = Ast.Not &&
+		    Ast0.Unary(e1,op) when
+		      (match get_op op with Ast.Not _ -> true | _ -> false) &&
 		      same_modif (Ast0.get_mcode_mcodekind op) ->
 			  k e1
 		  | Ast0.Edots(_,_) -> k (Ast0.rewrap e (Ast0.unwrap res))
@@ -2136,7 +2137,7 @@ let instantiate bindings mv_bindings model =
 				   Ast0.rewrap_mcode mv x in
 			      Ast0.rewrap e
 				(Ast0.Unary(k res,
-					    rewrap_binaryOp_mcode op Ast.Not)))
+					    rewrap_binaryOp_mcode op (Ast.Not str))))
 		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
 		      let exps =
@@ -2150,10 +2151,10 @@ let instantiate bindings mv_bindings model =
 		  | _ ->
 		      (*use e, because this might be the toplevel expression*)
 		      Ast0.rewrap e
-			(Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not))
+			(Ast0.Unary(k res,Ast0.rewrap_mcode unop (Ast.Not str)))
 		else
 		  Ast0.rewrap e
-		    (Ast0.Unary(k res,Ast0.rewrap_mcode unop Ast.Not))
+		    (Ast0.Unary(k res,Ast0.rewrap_mcode unop (Ast.Not str)))
 	      and negate_reb e e1 k =
 		(* used when ! is propagated to multiple places, to avoid
 		   duplicating mcode cells *)

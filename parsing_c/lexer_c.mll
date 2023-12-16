@@ -250,7 +250,7 @@ let cpp_keyword_table = Common.hash_of_list [
   "operator",  (fun ii -> Toperator ii);
   "final",     (fun ii -> Tfinal ii);
   "typename",  (fun ii -> Ttypename ii);
-  "not"     ,  (fun ii -> TNot ii);
+  "not"     ,  (fun ii -> TBang("not", ii));
   "override",  (fun ii -> TMacroAttr("override",ii));
   "noexcept",  (fun ii -> TMacroAttr("noexcept",ii))]
 
@@ -819,7 +819,8 @@ rule token = parse
   | ','    { TComma(tokinfo lexbuf) }
   | ";"    { TPtVirg(tokinfo lexbuf) }
   | "?"    { TWhy(tokinfo lexbuf) }    | ":"   { TDotDot(tokinfo lexbuf) }
-  | "!"    { TBang(tokinfo lexbuf) }   | "~"   { TTilde(tokinfo lexbuf) }
+  | "!"    { TBang(tok lexbuf,tokinfo lexbuf) }
+  | "~"    { TTilde(tokinfo lexbuf) }
 
   | "<:" { TOCro(tokinfo lexbuf) } | ":>" { TCCro(tokinfo lexbuf) }
   | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }

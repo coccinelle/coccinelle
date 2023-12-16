@@ -308,7 +308,7 @@ and base_string_format =
 
 and string_format = base_string_format wrap
 
-and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not
+and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not of string
 and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode

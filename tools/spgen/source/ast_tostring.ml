@@ -77,7 +77,7 @@ let unary_tostring = function
   | Ast.UnPlus -> "+"
   | Ast.UnMinus -> "-"
   | Ast.Tilde -> "~"
-  | Ast.Not -> "!"
+  | Ast.Not s -> s
 
 let binary_tostring = Ast.string_of_binaryOp
 

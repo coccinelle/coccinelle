@@ -220,7 +220,7 @@ let rec propagate_types env =
 	       | Ast.UnPlus -> Ast0.get_type exp
 	       | Ast.UnMinus -> Ast0.get_type exp
 	       | Ast.Tilde -> Ast0.get_type exp
-               | Ast.Not -> Some (Ast0.rewrap e bool_type))
+               | Ast.Not _ -> Some (Ast0.rewrap e bool_type))
 	| Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
 	| Ast0.Binary(exp1,op,exp2) ->
 	    let ty1 = Ast0.get_type exp1 in

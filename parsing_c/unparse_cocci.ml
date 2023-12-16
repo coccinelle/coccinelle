@@ -635,7 +635,7 @@ and unaryOp = function
   | Ast.UnPlus -> print_string "+"
   | Ast.UnMinus -> print_string "-"
   | Ast.Tilde -> print_string "~"
-  | Ast.Not -> print_string "!"
+  | Ast.Not s -> print_string s
 
 and assignOp op =
   match Ast.unwrap op with
