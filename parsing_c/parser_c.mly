@@ -1825,7 +1825,6 @@ decl2:
                 ($2::iistart::snd storage))
      }
  | decl_spec init_declarator_list TPtVirg { create_decls $1 $2 $3 }
- | decl_spec init_declarator_list_fn TPtVirg { create_decls $1 $2 $3 }
  /*(* cppext: *)*/
  /* using full decl spec allows too much,but avoids conflicts */
  | TMacroDecl TOPar macro_argument_list TCPar attributes_opt
@@ -1927,6 +1926,7 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
+ | declaratori_fn               { (Ast_c.noattr, $1, NoInit) }
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
  | declaratori_fn teq initialize{ (Ast_c.noattr, $1, ValInit($3, [$2])) }
  /* C++ only */
@@ -1934,9 +1934,6 @@ init_declarator2:
      { (Ast_c.noattr, $1, $3 $2 $4) }
  | declaratori tobrace_ini valinit tcbrace_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
-
-init_declarator_fn2:
- | declaratori_fn                  { (Ast_c.noattr, $1, NoInit) }
 
 /*(*-----------------------------------------------------------------------*)*/
 /*(* declarators (right part of type and variable). *)*/
@@ -1947,7 +1944,9 @@ init_declarator_fn2:
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator_attrs2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
+ | declaratori_fn               { (Ast_c.noattr, $1, NoInit) }
  | attributes declaratori       { ($1, $2, NoInit) }
+ | attributes declaratori_fn    { ($1, $2, NoInit) }
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
  | declaratori_fn teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
  | attributes declaratori teq initialize   { ($1, $2, ValInit($4, [$3])) }
@@ -1968,8 +1967,6 @@ init_declarator_attrs2:
 teq: TEq  { et "teq" (); $1 }
 
 init_declarator: init_declarator2  { dt "init" (); $1 }
-init_declarator_fn: init_declarator_fn2  { dt "init" (); $1 }
-
 init_declarator_attrs: init_declarator_attrs2 { dt "init_attrs" (); $1 }
 
 
@@ -2947,9 +2944,6 @@ init_declarator_list:
  | init_declarator_list TComma cpp_directive_list init_declarator_attrs
      { $1 @ [$4, [$2]] }
  | init_declarator_list TComma init_declarator_attrs { $1 @ [$3, [$2]] }
-
-init_declarator_list_fn:
- | init_declarator_fn                            { [$1,[]] }
 
 declaratorsfd_list:
  | declaratorsfd                            { [$1, []] }
