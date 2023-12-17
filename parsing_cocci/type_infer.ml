@@ -390,14 +390,28 @@ let rec propagate_types env =
 	    let _ = (propagate_types acc).VT0.combiner_rec_statement s in
 	    process_statement_list r acc ss)
 
+  and get_ty_type ty =
+    match Ast0.unwrap ty with
+      Ast0.TypeOfExpr(typeof,lp,exp,rp)
+      when Ast0.unwrap_mcode typeof = "decltype" ->
+	(match Ast0.unwrap exp with
+	  Ast0.Paren(lpp,exp,rpp) ->
+	    (match Ast0.get_type exp with
+	      Some t -> Ast0.rewrap ty (Ast0.Pointer(t, dummy))
+	    | None -> ty)
+	| _ -> ty)
+    | _ -> ty
+
   and process_decl env decl =
     match Ast0.unwrap decl with
       Ast0.MetaDecl(_,_,_) -> []
     | Ast0.Init(_,_,ty,id,_,_,exp,_) ->
 	let _ = (propagate_types env).VT0.combiner_rec_initialiser exp in
-	List.map (function i -> (i,ty)) (strip id)
+	let _ = (propagate_types env).VT0.combiner_rec_typeC ty in
+	List.map (function i -> (i,get_ty_type ty)) (strip id)
     | Ast0.UnInit(_,_,ty,id,_,_) ->
-	List.map (function i -> (i,ty)) (strip id)
+	let _ = (propagate_types env).VT0.combiner_rec_typeC ty in
+	List.map (function i -> (i,get_ty_type ty)) (strip id)
     | Ast0.FunProto(fi,nm,lp,params,va,rp,sem) -> []
     | Ast0.MacroDecl(_,_,_,_,_,_,_,_) -> []
     | Ast0.MacroDeclInit(_,_,_,_,_,_,_,_,exp,_) ->
