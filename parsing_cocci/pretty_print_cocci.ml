@@ -51,7 +51,8 @@ and print_anything_list = function
 	| Ast.Token("if",_) | Ast.Token("while",_) -> true | _ -> false) ||
 	(match aft with
 	  Ast.Rule_elemTag(_) | Ast.AssignOpTag(_) | Ast.BinaryOpTag(_)
-	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_) -> true
+	| Ast.ArithOpTag(_) | Ast.LogicalOpTag(_) | Ast.Token("{",_)
+	| Ast.Token("<:",_) -> true
 	| _ -> false) in
       if space then print_string " ";
       print_anything_list rest
@@ -327,19 +328,18 @@ and unaryOp = function
   | Ast.DeRef -> print_string "*"
   | Ast.UnPlus -> print_string "+"
   | Ast.UnMinus -> print_string "-"
-  | Ast.Tilde -> print_string "~"
+  | Ast.Tilde s -> print_string s
   | Ast.Not s -> print_string s
 
 and assignOp op =
   match Ast.unwrap op with
     Ast.SimpleAssign op -> mcode print_string op
-  | Ast.OpAssign(aop) ->
-      mcode (function op -> arithOp op; print_string "=") aop
+  | Ast.OpAssign(aop) -> mcode opAssignOp aop
   | Ast.MetaAssign(metavar,_,_,_) -> mcode print_meta metavar
 
 and simpleAssignOp op = print_string "="
 
-and opAssignOp aop = arithOp aop; print_string "="
+and opAssignOp op = simple_arithOp (fun s -> print_string s; print_string "=") op
 
 and fixOp = function
     Ast.Dec -> print_string "--"
@@ -351,19 +351,21 @@ and binaryOp op =
   | Ast.Logical(lop) -> mcode logicalOp lop
   | Ast.MetaBinary(metavar,_,_,_) -> mcode print_meta metavar
 
-and arithOp = function
-    Ast.Plus -> print_string "+"
-  | Ast.Minus -> print_string "-"
-  | Ast.Mul -> print_string "*"
-  | Ast.Div -> print_string "/"
-  | Ast.Min -> print_string "<?"
-  | Ast.Max -> print_string ">?"
-  | Ast.Mod -> print_string "%"
-  | Ast.DecLeft -> print_string "<<"
-  | Ast.DecRight -> print_string ">>"
-  | Ast.And -> print_string "&"
-  | Ast.Or -> print_string "|"
-  | Ast.Xor -> print_string "^"
+and simple_arithOp aprint_string = function
+    Ast.Plus -> aprint_string "+"
+  | Ast.Minus -> aprint_string "-"
+  | Ast.Mul -> aprint_string "*"
+  | Ast.Div -> aprint_string "/"
+  | Ast.Min -> aprint_string "<?"
+  | Ast.Max -> aprint_string ">?"
+  | Ast.Mod -> aprint_string "%"
+  | Ast.DecLeft -> aprint_string "<<"
+  | Ast.DecRight -> aprint_string ">>"
+  | Ast.And s -> print_string s
+  | Ast.Or s -> print_string s
+  | Ast.Xor s -> print_string s
+
+and arithOp op = simple_arithOp print_string op
 
 and  logicalOp = function
     Ast.Inf -> print_string "<"
@@ -371,9 +373,9 @@ and  logicalOp = function
   | Ast.InfEq -> print_string "<="
   | Ast.SupEq -> print_string ">="
   | Ast.Eq -> print_string "=="
-  | Ast.NotEq -> print_string "!="
-  | Ast.AndLog -> print_string "&&"
-  | Ast.OrLog -> print_string "||"
+  | Ast.NotEq s -> print_string s
+  | Ast.AndLog s -> print_string s
+  | Ast.OrLog s -> print_string s
 
 and constant = function
     Ast.String(s,sz) ->

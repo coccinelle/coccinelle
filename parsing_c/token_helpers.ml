@@ -384,7 +384,7 @@ let info_of_tok = function
   | TEq                  (i) -> i
   | TWhy                 (i) -> i
   | TTilde               (i) -> i
-  | TBang                (s,i) -> i
+  | TBang                (i) -> i
   | TEllipsis            (i) -> i
   | TDotDot              (i) -> i
   | TPtVirg              (i) -> i
@@ -575,7 +575,7 @@ let visitor_info_of_tok f = function
   | TCBrace              (i) -> TCBrace              (f i)
   | TOCro                (i) -> TOCro                (f i)
   | TCCro                (i) -> TCCro                (f i)
-  | TOCroCro             (i) -> TOCroCro                (f i)
+  | TOCroCro             (i) -> TOCroCro             (f i)
   | TDot                 (i) -> TDot                 (f i)
   | TComma               (i) -> TComma               (f i)
   | TNoComma             (i) -> TNoComma             (f i)
@@ -585,7 +585,7 @@ let visitor_info_of_tok f = function
   | TEq                  (i) -> TEq                  (f i)
   | TWhy                 (i) -> TWhy                 (f i)
   | TTilde               (i) -> TTilde               (f i)
-  | TBang                (s,i) -> TBang              (s,f i)
+  | TBang                (i) -> TBang                (f i)
   | TEllipsis            (i) -> TEllipsis            (f i)
   | TDotDot              (i) -> TDotDot              (f i)
   | TPtVirg              (i) -> TPtVirg              (f i)

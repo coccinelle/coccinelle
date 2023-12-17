@@ -193,13 +193,13 @@ let token2c (tok,_) add_clt =
   | PC.TInt(x,clt) -> add_clt x clt
   | PC.TDecimalCst(x,len,prc,clt) -> add_clt x clt
 
-  | PC.TOrLog(clt) -> add_clt "||" clt
-  | PC.TAndLog(_,clt) -> add_clt "&&" clt
-  | PC.TOr(clt) -> add_clt "|" clt
-  | PC.TXor(clt) -> add_clt "^" clt
-  | PC.TAnd (_,clt) -> add_clt "&" clt
+  | PC.TOrLog(s,clt) -> add_clt s clt
+  | PC.TAndLog(s,clt) -> add_clt s clt
+  | PC.TOr(s,clt) -> add_clt s clt
+  | PC.TXor(s,clt) -> add_clt s clt
+  | PC.TAnd (s,clt) -> add_clt s clt
   | PC.TEqEq(clt) -> add_clt "==" clt
-  | PC.TNotEq(clt) -> add_clt "!=" clt
+  | PC.TNotEq(s,clt) -> add_clt s clt
   | PC.TSub(clt) -> add_clt "<=" clt
   | PC.TTildeEq(clt) -> add_clt "~=" clt
   | PC.TTildeExclEq(clt) -> add_clt "~!=" clt
@@ -226,7 +226,7 @@ let token2c (tok,_) add_clt =
 	| Ast.Mod -> "%"
 	|_ -> failwith "not possible")
 	clt
-  | PC.TTilde (clt) -> add_clt "~" clt
+  | PC.TTilde (s,clt) -> add_clt s clt
 
   | PC.TMeta(_,_,_,clt) -> add_clt "meta" clt
   | PC.TMetaAssignOp(_,_,_,clt) -> add_clt "metaassignop" clt
@@ -291,12 +291,12 @@ let token2c (tok,_) add_clt =
   | PC.TCPar(clt)  -> add_clt "paren )" clt
   | PC.TCPar0(s,clt) -> add_clt "paren0 )" clt
 
-  | PC.TOBrace(clt) -> add_clt "{" clt
-  | PC.TCBrace(clt) -> add_clt "}" clt
-  | PC.TOCro(clt) -> add_clt "[" clt
-  | PC.TCCro(clt) -> add_clt "]" clt
-  | PC.TOCroCro(clt) -> add_clt "[[" clt
-  | PC.TOInit(clt) -> add_clt "{" clt
+  | PC.TOBrace(s,clt) -> add_clt s clt
+  | PC.TCBrace(s,clt) -> add_clt s clt
+  | PC.TOCro(s,clt) -> add_clt s clt
+  | PC.TCCro(s,clt) -> add_clt s clt
+  | PC.TOCroCro(s,clt) -> add_clt s clt
+  | PC.TOInit(s,clt) -> add_clt s clt
 
   | PC.TPtrOp(clt) -> add_clt "->" clt
 
@@ -370,12 +370,12 @@ let plus_attachable only_plus (tok,_) =
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
 
-  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TOrLog(_,clt) | PC.TAndLog(_,clt) | PC.TOr(_,clt) | PC.TXor(_,clt)
+  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(_,clt) | PC.TTildeEq(clt)
   | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
-  | PC.TDmOp(_,clt) | PC.TTilde (clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (_,clt)
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
   | PC.TMetaParamList(_,_,_,_,clt)
@@ -403,8 +403,8 @@ let plus_attachable only_plus (tok,_) =
   | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(_,clt) | PC.TOPar(clt)
   | PC.TCPar(clt) | PC.TInf3(clt) | PC.TSup3(clt)
 
-  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
-  | PC.TOCroCro(clt) | PC.TOInit(clt)
+  | PC.TOBrace(_,clt) | PC.TCBrace(_,clt) | PC.TOCro(_,clt) | PC.TCCro(_,clt)
+  | PC.TOCroCro(_,clt) | PC.TOInit(_,clt)
 
   | PC.TPtrOp(clt)
 
@@ -464,12 +464,12 @@ let get_clt (tok,_) =
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
 
-  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TOrLog(_,clt) | PC.TAndLog(_,clt) | PC.TOr(_,clt) | PC.TXor(_,clt)
+  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(_,clt) | PC.TTildeEq(clt)
   | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
-  | PC.TDmOp(_,clt) | PC.TTilde (clt) | PC.TTildeExclEq(clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (_,clt) | PC.TTildeExclEq(clt)
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
   | PC.TMetaParamList(_,_,_,_,clt)
@@ -496,8 +496,8 @@ let get_clt (tok,_) =
   | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(_,clt) | PC.TOPar(clt)
   | PC.TCPar(clt) | PC.TInf3(clt) | PC.TSup3(clt)
 
-  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
-  | PC.TOCroCro(clt) | PC.TOInit(clt)
+  | PC.TOBrace(_,clt) | PC.TCBrace(_,clt) | PC.TOCro(_,clt) | PC.TCCro(_,clt)
+  | PC.TOCroCro(_,clt) | PC.TOInit(_,clt)
 
   | PC.TPtrOp(clt)
 
@@ -669,13 +669,13 @@ let update_clt (tok,x) clt =
   | PC.TInt(s,_) -> (PC.TInt(s,clt),x)
   | PC.TDecimalCst(s,l,p,_) -> (PC.TDecimalCst(s,l,p,clt),x)
 
-  | PC.TOrLog(_) -> (PC.TOrLog(clt),x)
+  | PC.TOrLog(s,_) -> (PC.TOrLog(s,clt),x)
   | PC.TAndLog(s,_) -> (PC.TAndLog(s,clt),x)
-  | PC.TOr(_) -> (PC.TOr(clt),x)
-  | PC.TXor(_) -> (PC.TXor(clt),x)
+  | PC.TOr(s,_) -> (PC.TOr(s,clt),x)
+  | PC.TXor(s,_) -> (PC.TXor(s,clt),x)
   | PC.TAnd (s,_) -> (PC.TAnd (s,clt),x)
   | PC.TEqEq(_) -> (PC.TEqEq(clt),x)
-  | PC.TNotEq(_) -> (PC.TNotEq(clt),x)
+  | PC.TNotEq(s,_) -> (PC.TNotEq(s,clt),x)
   | PC.TTildeEq(_) -> (PC.TTildeEq(clt),x)
   | PC.TSub(_) -> (PC.TSub(clt),x)
   | PC.TLogOp(op,_) -> (PC.TLogOp(op,clt),x)
@@ -685,7 +685,7 @@ let update_clt (tok,x) clt =
   | PC.TMinus(_) -> (PC.TMinus(clt),x)
   | PC.TMul(s,_) -> (PC.TMul(s,clt),x)
   | PC.TDmOp(op,_) -> (PC.TDmOp(op,clt),x)
-  | PC.TTilde (_) -> (PC.TTilde (clt),x)
+  | PC.TTilde (s,_) -> (PC.TTilde (s,clt),x)
 
   | PC.TMeta(a,b,c,_)      -> (PC.TMeta(a,b,c,clt),x)
   | PC.TMetaParam(a,b,c,_) -> (PC.TMetaParam(a,b,c,clt),x)
@@ -741,12 +741,12 @@ let update_clt (tok,x) clt =
   | PC.TCPar(_)  -> (PC.TCPar(clt),x)
   | PC.TCPar0(s,_) -> (PC.TCPar0(s,clt),x)
 
-  | PC.TOBrace(_) -> (PC.TOBrace(clt),x)
-  | PC.TCBrace(_) -> (PC.TCBrace(clt),x)
-  | PC.TOCro(_) -> (PC.TOCro(clt),x)
-  | PC.TCCro(_) -> (PC.TCCro(clt),x)
-  | PC.TOCroCro(_) -> (PC.TOCroCro(clt),x)
-  | PC.TOInit(_) -> (PC.TOInit(clt),x)
+  | PC.TOBrace(s,_) -> (PC.TOBrace(s,clt),x)
+  | PC.TCBrace(s,_) -> (PC.TCBrace(s,clt),x)
+  | PC.TOCro(s,_) -> (PC.TOCro(s,clt),x)
+  | PC.TCCro(s,_) -> (PC.TCCro(s,clt),x)
+  | PC.TOCroCro(s,_) -> (PC.TOCroCro(s,clt),x)
+  | PC.TOInit(s,_) -> (PC.TOInit(s,clt),x)
 
   | PC.TPtrOp(_) -> (PC.TPtrOp(clt),x)
 
@@ -998,16 +998,15 @@ let split_token ((tok,_) as t) =
   | PC.TDecimalCst(_,_,_,clt) ->
       split t clt
 
-  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TTildeEq(clt)
+  | PC.TOrLog(_,clt) | PC.TAndLog(_,clt) | PC.TOr(_,clt) | PC.TXor(_,clt)
+  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(_,clt) | PC.TTildeEq(clt)
   | PC.TTildeExclEq(clt) | PC.TSub(clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
-  | PC.TDmOp(_,clt) | PC.TTilde (clt) -> split t clt
+  | PC.TDmOp(_,clt) | PC.TTilde (_,clt) -> split t clt
 
-  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOInit(clt) -> split t clt
-  | PC.TOCro(clt) | PC.TCCro(clt) -> split t clt
-  | PC.TOCroCro(clt) -> split t clt
+  | PC.TOBrace(_,clt) | PC.TCBrace(_,clt) | PC.TOInit(_,clt)
+  | PC.TOCro(_,clt) | PC.TCCro(_,clt) | PC.TOCroCro(_,clt) -> split t clt
 
   | PC.TPtrOp(clt) -> split t clt
 
@@ -1059,19 +1058,19 @@ let find_function_names l =
       (PC.TOPar0(_),info) -> true
     | _ -> false in
   let is_obrace = function
-      (PC.TOBrace(_),info) -> true
+      (PC.TOBrace _,info) -> true
     | (PC.TOPar(_),info) -> true
-    | (PC.TOCro(_),info) -> true
-    | (PC.TOCroCro(_),info) -> true
+    | (PC.TOCro _,info) -> true
+    | (PC.TOCroCro _,info) -> true
     | _ -> false in
   let is_cbrace = function
-      (PC.TCBrace(_),info) -> true
+      (PC.TCBrace _,info) -> true
     | (PC.TCPar(_),info) -> true
-    | (PC.TCCro(_),info) -> true
+    | (PC.TCCro _,info) -> true
     | _ -> false in
   let rec split acc = function
       [] | [_] -> raise Irrelevant
-    | ((PC.TCPar(_),_) as t1) :: ((PC.TOBrace(_),_) as t2) :: rest
+    | ((PC.TCPar(_),_) as t1) :: ((PC.TOBrace _,_) as t2) :: rest
     | ((PC.TCPar(_),_) as t1) :: ((PC.TPtVirg(_,_),_) as t2) :: rest ->
 	(List.rev (t1::acc),(t2::rest))
     | x::xs -> split (x::acc) xs in
@@ -1171,15 +1170,15 @@ let find_function_names l =
     | (PC.TPOEllipsis(_),_)::_
     | (PC.TPCEllipsis(_),_)::_
     | (PC.TPtVirg(_,_),_)::_
-    | (PC.TOBrace(_),_)::_
-    | (PC.TCBrace(_),_)::_
+    | (PC.TOBrace _,_)::_
+    | (PC.TCBrace _,_)::_
     | (PC.TOPar(_),_)::_
-    | (PC.TOCro(_),_)::_
+    | (PC.TOCro _,_)::_
     | (PC.TIdent(_),_)::_ -> false
     | _ -> true in
   let decl_or_proto clt info bef aft =
     match aft with
-      (PC.TOBrace(_),_)::_ -> (((PC.TFunDecl(clt),info) :: bef), aft)
+      (PC.TOBrace _,_)::_ -> (((PC.TFunDecl(clt),info) :: bef), aft)
     | (PC.TPtVirg(_,_),_)::_ -> (((PC.TFunProto(clt),info) :: bef), aft)
     | _ -> raise Irrelevant in
   let rec loop acc depth = function
@@ -1194,7 +1193,7 @@ let find_function_names l =
               (match aft with
                 (PC.TPtVirg(_,_),_)::_
                  when not(is_permissible_proto acc) -> raise Irrelevant
-	      | (((PC.TPtVirg(_,_),_)|(PC.TOBrace(_),_)) as a)::rest
+	      | (((PC.TPtVirg(_,_),_)|(PC.TOBrace _,_)) as a)::rest
 		  when is_pls a && List.exists is_ctx acc &&
 		       List.exists is_ctx rest ->
 		    (* new prototype or function cannot have context code
@@ -1287,8 +1286,8 @@ let detect_types in_meta_decls l =
       (PC.TOEllipsis(_),_)
     | (PC.TPOEllipsis(_),_)
     | (PC.TEllipsis(_),_)
-    | (PC.TPtVirg(_,_),_) | (PC.TOBrace(_),_) | (PC.TOInit(_),_)
-    | (PC.TCBrace(_),_)
+    | (PC.TPtVirg(_,_),_) | (PC.TOBrace _,_) | (PC.TOInit(_),_)
+    | (PC.TCBrace _,_)
     | (PC.TPure,_) | (PC.TContext,_)
     | (PC.Talignas(_),_)
     | (PC.Tstatic(_),_) | (PC.Textern(_),_)
@@ -1298,7 +1297,7 @@ let detect_types in_meta_decls l =
     | (PC.TDotDot(_,_),_) when in_meta_decls -> true
     | _ -> false in
   let is_choices_delim = function
-      (PC.TOBrace(_),_) | (PC.TComma(_),_) -> true | _ -> false in
+      (PC.TOBrace _,_) | (PC.TComma(_),_) -> true | _ -> false in
   let is_id = function
       (PC.TIdent(_,_),_) | (PC.TMetaId(_,_,_,_,_),_)
     | (PC.TMetaFunc(_,_,_,_),_)
@@ -1339,7 +1338,7 @@ let detect_types in_meta_decls l =
       (* infn: 0 means not in a function header
 	 > 0 means in a function header, after infn - 1 unmatched open parens*)
       [] -> []
-    | ((PC.TOBrace(clt),v)::_) as all when in_meta_decls ->
+    | ((PC.TOBrace(s,clt),v)::_) as all when in_meta_decls ->
 	collect_choices type_names all (* never a function header *)
     | delim::(PC.TIdent(ident,clt),v)::((PC.TMul(_),_) as x)::((id::_) as rest)
       when is_delim infn delim && (is_id id || is_tyleft id) ->
@@ -1373,8 +1372,8 @@ let detect_types in_meta_decls l =
     | x::rest -> x::(loop false infn type_names rest)
   and collect_choices type_names = function
       [] -> [] (* should happen, but let the parser detect that *)
-    | (PC.TCBrace(clt),v)::rest ->
-	(PC.TCBrace(clt),v)::(loop false 0 type_names rest)
+    | (PC.TCBrace(s,clt),v)::rest ->
+	(PC.TCBrace(s,clt),v)::(loop false 0 type_names rest)
     | delim::(PC.TIdent(ident,clt),v)::rest
       when is_choices_delim delim ->
 	let newid = redo_id ident clt v in
@@ -1418,11 +1417,11 @@ let token2line (tok,_) =
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
 
-  | PC.TOrLog(clt) | PC.TAndLog(_,clt) | PC.TOr(clt) | PC.TXor(clt)
-  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(clt) | PC.TLogOp(_,clt)
+  | PC.TOrLog(_,clt) | PC.TAndLog(_,clt) | PC.TOr(_,clt) | PC.TXor(_,clt)
+  | PC.TAnd (_,clt) | PC.TEqEq(clt) | PC.TNotEq(_,clt) | PC.TLogOp(_,clt)
   | PC.TShLOp(_,clt) | PC.TShROp(_,clt)
   | PC.TPlus(clt) | PC.TMinus(clt) | PC.TMul(_,clt)
-  | PC.TDmOp(_,clt) | PC.TTilde (clt)
+  | PC.TDmOp(_,clt) | PC.TTilde (_,clt)
 
   | PC.TMeta(_,_,_,clt) | PC.TMetaParam(_,_,_,clt)
   | PC.TMetaParamList(_,_,_,_,clt)
@@ -1451,8 +1450,8 @@ let token2line (tok,_) =
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
   | PC.TCPar0(_,clt)
 
-  | PC.TOBrace(clt) | PC.TCBrace(clt) | PC.TOCro(clt) | PC.TCCro(clt)
-  | PC.TOCroCro(clt) | PC.TOInit(clt)
+  | PC.TOBrace(_,clt) | PC.TCBrace(_,clt) | PC.TOCro(_,clt) | PC.TCCro(_,clt)
+  | PC.TOCroCro(_,clt) | PC.TOInit(_,clt)
 
   | PC.TPtrOp(clt)
 
@@ -1596,18 +1595,18 @@ let check_parentheses plus tokens =
 
 let find_top_init tokens =
   match tokens with
-    (PC.TOBrace(clt),q) :: rest ->
+    (PC.TOBrace(s,clt),q) :: rest ->
       let rec dot_start acc = function
-	  ((PC.TOBrace(_),_) as x) :: rest ->
+	  ((PC.TOBrace _,_) as x) :: rest ->
 	    dot_start (x::acc) rest
 	| ((PC.TDot(_),_) :: rest) as x ->
-	    Some ((PC.TOInit(clt),q) :: (List.rev acc) @ x)
+	    Some ((PC.TOInit(s,clt),q) :: (List.rev acc) @ x)
 	| l -> None in
       let rec comma_end acc = function
-	  ((PC.TCBrace(_),_) as x) :: rest ->
+	  ((PC.TCBrace _,_) as x) :: rest ->
 	    comma_end (x::acc) rest
 	| ((PC.TComma(_),_) :: rest) as x ->
-	    Some ((PC.TOInit(clt),q) :: (List.rev x) @ acc)
+	    Some ((PC.TOInit(s,clt),q) :: (List.rev x) @ acc)
 	| l -> None in
       (match dot_start [] rest with
 	Some x -> x

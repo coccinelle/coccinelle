@@ -370,15 +370,15 @@ let rec expression e =
       | Ast.Mul | Ast.Div | Ast.Mod -> mulit
       | Ast.Min | Ast.Max -> relat
       | Ast.DecLeft | Ast.DecRight -> shift
-      | Ast.And -> bit_and
-      | Ast.Or -> bit_or
-      | Ast.Xor -> bit_xor in
+      | Ast.And _ -> bit_and
+      | Ast.Or _ -> bit_or
+      | Ast.Xor _ -> bit_xor in
     let left_prec_of_logical op =
       match Ast.unwrap_mcode op with
 	Ast.Inf | Ast.Sup | Ast.InfEq | Ast.SupEq -> relat
-      | Ast.Eq | Ast.NotEq -> equal
-      | Ast.AndLog -> log_and
-      | Ast.OrLog -> log_or in
+      | Ast.Eq | Ast.NotEq _ -> equal
+      | Ast.AndLog _ -> log_and
+      | Ast.OrLog _ -> log_or in
     match Ast.unwrap op with
       Ast.Arith op' -> left_prec_of_arith op'
     | Ast.Logical op' -> left_prec_of_logical op'
@@ -396,9 +396,9 @@ let rec expression e =
       | Ast.Mul | Ast.Div | Ast.Mod -> cast
       | Ast.Min | Ast.Max -> shift
       | Ast.DecLeft | Ast.DecRight -> addit
-      | Ast.And -> equal
-      | Ast.Or -> bit_xor
-      | Ast.Xor -> bit_and in
+      | Ast.And _ -> equal
+      | Ast.Or _ -> bit_xor
+      | Ast.Xor _ -> bit_and in
     let right_prec_of_logical op =
       match Ast.unwrap_mcode op with
 	Ast.Inf -> shift
@@ -406,9 +406,9 @@ let rec expression e =
       | Ast.InfEq -> shift
       | Ast.SupEq -> shift
       | Ast.Eq -> relat
-      | Ast.NotEq -> relat
-      | Ast.AndLog -> bit_or
-      | Ast.OrLog -> log_and in
+      | Ast.NotEq _ -> relat
+      | Ast.AndLog _ -> bit_or
+      | Ast.OrLog _ -> log_and in
     match Ast.unwrap op with
       Ast.Arith op' -> right_prec_of_arith op'
     | Ast.Logical op' -> right_prec_of_logical op'
@@ -634,7 +634,7 @@ and unaryOp = function
   | Ast.DeRef -> print_string "*"
   | Ast.UnPlus -> print_string "+"
   | Ast.UnMinus -> print_string "-"
-  | Ast.Tilde -> print_string "~"
+  | Ast.Tilde s -> print_string s
   | Ast.Not s -> print_string s
 
 and assignOp op =
@@ -662,20 +662,20 @@ and binaryOp op =
 	| _ -> error name op "binary operator value expected")
 
 and arithOp eq op =
-  let print_string s = if eq then print_string (s^"=") else print_string s in
+  let aprint_string s = if eq then print_string (s^"=") else print_string s in
   match op with
-    Ast.Plus -> print_string "+"
-  | Ast.Minus -> print_string "-"
-  | Ast.Mul -> print_string "*"
-  | Ast.Div -> print_string "/"
-  | Ast.Min -> print_string "<?"
-  | Ast.Max -> print_string ">?"
-  | Ast.Mod -> print_string "%"
-  | Ast.DecLeft -> print_string "<<"
-  | Ast.DecRight -> print_string ">>"
-  | Ast.And -> print_string "&"
-  | Ast.Or -> print_string "|"
-  | Ast.Xor -> print_string "^"
+    Ast.Plus -> aprint_string "+"
+  | Ast.Minus -> aprint_string "-"
+  | Ast.Mul -> aprint_string "*"
+  | Ast.Div -> aprint_string "/"
+  | Ast.Min -> aprint_string "<?"
+  | Ast.Max -> aprint_string ">?"
+  | Ast.Mod -> aprint_string "%"
+  | Ast.DecLeft -> aprint_string "<<"
+  | Ast.DecRight -> aprint_string ">>"
+  | Ast.And s -> print_string s
+  | Ast.Or s -> print_string s
+  | Ast.Xor s -> print_string s
 
 and logicalOp = function
     Ast.Inf -> print_string "<"
@@ -683,9 +683,9 @@ and logicalOp = function
   | Ast.InfEq -> print_string "<="
   | Ast.SupEq -> print_string ">="
   | Ast.Eq -> print_string "=="
-  | Ast.NotEq -> print_string "!="
-  | Ast.AndLog -> print_string "&&"
-  | Ast.OrLog -> print_string "||"
+  | Ast.NotEq s -> print_string s
+  | Ast.AndLog s -> print_string s
+  | Ast.OrLog s -> print_string s
 
 and constant = function
     Ast.String(s,sz) -> print_text (sz2c sz); print_string ("\""^s^"\"")

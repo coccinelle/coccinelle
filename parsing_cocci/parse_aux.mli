@@ -44,6 +44,7 @@ val id3name : 'a * 'b * 'c -> 'a
 val id2name : 'a * 'b -> 'a
 val id2clt : 'a * 'b -> 'b
 val id2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
+val tok2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
 val sym2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
 val mkdots :
   string ->
@@ -100,35 +101,25 @@ val make_gcc_attr:
   Data.clt -> Data.clt -> Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
   Data.clt -> Data.clt -> Ast0_cocci.attr
 val make_cxx_attr:
-  Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
-  Data.clt -> Data.clt -> Ast0_cocci.attr
+  (string * Data.clt) -> Ast0_cocci.expression Ast0_cocci.dots ->
+  (string * Data.clt) -> (string * Data.clt) -> Ast0_cocci.attr
 val make_cxx_attr_using:
-  Data.clt -> Data.clt -> Ast0_cocci.ident ->
+  (string * Data.clt) -> Data.clt -> Ast0_cocci.ident ->
   Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
-  Data.clt -> Data.clt -> Ast0_cocci.attr
+  (string * Data.clt) -> (string * Data.clt) -> Ast0_cocci.attr
 val top_dots : 'a -> 'a Ast0_cocci.wrap
 val pointerify :
-  Ast0_cocci.typeC ->
-  (string * Data.clt)
-  list -> Ast0_cocci.typeC
+  Ast0_cocci.typeC -> (string * Data.clt) list -> Ast0_cocci.typeC
 val ty_pointerify : Ast0_cocci.typeC -> 'a list -> Ast0_cocci.typeC
 val make_cv :
     Ast0_cocci.cvattr list -> Ast0_cocci.typeC -> Ast0_cocci.cvattr list -> Ast0_cocci.typeC
 val make_ctype_and_ptr :
     Ast0_cocci.cvattr list * Ast0_cocci.typeC * Ast0_cocci.cvattr list *
-       ((string *Data.clt) * Ast0_cocci.cvattr list) list -> Ast0_cocci.typeC
+       ((string * Data.clt) * Ast0_cocci.cvattr list) list -> Ast0_cocci.typeC
 val arrayify :
   Ast0_cocci.typeC ->
-  ((Data.line_type * int * int * int * int * int *
-    (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-    (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-    string) *
-   Ast0_cocci.expression option *
-   (Data.line_type * int * int * int * int * int *
-    (Ast_cocci.added_string * Ast0_cocci.position_info) list *
-    (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
-    string))
-  list -> Ast0_cocci.typeC
+  ((string * Data.clt) * Ast0_cocci.expression option * (string * Data.clt)) list ->
+  Ast0_cocci.typeC
 val iso_adjust :
   ('a -> 'b) ->
   ('c -> 'b) -> 'a -> ('c, 'c) Common.either list -> 'b list list
@@ -268,9 +259,9 @@ val iterator :
   Ast0_cocci.ident -> Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
   Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val switch :
-  Data.clt -> Data.clt -> Ast0_cocci.expression -> Data.clt -> Data.clt ->
+  Data.clt -> Data.clt -> Ast0_cocci.expression -> Data.clt -> (string * Data.clt) ->
   Ast0_cocci.declaration list -> Ast0_cocci.case_line list ->
-  Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  (string * Data.clt) -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ret_exp :
   Data.clt -> Ast0_cocci.expression ->
   Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
@@ -286,8 +277,8 @@ val goto :
   Data.clt -> Ast0_cocci.ident ->
   Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val seq :
-  Data.clt -> Ast0_cocci.statement Ast0_cocci.dots ->
-  Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  (string * Data.clt) -> Ast0_cocci.statement Ast0_cocci.dots ->
+  (string * Data.clt) -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val check_rule_name : (string * 'a) option -> string option
 val make_iso_rule_name_result : string -> Ast_cocci.rulename
 val fix_dependencies : Ast0_cocci.dependency -> Ast_cocci.dependency

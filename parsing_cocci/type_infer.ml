@@ -219,7 +219,7 @@ let rec propagate_types env =
 		      |	_ -> None)
 	       | Ast.UnPlus -> Ast0.get_type exp
 	       | Ast.UnMinus -> Ast0.get_type exp
-	       | Ast.Tilde -> Ast0.get_type exp
+	       | Ast.Tilde _ -> Ast0.get_type exp
                | Ast.Not _ -> Some (Ast0.rewrap e bool_type))
 	| Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
 	| Ast0.Binary(exp1,op,exp2) ->
@@ -246,12 +246,13 @@ let rec propagate_types env =
 	    (match Ast0.unwrap op with
 	      Ast0.Arith _ -> same_type ty1 ty2
 	    | Ast0.MetaBinary _ -> same_type ty1 ty2
-	    | Ast0.Logical(op') when (let op''=Ast0.unwrap_mcode op' in op''=Ast.AndLog || op''=Ast.OrLog) ->
-		Some (Ast0.wrap bool_type)
 	    | Ast0.Logical(op) ->
-		let ty = lub_type ty1 ty2 in
-		Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
-		Some (Ast0.wrap bool_type))
+		(match Ast0.unwrap_mcode op with
+		  Ast.AndLog _ | Ast.OrLog _ -> Some (Ast0.wrap bool_type)
+		| _ ->
+		    let ty = lub_type ty1 ty2 in
+		    Ast0.set_type exp1 ty; Ast0.set_type exp2 ty;
+		    Some (Ast0.wrap bool_type)))
 	| Ast0.Paren(lp,exp,rp) -> Ast0.get_type exp
 	| Ast0.ArrayAccess(exp1,lb,exp2,rb) ->
 	    (match strip_cv (Ast0.get_type exp2) with

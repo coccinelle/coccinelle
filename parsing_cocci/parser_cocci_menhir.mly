@@ -56,8 +56,8 @@ let rec adjacent_ellipsis = function
 
 let build_arg = function
   | Arg arg -> arg
-  | Ellipsis e -> Ast0_cocci.wrap (Ast0_cocci.Pdots(Parse_aux.clt2mcode "..." e))
-  | Separator comma -> Ast0_cocci.wrap (Ast0_cocci.PComma (Parse_aux.clt2mcode "," comma))
+  | Ellipsis e -> Ast0_cocci.wrap (Ast0_cocci.Pdots(P.clt2mcode "..." e))
+  | Separator comma -> Ast0_cocci.wrap (Ast0_cocci.PComma (P.clt2mcode "," comma))
   | VAEllipsis _ -> assert false
   | Nothing -> assert false
 
@@ -69,8 +69,8 @@ let cleanup_arglist l =
   else begin
     let (args, vararg) = match l with
       | (VAEllipsis vaellipsis)::(Separator comma)::rem ->
-        let c = Parse_aux.clt2mcode "," comma in
-        let e = Parse_aux.clt2mcode "......" vaellipsis in
+        let c = P.clt2mcode "," comma in
+        let e = P.clt2mcode "......" vaellipsis in
         (rem, Some (c, e))
       | _ -> (l, None) in
     let just_args = List.filter (fun x -> not (is_separator x)) args in
@@ -108,50 +108,50 @@ let coerce_tmeta newty name builder matcher =
 let tmeta_to_type (name,cstr,pure,clt) =
   (coerce_tmeta "a type" name (TMetaType(name,cstr,pure,clt))
      (function TMetaType(_,_,_,_) -> true | _ -> false));
-  Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode name clt,cstr,pure))
+  Ast0_cocci.wrap(Ast0_cocci.MetaType(P.clt2mcode name clt,cstr,pure))
 
 let tmeta_to_field (name,cstr,pure,clt) =
   (coerce_tmeta "a field" name (TMetaField(name,cstr,pure,clt))
      (function TMetaField(_,_,_,_) -> true | _ -> false));
-  Parse_aux.meta_field (name,cstr,pure,clt)
+  P.meta_field (name,cstr,pure,clt)
 
 let tmeta_to_exp (name,cstr,pure,clt) =
   (coerce_tmeta "an expression" name
      (TMetaExp(name,cstr,pure,None,clt,None))
      (function TMetaExp(_,_,_,_,_,_) -> true | _ -> false));
   Ast0_cocci.wrap
-    (Ast0_cocci.MetaExpr(Parse_aux.clt2mcode name clt,cstr,None,Ast_cocci.ANY,pure,None))
+    (Ast0_cocci.MetaExpr(P.clt2mcode name clt,cstr,None,Ast_cocci.ANY,pure,None))
 
 let tmeta_to_param (name,cstr,pure,clt) =
   (coerce_tmeta "a parameter" name (TMetaParam(name,cstr,pure,clt))
      (function TMetaParam(_,_,_,_) -> true | _ -> false));
-  Ast0_cocci.wrap(Ast0_cocci.MetaParam(Parse_aux.clt2mcode name clt,cstr,pure))
+  Ast0_cocci.wrap(Ast0_cocci.MetaParam(P.clt2mcode name clt,cstr,pure))
 
 let tmeta_to_assignOp (name,cstr,pure,clt) =
   (coerce_tmeta "an assignment operator" name
      (TMetaAssignOp(name,cstr,pure,clt))
      (function TMetaAssignOp(_,_,_,_) -> true | _ -> false));
   Ast0_cocci.wrap
-    (Ast0_cocci.MetaAssign(Parse_aux.clt2mcode name clt,cstr, pure))
+    (Ast0_cocci.MetaAssign(P.clt2mcode name clt,cstr, pure))
 
 let tmeta_to_binaryOp (name,cstr,pure,clt) =
   (coerce_tmeta "a binary operator" name
      (TMetaBinaryOp(name,cstr,pure,clt))
      (function TMetaBinaryOp(_,_,_,_) -> true | _ -> false));
   Ast0_cocci.wrap
-    (Ast0_cocci.MetaBinary(Parse_aux.clt2mcode name clt,cstr, pure))
+    (Ast0_cocci.MetaBinary(P.clt2mcode name clt,cstr, pure))
 
 let tmeta_to_pragmainfo (name,cstr,pure,clt) =
   (coerce_tmeta "a pragma info" name
      (TMetaPragmaInfo(name,cstr,pure,clt))
      (function TMetaPragmaInfo(_,_,_,_) -> true | _ -> false));
   Ast0_cocci.wrap
-    (Ast0_cocci.MetaPragmaInfo(Parse_aux.clt2mcode name clt,cstr, pure))
+    (Ast0_cocci.MetaPragmaInfo(P.clt2mcode name clt,cstr, pure))
 
 let tmeta_to_statement (name,cstr,pure,clt) =
   (coerce_tmeta "a statement" name (TMetaType(name,cstr,pure,clt))
      (function TMetaType(_,_,_,_) -> true | _ -> false));
-  Parse_aux.meta_stm (name,cstr,pure,clt)
+  P.meta_stm (name,cstr,pure,clt)
 
 let tmeta_to_seed_id (name,pure,clt) =
   (coerce_tmeta "an identifier" name
@@ -163,7 +163,7 @@ let tmeta_to_ident (name,cstr,pure,clt) =
   (coerce_tmeta "an identifier" name
      (TMetaId(name,cstr,Ast_cocci.NoVal,pure,clt))
      (function TMetaId(_,_,_,_,_) -> true | _ -> false));
-  Ast0_cocci.wrap(Ast0_cocci.MetaId(Parse_aux.clt2mcode name clt,cstr,Ast_cocci.NoVal,pure))
+  Ast0_cocci.wrap(Ast0_cocci.MetaId(P.clt2mcode name clt,cstr,Ast_cocci.NoVal,pure))
 
 and  arithOp = function
     Ast_cocci.Plus -> "+"
@@ -175,9 +175,9 @@ and  arithOp = function
   | Ast_cocci.Mod -> "%"
   | Ast_cocci.DecLeft -> "<<"
   | Ast_cocci.DecRight -> ">>"
-  | Ast_cocci.And -> "&"
-  | Ast_cocci.Or -> "|"
-  | Ast_cocci.Xor -> "^"
+  | Ast_cocci.And s -> s
+  | Ast_cocci.Or s -> s
+  | Ast_cocci.Xor s -> s
 
 and  logicalOp = function
     Ast_cocci.Inf -> "<"
@@ -185,16 +185,16 @@ and  logicalOp = function
   | Ast_cocci.InfEq -> "<="
   | Ast_cocci.SupEq -> ">="
   | Ast_cocci.Eq -> "=="
-  | Ast_cocci.NotEq -> "!="
-  | Ast_cocci.AndLog -> "&&"
-  | Ast_cocci.OrLog -> "||"
+  | Ast_cocci.NotEq s -> s
+  | Ast_cocci.AndLog s -> s
+  | Ast_cocci.OrLog s -> s
 
 let mkarithop (op, clt) =
-  let op' = Parse_aux.clt2mcode op clt in
+  let op' = P.clt2mcode op clt in
   Ast0_cocci.wrap (Ast0_cocci.Arith op')
 
 let mklogop (op,clt) =
-  let op' = Parse_aux.clt2mcode op clt in
+  let op' = P.clt2mcode op clt in
   Ast0_cocci.wrap (Ast0_cocci.Logical op')
 
 let unknown_type = Ast0_cocci.wrap (Ast0_cocci.BaseType (Ast_cocci.Unknown, []))
@@ -207,15 +207,15 @@ let check_constraint_allowed () =
 
 let inline_id aft = function
     TMetaId((nm,constraints,seed,pure,clt)) ->
-      let clt = Parse_aux.set_aft aft clt in
+      let clt = P.set_aft aft clt in
       Ast0_cocci.wrap
-	(Ast0_cocci.MetaId(Parse_aux.clt2mcode nm clt,constraints,seed,pure))
+	(Ast0_cocci.MetaId(P.clt2mcode nm clt,constraints,seed,pure))
   | TIdent((nm,clt)) ->
-      let clt = Parse_aux.set_aft aft clt in
-      Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.clt2mcode nm clt))
+      let clt = P.set_aft aft clt in
+      Ast0_cocci.wrap(Ast0_cocci.Id(P.clt2mcode nm clt))
   | TSymId(nm,clt) ->
-      let clt = Parse_aux.set_aft aft clt in
-      Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.clt2mcode nm clt))
+      let clt = P.set_aft aft clt in
+      Ast0_cocci.wrap(Ast0_cocci.Id(P.clt2mcode nm clt))
   | _ ->
       raise (Semantic_cocci.Semantic "unexpected name for a #define")
 %}
@@ -297,21 +297,15 @@ let inline_id aft = function
 %token <string * Data.clt> TFloat TInt
 %token <string * string (*n*) * string (*p*) * Data.clt> TDecimalCst
 
-%token <Data.clt> TOrLog
-%token <string * Data.clt> TAndLog
-%token <Data.clt> TOr
-%token <Data.clt> TXor
-%token <string * Data.clt> TAnd
-%token <Data.clt> TEqEq TNotEq TTildeEq TTildeExclEq TSub
+%token <string * Data.clt> TAndLog TOrLog TOr TAnd TXor TNotEq
+%token <Data.clt> TEqEq TTildeEq TTildeExclEq TSub
 %token <Ast_cocci.logicalOp * Data.clt> TLogOp /* TInf TSup TInfEq TSupEq */
 %token <Ast_cocci.arithOp * Data.clt>   TShLOp TShROp  /* TShl TShr */
 %token <Ast_cocci.arithOp * Data.clt>   TDmOp  /* TDiv TMod TMin TMax */
 %token <Data.clt> TPlus TMinus
-%token <Data.clt> TTilde
-%token <string * Data.clt> TMul
+%token <string * Data.clt> TTilde TMul
 
-%token <Data.clt> TOBrace TCBrace TOInit
-%token <Data.clt> TOCro TCCro TOCroCro
+%token <string * Data.clt> TOBrace TCBrace TOCro TCCro TOCroCro TOInit
 
 %token <Data.clt> TPtrOp
 
@@ -1033,18 +1027,18 @@ non_signable_types_no_ident_with_braces:
 	{ (if i = None && !Data.in_iso
 	then failwith "enums must be named in the iso file");
 	  Ast0_cocci.wrap(Ast0_cocci.EnumDef(Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, k, i)),
-					     base, Parse_aux.clt2mcode "{" l, ids, Parse_aux.clt2mcode "}" r)) }
+					     base, Parse_aux.tok2mcode l, ids, Parse_aux.tok2mcode r)) }
     | s=struct_or_union i=ioption(type_ident)
 	l=TOBrace d=struct_decl_list r=TCBrace
 	{ (if i = None && !Data.in_iso
 	then failwith "structures must be named in the iso file");
 	  Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, i)),
-						Parse_aux.clt2mcode "{" l,
-				    d, Parse_aux.clt2mcode "}" r)) }
+						Parse_aux.tok2mcode l,
+				    d, Parse_aux.tok2mcode r)) }
     | s=TMetaType l=TOBrace d=struct_decl_list r=TCBrace
 	{ let (nm,cstr,pure,clt) = s in
 	let ty = Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) in
-	Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(ty,Parse_aux.clt2mcode "{" l,d,Parse_aux.clt2mcode "}" r)) }
+	Ast0_cocci.wrap(Ast0_cocci.StructUnionDef(ty,Parse_aux.tok2mcode l,d,Parse_aux.tok2mcode r)) }
 
 non_signable_types_no_ident_without_braces:
   ty=Tvoid
@@ -1695,8 +1689,7 @@ single_fundecl:
 			       f, i,
 			       Parse_aux.clt2mcode "(" (lp), args, vararg,
 			       Parse_aux.clt2mcode ")" rp, endar,
-			       Parse_aux.clt2mcode "{" lb, b,
-			       Parse_aux.clt2mcode "}" rb,
+			       Parse_aux.tok2mcode lb, b, Parse_aux.tok2mcode rb,
 			       (Ast0_cocci.default_info(),Ast0_cocci.context_befaft()))) }
 
 fninfo:
@@ -1836,7 +1829,7 @@ statement:
     { Parse_aux.seq $1 $2 $3 }
 | Texec TIdent exec_list TPtVirg
     { Ast0_cocci.wrap(
-      Ast0_cocci.Exec(Parse_aux.clt2mcode "EXEC" $1,Parse_aux.clt2mcode (fst $2) (snd $2),
+      Ast0_cocci.Exec(Parse_aux.clt2mcode "EXEC" $1,Parse_aux.id2mcode $2,
 		Ast0_cocci.wrap $3,Parse_aux.clt2mcode ";" (snd $4))) }
 
 stm_dots:
@@ -1980,7 +1973,7 @@ decl_var:
 
 no_decl_var(ender):
     t=ctype pv=ender
-      { Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,Parse_aux.clt2mcode (fst pv) (snd pv))) }
+      { Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,Parse_aux.id2mcode pv)) }
   | TMetaDecl { Parse_aux.meta_decl $1 }
   | one_decl_noender ender { $1 $2 }
 
@@ -2140,22 +2133,22 @@ array_dec: l=TOCro i=option(eexpr) r=TCCro { (l,i,r) }
 initialize:
     eexpr
       { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
-  | initialize_meta_or_list(TOBrace) { $1 }
+  | initialize_meta_or_list { $1 }
 
-initialize_meta_or_list(lb):
+initialize_meta_or_list:
   | TMetaInit
       {let (nm,cstr,pure,clt) = $1 in
       Ast0_cocci.wrap(Ast0_cocci.MetaInit(Parse_aux.clt2mcode nm clt,cstr,pure)) }
-  | initialize_metalist_or_list(lb) { $1 }
+  | initialize_metalist_or_list(TOBrace) { $1 }
 
 initialize_metalist_or_list(lb):
   | lb initialize_list TCBrace
     { if Parse_aux.struct_initializer $2
     then
       let il = Parse_aux.drop_dot_commas $2 in
-      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,il,Parse_aux.clt2mcode "}" $3,false))
+      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.tok2mcode $1,il,Parse_aux.tok2mcode $3,false))
     else
-      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.clt2mcode "{" $1,$2,Parse_aux.clt2mcode "}" $3,true)) }
+      Ast0_cocci.wrap(Ast0_cocci.InitList(Parse_aux.tok2mcode $1,$2,Parse_aux.tok2mcode $3,true)) }
   | TMetaInitList
       {let (nm,lenname,cstr,pure,clt) = $1 in
       let nm = Parse_aux.clt2mcode nm clt in
@@ -2167,7 +2160,7 @@ initialize2:
   /*dots and nests probably not allowed at top level, haven't looked into why*/
   arith_expr(eexpr,invalid) { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
 | nest_expressions_only     { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
-  | initialize_meta_or_list(TOBrace) { $1 }
+| initialize_meta_or_list { $1 }
            /* gccext:, labeled elements */
 | nonempty_list(designator) TEq initialize2
     /*can we have another of these on the rhs?*/
@@ -2179,10 +2172,10 @@ designator:
  | TDot type_ident
      { Ast0_cocci.DesignatorField (Parse_aux.clt2mcode "." $1,$2) }
  | TOCro eexpr TCCro
-     { Ast0_cocci.DesignatorIndex (Parse_aux.clt2mcode "[" $1,$2,Parse_aux.clt2mcode "]" $3) }
+     { Ast0_cocci.DesignatorIndex (Parse_aux.tok2mcode $1,$2,Parse_aux.clt2mcode (fst $3) (snd $3)) }
  | TOCro eexpr TEllipsis eexpr TCCro
-     { Ast0_cocci.DesignatorRange (Parse_aux.clt2mcode "[" $1,$2,Parse_aux.clt2mcode "..." $3,
-			     $4,Parse_aux.clt2mcode "]" $5) }
+     { Ast0_cocci.DesignatorRange (Parse_aux.tok2mcode $1,$2,Parse_aux.clt2mcode "..." $3,
+			     $4,Parse_aux.clt2mcode (fst $5) (snd $5)) }
 
 initialize_list:
    empty_list_start(initialize2,edots_when(TEllipsis,initialize))
@@ -2384,17 +2377,17 @@ arith_expr(r,pe):
   | arith_expr(r,pe) TEqEq   arith_expr_bis
       { Parse_aux.logic_op Ast_cocci.Eq $1 $2 $3 }
   | arith_expr(r,pe) TNotEq  arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.NotEq $1 $2 $3 }
+      { Parse_aux.logic_op (Ast_cocci.NotEq (fst $2)) $1 (snd $2) $3 }
   | arith_expr(r,pe) TAnd    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.And $1 (snd $2) $3 }
+      { Parse_aux.arith_op (Ast_cocci.And (fst $2)) $1 (snd $2) $3 }
   | arith_expr(r,pe) TOr     arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.Or $1 $2 $3 }
+      { Parse_aux.arith_op (Ast_cocci.Or (fst $2)) $1 (snd $2) $3 }
   | arith_expr(r,pe) TXor    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.Xor $1 $2 $3 }
+      { Parse_aux.arith_op (Ast_cocci.Xor (fst $2)) $1 (snd $2) $3 }
   | arith_expr(r,pe) TAndLog arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.AndLog $1 (snd $2) $3 }
+      { Parse_aux.logic_op (Ast_cocci.AndLog (fst $2)) $1 (snd $2) $3 }
   | arith_expr(r,pe) TOrLog  arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.OrLog $1 $2 $3 }
+      { Parse_aux.logic_op (Ast_cocci.OrLog (fst $2)) $1 (snd $2) $3 }
   | arith_expr(r,pe) TMetaBinaryOp  arith_expr_bis
       { let (mv, cstrt, pure, clt) = $2 in
       let op' = Parse_aux.clt2mcode mv clt in
@@ -2422,15 +2415,15 @@ arith_expr_bis:
   | arith_expr_bis TEqEq   arith_expr_bis
       { Parse_aux.logic_op Ast_cocci.Eq $1 $2 $3 }
   | arith_expr_bis TNotEq  arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.NotEq $1 $2 $3 }
+      { Parse_aux.logic_op (Ast_cocci.NotEq (fst $2)) $1 (snd $2) $3 }
   | arith_expr_bis TAnd    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.And $1 (snd $2) $3 }
+      { Parse_aux.arith_op (Ast_cocci.And (fst $2)) $1 (snd $2) $3 }
   | arith_expr_bis TOr     arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.Or $1 $2 $3 }
+      { Parse_aux.arith_op (Ast_cocci.Or (fst $2)) $1 (snd $2) $3 }
   | arith_expr_bis TXor    arith_expr_bis
-      { Parse_aux.arith_op Ast_cocci.Xor $1 $2 $3 }
+      { Parse_aux.arith_op (Ast_cocci.Xor (fst $2)) $1 (snd $2) $3 }
   | arith_expr_bis TAndLog arith_expr_bis
-      { Parse_aux.logic_op Ast_cocci.AndLog $1 (snd $2) $3 }
+      { Parse_aux.logic_op (Ast_cocci.AndLog (fst $2)) $1 (snd $2) $3 }
 // no OrLog because it is left associative and this is for
 // a right argument, not sure why not the same problem for AndLog
 
@@ -2461,8 +2454,7 @@ unary_expr(r,pe):
       { Ast0_cocci.wrap(Ast0_cocci.Delete     (Parse_aux.clt2mcode "delete" $1, $2)) }
   | s=Tdelete lb=TOCro rb=TCCro exp=unary_expr_bis
       { Ast0_cocci.wrap(Ast0_cocci.DeleteArr  (Parse_aux.clt2mcode "delete" s,
-					       Parse_aux.clt2mcode "[" lb,
-					       Parse_aux.clt2mcode "]" rb, exp)) }
+					       Parse_aux.tok2mcode lb, Parse_aux.tok2mcode rb, exp)) }
 cppnew:
   (* There are a total of 8 variations of New, because of three independant binary possibilities,
    that is, new (placement params)|None (type)|type initilizer|None *)
@@ -2492,11 +2484,14 @@ cppnew:
       { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, pp, None, t, None, args )) }
 
 cpp_initialiser:
-      lp=TOPar args=eexpr_list_option rp=TCPar { Some (Parse_aux.clt2mcode "(" lp, args, Parse_aux.clt2mcode ")" rp) }
-  |   lb=TOBrace args=eexpr_list_option rb=TCBrace { Some (Parse_aux.clt2mcode "{" lb, args, Parse_aux.clt2mcode "}" rb) }
+      lp=TOPar args=eexpr_list_option rp=TCPar
+      { Some (Parse_aux.clt2mcode "(" lp, args, Parse_aux.clt2mcode ")" rp) }
+  |   lb=TOBrace args=eexpr_list_option rb=TCBrace
+      { Some (Parse_aux.tok2mcode lb, args, Parse_aux.tok2mcode rb) }
 
 placement_params:
-      lp=TOPar args=eexpr_list_option_without_ctype rp=TCPar { Some (Parse_aux.clt2mcode "(" lp, args, Parse_aux.clt2mcode ")" rp) }
+      lp=TOPar args=eexpr_list_option_without_ctype rp=TCPar
+      { Some (Parse_aux.clt2mcode "(" lp, args, Parse_aux.clt2mcode ")" rp) }
 
 // version that allows dots
 unary_expr_bis:
@@ -2517,8 +2512,7 @@ unary_expr_bis:
       { Ast0_cocci.wrap(Ast0_cocci.Delete     (Parse_aux.clt2mcode "delete" $1, $2)) }
   | s=Tdelete lb=TOCro rb=TCCro t=unary_expr_bis
       { Ast0_cocci.wrap(Ast0_cocci.DeleteArr  (Parse_aux.clt2mcode "delete" s,
-					       Parse_aux.clt2mcode "[" lb,
-					       Parse_aux.clt2mcode "]" rb, t)) }
+					       Parse_aux.tok2mcode lb, Parse_aux.tok2mcode rb, t)) }
 
 /*  | n=TNew lp1=TOPar t=ctype rp1=TCPar args=cpp_initialiser
       { Ast0_cocci.wrap(Ast0_cocci.New ( Parse_aux.clt2mcode "new" n, None,
@@ -2553,14 +2547,14 @@ unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef (snd $1) }
 	| TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef (snd $1) }
 	| TPlus   { Parse_aux.clt2mcode Ast_cocci.UnPlus $1 }
 	| TMinus  { Parse_aux.clt2mcode Ast_cocci.UnMinus $1 }
-	| TTilde  { Parse_aux.clt2mcode Ast_cocci.Tilde $1 }
+	| TTilde  { Parse_aux.clt2mcode (Ast_cocci.Tilde (fst $1)) (snd $1) }
 	| TBang   { Parse_aux.clt2mcode (Ast_cocci.Not (fst $1)) (snd $1) }
 
 postfix_expr(r,pe):
    primary_expr(r,pe)                            { $1 }
  | postfix_expr(r,pe) TOCro eexpr_list TCCro
-     { Ast0_cocci.wrap(Ast0_cocci.ArrayAccess ($1,Parse_aux.clt2mcode "[" $2,$3,
-				       Parse_aux.clt2mcode "]" $4)) }
+     { Ast0_cocci.wrap(Ast0_cocci.ArrayAccess ($1,Parse_aux.tok2mcode $2,$3,
+				       Parse_aux.tok2mcode $4)) }
  | postfix_expr(r,pe) TDot   type_ident
      { Ast0_cocci.wrap(Ast0_cocci.RecordAccess($1, Parse_aux.clt2mcode "." $2, $3)) }
  | postfix_expr(r,pe) TPtrOp type_ident
@@ -2934,18 +2928,18 @@ binary_operator:
   TShLOp { mkarithop $1 } (* Ast_cocci.Arith Ast_cocci.DecLeft *)
 | TMul { mkarithop (Ast_cocci.Mul,(snd $1)) }
 | TEqEq { mklogop (Ast_cocci.Eq,$1) }
-| TNotEq { mklogop (Ast_cocci.NotEq,$1) }
+| TNotEq { mklogop (Ast_cocci.NotEq(fst $1),(snd $1)) }
 | TSub { mklogop (Ast_cocci.InfEq,$1) }
 | TPlus { mkarithop (Ast_cocci.Plus,$1) }
 | TMinus { mkarithop (Ast_cocci.Minus,$1) }
 | TDmOp { mkarithop $1 }
 | TShROp { mkarithop $1 }
-| TAnd { mkarithop (Ast_cocci.And,(snd $1)) }
-| TOr { mkarithop (Ast_cocci.Or,$1) }
-| TXor { mkarithop (Ast_cocci.Xor,$1) }
+| TAnd { mkarithop (Ast_cocci.And(fst $1),(snd $1)) }
+| TOr { mkarithop (Ast_cocci.Or(fst $1),(snd $1)) }
+| TXor { mkarithop (Ast_cocci.Xor(fst $1),(snd $1)) }
 | TLogOp { mklogop $1 }
-| TAndLog { mklogop (Ast_cocci.AndLog,(snd $1)) }
-| TOrLog { mklogop (Ast_cocci.OrLog,$1) }
+| TAndLog { mklogop (Ast_cocci.AndLog(fst $1),(snd $1)) }
+| TOrLog { mklogop (Ast_cocci.OrLog(fst $1),(snd $1)) }
 
 assignment_operator:
   TEq
@@ -3394,25 +3388,25 @@ exec_ident2:
 token:
     TPlus { Parse_aux.clt2mcode "+" $1 }
   | TMinus { Parse_aux.clt2mcode "-" $1 }
-  | TMul { Parse_aux.clt2mcode (fst $1) (snd $1) }
+  | TMul { Parse_aux.tok2mcode $1 }
   | TEqEq { Parse_aux.clt2mcode "==" $1 }
-  | TNotEq { Parse_aux.clt2mcode "!=" $1 }
+  | TNotEq { Parse_aux.tok2mcode $1 }
   | TDmOp { Parse_aux.clt2mcode (arithOp(fst $1)) (snd $1) }
   | TShLOp { Parse_aux.clt2mcode (arithOp(fst $1)) (snd $1) }
   | TShROp { Parse_aux.clt2mcode (arithOp(fst $1)) (snd $1) }
   | TLogOp { Parse_aux.clt2mcode (logicalOp(fst $1)) (snd $1) }
-  | TOr { Parse_aux.clt2mcode "|" $1 }
-  | TXor { Parse_aux.clt2mcode "+" $1 }
-  | TAnd { Parse_aux.clt2mcode (fst $1) (snd $1) }
-  | TOrLog { Parse_aux.clt2mcode "||" $1 }
-  | TAndLog { Parse_aux.clt2mcode (fst $1) (snd $1) }
-  | TOBrace { Parse_aux.clt2mcode "{" $1 }
-  | TCBrace { Parse_aux.clt2mcode "}" $1 }
-  | TOCro { Parse_aux.clt2mcode "[" $1 }
-  | TCCro { Parse_aux.clt2mcode "]" $1 }
+  | TOr { Parse_aux.tok2mcode $1 }
+  | TXor { Parse_aux.tok2mcode $1 }
+  | TAnd { Parse_aux.tok2mcode $1 }
+  | TOrLog { Parse_aux.tok2mcode $1 }
+  | TAndLog { Parse_aux.tok2mcode $1 }
+  | TOBrace { Parse_aux.tok2mcode $1 }
+  | TCBrace { Parse_aux.tok2mcode $1 }
+  | TOCro { Parse_aux.tok2mcode $1 }
+  | TCCro { Parse_aux.tok2mcode $1 }
   | TEq { Parse_aux.clt2mcode "=" $1 }
   | TWhy { Parse_aux.clt2mcode "?" $1 }
-  | TBang { Parse_aux.clt2mcode (fst $1) (snd $1) }
+  | TBang { Parse_aux.tok2mcode $1 }
   | TOPar { Parse_aux.clt2mcode "(" $1 }
   | TCPar { Parse_aux.clt2mcode ")" $1 }
   | TIf { Parse_aux.clt2mcode "if" $1 }
@@ -3445,19 +3439,19 @@ azl(elem):
 edots_when(dotter,when_grammar):
     d=dotter                                      { (d,None) }
   | d=dotter t=TWhen e=TNotEq w=when_grammar TLineEnd
-    { (d, Some (Parse_aux.clt2mcode "when" t, Parse_aux.clt2mcode "!=" e,w)) }
+    { (d, Some (Parse_aux.clt2mcode "when" t, Parse_aux.tok2mcode e,w)) }
 
 whens(when_grammar,simple_when_grammar,any_strict):
     t=TWhen e=TNotEq w=when_grammar TLineEnd
-      { [Ast0_cocci.WhenNot (Parse_aux.clt2mcode "when" t, Parse_aux.clt2mcode "!=" e, w)] }
+      { [Ast0_cocci.WhenNot (Parse_aux.clt2mcode "when" t, Parse_aux.tok2mcode e, w)] }
   | t=TWhen e=TEq w=simple_when_grammar TLineEnd
       { [Ast0_cocci.WhenAlways (Parse_aux.clt2mcode "when" t, Parse_aux.clt2mcode "=" e, w)] }
   | t=TWhen l=comma_list(any_strict) TLineEnd
       { List.map (function x -> Ast0_cocci.WhenModifier(Parse_aux.clt2mcode "when" t,x)) l }
   | t=TWhenTrue ee=TNotEq e = eexpr TLineEnd
-      { [Ast0_cocci.WhenNotTrue (Parse_aux.clt2mcode "when" t, Parse_aux.clt2mcode "!=" ee, e)] }
+      { [Ast0_cocci.WhenNotTrue (Parse_aux.clt2mcode "when" t, Parse_aux.tok2mcode ee, e)] }
   | t=TWhenFalse ee=TNotEq e = eexpr TLineEnd
-      { [Ast0_cocci.WhenNotFalse (Parse_aux.clt2mcode "when" t, Parse_aux.clt2mcode "!=" ee, e)] }
+      { [Ast0_cocci.WhenNotFalse (Parse_aux.clt2mcode "when" t, Parse_aux.tok2mcode ee, e)] }
 
 any_strict:
     TAny    { Ast_cocci.WhenAny }
@@ -3615,9 +3609,9 @@ attr:
     { Parse_aux.make_cxx_attr_using $1 $2 $3 (snd $4) $5 $6 $7 }
 
 attr_arg:
-   Tattr { Ast0_cocci.wrap (Ast0_cocci.MacroAttr(Parse_aux.clt2mcode (fst $1) (snd $1))) }
+   Tattr { Ast0_cocci.wrap (Ast0_cocci.MacroAttr(Parse_aux.id2mcode $1)) }
  | TAttrArg TOPar eexpr_list_option TCPar
-    { Ast0_cocci.wrap (Ast0_cocci.MacroAttrArgs(Parse_aux.clt2mcode (fst $1) (snd $1),
+    { Ast0_cocci.wrap (Ast0_cocci.MacroAttrArgs(Parse_aux.id2mcode $1,
         Parse_aux.clt2mcode "(" $2, $3, Parse_aux.clt2mcode ")" $4)) }
  | TMetaAttribute
     { let (nm,cstr,pure,clt) = $1 in
@@ -3738,8 +3732,8 @@ anything: /* used for script code */
  | TWhen { "when" }
 
  | TWhy { "?" }
- | TDotDot { ":" }
- | TBang { "!" }
+ | TDotDot { fst $1 }
+ | TBang { fst $1 }
  | TOPar { "(" }
  | TCPar { ")" }
 
@@ -3752,13 +3746,13 @@ anything: /* used for script code */
  | TInt { fst $1 }
  | TDecimalCst { let (x,_,_,_) = $1 in x }
 
- | TOrLog { "||" }
+ | TOrLog  { fst $1 }
  | TAndLog { fst $1 }
- | TOr { "|" }
- | TXor { "^" }
- | TAnd { (fst $1) }
- | TEqEq { "==" }
- | TNotEq { "!=" }
+ | TOr     { fst $1 }
+ | TXor    { fst $1 }
+ | TAnd    { fst $1 }
+ | TEqEq   { "==" }
+ | TNotEq  { fst $1 }
  | TTildeEq { "=~" }
  | TTildeExclEq { "!~" }
  | TSub { "<=" }
@@ -3777,8 +3771,8 @@ anything: /* used for script code */
  | TMul { (fst $1) }
  | TTilde { "~" }
 
- | TOCro {"[" }
- | TCCro { "]" }
+ | TOCro { fst $1 }
+ | TCCro { fst $1 }
 
  | TPtrOp { "->" }
 
@@ -3791,9 +3785,12 @@ anything: /* used for script code */
  | TOpAssign
      { match fst $1 with
        Ast_cocci.Minus -> "-=" | Ast_cocci.Plus -> "+=" | Ast_cocci.Mul -> "*=" | Ast_cocci.Div -> "/="
-     | Ast_cocci.Mod -> "%" | Ast_cocci.And -> "&=" | Ast_cocci.Or -> "|=" | Ast_cocci.Xor -> "^="
+     | Ast_cocci.Mod -> "%" | Ast_cocci.And "&" -> "&=" | Ast_cocci.And "bitand" -> "and_eq"
+     | Ast_cocci.Or "|" -> "|=" | Ast_cocci.Or "bitor" -> "or_eq"
+     | Ast_cocci.Xor "^" -> "^=" | Ast_cocci.Xor "xor" -> "xor_eq"
      | Ast_cocci.Max -> ">?=" | Ast_cocci.Min -> "<?=" | Ast_cocci.DecLeft -> "<<="
-     | Ast_cocci.DecRight -> ">>=" }
+     | Ast_cocci.DecRight -> ">>="
+     | _ -> failwith "unknown operator" }
 
  | TIso { "<=>" }
  | TRightIso { "=>" }

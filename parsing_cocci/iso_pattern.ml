@@ -2107,6 +2107,16 @@ let instantiate bindings mv_bindings model =
 			    let nop = Ast0.rewrap_mcode model nop in
 			    Ast0.rewrap op (Ast0.Logical nop) in
 			  let k1 x = k (Ast0.rewrap e x) in
+			  let fail _ =
+			    let rewrap_binaryOp_mcode op x =
+                              match Ast0.unwrap op with
+                                Ast0.Arith o -> Ast0.rewrap_mcode o x
+                              | Ast0.Logical o -> Ast0.rewrap_mcode o x
+                              | Ast0.MetaBinary (mv,_,_) ->
+				  Ast0.rewrap_mcode mv x in
+			    Ast0.rewrap e
+			      (Ast0.Unary(k res,
+					  rewrap_binaryOp_mcode op (Ast.Not str))) in
 			  (match Ast0.unwrap op with
 			    Ast0.Logical op' when get_op op' = Ast.Inf ->
 			      k1 (Ast0.Binary(e1,reb op' Ast.SupEq,e2))
@@ -2117,27 +2127,28 @@ let instantiate bindings mv_bindings model =
 			  | Ast0.Logical op' when get_op op' = Ast.SupEq ->
 			      k1 (Ast0.Binary(e1,reb op' Ast.Inf,e2))
 			  | Ast0.Logical op' when get_op op' = Ast.Eq ->
-			      k1 (Ast0.Binary(e1,reb op' Ast.NotEq,e2))
-			  | Ast0.Logical op' when get_op op' = Ast.NotEq ->
-			      k1 (Ast0.Binary(e1,reb op' Ast.Eq,e2))
-			  | Ast0.Logical op' when get_op op' = Ast.AndLog ->
-			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb op' Ast.OrLog,
-					      negate_reb e e2 idcont))
-			  | Ast0.Logical op' when get_op op' = Ast.OrLog ->
-			      k1 (Ast0.Binary(negate_reb e e1 idcont,
-					      reb op' Ast.AndLog,
-					      negate_reb e e2 idcont))
-			  | _ ->
-                             let rewrap_binaryOp_mcode op x =
-                               match Ast0.unwrap op with
-                                 Ast0.Arith o -> Ast0.rewrap_mcode o x
-                               | Ast0.Logical o -> Ast0.rewrap_mcode o x
-                               | Ast0.MetaBinary (mv,_,_) ->
-				   Ast0.rewrap_mcode mv x in
-			      Ast0.rewrap e
-				(Ast0.Unary(k res,
-					    rewrap_binaryOp_mcode op (Ast.Not str))))
+			      k1 (Ast0.Binary(e1,reb op' (Ast.NotEq "!="),e2))
+			  | Ast0.Logical op' ->
+			      (match get_op op' with
+				Ast.NotEq _ -> k1 (Ast0.Binary(e1,reb op' Ast.Eq,e2))
+			      | Ast.AndLog "&&" ->
+				  k1 (Ast0.Binary(negate_reb e e1 idcont,
+						  reb op' (Ast.OrLog "||"),
+						  negate_reb e e2 idcont))
+			      | Ast.AndLog "and" ->
+				  k1 (Ast0.Binary(negate_reb e e1 idcont,
+						  reb op' (Ast.OrLog "or"),
+						  negate_reb e e2 idcont))
+			      | Ast.OrLog  "||" ->
+				  k1 (Ast0.Binary(negate_reb e e1 idcont,
+						  reb op' (Ast.AndLog "&&"),
+						  negate_reb e e2 idcont))
+			      | Ast.OrLog  "or" ->
+				  k1 (Ast0.Binary(negate_reb e e1 idcont,
+						  reb op' (Ast.AndLog "and"),
+						  negate_reb e e2 idcont))
+			      | _ -> fail())
+			  | _ -> fail())
 		  | Ast0.DisjExpr(lp,exps,mids,rp) ->
 		      (* use res because it is the transformed argument *)
 		      let exps =

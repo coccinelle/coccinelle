@@ -135,18 +135,18 @@ let equal_c_int s1 s2 =
  * functions.
  *)
 
-let equal_unaryOp a b =
+let equal_unaryOp a b ii =
   match a, b with
   | A.GetRef   , B.GetRef  -> true
   | A.GetRefLabel, B.GetRefLabel -> true
   | A.DeRef    , B.DeRef   -> true
   | A.UnPlus   , B.UnPlus  -> true
   | A.UnMinus  , B.UnMinus -> true
-  | A.Tilde    , B.Tilde   -> true
-  | A.Not s1   , B.Not s2  -> s1 = s2
-  | _, (B.Not _|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
+  | A.Tilde s1 , B.Tilde   -> s1 = B.str_of_info (tuple_of_list1 ii)
+  | A.Not s1   , B.Not     -> s1 = B.str_of_info (tuple_of_list1 ii)
+  | _, (B.Not|B.Tilde|B.UnMinus|B.UnPlus|B.DeRef|B.GetRef|B.GetRefLabel) ->
       false
-let equal_arithOp a b =
+let equal_arithOp a b ii =
   match (A.unwrap_mcode a), b with
   | A.Plus     , B.Plus     -> true
   | A.Minus    , B.Minus    -> true
@@ -157,21 +157,21 @@ let equal_arithOp a b =
   | A.Mod      , B.Mod      -> true
   | A.DecLeft  , B.DecLeft  -> true
   | A.DecRight , B.DecRight -> true
-  | A.And      , B.And      -> true
-  | A.Or       , B.Or       -> true
-  | A.Xor      , B.Xor      -> true
+  | A.And s1    , B.And      -> s1 = B.str_of_info (tuple_of_list1 ii)
+  | A.Or s1     , B.Or       -> s1 = B.str_of_info (tuple_of_list1 ii)
+  | A.Xor s1    , B.Xor      -> s1 = B.str_of_info (tuple_of_list1 ii)
   | _, (B.Xor|B.Or|B.And|B.DecRight|B.DecLeft|B.Mod|B.Div|B.Mul|B.Minus|B.Plus|B.Min|B.Max)
       -> false
-let equal_logicalOp a b =
+let equal_logicalOp a b ii =
   match (A.unwrap_mcode a), b with
   | A.Inf    , B.Inf    -> true
   | A.Sup    , B.Sup    -> true
   | A.InfEq  , B.InfEq  -> true
   | A.SupEq  , B.SupEq  -> true
   | A.Eq     , B.Eq     -> true
-  | A.NotEq  , B.NotEq  -> true
-  | A.AndLog , B.AndLog -> true
-  | A.OrLog  , B.OrLog  -> true
+  | A.NotEq s1  , B.NotEq  -> s1 = B.str_of_info (tuple_of_list1 ii)
+  | A.AndLog s1 , B.AndLog -> s1 = B.str_of_info (tuple_of_list1 ii)
+  | A.OrLog s1  , B.OrLog  -> s1 = B.str_of_info (tuple_of_list1 ii)
   | _, (B.OrLog|B.AndLog|B.NotEq|B.Eq|B.SupEq|B.InfEq|B.Sup|B.Inf)
       -> false
 let equal_fixOp a b =
@@ -1098,7 +1098,7 @@ let list_matcher match_dots rebuild_dots match_comma rebuild_comma
  *  - node
  *)
 
-let arithA_of_arithB = function
+let arithA_of_arithB ii = function
   | B.Plus -> A.Plus
   | B.Minus -> A.Minus
   | B.Mul -> A.Mul
@@ -1106,29 +1106,41 @@ let arithA_of_arithB = function
   | B.Mod -> A.Mod
   | B.DecLeft -> A.DecLeft
   | B.DecRight -> A.DecRight
-  | B.And -> A.And
-  | B.Or -> A.Or
-  | B.Xor -> A.Xor
+  | B.And ->
+      let ib1 = tuple_of_list1 ii in
+      A.And(B.str_of_info ib1)
+  | B.Or ->
+      let ib1 = tuple_of_list1 ii in
+      A.Or(B.str_of_info ib1)
+  | B.Xor ->
+      let ib1 = tuple_of_list1 ii in
+      A.Xor(B.str_of_info ib1)
   | B.Min -> A.Min
   | B.Max -> A.Max
 
-let logicalA_of_logicalB = function
+let logicalA_of_logicalB ii = function
   | B.Inf -> A.Inf
   | B.Sup -> A.Sup
   | B.InfEq -> A.InfEq
   | B.SupEq -> A.SupEq
   | B.Eq -> A.Eq
-  | B.NotEq -> A.NotEq
-  | B.AndLog -> A.AndLog
-  | B.OrLog -> A.OrLog
+  | B.NotEq ->
+      let ib1 = tuple_of_list1 ii in
+      A.NotEq(B.str_of_info ib1)
+  | B.AndLog ->
+      let ib1 = tuple_of_list1 ii in
+      A.AndLog(B.str_of_info ib1)
+  | B.OrLog ->
+      let ib1 = tuple_of_list1 ii in
+      A.OrLog(B.str_of_info ib1)
 
 let assignOpA_of_assignOpB = function
-  | B.SimpleAssign -> A.SimpleAssign (A.make_mcode "=")
-  | B.OpAssign op -> A.OpAssign (A.make_mcode (arithA_of_arithB op))
+  | (B.SimpleAssign,_) -> A.SimpleAssign (A.make_mcode "=")
+  | (B.OpAssign op,ii) -> A.OpAssign (A.make_mcode (arithA_of_arithB ii op))
 
 let binaryOpA_of_binaryOpB = function
-  | B.Arith op -> A.Arith (A.make_mcode (arithA_of_arithB op))
-  | B.Logical op -> A.Logical (A.make_mcode (logicalA_of_logicalB op))
+  | (B.Arith op,ii) -> A.Arith (A.make_mcode (arithA_of_arithB ii op))
+  | (B.Logical op,ii) -> A.Logical (A.make_mcode (logicalA_of_logicalB ii op))
 
 let assignOp_eq op1 op2 = match (op1, op2) with
   | A.SimpleAssign _, A.SimpleAssign _ -> true
@@ -1465,9 +1477,9 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       else fail
 
   | A.Unary (ea, opa), ((B.Unary (eb, opb), typ),ii) ->
-      let opbi = tuple_of_list1 ii in
-      if equal_unaryOp (term opa) opb
+      if equal_unaryOp (term opa) opb ii
       then
+	let opbi = tuple_of_list1 ii in
         expression ea eb >>= (fun ea eb ->
         tokenf opa opbi >>= (fun opa opbi ->
           return (
@@ -1819,7 +1831,7 @@ and assignOp opa opb =
 	return
 	  (A.rewrap opa (A.SimpleAssign a), (B.SimpleAssign, [opbi])))
   | A.OpAssign oa, (B.OpAssign ob,opb') ->
-    if equal_arithOp oa ob
+    if equal_arithOp oa ob opb'
     then
       let opbi = tuple_of_list1 opb' in
       tokenf oa opbi >>= (fun oa opbi_ ->
@@ -1841,7 +1853,7 @@ and assignOp opa opb =
 and binaryOp opa opb =
   match (A.unwrap opa), opb with
     A.Arith oa, (B.Arith ob,opb') ->
-      if equal_arithOp oa ob
+      if equal_arithOp oa ob opb'
       then
 	let opbi = tuple_of_list1 opb' in
 	tokenf oa opbi >>= (fun oa opbi ->
@@ -1849,7 +1861,7 @@ and binaryOp opa opb =
             (A.rewrap opa (A.Arith oa), (B.Arith ob,[opbi])))
       else fail
   | A.Logical oa, (B.Logical ob,opb') ->
-      if equal_logicalOp oa ob
+      if equal_logicalOp oa ob opb'
       then
 	let opbi = tuple_of_list1 opb' in
 	tokenf oa opbi >>= (fun oa opbi ->
@@ -5000,8 +5012,8 @@ and define_parameter = fun parama paramb ->
   | _ -> fail in
 
   let rec check_constraints ida idb env c =
-    let get_assignOp op = assignOpA_of_assignOpB (fst op) in
-    let get_binaryOp op = binaryOpA_of_binaryOpB (fst op) in
+    let get_assignOp op = assignOpA_of_assignOpB op in
+    let get_binaryOp op = binaryOpA_of_binaryOpB op in
     let check_string f =
       let s =
 	match idb with

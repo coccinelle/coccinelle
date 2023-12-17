@@ -15,15 +15,17 @@ module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module U = Unparse_ast0
 
-let comm_assoc_arith =
-  [Ast.Plus; Ast.Mul; Ast.And; Ast.Or]
+let comm_assoc_arith = function
+    Ast.Plus | Ast.Mul | Ast.And _ | Ast.Or _ -> true
+  | _ -> false
 
-let comm_assoc_logical =
-  [Ast.AndLog; Ast.OrLog]
+let comm_assoc_logical = function
+    Ast.AndLog _ | Ast.OrLog _ -> true
+  | _ -> false
 
 let is_comm_assoc op0 = match Ast0.unwrap op0 with
-  | Ast0.Arith op -> List.mem (Ast0.unwrap_mcode op) comm_assoc_arith
-  | Ast0.Logical op -> List.mem (Ast0.unwrap_mcode op) comm_assoc_logical
+  | Ast0.Arith op -> comm_assoc_arith (Ast0.unwrap_mcode op)
+  | Ast0.Logical op -> comm_assoc_logical (Ast0.unwrap_mcode op)
   | Ast0.MetaBinary _ -> false
 
 let is_minus e =

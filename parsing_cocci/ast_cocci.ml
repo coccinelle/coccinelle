@@ -308,7 +308,8 @@ and base_string_format =
 
 and string_format = base_string_format wrap
 
-and unaryOp = GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde | Not of string
+and unaryOp =
+      GetRef | GetRefLabel | DeRef | UnPlus |  UnMinus | Tilde of string | Not of string
 and base_assignOp =
     SimpleAssign of simpleAssignOp mcode
   | OpAssign of arithOp mcode
@@ -325,9 +326,11 @@ and base_binaryOp =
       meta_name mcode * constraints * keep_binding * inherited
 and binaryOp = base_binaryOp wrap
 and arithOp =
-    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight | And | Or | Xor
+    Plus | Minus | Mul | Div | Mod | DecLeft | DecRight
+  | And of string | Or of string | Xor of string
   | Min | Max
-and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq | AndLog | OrLog
+and  logicalOp = Inf | Sup | InfEq | SupEq | Eq | NotEq of string
+  | AndLog of string | OrLog of string
 
 and constant =
     String of string * isWchar
@@ -1105,21 +1108,21 @@ let string_of_arithOp = function
   | Mod -> "%"
   | DecLeft -> "<<"
   | DecRight -> ">>"
-  | And -> "&"
-  | Or -> "|"
-  | Xor -> "^"
+  | And s -> s
+  | Or s -> s
+  | Xor s -> s
   | Min -> "<?"
   | Max -> ">?"
 
 let string_of_logicalOp = function
   | Eq -> "=="
-  | NotEq -> "!="
+  | NotEq s -> s
   | InfEq -> "<="
   | SupEq -> ">="
   | Sup -> ">"
   | Inf -> "<"
-  | AndLog -> "&&"
-  | OrLog -> "||"
+  | AndLog s -> s
+  | OrLog s -> s
 
 let string_of_binaryOp op = match (unwrap op) with
   | Arith arithOp -> string_of_arithOp (unwrap_mcode arithOp)

@@ -196,7 +196,7 @@ module Ast_c :
       | UnPlus
       | UnMinus
       | Tilde
-      | Not of string
+      | Not
       | GetRefLabel
     and assignOpbis = Ast_c.assignOpbis = SimpleAssign | OpAssign of arithOp
     and assignOp = assignOpbis wrap
@@ -745,7 +745,7 @@ module Parser_c :
       | TEq of Ast_c.info
       | TWhy of Ast_c.info
       | TTilde of Ast_c.info
-      | TBang of (string * Ast_c.info)
+      | TBang of Ast_c.info
       | TEllipsis of Ast_c.info
       | TDotDot of Ast_c.info
       | TPtVirg of Ast_c.info
@@ -2765,7 +2765,7 @@ module Ast_cocci :
       | DeRef
       | UnPlus
       | UnMinus
-      | Tilde
+      | Tilde of string
       | Not of string
     and base_assignOp =
       Ast_cocci.base_assignOp =
@@ -2792,9 +2792,9 @@ module Ast_cocci :
       | Mod
       | DecLeft
       | DecRight
-      | And
-      | Or
-      | Xor
+      | And of string
+      | Or of string
+      | Xor of string
       | Min
       | Max
     and logicalOp =
@@ -2804,9 +2804,9 @@ module Ast_cocci :
       | InfEq
       | SupEq
       | Eq
-      | NotEq
-      | AndLog
-      | OrLog
+      | NotEq of string
+      | AndLog of string
+      | OrLog of string
     and constant =
       Ast_cocci.constant =
         String of string * Ast_cocci.isWchar

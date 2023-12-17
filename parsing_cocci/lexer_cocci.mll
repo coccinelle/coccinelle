@@ -726,10 +726,11 @@ rule token = parse
   | "\\(" { start_line true;
 	    TOPar0 ("\\(",contextify(get_current_line_type lexbuf)) }
   | "|" { if not (!col_zero)
-	  then (start_line true; TOr(get_current_line_type lexbuf))
+	  then (start_line true; TOr(tok lexbuf,get_current_line_type lexbuf))
           else (start_line true;
 		check_context_linetype (tok lexbuf);
 		TMid0 ("|",get_current_line_type lexbuf))}
+  | "bitor" { start_line true; TOr(tok lexbuf, get_current_line_type lexbuf) }
   | "\\|" { start_line true;
 	    TMid0 ("\\|",contextify(get_current_line_type lexbuf)) }
   | ")" { if not !col_zero
@@ -740,11 +741,11 @@ rule token = parse
   | "\\)" { start_line true;
 	    TCPar0 ("\\)",contextify(get_current_line_type lexbuf)) }
 
-  | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
-  | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
-  | "[[" { start_line true; TOCroCro (get_current_line_type lexbuf)   }
-  | '{' { start_line true; TOBrace (get_current_line_type lexbuf) }
-  | '}' { start_line true; TCBrace (get_current_line_type lexbuf) }
+  | '[' | "<:" { start_line true; TOCro(tok lexbuf, get_current_line_type lexbuf)   }
+  | ']' | ":>" { start_line true; TCCro(tok lexbuf, get_current_line_type lexbuf)   }
+  | "[[" { start_line true; TOCroCro (tok lexbuf,get_current_line_type lexbuf)   }
+  | '{' | "<%" { start_line true; TOBrace(tok lexbuf, get_current_line_type lexbuf) }
+  | '}' | "%>" { start_line true; TCBrace(tok lexbuf, get_current_line_type lexbuf) }
 
   | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
@@ -768,7 +769,7 @@ rule token = parse
 		     TDmOp (Ast.Max,get_current_line_type lexbuf) }
   | '%'            { start_line true;
 		     TDmOp (Ast.Mod,get_current_line_type lexbuf) }
-  | '~'            { start_line true;  TTilde (get_current_line_type lexbuf) }
+  | '~' | "compl"  { start_line true;  TTilde (tok lexbuf, get_current_line_type lexbuf) }
 
   | "++"           { pass_zero();
  		     if !current_line_started
@@ -787,9 +788,9 @@ rule token = parse
   | "/="           { start_line true; mkassign Ast.Div lexbuf }
   | "%="           { start_line true; mkassign Ast.Mod lexbuf }
 
-  | "&="           { start_line true; mkassign Ast.And lexbuf }
-  | "|="           { start_line true; mkassign Ast.Or lexbuf }
-  | "^="           { start_line true; mkassign Ast.Xor lexbuf }
+  | "&=" | "and_eq" { start_line true; mkassign (Ast.And(tok lexbuf)) lexbuf }
+  | "|=" | "or_eq"  { start_line true; mkassign (Ast.Or(tok lexbuf)) lexbuf }
+  | "^=" | "xor_eq" { start_line true; mkassign (Ast.Xor(tok lexbuf)) lexbuf }
   | ">?="           { start_line true; mkassign Ast.Max lexbuf }
   | "<?="           { start_line true; mkassign Ast.Min lexbuf }
 
@@ -799,7 +800,7 @@ rule token = parse
   | ":"            { start_line true; TDotDot (":",get_current_line_type lexbuf) }
 
   | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
-  | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
+  | "!=" | "not_eq"{ start_line true; TNotEq   (tok lexbuf,get_current_line_type lexbuf) }
   | ">="           { start_line true;
 		     TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<="           { start_line true;
@@ -813,8 +814,10 @@ rule token = parse
   | ">>>"          { start_line true;
 		     TSup3(get_current_line_type lexbuf) }
 
-  | "&&"           { start_line true; TAndLog ("&&", get_current_line_type lexbuf) }
-  | "||"           { start_line true; TOrLog  (get_current_line_type lexbuf) }
+  | "&&" | "and"   { start_line true;
+		     TAndLog (tok lexbuf, get_current_line_type lexbuf) }
+  | "||" | "or"    { start_line true;
+		     TOrLog  (tok lexbuf, get_current_line_type lexbuf) }
 
   | ">>"           { start_line true;
 		     TShROp(Ast.DecRight,get_current_line_type lexbuf) }
@@ -822,14 +825,18 @@ rule token = parse
 		     TShLOp(Ast.DecLeft,get_current_line_type lexbuf) }
 
   | "&"            { if not (!col_zero)
-                     then (start_line true; TAnd("&", get_current_line_type lexbuf))
+                     then (start_line true;
+			   TAnd("&", get_current_line_type lexbuf))
                      else (start_line true;
 	                   check_context_linetype (tok lexbuf);
 		           TAnd0 ("&",get_current_line_type lexbuf))}
+  | "bitand"       { start_line true;
+		     TAnd(tok lexbuf, get_current_line_type lexbuf) }
   | "\\&"          { start_line true;
 	             TAnd0 ("\\&",contextify(get_current_line_type lexbuf)) }
 
-  | "^"            { start_line true; TXor(get_current_line_type lexbuf) }
+  | "^" | "xor"    { start_line true;
+		     TXor(tok lexbuf, get_current_line_type lexbuf) }
 
   | "##"            { start_line true; TCppConcatOp }
   | (("#" [' ' '\t']*  "undef" ([' ' '\t']+ as wss)) as def)
@@ -1085,10 +1092,10 @@ and metavariable_decl_token = parse
   | "(" { start_line true; TOPar (get_current_line_type lexbuf) }
   | ")" { start_line true; TCPar (get_current_line_type lexbuf) }
 
-  | '[' { start_line true; TOCro (get_current_line_type lexbuf)   }
-  | ']' { start_line true; TCCro (get_current_line_type lexbuf)   }
-  | '{' { start_line true; TOBrace (get_current_line_type lexbuf) }
-  | '}' { start_line true; TCBrace (get_current_line_type lexbuf) }
+  | '[' { start_line true; TOCro (tok lexbuf,get_current_line_type lexbuf)   }
+  | ']' { start_line true; TCCro (tok lexbuf,get_current_line_type lexbuf)   }
+  | '{' { start_line true; TOBrace (tok lexbuf,get_current_line_type lexbuf) }
+  | '}' { start_line true; TCBrace (tok lexbuf,get_current_line_type lexbuf) }
 
   | "->"           { start_line true; TPtrOp (get_current_line_type lexbuf)  }
   | '.'            { start_line true; TDot (get_current_line_type lexbuf)    }
@@ -1108,30 +1115,30 @@ and metavariable_decl_token = parse
 			metavariable_decl_token lexbuf) }
 
   | "=="           { start_line true; TEqEq    (get_current_line_type lexbuf) }
-  | "!="           { start_line true; TNotEq   (get_current_line_type lexbuf) }
+  | "!="           { start_line true; TNotEq   (tok lexbuf,get_current_line_type lexbuf) }
   | "<="           { start_line true; TSub     (get_current_line_type lexbuf) }
   | "+" { (start_line true; TPlus (get_current_line_type lexbuf)) }
   | "-" { (start_line true; TMinus (get_current_line_type lexbuf)) }
   | "/" { start_line true; TDmOp (Ast.Div,get_current_line_type lexbuf) }
   | "%" { start_line true; TDmOp (Ast.Mod,get_current_line_type lexbuf) }
   | ">>" { start_line true; TShROp(Ast.DecRight,get_current_line_type lexbuf) }
-  | "&" { start_line true; TAnd ("&", get_current_line_type lexbuf) }
-  | "|" {  (start_line true; TOr(get_current_line_type lexbuf)) }
-  | "^" { start_line true; TXor(get_current_line_type lexbuf) }
+  | "&" | "bitand" { start_line true; TAnd(tok lexbuf, get_current_line_type lexbuf) }
+  | "|" | "bitor"  { start_line true; TOr (tok lexbuf, get_current_line_type lexbuf) }
+  | "^" | "xor"    { start_line true; TXor(tok lexbuf, get_current_line_type lexbuf) }
   | ">=" { start_line true; TLogOp(Ast.SupEq,get_current_line_type lexbuf) }
   | "<" { start_line true; TLogOp(Ast.Inf,get_current_line_type lexbuf) }
   | ">" { start_line true; TLogOp(Ast.Sup,get_current_line_type lexbuf) }
-  | "&&" { start_line true; TAndLog ("&&", get_current_line_type lexbuf) }
-  | "||" { start_line true; TOrLog (get_current_line_type lexbuf) }
+  | "&&" | "and" { start_line true; TAndLog (tok lexbuf, get_current_line_type lexbuf) }
+  | "||" | "or"  { start_line true; TOrLog  (tok lexbuf, get_current_line_type lexbuf) }
   | ":"  { start_line true; TDotDot (":",get_current_line_type lexbuf) }
   | "-="           { start_line true; mkassign Ast.Minus lexbuf }
   | "+="           { start_line true; mkassign Ast.Plus lexbuf }
   | "*="           { start_line true; mkassign Ast.Mul lexbuf }
   | "/="           { start_line true; mkassign Ast.Div lexbuf }
   | "%="           { start_line true; mkassign Ast.Mod lexbuf }
-  | "&="           { start_line true; mkassign Ast.And lexbuf }
-  | "|="           { start_line true; mkassign Ast.Or lexbuf }
-  | "^="           { start_line true; mkassign Ast.Xor lexbuf }
+  | "&=" | "and_eq"{ start_line true; mkassign (Ast.And (tok lexbuf)) lexbuf }
+  | "|=" | "or_eq" { start_line true; mkassign (Ast.Or (tok lexbuf)) lexbuf }
+  | "^=" | "xor_eq"{ start_line true; mkassign (Ast.Xor (tok lexbuf)) lexbuf }
   | "<<="          { start_line true; mkassign Ast.DecLeft lexbuf }
   | ">>="          { start_line true; mkassign Ast.DecRight lexbuf }
   | "/*"

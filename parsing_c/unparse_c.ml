@@ -845,7 +845,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
      all surrounding blank lines.  Likewise when we remove lines at the end
      of a function *)
   let obrace = function
-      (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "{"
+      (T2(t,Ctx,_,_)) as x -> List.mem (str_of_token2 x) ["{";"<:"]
     | _ -> false in
 
   (* remove newly blank lines *)
@@ -880,7 +880,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
      on a line. input is reversed *)
 
   let cbrace = function
-      (T2(t,Ctx,_,_)) as x -> str_of_token2 x = "}"
+      (T2(t,Ctx,_,_)) as x -> List.mem (str_of_token2 x) ["}";":>"]
     | _ -> false in
 
   (* remove newly blank lines *)
@@ -1262,8 +1262,8 @@ let paren_then_brace toks =
   and search_plus xs =
     let (spaces, rest) = span generated_newline_space_or_min xs in
     match rest with
-    | ((Cocci2("{",_,_,_,_)) as x) :: ((Cocci2 (s,_,_,_,_)) as a) :: after
-      when s <> "" && String.get s 0 = '\n' ->
+    | ((Cocci2(lb,_,_,_,_)) as x) :: ((Cocci2 (s,_,_,_,_)) as a) :: after
+      when List.mem lb ["{";"<:"] && s <> "" && String.get s 0 = '\n' ->
 	(* move the brace up to the previous line *)
 	(* if there is a newline with indentation just before the {,
 	   then we want to move the { before that, to benefit from the
@@ -1554,7 +1554,7 @@ let add_newlines toks tabbing_unit =
   let ender = function
       [] -> false
     | Cocci2(s,line,lcol,rcol,Some Unparse_cocci.EndBox)::_ -> true
-    | t::_ -> List.mem (str_of_token2 t) [")";"}"] in
+    | t::_ -> List.mem (str_of_token2 t) [")";"}";":>"] in
   let get_indent stack t2 seen_cocci rest_toks =
     match stack with
       (indent_count,indent_string)::rest_stack ->
@@ -1750,7 +1750,7 @@ let add_newlines toks tabbing_unit =
         let (newcount,newstack,newspacecell,newseencocci) =
           end_box stack space_cell count seen_cocci s in
         a :: loop newstack instring newspacecell newcount newseencocci false xs
-      | "{" as s when seeneq ->
+      | s when List.mem s ["{";"<:"] && seeneq ->
 	  let (spaces_after,_) = span is_whitespace xs in
 	  let (newcount,nl) =
 	    List.fold_left
@@ -1763,11 +1763,11 @@ let add_newlines toks tabbing_unit =
 	  let s = if nl then "" else s in
           let (newcount,newstack) = start_box stack count s in
           a :: loop newstack instring space_cell newcount seen_cocci false xs
-      | "{" as s when not (stack = []) ->
+      | s when List.mem s ["{";"<:"] && not (stack = []) ->
         (* [] case means statement braces *)
         let (newcount,newstack) = start_box stack count s in
         a :: loop newstack instring space_cell newcount seen_cocci false xs
-      | "}" as s when not (stack = []) ->
+      | s when List.mem s ["}";":>"] && not (stack = []) ->
         (* [] case means statement braces *)
         let (newcount,newstack,newspacecell,newseencocci) =
           end_box stack space_cell count seen_cocci s in
@@ -1933,7 +1933,7 @@ let open_brace op xs =
   let is_whitespace t = is_whitespace t || is_added_whitespace t in
   match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | t::_ -> List.mem (str_of_token2 t) ["{";";";","]
+  | t::_ -> List.mem (str_of_token2 t) ["{";"<:";";";","]
 
 let notelse op xs =
   not
@@ -1946,7 +1946,7 @@ let close_brace op xs =
   let is_whitespace t = is_whitespace t || is_added_whitespace t in
   match skip_unlike_me op xs is_whitespace with
     [] -> false
-  | t::_ -> (str_of_token2 t) = "}"
+  | t::_ -> List.mem (str_of_token2 t) ["}";":>"]
 
 let is_nl op xs =
   let is_whitespace t = is_space t || is_added_space t in
@@ -2053,7 +2053,7 @@ let token_effect tok state xs =
 	adjust_by_function nopen_brace op accadd1 do_nothing state.accumulator xs in
       (Other 1,
        { state with inparens = (0,0); inassn = (0,0); accumulator = accumulator })
-  | (Tok "{",op) ->
+  | (Tok "{",op) | (Tok "<:",op) ->
       let (dmin,dplus) = add1 op (state.dmin,state.dplus) in
       let accumulator = add1top op state.accumulator in
       let instruct =
@@ -2068,7 +2068,7 @@ let token_effect tok state xs =
 	 inbrace = add1 op state.inbrace;
 	 instruct = instruct;
 	 accumulator = accumulator })
-  | (Tok "}",op) ->
+  | (Tok "}",op) | (Tok ":>",op) ->
       let (dmin,dplus) = sub1 op (state.dmin,state.dplus) in
       let accumulator = sub1top op state.accumulator in
       (Other 3,
@@ -2495,7 +2495,7 @@ let drop_line toks =
   let rec loop toks =
     match toks with
     | (T2(_, Min _, _, _) as x) :: tl
-      when str_of_token2 x = "}" ->
+      when List.mem (str_of_token2 x) ["}";":>"] ->
 	let (drop, tl) = space_until_newline tl in
 	(drop, x :: tl)
     | hd :: tl when is_whitespace hd ->

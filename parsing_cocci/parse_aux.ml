@@ -100,6 +100,7 @@ let id3name   (name, _, clt) = name
 let id2name   (name, clt) = name
 let id2clt    (name, clt) = clt
 let id2mcode  (name, clt) = clt2mcode name clt
+let tok2mcode (name, clt) = clt2mcode name clt
 let sym2mcode (name, clt) = clt2mcode_ext name true clt
 
 let mkdots str (dot,whencode) =
@@ -162,13 +163,13 @@ let make_gcc_attr attr_ lp1 lp2 arg rp1 rp2 =
 let make_cxx_attr lb1 arg rb1 rb2 =
   Ast0.wrap
     (Ast0.CxxAttribute
-       (clt2mcode "[[" lb1, arg, clt2mcode "]" rb1, clt2mcode "]" rb2))
+       (tok2mcode lb1, arg, tok2mcode rb1, tok2mcode rb2))
 
 let make_cxx_attr_using lb1 usng atnm dotdot arg rb1 rb2 =
   Ast0.wrap
     (Ast0.CxxAttributeUsing
-       (clt2mcode "[[" lb1,clt2mcode "using" usng, atnm,
-	clt2mcode ":" dotdot, arg, clt2mcode "]" rb1, clt2mcode "]" rb2))
+       (tok2mcode lb1,clt2mcode "using" usng, atnm,
+	clt2mcode ":" dotdot, arg, tok2mcode rb1, tok2mcode rb2))
 
 let top_dots l = Ast0.wrap l
 
@@ -201,7 +202,7 @@ let arrayify ty ar =
   List.fold_right
     (function (l,i,r) ->
       function rest ->
-	Ast0.wrap (Ast0.Array(rest,clt2mcode "[" l,i,clt2mcode "]" r)))
+	Ast0.wrap (Ast0.Array(rest,tok2mcode l,i,tok2mcode r)))
     ar ty
 
 (* Left is <=>, Right is =>.  Collect <=>s. *)
@@ -585,8 +586,8 @@ let switch s lp e rp lb d c rb =
 	Ast0.wrap(Ast0.Decl((Ast0.default_info(),Ast0.context_befaft()),d)))
       d in
   Ast0.wrap(Ast0.Switch(clt2mcode "switch" s,clt2mcode "(" lp,e,
-			clt2mcode ")" rp,clt2mcode "{" lb,
-			Ast0.wrap d,Ast0.wrap c,clt2mcode "}" rb))
+			clt2mcode ")" rp,tok2mcode lb,
+			Ast0.wrap d,Ast0.wrap c,tok2mcode rb))
 
 let ret_exp r e pv =
   Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" r,e,clt2mcode ";" pv))
@@ -607,7 +608,7 @@ let goto g i pv =
   Ast0.wrap(Ast0.Goto(clt2mcode "goto" g,i,clt2mcode ";" pv))
 
 let seq lb s rb =
-  Ast0.wrap(Ast0.Seq(clt2mcode "{" lb,s,clt2mcode "}" rb))
+  Ast0.wrap(Ast0.Seq(tok2mcode lb,s,tok2mcode rb))
 
 (* ---------------------------------------------------------------------- *)
 

@@ -795,34 +795,39 @@ rule token = parse
   | "+=" { TAssign (OpAssign Plus, [tokinfo lexbuf]) }
   | "*=" { TAssign (OpAssign Mul, [tokinfo lexbuf]) }
   | "/=" { TAssign (OpAssign Div, [tokinfo lexbuf]) }
-  | "%=" { TAssign (OpAssign Mod,[tokinfo lexbuf]) }
-  | "&=" { TAssign (OpAssign And,[tokinfo lexbuf]) }
-  | "|=" { TAssign (OpAssign Or,[tokinfo lexbuf]) }
-  | "^=" { TAssign (OpAssign Xor,[tokinfo lexbuf]) }
+  | "%=" { TAssign (OpAssign Mod, [tokinfo lexbuf]) }
+  | "&=" | "and_eq" { TAssign (OpAssign And, [tokinfo lexbuf]) }
+  | "|=" | "or_eq"  { TAssign (OpAssign Or,  [tokinfo lexbuf]) }
+  | "^=" | "xor_eq" { TAssign (OpAssign Xor, [tokinfo lexbuf]) }
   | "<<=" {TAssign (OpAssign DecLeft,[tokinfo lexbuf]) }
   | ">>=" {TAssign (OpAssign DecRight,[tokinfo lexbuf]) }
   | ">?=" { TAssign(OpAssign Max,[tokinfo lexbuf]) }
   | "<?=" { TAssign(OpAssign Min,[tokinfo lexbuf]) }
 
-  | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) }
+  | "==" { TEqEq(tokinfo lexbuf) }  | "!=" | "not_eq" { TNotEq(tokinfo lexbuf) }
   | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) }
   | "<"  { TInf(tokinfo lexbuf) }   | ">"  { TSup(tokinfo lexbuf) }
   | "<<<"{ TInf3(tokinfo lexbuf) }  | ">>>"{ TSup3(tokinfo lexbuf) }
 
-  | "&&" { TAndLog(tokinfo lexbuf) } | "||" { TOrLog(tokinfo lexbuf) }
-  | ">>" { TShr(tokinfo lexbuf) }    | "<<" { TShl(tokinfo lexbuf) }
-  | "&"  { TAnd(tokinfo lexbuf) }    | "|" { TOr(tokinfo lexbuf) }
-  | "^"  { TXor(tokinfo lexbuf) }
+  | "&&" | "and" { TAndLog(tokinfo lexbuf) }
+  | "||" | "or" { TOrLog(tokinfo lexbuf) }
+  | ">>"  { TShr(tokinfo lexbuf) }    | "<<" { TShl(tokinfo lexbuf) }
+  | "&" | "bitand" { TAnd(tokinfo lexbuf) }
+  | "|" | "bitor" { TOr(tokinfo lexbuf) }
+  | "^" | "xor" { TXor(tokinfo lexbuf) }
   | "..." { TEllipsis(tokinfo lexbuf) }
   | "->"   { TPtrOp(tokinfo lexbuf) }  | '.'  { TDot(tokinfo lexbuf) }
   | ','    { TComma(tokinfo lexbuf) }
   | ";"    { TPtVirg(tokinfo lexbuf) }
   | "?"    { TWhy(tokinfo lexbuf) }    | ":"   { TDotDot(tokinfo lexbuf) }
-  | "!" | "not" { TBang(tok lexbuf,tokinfo lexbuf) }
-  | "~"    { TTilde(tokinfo lexbuf) }
+  | "!" | "not" { TBang(tokinfo lexbuf) }
+  | "~" | "compl" { TTilde(tokinfo lexbuf) }
 
-  | "<:" { TOCro(tokinfo lexbuf) } | ":>" { TCCro(tokinfo lexbuf) }
-  | "<%" { TOBrace(tokinfo lexbuf) } | "%>" { TCBrace(tokinfo lexbuf) }
+  | "<:" { TOCro(tokinfo lexbuf) }
+  | "<:<:" { TOCroCro(tokinfo lexbuf) }
+  | ":>" { TCCro(tokinfo lexbuf) }
+  | "<%" { TOBrace(tokinfo lexbuf) }
+  | "%>" { TCBrace(tokinfo lexbuf) }
 
 
 
