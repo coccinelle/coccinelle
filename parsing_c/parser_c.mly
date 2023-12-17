@@ -1928,6 +1928,7 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 init_declarator2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
+ | declaratori_fn teq initialize{ (Ast_c.noattr, $1, ValInit($3, [$2])) }
  /* C++ only */
  | declaratori topar_ini_cxx valinit tcpar_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
@@ -1948,7 +1949,9 @@ init_declarator_attrs2:
  | declaratori                  { (Ast_c.noattr, $1, NoInit) }
  | attributes declaratori       { ($1, $2, NoInit) }
  | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
+ | declaratori_fn teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
  | attributes declaratori teq initialize   { ($1, $2, ValInit($4, [$3])) }
+ | attributes declaratori_fn teq initialize   { ($1, $2, ValInit($4, [$3])) }
  /* C++ only */
  | declaratori topar_ini_cxx valinit tcpar_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
