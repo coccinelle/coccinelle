@@ -1228,7 +1228,7 @@ iteration:
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(None, [])),$6),    [$1;$2;$5]}
  | Tfor TOPar decl expr_statement expr TCPar cpp_ifdef_statement
      { For (ForDecl(($3 Ast_c.LocalDecl),$4,(Some $5, [])),$7), [$1;$2;$6] }
- | Tfor TOPar decl_spec declaratori TDotDot initialize TCPar cpp_ifdef_statement
+ | Tfor TOPar decl_spec declaratorifn TDotDot initialize TCPar cpp_ifdef_statement
      { let decl = (* should share with code in decl2 *)
          let di = (fst $3, $4, NoInit) in
          create_decls $3 [di,[]] $5 Ast_c.LocalDecl in
@@ -1857,11 +1857,6 @@ decl2:
 	 ((sto, attrs, fst $2, $4, $6, $8),
 	  (snd $2::$3::$5::$7::$9::fakeBeforeInfo()::stoii)) }
 
-storage_const_opt:
-   storage_class_spec_nt TMacroDeclConst { Some (fst $1,[snd $1; $2]) }
- | storage_class_spec_nt { Some (fst $1,[snd $1]) }
- |                       { None }
-
 /*(*-----------------------------------------------------------------------*)*/
 decl_spec2:
  | storage_class_spec { ([], {nullDecl with storageD = (fst $1, [snd $1]) }) }
@@ -1925,10 +1920,8 @@ decl_spec: decl_spec2    { dt "declspec" (); $1  }
 /*(* declarators (right part of type and variable) *)*/
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator2:
- | declaratori                  { (Ast_c.noattr, $1, NoInit) }
- | declaratori_fn               { (Ast_c.noattr, $1, NoInit) }
- | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
- | declaratori_fn teq initialize{ (Ast_c.noattr, $1, ValInit($3, [$2])) }
+ | declaratorifn                { (Ast_c.noattr, $1, NoInit) }
+ | declaratorifn teq initialize { (Ast_c.noattr, $1, ValInit($3, [$2])) }
  /* C++ only */
  | declaratori topar_ini_cxx valinit tcpar_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
@@ -1943,14 +1936,10 @@ init_declarator2:
 /*(* attributes to it causes conflicts, thus the need for this rule. *)*/
 /*(*-----------------------------------------------------------------------*)*/
 init_declarator_attrs2:
- | declaratori                  { (Ast_c.noattr, $1, NoInit) }
- | declaratori_fn               { (Ast_c.noattr, $1, NoInit) }
- | attributes declaratori       { ($1, $2, NoInit) }
- | attributes declaratori_fn    { ($1, $2, NoInit) }
- | declaratori teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
- | declaratori_fn teq initialize   { (Ast_c.noattr, $1, ValInit($3, [$2])) }
- | attributes declaratori teq initialize   { ($1, $2, ValInit($4, [$3])) }
- | attributes declaratori_fn teq initialize   { ($1, $2, ValInit($4, [$3])) }
+ | declaratorifn                { (Ast_c.noattr, $1, NoInit) }
+ | attributes declaratorifn     { ($1, $2, NoInit) }
+ | declaratorifn teq initialize { (Ast_c.noattr, $1, ValInit($3, [$2])) }
+ | attributes declaratorifn teq initialize { ($1, $2, ValInit($4, [$3])) }
  /* C++ only */
  | declaratori topar_ini_cxx valinit tcpar_ini
      { (Ast_c.noattr, $1, $3 $2 $4) }
@@ -1981,7 +1970,12 @@ declaratori:
  | declarator gcc_asm_decl
      { LP.add_ident (str_of_name (fst $1)); $1, [] }
 
-declaratori_fn:
+declaratorifn:
+ | declarator attributes_opt
+     { LP.add_ident (str_of_name (fst $1)); $1, $2 }
+ /*(* gccext: *)*/
+ | declarator gcc_asm_decl
+     { LP.add_ident (str_of_name (fst $1)); $1, [] }
  | declarator_fn attributes_opt
      { LP.add_ident (str_of_name (fst $1)); $1, $2 }
  /*(* gccext: *)*/
@@ -2220,47 +2214,6 @@ field_declaration:
                          ,[$4;iistart])
      }
 
-/* simpler for C++ - no attributes, no fields without names, and no bitfields
-   avoid conflicts with function definition */
-simple_field_declaration:
- | decl_spec declaratorsfd_list TPtVirg
-     {
-       let (returnType,storage) = fixDeclSpecForDecl $1 in
-       (if fst3 (unwrap storage) <> NoSto
-       then
-	 raise
-	   (Semantic
-	      ("simple_field_declaration: parsing don't allow this",
-	       Ast_c.parse_info_of_info $3)));
-
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
-       FieldDeclList ($2 +> (List.map (fun (f, iivirg) ->
-         f returnType, iivirg))
-                         ,[$3;iistart])
-         (* don't need to check if typedef or func initialised cos
-          * grammar don't allow typedef nor initialiser in struct
-          *)
-     }
- | simple_type dotdot const_expr2 TPtVirg
-     /* specialized for the only thing that makes sense for an anonymous
-	 bitfield - don't need more than one and don't need struct etc types */
-     { let ty = ([], addTypeD ($1, nullDecl)) in
-       let decl = [(fun x -> BitField (None, x, $2, $3)),[]] in
-       let (returnType,storage) = fixDeclSpecForDecl ty in
-       (if fst3 (unwrap storage) <> NoSto
-       then
-	 raise
-	   (Semantic
-	      ("field_declaration: case 3: parsing don't allow this",
-	       Ast_c.parse_info_of_info $2)));
-
-       let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
-       FieldDeclList (decl +> (List.map (fun (f, iivirg) ->
-         f returnType, iivirg))
-                         ,[$4;iistart])
-     }
-
-
 struct_declarator:
  | declarator attributes_opt
      { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
@@ -2270,16 +2223,6 @@ struct_declarator:
      { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
  | declarator_fn dotdot const_expr2
      { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
-
-declaratorsfd:
- | declaratori
-     { let (dec,endattr) = $1 in
-       (fun x -> Simple (Some (fst dec), (snd dec) x, endattr)) }
- | declaratori dotdot TInt
-     { let (dec,endattr) = $1 in
-       let (str,(sign,base)) = fst $3 in
-       let cst = mk_e(Constant (Int (str,Si(sign,base)))) [snd $3] in
-       (fun x -> BitField (Some (fst dec), ((snd dec) x), $2, cst)) }
 
 /*(*----------------------------*)*/
 /*(* workarounds *)*/
@@ -2381,10 +2324,6 @@ idente: ident_cpp { LP.add_ident (str_of_name $1); $1 }
 /*(* function *)*/
 /*(*************************************************************************)*/
 function_definition: function_def    { fixFunc $1 }
-
-decl_list:
- | decl           { [$1 Ast_c.LocalDecl]   }
- | decl_list decl { $1 @ [$2 Ast_c.LocalDecl] }
 
 /* hack : to drop when a better solution is found */
 cpp_directive_list:
@@ -2944,10 +2883,6 @@ init_declarator_list:
  | init_declarator_list TComma cpp_directive_list init_declarator_attrs
      { $1 @ [$4, [$2]] }
  | init_declarator_list TComma init_declarator_attrs { $1 @ [$3, [$2]] }
-
-declaratorsfd_list:
- | declaratorsfd                            { [$1, []] }
- | declaratorsfd_list TComma declaratorsfd  { $1 @ [$3, [$2]] }
 
 
 parameter_list:
