@@ -250,7 +250,8 @@ let inline_id aft = function
 
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
-%token <Data.clt> TBreak TContinue TGoto TSizeof TTypeof TFunDecl TFunProto TNew Tdelete
+%token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl TFunProto TNew Tdelete
+%token <string * Data.clt> TTypeof
 %token <Data.clt> Tdecimal Texec
 %token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
 %token <Ast_cocci.added_string * Data.clt> TDirective
@@ -1088,11 +1089,11 @@ non_signable_types_no_ident_without_braces:
 			     Parse_aux.clt2mcode "(" $2,$3,None,None,
 			     Parse_aux.clt2mcode ")" $4)) }
 | TTypeof TOPar eexpr TCPar
-    { Ast0_cocci.wrap(Ast0_cocci.TypeOfExpr(Parse_aux.clt2mcode "typeof" $1,
+    { Ast0_cocci.wrap(Ast0_cocci.TypeOfExpr(Parse_aux.tok2mcode $1,
                                    Parse_aux.clt2mcode "(" $2,$3,
                                    Parse_aux.clt2mcode ")" $4)) }
 | TTypeof TOPar ctype TCPar
-    { Ast0_cocci.wrap(Ast0_cocci.TypeOfType(Parse_aux.clt2mcode "typeof" $1,
+    { Ast0_cocci.wrap(Ast0_cocci.TypeOfType(Parse_aux.tok2mcode $1,
                                    Parse_aux.clt2mcode "(" $2,$3,
                                    Parse_aux.clt2mcode ")" $4)) }
 | TautoType

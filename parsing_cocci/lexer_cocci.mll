@@ -337,7 +337,9 @@ let id_tokens lexbuf =
   | "goto" ->       TGoto     linetype
 
   | "sizeof" ->     TSizeof   linetype
-  | "typeof" ->     TTypeof   linetype
+  | "typeof" ->     TTypeof   ("typeof", linetype)
+  | "decltype" when !Flag.c_plus_plus <> Flag.Off ->
+      TTypeof   ("decltype", linetype)
 
   | "new" when !Flag.c_plus_plus != Flag.Off -> TNew linetype
 

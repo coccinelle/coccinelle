@@ -251,7 +251,8 @@ let cpp_keyword_table = Common.hash_of_list [
   "final",     (fun ii -> Tfinal ii);
   "typename",  (fun ii -> Ttypename ii);
   "override",  (fun ii -> TMacroAttr("override",ii));
-  "noexcept",  (fun ii -> TMacroAttr("noexcept",ii))]
+  "noexcept",  (fun ii -> TMacroAttr("noexcept",ii));
+  "decltype",  (fun ii -> Ttypeof ii)]
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);

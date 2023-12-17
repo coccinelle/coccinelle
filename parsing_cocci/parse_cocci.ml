@@ -184,7 +184,7 @@ let token2c (tok,_) add_clt =
 
   | PC.TSizeof(clt) -> add_clt "sizeof" clt
   | PC.Tdelete(clt) -> add_clt "delete" clt
-  | PC.TTypeof(clt) -> add_clt "typeof" clt
+  | PC.TTypeof(s,clt) -> add_clt s clt
   | PC.TNew(clt) -> add_clt "new" clt
 	
   | PC.TString(x,_,clt) -> add_clt (Printf.sprintf "\"%s\"" x) clt
@@ -365,7 +365,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TSymId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
-  | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(clt)
+  | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
 
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
@@ -459,7 +459,7 @@ let get_clt (tok,_) =
   | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
-  | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(clt)
+  | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
 
   | PC.TString(_,_,clt) | PC.TChar(_,_,clt) | PC.TFloat(_,clt) | PC.TInt(_,clt)
   | PC.TDecimalCst(_,_,_,clt)
@@ -660,7 +660,7 @@ let update_clt (tok,x) clt =
 
   | PC.TSizeof(_) -> (PC.TSizeof(clt),x)
   | PC.Tdelete(_) -> (PC.Tdelete(clt),x)
-  | PC.TTypeof(_) -> (PC.TTypeof(clt),x)
+  | PC.TTypeof(s,_) -> (PC.TTypeof(s,clt),x)
   | PC.TNew(_) -> (PC.TNew(clt),x)
 
   | PC.TString(s,sz,_) -> (PC.TString(s,sz,clt),x)
@@ -952,7 +952,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
-  | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(clt)
+  | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
@@ -1134,7 +1134,7 @@ let find_function_names l =
       let l = balanced_args 0 true l in
       let x = match l with
         ((PC.TAttr_(_)|PC.Tattr(_)|PC.TAttrArg(_)),_)::rest -> is_permissible_proto rest
-      | (PC.TTypeof(_),_)::_ -> true
+      | (PC.TTypeof _,_)::_ -> true
       | _ -> false in x
     | _::((PC.TEq(_),_) | (PC.TNotEq(_),_))::(PC.TWhen(_),_)::_
     | _::(PC.TWhen(_),_)::_
@@ -1406,7 +1406,7 @@ let token2line (tok,_) =
 
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt)
-  | PC.TSizeof (clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof (clt)
+  | PC.TSizeof (clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TIdent(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
