@@ -120,6 +120,7 @@ let rec is_int_type_unwrap = function
 and is_int_type ty = is_int_type_unwrap (Ast0.unwrap ty)
 
 let dummy = Ast0.make_mcode ""
+let dummy_star = Ast0.make_mcode "*"
 
 let num s = Ast0.Constant (Ast0.make_mcode (Ast.Int s))
 
@@ -160,7 +161,7 @@ let rec propagate_types env =
                      Ast0.rewrap e (
                        Ast0.Pointer(
                          Ast0.rewrap e char_type,
-                         dummy)))
+                         dummy_star)))
 	       | Ast.Char(_) -> Some (Ast0.rewrap e char_type)
 	       | Ast.Int(_) -> Some (Ast0.rewrap e int_type)
 	       | Ast.Float(_) ->  Some (Ast0.rewrap e float_type)
@@ -203,24 +204,22 @@ let rec propagate_types env =
 	    Ast0.get_type exp
 	| Ast0.Unary(exp,op) ->
 	    (match Ast0.unwrap_mcode op with
-		 Ast.GetRef ->
-                   Some (Ast0.rewrap e (Ast0.Pointer (
-                    (match Ast0.get_type exp with
-                       None -> Ast0.rewrap e unknown_type
-                     | Some t -> t),
-                     dummy)))
-	       | Ast.GetRefLabel ->
-                   Some (Ast0.rewrap e (Ast0.Pointer (
-                     Ast0.rewrap e void_type,
-                     dummy)))
-	       | Ast.DeRef ->
-                   (match Common.map_option Ast0.unwrap (Ast0.get_type exp) with
-                        Some (Ast0.Pointer(t, _)) -> Some t
-		      |	_ -> None)
-	       | Ast.UnPlus -> Ast0.get_type exp
-	       | Ast.UnMinus -> Ast0.get_type exp
-	       | Ast.Tilde _ -> Ast0.get_type exp
-               | Ast.Not _ -> Some (Ast0.rewrap e bool_type))
+	      Ast.GetRef ->
+		let exptype =
+		  match Ast0.get_type exp with
+		    None -> Ast0.rewrap e unknown_type
+		  | Some t -> t in
+                Some (Ast0.rewrap e (Ast0.Pointer (exptype,dummy_star)))
+	    | Ast.GetRefLabel ->
+                Some (Ast0.rewrap e (Ast0.Pointer (Ast0.rewrap e void_type,dummy)))
+	    | Ast.DeRef ->
+                (match Common.map_option Ast0.unwrap (Ast0.get_type exp) with
+                  Some (Ast0.Pointer(t, _)) -> Some t
+		| _ -> None)
+	    | Ast.UnPlus -> Ast0.get_type exp
+	    | Ast.UnMinus -> Ast0.get_type exp
+	    | Ast.Tilde _ -> Ast0.get_type exp
+            | Ast.Not _ -> Some (Ast0.rewrap e bool_type))
 	| Ast0.Nested(exp1,op,exp2) -> failwith "nested in type inf not possible"
 	| Ast0.Binary(exp1,op,exp2) ->
 	    let ty1 = Ast0.get_type exp1 in
@@ -518,7 +517,7 @@ let rec propagate_types env =
 
 let type_infer code =
   let unknown = Ast0.wrap (Ast0.BaseType (Ast.Unknown, [])) in
-  let unknown_ptr = Ast0.wrap (Ast0.Pointer (unknown, dummy)) in
+  let unknown_ptr = Ast0.wrap (Ast0.Pointer (unknown, dummy_star)) in
   let prop = propagate_types [(Id("NULL"), unknown_ptr)] in
   let fn = prop.VT0.combiner_rec_top_level in
   let _ = List.map fn code in

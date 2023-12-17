@@ -4783,8 +4783,11 @@ and compatible_typeC a (b,local) =
 		  )
 	| _ -> failwith "compatible_typeC: not possible")
 
-    | A.Pointer (a, _), (qub, attra, (B.Pointer b, ii)) ->
-	compatible_type a (b, local)
+    | A.Pointer (a, astar), (qub, attra, (B.Pointer b, ii)) ->
+	let star = tuple_of_list1 ii in
+	if A.unwrap_mcode astar = B.str_of_info star
+	then compatible_type a (b, local)
+	else fail
     | A.ParenType (_, a, _), (qub, attra, (B.ParenType b, ii)) ->
 	compatible_type a (b, local)
     | A.FunctionType (a, _, _, _), (qub, attra, (B.FunctionType (b,_), ii)) ->
