@@ -486,13 +486,6 @@ let rec type_unfold_one_step ty env =
   loop [] ty env
 
 
-
-
-
-
-
-
-
 (* normalizer. can be seen as the opposite of the previous function as
  * we "fold" at least for the structUnion. Should return something that
  * Type_c.is_completed_fullType likes, something that makes it easier
