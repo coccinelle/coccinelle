@@ -452,8 +452,34 @@ let rec type_unfold_one_step ty env =
   | FieldType (t, _, _) -> type_unfold_one_step t env
 
   | TypeOfExpr e ->
-      pr2_once ("Type_annoter: not handling typeof");
-      ty
+      (* hackish, but this is the only place where the
+	 difference between decltype and typeof matters *)
+      let (qu, attr, ii) =
+	let (qu, attr, (typeC, ii)) = ty in
+	(qu, attr, List.hd ii) in
+      let etype _ =
+	match Type_c.get_opt_type e with
+	  Some t -> t
+	| None -> ty in
+      if str_of_info ii = "decltype"
+      then
+	(match Ast_c.unwrap_expr e with
+	  ParenExpr e ->
+	    (match Type_c.get_opt_type e with
+	      Some t ->
+		(* position shouldn't matter because this is a type *)
+		let vp = ({str="";charpos=0;line=0;column=0;file=""},0) in
+		let ander =
+		  { pinfo = FakeTok ("&",vp,Ast_c.After);
+		    cocci_tag = ref Ast_c.emptyAnnot;
+		    annots_tag = Token_annot.empty;
+		    comments_tag = ref Ast_c.emptyComments;
+		    danger = ref Ast_c.NoDanger;
+		  } in
+		(qu, attr, (Pointer t, [ander]))
+	    | None -> ty)
+	| _ -> etype())
+      else etype()
   | TypeOfType t -> type_unfold_one_step t env
   | AutoType -> ty
   | TemplateType _ -> ty in
