@@ -1263,7 +1263,22 @@ and parameterTypeDef p =
   | Ast.Pdots(_) -> raise CantBeInPlus
   | Ast.OptParam(param) -> raise CantBeInPlus
 
+and templateParameterTypeDef p =
+  match Ast.unwrap p with
+    Ast.TypenameOrClassParam(tyorcl,id,eqtyopt) ->
+      mcode print_string tyorcl;
+      ident id;
+      print_option (fun (eq,ty) -> mcode print_string eq; fullType ty) eqtyopt
+  | Ast.VarNameParam(ty,id,eqexpopt) ->
+      print_named_type ty (fun _ -> ident id);
+      print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+  | Ast.TPComma(comma) -> mcode print_string comma; force_newline()
+  | Ast.TPDots(dots) -> mcode print_string dots; force_newline()
+
 and parameter_list l = dots (function _ -> ()) parameterTypeDef l
+
+and template_parameter_list l = dots (function _ -> ()) templateParameterTypeDef l
+
 in
 
 
@@ -1499,6 +1514,11 @@ let indent_if_needed s f =
       indent(); start_block(); f(); unindent true
     end in
 
+(*let rec toplevel arity t =
+  match Ast.unwrap t with
+       Ast.Declaration (d) -> declaration arity d;
+    |  Ast.Definition (d) -> definition arity d;*)
+
 let rec statement arity s =
   match Ast.unwrap s with
     Ast.Seq(lbrace,body,rbrace) ->
@@ -1544,6 +1564,13 @@ let rec statement arity s =
       dots force_newline (statement arity) body;
       end_block (Ast.unwrap body);
       rule_elem arity rbrace
+
+  | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+     mcode print_string tmpkw;
+     mcode print_string lab;
+     template_parameter_list params;
+     mcode print_string rab;
+     statement "" stmt;
 
   | Ast.Define(header,body) ->
       rule_elem arity header; pr_space();
@@ -1713,14 +1740,15 @@ let pp_any = function
      normally there should be no '...' inside them *)
   | Ast.ExprDotsTag(x) -> dots (fun _ -> ()) expression x; false
   | Ast.ParamDotsTag(x) -> parameter_list x; false
+  | Ast.TemplateParamDotsTag(x) -> template_parameter_list x; false
   | Ast.StmtDotsTag(x) -> dots force_newline (statement "") x; false
   | Ast.AnnDeclDotsTag(x) -> dots force_newline annotated_decl x; false
   | Ast.AnnFieldDotsTag(x) -> dots force_newline annotated_field x; false
   | Ast.EnumDeclDotsTag(x) -> dots force_newline enum_decl x; false
   | Ast.DefParDotsTag(x) -> dots (fun _ -> ()) print_define_param x; false
-
   | Ast.TypeCTag(x) -> typeC false x; false
   | Ast.ParamTag(x) -> parameterTypeDef x; false
+  | Ast.TemplateParamTag(x) -> templateParameterTypeDef x; false
   | Ast.SgrepStartTag(x) -> failwith "unexpected start tag"
   | Ast.SgrepEndTag(x) -> failwith "unexpected end tag"
 in

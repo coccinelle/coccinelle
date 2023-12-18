@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 197, also unused: {none}
+(* current max is 201, also unused: {none}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -175,6 +175,8 @@ let templateParameterTypeDef p =
   match Ast0.unwrap p with
     Ast0.TypenameOrClassParam(tyorcl,id,eqtyopt) -> [198]
   | Ast0.VarNameParam(ty,id,eqexpopt) -> [199]
+  | Ast0.TPComma(_) -> [200]
+  | Ast0.TPDots(_) -> [201]
 
 let statement s =
   match Ast0.unwrap s with

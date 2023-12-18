@@ -3033,6 +3033,15 @@ module Ast_cocci :
       | Default of string mcode * string mcode
       | AsRe of rule_elem * rule_elem
       | DisjRuleElem of rule_elem list
+    and base_templateParameterTypeDef =
+        TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * fullType) option
+      | VarNameParam of fullType * ident (* name *) * (string mcode (* = *) * expression ) option
+      | TPComma of string mcode
+      | TPDots of string mcode (* ... *)
+      (* Note: TemplateParam not supported yet. *)
+    and templateParameterTypeDef = base_templateParameterTypeDef wrap
+    and template_parameter_list = templateParameterTypeDef dots
+
     and base_pragmainfo =
       Ast_cocci.base_pragmainfo =
         PragmaString of string mcode
@@ -3100,6 +3109,10 @@ module Ast_cocci :
           dots_whencode list * dots_whencode list
       | FunDecl of rule_elem * rule_elem * statement dots * rule_elem *
           end_info
+      | TemplateDefinition of
+        string mcode (* template *) * string mcode (* < *) *
+            template_parameter_list * string mcode (* > *) *
+            statement
       | Define of rule_elem * statement dots
       | AsStmt of statement * statement
       | Dots of string mcode * (statement dots, statement) whencode list *
