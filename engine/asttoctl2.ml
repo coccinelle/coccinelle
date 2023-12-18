@@ -341,11 +341,12 @@ let elim_opt =
   V.rebuilder
     mcode mcode mcode mcode mcode mcode mcode mcode mcode
     mcode mcode mcode mcode mcode
+    donothing
     donothing donothing stmtdotsfn donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
     donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
+    donothing donothing donothing donothing
 
 (* --------------------------------------------------------------------- *)
 (* after management *)
@@ -468,10 +469,11 @@ let contains_modif =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
+      do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing init do_nothing do_nothing
-      do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -499,10 +501,11 @@ let contains_pos =
     V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
+      do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing
+      do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing in
   recursor.V.combiner_rule_elem
@@ -600,6 +603,7 @@ let count_nested_braces s =
   let recursor = V.combiner bind option_default
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
+      donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing
@@ -2621,6 +2625,8 @@ and statement stmt top after quantified minus_quantified
       quantify guard ahfvs
 	(quantify guard b1fvs
 	   (make_seq [function_header; quantify guard b2fvs body_code]))
+  | Ast.TemplateDefinition(_,_,_,_,_) ->
+      failwith "Please write me ... FIXME\n"
   | Ast.Define(header,body) ->
       let (hfvs,bfvs,bodyfvs) =
 	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]
@@ -2773,6 +2779,7 @@ and drop_minuses stmt_dots =
     V.rebuilder
       mcode mcode mcode mcode mcode mcode mcode mcode mcode
       mcode mcode mcode mcode mcode
+      donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing
       donothing donothing donothing donothing donothing donothing donothing

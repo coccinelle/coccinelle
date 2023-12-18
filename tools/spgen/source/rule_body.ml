@@ -217,6 +217,7 @@ let rec gen_combiner ~context_mode =
   let dotsexprfn = donothing in
   let dotsinitfn = donothing in
   let dotsparamfn = donothing in
+  let dotstemplateparamfn = donothing in
   let dotsdeclfn = donothing in
   let dotsfieldfn = donothing in
   let dotsenumdeclfn = donothing in
@@ -228,6 +229,7 @@ let rec gen_combiner ~context_mode =
   let initfn = donothing in
   let enumdeclfn = donothing in
   let paramfn = donothing in
+  let templateparamfn = donothing in
   let forinfofn = donothing in
   let casefn = donothing in
   let string_fragmentfn = donothing in
@@ -352,9 +354,9 @@ let rec gen_combiner ~context_mode =
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn templateparamfn declfn fieldfn
     enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn
 
 

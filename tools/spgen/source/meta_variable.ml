@@ -388,6 +388,7 @@ let metavar_combiner rn =
   let dotsexprfn = donothing in
   let dotsinitfn = donothing in
   let dotsparamfn = donothing in
+  let dotstemplatesparamfn = donothing in
   let dotsstmtfn = donothing in
   let dotsdeclfn = donothing in
   let dotsfieldfn = donothing in
@@ -525,6 +526,23 @@ let metavar_combiner rn =
         as_format ptd ex par expr
     | _ -> fn v in
 
+  let templateparamfn c fn v =
+    match Ast0.unwrap v with
+    (* FIXME: incomplete *)
+      Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+           fn v
+    | Ast0.TypenameOrClassParam(tyorcl,id,None) ->
+           fn v
+    | Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
+           fn v
+    | Ast0.VarNameParam(ty,id,None) ->
+           fn v
+    | Ast0.TPComma(comma) ->
+           fn v
+    | Ast0.TPDots(dots) ->
+           fn v
+    in
+
 (*
   Not used for now, visitor not parameterized by this...
   let define_paramfn c fn v =
@@ -584,9 +602,9 @@ let metavar_combiner rn =
     meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
     fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
     struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotsstmtfn dotsdeclfn dotsfieldfn
+    dotsexprfn dotsinitfn dotsparamfn dotstemplatesparamfn dotsstmtfn dotsdeclfn dotsfieldfn
     dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn declfn fieldfn
+    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn templateparamfn declfn fieldfn
     enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn
 
 

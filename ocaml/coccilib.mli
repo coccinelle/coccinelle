@@ -3245,6 +3245,7 @@ module Ast_cocci :
       | Code of top_level
       | ExprDotsTag of expression dots
       | ParamDotsTag of parameterTypeDef dots
+      | TemplateParamDotsTag of templateParameterTypeDef dots
       | StmtDotsTag of statement dots
       | AnnDeclDotsTag of annotated_decl dots
       | AnnFieldDotsTag of annotated_field dots
@@ -3252,6 +3253,7 @@ module Ast_cocci :
       | DefParDotsTag of define_param dots
       | TypeCTag of typeC
       | ParamTag of parameterTypeDef
+      | TemplateParamTag    of templateParameterTypeDef
       | SgrepStartTag of string
       | SgrepEndTag of string
     and exists = Ast_cocci.exists = Exists | Forall | Undetermined
@@ -3707,6 +3709,10 @@ module Ast0_cocci :
           parameter_list * (string mcode * string mcode) option *
           string mcode * attr list * string mcode * statement dots *
           string mcode * (info * mcodekind)
+      | TemplateDefinition of
+            string mcode (* template *) * string mcode (* < *) *
+            template_parameter_list * string mcode (* > *) *
+            statement
       | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
       | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * string mcode option (*typename*) * typeC (*full_type*) * string mcode (*;*)
       | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
@@ -3716,6 +3722,16 @@ module Ast0_cocci :
       | Define of string mcode * ident * define_parameters * statement dots
       | Pragma of string mcode * ident * pragmainfo
       | OptStm of statement
+    and base_templateParameterTypeDef =
+      Ast0_cocci.base_templateParameterTypeDef =
+        TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * typeC) option
+      | VarNameParam of typeC * ident (* name *) * (string mcode (* = *) * expression ) option
+      | TPComma of string mcode
+      | TPDots of string mcode (* ... *)
+      (* Note: TemplateParam not supported yet. *)
+    and templateParameterTypeDef = base_templateParameterTypeDef wrap
+    and template_parameter_list = templateParameterTypeDef dots
+
     and base_pragmainfo =
       Ast0_cocci.base_pragmainfo =
         PragmaString of string mcode
@@ -3836,6 +3852,7 @@ module Ast0_cocci :
         DotsExprTag of expression dots
       | DotsInitTag of initialiser dots
       | DotsParamTag of parameterTypeDef dots
+      | DotsTemplateParamTag of templateParameterTypeDef dots
       | DotsStmtTag of statement dots
       | DotsDeclTag of declaration dots
       | DotsFieldTag of field dots
@@ -3850,6 +3867,7 @@ module Ast0_cocci :
       | TestExprTag of expression
       | TypeCTag of typeC
       | ParamTag of parameterTypeDef
+      | TemplateParamTag of templateParameterTypeDef
       | InitTag of initialiser
       | DeclTag of declaration
       | FieldTag of field

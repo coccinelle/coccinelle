@@ -2402,7 +2402,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
 		donothing donothing donothing donothing donothing donothing
-		donothing in
+		donothing donothing donothing in
 	    v.Visitor_ast.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->

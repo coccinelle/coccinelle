@@ -48,7 +48,7 @@ let contains_modif used_after x =
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing
+	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing in
     recursor.V.combiner_rule_elem x
@@ -75,7 +75,8 @@ let contains_constant x =
 	  mcode mcode mcode
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	  do_nothing
-	  ident expr do_nothing do_nothing do_nothing do_nothing do_nothing
+	  do_nothing ident expr do_nothing do_nothing do_nothing do_nothing
+	  do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	  do_nothing do_nothing do_nothing do_nothing do_nothing in
@@ -144,7 +145,7 @@ let strip x =
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
       do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing
+      do_nothing do_nothing do_nothing
       decl_or_field do_absolutely_nothing decl_or_field do_absolutely_nothing
       do_nothing rule_elem
       do_nothing do_nothing do_nothing do_nothing do_nothing do_absolutely_nothing in
@@ -212,7 +213,8 @@ let find_commonalities res : Ast_cocci.rule_elem option =
 	mcode mcode mcode
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing
-	expression do_nothing do_nothing do_nothing do_nothing do_nothing
+	do_nothing expression do_nothing do_nothing do_nothing do_nothing
+        do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing
 	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
@@ -341,6 +343,10 @@ and statement testfn mcode tail stmt : 'a list list =
 	mcode () ((),(),aft,[])
       then conj (rule_elem header) body_info
       else body_info
+
+  | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+   (* [] FIXME: continue here *)
+      statement testfn mcode tail stmt
 
   | Ast.Define(header,body) ->
       conj_one testfn header (statement_list testfn mcode tail body)
