@@ -829,6 +829,13 @@ and rule_elem arity re =
       end; close_box(); mcode print_string rp;
       print_attribute_list attrs;
       print_string " "
+  | Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab) ->
+      mcode print_string tmpkw;
+      print_string " ";
+      mcode print_string lab;
+      print_string " ";
+      template_parameter_list params;
+      mcode print_string rab
   | Ast.Decl(ann_decl) -> annotated_decl arity ann_decl
   | Ast.SeqStart(brace) ->
       print_string arity; mcode print_string brace;
@@ -1010,14 +1017,9 @@ and statement arity s =
       dots force_newline (statement arity) body;
       rule_elem arity rbrace;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])
-  | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
-      mcode print_string tmpkw;
-      print_string " ";
-      mcode print_string lab;
-      print_string " ";
-      template_parameter_list params;
-      mcode print_string rab;
-      statement arity stmt;
+  | Ast.TemplateDefinition(header,stmt) ->
+      rule_elem arity header;
+      statement arity stmt
   | Ast.Disj([stmt_dots]) (* useful why? *)
   | Ast.Conj([stmt_dots]) ->
       print_string arity;

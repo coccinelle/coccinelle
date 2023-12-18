@@ -3028,6 +3028,9 @@ module Ast_cocci :
       | MetaInclude of string mcode * expression
       | Undef of string mcode * ident
       | DefineHeader of string mcode * ident * define_parameters
+      | TemplateDefinitionHeader
+                     of string mcode (* template *) * string mcode (* < *) *
+			 template_parameter_list * string mcode (* > *)
       | Pragma of string mcode * ident * pragmainfo
       | Case of string mcode * expression * string mcode
       | Default of string mcode * string mcode
@@ -3110,10 +3113,7 @@ module Ast_cocci :
           dots_whencode list * dots_whencode list
       | FunDecl of rule_elem * rule_elem * statement dots * rule_elem *
           end_info
-      | TemplateDefinition of
-        string mcode (* template *) * string mcode (* < *) *
-            template_parameter_list * string mcode (* > *) *
-            statement
+      | TemplateDefinition of rule_elem * statement
       | Define of rule_elem * statement dots
       | AsStmt of statement * statement
       | Dots of string mcode * (statement dots, statement) whencode list *

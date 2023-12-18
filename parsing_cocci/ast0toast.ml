@@ -1134,10 +1134,12 @@ and statement s =
       | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
 	  let tmpkw = mcode tmpkw in
 	  let lab = mcode lab in
-	  let params = template_parameter_list params in (* ? *)
+	  let params = template_parameter_list params in
 	  let rab = mcode rab in
           let stmt = statement seqible stmt in
-          Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt)
+          Ast.TemplateDefinition
+	    (rewrap_rule_elem s (Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab)),
+	     stmt)
       |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
         Ast.Atomic(rewrap_rule_elem s
           (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))

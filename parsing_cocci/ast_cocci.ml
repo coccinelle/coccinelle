@@ -627,6 +627,9 @@ and base_rule_elem =
   | Undef         of string mcode (* #define *) * ident (* name *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)
+  | TemplateDefinitionHeader
+                  of string mcode (* template *) * string mcode (* < *) *
+                      template_parameter_list * string mcode (* > *)
   | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
@@ -713,10 +716,7 @@ and base_statement =
 	             dots_whencode list * dots_whencode list
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * rule_elem (* } *) * end_info (*exit*)
-  | TemplateDefinition of
-	string mcode (* template *) * string mcode (* < *) *
-        template_parameter_list * string mcode (* > *) *
-        statement
+  | TemplateDefinition of rule_elem * statement
   | Define        of rule_elem (* header *) * statement dots
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *

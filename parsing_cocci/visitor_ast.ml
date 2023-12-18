@@ -736,10 +736,12 @@ let combiner bind option_default
 	  let lparams = parameter_dots params in
           let (lcomma,lellipsis) = match va with
             | None -> ([],[])
-            | Some (comma,ellipsis) -> ([string_mcode comma],[string_mcode ellipsis]) in
+            | Some (comma,ellipsis) ->
+		([string_mcode comma],[string_mcode ellipsis]) in
 	  let lrp = string_mcode rp in
 	  let lattrs = List.map attribute attrs in
-	  multibind (lfi @ [lname; llp; lparams] @ lcomma @ lellipsis @ [lrp] @ lattrs)
+	  multibind (lfi @ [lname; llp; lparams] @ lcomma @ lellipsis @
+		     [lrp] @ lattrs)
       | Ast.Decl decl -> annotated_decl decl
       | Ast.SeqStart(brace) -> string_mcode brace
       | Ast.SeqEnd(brace) -> string_mcode brace
@@ -862,6 +864,12 @@ let combiner bind option_default
 	  let lid = ident id in
 	  let lparams = define_parameters params in
 	  multibind [ldef; lid; lparams]
+      | Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab) ->
+	  let ltmpkw = string_mcode tmpkw in
+	  let llab = string_mcode lab in
+	  let lparams = template_parameter_dots params in
+	  let lrab = string_mcode rab in
+	  multibind [ltmpkw;llab;lparams;lrab]
       |	Ast.Pragma(prg,id,body) ->
 	  let lprg = string_mcode prg in
 	  let lid = ident id in
@@ -1004,6 +1012,10 @@ let combiner bind option_default
 	  let lbody = statement_dots body in
 	  let lrbrace = rule_elem rbrace in
 	  multibind [lheader; lbraces; lbody; lrbrace]
+      | Ast.TemplateDefinition(header,stmt) ->
+	  let lheader = rule_elem header in
+	  let lstmt = statement stmt in
+          bind lheader lstmt
       | Ast.Define(header,body) ->
 	  let lheader = rule_elem header in
 	  let lbody = statement_dots body in
@@ -1017,14 +1029,7 @@ let combiner bind option_default
 	  let lwhn = multibind
 	    (List.map (whencode statement_dots statement) whn) in
 	  bind ld lwhn
-      | Ast.OptStm(stmt) -> statement stmt
-      | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
-	  let ltmpkw = string_mcode tmpkw in
-	  let llab = string_mcode lab in
-	  let lrab = string_mcode rab in
-	  let lstmt = statement stmt in
-	  (* FIXME -> let lparams = template_parameter_list params in *)
-          multibind [ltmpkw; llab;(*; lparams *) lrab; lstmt] in
+      | Ast.OptStm(stmt) -> statement stmt in
     stmtfn all_functions k s
 
   and fninfo = function
@@ -1999,6 +2004,12 @@ let rebuilder
 	    let lid = ident id in
 	    let lparams = define_parameters params in
 	    Ast.DefineHeader(ldef, lid, lparams)
+	| Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab) ->
+	    let ltmpkw = string_mcode tmpkw in
+	    let llab = string_mcode lab in
+	    let lparams = template_parameter_dots params in
+	    let lrab = string_mcode rab in
+	    Ast.TemplateDefinitionHeader(ltmpkw,llab,lparams,lrab)
 	| Ast.Pragma(prg,id,body) ->
 	    let lprg = string_mcode prg in
 	    let lid = ident id in
@@ -2163,14 +2174,10 @@ let rebuilder
 	    let lwhn = List.map (whencode statement_dots statement) whn in
 	    Ast.Dots(ld, lwhn, bef, aft)
 	| Ast.OptStm(stmt) -> Ast.OptStm(statement stmt)
-	| Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
-	  let ltmpkw = string_mcode tmpkw in
-	  let llab = string_mcode lab in
-	  let lrab = string_mcode rab in
-	  let lstmt = statement stmt in
-	  let lparams = template_parameter_dots params in (* FIXME -> let lparams = template_parameter_list params in *)
-	  Ast.TemplateDefinition(ltmpkw,llab,lparams,lrab,lstmt)
-        ) in
+	| Ast.TemplateDefinition(header,stmt) ->
+	    let lheader = rule_elem header in
+	    let lstmt = statement stmt in
+	    Ast.TemplateDefinition(lheader,lstmt)) in
     let s = stmtfn all_functions k s in
     (* better to do this after, in case there is an equality test on the whole
        statement, eg in free_vars.  equality test would require that this
