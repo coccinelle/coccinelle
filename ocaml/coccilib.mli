@@ -3034,6 +3034,7 @@ module Ast_cocci :
       | AsRe of rule_elem * rule_elem
       | DisjRuleElem of rule_elem list
     and base_templateParameterTypeDef =
+      Ast_cocci.base_templateParameterTypeDef =
         TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * fullType) option
       | VarNameParam of fullType * ident (* name *) * (string mcode (* = *) * expression ) option
       | TPComma of string mcode
