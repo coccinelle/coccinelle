@@ -312,6 +312,26 @@ and disjparam p =
       let param = disjparam param in
       List.map (function param -> Ast.rewrap p (Ast.OptParam(param))) param
 
+and disjtemplateparam p =
+  match Ast.unwrap p with
+    Ast.TypenameOrClassParam(tyorcl,id,Some(eq,ty)) ->
+      disjmult2 (disjident id) (disjty ty)
+	(fun id ty ->
+	  Ast.rewrap p (Ast.TypenameOrClassParam(tyorcl,id,Some(eq,ty))))
+  | Ast.TypenameOrClassParam(tyorcl,id,None) ->
+      let id = disjident id in
+      List.map
+	(fun id -> Ast.rewrap p (Ast.TypenameOrClassParam(tyorcl,id,None)))
+	id
+  | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
+      disjmult3 (disjty ty) (disjident id) (disjexp exp)
+	(fun ty id exp -> Ast.rewrap p (Ast.VarNameParam(ty,id,Some(eq,exp))))
+  | Ast.VarNameParam(ty,id,None) ->
+      disjmult2 (disjty ty) (disjident id)
+	(fun ty id -> Ast.rewrap p (Ast.VarNameParam(ty,id,None)))
+  | Ast.TPComma(comma) -> [p]
+  | Ast.TPDots(dots) -> [p]
+
 and disjini i =
   match Ast.unwrap i with
     Ast.MetaInit(_,_,_,_) | Ast.MetaInitList(_,_,_,_,_) -> [i]
@@ -450,6 +470,10 @@ let rec disj_rule_elem r k re =
 	(fun (name,params) ->
 	  Ast.rewrap re
 	    (Ast.FunHeader(bef,allminus,fninfo,name,lp,params,va,rp,attrs)))
+  | Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab) ->
+      generic_orify_rule_elem (disjdots disjtemplateparam) re params
+	(function params ->
+	  Ast.rewrap re (Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab)))
   | Ast.Decl decl ->
       orify_rule_elem_anndecl re decl
 	(function decl -> Ast.rewrap re (Ast.Decl decl))

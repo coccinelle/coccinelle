@@ -69,6 +69,10 @@ val vk_param : visitor_c -> parameterType -> unit
 val vk_param_list : visitor_c -> parameterType wrap2 list -> unit
 val vk_params_splitted :
   visitor_c -> (parameterType, il) Common.either list -> unit
+val vk_template_param : visitor_c -> templateParameterType -> unit
+val vk_template_param_list : visitor_c -> templateParameterType wrap2 list -> unit
+val vk_template_params_splitted :
+  visitor_c -> (templateParameterType, il) Common.either list -> unit
 
 val vk_struct_field : visitor_c -> field -> unit
 val vk_struct_fields : visitor_c -> field list -> unit
@@ -172,17 +176,24 @@ val vk_args_splitted_s :
   (argument, il) Common.either list ->
   (argument, il) Common.either list
 
+val vk_param_s : visitor_c_s -> parameterType -> parameterType
 val vk_params_s :
   visitor_c_s ->
   parameterType wrap2 list -> parameterType wrap2 list
-
 val vk_params_splitted_s :
   visitor_c_s ->
   (parameterType, il) Common.either list ->
   (parameterType, il) Common.either list
 
-
-val vk_param_s : visitor_c_s -> parameterType -> parameterType
+val vk_template_param_s :
+    visitor_c_s -> templateParameterType -> templateParameterType
+val vk_template_params_s :
+  visitor_c_s ->
+  templateParameterType wrap2 list -> templateParameterType wrap2 list
+val vk_template_params_splitted_s :
+  visitor_c_s ->
+  (templateParameterType, il) Common.either list ->
+  (templateParameterType, il) Common.either list
 
 val vk_define_params_s :
   visitor_c_s ->

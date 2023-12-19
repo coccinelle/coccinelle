@@ -242,6 +242,10 @@ let print_extra_typedefs pr env =
       | Ast_c.MetaExprListVal(args,_) -> Visitor_c.vk_argument_list bigf args
       | Ast_c.MetaParamVal(param,_) -> Visitor_c.vk_param bigf param
       | Ast_c.MetaParamListVal(params,_) -> Visitor_c.vk_param_list bigf params
+      | Ast_c.MetaTemplateParamVal(param,_) ->
+	  Visitor_c.vk_template_param bigf param
+      | Ast_c.MetaTemplateParamListVal(params,_) ->
+	  Visitor_c.vk_template_param_list bigf params
       | Ast_c.MetaDParamListVal params ->
 	  Visitor_c.vk_define_params bigf params
 
@@ -302,6 +306,12 @@ let rename argids env =
        | Ast_c.MetaParamListVal(params,original) ->
 	   Ast_c.MetaParamListVal(Visitor_c.vk_params_s bigf params,
 				  Visitor_c.vk_params_s bigf original)
+       | Ast_c.MetaTemplateParamVal(param,original) ->
+	   Ast_c.MetaTemplateParamVal(Visitor_c.vk_template_param_s bigf param,
+				      Visitor_c.vk_template_param_s bigf original)
+       | Ast_c.MetaTemplateParamListVal(params,original) ->
+	   Ast_c.MetaTemplateParamListVal(Visitor_c.vk_template_params_s bigf params,
+					  Visitor_c.vk_template_params_s bigf original)
        | Ast_c.MetaDParamListVal(params) ->
 	   Ast_c.MetaDParamListVal(Visitor_c.vk_define_params_s bigf params)
 

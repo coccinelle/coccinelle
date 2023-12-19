@@ -264,6 +264,10 @@ let equal_metavarval valu valu' =
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal(a,_), Ast_c.MetaParamListVal(b,_) ->
       Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
+  | Ast_c.MetaTemplateParamVal(a,_), Ast_c.MetaTemplateParamVal(b,_) ->
+      Lib_parsing_c.al_template_param a = Lib_parsing_c.al_template_param b
+  | Ast_c.MetaTemplateParamListVal(a,_), Ast_c.MetaTemplateParamListVal(b,_) ->
+      Lib_parsing_c.al_template_params a = Lib_parsing_c.al_template_params b
   | Ast_c.MetaDParamListVal a, Ast_c.MetaDParamListVal b ->
       Lib_parsing_c.al_define_params a = Lib_parsing_c.al_define_params b
 
@@ -289,7 +293,8 @@ let equal_metavarval valu valu' =
       |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
-      |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaParamVal _
+      |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaTemplateParamListVal _
+      |B.MetaParamVal _|B.MetaTemplateParamVal _
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _ | B.MetaPragmaInfoVal _
@@ -371,6 +376,10 @@ let equal_inh_metavarval valu valu'=
       Lib_parsing_c.al_param a = Lib_parsing_c.al_param b
   | Ast_c.MetaParamListVal(a,_), Ast_c.MetaParamListVal(b,_) ->
       Lib_parsing_c.al_params a = Lib_parsing_c.al_params b
+  | Ast_c.MetaTemplateParamVal(a,_), Ast_c.MetaTemplateParamVal(b,_) ->
+      Lib_parsing_c.al_template_param a = Lib_parsing_c.al_template_param b
+  | Ast_c.MetaTemplateParamListVal(a,_), Ast_c.MetaTemplateParamListVal(b,_) ->
+      Lib_parsing_c.al_template_params a = Lib_parsing_c.al_template_params b
   | Ast_c.MetaDParamListVal a, Ast_c.MetaDParamListVal b ->
       Lib_parsing_c.al_define_params a = Lib_parsing_c.al_define_params b
 
@@ -396,7 +405,9 @@ let equal_inh_metavarval valu valu'=
       |B.MetaStmtListVal _
       |B.MetaDeclVal _ |B.MetaFieldVal _ |B.MetaFieldListVal _
       |B.MetaTypeVal _ |B.MetaInitVal _ |B.MetaInitListVal _
-      |B.MetaDParamListVal _|B.MetaParamListVal _|B.MetaParamVal _
+      |B.MetaDParamListVal _
+      |B.MetaParamListVal _|B.MetaParamVal _
+      |B.MetaTemplateParamListVal _|B.MetaTemplateParamVal _
       |B.MetaExprListVal _
       |B.MetaExprVal _|B.MetaLocalFuncVal _|B.MetaFuncVal _|B.MetaIdVal _
       |B.MetaAssignOpVal _ | B.MetaBinaryOpVal _ | B.MetaPragmaInfoVal _
@@ -704,6 +715,11 @@ module type PARAM =
        (Ast_c.parameterType, Ast_c.il) either list) matcher
     val distrf_param :
       (A.meta_name A.mcode, Ast_c.parameterType) matcher
+    val distrf_template_params :
+      (A.meta_name A.mcode,
+       (Ast_c.templateParameterType, Ast_c.il) either list) matcher
+    val distrf_template_param :
+      (A.meta_name A.mcode, Ast_c.templateParameterType) matcher
     val distrf_ini :
       (A.meta_name A.mcode, Ast_c.initialiser) matcher
     val distrf_inis :
@@ -2088,8 +2104,8 @@ and (arguments: sequence ->
     | Unordered -> failwith "not handling ooo"
     | Ordered ->
 	arguments_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
-          return (eas, (Ast_c.unsplit_comma ebs_splitted))
-	    )
+          return (eas, (Ast_c.unsplit_comma ebs_splitted)))
+
 (* because '...' can match nothing, need to take care when have
    * ', ...'   or '...,'  as in  f(..., X, Y, ...). It must match
    * f(1,2) for instance.
@@ -2161,15 +2177,14 @@ and argument arga argb =
 (* ------------------------------------------------------------------------- *)
 (* todo? facto code with argument ? *)
 and (parameters: sequence ->
-      (A.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
-        matcher) =
- fun seqstyle eas ebs ->
-  match seqstyle with
-  | Unordered -> failwith "not handling ooo"
-  | Ordered ->
-      parameters_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
-        return (eas, (Ast_c.unsplit_comma ebs_splitted))
-      )
+  (A.parameterTypeDef list, Ast_c.parameterType Ast_c.wrap2 list)
+    matcher) =
+  fun seqstyle eas ebs ->
+    match seqstyle with
+    | Unordered -> failwith "not handling ooo"
+    | Ordered ->
+	parameters_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
+          return (eas, (Ast_c.unsplit_comma ebs_splitted)))
 
 and parameters_bis eas ebs =
   let match_dots ea =
@@ -2295,6 +2310,95 @@ and parameter = fun parama paramb ->
 	| None, Some _ -> fail))
   | A.OptParam _, _ ->
       failwith "not handling Opt for Param"
+  | _ -> fail
+
+(* ------------------------------------------------------------------------- *)
+and (template_parameters: sequence ->
+  (A.templateParameterTypeDef list, Ast_c.templateParameterType Ast_c.wrap2 list)
+    matcher) =
+  fun seqstyle eas ebs ->
+    match seqstyle with
+    | Unordered -> failwith "not handling ooo"
+    | Ordered ->
+	template_parameters_bis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
+          return (eas, (Ast_c.unsplit_comma ebs_splitted)))
+
+and template_parameters_bis eas ebs =
+  let match_dots ea =
+    match A.unwrap ea with
+      A.TPDots(mcode) -> Some (mcode, None)
+    | _ -> None in
+  let build_dots (mcode, _optexpr) = A.TPDots(mcode) in
+  let match_comma ea =
+    match A.unwrap ea with
+      A.TPComma ia1 -> Some ia1
+    | _ -> None in
+  let build_comma ia1 = A.TPComma ia1 in
+  let match_metalist ea = None in
+  let rec build_metalist ea (ida,leninfo,constraints,keep,inherited) =
+    failwith "template parameters: build metalist: not possible" in
+  let mktermval v = Ast_c.MetaTemplateParamListVal(v,v) in
+  let special_cases ea eas ebs = None in
+  list_matcher match_dots build_dots match_comma build_comma
+    match_metalist build_metalist mktermval
+    special_cases template_parameter X.distrf_template_params
+    B.split_comma B.unsplit_comma
+    Lib_parsing_c.ii_of_template_params (function x -> Some x) eas ebs
+
+(*
+   let split_register_param = fun (hasreg, idb, ii_b_s) ->
+   match hasreg, idb,  ii_b_s with
+   | false, Some s, [i1] -> Left (s, [], i1)
+   | true, Some s, [i1;i2] -> Left (s, [i1], i2)
+   | _, None, ii -> Right ii
+   | _ -> raise Impossible
+*)
+
+
+and template_parameter = fun parama paramb ->
+  match A.unwrap parama, paramb with
+    A.TypenameOrClassParam(tyorcla,ida,Some(eqa,typa)),
+      B.TypenameOrClassParam((idb, Some typb),ii) ->
+	let (tyorclb,eqb) = tuple_of_list2 ii in
+	if A.unwrap_mcode tyorcla = B.str_of_info tyorclb
+	then
+	  tokenf tyorcla tyorclb >>= (fun tyorcla tyorclb ->
+	  ident_cpp DontKnow ida idb >>= (fun ida idb ->
+	  tokenf eqa eqb >>= (fun eqa eqb ->
+          fullType typa typb >>= (fun typa typb ->
+	    return(
+	    A.TypenameOrClassParam(tyorcla,ida,Some(eqa,typa)) +> A.rewrap parama,
+	    B.TypenameOrClassParam((idb, Some typb),[tyorclb;eqb]))))))
+	else fail
+  | A.TypenameOrClassParam(tyorcla,ida,None),
+      B.TypenameOrClassParam((idb, None),ii) ->
+	let tyorclb = tuple_of_list1 ii in
+	if A.unwrap_mcode tyorcla = B.str_of_info tyorclb
+	then
+	  tokenf tyorcla tyorclb >>= (fun tyorcla tyorclb ->
+	  ident_cpp DontKnow ida idb >>= (fun ida idb ->
+	  return (
+	    A.TypenameOrClassParam(tyorcla,ida,None) +> A.rewrap parama,
+	    B.TypenameOrClassParam((idb, None),[tyorclb]))))
+	else fail
+  | A.VarNameParam(typa,ida,Some (eqa,expa)),
+      B.VarNameParam((typb,idb,Some expb),ii) ->
+	let eqb = tuple_of_list1 ii in
+	fullType typa typb >>= (fun typa typb ->
+	ident_cpp DontKnow ida idb >>= (fun ida idb ->
+	tokenf eqa eqb >>= (fun eqa eqb ->
+	expression expa expb >>= (fun expa expb ->
+	  return(
+	  A.VarNameParam(typa,ida,Some (eqa,expa)) +> A.rewrap parama,
+	  B.VarNameParam((typb,idb,Some expb),[eqb]))))))
+  | A.VarNameParam(typa,ida,None),
+      B.VarNameParam((typb,idb,None),[]) ->
+	fullType typa typb >>= (fun typa typb ->
+	ident_cpp DontKnow ida idb >>= (fun ida idb ->
+	  return(
+	  A.VarNameParam(typa,ida,None) +> A.rewrap parama,
+	  B.VarNameParam((typb,idb,None),[]))))
+  | (_,B.TemplateParam _) -> fail (* not supported yet in SmPL *)
   | _ -> fail
 
 (* ------------------------------------------------------------------------- *)
@@ -4853,8 +4957,7 @@ and (define_params: sequence ->
   | Unordered -> failwith "not handling ooo"
   | Ordered ->
       define_paramsbis eas (Ast_c.split_comma ebs) >>= (fun eas ebs_splitted ->
-        return (eas, (Ast_c.unsplit_comma ebs_splitted))
-      )
+        return (eas, (Ast_c.unsplit_comma ebs_splitted)))
 
 (* todo? facto code with argument and parameters ? *)
 and define_paramsbis = fun eas ebs ->
@@ -5678,6 +5781,19 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.DefineHeader ((idb,[defineb;iidb;ieol]),defkind)
         ))
       ))
+
+  | A.TemplateDefinitionHeader(tmpkwa,laba,paramsa,raba),
+      F.TemplateHeader(paramsb,ii) ->
+	let (tmpkwb,labb,rabb) = tuple_of_list3 ii in
+	tokenf tmpkwa tmpkwb >>= (fun tmpkwa tmpkwb ->
+	tokenf laba labb >>= (fun laba labb ->
+	template_parameters (seqstyle paramsa) (A.unwrap paramsa) paramsb
+	    >>= (fun paramsaunwrap paramsb ->
+	tokenf raba rabb >>= (fun raba rabb ->
+          let paramsa = A.rewrap paramsa paramsaunwrap in
+	  return(
+	    A.TemplateDefinitionHeader(tmpkwa,laba,paramsa,raba),
+	    F.TemplateHeader(paramsb,[tmpkwb;labb;rabb]))))))
 
   | A.Pragma(prga,ida,pragmainfoa),
     F.PragmaHeader ((idb, [(restb,[rest_iidb])]), ii) ->

@@ -853,11 +853,7 @@ and vk_toplevel = fun bigf p ->
 and vk_template_param = fun bigf param ->
   let iif ii =  vk_ii bigf ii in
   let k = function
-      TypeNameParam((nm,tyopt),ii) ->
-	iif ii;
-	vk_name bigf nm;
-	do_option (vk_type bigf) tyopt
-    | ClassNameParam((nm,tyopt),ii) ->
+      TypenameOrClassParam((nm,tyopt),ii) ->
 	iif ii;
 	vk_name bigf nm;
 	do_option (vk_type bigf) tyopt
@@ -873,6 +869,13 @@ and vk_template_param = fun bigf param ->
           iif iicomma);
 	vk_template_param bigf temp_param in
   k param
+
+and vk_template_param_list = fun bigf ts ->
+  let iif ii = vk_ii bigf ii in
+  ts +> List.iter (fun (param,iicomma) ->
+    vk_template_param bigf param;
+    iif iicomma;
+  )
 
 and vk_program = fun bigf xs ->
   xs +> List.iter (vk_toplevel bigf)
@@ -1227,6 +1230,7 @@ let vk_splitted element = fun bigf args_splitted ->
 let vk_args_splitted = vk_splitted vk_argument
 let vk_define_params_splitted = vk_splitted (fun bigf (_,ii) -> vk_ii bigf ii)
 let vk_params_splitted = vk_splitted vk_param
+let vk_template_params_splitted = vk_splitted vk_template_param
 let vk_enum_fields_splitted = vk_splitted vk_oneEnum
 let vk_inis_splitted = vk_splitted vk_ini
 let vk_ident_list_splitted = vk_splitted vk_name
@@ -1956,12 +1960,9 @@ and vk_toplevel_s = fun bigf p ->
 and vk_template_param_s = fun bigf param ->
   let iif ii =  vk_ii_s bigf ii in
   let k = function
-      TypeNameParam((nm,tyopt),ii) ->
-	TypeNameParam((vk_name_s bigf nm,fmap (vk_type_s bigf) tyopt),
+      TypenameOrClassParam((nm,tyopt),ii) ->
+	TypenameOrClassParam((vk_name_s bigf nm,fmap (vk_type_s bigf) tyopt),
 		      iif ii)
-    | ClassNameParam((nm,tyopt),ii) ->
-	ClassNameParam((vk_name_s bigf nm,fmap (vk_type_s bigf) tyopt),
-		       iif ii)
     | VarNameParam((ty,name,expopt),ii) ->
 	VarNameParam((vk_type_s bigf ty,vk_name_s bigf name,
 		      fmap (vk_expr_s bigf) expopt),
@@ -2302,6 +2303,10 @@ let vk_params_s = fun bigf args ->
   let iif ii = vk_ii_s bigf ii in
   args +> List.map (fun (p,ii) -> vk_param_s bigf p, iif ii)
 
+let vk_template_params_s = fun bigf args ->
+  let iif ii = vk_ii_s bigf ii in
+  args +> List.map (fun (p,ii) -> vk_template_param_s bigf p, iif ii)
+
 let vk_cst_s = fun bigf (cst, ii) ->
   let iif ii = vk_ii_s bigf ii in
   (match cst with
@@ -2320,6 +2325,7 @@ let vk_splitted_s element = fun bigf args_splitted ->
 
 let vk_args_splitted_s = vk_splitted_s vk_argument_s
 let vk_params_splitted_s = vk_splitted_s vk_param_s
+let vk_template_params_splitted_s = vk_splitted_s vk_template_param_s
 let vk_define_params_splitted_s =
   vk_splitted_s (fun bigf (s,ii) -> (s,vk_ii_s bigf ii))
 let vk_enum_fields_splitted_s = vk_splitted_s vk_oneEnum_s

@@ -96,7 +96,8 @@ let combiner bind option_default
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
-  and template_parameter_dots d = dotsfn template_paramdotsfn templateParameterTypeDef all_functions d
+  and template_parameter_dots d =
+    dotsfn template_paramdotsfn templateParameterTypeDef all_functions d
   and statement_dots d = dotsfn stmtdotsfn statement all_functions d
   and annotated_decl_dots d =
     dotsfn anndecldotsfn annotated_decl all_functions d
@@ -710,20 +711,16 @@ let combiner bind option_default
 
   and templateParameterTypeDef p =
     let k p =
-	match Ast.unwrap p with
-          Ast.TypenameOrClassParam(tyorcl,id,Some(eq,ty)) ->
-	    multibind [string_mcode tyorcl;ident id;string_mcode eq;fullType ty] (* FIXME: not [eq;exp] ?*)
-        | Ast.TypenameOrClassParam(tyorcl,id,None) ->
-	    multibind [string_mcode tyorcl;ident id] (* FIXME: with None or not ?*)
-        | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
-	    multibind [fullType ty;ident id;string_mcode eq;expression exp] (* FIXME: not [eq;exp] ?*)
-        | Ast.VarNameParam(ty,id,None) ->
-	    multibind [fullType ty;ident id] (* FIXME: with None or not ?*)
-        | Ast.TPComma(comma) ->
-	    string_mcode comma
-        | Ast.TPDots(dots) ->
-	    string_mcode dots
-        in
+      match Ast.unwrap p with
+        Ast.TypenameOrClassParam(tyorcl,id,Some(eq,ty)) ->
+	  multibind [string_mcode tyorcl;ident id;string_mcode eq;fullType ty]
+      | Ast.TypenameOrClassParam(tyorcl,id,None) ->
+	  multibind [string_mcode tyorcl;ident id]
+      | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
+	  multibind [fullType ty;ident id;string_mcode eq;expression exp]
+      | Ast.VarNameParam(ty,id,None) -> multibind [fullType ty;ident id]
+      | Ast.TPComma(comma) -> string_mcode comma
+      | Ast.TPDots(dots) -> string_mcode dots in
     template_paramfn all_functions k p
 
   and rule_elem re =

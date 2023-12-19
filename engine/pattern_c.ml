@@ -322,7 +322,9 @@ module XMATCH = struct
   let distrf_args           = distrf Lib_parsing_c.ii_of_args
   let distrf_type           = distrf Lib_parsing_c.ii_of_type
   let distrf_param          = distrf Lib_parsing_c.ii_of_param
-  let distrf_params         = distrf Lib_parsing_c.ii_of_params
+  let distrf_params         = distrf Lib_parsing_c.ii_of_params 
+  let distrf_template_param = distrf Lib_parsing_c.ii_of_template_param
+  let distrf_template_params= distrf Lib_parsing_c.ii_of_template_params
   let distrf_ini            = distrf Lib_parsing_c.ii_of_ini
   let distrf_inis           = distrf Lib_parsing_c.ii_of_inis
   let distrf_decl           = distrf Lib_parsing_c.ii_of_decl
@@ -526,6 +528,19 @@ module XMATCH = struct
 		then Lib_parsing_c.al_params a
 		else Lib_parsing_c.semi_al_params a in
 	      success(Ast_c.MetaParamListVal(stripped,original))
+
+          | Ast_c.MetaTemplateParamVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_template_param a
+		else Lib_parsing_c.semi_al_template_param a in
+	      success(Ast_c.MetaTemplateParamVal(stripped,original))
+          | Ast_c.MetaTemplateParamListVal(a,original) ->
+	      let stripped =
+		if strip
+		then Lib_parsing_c.al_template_params a
+		else Lib_parsing_c.semi_al_template_params a in
+	      success(Ast_c.MetaTemplateParamListVal(stripped,original))
 
           | Ast_c.MetaDParamListVal a ->
 	      success

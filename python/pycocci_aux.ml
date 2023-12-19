@@ -80,6 +80,10 @@ let stringrep = function
     call_pretty Pretty_print_c.pp_param_gen param
 | Ast_c.MetaParamListVal (_,params) ->
     call_pretty Pretty_print_c.pp_param_list_gen params
+| Ast_c.MetaTemplateParamVal     (_,param) ->
+    call_pretty Pretty_print_c.pp_template_param_gen param
+| Ast_c.MetaTemplateParamListVal (_,params) ->
+    call_pretty Pretty_print_c.pp_template_param_list_gen params
 | Ast_c.MetaDParamListVal params ->
     call_pretty Pretty_print_c.pp_define_param_list_gen params
 | Ast_c.MetaFragListVal frags ->

@@ -29,6 +29,7 @@ let dumb_astcocci_rule_elem = function
  | A.TopId id -> ()
  | A.TopInit init -> ()
  | A.FunHeader (bef,allminus, fninfo, ida, _, paramsa, _, _, _) -> ()
+ | A.TemplateDefinitionHeader (tmpkw,lab,params,rab) -> ()
  | A.Decl decl -> ()
  | A.SeqStart _ -> ()
  | A.SeqEnd _ -> ()

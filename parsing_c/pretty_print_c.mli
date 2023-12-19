@@ -18,6 +18,8 @@ type pretty_printers = {
   init_list       : (Ast_c.newlines * Ast_c.initialiser Ast_c.wrap2 list) printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
+  template_param  : Ast_c.templateParameterType printer;
+  template_paramlist : (Ast_c.templateParameterType Ast_c.wrap2 list) printer;
   dparamlist      : ((string Ast_c.wrap) Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
@@ -68,6 +70,10 @@ val pp_param_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   Ast_c.parameterType printer
 val pp_param_list_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
   (Ast_c.parameterType Ast_c.wrap2 list) printer
+val pp_template_param_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  Ast_c.templateParameterType printer
+val pp_template_param_list_gen:  pr_elem:Ast_c.info printer -> pr_space: unit printer ->
+  (Ast_c.templateParameterType Ast_c.wrap2 list) printer
 val pp_define_param_list_gen:
     pr_elem:Ast_c.info printer -> pr_space: unit printer ->
       ((string Ast_c.wrap) Ast_c.wrap2 list) printer

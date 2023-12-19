@@ -1030,6 +1030,7 @@ let astfvs metavars bound =
     | Ast.MetaInclude _ -> "MetaInclude"
     | Ast.Undef _ -> "Undef"
     | Ast.DefineHeader _ -> "DefineHeader"
+    | Ast.TemplateDefinitionHeader(_,_,_,_) -> "TemplateDefinitionHeader"
     | Ast.Pragma _ -> "Pragma"
     | Ast.Case _ -> "Case"
     | Ast.Default _ -> "Default"

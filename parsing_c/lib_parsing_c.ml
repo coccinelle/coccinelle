@@ -78,6 +78,8 @@ let al_init      x = Visitor_c.vk_ini_s       (strip_info_visitor()) x
 let al_inits     x = Visitor_c.vk_inis_s      (strip_info_visitor()) x
 let al_param     x = Visitor_c.vk_param_s     (strip_info_visitor()) x
 let al_params    x = Visitor_c.vk_params_s    (strip_info_visitor()) x
+let al_template_param  x = Visitor_c.vk_template_param_s     (strip_info_visitor()) x
+let al_template_params x = Visitor_c.vk_template_params_s    (strip_info_visitor()) x
 let al_define_params x =
   Visitor_c.vk_define_params_s (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
@@ -184,6 +186,8 @@ let semi_al_init      = Visitor_c.vk_ini_s       semi_strip_info_visitor
 let semi_al_inits     = Visitor_c.vk_inis_s      semi_strip_info_visitor
 let semi_al_param     = Visitor_c.vk_param_s     semi_strip_info_visitor
 let semi_al_params    = Visitor_c.vk_params_s    semi_strip_info_visitor
+let semi_al_template_param  = Visitor_c.vk_template_param_s     semi_strip_info_visitor
+let semi_al_template_params = Visitor_c.vk_template_params_s    semi_strip_info_visitor
 let semi_al_define_params =
   Visitor_c.vk_define_params_s semi_strip_info_visitor
 let semi_al_arguments = Visitor_c.vk_arguments_s semi_strip_info_visitor
@@ -311,6 +315,8 @@ let ii_of_ini  = extract_info_visitor Visitor_c.vk_ini
 let ii_of_inis  = extract_info_visitor Visitor_c.vk_inis_splitted
 let ii_of_param = extract_info_visitor Visitor_c.vk_param
 let ii_of_params = extract_info_visitor Visitor_c.vk_params_splitted
+let ii_of_template_param = extract_info_visitor Visitor_c.vk_template_param
+let ii_of_template_params = extract_info_visitor Visitor_c.vk_template_params_splitted
 let ii_of_enum_fields = extract_info_visitor Visitor_c.vk_enum_fields_splitted
 let ii_of_struct_fields = extract_info_visitor Visitor_c.vk_struct_fields
 (*let ii_of_struct_field = extract_info_visitor Visitor_c.vk_struct_field*)

@@ -119,6 +119,13 @@ module type PARAM =
     val distrf_param :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.parameterType) matcher
 
+    val distrf_template_params :
+      (Ast_cocci.meta_name Ast_cocci.mcode,
+      (Ast_c.templateParameterType, Ast_c.il) Common.either list)
+      matcher
+    val distrf_template_param :
+      (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.templateParameterType) matcher
+
     val distrf_ini :
       (Ast_cocci.meta_name Ast_cocci.mcode, Ast_c.initialiser) matcher
     val distrf_inis :

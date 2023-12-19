@@ -47,6 +47,8 @@ type pretty_printers = {
   init_list       : (Ast_c.newlines * Ast_c.initialiser wrap2 list) printer;
   param           : Ast_c.parameterType printer;
   paramlist       : (Ast_c.parameterType Ast_c.wrap2 list) printer;
+  template_param  : Ast_c.templateParameterType printer;
+  template_paramlist : (Ast_c.templateParameterType Ast_c.wrap2 list) printer;
   dparamlist      : ((string Ast_c.wrap) Ast_c.wrap2 list) printer;
   ty              : Ast_c.fullType printer;
   type_with_ident : type_with_ident;
@@ -1519,8 +1521,7 @@ and pp_init (init, iinit) =
   and pp_template_param_list paramst = pp_list pp_template_param paramst
 
   and pp_template_param = function
-      TypeNameParam((nm,tyopt),ii)
-    | ClassNameParam((nm,tyopt),ii) ->
+      TypenameOrClassParam((nm,tyopt),ii) ->
 	pr_elem (List.hd ii); pp_name nm;
 	(match tyopt with
 	  None -> ()
@@ -1755,6 +1756,8 @@ and pp_init (init, iinit) =
     init_list  = pp_init_list;
     param      = pp_param;
     paramlist  = pp_param_list;
+    template_param     = pp_template_param;
+    template_paramlist = pp_template_param_list;
     dparamlist = pp_define_param_list;
     ty         = pp_type;
     type_with_ident = pp_type_ident;
@@ -1877,6 +1880,12 @@ let pp_param_gen ~pr_elem ~pr_space =
 
 let pp_param_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).paramlist
+
+let pp_template_param_gen ~pr_elem ~pr_space =
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).template_param
+
+let pp_template_param_list_gen ~pr_elem ~pr_space =
+  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).template_paramlist
 
 let pp_define_param_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).dparamlist

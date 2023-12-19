@@ -703,9 +703,6 @@ and base_statement =
 	             dots_whencode list * dots_whencode list
   | OptStm        of statement
 
-and templateParameterType =
-    TypeNameParam of (string mcode * typeC (*full_type*) option) wrap
-
 and ('a,'b) whencode =
     WhenNot of 'a
   | WhenAlways of 'b

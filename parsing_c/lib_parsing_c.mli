@@ -15,6 +15,11 @@ val al_param : Ast_c.parameterType -> Ast_c.parameterType
 val al_params :
   Ast_c.parameterType Ast_c.wrap2 list ->
   Ast_c.parameterType Ast_c.wrap2 list
+val al_template_param :
+    Ast_c.templateParameterType -> Ast_c.templateParameterType
+val al_template_params :
+  Ast_c.templateParameterType Ast_c.wrap2 list ->
+  Ast_c.templateParameterType Ast_c.wrap2 list
 val al_define_params :
   string Ast_c.wrap Ast_c.wrap2 list -> string Ast_c.wrap Ast_c.wrap2 list
 val al_arguments :
@@ -67,6 +72,11 @@ val semi_al_param : Ast_c.parameterType -> Ast_c.parameterType
 val semi_al_params :
   Ast_c.parameterType Ast_c.wrap2 list ->
   Ast_c.parameterType Ast_c.wrap2 list
+val semi_al_template_param :
+    Ast_c.templateParameterType -> Ast_c.templateParameterType
+val semi_al_template_params :
+  Ast_c.templateParameterType Ast_c.wrap2 list ->
+  Ast_c.templateParameterType Ast_c.wrap2 list
 val semi_al_define_params :
   string Ast_c.wrap Ast_c.wrap2 list -> string Ast_c.wrap Ast_c.wrap2 list
 val semi_al_arguments :
@@ -119,6 +129,9 @@ val ii_of_inis :
 val ii_of_param : Ast_c.parameterType -> Ast_c.info list
 val ii_of_params :
   (Ast_c.parameterType, Ast_c.il) Common.either list -> Ast_c.info list
+val ii_of_template_param : Ast_c.templateParameterType -> Ast_c.info list
+val ii_of_template_params :
+  (Ast_c.templateParameterType, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_enum_fields :
   (Ast_c.oneEnumType, Ast_c.il) Common.either list -> Ast_c.info list
 val ii_of_struct_fields : Ast_c.field list -> Ast_c.info list

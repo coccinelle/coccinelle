@@ -1711,20 +1711,20 @@ parameter_decl_arg: /* more tolerant */
 template_parameter_decl2:
    Ttypename ident
      { let id = RegularName (mk_string_wrap $2) in
-       TypeNameParam((id,None),[$1]) }
+       TypenameOrClassParam((id,None),[$1]) }
  | Ttypename ident TEq type_spec
      { let id = RegularName (mk_string_wrap $2) in
        let ds = ([], addTypeD ($4, nullDecl)) in
        let ((returnType,_hasreg), _iihasreg) = fixDeclSpecForParam ds in
-       TypeNameParam((id,Some returnType),[$1;$3]) }
+       TypenameOrClassParam((id,Some returnType),[$1;$3]) }
  | Tclass ident
      { let id = RegularName (mk_string_wrap $2) in
-       ClassNameParam((id,None),[$1]) }
+       TypenameOrClassParam((id,None),[$1]) }
  | Tclass ident TEq type_spec
      { let id = RegularName (mk_string_wrap $2) in
        let ds = ([], addTypeD ($4, nullDecl)) in
        let ((returnType,_hasreg), _iihasreg) = fixDeclSpecForParam ds in
-       ClassNameParam((id,Some returnType),[$1;$3]) }
+       TypenameOrClassParam((id,Some returnType),[$1;$3]) }
  | type_spec2_without_braces declaratorp
      { let ds = ([], addTypeD ($1, nullDecl)) in
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in

@@ -63,6 +63,8 @@ type param_type =
   | Int of int
   | Param of Ast_c.parameterType
   | ParamList of Ast_c.parameterType Ast_c.wrap2 list
+  | TemplateParam of Ast_c.templateParameterType
+  | TemplateParamList of Ast_c.templateParameterType Ast_c.wrap2 list
   | DParamList of (string Ast_c.wrap) Ast_c.wrap2 list
   | Expr of Ast_c.expression
   | ExprList of Ast_c.argument Ast_c.wrap2 list

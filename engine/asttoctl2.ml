@@ -2625,8 +2625,24 @@ and statement stmt top after quantified minus_quantified
       quantify guard ahfvs
 	(quantify guard b1fvs
 	   (make_seq [function_header; quantify guard b2fvs body_code]))
-  | Ast.TemplateDefinition(_,_,_,_,_) ->
-      failwith "Please write me ... FIXME\n"
+  | Ast.TemplateDefinition(header,stmt) ->
+      let (hfvs,bfvs,bodyfvs) =
+	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs stmt]
+	with
+	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
+	| _ -> failwith "asttoctl2: not possible 30" in
+      let (mhfvs,mbfvs,mbodyfvs) =
+	match seq_fvs minus_quantified [Ast.get_mfvs header;Ast.get_mfvs stmt]
+	with
+	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
+	| _ -> failwith "asttoctl2: not possible 31" in
+      let define_header = quantify guard hfvs (make_match header) in
+      let body_code =
+	statement stmt NotTop after
+	  (Common.union_set bfvs quantified)
+	  (Common.union_set mbfvs minus_quantified)
+	  None llabel slabel guard in
+      quantify guard bfvs (make_seq [define_header; body_code])
   | Ast.Define(header,body) ->
       let (hfvs,bfvs,bodyfvs) =
 	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]

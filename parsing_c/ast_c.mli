@@ -357,8 +357,7 @@ and toplevel =
   | Namespace of toplevel list * il
   | TemplateDefinition of templateParameterType wrap2 list * toplevel * il
 and templateParameterType =
-    TypeNameParam of (name * fullType option) wrap
-  | ClassNameParam of (name * fullType option) wrap
+    TypenameOrClassParam of (name * fullType option) wrap
   | VarNameParam of (fullType * name * expression option) wrap
   | TemplateParam of (templateParameterType wrap2 list * templateParameterType) wrap
 and program = toplevel list
@@ -373,6 +372,10 @@ and metavar_binding_kind =
   | MetaExprListVal of argument wrap2 list * argument wrap2 list
   | MetaParamVal of parameterType * parameterType
   | MetaParamListVal of parameterType wrap2 list * parameterType wrap2 list
+  | MetaTemplateParamVal
+    of templateParameterType * templateParameterType
+  | MetaTemplateParamListVal
+    of templateParameterType wrap2 list * templateParameterType wrap2 list
   | MetaTypeVal of fullType * fullType
   | MetaInitVal of initialiser * initialiser
   | MetaInitListVal of newlines * initialiser wrap2 list * initialiser wrap2 list

@@ -605,3 +605,6 @@ let rec statement_pos s snp
   | Ast0.FunDecl (b, f, id, lp, ps, op, rp, ea, lb, sd, rb, a) ->
       let constructor ~id = Ast0.FunDecl(b,f,id,lp,ps,op,rp,ea,lb,sd,rb,a) in
       id_wrap ~id ~constructor snp
+  | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
+      let constructor ~mc = Ast0.TemplateDefinition(mc,lab,params,rab,stmt) in
+      mcode_wrap ~mc:tmpkw ~constructor snp

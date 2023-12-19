@@ -678,6 +678,13 @@ module XTRANS = struct
     Visitor_c.vk_params_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
       x
 
+  let distribute_mck_template_param (maxpos, minpos) = fun (lop,mop,rop,bop) -> fun x ->
+    Visitor_c.vk_template_param_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop)) x
+
+  let distribute_mck_template_params (maxpos, minpos) = fun (lop,mop,rop,bop) ->fun x ->
+    Visitor_c.vk_template_params_splitted_s (mk_bigf (maxpos, minpos) (lop,mop,rop,bop))
+      x
+
   let distribute_mck_fragments (maxpos, minpos) =
     fun (lop,mop,rop,bop) ->fun x ->
       Visitor_c.vk_string_fragments_splitted_s
@@ -778,6 +785,10 @@ module XTRANS = struct
   let distrf_type = distrf (Lib_parsing_c.ii_of_type,  distribute_mck_type)
   let distrf_param  = distrf (Lib_parsing_c.ii_of_param, distribute_mck_param)
   let distrf_params = distrf (Lib_parsing_c.ii_of_params,distribute_mck_params)
+  let distrf_template_param =
+    distrf (Lib_parsing_c.ii_of_template_param, distribute_mck_template_param)
+  let distrf_template_params =
+    distrf (Lib_parsing_c.ii_of_template_params,distribute_mck_template_params)
   let distrf_ini = distrf (Lib_parsing_c.ii_of_ini,distribute_mck_ini)
   let distrf_inis = distrf (Lib_parsing_c.ii_of_inis,distribute_mck_inis)
   let distrf_decl = distrf (Lib_parsing_c.ii_of_decl,distribute_mck_decl)

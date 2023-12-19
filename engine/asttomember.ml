@@ -344,9 +344,11 @@ and statement testfn mcode tail stmt : 'a list list =
       then conj (rule_elem header) body_info
       else body_info
 
-  | Ast.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
-   (* [] FIXME: continue here *)
-      statement testfn mcode tail stmt
+  | Ast.TemplateDefinition(header,stmt) ->
+      let body_info = statement testfn mcode true stmt in
+      if testfn header
+      then conj (rule_elem header) body_info
+      else body_info      
 
   | Ast.Define(header,body) ->
       conj_one testfn header (statement_list testfn mcode tail body)

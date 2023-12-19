@@ -476,8 +476,7 @@ module Ast_c :
       | TemplateDefinition of templateParameterType wrap2 list * toplevel * il
     and templateParameterType =
       Ast_c.templateParameterType =
-	TypeNameParam of (name * fullType option) wrap
-      | ClassNameParam of (name * fullType option) wrap
+	TypenameOrClassParam of (name * fullType option) wrap
       | VarNameParam of (fullType * name * expression option) wrap
       | TemplateParam of (templateParameterType wrap2 list * templateParameterType) wrap
     and program = toplevel list
@@ -495,6 +494,10 @@ module Ast_c :
       | MetaExprListVal of argument wrap2 list * argument wrap2 list
       | MetaParamVal of parameterType * parameterType
       | MetaParamListVal of parameterType wrap2 list * parameterType wrap2 list
+      | MetaTemplateParamVal
+	of templateParameterType * templateParameterType
+      | MetaTemplateParamListVal
+	of templateParameterType wrap2 list * templateParameterType wrap2 list
       | MetaTypeVal of fullType * fullType
       | MetaInitVal of initialiser * initialiser
       | MetaInitListVal of newlines * initialiser wrap2 list * initialiser wrap2 list
@@ -938,6 +941,8 @@ module Pretty_print_c :
       init_list : (Ast_c.newlines * Ast_c.initialiser Ast_c.wrap2 list) printer;
       param : Ast_c.parameterType printer;
       paramlist : Ast_c.parameterType Ast_c.wrap2 list printer;
+      template_param : Ast_c.templateParameterType printer;
+      template_paramlist : Ast_c.templateParameterType Ast_c.wrap2 list printer;
       dparamlist : string Ast_c.wrap Ast_c.wrap2 list printer;
       ty : Ast_c.fullType printer;
       type_with_ident : type_with_ident;
@@ -3990,6 +3995,8 @@ type param_type =
   | Int of int
   | Param of Ast_c.parameterType
   | ParamList of Ast_c.parameterType Ast_c.wrap2 list
+  | TemplateParam of Ast_c.templateParameterType
+  | TemplateParamList of Ast_c.templateParameterType Ast_c.wrap2 list
   | DParamList of string Ast_c.wrap Ast_c.wrap2 list
   | Expr of Ast_c.expression
   | ExprList of Ast_c.argument Ast_c.wrap2 list
