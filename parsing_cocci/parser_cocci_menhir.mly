@@ -281,9 +281,11 @@ let inline_id aft = function
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
-%token <Data.clt> TWhy TBang TOPar TCPar TInf3 TSup3
-%token <Data.clt> TTemplateStart Ttemplate TTemplateEnd TTemplateEndTemplateEnd TTemplateEndTemplateEndTemplateEnd TTemplateEndSup
-%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0
+%token <Data.clt> TWhy TOPar TCPar TInf3 TSup3
+%token <Data.clt> TTemplateStart Ttemplate TTemplateEnd
+%token <Data.clt> TTemplateEndTemplateEnd TTemplateEndTemplateEndTemplateEnd
+%token <Data.clt> TTemplateEndSup
+%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0 TBang
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
