@@ -2098,12 +2098,12 @@ let convert_templates_cocci toks =
       loop stack new_pdepth tdepth xs
   (* start point *)
   | ((((PC.TIdent(s,i1)|PC.TTypeId(s,i1)),_),cell) as a) :: (* no space *)
-    ((( PC.TLogOp(Ast.Inf,i2),q),_) as b) :: rest ->
+    (((PC.TLogOp(Ast.Inf,i2),q),_) as b) :: rest ->
       loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
   | ((((PC.TIdent(s,i1)|PC.TTypeId(s,i1)),_),cell) as a) :: (spt,spr) ::
-    (((PC.TLogOp(Ast.Inf,i2),q),_) as b) :: (((notspt,notspr)::_) as rest)
+    (((PC.TLogOp(Ast.Inf,i2),q),_) as b) :: ((c::_) as rest)
     (* allow one space or newline before < if none after *)
-    when is_space spt && not(is_space notspt) ->
+    when is_space s a b && not(is_space "<" b c) ->
       loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
   | (((PC.Ttemplate(i1),q),cell) as a) :: rest ->
       let (skipped,rest) =
