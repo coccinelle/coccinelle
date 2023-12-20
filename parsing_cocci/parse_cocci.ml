@@ -2041,14 +2041,10 @@ let is_just_comment_or_space = function
   | TCommentNewline _ -> true
          * *)
   | _ -> false
-(* convert_templates_cocci START *)
 
 let convert_templates_cocci toks =
-  (* FIXME: here in analogy to  parsing_hacks.ml's, and yet to be completed *)
-  (*let tokens2 = toks +> Common.acc_map TV.mk_token_extended in*)
-  (*let tokens2 = (Common.acc_map toks) TV.mk_token_extended in*)
-  (*let tokens2 = toks in*)
-  let tokens2 = List.fold_left (fun prev tok -> (tok,ref tok) :: prev) [] toks in
+  let tokens2 =
+    List.fold_left (fun prev tok -> (tok,ref tok) :: prev) [] toks in
   let tokens2 = List.rev tokens2 in
   let rebuild = ref false in
   let top1 stack pdepth tdepth =
@@ -2067,9 +2063,10 @@ let convert_templates_cocci toks =
       (tok1,tok1_pdepth,tok1_tdepth)::(tok2,tok2_pdepth,tok2_tdepth)::
       (tok3,tok3_pdepth,tok3_tdepth)::rest ->
 	pdepth = tok1_pdepth && pdepth = tok2_pdepth && pdepth = tok3_pdepth &&
-	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2 && tdepth = tok3_tdepth + 3
+	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2 &&
+	tdepth = tok3_tdepth + 3
     | _ -> false in
-  let success (at,ar) repl (bt,br) (i2clt,i2q) (ct,(cr: (PC.token * 'a) ref)) i3 xs = (* FIXME: incomplete *)
+  let success (at,ar) repl (bt,br) (i2clt,i2q) (ct,cr) i3 xs =
     br := (PC.TTemplateStart i2clt,i2q);
     cr := i3;
     let comment_or_space_or_and (xt,xr) =
@@ -2116,12 +2113,13 @@ let convert_templates_cocci toks =
 	  loop (((a,None,b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
       | _ -> loop stack pdepth tdepth rest) (* just move on, template type name<...>(...) *)
   (* one possible end point *)
-  | (((PC.TLogOp(Ast.Sup,i3),q),cell) as c) :: rest when top1 stack pdepth tdepth ->
+  | (((PC.TLogOp(Ast.Sup,i3),q),cell) as c) :: rest
+    when top1 stack pdepth tdepth ->
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
       success ident repl inf i2 c (PC.TTemplateEnd i3,q) rest;
       loop (List.tl stack) pdepth (tdepth-1) rest
   (* another possible end point, more constraining Shr case first *)
-  | (((PC.TShROp(_,i3),q),cell) as c) :: rest when top2 stack pdepth tdepth -> (*FIXME: not ready*)
+  | (((PC.TShROp(_,i3),q),cell) as c) :: rest when top2 stack pdepth tdepth ->
       rebuild := true;
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
       success ident repl inf i2 c (PC.TTemplateEndTemplateEnd i3,q) rest;
@@ -2129,7 +2127,7 @@ let convert_templates_cocci toks =
       success ident repl inf i2 c (PC.TTemplateEndTemplateEnd i3,q) rest;
       loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
   (* another possible end point, Shr that is template + > *)
-  | (((PC.TShROp(_,i3),q),cell) as c) :: rest when top1 stack pdepth tdepth -> (*FIXME: not ready*)
+  | (((PC.TShROp(_,i3),q),cell) as c) :: rest when top1 stack pdepth tdepth ->
       rebuild := true;
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
       success ident repl inf i2 c (PC.TTemplateEndSup i3,q) rest;
