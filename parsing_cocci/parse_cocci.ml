@@ -2088,12 +2088,12 @@ let convert_templates_cocci toks =
   let rec loop stack pdepth tdepth = function
     [] -> ()
   | ((PC.TOPar(clt),q),cell) :: xs
-  | ((PC.TOCro(clt),q),cell) :: xs
-  | ((PC.TOBrace(clt),q),cell) :: xs ->
+  | ((PC.TOCro(_,clt),q),cell) :: xs
+  | ((PC.TOBrace(_,clt),q),cell) :: xs ->
       loop stack (pdepth+1) tdepth xs
   | ((PC.TCPar(clt),q),cell) :: xs
-  | ((PC.TCCro(clt),q),cell) :: xs
-  | ((PC.TCBrace(clt),q),cell) :: xs ->
+  | ((PC.TCCro(_,clt),q),cell) :: xs
+  | ((PC.TCBrace(_,clt),q),cell) :: xs ->
       let new_pdepth = max 0 (pdepth-1) in
       let stack =
 	List.filter
