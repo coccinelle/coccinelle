@@ -661,7 +661,8 @@ let combiner bind option_default mcode donothing
 	  let lrp = string_mcode rp in
 	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
-	  multibind [lname; llp; largs; lrp; lattr; lsem] in
+	  multibind [lname; llp; largs; lrp; lattr; lsem]
+      | Ast.CppField(di) -> directive di in
     fieldfn all_functions k d
 
   and annotated_field d =
@@ -897,25 +898,6 @@ let combiner bind option_default mcode donothing
       | Ast.Ty(ty) -> fullType ty
       | Ast.TopId(ty) -> ident ty
       | Ast.TopInit(init) -> initialiser init
-      | Ast.UsingNamespace(usng,nmspc,name,sem) ->
-          let lusng = string_mcode usng in
-          let lnmspc = string_mcode nmspc in
-          let lname = ident name in
-          let lsem = string_mcode sem in
-          multibind [lusng; lnmspc; lname; lsem]
-      |	Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
-          let lusng = string_mcode usng in
-          let lname = ident name in
-          let leq = string_mcode eq in
-          let ltn = get_option string_mcode tn in
-          let lty = fullType ty in
-          let lsem = string_mcode sem in
-          multibind [lusng; lname; leq; lty; ltn; lsem]
-      | Ast.UsingMember(usng,name,sem) ->
-          let lusng = string_mcode usng in
-          let lname = ident name in
-          let lsem = string_mcode sem in
-          multibind [lusng; lname; lsem]
       |	Ast.Include(inc,name) ->
 	  let linc = string_mcode inc in
 	  let lname = inc_file_mcode name in
@@ -939,11 +921,7 @@ let combiner bind option_default mcode donothing
 	  let lparams = template_parameter_dots params in
 	  let lrab = string_mcode rab in
 	  multibind [ltmpkw;llab;lparams;lrab]
-      |	Ast.Pragma(prg,id,body) ->
-	  let lprg = string_mcode prg in
-	  let lid = ident id in
-	  let lbody = pragmainfo body in
-	  multibind [lprg; lid; lbody]
+      | Ast.CppTop(di) -> directive di
       |	Ast.Default(def,colon) ->
 	  let ldef = string_mcode def in
 	  let lcolon = string_mcode colon in
@@ -1147,6 +1125,36 @@ let combiner bind option_default mcode donothing
 	  let lrp = string_mcode rp in
 	  multibind [lattr; llp; largs; lrp] in
     attr_argfn all_functions k a
+
+  (* not parameterisable, for now *)
+  and directive d =
+    let k d =
+      match Ast.unwrap d with
+	Ast.Pragma(prg,id,body) ->
+	  let lprg = string_mcode prg in
+	  let lid = ident id in
+	  let lbody = pragmainfo body in
+	  multibind [lprg; lid; lbody]
+      | Ast.UsingNamespace(usng,nmspc,name,sem) ->
+          let lusng = string_mcode usng in
+          let lnmspc = string_mcode nmspc in
+          let lname = ident name in
+          let lsem = string_mcode sem in
+          multibind [lusng; lnmspc; lname; lsem]
+      |	Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
+          let lusng = string_mcode usng in
+          let lname = ident name in
+          let leq = string_mcode eq in
+          let ltn = get_option string_mcode tn in
+          let lty = fullType ty in
+          let lsem = string_mcode sem in
+          multibind [lusng; lname; leq; lty; ltn; lsem]
+      | Ast.UsingMember(usng,name,sem) ->
+          let lusng = string_mcode usng in
+          let lname = ident name in
+          let lsem = string_mcode sem in
+          multibind [lusng; lname; lsem] in
+    k d
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> notfn a
@@ -1841,7 +1849,8 @@ let rebuilder mcode donothing
 	    let lrp = string_mcode rp in
 	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
-	    Ast.MacroDeclField(lname, llp, largs, lrp, lattr, lsem)) in
+	    Ast.MacroDeclField(lname, llp, largs, lrp, lattr, lsem)
+	| Ast.CppField(di) -> Ast.CppField(directive di))
     fieldfn all_functions k d
 
   and annotated_field d =
@@ -2095,25 +2104,6 @@ let rebuilder mcode donothing
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.TopId(id) -> Ast.TopId(ident id)
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
-	| Ast.UsingNamespace(usng,nmspc,name,sem) ->
-	   let lusng = string_mcode usng in
-	   let lnmspc = string_mcode nmspc in
-	   let lname = ident name in
-	   let lsem = string_mcode sem in
-	   Ast.UsingNamespace(lusng, lnmspc, lname, lsem)
-	| Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
-	   let lusng = string_mcode usng in
-	   let lname = ident name in
-	   let leq = string_mcode eq in
-	   let ltn = get_option string_mcode tn in
-	   let lty = fullType ty in
-	   let lsem = string_mcode sem in
-	   Ast.UsingTypename(lusng, lname, leq, ltn, lty, lsem)
-	| Ast.UsingMember(usng,name,sem) ->
-	   let lusng = string_mcode usng in
-	   let lname = ident name in
-	   let lsem = string_mcode sem in
-	   Ast.UsingMember(lusng, lname, lsem)
 	| Ast.Include(inc,name) ->
 	    let linc = string_mcode inc in
 	    let lname = inc_mcode name in
@@ -2137,11 +2127,7 @@ let rebuilder mcode donothing
 	    let lparams = template_parameter_dots params in
 	    let lrab = string_mcode rab in
 	    Ast.TemplateDefinitionHeader(ltmpkw,llab,lparams,lrab)
-	| Ast.Pragma(prg,id,body) ->
-	    let lprg = string_mcode prg in
-	    let lid = ident id in
-	    let lbody = pragmainfo body in
-	    Ast.Pragma(lprg, lid, lbody)
+	| Ast.CppTop(di) -> Ast.CppTop(directive di)
 	| Ast.Default(def,colon) ->
 	    let ldef = string_mcode def in
 	    let lcolon = string_mcode colon in
@@ -2357,6 +2343,35 @@ let rebuilder mcode donothing
 	    let lrp = string_mcode rp in
             Ast.MacroAttrArgs(lattr,llp,largs,lrp)) in
         attr_argfn all_functions k a
+
+  (* not parameterisable, for now *)
+  and directive d =
+    let k =
+      Ast.Pragma(prg,id,body) ->
+	let lprg = string_mcode prg in
+	let lid = ident id in
+	let lbody = pragmainfo body in
+	Ast.Pragma(lprg, lid, lbody)
+    | Ast.UsingNamespace(usng,nmspc,name,sem) ->
+	let lusng = string_mcode usng in
+	let lnmspc = string_mcode nmspc in
+	let lname = ident name in
+	let lsem = string_mcode sem in
+	Ast.UsingNamespace(lusng, lnmspc, lname, lsem)
+    | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
+	let lusng = string_mcode usng in
+	let lname = ident name in
+	let leq = string_mcode eq in
+	let ltn = get_option string_mcode tn in
+	let lty = fullType ty in
+	let lsem = string_mcode sem in
+	Ast.UsingTypename(lusng, lname, leq, ltn, lty, lsem)
+    | Ast.UsingMember(usng,name,sem) ->
+	let lusng = string_mcode usng in
+	let lname = ident name in
+	let lsem = string_mcode sem in
+	Ast.UsingMember(lusng, lname, lsem) in
+    k d
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> Ast.WhenNot (notfn a)

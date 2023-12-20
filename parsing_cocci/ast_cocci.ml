@@ -452,6 +452,7 @@ and base_field =
 	ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *
         attr list * string mcode (* ; *)
+  | CppField  of directive
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited
@@ -620,13 +621,7 @@ and base_rule_elem =
   | Ty            of fullType (* only at SP top level, matches a subterm *)
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
-  | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
-      ident (*name*) * string mcode (*;*)
-  | UsingTypename of string mcode (*using*) * ident (*name*) *
-      string mcode (*=*) * string mcode option (*typename*) *
-      fullType (*full_type*) * string mcode (*;*)
-  | UsingMember of string mcode (*using*) * ident (*name*) *
-      string mcode (*;*)
+  | CppTop        of directive
   | Include       of string mcode (*#include*) * inc_file mcode (*file *)
   | MetaInclude   of string mcode (* #include *) * expression (* file *)
   | Undef         of string mcode (* #define *) * ident (* name *)
@@ -635,7 +630,6 @@ and base_rule_elem =
   | TemplateDefinitionHeader
                   of string mcode (* template *) * string mcode (* < *) *
                       template_parameter_list * string mcode (* > *)
-  | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | Case          of string mcode (* case *) * expression * string mcode (*:*)
   | Default       of string mcode (* default *) * string mcode (*:*)
   | AsRe          of rule_elem * rule_elem (* always { and MetaStmtList *)
@@ -728,6 +722,18 @@ and base_statement =
 	             (statement dots,statement) whencode list *
 	             dots_whencode list * dots_whencode list
   | OptStm        of statement
+
+and base_directive =
+    Pragma        of string mcode (* #pragma *) * ident * pragmainfo
+  | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
+      ident (*name*) * string mcode (*;*)
+  | UsingTypename of string mcode (*using*) * ident (*name*) *
+      string mcode (*=*) * string mcode option (*typename*) *
+      fullType (*full_type*) * string mcode (*;*)
+  | UsingMember of string mcode (*using*) * ident (*name*) *
+      string mcode (*;*)
+
+and directive = base_directive wrap
 
 and ('a,'b) whencode =
     WhenNot of 'a

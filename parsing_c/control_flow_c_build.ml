@@ -1553,40 +1553,36 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
       [(outer_e,Some !g)]
 
-  | Ast_c.CppTop (Ast_c.Pragma ((id,rest),ii))  ->
-      let elem = PragmaHeader ((id,rest),ii) in
+  | Ast_c.CppTop ((Ast_c.Pragma ((id,rest),ii)) as elem)  ->
       let str = "#pragma" in
-      let ei =   !g +> add_node elem    lbl_0 str in
+      let ei =   !g +> add_node (CppTop elem) lbl_0 str in
       let endi = !g +> add_node EndNode lbl_0 "[end]" in
 
       !g#add_arc ((topi, ei),Direct);
       !g#add_arc ((ei, endi),Direct);
       [(outer_e,Some !g)]
 
-    | Ast_c.CppTop (Ast_c.UsingTypename ((id,ty),ii)) ->
-	let elem = UsingTypenameHeader ((id,ty),ii) in
-	let str = "using" in
-	let ei =   !g +> add_node elem    lbl_0 str in
+    | Ast_c.CppTop ((Ast_c.UsingTypename ((id,ty),ii)) as elem) ->
+	let str = "using type" in
+	let ei =   !g +> add_node (CppTop elem) lbl_0 str in
 	let endi = !g +> add_node EndNode lbl_0 "[end]" in
 
 	!g#add_arc ((topi, ei),Direct);
 	!g#add_arc ((ei, endi),Direct);
 	[(outer_e,Some !g)]
 
-    | Ast_c.CppTop (Ast_c.UsingMember (id,ii)) ->
-	let elem = UsingMemberHeader (id,ii) in
-	let str = "using" in
-	let ei =   !g +> add_node elem    lbl_0 str in
+    | Ast_c.CppTop ((Ast_c.UsingMember (id,ii)) as elem) ->
+	let str = "using member" in
+	let ei =   !g +> add_node (CppTop elem) lbl_0 str in
 	let endi = !g +> add_node EndNode lbl_0 "[end]" in
 
 	!g#add_arc ((topi, ei),Direct);
 	!g#add_arc ((ei, endi),Direct);
 	[(outer_e,Some !g)]
 
-    | Ast_c.CppTop (Ast_c.UsingNamespace (id,ii)) ->
-	let elem = UsingNamespaceHeader (id,ii) in
-	let str = "using" in
-	let ei =   !g +> add_node elem    lbl_0 str in
+    | Ast_c.CppTop ((Ast_c.UsingNamespace (id,ii)) as elem) ->
+	let str = "using namespace" in
+	let ei =   !g +> add_node (CppTop elem) lbl_0 str in
 	let endi = !g +> add_node EndNode lbl_0 "[end]" in
 
 	!g#add_arc ((topi, ei),Direct);

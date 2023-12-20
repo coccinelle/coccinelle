@@ -221,11 +221,8 @@ type node = node1 * string
 
   | Include of includ
 
-  | PragmaHeader of (name * string wrap list) wrap
   | TemplateHeader of templateParameterType wrap2 list wrap
-  | UsingTypenameHeader of (name * fullType) wrap
-  | UsingMemberHeader of name wrap
-  | UsingNamespaceHeader of name wrap
+  | CppTop of cpp_directive
 
   (* obsolete? *)
   | MacroTop of string * argument wrap2 list * il

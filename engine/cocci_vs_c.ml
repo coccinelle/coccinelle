@@ -5025,7 +5025,103 @@ and define_parameter = fun parama paramb ->
       ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
   | A.OptDParam _, _ -> failwith "handling Opt for define parameters"
-  | _ -> fail in
+  | _ -> fail
+
+and directive = fun dira dirb ->
+  | A.Pragma(prga,ida,pragmainfoa),
+    B.Pragma ((idb, [(restb,[rest_iidb])]), ii) ->
+      let (prgb, ieol) = tuple_of_list2 ii in
+      ident_cpp DontKnow ida idb >>= (fun ida idb ->
+      tokenf prga prgb >>= (fun prga prgb ->
+      let wp x = A.rewrap pragmainfoa x  in
+      (match A.unwrap pragmainfoa with
+	A.PragmaString(sa) ->
+	  if A.unwrap_mcode sa = B.str_of_info rest_iidb
+	  then
+	    tokenf sa rest_iidb >>= (fun sa rest_iidb ->
+	    return(
+	      A.PragmaString(sa) +> wp,
+	      rest_iidb
+	    ))
+	  else fail
+      | A.PragmaDots(mcode) ->
+	  tokenf mcode rest_iidb >>= (fun mcode rest_iidb ->
+	  return(
+	    A.PragmaDots(mcode) +> wp,
+	    rest_iidb
+	  ))
+      | A.MetaPragmaInfo(mv, c, keep, inherited) ->
+	  let mv' = B.MetaPragmaInfoVal rest_iidb in
+	  let check_constraints cstr mida idb =
+	    X.check_constraints (A.unwrap_mcode mida) idb cstr in
+	  check_constraints c mv mv'
+	    (fun () ->
+	      let max_min _ = [rest_iidb] in
+	      X.envf keep inherited (mv,mv',max_min)
+		(fun () -> X.distrf_pragma_info mv rest_iidb >>=
+		  (fun mv rest_iidb ->
+		    return (A.MetaPragmaInfo(mv,c,keep,inherited) +> A.rewrap pragmainfoa,
+			    rest_iidb))))
+      ) >>= (fun pragmainfoa rest_iidb ->
+        return (
+	  A.Pragma(prga,ida,pragmainfoa),
+	  B.Pragma((idb, [(restb,[rest_iidb])]), [prgb;ieol])
+        ))
+      ))
+
+  | A.Pragma(prga,ida,pragmainfoa),
+    B.Pragma ((idb, [(restb,rest_iib)]), ii) ->
+      (* matches against multiline pragmas not supported *)
+      fail
+  | A.UsingNamespace (usnga, nmspca, namea, sema),
+    B.UsingNamespace (nameb, ii) ->
+      assert ( (List.length ii) = 3);
+      let (usngb, nmspcb, semb) = tuple_of_list3 ii in
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      tokenf nmspca nmspcb >>= (fun nmspca nmspcb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingNamespace (usnga, nmspca, namea, sema),
+          B.UsingNamespace (nameb, [usngb;nmspcb;semb])
+        ) ))))
+  | A.UsingMember (usnga, namea, sema), B.UsingMember (nameb, ii) ->
+      assert ( (List.length ii) = 2);
+      let (usngb, semb) = tuple_of_list2 ii in
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingMember (usnga, namea, sema),
+          B.UsingMember (nameb, [usngb;semb])
+        ) )))
+
+  | A.UsingTypename (usnga,namea,eqa,Some tna,tya,sema),
+    B.UsingTypename ((nameb,tyb), [usngb; eqb; tnb; semb]) ->
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf eqa eqb >>= (fun eqa eqb ->
+      tokenf tna tnb >>= (fun tna tnb ->
+      fullType tya tyb >>= (fun tya tyb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingTypename (usnga, namea, eqa, Some tna, tya, sema),
+          B.UsingTypename ((nameb,tyb), [usngb;eqb;tnb;semb])
+        ) ))))))
+  | A.UsingTypename (usnga,namea,eqa,None,tya,sema),
+    B.UsingTypename ((nameb,tyb), [usngb; eqb; semb]) ->
+      tokenf usnga usngb >>= (fun usnga usngb ->
+      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
+      tokenf eqa eqb >>= (fun eqa eqb ->
+      fullType tya tyb >>= (fun tya tyb ->
+      tokenf sema semb >>= (fun sema semb->
+        return (
+          A.UsingTypename (usnga, namea, eqa, None, tya, sema),
+          B.UsingTypename ((nameb,tyb), [usngb;eqb;semb])
+        ) )))))
+
+  | _ -> fail
+in
 
   let rec check_constraints ida idb env c =
     let get_assignOp op = assignOpA_of_assignOpB op in
@@ -5663,53 +5759,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
 
-  | A.UsingNamespace (usnga, nmspca, namea, sema),
-    F.UsingNamespaceHeader (nameb, ii) ->
-      assert ( (List.length ii) = 3);
-      let (usngb, nmspcb, semb) = tuple_of_list3 ii in
-      tokenf usnga usngb >>= (fun usnga usngb ->
-      tokenf nmspca nmspcb >>= (fun nmspca nmspcb ->
-      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
-      tokenf sema semb >>= (fun sema semb->
-        return (
-          A.UsingNamespace (usnga, nmspca, namea, sema),
-          F.UsingNamespaceHeader (nameb, [usngb;nmspcb;semb])
-        ) ))))
-
-  | A.UsingMember (usnga, namea, sema), F.UsingMemberHeader (nameb, ii) ->
-      assert ( (List.length ii) = 2);
-      let (usngb, semb) = tuple_of_list2 ii in
-      tokenf usnga usngb >>= (fun usnga usngb ->
-      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
-      tokenf sema semb >>= (fun sema semb->
-        return (
-          A.UsingMember (usnga, namea, sema),
-          F.UsingMemberHeader (nameb, [usngb;semb])
-        ) )))
-
-  | A.UsingTypename (usnga,namea,eqa,Some tna,tya,sema),
-    F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; tnb; semb]) ->
-      tokenf usnga usngb >>= (fun usnga usngb ->
-      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
-      tokenf eqa eqb >>= (fun eqa eqb ->
-      tokenf tna tnb >>= (fun tna tnb ->
-      fullType tya tyb >>= (fun tya tyb ->
-      tokenf sema semb >>= (fun sema semb->
-        return (
-          A.UsingTypename (usnga, namea, eqa, Some tna, tya, sema),
-          F.UsingTypenameHeader ((nameb,tyb), [usngb;eqb;tnb;semb])
-        ) ))))))
-  | A.UsingTypename (usnga,namea,eqa,None,tya,sema),
-    F.UsingTypenameHeader ((nameb,tyb), [usngb; eqb; semb]) ->
-      tokenf usnga usngb >>= (fun usnga usngb ->
-      ident_cpp LocalFunction namea nameb >>= (fun namea nameb ->
-      tokenf eqa eqb >>= (fun eqa eqb ->
-      fullType tya tyb >>= (fun tya tyb ->
-      tokenf sema semb >>= (fun sema semb->
-        return (
-          A.UsingTypename (usnga, namea, eqa, None, tya, sema),
-          F.UsingTypenameHeader ((nameb,tyb), [usngb;eqb;semb])
-        ) )))))
   | A.Include(incla,filea),
     F.Include {B.i_include = (fileb, ii);
                B.i_rel_pos = h_rel_pos;
@@ -5823,51 +5872,11 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	    A.TemplateDefinitionHeader(tmpkwa,laba,paramsa,raba),
 	    F.TemplateHeader(paramsb,[tmpkwb;labb;rabb]))))))
 
-  | A.Pragma(prga,ida,pragmainfoa),
-    F.PragmaHeader ((idb, [(restb,[rest_iidb])]), ii) ->
-      let (prgb, ieol) = tuple_of_list2 ii in
-      ident_cpp DontKnow ida idb >>= (fun ida idb ->
-      tokenf prga prgb >>= (fun prga prgb ->
-      let wp x = A.rewrap pragmainfoa x  in
-      (match A.unwrap pragmainfoa with
-	A.PragmaString(sa) ->
-	  if A.unwrap_mcode sa = B.str_of_info rest_iidb
-	  then
-	    tokenf sa rest_iidb >>= (fun sa rest_iidb ->
-	    return(
-	      A.PragmaString(sa) +> wp,
-	      rest_iidb
-	    ))
-	  else fail
-      | A.PragmaDots(mcode) ->
-	  tokenf mcode rest_iidb >>= (fun mcode rest_iidb ->
-	  return(
-	    A.PragmaDots(mcode) +> wp,
-	    rest_iidb
-	  ))
-      | A.MetaPragmaInfo(mv, c, keep, inherited) ->
-	  let mv' = B.MetaPragmaInfoVal rest_iidb in
-	  let check_constraints cstr mida idb =
-	    X.check_constraints (A.unwrap_mcode mida) idb cstr in
-	  check_constraints c mv mv'
-	    (fun () ->
-	      let max_min _ = [rest_iidb] in
-	      X.envf keep inherited (mv,mv',max_min)
-		(fun () -> X.distrf_pragma_info mv rest_iidb >>=
-		  (fun mv rest_iidb ->
-		    return (A.MetaPragmaInfo(mv,c,keep,inherited) +> A.rewrap pragmainfoa,
-			    rest_iidb))))
-      ) >>= (fun pragmainfoa rest_iidb ->
-        return (
-	  A.Pragma(prga,ida,pragmainfoa),
-	  F.PragmaHeader ((idb, [(restb,[rest_iidb])]), [prgb;ieol])
-        ))
-      ))
-
-  | A.Pragma(prga,ida,pragmainfoa),
-    F.PragmaHeader ((idb, [(restb,rest_iib)]), ii) ->
-      (* matches against multiline pragmas not supported *)
-      fail
+  | A.CppTop(dia), F.CppTop(dib) ->
+      directive dia dib (fun dia dib ->
+	return(
+	A.CppTop(dia),
+	F.CppTop(dib)))
 
   | A.Default(def,colon), F.Default (st, ((),ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in
@@ -5959,9 +5968,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
     (F.Label (_, _, _)|F.Break (_, _, _)|F.Continue (_, _)|F.Default (_, _)|
     F.Case (_, _)|F.Include _|F.Goto _|F.ExprStatement _|F.Exec _|
     F.DefineType _|F.DefineExpr _|F.DefineInit _|F.DefineTodo|
-    F.DefineHeader (_, _)|F.PragmaHeader (_, _)|
-    F.UsingNamespaceHeader(_, _)|
-    F.UsingTypenameHeader (_, _)|F.UsingMemberHeader (_, _)|
+    F.DefineHeader (_, _)|F.CppTop _|
     F.ReturnExpr (_, _)|F.Return (_, _)|
     F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|

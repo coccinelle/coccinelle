@@ -284,6 +284,7 @@ and base_field =
   | MacroDeclField of ident (* name *) * string mcode (* ( *) *
         expression dots * string mcode (* ) *) *
         attr list * string mcode (* ; *)
+  | CppField    of directive
   | DisjField   of string mcode * field list * string mcode list *
 	          string mcode
   | ConjField   of string mcode * field list * string mcode list *
@@ -464,13 +465,6 @@ and base_templateParameterTypeDef =
 and templateParameterTypeDef = base_templateParameterTypeDef wrap
 and template_parameter_list = templateParameterTypeDef dots
 
-and base_pragmainfo =
-    PragmaString of string mcode
-  | PragmaDots of string mcode
-  | MetaPragmaInfo of Ast_cocci.meta_name mcode * constraints * pure
-
-and pragmainfo = base_pragmainfo wrap
-
 and base_forinfo =
     ForExp of expression option * string mcode (*;*) *
 	expression option * string mcode (*;*) *
@@ -522,6 +516,24 @@ and ('a,'b) whencode =
     expression
 
 and statement = base_statement wrap
+
+and base_directive = 
+  | Pragma of string mcode (* #pragma *) * ident * pragmainfo
+  | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
+      ident (*name*) * string mcode (*;*)
+  | UsingTypename of string mcode (*using*) * ident (*name*) *
+      string mcode (*=*) * string mcode option (*typename*) *
+      typeC (*full_type*) * string mcode (*;*)
+  | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
+
+and directive = base_directive wrap
+
+and base_pragmainfo =
+    PragmaString of string mcode
+  | PragmaDots of string mcode
+  | MetaPragmaInfo of Ast_cocci.meta_name mcode * constraints * pure
+
+and pragmainfo = base_pragmainfo wrap
 
 and base_case_line =
     Default of string mcode (* default *) * string mcode (*:*) * statement dots

@@ -776,6 +776,7 @@ and field d =
 	let attr = List.map attribute attr in
 	let sem = mcode sem in
 	Ast.MacroDeclField(name,lp,args,rp,attr,sem)
+    | Ast0.CppField(di) -> Ast0.CppField(directive di)
     | Ast0.ConjField(_,_,_,_)
     | Ast0.DisjField(_,_,_,_)
     | Ast0.OptField(_)
@@ -1139,17 +1140,7 @@ and statement s =
           Ast.TemplateDefinition
 	    (rewrap_rule_elem s (Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab)),
 	     stmt)
-      |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
-        Ast.Atomic(rewrap_rule_elem s
-          (Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)))
-      | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
-        let allminus = check_allminus.VT0.combiner_rec_statement s in
-        Ast.Atomic(rewrap_rule_elem s
-          (Ast.UsingTypename(mcode usng,ident name,mcode eq,get_option mcode tn,
-                             typeC allminus ty,mcode sem)))
-      | Ast0.UsingMember(usng,name,sem) ->
-        Ast.Atomic(rewrap_rule_elem s
-          (Ast.UsingMember(mcode usng,ident name,mcode sem)))
+      | Ast0.CppTop(di) -> Ast.Atomic(rewrap_rule_elem s (directive di))
       |	Ast0.Include(inc,str) ->
          Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
       |	Ast0.MetaInclude(inc,str) ->
@@ -1163,10 +1154,20 @@ and statement s =
 	       (Ast.DefineHeader
 		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
-      |	Ast0.Pragma(prg,id,body) ->
-	  Ast.Atomic(rewrap_rule_elem s
-		       (Ast.Pragma(mcode prg,ident id,pragmainfo body)))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm))
+
+  and directive d =
+    rewrap d no_isos
+      (match Ast0.unwrap d with
+      	Ast0.Pragma(prg,id,body) ->
+	  Ast.Pragma(mcode prg,ident id,pragmainfo body)
+      |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
+          Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)
+      | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+          Ast.UsingTypename(mcode usng,ident name,mcode eq,get_option mcode tn,
+                            typeC false ty,mcode sem)
+      | Ast0.UsingMember(usng,name,sem) ->
+          Ast.UsingMember(mcode usng,ident name,mcode sem))
 
   and whencode notfn alwaysfn = function
       Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)
