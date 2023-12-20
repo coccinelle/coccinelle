@@ -802,24 +802,9 @@ and statement arity s =
 	  List.iter
 	    (whencode (dots force_newline (statement "")) (statement ""))
 	    whn
-      | Ast0.UsingNamespace(usng,nmspc,s,sem) ->
-           mcode print_string usng; print_string " ";
-           mcode print_string nmspc; print_string " ";
-           ident s; print_string " ";
-           mcode print_string sem
-      | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
-           mcode print_string usng; print_string " ";
-           ident name; print_string " ";
-           mcode print_string eq; print_string " ";
-	   print_option (mcode print_string) tn; print_string " ";
-           typeC ty; print_string " ";
-           mcode print_string sem
-      | Ast0.UsingMember(usng,name,sem) ->
-           mcode print_string usng; print_string " ";
-           ident name; print_string " ";
-           mcode print_string sem
       | Ast0.Include(inc,s) ->
 	  mcode print_string inc; print_string " "; mcode U.inc_file s
+      | Ast0.CppTop(di) -> directive di
       | Ast0.MetaInclude(inc,s) ->
 	  mcode print_string inc; print_string " "; expression s
       | Ast0.Undef(def,id) ->
@@ -829,18 +814,9 @@ and statement arity s =
 	  print_define_parameters params;
 	  print_string " ";
 	  dots force_newline (statement arity) body
-      | Ast0.Pragma(prg,id,body) ->
-	  mcode print_string prg; print_string " "; ident id;
-	  print_string " "; pragmainfo body
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)
-
-and pragmainfo pi =
-  match Ast0.unwrap pi with
-    Ast0.PragmaString(s) -> mcode print_string s
-  | Ast0.PragmaDots(dots) -> mcode print_string dots
-  | Ast0.MetaPragmaInfo(name,_,_) -> mcode print_meta name
 
 and print_define_parameters params =
   match Ast0.unwrap params with
@@ -900,6 +876,35 @@ and print_attr_arg a =
       mcode print_string attr; mcode print_string_box lp;
       let _ = dots (function _ -> ()) expression args in
       close_box(); mcode print_string rp
+  | Ast0.CppField(di) -> directive di
+
+and pragmainfo pi =
+  match Ast0.unwrap pi with
+    Ast0.PragmaString(s) -> mcode print_string s
+  | Ast0.PragmaDots(dots) -> mcode print_string dots
+  | Ast0.MetaPragmaInfo(name,_,_) -> mcode print_meta name
+
+and directive d =
+  match Ast0.unwrap d with
+    Ast0.Pragma(prg,id,body) ->
+      mcode print_string prg; print_string " "; ident id;
+      print_string " "; pragmainfo body
+  | Ast0.UsingNamespace(usng,nmspc,s,sem) ->
+      mcode print_string usng; print_string " ";
+      mcode print_string nmspc; print_string " ";
+      ident s; print_string " ";
+      mcode print_string sem
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      mcode print_string usng; print_string " ";
+      ident name; print_string " ";
+      mcode print_string eq; print_string " ";
+      print_option (mcode print_string) tn; print_string " ";
+      typeC ty; print_string " ";
+      mcode print_string sem
+  | Ast0.UsingMember(usng,name,sem) ->
+      mcode print_string usng; print_string " ";
+      ident name; print_string " ";
+      mcode print_string sem
 
 and whencode notfn alwaysfn = function
     Ast0.WhenNot (_,_,a) ->

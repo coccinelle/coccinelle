@@ -902,6 +902,9 @@ and field d =
       let sem = normal_mcode sem in
       mkres d (Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
 	name (promote_mcode sem)
+  | Ast0.CppField(di) ->
+      let di = directive di in
+      mkres d (Ast0.CppField(di)) di di
   | Ast0.DisjField(starter,decls,mids,ender) ->
       do_disj d starter decls mids ender field
 	(fun starter decls mids ender ->
@@ -1499,28 +1502,9 @@ let rec statement s =
 	let rab = normal_mcode rab in
 	mkres s (Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt))
           (promote_mcode tmpkw) (statement stmt)
-    | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
-	let usng = normal_mcode usng in
-	let nmspc = normal_mcode nmspc in
-	let name = ident name in
-	let sem = normal_mcode sem in
-	mkres s (Ast0.UsingNamespace(usng,nmspc,name,sem))
-          (promote_mcode usng) (promote_mcode sem)
-    | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
-	let usng = normal_mcode usng in
-	let name = ident name in
-	let eq = normal_mcode eq in
-	let tn = get_option normal_mcode tn in
-	let ty = typeC ty in
-	let sem = normal_mcode sem in
-	mkres s (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
-          (promote_mcode usng) (promote_mcode sem)
-    | Ast0.UsingMember(usng,name,sem) ->
-	let usng = normal_mcode usng in
-	let name = ident name in
-	let sem = normal_mcode sem in
-	mkres s (Ast0.UsingMember(usng,name,sem))
-          (promote_mcode usng) (promote_mcode sem)
+    | Ast0.CppTop(di) ->
+	let di = directive di in
+	mkres s (Ast0.CppTop(di)) di di
     | Ast0.Include(inc,stm) ->
 	let inc = normal_mcode inc in
 	let stm = normal_mcode stm in
@@ -1543,11 +1527,6 @@ let rec statement s =
 	    let (params,prev) = define_parameters params right in
 	    let body = dots is_stm_dots (Some prev) statement body in
 	    mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body)
-    | Ast0.Pragma(prg,id,body) ->
-	let prg = normal_mcode prg in
-	let id = ident id in
-	let body = pragmainfo body in
-	mkres s (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
     | Ast0.AsStmt(stm,asstm) ->
@@ -1595,6 +1574,36 @@ and pragmainfo pi =
       let mv0 = normal_mcode mv0 in
       let ln = promote_mcode mv0 in
       mkres pi (Ast0.MetaPragmaInfo(mv0, c, pure)) ln ln
+
+and directive d =
+  match Ast0.unwrap d with
+    Ast0.Pragma(prg,id,body) ->
+      let prg = normal_mcode prg in
+      let id = ident id in
+      let body = pragmainfo body in
+      mkres d (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
+  | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+      let usng = normal_mcode usng in
+      let nmspc = normal_mcode nmspc in
+      let name = ident name in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.UsingNamespace(usng,nmspc,name,sem))
+        (promote_mcode usng) (promote_mcode sem)
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      let usng = normal_mcode usng in
+      let name = ident name in
+      let eq = normal_mcode eq in
+      let tn = get_option normal_mcode tn in
+      let ty = typeC ty in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
+        (promote_mcode usng) (promote_mcode sem)
+  | Ast0.UsingMember(usng,name,sem) ->
+      let usng = normal_mcode usng in
+      let name = ident name in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.UsingMember(usng,name,sem))
+        (promote_mcode usng) (promote_mcode sem)
 
 and case_line c =
   match Ast0.unwrap c with

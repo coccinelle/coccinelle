@@ -774,6 +774,7 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [name_n;lp_n;args_n;rp_n;attr_n;sem_n],
 	     Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
+	| Ast0.CppField(di) -> directive di
 	| Ast0.DisjField(starter,decls,mids,ender) ->
 	    do_disj starter decls mids ender field
 	      (fun starter decls mids ender ->
@@ -1157,27 +1158,7 @@ let visitor mode bind option_default
 	    let (whn_n,whn) =
 	      map_split_bind (whencode statement_dots statement) whn in
 	    (bind d_n whn_n, Ast0.Dots(d,whn))
-	| Ast0.UsingNamespace(usng,nmspc,name,sem) ->
-	    let (usng_n,usng) = string_mcode usng in
-	    let (nmspc_n,nmspc) = string_mcode nmspc in
-	    let (name_n,name) = ident name in
-	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [usng_n;nmspc_n],
-               Ast0.UsingNamespace(usng,nmspc,name,sem))
-	| Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
-	    let (usng_n,usng) = string_mcode usng in
-	    let (name_n,name) = ident name in
-	    let (eq_n,eq) = string_mcode eq in
-	    let (tn_n,tn) = get_option string_mcode tn in
-	    let (ty_n,ty) = typeC ty in
-	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [usng_n;name_n;eq_n;tn_n;ty_n;sem_n],
-               Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
-	| Ast0.UsingMember(usng,name,sem) ->
-	    let (usng_n,usng) = string_mcode usng in
-	    let (name_n,name) = ident name in
-	    let (sem_n,sem) = string_mcode sem in
-	    (multibind [usng_n;name_n;sem_n],Ast0.UsingMember(usng,name,sem))
+	| Ast0.CppTop(di) -> directive di
 	| Ast0.Include(inc,name) ->
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in
@@ -1197,11 +1178,6 @@ let visitor mode bind option_default
 	    let (body_n,body) = statement_dots body in
 	    (multibind [def_n;id_n;params_n;body_n],
 	     Ast0.Define(def,id,params,body))
-	| Ast0.Pragma(prg,id,body) ->
-	    let (prg_n,prg) = string_mcode prg in
-	    let (id_n,id) = ident id in
-	    let (body_n,body) = pragmainfo body in
-	    (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
 	| Ast0.OptStm(re) ->
 	    let (re_n,re) = statement re in (re_n,Ast0.OptStm(re))
 	| Ast0.AsStmt(stm,asstm) ->
@@ -1235,22 +1211,6 @@ let visitor mode bind option_default
 	    let (ini_n,ini) = initialiser ini in
 	    (multibind [decl_n;ini_n],Ast0.ForRange (bef,decl,ini))) in
     forinfofn all_functions k fi
-
-  (* not parameterizable for now... *)
-  and pragmainfo pi =
-    let k pi =
-      rewrap pi
-	(match Ast0.unwrap pi with
-	  Ast0.PragmaString(s) ->
-	    let (s_n,s) = string_mcode s in
-	    (s_n, Ast0.PragmaString(s))
-	| Ast0.PragmaDots (dots) ->
-	    let (dots_n,dots) = string_mcode dots in
-	    (dots_n,Ast0.PragmaDots dots)
-	| Ast0.MetaPragmaInfo (name, c, pure) ->
-          let (name_n,name) = meta_mcode name in
-          (name_n,Ast0.MetaPragmaInfo(name, c, pure))) in
-    k pi
 
   (* not parameterizable for now... *)
   and define_parameters p =
@@ -1338,7 +1298,56 @@ let visitor mode bind option_default
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
             (multibind [attr_n;lp_n;args_n;rp_n], Ast0.MacroAttrArgs (attr,lp,args,rp))) in
-              attr_argfn all_functions k a
+    attr_argfn all_functions k a
+
+  (* not parameterizable for now... *)
+  and pragmainfo pi =
+    let k pi =
+      rewrap pi
+	(match Ast0.unwrap pi with
+	  Ast0.PragmaString(s) ->
+	    let (s_n,s) = string_mcode s in
+	    (s_n, Ast0.PragmaString(s))
+	| Ast0.PragmaDots (dots) ->
+	    let (dots_n,dots) = string_mcode dots in
+	    (dots_n,Ast0.PragmaDots dots)
+	| Ast0.MetaPragmaInfo (name, c, pure) ->
+          let (name_n,name) = meta_mcode name in
+          (name_n,Ast0.MetaPragmaInfo(name, c, pure))) in
+    k pi
+
+  (* not parameterisable, for now *)
+  and directive d =
+    let k d =
+      rewrap d
+	(match Ast0.unwrap d with
+	  Ast0.Pragma(prg,id,body) ->
+	    let (prg_n,prg) = string_mcode prg in
+	    let (id_n,id) = ident id in
+	    let (body_n,body) = pragmainfo body in
+	    (multibind [prg_n;id_n;body_n],Ast0.Pragma(prg,id,body))
+	| Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+	    let (usng_n,usng) = string_mcode usng in
+	    let (nmspc_n,nmspc) = string_mcode nmspc in
+	    let (name_n,name) = ident name in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [usng_n;nmspc_n],
+             Ast0.UsingNamespace(usng,nmspc,name,sem))
+	| Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+	    let (usng_n,usng) = string_mcode usng in
+	    let (name_n,name) = ident name in
+	    let (eq_n,eq) = string_mcode eq in
+	    let (tn_n,tn) = get_option string_mcode tn in
+	    let (ty_n,ty) = typeC ty in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [usng_n;name_n;eq_n;tn_n;ty_n;sem_n],
+             Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
+	| Ast0.UsingMember(usng,name,sem) ->
+	    let (usng_n,usng) = string_mcode usng in
+	    let (name_n,name) = ident name in
+	    let (sem_n,sem) = string_mcode sem in
+	    (multibind [usng_n;name_n;sem_n],Ast0.UsingMember(usng,name,sem))) in
+    k d
 
   (* we only include the when string mcode w because the parameterised
      string_mcodefn function might have side-effects *)

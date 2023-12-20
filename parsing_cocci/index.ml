@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 202, also unused: {none}
+(* current max is 202, also unused: {9,15,161,194}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -138,6 +138,7 @@ let field d =
   | Ast0.MetaFieldList(name,_,_,_) -> [152]
   | Ast0.Field(ty,id,_bf,_endattr,sem) -> [55]
   | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) -> [59]
+  | Ast0.CppField(_) -> [202]
   | Ast0.DisjField(_,decls,_,_) -> [189] (* added after *)
   | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
   | Ast0.Fdots(dots,whencode) -> [133]
@@ -211,14 +212,10 @@ let statement s =
   | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
   | Ast0.Dots(d,whencode) -> [84]
-  | Ast0.UsingNamespace(usng,nmspc,name,sem) -> [15]
-  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) -> [9]
-  | Ast0.UsingMember(usng,name,sem) -> [194]
   | Ast0.Include(inc,name) -> [118]
   | Ast0.MetaInclude(inc,name) -> [111]
   | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]
-  | Ast0.Pragma(prg,id,body) -> [161]
   | Ast0.OptStm(re) -> [87]
   | Ast0.AsStmt _ -> failwith "not possible"
 
