@@ -2136,43 +2136,52 @@ let convert_templates_cocci toks =
   | (((PC.TSup3(i3),q),cell) as c) :: rest when top3 stack pdepth tdepth ->
       rebuild := true;
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
-      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q)
+	rest;
       let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
-      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q)
+	rest;
       let ((ident,repl,inf,i2),_,_) = List.hd (List.tl (List.tl stack)) in
-      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q)
+	rest;
       loop (List.tl (List.tl (List.tl stack))) pdepth (tdepth-3) rest
   (* something else *)
   | _::rest -> loop stack pdepth tdepth rest in
   loop [] 0 0 tokens2;
   if !rebuild
   then
-    let copy_pi pi str offset =
-      { pi with Common.str = str;
-	Common.charpos = pi.Common.charpos + offset;
-	Common.column = pi.Common.column + offset } in
-    let copy_tok t str offset = t in
+    let copy_tok clt info offset last k =
+      let (x,line,logical_line,logical_line_end,off,col,
+              strbef,straft,pos,ws) = clt in
+      let newclt =
+	let newbef = if offset = 8 then strbef else [] in
+	let newaft = if last then straft else [] in
+	let newpos = if last then pos else [] in
+	(x,line,logical_line,logical_line_end,off+offset,col+offset,
+         newbef,newaft,newpos,"") in
+      let (str,line,(startcol,endcol)) = info in
+      let newinfo = (str,line,(startcol+offset,startcol+offset+1)) in
+      (k newclt,newinfo) in
     List.rev
       (List.fold_left
 	 (fun prev ((tok,q),tokr) ->
 	   match tok with
 	     PC.TTemplateEndSup i3 ->
-	       let t1 = PC.TTemplateEnd (copy_tok i3 ">" 0) in
-	       let t2 = PC.TLogOp(Ast.Inf,(copy_tok i3 ">" 1)) in
+	       let t1 = copy_tok i3 q 0 false (fun clt -> PC.TTemplateEnd clt) in
+	       let t2 = copy_tok i3 q 1 true (fun clt -> PC.TLogOp(Ast.Inf,clt)) in
 	       t2 :: t1 :: prev
 	   | PC.TTemplateEndTemplateEnd i3 ->
-	       let t1 = PC.TTemplateEnd (copy_tok i3 ">" 0) in
-	       let t2 = PC.TTemplateEnd (copy_tok i3 ">" 1) in
+	       let t1 = copy_tok i3 q 0 false (fun clt -> PC.TTemplateEnd clt) in
+	       let t2 = copy_tok i3 q 1 true (fun clt -> PC.TTemplateEnd clt) in
 	       t2 :: t1 :: prev
 	   | PC.TTemplateEndTemplateEndTemplateEnd i3 ->
-	       let t1 = PC.TTemplateEnd (copy_tok i3 ">" 0) in
-	       let t2 = PC.TTemplateEnd (copy_tok i3 ">" 1) in
-	       let t3 = PC.TTemplateEnd (copy_tok i3 ">" 2) in
+	       let t1 = copy_tok i3 q 0 false (fun clt -> PC.TTemplateEnd clt) in
+	       let t2 = copy_tok i3 q 1 false (fun clt -> PC.TTemplateEnd clt) in
+	       let t3 = copy_tok i3 q 2 true (fun clt -> PC.TTemplateEnd clt) in
 	       t3 :: t2 :: t1 :: prev
-	   | x -> x :: prev)
+	   | x -> (x,q) :: prev)
 	 [] tokens2)
-  else Common.acc_map (fun ((tok,q),tokr) -> tok ) tokens2
-(* convert_templates_cocci END *)
+  else Common.acc_map (fun (tok,tokr) -> tok) tokens2
 
 let prepare_tokens plus tokens =
         (* TODO: convert_templates_cocci is incomplete *)
