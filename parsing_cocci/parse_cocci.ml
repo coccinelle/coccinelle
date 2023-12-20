@@ -2028,12 +2028,10 @@ let parse_one str parsefn file toks =
 
 
 (* FIXME: here in analogy to  parsing_hacks.ml's *)
-let is_space = function
-        (*
-  | TCommentSpace _ -> true
-  | TCommentNewline _ -> true
-        *)
-  | _ -> false
+let is_space str1 (tleft,_) (tright,_) =
+  let (_,lline,_,_,_,lcol,_,_,_,_) = get_clt tleft in
+  let (_,rline,_,_,_,rcol,_,_,_,_) = get_clt tright in
+  lline = rline && lcol + String.length str1 + 1 = rcol
 
 (* FIXME: here in analogy to  parsing_hacks.ml's *)
 let is_just_comment_or_space = function
