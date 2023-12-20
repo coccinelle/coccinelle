@@ -329,6 +329,9 @@ let token2c (tok,_) add_clt =
   | PC.TTemplateStart s -> "TTemplateStart"
   | PC.Ttemplate s -> "Ttemplate"
   | PC.TTemplateEnd s -> "TTemplateEnd"
+  | PC.TTemplateEndTemplateEndTemplateEnd s -> "TTemplateEndTemplateEndTemplateEnd"
+  | PC.TTemplateEndTemplateEnd s -> "TTemplateEndTemplateEnd"
+  | PC.TTemplateEndSup s -> "TTemplateEndSup"
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
@@ -514,6 +517,12 @@ let get_clt (tok,_) =
   | PC.TFunDecl(clt) | PC.TDirective(_,clt) | PC.TAttr_(clt)
   | PC.TLineEnd(clt) -> clt
   | PC.TVAEllipsis(clt) -> clt
+  | PC.Ttemplate(clt) -> clt
+  | PC.TTemplateStart(clt) -> clt
+  | PC.TTemplateEnd(clt) -> clt
+  | PC.TTemplateEndTemplateEndTemplateEnd(clt) -> clt
+  | PC.TTemplateEndTemplateEnd(clt) -> clt
+  | PC.TTemplateEndSup(clt) -> clt
 
   | PC.Tlist -> failwith "No clt attached to token Tlist"
   | PC.TWords -> failwith "No clt attached to token TWords"
@@ -769,6 +778,13 @@ let update_clt (tok,x) clt =
   | PC.TAttr_(_) -> (PC.TAttr_(clt),x)
   | PC.TVAEllipsis(_) -> (PC.TVAEllipsis(clt),x)
 
+  | PC.TTemplateStart(_) -> (PC.TTemplateStart(clt),x)
+  | PC.Ttemplate(_) -> (PC.Ttemplate(clt),x)
+  | PC.TTemplateEnd(_) -> (PC.TTemplateEnd(clt),x)
+  | PC.TTemplateEndTemplateEndTemplateEnd(_) -> (PC.TTemplateEndTemplateEndTemplateEnd(clt),x)
+  | PC.TTemplateEndTemplateEnd(_) -> (PC.TTemplateEndTemplateEnd(clt),x)
+  | PC.TTemplateEndSup(_) -> (PC.TTemplateEndSup(clt),x)
+
   | PC.Tlist -> assert false
   | PC.TWords -> assert false
   | PC.TWhy0 -> assert false
@@ -942,6 +958,14 @@ let split_token ((tok,_) as t) =
   | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.TAttrArg(_,clt)
   | PC.TVAEllipsis(clt) | PC.Tconst(clt) | PC.Tvolatile(clt)
+
+  | PC.TTemplateStart(clt)
+  | PC.Ttemplate(clt)
+  | PC.TTemplateEnd(clt)
+  | PC.TTemplateEndTemplateEndTemplateEnd(clt)
+  | PC.TTemplateEndTemplateEnd(clt)
+  | PC.TTemplateEndSup(clt)
+
   | PC.TAttr_(clt) | PC.TUsing(clt) -> split t clt
   | PC.TNamespace(clt) -> split t clt
 
