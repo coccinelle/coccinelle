@@ -326,6 +326,9 @@ let token2c (tok,_) add_clt =
   | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
   | PC.TWhitespace s -> "Whitespace(" ^ s ^ ")"
+  | PC.TTemplateStart s -> "TTemplateStart"
+  | PC.Ttemplate s -> "Ttemplate"
+  | PC.TTemplateEnd s -> "TTemplateEnd"
 
 let print_tokens s tokens =
   Printf.printf "%s\n" s;
@@ -1999,16 +2002,185 @@ let parse_one str parsefn file toks =
 
   | e -> raise e
 
+
+(* FIXME: here in analogy to  parsing_hacks.ml's *)
+let is_space = function
+        (*
+  | TCommentSpace _ -> true
+  | TCommentNewline _ -> true
+        *)
+  | _ -> false
+
+(* FIXME: here in analogy to  parsing_hacks.ml's *)
+let is_just_comment_or_space = function
+        (*
+  | TComment _ -> true
+  | TCommentSpace _ -> true
+  | TCommentNewline _ -> true
+         * *)
+  | _ -> false
+(* convert_templates_cocci START *)
+
+let convert_templates_cocci toks =
+  (* FIXME: here in analogy to  parsing_hacks.ml's, and yet to be completed *)
+  (*let tokens2 = toks +> Common.acc_map TV.mk_token_extended in*)
+  (*let tokens2 = (Common.acc_map toks) TV.mk_token_extended in*)
+  (*let tokens2 = toks in*)
+  let tokens2 = List.fold_left (fun prev tok -> (tok,ref tok) :: prev) [] toks in
+  let tokens2 = List.rev tokens2 in
+  let rebuild = ref false in
+  let top1 stack pdepth tdepth =
+    match stack with
+      (tok,tok_pdepth,tok_tdepth)::rest ->
+	pdepth = tok_pdepth && tdepth = tok_tdepth + 1
+    | _ -> false in
+  let top2 stack pdepth tdepth =
+    match stack with
+      (tok1,tok1_pdepth,tok1_tdepth)::(tok2,tok2_pdepth,tok2_tdepth)::rest ->
+	pdepth = tok1_pdepth && pdepth = tok2_pdepth &&
+	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2
+    | _ -> false in
+  let top3 stack pdepth tdepth =
+    match stack with
+      (tok1,tok1_pdepth,tok1_tdepth)::(tok2,tok2_pdepth,tok2_tdepth)::
+      (tok3,tok3_pdepth,tok3_tdepth)::rest ->
+	pdepth = tok1_pdepth && pdepth = tok2_pdepth && pdepth = tok3_pdepth &&
+	tdepth = tok1_tdepth + 1 && tdepth = tok2_tdepth + 2 && tdepth = tok3_tdepth + 3
+    | _ -> false in
+  let success (at,ar) repl (bt,br) (i2clt,i2q) (ct,(cr: (PC.token * 'a) ref)) i3 xs = (* FIXME: incomplete *)
+    br := (PC.TTemplateStart i2clt,i2q);
+    cr := i3;
+    let comment_or_space_or_and (xt,xr) =
+      let tok = xt in
+      is_just_comment_or_space tok ||
+      (match tok with
+	(PC.TAnd _,q) -> true
+      | _ -> false) in
+    let (_,tmp) = Common.span comment_or_space_or_and xs in
+    (match tmp, repl with
+      ((PC.TIdent(clt,_),q),cell)::xs, Some (s,i1) ->
+        at := PC.TTypeId(s,i1) (* was: TypedefIdent *)
+    | _ -> ()) in
+  let rec loop stack pdepth tdepth = function
+    [] -> ()
+  | ((PC.TOPar(clt),q),cell) :: xs
+  | ((PC.TOCro(clt),q),cell) :: xs
+  | ((PC.TOBrace(clt),q),cell) :: xs ->
+      loop stack (pdepth+1) tdepth xs
+  | ((PC.TCPar(clt),q),cell) :: xs
+  | ((PC.TCCro(clt),q),cell) :: xs
+  | ((PC.TCBrace(clt),q),cell) :: xs ->
+      let new_pdepth = max 0 (pdepth-1) in
+      let stack =
+	List.filter
+	  (* close paren before close > *)
+	  (fun (info,pdepth,tdepth) -> pdepth <= new_pdepth)
+	  stack in
+      loop stack new_pdepth tdepth xs
+  (* start point *)
+  | (((PC.TIdent(s,i1)|PC.TTypeId(s,i1)),_) as a,cell) :: (* no space *)
+    (( PC.TLogOp(Ast.Inf,i2),q) as b,_) :: rest ->
+      loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+  | (((PC.TIdent(s,i1)|PC.TTypeId(s,i1)),_) as a,cell) :: (spt,spr) ::
+    (((PC.TLogOp(Ast.Inf,i2),q) as b,_)) :: (((notspt,notspr)::_) as rest)
+    (* allow one space or newline before < if none after *)
+    when is_space spt && not(is_space notspt) ->
+      loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+  | ((PC.Ttemplate(i1),q) as a,cell) :: rest ->
+      let (skipped,rest) =
+	Common.span (fun (xt,xr) -> let tok = xt in is_just_comment_or_space tok) rest in
+      (match rest with
+	(((PC.TLogOp(Ast.Inf,i2)),q) as b,_) ::rest ->
+	  loop (((a,None,b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+      | _ -> loop stack pdepth tdepth rest) (* just move on, template type name<...>(...) *)
+  (* one possible end point *)
+  | ((PC.TLogOp(Ast.Sup,i3),q) as c,cell) :: rest when top1 stack pdepth tdepth ->
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (PC.TTemplateEnd i3,q) rest;
+      loop (List.tl stack) pdepth (tdepth-1) rest
+  (* another possible end point, more constraining Shr case first *)
+  | ((PC.TShROp(i3),q) as c,cell) :: rest when top2 stack pdepth tdepth -> (*FIXME: not ready*)
+      rebuild := true;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEndTemplateEnd i3,q) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
+      success ident repl inf i2 c (TTemplateEndTemplateEnd i3,q) rest;
+      loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
+  (* another possible end point, Shr that is template + > *)
+  | ((PC.TShROp(i3),q) as c,cell) :: rest when top1 stack pdepth tdepth -> (*FIXME: not ready*)
+      rebuild := true;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEndSup i3,q) rest;
+      loop (List.tl stack) pdepth (tdepth-1) rest
+  (* another possible end point *)
+  | ((PC.TSup3(i3),q) as c,cell) :: rest when top3 stack pdepth tdepth ->
+      rebuild := true;
+      let ((ident,repl,inf,i2),_,_) = List.hd stack in
+      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
+      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      let ((ident,repl,inf,i2),_,_) = List.hd (List.tl (List.tl stack)) in
+      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      loop (List.tl (List.tl (List.tl stack))) pdepth (tdepth-3) rest
+  (* something else *)
+  | _::rest -> loop stack pdepth tdepth rest in
+  loop [] 0 0 tokens2;
+  if !rebuild
+  then
+    let copy_pi pi str offset =
+      { pi with Common.str = str;
+	Common.charpos = pi.Common.charpos + offset;
+	Common.column = pi.Common.column + offset } in
+    let copy_t tok str offset =
+      match tok with
+	Ast0.OriginTok pi ->
+	  Ast0.OriginTok(copy_pi pi str offset)
+      | Ast0.FakeTok _ -> failwith "should not be a fake tok"
+      | Ast0.ExpandedTok(pi,(vpi,voffset)) ->
+	  Ast0.ExpandedTok(copy_pi pi str offset,
+			    (copy_pi vpi str offset,voffset+offset))
+      | Ast0.AbstractLineTok pi ->
+	  Ast0.AbstractLineTok(copy_pi pi str offset) in
+    let copy_tok t str offset =
+      { Ast0.pinfo = copy_t t.Ast0.pinfo str offset;
+	Ast0.cocci_tag = ref !(t.Ast0.cocci_tag);
+	Ast0.comments_tag = ref !(t.Ast0.comments_tag);
+	Ast0.annots_tag = t.Ast0.annots_tag;
+	Ast0.danger = ref !(t.Ast0.danger) } in
+    List.rev
+      (List.fold_left
+	 (fun prev tok ->
+	   match tok.TV.tok with
+	     TTemplateEndSup i3 ->
+	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = TSup (copy_tok i3 ">" 1) in
+	       t2 :: t1 :: prev
+	   | TTemplateEndTemplateEnd i3 ->
+	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
+	       t2 :: t1 :: prev
+	   | TTemplateEndTemplateEndTemplateEnd i3 ->
+	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
+	       let t3 = TTemplateEnd (copy_tok i3 ">" 2) in
+	       t3 :: t2 :: t1 :: prev
+	   | x -> x :: prev)
+	 [] tokens2)
+  else Common.acc_map (fun x -> x.TV.tok) tokens2
+(* convert_templates_cocci END *)
+
 let prepare_tokens plus tokens =
-  find_top_init
-    (translate_when_true_false (* after insert_line_end *)
-       (insert_line_end
-	  (detect_types false
-	     (find_function_names
-                (detect_attr_with_arguments
-                  (detect_attr
-                     (check_nests
-                        (check_parentheses plus tokens))))))))
+        (* TODO: convert_templates_cocci is incomplete *)
+  convert_templates_cocci
+    (find_top_init
+      (translate_when_true_false (* after insert_line_end *)
+         (insert_line_end (* TODO: take this as example *)
+            (detect_types false
+               (find_function_names
+                  (detect_attr_with_arguments
+                    (detect_attr
+                       (check_nests
+                          (check_parentheses plus tokens)))))))))
 
 let prepare_mv_tokens tokens =
   detect_types false (detect_attr tokens)

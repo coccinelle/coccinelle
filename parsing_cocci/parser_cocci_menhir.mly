@@ -281,8 +281,9 @@ let inline_id aft = function
 %token <Data.clt> TEllipsis TOEllipsis TCEllipsis TPOEllipsis TPCEllipsis
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
-%token <Data.clt> TWhy TOPar TCPar TInf3 TSup3
-%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0 TBang
+%token <Data.clt> TWhy TBang TOPar TCPar TInf3 TSup3
+%token <Data.clt> TTemplateStart Ttemplate TTemplateEnd
+%token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0
 
 %token <string>  TPathIsoFile
 %token <string * Data.clt> TIncludeL TIncludeNL TIncludeAny
@@ -3515,6 +3516,9 @@ never_used: TDirective { () }
   | TWhitespace        { () }
   | TCppEscapedNewline { () }
   | TMetaPragmaInfo    { () } // only occurs inside TPragma
+  | TTemplateStart     { () }
+  | Ttemplate          { () }
+  | TTemplateEnd       { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg
