@@ -282,7 +282,7 @@ let inline_id aft = function
 %token <Data.clt> TWhen TWhenTrue TWhenFalse TAny TStrict TLineEnd
 
 %token <Data.clt> TWhy TBang TOPar TCPar TInf3 TSup3
-%token <Data.clt> TTemplateStart Ttemplate TTemplateEnd
+%token <Data.clt> TTemplateStart Ttemplate TTemplateEnd TTemplateEndTemplateEnd TTemplateEndTemplateEndTemplateEnd TTemplateEndSup
 %token <string * Data.clt> TOPar0 TMid0 TAnd0 TCPar0
 
 %token <string>  TPathIsoFile
@@ -3519,6 +3519,9 @@ never_used: TDirective { () }
   | TTemplateStart     { () }
   | Ttemplate          { () }
   | TTemplateEnd       { () }
+  | TTemplateEndTemplateEnd { () }
+  | TTemplateEndTemplateEndTemplateEnd { () }
+  | TTemplateEndSup { () }
 
 script_meta_main:
     py=pure_ident TMPtVirg

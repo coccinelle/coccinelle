@@ -2059,7 +2059,7 @@ let convert_templates_cocci toks =
     let (_,tmp) = Common.span comment_or_space_or_and xs in
     (match tmp, repl with
       ((PC.TIdent(clt,_),q),cell)::xs, Some (s,i1) ->
-        at := PC.TTypeId(s,i1) (* was: TypedefIdent *)
+        ar := (PC.TTypeId(s,i1),q)
     | _ -> ()) in
   let rec loop stack pdepth tdepth = function
     [] -> ()
@@ -2099,28 +2099,28 @@ let convert_templates_cocci toks =
       success ident repl inf i2 c (PC.TTemplateEnd i3,q) rest;
       loop (List.tl stack) pdepth (tdepth-1) rest
   (* another possible end point, more constraining Shr case first *)
-  | (((PC.TShROp(i3),q),cell) as c) :: rest when top2 stack pdepth tdepth -> (*FIXME: not ready*)
+  | (((PC.TShROp(_,i3),q),cell) as c) :: rest when top2 stack pdepth tdepth -> (*FIXME: not ready*)
       rebuild := true;
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
-      success ident repl inf i2 c (TTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEnd i3,q) rest;
       let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
-      success ident repl inf i2 c (TTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEnd i3,q) rest;
       loop (List.tl (List.tl stack)) pdepth (tdepth-2) rest
   (* another possible end point, Shr that is template + > *)
-  | (((PC.TShROp(i3),q),cell) as c) :: rest when top1 stack pdepth tdepth -> (*FIXME: not ready*)
+  | (((PC.TShROp(_,i3),q),cell) as c) :: rest when top1 stack pdepth tdepth -> (*FIXME: not ready*)
       rebuild := true;
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
-      success ident repl inf i2 c (TTemplateEndSup i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndSup i3,q) rest;
       loop (List.tl stack) pdepth (tdepth-1) rest
   (* another possible end point *)
   | (((PC.TSup3(i3),q),cell) as c) :: rest when top3 stack pdepth tdepth ->
       rebuild := true;
       let ((ident,repl,inf,i2),_,_) = List.hd stack in
-      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q) rest;
       let ((ident,repl,inf,i2),_,_) = List.hd (List.tl stack) in
-      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q) rest;
       let ((ident,repl,inf,i2),_,_) = List.hd (List.tl (List.tl stack)) in
-      success ident repl inf i2 c (TTemplateEndTemplateEndTemplateEnd i3,q) rest;
+      success ident repl inf i2 c (PC.TTemplateEndTemplateEndTemplateEnd i3,q) rest;
       loop (List.tl (List.tl (List.tl stack))) pdepth (tdepth-3) rest
   (* something else *)
   | _::rest -> loop stack pdepth tdepth rest in
@@ -2131,42 +2131,27 @@ let convert_templates_cocci toks =
       { pi with Common.str = str;
 	Common.charpos = pi.Common.charpos + offset;
 	Common.column = pi.Common.column + offset } in
-    let copy_t tok str offset =
-      match tok with
-	Ast0.OriginTok pi ->
-	  Ast0.OriginTok(copy_pi pi str offset)
-      | Ast0.FakeTok _ -> failwith "should not be a fake tok"
-      | Ast0.ExpandedTok(pi,(vpi,voffset)) ->
-	  Ast0.ExpandedTok(copy_pi pi str offset,
-			    (copy_pi vpi str offset,voffset+offset))
-      | Ast0.AbstractLineTok pi ->
-	  Ast0.AbstractLineTok(copy_pi pi str offset) in
-    let copy_tok t str offset =
-      { Ast0.pinfo = copy_t t.Ast0.pinfo str offset;
-	Ast0.cocci_tag = ref !(t.Ast0.cocci_tag);
-	Ast0.comments_tag = ref !(t.Ast0.comments_tag);
-	Ast0.annots_tag = t.Ast0.annots_tag;
-	Ast0.danger = ref !(t.Ast0.danger) } in
+    let copy_tok t str offset = t in
     List.rev
       (List.fold_left
-	 (fun prev tok ->
-	   match tok.TV.tok with
-	     TTemplateEndSup i3 ->
-	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
-	       let t2 = TSup (copy_tok i3 ">" 1) in
+	 (fun prev ((tok,q),tokr) ->
+	   match tok with
+	     PC.TTemplateEndSup i3 ->
+	       let t1 = PC.TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = PC.TLogOp(Ast.Inf,(copy_tok i3 ">" 1)) in
 	       t2 :: t1 :: prev
-	   | TTemplateEndTemplateEnd i3 ->
-	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
-	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
+	   | PC.TTemplateEndTemplateEnd i3 ->
+	       let t1 = PC.TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = PC.TTemplateEnd (copy_tok i3 ">" 1) in
 	       t2 :: t1 :: prev
-	   | TTemplateEndTemplateEndTemplateEnd i3 ->
-	       let t1 = TTemplateEnd (copy_tok i3 ">" 0) in
-	       let t2 = TTemplateEnd (copy_tok i3 ">" 1) in
-	       let t3 = TTemplateEnd (copy_tok i3 ">" 2) in
+	   | PC.TTemplateEndTemplateEndTemplateEnd i3 ->
+	       let t1 = PC.TTemplateEnd (copy_tok i3 ">" 0) in
+	       let t2 = PC.TTemplateEnd (copy_tok i3 ">" 1) in
+	       let t3 = PC.TTemplateEnd (copy_tok i3 ">" 2) in
 	       t3 :: t2 :: t1 :: prev
 	   | x -> x :: prev)
 	 [] tokens2)
-  else Common.acc_map (fun x -> x.TV.tok) tokens2
+  else Common.acc_map (fun ((tok,q),tokr) -> tok ) tokens2
 (* convert_templates_cocci END *)
 
 let prepare_tokens plus tokens =
