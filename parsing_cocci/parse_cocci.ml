@@ -2166,7 +2166,7 @@ let convert_templates_cocci toks =
 	       t3 :: t2 :: t1 :: prev
 	   | x -> (x,q) :: prev)
 	 [] tokens2)
-  else Common.acc_map (fun (tok,tokr) -> tok) tokens2
+  else Common.acc_map (fun (tok,tokr) -> !tokr) tokens2
 
 let prepare_tokens plus tokens =
   convert_templates_cocci

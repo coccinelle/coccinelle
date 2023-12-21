@@ -1117,14 +1117,12 @@ non_signable_types_no_ident_without_braces:
 
 non_signable_types_without_braces:
   ty=non_signable_types_no_ident_without_braces { ty }
-| p=TTypeId
-    { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+| p=type_ident_or_template { p }
 
 non_signable_types:
   ty=non_signable_types_no_ident_without_braces { ty }
 | ty=non_signable_types_no_ident_with_braces { ty }
-| p=TTypeId
-    { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+| p=type_ident_or_template { p }
 
 non_signable_types_no_ident:
   ty=non_signable_types_no_ident_without_braces { ty }
@@ -1152,8 +1150,7 @@ all_basic_types_without_braces:
 all_basic_types_signable:
   ty=signed_basic_types_tyempty { ty }
 | ty=signable_types { ty }
-| p=TTypeId
-    { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+| p=type_ident_or_template { p }
 
 all_basic_types_non_signable:
   ty=non_signable_types_no_ident { ty }
@@ -1938,21 +1935,20 @@ decl_var:
 	  (Ast0_cocci.Init
 	     (al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,Parse_aux.clt2mcode ";" (snd pv)))]}
   /* type is a typedef name */
-  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
-      d=comma_list(d_ident) pv=TPtVirg
+  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type
+      midattrs=const_vol_attr_list d=comma_list(d_ident) pv=TPtVirg
       { let cv = List.map (fun x -> Ast0.CV x) cv in
         List.map
 	  (function (id,fn) ->
-	    let idtype =
-	      Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
+	    let idtype = Parse_aux.make_cv cv i midattrs in
 	    Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn idtype,id,[],Parse_aux.clt2mcode ";" (snd pv))))
 	  d }
-  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
-      d=d_ident endattrs=attr_list q=TEq e=initialize pv=TPtVirg
+  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type
+      midattrs=const_vol_attr_list d=d_ident endattrs=attr_list q=TEq e=initialize
+      pv=TPtVirg
       { let cv = List.map (fun x -> Ast0.CV x) cv in
         let (id,fn) = d in
-	!Data.add_type_name (Parse_aux.id2name i);
-	let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
+	let idtype = Parse_aux.make_cv cv i midattrs in
 	[Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode "=" q,e,
 					 Parse_aux.clt2mcode ";" (snd pv)))] }
   | s=ioption(storage) prear=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
@@ -2000,19 +1996,18 @@ one_decl_noender:
       Ast0_cocci.wrap
 	(Ast0_cocci.Init(al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,Parse_aux.clt2mcode str pv)) }
   /* type is a typedef name */
-  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
+  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list
       { let cv = List.map (fun x -> Ast0.CV x) cv in
 	let (id,fn) = d in
-        let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
+        let idtype = Parse_aux.make_cv cv i midattrs in
         fun (str,pv) ->
 	Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode str pv)) }
-  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=pure_ident_or_symbol midattrs=const_vol_attr_list
+  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type midattrs=const_vol_attr_list
       d=d_ident a=attr_list q=TEq e=initialize
       { let cv = List.map (fun x -> Ast0.CV x) cv in
 	let (id,fn) = d in
-	!Data.add_type_name (Parse_aux.id2name i);
-	let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) midattrs in
+	let idtype = Parse_aux.make_cv cv i midattrs in
         fun (str,pv) ->
 	Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,
 					Parse_aux.clt2mcode str pv)) }
@@ -3017,6 +3012,26 @@ top_ident:
 type_ident: disj_ident { $1 }
      | TTypeId
          { Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode $1)) }
+
+type_ident_or_template:
+     | p=TTypeId
+	 { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+     | p=TTypeId TTemplateStart eexpr_list_option TTemplateEnd
+	 { let nm = Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode p)) in
+	   Ast0_cocci.wrap
+	   (Ast0_cocci.TemplateType
+	      (nm,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
+
+ident_or_template_type:
+     | p=pure_ident_or_symbol
+	 { !Data.add_type_name (Parse_aux.id2name p);
+	   Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+     | p=pure_ident_or_symbol TTemplateStart eexpr_list_option TTemplateEnd
+	 { !Data.add_type_name (Parse_aux.id2name p);
+	   let nm = Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode p)) in
+	   Ast0_cocci.wrap
+	   (Ast0_cocci.TemplateType
+	      (nm,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
 
 decl_ident:
        TDeclarerId

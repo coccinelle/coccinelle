@@ -1,0 +1,3 @@
+int min() {
+  int x;
+}
