@@ -4241,6 +4241,18 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
            | B.CppConcatenatedName _ | B.CppVariadicName _ |B.CppIdentBuilder _
                -> raise Todo
         )
+
+    | A.TemplateType(nma,laba,argsa,raba),
+	(B.TemplateType(nmb,argsb), [labb;rabb]) ->
+	  ident_cpp DontKnow nma nmb >>= (fun nma nmb ->
+	  tokenf laba labb >>= (fun laba labb ->
+          arguments (seqstyle argsa) (A.unwrap argsa) argsb >>= (fun argsaunwrap argsb ->
+	  tokenf raba rabb >>= (fun raba rabb ->
+          let argsa = A.rewrap argsa argsaunwrap in
+	  return(
+	  A.TemplateType(nma,laba,argsa,raba) +> A.rewrap ta,
+	  (B.TemplateType(nmb,argsb), [labb;rabb]))))))
+
     | _, (B.FieldType ((_,_,tyb), _, _), _) ->
 	typeC ta tyb
 
