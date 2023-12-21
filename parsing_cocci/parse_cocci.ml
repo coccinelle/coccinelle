@@ -2026,21 +2026,10 @@ let parse_one str parsefn file toks =
 
   | e -> raise e
 
-
-(* FIXME: here in analogy to  parsing_hacks.ml's *)
 let is_space str1 (tleft,_) (tright,_) =
   let (_,lline,_,_,_,lcol,_,_,_,_) = get_clt tleft in
   let (_,rline,_,_,_,rcol,_,_,_,_) = get_clt tright in
   lline = rline && lcol + String.length str1 + 1 = rcol
-
-(* FIXME: here in analogy to  parsing_hacks.ml's *)
-let is_just_comment_or_space = function
-        (*
-  | TComment _ -> true
-  | TCommentSpace _ -> true
-  | TCommentNewline _ -> true
-         * *)
-  | _ -> false
 
 let convert_templates_cocci toks =
   let tokens2 =
@@ -2069,17 +2058,15 @@ let convert_templates_cocci toks =
   let success (at,ar) repl (bt,br) (i2clt,i2q) (ct,cr) i3 xs =
     br := (PC.TTemplateStart i2clt,i2q);
     cr := i3;
-    let comment_or_space_or_and (xt,xr) =
-      let tok = xt in
-      is_just_comment_or_space tok ||
-      (match tok with
-	(PC.TAnd _,q) -> true
-      | _ -> false) in
-    let (_,tmp) = Common.span comment_or_space_or_and xs in
-    (match tmp, repl with
-      ((PC.TIdent(clt,_),q),cell)::xs, Some (s,i1) ->
-        ar := (PC.TTypeId(s,i1),q)
-    | _ -> ()) in
+    let is_and (tok,_) =
+      match tok with
+	(PC.TAnd _,_) | (PC.TAndLog _,_) -> true
+      | _ -> false in
+    let tmp = Common.drop_while is_and xs in
+    match tmp, repl with
+      ((PC.TIdent _,_),cell)::xs, Some (s,i1) ->
+        ar := (PC.TTypeId(s,i1),snd at)
+    | _ -> () in
   let rec loop stack pdepth tdepth = function
     [] -> ()
   | ((PC.TOPar(clt),q),cell) :: xs
@@ -2106,8 +2093,6 @@ let convert_templates_cocci toks =
     when is_space s a b && not(is_space "<" b c) ->
       loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
   | (((PC.Ttemplate(i1),q),cell) as a) :: rest ->
-      let (skipped,rest) =
-	Common.span (fun (xt,xr) -> let tok = xt in is_just_comment_or_space tok) rest in
       (match rest with
 	((((PC.TLogOp(Ast.Inf,i2)),q),_) as b) ::rest ->
 	  loop (((a,None,b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
@@ -2184,7 +2169,6 @@ let convert_templates_cocci toks =
   else Common.acc_map (fun (tok,tokr) -> tok) tokens2
 
 let prepare_tokens plus tokens =
-        (* TODO: convert_templates_cocci is incomplete *)
   convert_templates_cocci
     (find_top_init
       (translate_when_true_false (* after insert_line_end *)
