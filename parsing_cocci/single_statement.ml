@@ -21,11 +21,6 @@ let left_dots f l =
     [] -> false
   | x::xs -> f x
 
-let right_dots f l =
-  match List.rev (Ast0.unwrap l) with
-    [] -> false
-  | x::xs -> f x
-
 let modif_before_mcode mc =
   match Ast0.get_mcode_mcodekind mc with
     Ast0.MINUS mc -> true (*conservative; don't want to hunt right for + code*)
@@ -102,18 +97,6 @@ let rec left_ident i =
   | Ast0.DisjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.ConjId(_,id_list,_,_) -> List.exists left_ident id_list
   | Ast0.OptIdent(id) -> left_ident id
-  | Ast0.AsIdent _ -> failwith "not possible"
-
-let rec right_ident i =
-  modif_after i ||
-  match Ast0.unwrap i with
-    Ast0.Id(name) -> modif_after_mcode name
-  | Ast0.MetaId(name,_,_,_) -> modif_after_mcode name
-  | Ast0.MetaFunc(name,_,_) -> modif_after_mcode name
-  | Ast0.MetaLocalFunc(name,_,_) -> modif_after_mcode name
-  | Ast0.DisjId(_,id_list,_,_) -> List.exists right_ident id_list
-  | Ast0.ConjId(_,id_list,_,_) -> List.exists right_ident id_list
-  | Ast0.OptIdent(id) -> right_ident id
   | Ast0.AsIdent _ -> failwith "not possible"
 
 (* --------------------------------------------------------------------- *)
@@ -247,148 +230,7 @@ and left_declaration d =
   | Ast0.OptDecl(decl) -> left_declaration decl
   | Ast0.AsDecl _ -> failwith "not possible"
 
-and right_declaration d =
-  modif_before d ||
-  match Ast0.unwrap d with
-    Ast0.MetaDecl(name,_,_) -> modif_before_mcode name
-  | Ast0.Init(_,_,ty,id,eq,ini,endattr,sem) -> modif_after_mcode sem
-  | Ast0.UnInit(_,_,ty,id,endattr,sem) -> modif_after_mcode sem
-  | Ast0.FunProto(fninfo,name,lp1,params,va,rp1,sem) -> modif_after_mcode sem
-  | Ast0.MacroDecl(_,preattr,name,lp,args,rp,attr,sem) -> modif_after_mcode sem
-  | Ast0.MacroDeclInit(_,preattr,name,lp,args,rp,attr,eq,ini,sem) -> modif_after_mcode sem
-  | Ast0.TyDecl(ty,sem) -> modif_after_mcode sem
-  | Ast0.Typedef(stg,ty,id,sem) -> modif_after_mcode sem
-  | Ast0.DisjDecl(_,decls,_,_) -> List.exists right_declaration decls
-  | Ast0.ConjDecl(_,decls,_,_) -> List.exists right_declaration decls
-  | Ast0.OptDecl(decl) -> right_declaration decl
-  | Ast0.AsDecl _ -> failwith "not possible"
-
 (* --------------------------------------------------------------------- *)
-(* Field declaration *)
-
-and left_field d =
-  modif_before d ||
-  match Ast0.unwrap d with
-    Ast0.MetaField(name,_,_)
-  | Ast0.MetaFieldList(name,_,_,_) ->
-      modif_before_mcode name
-  | Ast0.Field(ty,id,_bf,_endattr,sem) -> left_typeC ty
-  | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) -> left_ident name
-  | Ast0.DisjField(_,decls,_,_) -> List.exists left_field decls
-  | Ast0.ConjField(_,decls,_,_) -> List.exists left_field decls
-  | Ast0.OptField(decl) -> left_field decl
-  | Ast0.Fdots(dots,_) -> false
-
-and right_field d =
-  modif_before d ||
-  match Ast0.unwrap d with
-    Ast0.MetaField(name,_,_)
-  | Ast0.MetaFieldList(name,_,_,_) ->
-      modif_before_mcode name
-  | Ast0.Field(ty,id,_bf,_endattr,sem) -> modif_after_mcode sem
-  | Ast0.MacroDeclField(name,lp,args,rp,attr,sem) -> modif_after_mcode sem
-  | Ast0.DisjField(_,decls,_,_) -> List.exists right_field decls
-  | Ast0.ConjField(_,decls,_,_) -> List.exists right_field decls
-  | Ast0.OptField(decl) -> right_field decl
-  | Ast0.Fdots(dots,_) -> false
-
-(* --------------------------------------------------------------------- *)
-(* Top-level code *)
-(* These functions seem to be never used
-and left_statement s =
-  modif_before s or
-  match Ast0.unwrap s with
-    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-      (* irrelevant *) false
-  | Ast0.Decl(_,decl) -> left_declaration decl
-  | Ast0.Seq(lbrace,body,rbrace) -> modif_before_mcode lbrace
-  | Ast0.ExprStatement(Some exp,sem) -> left_expression exp
-  | Ast0.ExprStatement(None,sem) -> modif_before_mcode sem
-  | Ast0.IfThen(iff,lp,exp,rp,branch1,aft) -> modif_before_mcode iff
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft) ->
-      modif_before_mcode iff
-  | Ast0.While(whl,lp,exp,rp,body,aft) -> modif_before_mcode whl
-  | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_before_mcode d
-  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,aft) ->
-      modif_before_mcode fr
-  | Ast0.Iterator(nm,lp,args,rp,body,aft) -> left_ident nm
-  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) ->
-      modif_before_mcode switch
-  | Ast0.Break(br,sem) -> modif_before_mcode br
-  | Ast0.Continue(cont,sem) -> modif_before_mcode cont
-  | Ast0.Label(l,dd) -> left_ident l
-  | Ast0.Goto(goto,l,sem) -> modif_before_mcode goto
-  | Ast0.Return(ret,sem) -> modif_before_mcode ret
-  | Ast0.ReturnExpr(ret,exp,sem) -> modif_before_mcode ret
-  | Ast0.Exec(exec,lang,code,sem) -> modif_before_mcode exec
-  | Ast0.MetaStmt(name,pure) -> modif_before_mcode name
-  | Ast0.MetaStmtList(name,_,_) -> modif_before_mcode name
-  | Ast0.Disj(_,statement_dots_list,_,_) ->
-      List.exists (left_dots left_statement) statement_dots_list
-  | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
-      left_dots left_statement stmt_dots
-  | Ast0.Exp(exp) -> false (* can only be replaced by an expression *)
-  | Ast0.TopExp(exp) -> false (* as above *)
-  | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
-  | Ast0.TopId(id) -> false (* can only be replaced by an ident *)
-  | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
-  | Ast0.Dots(d,whn) -> false
-  | Ast0.Include(inc,s) -> modif_before_mcode inc
-  | Ast0.MetaInclude(inc,s) -> modif_before_mcode inc
-  | Ast0.Undef(def,id) -> modif_before_mcode def
-  | Ast0.Define(def,id,params,body) -> modif_before_mcode def
-  | Ast0.Pragma(prg,id,body) -> modif_before_mcode prg
-  | Ast0.OptStm(re) -> left_statement re
-  | Ast0.AsStmt _ -> failwith "not possible"
-
-and right_statement s =
-  modif_after s or
-  match Ast0.unwrap s with
-    Ast0.FunDecl(_,fninfo,name,lp,params,rp,lbrace,body,rbrace) ->
-      (* irrelevant *) false
-  | Ast0.Decl(_,decl) -> right_declaration decl
-  | Ast0.Seq(lbrace,body,rbrace) -> modif_after_mcode rbrace
-  | Ast0.ExprStatement(exp,sem) -> modif_after_mcode sem
-  | Ast0.IfThen(iff,lp,exp,rp,branch1,(_,aft,_)) -> modif_after_mcodekind aft
-  | Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,(_,aft,_)) ->
-      modif_after_mcodekind aft
-  | Ast0.While(whl,lp,exp,rp,body,(_,aft,_)) -> modif_after_mcodekind aft
-  | Ast0.Do(d,body,whl,lp,exp,rp,sem) -> modif_after_mcode sem
-  | Ast0.For(fr,lp,first,e2,sem2,e3,rp,body,(_,aft,_)) ->
-      modif_after_mcodekind aft
-  | Ast0.Iterator(nm,lp,args,rp,body,(_,aft,_)) ->
-      modif_after_mcodekind aft
-  | Ast0.Switch(switch,lp,exp,rp,lb,decls,cases,rb) -> modif_after_mcode rb
-  | Ast0.Break(br,sem) -> modif_after_mcode sem
-  | Ast0.Continue(cont,sem) -> modif_after_mcode sem
-  | Ast0.Label(l,dd) -> modif_after_mcode dd
-  | Ast0.Goto(goto,l,sem) -> modif_after_mcode sem
-  | Ast0.Return(ret,sem) -> modif_after_mcode sem
-  | Ast0.ReturnExpr(ret,exp,sem) -> modif_after_mcode sem
-  | Ast0.Exec(exec,lang,code,sem) -> modif_after_mcode sem
-  | Ast0.MetaStmt(name,pure) -> modif_after_mcode name
-  | Ast0.MetaStmtList(name,_,_) -> modif_after_mcode name
-  | Ast0.Disj(_,statement_dots_list,_,_) ->
-      List.exists (right_dots right_statement) statement_dots_list
-  | Ast0.Nest(starter,stmt_dots,ender,whencode,multi) ->
-      right_dots right_statement stmt_dots
-  | Ast0.Exp(exp) -> false (* can only be replaced by an expression *)
-  | Ast0.TopExp(exp) -> false (* as above *)
-  | Ast0.Ty(ty) -> false (* can only be replaced by a type *)
-  | Ast0.TopId(id) -> false (* can only be replaced by a type *)
-  | Ast0.TopInit(init) -> false (* can only be replaced by an init *)
-  | Ast0.Dots(d,whn) -> false
-  | Ast0.Include(inc,s) -> modif_after_mcode s
-  | Ast0.MetaInclude(inc,s) -> false (* irrelevant, not a substatement *)
-  | Ast0.Undef(def,id) -> right_ident id
-  | Ast0.Define(def,id,params,body) -> right_dots right_statement body
-  | Ast0.Pragma(prg,id,body) -> right_pragma body -- not defined, b/c not used
-  | Ast0.OptStm(re) -> right_statement re
-  | Ast0.AsStmt _ -> failwith "not possible"
-*)
-
-(* --------------------------------------------------------------------- *)
-
 
 (* A very coarse approximation.  We would really only like to return true
 if a new statement is added.  For this it would be best to correlate with the
@@ -409,8 +251,7 @@ let rec adding_something s =
       let (text,tinfo1,tinfo2) = !mc in
       (match text with Ast.NOTHING -> false | _ -> true)
   | Ast0.MIXED(_) ->
-      not(contains_only_minus.VT0.combiner_rec_statement s) (*&&
-      (left_statement s) or (right_statement s)*)
+      not(contains_only_minus.VT0.combiner_rec_statement s)
   | _ -> failwith "unexpected plus code"
 
 (* why do we need this; MINUS should mean the same thing *)
