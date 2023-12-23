@@ -942,6 +942,50 @@ and enum_decl d =
       let ln = promote_mcode dots in
       mkres d (Ast0.EnumDots(dots,whencode)) ln ln
 
+and pragmainfo pi =
+  match Ast0.unwrap pi with
+    Ast0.PragmaString(s) ->
+      let s = normal_mcode s in
+      let ln = promote_mcode s in
+      mkres pi (Ast0.PragmaString(s)) ln ln
+  | Ast0.PragmaDots(dots) ->
+      let dots = bad_mcode dots in
+      let ln = promote_mcode dots in
+      mkres pi (Ast0.PragmaDots(dots)) ln ln
+  | Ast0.MetaPragmaInfo(mv0, c, pure) ->
+      let mv0 = normal_mcode mv0 in
+      let ln = promote_mcode mv0 in
+      mkres pi (Ast0.MetaPragmaInfo(mv0, c, pure)) ln ln
+
+and directive d =
+  match Ast0.unwrap d with
+    Ast0.Pragma(prg,id,body) ->
+      let prg = normal_mcode prg in
+      let id = ident id in
+      let body = pragmainfo body in
+      mkres d (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
+  | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+      let usng = normal_mcode usng in
+      let nmspc = normal_mcode nmspc in
+      let name = ident name in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.UsingNamespace(usng,nmspc,name,sem))
+        (promote_mcode usng) (promote_mcode sem)
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      let usng = normal_mcode usng in
+      let name = ident name in
+      let eq = normal_mcode eq in
+      let tn = get_option normal_mcode tn in
+      let ty = typeC ty in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
+        (promote_mcode usng) (promote_mcode sem)
+  | Ast0.UsingMember(usng,name,sem) ->
+      let usng = normal_mcode usng in
+      let name = ident name in
+      let sem = normal_mcode sem in
+      mkres d (Ast0.UsingMember(usng,name,sem))
+        (promote_mcode usng) (promote_mcode sem)
 
 (* --------------------------------------------------------------------- *)
 (* Initializer *)
@@ -1559,51 +1603,6 @@ and leftfninfo fninfo name bef = (* cases on what is leftmost *)
       (leftinfo,
        Ast0.FInline(set_mcode_info inline (Ast0.get_info inlinfo))::rest,
        name)
-
-and pragmainfo pi =
-  match Ast0.unwrap pi with
-    Ast0.PragmaString(s) ->
-      let s = normal_mcode s in
-      let ln = promote_mcode s in
-      mkres pi (Ast0.PragmaString(s)) ln ln
-  | Ast0.PragmaDots(dots) ->
-      let dots = bad_mcode dots in
-      let ln = promote_mcode dots in
-      mkres pi (Ast0.PragmaDots(dots)) ln ln
-  | Ast0.MetaPragmaInfo(mv0, c, pure) ->
-      let mv0 = normal_mcode mv0 in
-      let ln = promote_mcode mv0 in
-      mkres pi (Ast0.MetaPragmaInfo(mv0, c, pure)) ln ln
-
-and directive d =
-  match Ast0.unwrap d with
-    Ast0.Pragma(prg,id,body) ->
-      let prg = normal_mcode prg in
-      let id = ident id in
-      let body = pragmainfo body in
-      mkres d (Ast0.Pragma(prg,id,body)) (promote_mcode prg) body
-  | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
-      let usng = normal_mcode usng in
-      let nmspc = normal_mcode nmspc in
-      let name = ident name in
-      let sem = normal_mcode sem in
-      mkres d (Ast0.UsingNamespace(usng,nmspc,name,sem))
-        (promote_mcode usng) (promote_mcode sem)
-  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
-      let usng = normal_mcode usng in
-      let name = ident name in
-      let eq = normal_mcode eq in
-      let tn = get_option normal_mcode tn in
-      let ty = typeC ty in
-      let sem = normal_mcode sem in
-      mkres d (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
-        (promote_mcode usng) (promote_mcode sem)
-  | Ast0.UsingMember(usng,name,sem) ->
-      let usng = normal_mcode usng in
-      let name = ident name in
-      let sem = normal_mcode sem in
-      mkres d (Ast0.UsingMember(usng,name,sem))
-        (promote_mcode usng) (promote_mcode sem)
 
 and case_line c =
   match Ast0.unwrap c with

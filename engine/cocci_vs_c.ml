@@ -5028,6 +5028,7 @@ and define_parameter = fun parama paramb ->
   | _ -> fail
 
 and directive = fun dira dirb ->
+  match A.unwrap dira, dirb with
   | A.Pragma(prga,ida,pragmainfoa),
     B.Pragma ((idb, [(restb,[rest_iidb])]), ii) ->
       let (prgb, ieol) = tuple_of_list2 ii in

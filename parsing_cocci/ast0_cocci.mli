@@ -420,6 +420,7 @@ and base_statement =
   | Ty            of typeC (* only at top level *)
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
+  | CppTop        of directive
   | Disj          of string mcode * statement dots list * string mcode list *
 	             string mcode
   | Conj          of string mcode * statement dots list * string mcode list *
@@ -440,19 +441,11 @@ and base_statement =
 	string mcode (* template *) * string mcode (* < *) *
         template_parameter_list * string mcode (* > *) *
         statement
-  | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
-      ident (*name*) * string mcode (*;*)
-  | UsingTypename of string mcode (*using*) * ident (*name*) *
-      string mcode (*=*) * string mcode option (*typename*) *
-      typeC (*full_type*) * string mcode (*;*)
-  | UsingMember of string mcode (*using*) * ident (*name*) *
-      string mcode (*;*)
   | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode(* file *)
   | MetaInclude of string mcode (* #include *) * expression (* file *)
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots
-  | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | OptStm   of statement
 
 and base_templateParameterTypeDef =

@@ -688,8 +688,6 @@ and unify_rule_elem re1 re2 =
   | (Ast.DefineHeader(_,n1,p1),Ast.DefineHeader(_,n2,p2)) ->
        unify_ident n1 n2 &&
        unify_define_parameters p1 p2
-  | (Ast.Pragma(_,i1,n1),Ast.Pragma(_,i2,n2)) ->
-      unify_ident i1 i2 && unify_pragmainfo n1 n2
   | (Ast.Break(r1,s1),Ast.Break(r2,s2)) -> true
   | (Ast.Continue(r1,s1),Ast.Continue(r2,s2)) -> true
   | (Ast.Label(l1,dd1),Ast.Label(l2,dd2)) -> unify_ident l1 l2
@@ -786,6 +784,23 @@ and unify_exec_code ec1 ec2 =
   | (Ast.ExecToken(tok1),Ast.ExecToken(tok2)) ->
       unify_mcode tok1 tok2
   | (Ast.ExecDots(_),_) | (_,Ast.ExecDots(_)) ->  true
+  | _ -> false
+
+and unify_directive di1 di2 =
+  match (Ast.unwrap di1,Ast.unwrap di2) with
+  | (Ast.Pragma(_,i1,n1),Ast.Pragma(_,i2,n2)) ->
+      unify_ident i1 i2 && unify_pragmainfo n1 n2
+  | (Ast.UsingNamespace(usng1,nmspc1,name1,sem1),
+     Ast.UsingNamespace(usng2,nmspc2,name2,sem2)) ->
+       unify_mcode nmspc1 nmspc2 && unify_ident name1 name2
+  | (Ast.UsingTypename(usng1,name1,eq1,tn1,ty1,sem1),
+     Ast.UsingTypename(usng2,name2,eq2,tn2,ty2,sem2)) ->
+       unify_ident name1 name2 &&
+       bool_unify_option unify_mcode tn1 tn2 &&
+       unify_fullType ty1 ty2
+  | (Ast.UsingMember(usng1,name1,sem1),
+     Ast.UsingMember(usng2,name2,sem2)) ->
+       unify_ident name1 name2
   | _ -> false
 
 and subexp f =

@@ -770,6 +770,9 @@ and field tgt decl =
       let sem = mcode sem in
       make_field decl tgt arity
 	(Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
+  | Ast0.CppField(di) ->
+      let di = directive tgt di in
+      Ast0.rewrap decl (Ast0.CppField(di))
   | Ast0.DisjField(starter,decls,mids,ender) ->
       let decls = List.map (field tgt) decls in
       (match List.rev decls with
@@ -1301,37 +1304,6 @@ and statement tgt stm =
       let stmt = statement arity stmt in
       let params = template_parameter_list arity params in
       make_rule_elem stm tgt arity (Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt))
-  | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
-      let arity =
-	all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity nmspc; mcode2arity sem] in
-      let usng = mcode usng in
-      let nmspc = mcode nmspc in
-      let name = ident false arity name in
-      let sem = mcode sem in
-      make_rule_elem stm tgt arity (Ast0.UsingNamespace(usng,nmspc,name,sem))
-  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
-      let mclist =
-        [mcode2arity usng; mcode2arity eq; mcode2arity sem] in
-      let mclist =
-        match tn with
-         Some tn -> (mcode2arity tn) :: mclist
-       | None -> mclist in
-      let arity =
-        all_same true tgt (mcode2line usng) mclist in
-      let usng = mcode usng in
-      let name = ident false arity name in
-      let eq = mcode eq in
-      let tn = get_option mcode tn in
-      let ty = typeC arity ty in
-      let sem = mcode sem in
-      make_rule_elem stm tgt arity (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
-  | Ast0.UsingMember(usng,name,sem) ->
-      let arity =
-        all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity sem] in
-      let usng = mcode usng in
-      let name = ident false arity name in
-      let sem = mcode sem in
-      make_rule_elem stm tgt arity (Ast0.UsingMember(usng,name,sem))
   | Ast0.Include(inc,s) ->
       let arity =
 	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
@@ -1355,12 +1327,9 @@ and statement tgt stm =
       let params = define_parameters arity params in
       let body = dots (statement arity) body in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
-  | Ast0.Pragma(prg,id,body) ->
-      let arity = all_same true tgt (mcode2line prg) [mcode2arity prg] in
-      let prg = mcode prg in
-      let id = ident false arity id in
-      let body = pragmainfo arity body in
-      make_rule_elem stm tgt arity (Ast0.Pragma(prg,id,body))
+  | Ast0.CppTop(di) ->
+      let di = directive tgt di in
+      Ast0.rewrap stm (Ast0.CppTop(di))
   | Ast0.OptStm(_) | Ast0.AsStmt _ ->
       failwith "unexpected code"
 
@@ -1382,6 +1351,50 @@ and pragmainfo tgt pi =
       let arity = all_same false tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
       make_pragma pi tgt arity (Ast0.MetaPragmaInfo(name,constraints,pure))
+
+and make_directive =
+  make_opt
+    (function x -> failwith "opt not allowed for pragma")
+
+and directive tgt di =
+  match Ast0.unwrap di with
+    Ast0.Pragma(prg,id,body) ->
+      let arity = all_same true tgt (mcode2line prg) [mcode2arity prg] in
+      let prg = mcode prg in
+      let id = ident false arity id in
+      let body = pragmainfo arity body in
+      make_directive di tgt arity (Ast0.Pragma(prg,id,body))
+  | Ast0.UsingNamespace(usng,nmspc,name,sem) ->
+      let arity =
+	all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity nmspc; mcode2arity sem] in
+      let usng = mcode usng in
+      let nmspc = mcode nmspc in
+      let name = ident false arity name in
+      let sem = mcode sem in
+      make_directive di tgt arity (Ast0.UsingNamespace(usng,nmspc,name,sem))
+  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      let mclist =
+        [mcode2arity usng; mcode2arity eq; mcode2arity sem] in
+      let mclist =
+        match tn with
+         Some tn -> (mcode2arity tn) :: mclist
+       | None -> mclist in
+      let arity =
+        all_same true tgt (mcode2line usng) mclist in
+      let usng = mcode usng in
+      let name = ident false arity name in
+      let eq = mcode eq in
+      let tn = get_option mcode tn in
+      let ty = typeC arity ty in
+      let sem = mcode sem in
+      make_directive di tgt arity (Ast0.UsingTypename(usng,name,eq,tn,ty,sem))
+  | Ast0.UsingMember(usng,name,sem) ->
+      let arity =
+        all_same true tgt (mcode2line usng) [mcode2arity usng; mcode2arity sem] in
+      let usng = mcode usng in
+      let name = ident false arity name in
+      let sem = mcode sem in
+      make_directive di tgt arity (Ast0.UsingMember(usng,name,sem))
 
 and define_parameters tgt params =
   match Ast0.unwrap params with

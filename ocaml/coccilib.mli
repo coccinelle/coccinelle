@@ -2910,6 +2910,7 @@ module Ast_cocci :
         Field of fullType * ident option * bitfield option * attr list * string mcode
       | MacroDeclField of ident * string mcode *
           expression dots * string mcode * attr list * string mcode
+      | CppField of directive
       | MetaField of meta_name mcode * constraints * keep_binding * inherited
       | MetaFieldList of meta_name mcode * listlen * constraints *
           keep_binding * inherited

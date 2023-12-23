@@ -133,9 +133,7 @@ let rec right_statement s =
   | Ast0.TopId(id) -> None
   | Ast0.TopInit(init) -> None
   | Ast0.Dots(d,whn) -> None
-  | Ast0.UsingNamespace(usng,nmspc,name,sem) -> None
-  | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) -> None
-  | Ast0.UsingMember(usng,name,sem) -> None
+  | Ast0.CppTop(di) -> None
   | Ast0.Include(inc,name) ->
       call_right right_mcode name s
          (function name -> Ast0.Include(inc,name))
@@ -148,9 +146,6 @@ let rec right_statement s =
   | Ast0.Define(def,id,params,body) ->
       call_right right_statement_dots body s
 	(function body -> Ast0.Define(def,id,params,body))
-  | Ast0.Pragma(prg,id,body) ->
-      (* seems safe; let the code go with the enclosing statement, if any *)
-      None
   | Ast0.OptStm(re) ->
       call_right right_statement re s (function re -> Ast0.OptStm(re))
 

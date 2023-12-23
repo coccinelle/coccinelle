@@ -534,6 +534,7 @@ and field d =
 	  close_box(); mcode print_string rp;
           print_attribute_list attr;
 	  mcode print_string sem
+      | Ast0.CppField(di) -> directive di
       | Ast0.DisjField(_,fields,_,_) ->
 	  do_disj fields field "|"
       | Ast0.ConjField(_,fields,_,_) ->
@@ -876,7 +877,6 @@ and print_attr_arg a =
       mcode print_string attr; mcode print_string_box lp;
       let _ = dots (function _ -> ()) expression args in
       close_box(); mcode print_string rp
-  | Ast0.CppField(di) -> directive di
 
 and pragmainfo pi =
   match Ast0.unwrap pi with

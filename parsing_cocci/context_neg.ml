@@ -910,6 +910,7 @@ let equal_field d1 d2 =
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode lp1 lp2 && equal_mcode lp1 lp2 &&
       equal_mcode sem1 sem2
+  | (Ast0.CppField(_),Ast0.CppField(_)) -> true
        
   | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptField(_),Ast0.OptField(_)) -> true
@@ -1346,7 +1347,7 @@ let rec is_toplevel s =
       |	_ -> false)
   | Ast0.Include(_,_) -> true
   | Ast0.Undef(_,_) -> true
-  | Ast0.Pragma(_,_,_) -> true
+  | Ast0.CppTop(_) -> true
   | Ast0.Define(_,_,_,_) -> true
   | _ -> false
 

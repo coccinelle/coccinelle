@@ -774,7 +774,9 @@ let visitor mode bind option_default
 	    let (sem_n,sem) = string_mcode sem in
 	    (multibind [name_n;lp_n;args_n;rp_n;attr_n;sem_n],
 	     Ast0.MacroDeclField(name,lp,args,rp,attr,sem))
-	| Ast0.CppField(di) -> directive di
+	| Ast0.CppField(di) ->
+	    let (di_n,di) = directive di in
+	    (di_n, Ast0.CppField(di))
 	| Ast0.DisjField(starter,decls,mids,ender) ->
 	    do_disj starter decls mids ender field
 	      (fun starter decls mids ender ->
@@ -1158,7 +1160,9 @@ let visitor mode bind option_default
 	    let (whn_n,whn) =
 	      map_split_bind (whencode statement_dots statement) whn in
 	    (bind d_n whn_n, Ast0.Dots(d,whn))
-	| Ast0.CppTop(di) -> directive di
+	| Ast0.CppTop(di) ->
+	    let (di_n,di) = directive di in
+	    (di_n, Ast0.CppTop(di))
 	| Ast0.Include(inc,name) ->
 	    let (inc_n,inc) = string_mcode inc in
 	    let (name_n,name) = inc_mcode name in

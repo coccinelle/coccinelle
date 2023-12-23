@@ -1128,6 +1128,7 @@ and field d =
       close_box(); mcode print_string rp;
       print_attribute_list attr;
       mcode print_string sem
+  | Ast.CppField(di) -> directive di
 
 and annotated_field d =
   match Ast.unwrap d with
@@ -1392,23 +1393,7 @@ and rule_elem arity re =
   | Ast.Ty(ty) -> pr_arity arity; fullType ty
   | Ast.TopId(id) -> pr_arity arity; ident id
   | Ast.TopInit(init) -> initialiser false init
-  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
-      mcode print_string usng; print_text " ";
-      mcode print_string nmspc; print_text " ";
-      ident name; print_text " ";
-      mcode print_string sem;
-  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
-      mcode print_string usng; print_text " ";
-      ident name; print_text " ";
-      mcode print_string eq; print_text " ";
-      print_option (mcode print_string) tn;
-      print_text " ";
-      fullType ty; print_text " ";
-      mcode print_string sem;
-  | Ast.UsingMember(usng,name,sem) ->
-      mcode print_string usng; print_text " ";
-      ident name; print_text " ";
-      mcode print_string sem;
+  | Ast.CppTop(di) -> directive di
   | Ast.Include(inc,s) ->
       mcode print_string inc; print_text " "; mcode inc_file s
   | Ast.MetaInclude(inc,s) ->
@@ -1418,9 +1403,6 @@ and rule_elem arity re =
   | Ast.DefineHeader(def,id,params) ->
       mcode print_string def; pr_space(); ident id;
       print_define_parameters params
-  | Ast.Pragma(prg,id,body) ->
-      mcode print_string prg; print_text " "; ident id; print_text " ";
-      pragmainfo body
   | Ast.Default(def,colon) ->
       mcode print_string def; mcode print_string colon; pr_space()
   | Ast.Case(case,exp,colon) ->
@@ -1628,6 +1610,28 @@ let rec statement arity s =
       else raise CantBeInPlus
 
   | Ast.OptStm(s) -> raise CantBeInPlus
+
+and directive di =
+  match Ast.unwrap di with
+    Ast.Pragma(prg,id,body) ->
+      mcode print_string prg; print_string " "; ident id; pr_space();
+      pragmainfo body
+  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
+      mcode print_string usng; pr_space();
+      mcode print_string nmspc; pr_space();
+      ident name; print_string " ";
+      mcode print_string sem
+  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      mcode print_string usng; pr_space();
+      ident name; pr_space();
+      mcode print_string eq  ; pr_space();
+      print_option (fun x -> mcode print_string x; pr_space()) tn;
+      fullType ty; pr_space();
+      mcode print_string sem
+  | Ast.UsingMember(usng,name,sem) ->
+      mcode print_string usng; pr_space();
+      ident name; pr_space();
+      mcode print_string sem
 
 and whencode notfn alwaysfn = function
     Ast.WhenNot a ->
