@@ -897,13 +897,20 @@ let equal_declaration d1 d2 =
 
 let equal_field d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
-     (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
+    (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
   | (Ast0.MetaFieldList(name1,_,_,_),Ast0.MetaFieldList(name2,_,_,_)) ->
       equal_mcode name1 name2
   | (Ast0.Field(_,_,_bf1,endattr1,sem1),Ast0.Field(_,_,_bf2,endattr2,sem2)) ->
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode sem1 sem2
+  | (Ast0.MacroDeclField(_,lp1,_,rp1,endattr1,sem1),
+     Ast0.MacroDeclField(_,lp2,_,rp2,endattr2,sem2)) ->
+      (List.length endattr1) = (List.length endattr2) &&
+      List.for_all2 equal_attribute endattr1 endattr2 &&
+      equal_mcode lp1 lp2 && equal_mcode lp1 lp2 &&
+      equal_mcode sem1 sem2
+       
   | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptField(_),Ast0.OptField(_)) -> true
   | (Ast0.DisjField(starter1,_,mids1,ender1),
@@ -1069,8 +1076,7 @@ let equal_statement s1 s2 =
       equal_mcode def1 def2
   | (Ast0.Define(def1,_,_,_),Ast0.Define(def2,_,_,_)) ->
       equal_mcode def1 def2
-  | (Ast0.Pragma(prg1,_,_),Ast0.Pragma(prg2,_,_)) ->
-      equal_mcode prg1 prg2
+  | (Ast0.CppTop(_),Ast0.CppTop(_)) -> true
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | _ -> false
 
