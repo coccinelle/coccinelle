@@ -188,14 +188,8 @@ let collect_plus_lines top =
 	  bind (k s) (mcode info aft)
       |	_ -> k s in
   let fn =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing statement donothing donothing donothing
-      donothing donothing donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+      ~stmt:statement () in
   fn.VT0.combiner_rec_top_level top
 
 (* --------------------------------------------------------------------- *)
@@ -584,19 +578,20 @@ let classify is_minus all_marked table code =
   let do_top builder r k e = compute_result builder e (k e) in
 
   let combiner =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      (do_nothing Ast0.dotsExpr) (do_nothing Ast0.dotsInit)
-      (do_nothing Ast0.dotsParam) (do_nothing Ast0.dotsTemplateParam)
-      (do_nothing Ast0.dotsStmt)
-      (do_nothing Ast0.dotsDecl) (do_nothing Ast0.dotsField)
-      (do_nothing Ast0.dotsEnumDecl) (do_nothing Ast0.dotsCase)
-      (do_nothing Ast0.dotsDefParam)
-      ident expression (do_nothing Ast0.assignOp) (do_nothing Ast0.binaryOp)
-      typeC initialiser param template_param declaration field enum_decl
-      statement (do_nothing Ast0.forinfo) case_line string_fragment
-      (do_nothing Ast0.attr) (do_nothing Ast0.attr_arg) (do_top Ast0.top) in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=(fun r k e -> k e)}
+      ~dotsexpr:(do_nothing Ast0.dotsExpr) ~dotsinit:(do_nothing Ast0.dotsInit)
+      ~dotsparam:(do_nothing Ast0.dotsParam) ~dotstemplateparam:(do_nothing Ast0.dotsTemplateParam)
+      ~dotsstmt:(do_nothing Ast0.dotsStmt)
+      ~dotsdecl:(do_nothing Ast0.dotsDecl) ~dotsfield:(do_nothing Ast0.dotsField)
+      ~dotsenumdecl:(do_nothing Ast0.dotsEnumDecl) ~dotscase:(do_nothing Ast0.dotsCase)
+      ~dotsdefpar:(do_nothing Ast0.dotsDefParam)
+      ~ident:ident ~expr:expression ~assignOp:(do_nothing Ast0.assignOp)
+      ~binaryOp:(do_nothing Ast0.binaryOp)
+      ~ty:typeC ~init:initialiser ~param:param ~template_param:template_param
+      ~decl:declaration ~field:field ~enumdecl:enum_decl
+      ~stmt:statement ~forinfo:(do_nothing Ast0.forinfo) ~case:case_line
+      ~string_fragment:string_fragment ~attribute:(do_nothing Ast0.attr)
+      ~attr_arg:(do_nothing Ast0.attr_arg) ~top:(do_top Ast0.top) () in
   combiner.VT0.combiner_rec_top_level code
 
 (* --------------------------------------------------------------------- *)
@@ -1177,14 +1172,7 @@ let contextify_all =
   let option_default = () in
   let mcode x = () in
   let donothing r k e = Ast0.set_mcodekind e (default_context()); k e in
-
-  V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
+  V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing} ()
 
 let contextify_whencode =
   let bind x y = () in
@@ -1221,11 +1209,8 @@ let contextify_whencode =
     | _ -> () in
 
   let combiner =
-    V0.combiner bind option_default
-      {V0.combiner_functions with
-	VT0.combiner_exprfn = expression;
-	VT0.combiner_initfn = initialiser;
-	VT0.combiner_stmtfn = statement} in
+    V0.combiner_default bind option_default
+      ~expr:expression ~init:initialiser ~stmt:statement () in
   combiner.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)

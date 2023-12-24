@@ -183,14 +183,8 @@ let inline_mcodes =
     | Ast0.PLUS _ -> () in
   let do_nothing r k e = do_nothing_dir true r k e in
   let do_nothing_end r k e = do_nothing_dir false r k e in
-  V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing_end do_nothing_end do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
+  V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=do_nothing}
+    ~decl:do_nothing_end ~field:do_nothing_end ()
 
 (* --------------------------------------------------------------------- *)
 (* For function declarations.  Can't use the mcode at the root, because that
@@ -267,14 +261,9 @@ let check_allminus =
 	List.for_all r.VT0.combiner_rec_case_line case_lines
     | _ -> k e in
 
-  V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing donothing
-    donothing
-    donothing ident expression donothing donothing typeC initialiser donothing
-    donothing declaration field donothing statement donothing case_line donothing
-    donothing donothing donothing
+  V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+    ~ident:ident ~expr:expression ~ty:typeC ~init:initialiser
+    ~decl:declaration ~field:field ~stmt:statement ~case:case_line ()
 
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)

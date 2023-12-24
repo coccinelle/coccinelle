@@ -98,8 +98,8 @@ type 'n combiner_functions =
    combiner_const_mcode : (Ast.constant,'n) cmcode;
    combiner_simpleAssign_mcode : (Ast0.simpleAssignOp,'n) cmcode;
    combiner_opAssign_mcode : (Ast.arithOp,'n) cmcode;
-   combiner_fix_mcode : (Ast.fixOp,'n) cmcode;
-   combiner_unary_mcode : (Ast.unaryOp,'n) cmcode;
+   combiner_fixOp_mcode : (Ast.fixOp,'n) cmcode;
+   combiner_unaryOp_mcode : (Ast.unaryOp,'n) cmcode;
    combiner_arithOp_mcode : (Ast.arithOp,'n) cmcode;
    combiner_logicalOp_mcode : (Ast.logicalOp,'n) cmcode;
    combiner_cv_mcode : (Ast.const_vol,'n) cmcode;
@@ -191,8 +191,8 @@ type rebuilder_functions =
    rebuilder_const_mcode : Ast.constant rmcode;
    rebuilder_simpleAssign_mcode : Ast0.simpleAssignOp rmcode;
    rebuilder_opAssign_mcode : Ast.arithOp rmcode;
-   rebuilder_fix_mcode : Ast.fixOp rmcode;
-   rebuilder_unary_mcode : Ast.unaryOp rmcode;
+   rebuilder_fixOp_mcode : Ast.fixOp rmcode;
+   rebuilder_unaryOp_mcode : Ast.unaryOp rmcode;
    rebuilder_arithOp_mcode : Ast.arithOp rmcode;
    rebuilder_logicalOp_mcode : Ast.logicalOp rmcode;
    rebuilder_cv_mcode : Ast.const_vol rmcode;
@@ -234,6 +234,7 @@ type rebuilder_functions =
 (* combiner_rebuilder *)
 
 type ('mc,'a) rcmcode = 'a -> 'mc Ast0.mcode -> ('a * 'mc Ast0.mcode)
+type ('mc,'a) flat_rcmcode = 'mc Ast0.mcode -> ('a * 'mc Ast0.mcode)
 type ('cd,'a) rccode =
     'a all_functions -> ('cd -> ('a * 'cd)) -> 'cd -> ('a * 'cd)
 
@@ -243,8 +244,8 @@ type 'n combiner_rebuilder_functions =
    combiner_rebuilder_const_mcode : (Ast.constant,'n) rcmcode;
    combiner_rebuilder_simpleAssign_mcode : (Ast0.simpleAssignOp,'n) rcmcode;
    combiner_rebuilder_opAssign_mcode : (Ast.arithOp,'n) rcmcode;
-   combiner_rebuilder_fix_mcode : (Ast.fixOp,'n) rcmcode;
-   combiner_rebuilder_unary_mcode : (Ast.unaryOp,'n) rcmcode;
+   combiner_rebuilder_fixOp_mcode : (Ast.fixOp,'n) rcmcode;
+   combiner_rebuilder_unaryOp_mcode : (Ast.unaryOp,'n) rcmcode;
    combiner_rebuilder_arithOp_mcode : (Ast.arithOp,'n) rcmcode;
    combiner_rebuilder_logicalOp_mcode : (Ast.logicalOp,'n) rcmcode;
    combiner_rebuilder_cv_mcode : (Ast.const_vol,'n) rcmcode;

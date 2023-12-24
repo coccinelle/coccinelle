@@ -34,29 +34,24 @@ let sequence_tokens =
     (* have to convert the mcodes to a common type so that we can make a list
        out of them *)
     [(f x,Ast0.get_pos_ref x)] in
-  let donothing r k e = k e in
   let bind x y = x @ y in
   let option_default = [] in
 
-  V0.flat_combiner bind option_default
-    (mcode (function x -> MetaName (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Str (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Cst (Ast0.unwrap_mcode x)))
-    (mcode (function x -> SAOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> ArOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> FixOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> UnOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> ArOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> LogOp (Ast0.unwrap_mcode x)))
-    (mcode (function x -> CV (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Sign (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Struct (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Store (Ast0.unwrap_mcode x)))
-    (mcode (function x -> Inc (Ast0.unwrap_mcode x)))
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
+  V0.combiner_default bind option_default
+    ~meta_mcode:(mcode (function x -> MetaName (Ast0.unwrap_mcode x)))
+    ~string_mcode:(mcode (function x -> Str (Ast0.unwrap_mcode x)))
+    ~const_mcode:(mcode (function x -> Cst (Ast0.unwrap_mcode x)))
+    ~simpleAssign_mcode:(mcode (function x -> SAOp (Ast0.unwrap_mcode x)))
+    ~opAssign_mcode:(mcode (function x -> ArOp (Ast0.unwrap_mcode x)))
+    ~fixOp_mcode:(mcode (function x -> FixOp (Ast0.unwrap_mcode x)))
+    ~unaryOp_mcode:(mcode (function x -> UnOp (Ast0.unwrap_mcode x)))
+    ~arithOp_mcode:(mcode (function x -> ArOp (Ast0.unwrap_mcode x)))
+    ~logicalOp_mcode:(mcode (function x -> LogOp (Ast0.unwrap_mcode x)))
+    ~cv_mcode:(mcode (function x -> CV (Ast0.unwrap_mcode x)))
+    ~sign_mcode:(mcode (function x -> Sign (Ast0.unwrap_mcode x)))
+    ~struct_mcode:(mcode (function x -> Struct (Ast0.unwrap_mcode x)))
+    ~storage_mcode:(mcode (function x -> Store (Ast0.unwrap_mcode x)))
+    ~inc_mcode:(mcode (function x -> Inc (Ast0.unwrap_mcode x))) ()
 
 (* In general, we will get a list of lists:
 

@@ -401,7 +401,6 @@ let process =
 	      Ast0.Iterator(nm,lp,args,rp,body,update_before pragmas aft))
       | _ -> Ast0.unwrap s) in
 
-  let res = V0.rebuilder
-      {V0.rebuilder_functions with VT0.rebuilder_stmtfn = statement} in
+  let res = V0.rebuilder_default ~stmt:statement () in
 
   List.map res.VT0.rebuilder_rec_top_level

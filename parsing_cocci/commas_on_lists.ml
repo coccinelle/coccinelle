@@ -64,9 +64,5 @@ let initialiser r k i =
   | _ -> i
 
 let process p =
-  let fn =
-    V0.rebuilder
-      {V0.rebuilder_functions with
-	VT0.rebuilder_tyfn = base_typeC;
-	VT0.rebuilder_initfn = initialiser} in
+  let fn = V0.rebuilder_default ~ty:base_typeC ~init:initialiser () in
   List.map fn.VT0.rebuilder_rec_top_level p

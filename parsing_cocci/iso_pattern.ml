@@ -39,13 +39,7 @@ let strip_info =
     {(Ast0.wrap (Ast0.unwrap x)) with
       Ast0.mcodekind = ref (Ast0.PLUS Ast.ONE);
       Ast0.true_if_test = x.Ast0.true_if_test} in
-  V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
+  V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing} ()
 
 let anything_equal = function
     (Ast0.DotsExprTag(d1),Ast0.DotsExprTag(d2)) ->
@@ -484,13 +478,10 @@ let match_maker checks_needed context_required whencode_allowed =
 	  Ast0.MetaAttr(name,_,pure) -> pure
 	| _ -> Ast0.Impure) in
 
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing
-      ident expression assignOp binaryOp typeC init param donothing decl field donothing
-      stmt donothing donothing donothing donothing attr_arg donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+      ~ident:ident ~expr:expression ~assignOp:assignOp ~binaryOp:binaryOp
+      ~ty:typeC ~init:init ~param:param ~decl:decl ~field:field
+      ~stmt:stmt ~attr_arg:attr_arg () in
 
   let add_pure_list_binding name pure is_pure builder1 builder2 lst =
     match (checks_needed,pure) with
@@ -1717,13 +1708,12 @@ let make_minus =
 		 info.Ast0.pos_info.Ast0.line_start (Dumper.dump e)))
     | _ -> donothing r k e in
 
-  V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    dots dots dots dots dots dots dots dots dots dots
-    donothing expression donothing donothing donothing initialiser donothing donothing
-    declaration field enum_decl statement donothing donothing donothing
-    donothing donothing donothing
+  V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing}
+    ~dotsexpr:dots ~dotsinit:dots ~dotsparam:dots ~dotstemplateparam:dots
+    ~dotsstmt:dots ~dotsdecl:dots ~dotsfield:dots ~dotsenumdecl:dots
+    ~dotscase:dots ~dotsdefpar:dots
+    ~expr:expression ~init:initialiser ~decl:declaration ~field:field
+    ~enumdecl:enum_decl ~stmt:statement ()
 
 (* --------------------------------------------------------------------- *)
 (* rebuild mcode cells in an instantiated alt *)
@@ -1808,13 +1798,8 @@ let rebuild_mcode start_line =
       | Ast0.DroppingBetweenDots s ->
 	  Ast0.DroppingBetweenDots(r.VT0.rebuilder_rec_statement s)) in
 
-  V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    statement donothing donothing donothing donothing donothing donothing
+  V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing}
+    ~stmt:statement ()
 
 (* --------------------------------------------------------------------- *)
 (* The problem of whencode.  If an isomorphism contains dots in multiple
@@ -1829,18 +1814,14 @@ let count_edots =
     match Ast0.unwrap e with
       Ast0.Edots(_,_) -> 1
     | _ -> 0 in
-
-  V0.combiner bind option_default
-    {V0.combiner_functions with VT0.combiner_exprfn = exprfn}
+  V0.combiner_default bind option_default ~expr:exprfn ()
 
 let count_idots =
   let option_default = 0 in
   let bind x y = x + y in
   let initfn r k e =
     match Ast0.unwrap e with Ast0.Idots(_,_) -> 1 | _ -> 0 in
-
-  V0.combiner bind option_default
-    {V0.combiner_functions with VT0.combiner_initfn = initfn}
+  V0.combiner_default bind option_default ~init:initfn ()
 
 let count_dots =
   let option_default = 0 in
@@ -1849,9 +1830,7 @@ let count_dots =
     match Ast0.unwrap e with
       Ast0.Dots(_,_) -> 1
     | _ -> 0 in
-
-  V0.combiner bind option_default
-    {V0.combiner_functions with VT0.combiner_stmtfn = stmtfn}
+  V0.combiner_default bind option_default ~stmt:stmtfn ()
 
 (* --------------------------------------------------------------------- *)
 
@@ -2320,13 +2299,10 @@ let instantiate bindings mv_bindings model =
 		(Ast0.MetaAttr(Ast0.set_mcode_data new_mv name,cstr,pure)))
     | _ -> e in
 
-  V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    (dots elist) donothing (dots plist) donothing (dots slist) donothing donothing
-    donothing donothing donothing
-    identfn exprfn donothing donothing tyfn initfn paramfn donothing declfn fieldfn
-    enumdeclfn stmtfn donothing donothing donothing donothing attr_argfn donothing
+  V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing}
+    ~dotsexpr:(dots elist) ~dotsparam:(dots plist) ~dotsstmt:(dots slist)
+    ~ident:identfn ~expr:exprfn ~ty:tyfn ~init:initfn ~param:paramfn ~decl:declfn ~field:fieldfn
+    ~enumdecl:enumdeclfn ~stmt:stmtfn ~attr_arg:attr_argfn ()
 
 (* --------------------------------------------------------------------- *)
 
@@ -3038,13 +3014,8 @@ let transform (alts : isomorphism) t =
     else (e_count,e) in
 
   let res =
-    V0.combiner_rebuilder bind option_default
-      {V0.combiner_rebuilder_functions with
-	VT0.combiner_rebuilder_exprfn = exprfn;
-	VT0.combiner_rebuilder_tyfn = typefn;
-	VT0.combiner_rebuilder_declfn = declfn;
-	VT0.combiner_rebuilder_stmtfn = stmtfn;
-	VT0.combiner_rebuilder_topfn = topfn} in
+    V0.combiner_rebuilder_default bind option_default
+      ~expr:exprfn ~ty:typefn ~decl:declfn ~stmt:stmtfn ~top:topfn () in
   let (_,res) = res.VT0.top_level t in
   (!extra_meta_decls,res)
 
@@ -3054,13 +3025,7 @@ let transform (alts : isomorphism) t =
 let rewrap =
   let mcode (x,a,i,mc,pos,adj) = (x,a,i,Ast0.context_befaft(),pos,adj) in
   let donothing r k e = Ast0.context_wrap(Ast0.unwrap(k e)) in
-  V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
+  V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing} ()
 
 let rec rewrap_anything = function
     Ast0.DotsExprTag(d) ->

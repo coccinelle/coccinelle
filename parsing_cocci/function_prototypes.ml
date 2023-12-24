@@ -61,14 +61,7 @@ let drop_positions =
   let mcode (term,arity,info,mc,_,adj) =
     (term,arity,info,mc,ref [],adj) in
   let donothing r k e = k e in
-  let res =
-    V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing in
+  let res = V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing} () in
   res.VT0.rebuilder_rec_statement
 
 let get_all_functions rule =
@@ -175,14 +168,8 @@ and strip =
 	     Ast0.MetaAttr(nm,cstr,Ast0.Pure)
 	 | e -> e)) in
 
-  V0.flat_rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
-    ident donothing donothing donothing typeC donothing param donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing attr_arg donothing
+  V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=donothing}
+    ~ident:ident ~ty:typeC ~param:param ~attr_arg:attr_arg ()
 
 and changed_proto = function
     (mname,mdef,mproto,None) -> true
@@ -200,13 +187,7 @@ let collect_ident_strings id =
   let mcode (_,_,info,_,_,_) =
     info.Ast0.strings_before @ info.Ast0.strings_after in
   let v =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing} () in
       v.VT0.combiner_rec_ident id
 
 let right_attach_mcode strings (x,ar,info,mc,pos,adj) =

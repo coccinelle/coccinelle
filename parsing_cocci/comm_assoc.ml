@@ -71,7 +71,7 @@ let process_binops rule_name =
 	     e)
 	| _ -> e)
     | _ -> e in
-  V0.rebuilder {V0.rebuilder_functions with VT0.rebuilder_exprfn = expr}
+  V0.rebuilder_default ~expr:expr ()
 
 let comm_assoc rule rule_name dropped_isos =
   if List.mem "comm_assoc" dropped_isos

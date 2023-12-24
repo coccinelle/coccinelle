@@ -717,14 +717,7 @@ let positions rname table rules =
   let bind x y = () in
   let donothing r k e = k e in
   let fn =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
-
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing} () in
   List.iter fn.VT0.combiner_rec_top_level rules
 
 let dup_positions rules =
@@ -787,13 +780,8 @@ let dup_positions rules =
 
   let donothing r k e = k e in
   let fn =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing expression donothing donothing typeC
-      donothing donothing donothing declaration field donothing statement
-      donothing donothing donothing donothing donothing donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+      ~expr:expression ~ty:typeC ~decl:declaration ~field:field ~stmt:statement () in
 
   let res =
     List.sort compare

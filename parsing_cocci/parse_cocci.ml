@@ -2129,13 +2129,7 @@ let any_modif rule =
   let bind x y = x || y in
   let option_default = false in
   let fn =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing} () in
   List.exists fn.VT0.combiner_rec_top_level rule
 
 let eval_virt virt =

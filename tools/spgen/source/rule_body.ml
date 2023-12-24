@@ -350,15 +350,21 @@ let rec gen_combiner ~context_mode =
     | _ -> c_topfn top
   in
 
-  V0.flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
-    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
-    struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
-    dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn templateparamfn declfn fieldfn
-    enumdeclfn stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn
-
+  V0.combiner_default bind option_default
+    ~meta_mcode:meta_mcode ~string_mcode:string_mcode ~const_mcode:const_mcode
+    ~simpleAssign_mcode:simpleAssign_mcode ~opAssign_mcode:opAssign_mcode
+    ~fixOp_mcode:fix_mcode ~unaryOp_mcode:unary_mcode ~arithOp_mcode:arithOp_mcode
+    ~logicalOp_mcode:logicalOp_mcode ~cv_mcode:cv_mcode ~sign_mcode:sign_mcode
+    ~struct_mcode:struct_mcode ~storage_mcode:storage_mcode ~inc_mcode:inc_mcode
+    ~dotsexpr:dotsexprfn ~dotsinit:dotsinitfn ~dotsparam:dotsparamfn
+    ~dotstemplateparam:dotstemplateparamfn ~dotsstmt:dotsstmtfn ~dotsdecl:dotsdeclfn
+    ~dotsfield:dotsfieldfn ~dotsenumdecl:dotsenumdeclfn ~dotscase:dotscasefn
+    ~dotsdefpar:dotsdefparfn ~ident:identfn ~expr:exprfn ~assignOp:assignOpfn
+    ~binaryOp:binaryOpfn ~ty:tyfn ~init:initfn ~param:paramfn
+    ~template_param:templateparamfn ~decl:declfn ~field:fieldfn
+    ~enumdecl:enumdeclfn ~stmt:stmtfn ~forinfo:forinfofn ~case:casefn
+    ~string_fragment:string_fragmentfn ~attribute:attributefn ~attr_arg:attr_argfn
+    ~top:topfn ()
 
 (* ------------------------------------------------------------------------- *)
 (* ENTRY POINT *)

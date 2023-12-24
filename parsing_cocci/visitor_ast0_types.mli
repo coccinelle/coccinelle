@@ -78,8 +78,8 @@ type 'n combiner_functions = {
   combiner_const_mcode : (Ast_cocci.constant, 'n) cmcode;
   combiner_simpleAssign_mcode : (Ast0_cocci.simpleAssignOp, 'n) cmcode;
   combiner_opAssign_mcode : (Ast_cocci.arithOp, 'n) cmcode;
-  combiner_fix_mcode : (Ast_cocci.fixOp, 'n) cmcode;
-  combiner_unary_mcode : (Ast_cocci.unaryOp, 'n) cmcode;
+  combiner_fixOp_mcode : (Ast_cocci.fixOp, 'n) cmcode;
+  combiner_unaryOp_mcode : (Ast_cocci.unaryOp, 'n) cmcode;
   combiner_arithOp_mcode : (Ast_cocci.arithOp, 'n) cmcode;
   combiner_logicalOp_mcode : (Ast_cocci.logicalOp, 'n) cmcode;
   combiner_cv_mcode : (Ast_cocci.const_vol, 'n) cmcode;
@@ -159,8 +159,8 @@ type rebuilder_functions = {
   rebuilder_const_mcode : Ast_cocci.constant rmcode;
   rebuilder_simpleAssign_mcode : Ast0_cocci.simpleAssignOp rmcode;
   rebuilder_opAssign_mcode : Ast_cocci.arithOp rmcode;
-  rebuilder_fix_mcode : Ast_cocci.fixOp rmcode;
-  rebuilder_unary_mcode : Ast_cocci.unaryOp rmcode;
+  rebuilder_fixOp_mcode : Ast_cocci.fixOp rmcode;
+  rebuilder_unaryOp_mcode : Ast_cocci.unaryOp rmcode;
   rebuilder_arithOp_mcode : Ast_cocci.arithOp rmcode;
   rebuilder_logicalOp_mcode : Ast_cocci.logicalOp rmcode;
   rebuilder_cv_mcode : Ast_cocci.const_vol rmcode;
@@ -198,51 +198,6 @@ type rebuilder_functions = {
   rebuilder_topfn : Ast0_cocci.top_level rcode;
 }
 type ('mc, 'a) rcmcode = 'a -> 'mc Ast0_cocci.mcode -> 'a * 'mc Ast0_cocci.mcode
+type ('mc,'a) flat_rcmcode = 'mc Ast0_cocci.mcode -> ('a * 'mc Ast0_cocci.mcode)
 type ('cd, 'a) rccode =
     'a all_functions -> ('cd -> 'a * 'cd) -> 'cd -> 'a * 'cd
-type 'n combiner_rebuilder_functions = {
-  combiner_rebuilder_meta_mcode : (Ast_cocci.meta_name, 'n) rcmcode;
-  combiner_rebuilder_string_mcode : (string, 'n) rcmcode;
-  combiner_rebuilder_const_mcode : (Ast_cocci.constant, 'n) rcmcode;
-  combiner_rebuilder_simpleAssign_mcode : (Ast0_cocci.simpleAssignOp, 'n) rcmcode;
-  combiner_rebuilder_opAssign_mcode : (Ast_cocci.arithOp, 'n) rcmcode;
-  combiner_rebuilder_fix_mcode : (Ast_cocci.fixOp, 'n) rcmcode;
-  combiner_rebuilder_unary_mcode : (Ast_cocci.unaryOp, 'n) rcmcode;
-  combiner_rebuilder_arithOp_mcode : (Ast_cocci.arithOp, 'n) rcmcode;
-  combiner_rebuilder_logicalOp_mcode : (Ast_cocci.logicalOp, 'n) rcmcode;
-  combiner_rebuilder_cv_mcode : (Ast_cocci.const_vol, 'n) rcmcode;
-  combiner_rebuilder_sign_mcode : (Ast_cocci.sign, 'n) rcmcode;
-  combiner_rebuilder_struct_mcode : (Ast_cocci.structUnion, 'n) rcmcode;
-  combiner_rebuilder_storage_mcode : (Ast_cocci.storage, 'n) rcmcode;
-  combiner_rebuilder_inc_mcode : (Ast_cocci.inc_file, 'n) rcmcode;
-  combiner_rebuilder_dotsexprfn : (Ast0_cocci.expression Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsinitfn : (Ast0_cocci.initialiser Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsparamfn :
-    (Ast0_cocci.parameterTypeDef Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotstemplateparamfn :
-    (Ast0_cocci.templateParameterTypeDef Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsstmtfn : (Ast0_cocci.statement Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsdeclfn : (Ast0_cocci.declaration Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsfieldfn : (Ast0_cocci.field Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsenumdeclfn : (Ast0_cocci.enum_decl Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotscasefn : (Ast0_cocci.case_line Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_dotsdefparfn : (Ast0_cocci.define_param Ast0_cocci.dots, 'n) rccode;
-  combiner_rebuilder_identfn : (Ast0_cocci.ident, 'n) rccode;
-  combiner_rebuilder_exprfn : (Ast0_cocci.expression, 'n) rccode;
-  combiner_rebuilder_assignOpfn : (Ast0_cocci.assignOp, 'n) rccode;
-  combiner_rebuilder_binaryOpfn : (Ast0_cocci.binaryOp, 'n) rccode;
-  combiner_rebuilder_tyfn : (Ast0_cocci.typeC, 'n) rccode;
-  combiner_rebuilder_initfn : (Ast0_cocci.initialiser, 'n) rccode;
-  combiner_rebuilder_paramfn : (Ast0_cocci.parameterTypeDef, 'n) rccode;
-  combiner_rebuilder_template_paramfn : (Ast0_cocci.templateParameterTypeDef, 'n) rccode;
-  combiner_rebuilder_declfn : (Ast0_cocci.declaration, 'n) rccode;
-  combiner_rebuilder_fieldfn : (Ast0_cocci.field, 'n) rccode;
-  combiner_rebuilder_enumdeclfn : (Ast0_cocci.enum_decl,'n) rccode;
-  combiner_rebuilder_stmtfn : (Ast0_cocci.statement, 'n) rccode;
-  combiner_rebuilder_forinfofn : (Ast0_cocci.forinfo, 'n) rccode;
-  combiner_rebuilder_casefn : (Ast0_cocci.case_line, 'n) rccode;
-  combiner_rebuilder_string_fragmentfn : (Ast0_cocci.string_fragment, 'n) rccode;
-  combiner_rebuilder_attributefn : (Ast0_cocci.attr, 'n) rccode;
-  combiner_rebuilder_attr_argfn : (Ast0_cocci.attr_arg, 'n) rccode;
-  combiner_rebuilder_topfn : (Ast0_cocci.top_level, 'n) rccode;
-}

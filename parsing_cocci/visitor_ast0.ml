@@ -1574,50 +1574,6 @@ let visitor mode bind option_default
       VT0.anything = anything} in
   all_functions
 
-let combiner_functions =
-  {VT0.combiner_meta_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_string_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_const_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_simpleAssign_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_opAssign_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_fix_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_unary_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_arithOp_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_logicalOp_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_cv_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_sign_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_struct_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_storage_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_inc_mcode = (fun opt_default mc -> opt_default);
-   VT0.combiner_dotsexprfn = (fun r k e -> k e);
-   VT0.combiner_dotsinitfn = (fun r k e -> k e);
-   VT0.combiner_dotsparamfn = (fun r k e -> k e);
-   VT0.combiner_dotstemplateparamfn = (fun r k e -> k e);
-   VT0.combiner_dotsstmtfn = (fun r k e -> k e);
-   VT0.combiner_dotsdeclfn = (fun r k e -> k e);
-   VT0.combiner_dotsfieldfn = (fun r k e -> k e);
-   VT0.combiner_dotsenumdeclfn = (fun r k e -> k e);
-   VT0.combiner_dotscasefn = (fun r k e -> k e);
-   VT0.combiner_dotsdefparfn = (fun r k e -> k e);
-   VT0.combiner_identfn = (fun r k e -> k e);
-   VT0.combiner_exprfn = (fun r k e -> k e);
-   VT0.combiner_assignOpfn = (fun r k e -> k e);
-   VT0.combiner_binaryOpfn = (fun r k e -> k e);
-   VT0.combiner_tyfn = (fun r k e -> k e);
-   VT0.combiner_initfn = (fun r k e -> k e);
-   VT0.combiner_paramfn = (fun r k e -> k e);
-   VT0.combiner_template_paramfn = (fun r k e -> k e);
-   VT0.combiner_declfn = (fun r k e -> k e);
-   VT0.combiner_fieldfn = (fun r k e -> k e);
-   VT0.combiner_enumdeclfn = (fun r k e -> k e);
-   VT0.combiner_stmtfn = (fun r k e -> k e);
-   VT0.combiner_forinfofn = (fun r k e -> k e);
-   VT0.combiner_casefn = (fun r k e -> k e);
-   VT0.combiner_string_fragmentfn = (fun r k e -> k e);
-   VT0.combiner_attributefn = (fun r k e -> k e);
-   VT0.combiner_attr_argfn = (fun r k e -> k e);
-   VT0.combiner_topfn = (fun r k e -> k e)}
-
 let combiner_dz r =
     {VT0.combiner_rec_meta_mcode =
       (function e -> let (n,_) = r.VT0.meta_mcode e in n);
@@ -1682,68 +1638,32 @@ let combiner_dz r =
       VT0.combiner_rec_anything =
       (function e -> let (n,_) = r.VT0.anything e in n)}
 
-let combiner bind option_default functions =
-  let xk k e = let (n,_) = k e in n in
-  let dz = combiner_dz in
-  combiner_dz
-    (visitor COMBINER bind option_default
-    (function mc -> (functions.VT0.combiner_meta_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_string_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_const_mcode option_default mc,mc))
-    (function mc ->
-      (functions.VT0.combiner_simpleAssign_mcode option_default mc,mc))
-    (function mc ->
-      (functions.VT0.combiner_opAssign_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_fix_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_unary_mcode option_default mc,mc))
-    (function mc ->
-      (functions.VT0.combiner_arithOp_mcode option_default mc,mc))
-    (function mc ->
-      (functions.VT0.combiner_logicalOp_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_cv_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_sign_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_struct_mcode option_default mc,mc))
-    (function mc ->
-    (functions.VT0.combiner_storage_mcode option_default mc,mc))
-    (function mc -> (functions.VT0.combiner_inc_mcode option_default mc,mc))
-    (fun r k e -> (functions.VT0.combiner_dotsexprfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsinitfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsparamfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotstemplateparamfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsstmtfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsdeclfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsfieldfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsenumdeclfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotscasefn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_dotsdefparfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_identfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_exprfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_assignOpfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_binaryOpfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_tyfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_initfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_paramfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_template_paramfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_declfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_fieldfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_enumdeclfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_stmtfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_forinfofn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_casefn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_string_fragmentfn (dz r) (xk k) e,e))
-    (fun r k e -> (functions.VT0.combiner_attributefn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_attr_argfn (dz r) (xk k) e, e))
-    (fun r k e -> (functions.VT0.combiner_topfn (dz r) (xk k) e, e)))
+type 'b cmcodefn = { cmcode: 'a. 'a Ast0.mcode -> 'b }
+type 'b cdonothingfn =
+    { cdonothing: 'a. 'b Visitor_ast0_types.combiner_rec_functions ->
+      ('a Ast0.wrap -> 'b) -> 'a Ast0.wrap -> 'b }
 
-let flat_combiner bind option_default
-    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
-    fix_mcode unary_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
-    struct_mcode storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
-    dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn binaryOpfn tyfn initfn paramfn template_paramfn declfn fieldfn
-    enumdeclfn
-    stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn =
+let combiner bind option_default mcode donothing
+    ?(meta_mcode=mcode.cmcode) ?(string_mcode=mcode.cmcode) ?(const_mcode=mcode.cmcode)
+    ?(simpleAssign_mcode=mcode.cmcode) ?(opAssign_mcode=mcode.cmcode)
+    ?(fixOp_mcode=mcode.cmcode) ?(unaryOp_mcode=mcode.cmcode) ?(arithOp_mcode=mcode.cmcode)
+    ?(logicalOp_mcode=mcode.cmcode) ?(cv_mcode=mcode.cmcode) ?(sign_mcode=mcode.cmcode)
+    ?(struct_mcode=mcode.cmcode) ?(storage_mcode=mcode.cmcode) ?(inc_mcode=mcode.cmcode)
+    ?(dotsexpr=donothing.cdonothing) ?(dotsinit=donothing.cdonothing)
+    ?(dotsparam=donothing.cdonothing) ?(dotstemplateparam=donothing.cdonothing)
+    ?(dotsstmt=donothing.cdonothing) ?(dotsdecl=donothing.cdonothing)
+    ?(dotsfield=donothing.cdonothing) ?(dotsenumdecl=donothing.cdonothing)
+    ?(dotscase=donothing.cdonothing) ?(dotsdefpar=donothing.cdonothing)
+    ?(ident=donothing.cdonothing) ?(expr=donothing.cdonothing)
+    ?(assignOp=donothing.cdonothing) ?(binaryOp=donothing.cdonothing)
+    ?(ty=donothing.cdonothing) ?(init=donothing.cdonothing)
+    ?(param=donothing.cdonothing) ?(template_param=donothing.cdonothing)
+    ?(decl=donothing.cdonothing) ?(field=donothing.cdonothing)
+    ?(enumdecl=donothing.cdonothing) ?(stmt=donothing.cdonothing)
+    ?(forinfo=donothing.cdonothing) ?(case=donothing.cdonothing)
+    ?(string_fragment=donothing.cdonothing) ?(attribute=donothing.cdonothing)
+    ?(attr_arg=donothing.cdonothing) ?(top=donothing.cdonothing) endarg =
+
   let dz = combiner_dz in
   let xk k e = let (n,_) = k e in n in
   combiner_dz (visitor COMBINER bind option_default
@@ -1752,8 +1672,8 @@ let flat_combiner bind option_default
     (function mc -> (const_mcode mc,mc))
     (function mc -> (simpleAssign_mcode mc,mc))
     (function mc -> (opAssign_mcode mc,mc))
-    (function mc -> (fix_mcode mc,mc))
-    (function mc -> (unary_mcode mc,mc))
+    (function mc -> (fixOp_mcode mc,mc))
+    (function mc -> (unaryOp_mcode mc,mc))
     (function mc -> (arithOp_mcode mc,mc))
     (function mc -> (logicalOp_mcode mc,mc))
     (function mc -> (cv_mcode mc,mc))
@@ -1761,78 +1681,62 @@ let flat_combiner bind option_default
     (function mc -> (struct_mcode mc,mc))
     (function mc -> (storage_mcode mc,mc))
     (function mc -> (inc_mcode mc,mc))
-    (fun r k e -> (dotsexprfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsinitfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsparamfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotstemplateparamfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsstmtfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsdeclfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsfieldfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsenumdeclfn (dz r) (xk k) e, e))
-    (fun r k e -> (dotscasefn (dz r) (xk k) e, e))
-    (fun r k e -> (dotsdefparfn (dz r) (xk k) e, e))
-    (fun r k e -> (identfn (dz r) (xk k) e, e))
-    (fun r k e -> (exprfn (dz r) (xk k) e, e))
-    (fun r k e -> (assignOpfn (dz r) (xk k) e, e))
-    (fun r k e -> (binaryOpfn (dz r) (xk k) e, e))
-    (fun r k e -> (tyfn (dz r) (xk k) e, e))
-    (fun r k e -> (initfn (dz r) (xk k) e, e))
-    (fun r k e -> (paramfn (dz r) (xk k) e, e))
-    (fun r k e -> (template_paramfn (dz r) (xk k) e, e))
-    (fun r k e -> (declfn (dz r) (xk k) e, e))
-    (fun r k e -> (fieldfn (dz r) (xk k) e, e))
-    (fun r k e -> (enumdeclfn (dz r) (xk k) e, e))
-    (fun r k e -> (stmtfn (dz r) (xk k) e, e))
-    (fun r k e -> (forinfofn (dz r) (xk k) e, e))
-    (fun r k e -> (casefn (dz r) (xk k) e, e))
-    (fun r k e -> (string_fragmentfn (dz r) (xk k) e, e))
-    (fun r k e -> (attributefn (dz r) (xk k) e, e))
-    (fun r k e -> (attr_argfn (dz r) (xk k) e, e))
-    (fun r k e -> (topfn (dz r) (xk k) e, e)))
+    (fun r k e -> (dotsexpr (dz r) (xk k) e, e))
+    (fun r k e -> (dotsinit (dz r) (xk k) e, e))
+    (fun r k e -> (dotsparam (dz r) (xk k) e, e))
+    (fun r k e -> (dotstemplateparam (dz r) (xk k) e, e))
+    (fun r k e -> (dotsstmt (dz r) (xk k) e, e))
+    (fun r k e -> (dotsdecl (dz r) (xk k) e, e))
+    (fun r k e -> (dotsfield (dz r) (xk k) e, e))
+    (fun r k e -> (dotsenumdecl (dz r) (xk k) e, e))
+    (fun r k e -> (dotscase (dz r) (xk k) e, e))
+    (fun r k e -> (dotsdefpar (dz r) (xk k) e, e))
+    (fun r k e -> (ident (dz r) (xk k) e, e))
+    (fun r k e -> (expr (dz r) (xk k) e, e))
+    (fun r k e -> (assignOp (dz r) (xk k) e, e))
+    (fun r k e -> (binaryOp (dz r) (xk k) e, e))
+    (fun r k e -> (ty (dz r) (xk k) e, e))
+    (fun r k e -> (init (dz r) (xk k) e, e))
+    (fun r k e -> (param (dz r) (xk k) e, e))
+    (fun r k e -> (template_param (dz r) (xk k) e, e))
+    (fun r k e -> (decl (dz r) (xk k) e, e))
+    (fun r k e -> (field (dz r) (xk k) e, e))
+    (fun r k e -> (enumdecl (dz r) (xk k) e, e))
+    (fun r k e -> (stmt (dz r) (xk k) e, e))
+    (fun r k e -> (forinfo (dz r) (xk k) e, e))
+    (fun r k e -> (case (dz r) (xk k) e, e))
+    (fun r k e -> (string_fragment (dz r) (xk k) e, e))
+    (fun r k e -> (attribute (dz r) (xk k) e, e))
+    (fun r k e -> (attr_arg (dz r) (xk k) e, e))
+    (fun r k e -> (top (dz r) (xk k) e, e)))
 
-let rebuilder_functions =
-  {VT0.rebuilder_meta_mcode = (fun mc -> mc);
-   VT0.rebuilder_string_mcode = (fun mc -> mc);
-   VT0.rebuilder_const_mcode = (fun mc -> mc);
-   VT0.rebuilder_simpleAssign_mcode = (fun mc -> mc);
-   VT0.rebuilder_opAssign_mcode = (fun mc -> mc);
-   VT0.rebuilder_fix_mcode = (fun mc -> mc);
-   VT0.rebuilder_unary_mcode = (fun mc -> mc);
-   VT0.rebuilder_arithOp_mcode = (fun mc -> mc);
-   VT0.rebuilder_logicalOp_mcode = (fun mc -> mc);
-   VT0.rebuilder_cv_mcode = (fun mc -> mc);
-   VT0.rebuilder_sign_mcode = (fun mc -> mc);
-   VT0.rebuilder_struct_mcode = (fun mc -> mc);
-   VT0.rebuilder_storage_mcode = (fun mc -> mc);
-   VT0.rebuilder_inc_mcode = (fun mc -> mc);
-   VT0.rebuilder_dotsexprfn = (fun r k e -> k e);
-   VT0.rebuilder_dotsinitfn = (fun r k e -> k e);
-   VT0.rebuilder_dotsparamfn = (fun r k e -> k e);
-   VT0.rebuilder_dotstemplateparamfn = (fun r k e -> k e);
-   VT0.rebuilder_dotsstmtfn = (fun r k e -> k e);
-   VT0.rebuilder_dotsdeclfn = (fun r k e -> k e);
-   VT0.rebuilder_dotsfieldfn = (fun r k e -> k e);
-   VT0.rebuilder_dotsenumdeclfn = (fun r k e -> k e);
-   VT0.rebuilder_dotscasefn = (fun r k e -> k e);
-   VT0.rebuilder_dotsdefparfn = (fun r k e -> k e);
-   VT0.rebuilder_identfn = (fun r k e -> k e);
-   VT0.rebuilder_exprfn = (fun r k e -> k e);
-   VT0.rebuilder_assignOpfn = (fun r k e -> k e);
-   VT0.rebuilder_binaryOpfn = (fun r k e -> k e);
-   VT0.rebuilder_tyfn = (fun r k e -> k e);
-   VT0.rebuilder_initfn = (fun r k e -> k e);
-   VT0.rebuilder_paramfn = (fun r k e -> k e);
-   VT0.rebuilder_template_paramfn = (fun r k e -> k e);
-   VT0.rebuilder_declfn = (fun r k e -> k e);
-   VT0.rebuilder_fieldfn = (fun r k e -> k e);
-   VT0.rebuilder_enumdeclfn = (fun r k e -> k e);
-   VT0.rebuilder_stmtfn = (fun r k e -> k e);
-   VT0.rebuilder_forinfofn = (fun r k e -> k e);
-   VT0.rebuilder_casefn = (fun r k e -> k e);
-   VT0.rebuilder_string_fragmentfn = (fun r k e -> k e);
-   VT0.rebuilder_attributefn = (fun r k e -> k e);
-   VT0.rebuilder_attr_argfn = (fun r k e -> k e);
-   VT0.rebuilder_topfn = (fun r k e -> k e)}
+let donothing r k e = k e
+
+let combiner_default bind option_default
+    ?(meta_mcode=(fun x -> option_default)) ?(string_mcode=(fun x -> option_default))
+    ?(const_mcode=(fun x -> option_default)) ?(simpleAssign_mcode=(fun x -> option_default))
+    ?(opAssign_mcode=(fun x -> option_default)) ?(fixOp_mcode=(fun x -> option_default))
+    ?(unaryOp_mcode=(fun x -> option_default)) ?(arithOp_mcode=(fun x -> option_default))
+    ?(logicalOp_mcode=(fun x -> option_default)) ?(cv_mcode=(fun x -> option_default))
+    ?(sign_mcode=(fun x -> option_default)) ?(struct_mcode=(fun x -> option_default))
+    ?(storage_mcode=(fun x -> option_default)) ?(inc_mcode=(fun x -> option_default))
+    ?(dotsexpr=donothing) ?(dotsinit=donothing) ?(dotsparam=donothing)
+    ?(dotstemplateparam=donothing) ?(dotsstmt=donothing) ?(dotsdecl=donothing)
+    ?(dotsfield=donothing) ?(dotsenumdecl=donothing) ?(dotscase=donothing)
+    ?(dotsdefpar=donothing) ?(ident=donothing) ?(expr=donothing) ?(assignOp=donothing)
+    ?(binaryOp=donothing) ?(ty=donothing) ?(init=donothing) ?(param=donothing)
+    ?(template_param=donothing) ?(decl=donothing) ?(field=donothing) ?(enumdecl=donothing)
+    ?(stmt=donothing) ?(forinfo=donothing) ?(case=donothing) ?(string_fragment=donothing)
+    ?(attribute=donothing) ?(attr_arg=donothing) ?(top=donothing) endarg =
+  combiner bind option_default
+    {cmcode = (fun x -> option_default)} {cdonothing = donothing}
+    ~meta_mcode ~string_mcode ~const_mcode ~simpleAssign_mcode ~opAssign_mcode
+    ~fixOp_mcode ~unaryOp_mcode ~arithOp_mcode ~logicalOp_mcode ~cv_mcode ~sign_mcode
+    ~struct_mcode ~storage_mcode ~inc_mcode
+    ~dotsexpr ~dotsinit ~dotsparam ~dotstemplateparam ~dotsstmt ~dotsdecl
+    ~dotsfield ~dotsenumdecl ~dotscase ~dotsdefpar
+    ~ident ~expr ~assignOp ~binaryOp ~ty ~init ~param ~template_param ~decl ~field
+    ~enumdecl ~stmt ~forinfo ~case ~string_fragment ~attribute ~attr_arg ~top endarg
 
 let rebuilder_dz r =
   {VT0.rebuilder_rec_meta_mcode =
@@ -1896,65 +1800,32 @@ let rebuilder_dz r =
       VT0.rebuilder_rec_anything =
       (function e -> let (_,e) = r.VT0.anything e in e)}
 
-let rebuilder functions =
-  let dz = rebuilder_dz in
-  let xk k e = let (_,e) = k e in e in
-  rebuilder_dz
-    (visitor REBUILDER (fun x y -> x) ()
-    (function mc -> ((),functions.VT0.rebuilder_meta_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_string_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_const_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_simpleAssign_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_opAssign_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_fix_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_unary_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_arithOp_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_logicalOp_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_cv_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_sign_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_struct_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_storage_mcode mc))
-    (function mc -> ((),functions.VT0.rebuilder_inc_mcode mc))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsexprfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsinitfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsparamfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotstemplateparamfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsstmtfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsdeclfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsfieldfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsenumdeclfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotscasefn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_dotsdefparfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_identfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_exprfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_assignOpfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_binaryOpfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_tyfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_initfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_paramfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_template_paramfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_declfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_fieldfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_enumdeclfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_stmtfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_forinfofn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_casefn (dz r) (xk k) e))
-    (fun r k e ->
-      ((),functions.VT0.rebuilder_string_fragmentfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_attributefn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_attr_argfn (dz r) (xk k) e))
-    (fun r k e -> ((),functions.VT0.rebuilder_topfn (dz r) (xk k) e)))
+type rmcodefn = { rmcode: 'a. 'a Ast0.mcode -> 'a Ast0.mcode }
+type rdonothingfn =
+    { rdonothing: 'a. Visitor_ast0_types.rebuilder_rec_functions ->
+      ('a Ast0.wrap -> 'a Ast0.wrap) -> 'a Ast0.wrap -> 'a Ast0.wrap }
 
-let flat_rebuilder
-    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
-    fix_mcode unary_mcode
-    arithOp_mcode logicalOp_mcode cv_mcode sign_mcode struct_mcode
-    storage_mcode inc_mcode
-    dotsexprfn dotsinitfn dotsparamfn dotstemplateparamfn dotsstmtfn dotsdeclfn dotsfieldfn
-    dotsenumdeclfn dotscasefn dotsdefparfn
-    identfn exprfn assignOpfn arithOpfn tyfn initfn paramfn template_paramfn declfn fieldfn
-    enumdeclfn
-    stmtfn forinfofn casefn string_fragmentfn attributefn attr_argfn topfn =
+let rebuilder mcode donothing
+    ?(meta_mcode=mcode.rmcode) ?(string_mcode=mcode.rmcode) ?(const_mcode=mcode.rmcode)
+    ?(simpleAssign_mcode=mcode.rmcode) ?(opAssign_mcode=mcode.rmcode)
+    ?(fixOp_mcode=mcode.rmcode) ?(unaryOp_mcode=mcode.rmcode) ?(arithOp_mcode=mcode.rmcode)
+    ?(logicalOp_mcode=mcode.rmcode) ?(cv_mcode=mcode.rmcode) ?(sign_mcode=mcode.rmcode)
+    ?(struct_mcode=mcode.rmcode) ?(storage_mcode=mcode.rmcode) ?(inc_mcode=mcode.rmcode)
+    ?(dotsexpr=donothing.rdonothing) ?(dotsinit=donothing.rdonothing)
+    ?(dotsparam=donothing.rdonothing) ?(dotstemplateparam=donothing.rdonothing)
+    ?(dotsstmt=donothing.rdonothing) ?(dotsdecl=donothing.rdonothing)
+    ?(dotsfield=donothing.rdonothing) ?(dotsenumdecl=donothing.rdonothing)
+    ?(dotscase=donothing.rdonothing) ?(dotsdefpar=donothing.rdonothing)
+    ?(ident=donothing.rdonothing) ?(expr=donothing.rdonothing)
+    ?(assignOp=donothing.rdonothing) ?(binaryOp=donothing.rdonothing)
+    ?(ty=donothing.rdonothing) ?(init=donothing.rdonothing)
+    ?(param=donothing.rdonothing) ?(template_param=donothing.rdonothing)
+    ?(decl=donothing.rdonothing) ?(field=donothing.rdonothing)
+    ?(enumdecl=donothing.rdonothing) ?(stmt=donothing.rdonothing)
+    ?(forinfo=donothing.rdonothing) ?(case=donothing.rdonothing)
+    ?(string_fragment=donothing.rdonothing) ?(attribute=donothing.rdonothing)
+    ?(attr_arg=donothing.rdonothing) ?(top=donothing.rdonothing) endarg =
+
   let dz = rebuilder_dz in
   let xk k e = let (_,e) = k e in e in
   rebuilder_dz
@@ -1964,8 +1835,8 @@ let flat_rebuilder
     (function mc -> ((),const_mcode mc))
     (function mc -> ((),simpleAssign_mcode mc))
     (function mc -> ((),opAssign_mcode mc))
-    (function mc -> ((),fix_mcode mc))
-    (function mc -> ((),unary_mcode mc))
+    (function mc -> ((),fixOp_mcode mc))
+    (function mc -> ((),unaryOp_mcode mc))
     (function mc -> ((),arithOp_mcode mc))
     (function mc -> ((),logicalOp_mcode mc))
     (function mc -> ((),cv_mcode mc))
@@ -1973,134 +1844,127 @@ let flat_rebuilder
     (function mc -> ((),struct_mcode mc))
     (function mc -> ((),storage_mcode mc))
     (function mc -> ((),inc_mcode mc))
-    (fun r k e -> ((),dotsexprfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsinitfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsparamfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotstemplateparamfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsstmtfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsdeclfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsfieldfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsenumdeclfn (dz r) (xk k) e))
-    (fun r k e -> ((),dotscasefn (dz r) (xk k) e))
-    (fun r k e -> ((),dotsdefparfn (dz r) (xk k) e))
-    (fun r k e -> ((),identfn (dz r) (xk k) e))
-    (fun r k e -> ((),exprfn (dz r) (xk k) e))
-    (fun r k e -> ((),assignOpfn (dz r) (xk k) e))
-    (fun r k e -> ((),arithOpfn (dz r) (xk k) e))
-    (fun r k e -> ((),tyfn (dz r) (xk k) e))
-    (fun r k e -> ((),initfn (dz r) (xk k) e))
-    (fun r k e -> ((),paramfn (dz r) (xk k) e))
-    (fun r k e -> ((),template_paramfn (dz r) (xk k) e))
-    (fun r k e -> ((),declfn (dz r) (xk k) e))
-    (fun r k e -> ((),fieldfn (dz r) (xk k) e))
-    (fun r k e -> ((),enumdeclfn (dz r) (xk k) e))
-    (fun r k e -> ((),stmtfn (dz r) (xk k) e))
-    (fun r k e -> ((),forinfofn (dz r) (xk k) e))
-    (fun r k e -> ((),casefn (dz r) (xk k) e))
-    (fun r k e -> ((),string_fragmentfn (dz r) (xk k) e))
-    (fun r k e -> ((),attributefn (dz r) (xk k) e))
-    (fun r k e -> ((),attr_argfn (dz r) (xk k) e))
-    (fun r k e -> ((),topfn (dz r) (xk k) e)))
+    (fun r k e -> ((),dotsexpr (dz r) (xk k) e))
+    (fun r k e -> ((),dotsinit (dz r) (xk k) e))
+    (fun r k e -> ((),dotsparam (dz r) (xk k) e))
+    (fun r k e -> ((),dotstemplateparam (dz r) (xk k) e))
+    (fun r k e -> ((),dotsstmt (dz r) (xk k) e))
+    (fun r k e -> ((),dotsdecl (dz r) (xk k) e))
+    (fun r k e -> ((),dotsfield (dz r) (xk k) e))
+    (fun r k e -> ((),dotsenumdecl (dz r) (xk k) e))
+    (fun r k e -> ((),dotscase (dz r) (xk k) e))
+    (fun r k e -> ((),dotsdefpar (dz r) (xk k) e))
+    (fun r k e -> ((),ident (dz r) (xk k) e))
+    (fun r k e -> ((),expr (dz r) (xk k) e))
+    (fun r k e -> ((),assignOp (dz r) (xk k) e))
+    (fun r k e -> ((),binaryOp (dz r) (xk k) e))
+    (fun r k e -> ((),ty (dz r) (xk k) e))
+    (fun r k e -> ((),init (dz r) (xk k) e))
+    (fun r k e -> ((),param (dz r) (xk k) e))
+    (fun r k e -> ((),template_param (dz r) (xk k) e))
+    (fun r k e -> ((),decl (dz r) (xk k) e))
+    (fun r k e -> ((),field (dz r) (xk k) e))
+    (fun r k e -> ((),enumdecl (dz r) (xk k) e))
+    (fun r k e -> ((),stmt (dz r) (xk k) e))
+    (fun r k e -> ((),forinfo (dz r) (xk k) e))
+    (fun r k e -> ((),case (dz r) (xk k) e))
+    (fun r k e -> ((),string_fragment (dz r) (xk k) e))
+    (fun r k e -> ((),attribute (dz r) (xk k) e))
+    (fun r k e -> ((),attr_arg (dz r) (xk k) e))
+    (fun r k e -> ((),top (dz r) (xk k) e)))
 
-let combiner_rebuilder_functions =
-  {VT0.combiner_rebuilder_meta_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_string_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_const_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_simpleAssign_mcode =
-     (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_opAssign_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_fix_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_unary_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_arithOp_mcode =
-     (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_logicalOp_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_cv_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_sign_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_struct_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_storage_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_inc_mcode =
-    (fun opt_default mc -> (opt_default,mc));
-   VT0.combiner_rebuilder_dotsexprfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsinitfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsparamfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotstemplateparamfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsstmtfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsdeclfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsfieldfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsenumdeclfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotscasefn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_dotsdefparfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_identfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_exprfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_assignOpfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_binaryOpfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_tyfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_initfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_paramfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_template_paramfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_declfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_fieldfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_enumdeclfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_stmtfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_forinfofn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_casefn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_string_fragmentfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_attributefn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_attr_argfn = (fun r k e -> k e);
-   VT0.combiner_rebuilder_topfn = (fun r k e -> k e)}
+let id x = x
 
-let combiner_rebuilder bind option_default functions =
+let rebuilder_default
+    ?(meta_mcode=id) ?(string_mcode=id) ?(const_mcode=id) ?(simpleAssign_mcode=id)
+    ?(opAssign_mcode=id) ?(fixOp_mcode=id) ?(unaryOp_mcode=id) ?(arithOp_mcode=id)
+    ?(logicalOp_mcode=id) ?(cv_mcode=id) ?(sign_mcode=id) ?(struct_mcode=id)
+    ?(storage_mcode=id) ?(inc_mcode=id) ?(dotsexpr=donothing) ?(dotsinit=donothing)
+    ?(dotsparam=donothing) ?(dotstemplateparam=donothing) ?(dotsstmt=donothing)
+    ?(dotsdecl=donothing) ?(dotsfield=donothing) ?(dotsenumdecl=donothing)
+    ?(dotscase=donothing) ?(dotsdefpar=donothing) ?(ident=donothing)
+    ?(expr=donothing) ?(assignOp=donothing) ?(binaryOp=donothing) ?(ty=donothing)
+    ?(init=donothing) ?(param=donothing) ?(template_param=donothing) ?(decl=donothing)
+    ?(field=donothing) ?(enumdecl=donothing) ?(stmt=donothing) ?(forinfo=donothing)
+    ?(case=donothing) ?(string_fragment=donothing) ?(attribute=donothing)
+    ?(attr_arg=donothing) ?(top=donothing) endarg =
+  rebuilder {rmcode = (fun x -> x)} {rdonothing = (fun r k e -> k e)}
+    ~meta_mcode ~string_mcode ~const_mcode ~simpleAssign_mcode ~opAssign_mcode
+    ~fixOp_mcode ~unaryOp_mcode ~arithOp_mcode ~logicalOp_mcode ~cv_mcode ~sign_mcode
+    ~struct_mcode ~storage_mcode ~inc_mcode
+    ~dotsexpr ~dotsinit ~dotsparam ~dotstemplateparam ~dotsstmt ~dotsdecl
+    ~dotsfield ~dotsenumdecl ~dotscase ~dotsdefpar
+    ~ident ~expr ~assignOp ~binaryOp ~ty ~init ~param ~template_param ~decl ~field
+    ~enumdecl ~stmt ~forinfo ~case ~string_fragment ~attribute ~attr_arg ~top endarg
+
+type 'b crmcodefn = { crmcode: 'a. 'a Ast0.mcode -> 'b * 'a Ast0.mcode }
+type 'b crdonothingfn =
+    { crdonothing: 'a. 'b Visitor_ast0_types.all_functions ->
+      ('a Ast0.wrap -> 'b * 'a Ast0.wrap) -> 'a Ast0.wrap -> 'b * 'a Ast0.wrap }
+
+let combiner_rebuilder bind option_default mcode donothing
+    ?(meta_mcode=mcode.crmcode) ?(string_mcode=mcode.crmcode) ?(const_mcode=mcode.crmcode)
+    ?(simpleAssign_mcode=mcode.crmcode) ?(opAssign_mcode=mcode.crmcode)
+    ?(fixOp_mcode=mcode.crmcode) ?(unaryOp_mcode=mcode.crmcode) ?(arithOp_mcode=mcode.crmcode)
+    ?(logicalOp_mcode=mcode.crmcode) ?(cv_mcode=mcode.crmcode) ?(sign_mcode=mcode.crmcode)
+    ?(struct_mcode=mcode.crmcode) ?(storage_mcode=mcode.crmcode) ?(inc_mcode=mcode.crmcode)
+    ?(dotsexpr=donothing.crdonothing) ?(dotsinit=donothing.crdonothing)
+    ?(dotsparam=donothing.crdonothing) ?(dotstemplateparam=donothing.crdonothing)
+    ?(dotsstmt=donothing.crdonothing) ?(dotsdecl=donothing.crdonothing)
+    ?(dotsfield=donothing.crdonothing) ?(dotsenumdecl=donothing.crdonothing)
+    ?(dotscase=donothing.crdonothing) ?(dotsdefpar=donothing.crdonothing)
+    ?(ident=donothing.crdonothing) ?(expr=donothing.crdonothing)
+    ?(assignOp=donothing.crdonothing) ?(binaryOp=donothing.crdonothing)
+    ?(ty=donothing.crdonothing) ?(init=donothing.crdonothing)
+    ?(param=donothing.crdonothing) ?(template_param=donothing.crdonothing)
+    ?(decl=donothing.crdonothing) ?(field=donothing.crdonothing)
+    ?(enumdecl=donothing.crdonothing) ?(stmt=donothing.crdonothing)
+    ?(forinfo=donothing.crdonothing) ?(case=donothing.crdonothing)
+    ?(string_fragment=donothing.crdonothing) ?(attribute=donothing.crdonothing)
+    ?(attr_arg=donothing.crdonothing) ?(top=donothing.crdonothing) endarg =
+
   visitor BOTH bind option_default
-    (functions.VT0.combiner_rebuilder_meta_mcode option_default)
-    (functions.VT0.combiner_rebuilder_string_mcode option_default)
-    (functions.VT0.combiner_rebuilder_const_mcode option_default)
-    (functions.VT0.combiner_rebuilder_simpleAssign_mcode option_default)
-    (functions.VT0.combiner_rebuilder_opAssign_mcode option_default)
-    (functions.VT0.combiner_rebuilder_fix_mcode option_default)
-    (functions.VT0.combiner_rebuilder_unary_mcode option_default)
-    (functions.VT0.combiner_rebuilder_arithOp_mcode option_default)
-    (functions.VT0.combiner_rebuilder_logicalOp_mcode option_default)
-    (functions.VT0.combiner_rebuilder_cv_mcode option_default)
-    (functions.VT0.combiner_rebuilder_sign_mcode option_default)
-    (functions.VT0.combiner_rebuilder_struct_mcode option_default)
-    (functions.VT0.combiner_rebuilder_storage_mcode option_default)
-    (functions.VT0.combiner_rebuilder_inc_mcode option_default)
-    functions.VT0.combiner_rebuilder_dotsexprfn
-    functions.VT0.combiner_rebuilder_dotsinitfn
-    functions.VT0.combiner_rebuilder_dotsparamfn
-    functions.VT0.combiner_rebuilder_dotstemplateparamfn
-    functions.VT0.combiner_rebuilder_dotsstmtfn
-    functions.VT0.combiner_rebuilder_dotsdeclfn
-    functions.VT0.combiner_rebuilder_dotsfieldfn
-    functions.VT0.combiner_rebuilder_dotsenumdeclfn
-    functions.VT0.combiner_rebuilder_dotscasefn
-    functions.VT0.combiner_rebuilder_dotsdefparfn
-    functions.VT0.combiner_rebuilder_identfn
-    functions.VT0.combiner_rebuilder_exprfn
-    functions.VT0.combiner_rebuilder_assignOpfn
-    functions.VT0.combiner_rebuilder_binaryOpfn
-    functions.VT0.combiner_rebuilder_tyfn
-    functions.VT0.combiner_rebuilder_initfn
-    functions.VT0.combiner_rebuilder_paramfn
-    functions.VT0.combiner_rebuilder_template_paramfn
-    functions.VT0.combiner_rebuilder_declfn
-    functions.VT0.combiner_rebuilder_fieldfn
-    functions.VT0.combiner_rebuilder_enumdeclfn
-    functions.VT0.combiner_rebuilder_stmtfn
-    functions.VT0.combiner_rebuilder_forinfofn
-    functions.VT0.combiner_rebuilder_casefn
-    functions.VT0.combiner_rebuilder_string_fragmentfn
-    functions.VT0.combiner_rebuilder_attributefn
-    functions.VT0.combiner_rebuilder_attr_argfn
-    functions.VT0.combiner_rebuilder_topfn
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fixOp_mcode unaryOp_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
+    dotsexpr dotsinit dotsparam dotstemplateparam dotsstmt dotsdecl
+    dotsfield dotsenumdecl dotscase dotsdefpar
+    ident expr assignOp binaryOp ty init param template_param
+    decl field enumdecl stmt forinfo case string_fragment
+    attribute attr_arg top
+
+let combiner_rebuilder_default bind option_default
+    ?(meta_mcode=(fun x -> (option_default,x)))
+    ?(string_mcode=(fun x -> (option_default,x)))
+    ?(const_mcode=(fun x -> (option_default,x)))
+    ?(simpleAssign_mcode=(fun x -> (option_default,x)))
+    ?(opAssign_mcode=(fun x -> (option_default,x)))
+    ?(fixOp_mcode=(fun x -> (option_default,x)))
+    ?(unaryOp_mcode=(fun x -> (option_default,x)))
+    ?(arithOp_mcode=(fun x -> (option_default,x)))
+    ?(logicalOp_mcode=(fun x -> (option_default,x)))
+    ?(cv_mcode=(fun x -> (option_default,x)))
+    ?(sign_mcode=(fun x -> (option_default,x)))
+    ?(struct_mcode=(fun x -> (option_default,x)))
+    ?(storage_mcode=(fun x -> (option_default,x)))
+    ?(inc_mcode=(fun x -> (option_default,x)))
+    ?(dotsexpr=donothing) ?(dotsinit=donothing) ?(dotsparam=donothing)
+    ?(dotstemplateparam=donothing) ?(dotsstmt=donothing) ?(dotsdecl=donothing)
+    ?(dotsfield=donothing) ?(dotsenumdecl=donothing) ?(dotscase=donothing)
+    ?(dotsdefpar=donothing) ?(ident=donothing) ?(expr=donothing)
+    ?(assignOp=donothing) ?(binaryOp=donothing) ?(ty=donothing)
+    ?(init=donothing) ?(param=donothing) ?(template_param=donothing)
+    ?(decl=donothing) ?(field=donothing) ?(enumdecl=donothing)
+    ?(stmt=donothing) ?(forinfo=donothing) ?(case=donothing)
+    ?(string_fragment=donothing) ?(attribute=donothing)
+    ?(attr_arg=donothing) ?(top=donothing) endarg =
+
+  visitor BOTH bind option_default
+    meta_mcode string_mcode const_mcode simpleAssign_mcode opAssign_mcode
+    fixOp_mcode unaryOp_mcode arithOp_mcode logicalOp_mcode cv_mcode sign_mcode
+    struct_mcode storage_mcode inc_mcode
+    dotsexpr dotsinit dotsparam dotstemplateparam dotsstmt dotsdecl
+    dotsfield dotsenumdecl dotscase dotsdefpar
+    ident expr assignOp binaryOp ty init param template_param
+    decl field enumdecl stmt forinfo case string_fragment
+    attribute attr_arg top

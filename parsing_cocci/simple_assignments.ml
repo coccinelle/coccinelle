@@ -117,7 +117,5 @@ let simple_assignments l =
     match Ast0.unwrap e with
       Ast0.Exp(e1) -> Ast0.rewrap e (Ast0.Exp(exp (Ast0.get_mcodekind e) e1))
     | _ -> k e in
-  let fn =
-    V0.rebuilder
-      {V0.rebuilder_functions with VT0.rebuilder_stmtfn = statement} in
+  let fn = V0.rebuilder_default ~stmt:statement () in
   List.map fn.VT0.rebuilder_rec_top_level l

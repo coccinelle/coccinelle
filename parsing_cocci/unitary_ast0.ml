@@ -206,14 +206,10 @@ let get_free checker t =
    | _ -> k s in
 
   let res =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing
-      ident expression donothing donothing typeC donothing parameter donothing
-      declaration field donothing statement donothing case_line donothing
-      donothing attr_arg donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+      ~ident:ident ~expr:expression ~ty:typeC ~param:parameter
+      ~decl:declaration ~field:field ~stmt:statement ~case:case_line
+      ~attr_arg:attr_arg () in
 
   collect_unitary_nonunitary
     (List.concat (List.map res.VT0.combiner_rec_top_level t))
@@ -298,28 +294,10 @@ let update_unitary unitary =
 	Ast0.rewrap s (Ast0.MetaStmtList(name,lenname,cstr,is_unitary name))
     | _ -> s in
 
-  let res = V0.rebuilder
-      {V0.rebuilder_functions with
-	VT0.rebuilder_meta_mcode = mcode;
-	VT0.rebuilder_string_mcode = mcode;
-	VT0.rebuilder_const_mcode = mcode;
-	VT0.rebuilder_simpleAssign_mcode = mcode;
-	VT0.rebuilder_opAssign_mcode = mcode;
-	VT0.rebuilder_fix_mcode = mcode;
-	VT0.rebuilder_unary_mcode = mcode;
-	VT0.rebuilder_arithOp_mcode = mcode;
-	VT0.rebuilder_logicalOp_mcode = mcode;
-	VT0.rebuilder_cv_mcode = mcode;
-	VT0.rebuilder_sign_mcode = mcode;
-	VT0.rebuilder_struct_mcode = mcode;
-	VT0.rebuilder_storage_mcode = mcode;
-	VT0.rebuilder_inc_mcode = mcode;
-	VT0.rebuilder_identfn = ident;
-	VT0.rebuilder_exprfn = expression;
-	VT0.rebuilder_tyfn = typeC;
-	VT0.rebuilder_paramfn = parameter;
-	VT0.rebuilder_stmtfn = statement;
-	VT0.rebuilder_declfn = declaration} in
+  let res =
+    V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=(fun r k e -> k e)}
+      ~ident:ident ~expr:expression ~ty:typeC ~param:parameter
+	~stmt:statement ~decl:declaration () in
 
   List.map res.VT0.rebuilder_rec_top_level
 

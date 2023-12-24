@@ -20,7 +20,7 @@ let map_split f l = List.split(List.map f l)
 
 let rewrap x (n,e) = (n,Ast0.rewrap x e)
 
-let mcode _ x =
+let mcode x =
   let (nonpos,ispos) =
     List.partition (function Ast0.MetaPosTag _ -> false | _ -> true)
       (Ast0.get_pos x) in
@@ -117,7 +117,7 @@ and param r k p =
     Ast0.MetaParamList(name,lenname,cstr,pure) ->
       let (metas,p) =
        rewrap p
-         (let (n,name) = mcode () name in
+         (let (n,name) = mcode name in
          (n,Ast0.MetaParamList(name,lenname,cstr,pure))) in
       List.fold_left
        (function (other_metas,id) ->
@@ -141,30 +141,11 @@ and statement r k s =
 	| x -> (x::other_metas,stmt))
     ([],s) metas
 
-let res = V0.combiner_rebuilder bind option_default
-    {V0.combiner_rebuilder_functions with
-      VT0.combiner_rebuilder_meta_mcode = mcode;
-      VT0.combiner_rebuilder_string_mcode = mcode;
-      VT0.combiner_rebuilder_const_mcode = mcode;
-      VT0.combiner_rebuilder_simpleAssign_mcode = mcode;
-      VT0.combiner_rebuilder_opAssign_mcode = mcode;
-      VT0.combiner_rebuilder_fix_mcode = mcode;
-      VT0.combiner_rebuilder_unary_mcode = mcode;
-      VT0.combiner_rebuilder_arithOp_mcode = mcode;
-      VT0.combiner_rebuilder_logicalOp_mcode = mcode;
-      VT0.combiner_rebuilder_cv_mcode = mcode;
-      VT0.combiner_rebuilder_sign_mcode = mcode;
-      VT0.combiner_rebuilder_struct_mcode = mcode;
-      VT0.combiner_rebuilder_storage_mcode = mcode;
-      VT0.combiner_rebuilder_inc_mcode = mcode;
-      
-      VT0.combiner_rebuilder_identfn = ident;
-      VT0.combiner_rebuilder_exprfn = expression;
-      VT0.combiner_rebuilder_tyfn = typeC;
-      VT0.combiner_rebuilder_initfn = initialiser;
-      VT0.combiner_rebuilder_paramfn = param;
-      VT0.combiner_rebuilder_declfn = declaration;
-      VT0.combiner_rebuilder_stmtfn = statement}
+let res =
+  V0.combiner_rebuilder bind option_default
+    {V0.crmcode=mcode} {V0.crdonothing=(fun r k e -> k e)}
+    ~ident:ident ~expr:expression ~ty:typeC ~init:initialiser
+    ~param:param ~decl:declaration ~stmt:statement ()
 
 let do_process fn line_getter t =
   match fn t with

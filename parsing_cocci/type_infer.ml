@@ -507,13 +507,8 @@ let rec propagate_types env =
 	None
     | _ -> k c in
 
-  V0.combiner bind option_default
-    {V0.combiner_functions with
-      VT0.combiner_dotsstmtfn = statement_dots;
-      VT0.combiner_identfn = ident;
-      VT0.combiner_exprfn = expression;
-      VT0.combiner_stmtfn = statement;
-      VT0.combiner_casefn = case_line}
+  V0.combiner_default bind option_default
+    ~dotsstmt:statement_dots ~ident:ident ~expr:expression ~stmt:statement ~case:case_line ()
 
 let type_infer code =
   let unknown = Ast0.wrap (Ast0.BaseType (Ast.Unknown, [])) in

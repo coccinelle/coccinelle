@@ -493,14 +493,12 @@ and contains_only_minus =
 	List.for_all r.VT0.combiner_rec_case_line case_list
     | _ -> k e in
 
-  V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode
-    dots dots dots dots dots dots dots dots dots dots
-    identifier expression donothing donothing typeC donothing donothing donothing
-    declaration field donothing statement donothing case_line donothing
-    donothing donothing donothing
-
+  V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+    ~dotsexpr:dots ~dotsinit:dots ~dotsparam:dots ~dotstemplateparam:dots
+    ~dotsstmt:dots ~dotsdecl:dots ~dotsfield:dots ~dotsenumdecl:dots
+    ~dotscase:dots ~dotsdefpar:dots
+    ~ident:identifier ~expr:expression ~ty:typeC ~decl:declaration ~field:field
+    ~stmt:statement ~case:case_line ()
 
 (* needs a special case when there is a Disj or an empty DOTS *)
 (* ---------------------------------------------------------------------- *)

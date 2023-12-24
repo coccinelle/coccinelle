@@ -32,8 +32,6 @@ let collect_context e =
   let bind x y = x @ y in
   let option_default = [] in
 
-  let mcode _ = [] in
-
   let donothing builder r k e =
     match Ast0.get_mcodekind e with
       Ast0.CONTEXT(_) -> (builder e) :: (k e)
@@ -69,22 +67,22 @@ it *)
   let topfn r k e = Ast0.TopTag(e) :: (k e) in
 
   let res =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      (donothing Ast0.dotsExpr) (donothing Ast0.dotsInit)
-      (donothing Ast0.dotsParam) (donothing Ast0.dotsTemplateParam) (donothing Ast0.dotsStmt)
-      (donothing Ast0.dotsDecl) (donothing Ast0.dotsField)
-      (donothing Ast0.dotsEnumDecl) (donothing Ast0.dotsCase)
-      (donothing Ast0.dotsDefParam)
-      (donothing Ast0.ident) expression  (donothing Ast0.assignOp)
-      (donothing Ast0.binaryOp)
-      (donothing Ast0.typeC) initialiser
-      (donothing Ast0.param) (donothing Ast0.template_param) (donothing Ast0.decl)
-      (donothing Ast0.field) (donothing Ast0.enum_decl) statement
-      (donothing Ast0.forinfo) (donothing Ast0.case_line)
-      (donothing Ast0.string_fragment) (donothing Ast0.attr) (donothing Ast0.attr_arg)
-      topfn in
+    V0.combiner_default bind option_default
+      ~dotsexpr:(donothing Ast0.dotsExpr) ~dotsinit:(donothing Ast0.dotsInit)
+      ~dotsparam:(donothing Ast0.dotsParam) ~dotstemplateparam:(donothing Ast0.dotsTemplateParam)
+      ~dotsstmt:(donothing Ast0.dotsStmt)
+      ~dotsdecl:(donothing Ast0.dotsDecl) ~dotsfield:(donothing Ast0.dotsField)
+      ~dotsenumdecl:(donothing Ast0.dotsEnumDecl) ~dotscase:(donothing Ast0.dotsCase)
+      ~dotsdefpar:(donothing Ast0.dotsDefParam)
+      ~ident:(donothing Ast0.ident) ~expr:expression ~assignOp:(donothing Ast0.assignOp)
+      ~binaryOp:(donothing Ast0.binaryOp)
+      ~ty:(donothing Ast0.typeC) ~init:initialiser
+      ~param:(donothing Ast0.param) ~template_param:(donothing Ast0.template_param)
+      ~decl:(donothing Ast0.decl) ~field:(donothing Ast0.field)
+      ~enumdecl:(donothing Ast0.enum_decl) ~stmt:statement
+      ~forinfo:(donothing Ast0.forinfo) ~case:(donothing Ast0.case_line)
+      ~string_fragment:(donothing Ast0.string_fragment) ~attribute:(donothing Ast0.attr)
+      ~attr_arg:(donothing Ast0.attr_arg) ~top:topfn () in
   res.VT0.combiner_rec_top_level e
 
 (* --------------------------------------------------------------------- *)
@@ -396,14 +394,13 @@ bind to that; not good for isomorphisms *)
 
   let do_top r k (e: Ast0.top_level) = k e in
 
-  V0.flat_combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    edots idots pdots tpdots sdots ddots fdots enumdots cdots dpdots
-    ident expression do_nothing do_nothing
-    typeC initialiser param do_nothing decl field do_nothing statement forinfo
-    case_line do_nothing do_nothing do_nothing do_top
-
+  V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=do_nothing}
+    ~dotsexpr:edots ~dotsinit:idots ~dotsparam:pdots ~dotstemplateparam:tpdots
+    ~dotsstmt:sdots ~dotsdecl:ddots ~dotsfield:fdots ~dotsenumdecl:enumdots
+    ~dotscase:cdots ~dotsdefpar:dpdots
+    ~ident:ident ~expr:expression
+    ~ty:typeC ~init:initialiser ~param:param ~decl:decl ~field:field
+    ~stmt:statement ~forinfo:forinfo ~case:case_line ~top:do_top ()
 
 let call_collect_minus context_nodes :
     (int * (minus_join_point * Ast0.info * Ast0.mcodekind) list) list =
@@ -688,28 +685,27 @@ let collect_plus_nodes root =
 
   let initdots r k e = k e in
 
-  V0.flat_combiner bind option_default
-    (imcode mk_meta) (imcode mk_token) (mcode mk_constant)
-    (mcode mk_simpleAssignOp) (mcode mk_opAssignOp)
-    (mcode mk_fixOp)
-    (mcode mk_unaryOp) (mcode mk_arithOp)
-    (mcode mk_logicalOp) (mcode mk_const_vol)
-    (mcode mk_sign) (mcode mk_structUnion)
-    (mcode mk_storage) (mcode mk_inc_file)
-    (do_nothing mk_exprdots) initdots
-    (do_nothing mk_paramdots) (do_nothing mk_templateparamdots) stmt_dots (do_nothing mk_decldots)
-    (do_nothing mk_fielddots) (do_nothing mk_enumdecldots)
-    (do_nothing mk_casedots) (do_nothing mk_defpardots)
-    (do_nothing mk_ident) (do_nothing mk_expression)
-    (do_nothing mk_assignOp) (do_nothing mk_binaryOp)
-    (do_nothing mk_typeC) (do_nothing mk_init)
-    (do_nothing mk_param) (do_nothing mk_template_param)
-    (do_nothing mk_declaration) (do_nothing mk_field)
-    (do_nothing mk_enum_decl)
-    stmt (do_nothing mk_forinfo) (do_nothing mk_case_line)
-    (do_nothing mk_string_fragment) (do_nothing mk_attribute)
-    (do_nothing mk_attr_arg)
-    toplevel
+  V0.combiner_default bind option_default
+    ~meta_mcode:(imcode mk_meta) ~string_mcode:(imcode mk_token) ~const_mcode:(mcode mk_constant)
+    ~simpleAssign_mcode:(mcode mk_simpleAssignOp) ~opAssign_mcode:(mcode mk_opAssignOp)
+    ~fixOp_mcode:(mcode mk_fixOp) ~unaryOp_mcode:(mcode mk_unaryOp) ~arithOp_mcode:(mcode mk_arithOp)
+    ~logicalOp_mcode:(mcode mk_logicalOp) ~cv_mcode:(mcode mk_const_vol)
+    ~sign_mcode:(mcode mk_sign) ~struct_mcode:(mcode mk_structUnion)
+    ~storage_mcode:(mcode mk_storage) ~inc_mcode:(mcode mk_inc_file)
+    ~dotsexpr:(do_nothing mk_exprdots) ~dotsinit:initdots
+    ~dotsparam:(do_nothing mk_paramdots) ~dotstemplateparam:(do_nothing mk_templateparamdots)
+    ~dotsstmt:stmt_dots ~dotsdecl:(do_nothing mk_decldots)
+    ~dotsfield:(do_nothing mk_fielddots) ~dotsenumdecl:(do_nothing mk_enumdecldots)
+    ~dotscase:(do_nothing mk_casedots) ~dotsdefpar:(do_nothing mk_defpardots)
+    ~ident:(do_nothing mk_ident) ~expr:(do_nothing mk_expression)
+    ~assignOp:(do_nothing mk_assignOp) ~binaryOp:(do_nothing mk_binaryOp)
+    ~ty:(do_nothing mk_typeC) ~init:(do_nothing mk_init)
+    ~param:(do_nothing mk_param) ~template_param:(do_nothing mk_template_param)
+    ~decl:(do_nothing mk_declaration) ~field:(do_nothing mk_field)
+    ~enumdecl:(do_nothing mk_enum_decl)
+    ~stmt:stmt ~forinfo:(do_nothing mk_forinfo) ~case:(do_nothing mk_case_line)
+    ~string_fragment:(do_nothing mk_string_fragment) ~attribute:(do_nothing mk_attribute)
+    ~attr_arg:(do_nothing mk_attr_arg) ~top:toplevel ()
 
 let call_collect_plus context_nodes :
     (int * (Ast0.info * Ast.count * Ast.anything) list) list =
@@ -1271,13 +1267,8 @@ let reevaluate_contextness =
      | _ -> donothing r k e in
 
   let res =
-    V0.flat_combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      stmt donothing donothing donothing donothing donothing donothing in
+    V0.combiner bind option_default {V0.cmcode=mcode} {V0.cdonothing=donothing}
+      ~stmt:stmt () in
   res.VT0.combiner_rec_top_level
 
 (* --------------------------------------------------------------------- *)

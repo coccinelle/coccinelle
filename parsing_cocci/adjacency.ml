@@ -74,21 +74,6 @@ let compute_adjacency p =
 	  Ast0.Iterator(nm,lp,args,rp,body,(info,mc,get_adj()))
       | s -> s) in
   let fn =
-    V0.rebuilder
-      {V0.rebuilder_functions with
-	VT0.rebuilder_meta_mcode = mcode;
-	VT0.rebuilder_string_mcode = string_mcode;
-	VT0.rebuilder_const_mcode = mcode;
-	VT0.rebuilder_simpleAssign_mcode = mcode;
-	VT0.rebuilder_opAssign_mcode = mcode;
-	VT0.rebuilder_fix_mcode = mcode;
-	VT0.rebuilder_unary_mcode = mcode;
-	VT0.rebuilder_arithOp_mcode = mcode;
-	VT0.rebuilder_logicalOp_mcode = mcode;
-	VT0.rebuilder_cv_mcode = mcode;
-	VT0.rebuilder_sign_mcode = mcode;
-	VT0.rebuilder_struct_mcode = mcode;
-	VT0.rebuilder_storage_mcode = mcode;
-	VT0.rebuilder_inc_mcode = mcode;
-	VT0.rebuilder_stmtfn = statement;} in
+    V0.rebuilder {V0.rmcode=mcode} {V0.rdonothing=(fun r k e -> k e)}
+      ~string_mcode:string_mcode ~stmt:statement () in
   List.map fn.VT0.rebuilder_rec_top_level p

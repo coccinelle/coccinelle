@@ -83,9 +83,7 @@ let set_test_poss =
 	Ast0.rewrap s (Ast0.Nest(l,s1,r,List.map process_wc wc,m))
     | _ -> s in
 
-  V0.rebuilder
-    {V0.rebuilder_functions with
-      VT0.rebuilder_exprfn = expression; VT0.rebuilder_stmtfn = statement}
+  V0.rebuilder_default ~expr:expression ~stmt:statement ()
 
 let process = List.map set_test_poss.VT0.rebuilder_rec_top_level
 
