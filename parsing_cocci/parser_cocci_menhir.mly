@@ -3016,7 +3016,7 @@ type_ident: disj_ident { $1 }
 type_ident_or_template:
      | p=TTypeId
 	 { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
-     | p=TTypeId TTemplateStart eexpr_list_option TTemplateEnd
+     | p=TTypeId TTemplateStart eexpr_list TTemplateEnd
 	 { let nm = Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode p)) in
 	   Ast0_cocci.wrap
 	   (Ast0_cocci.TemplateType
@@ -3026,7 +3026,7 @@ ident_or_template_type:
      | p=pure_ident_or_symbol
 	 { !Data.add_type_name (Parse_aux.id2name p);
 	   Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
-     | p=pure_ident_or_symbol TTemplateStart eexpr_list_option TTemplateEnd
+     | p=pure_ident_or_symbol TTemplateStart eexpr_list TTemplateEnd
 	 { !Data.add_type_name (Parse_aux.id2name p);
 	   let nm = Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode p)) in
 	   Ast0_cocci.wrap
