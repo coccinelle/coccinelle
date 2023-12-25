@@ -3050,16 +3050,13 @@ let convert_templates toks =
   let success a repl b i2 c i3 xs =
     b.TV.tok <- TTemplateStart i2;
     c.TV.tok <- i3;
-    let comment_or_space_or_and x =
+    let comment_or_space x =
       let tok = x.TV.tok in
-      TH.is_just_comment_or_space tok ||
-      (match tok with
-	TAnd _ -> true
-      | _ -> false) in
-    let (_,tmp) = span comment_or_space_or_and xs in
+      TH.is_just_comment_or_space tok in
+    let tmp = drop_while comment_or_space xs in
     (match tmp, repl with
-      {TV.tok = TIdent(_,_)} :: xs, Some (s,i1) ->
-        a.TV.tok <- TypedefIdent(s,i1)
+      {TV.tok = TOPar(_)} :: xs, _ -> ()
+    | _, Some (s,i1) -> a.TV.tok <- TypedefIdent(s,i1)
     | _ -> ()) in
   let rec loop stack pdepth tdepth = function
     [] -> ()

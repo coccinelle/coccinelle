@@ -2058,14 +2058,9 @@ let convert_templates_cocci toks =
   let success (at,ar) repl (bt,br) (i2clt,i2q) (ct,cr) i3 xs =
     br := (PC.TTemplateStart i2clt,i2q);
     cr := i3;
-    let is_and (tok,_) =
-      match tok with
-	(PC.TAnd _,_) | (PC.TAndLog _,_) -> true
-      | _ -> false in
-    let tmp = Common.drop_while is_and xs in
-    match tmp, repl with
-      ((PC.TIdent _,_),cell)::xs, Some (s,i1) ->
-        ar := (PC.TTypeId(s,i1),snd at)
+    match xs, repl with
+      ((PC.TOPar _,_),cell)::_, _ -> ()
+    | _, Some (s,i1) -> ar := (PC.TTypeId(s,i1),snd at)
     | _ -> () in
   let rec loop stack pdepth tdepth = function
     [] -> ()
