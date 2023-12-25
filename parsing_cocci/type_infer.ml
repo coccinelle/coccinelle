@@ -211,7 +211,9 @@ let rec propagate_types env =
 		  | Some t -> t in
                 Some (Ast0.rewrap e (Ast0.Pointer (exptype,dummy_star)))
 	    | Ast.GetRefLabel ->
-                Some (Ast0.rewrap e (Ast0.Pointer (Ast0.rewrap e void_type,dummy)))
+                Some
+		  (Ast0.rewrap e
+		     (Ast0.Pointer (Ast0.rewrap e void_type,dummy_star)))
 	    | Ast.DeRef ->
                 (match Common.map_option Ast0.unwrap (Ast0.get_type exp) with
                   Some (Ast0.Pointer(t, _)) -> Some t
@@ -297,7 +299,7 @@ let rec propagate_types env =
 		      | Some (Ast0.StructUnionName(_, _)) -> None
 		      | Some x ->
                           let ty =
-                            Ast0.wrap (Ast0.Pointer(t, Ast0.make_mcode "")) in
+                            Ast0.wrap (Ast0.Pointer(t, dummy_star)) in
                           err exp ty
 			    "non-structure pointer type in field ref"
 		      |	_ -> failwith "not possible")
@@ -396,7 +398,7 @@ let rec propagate_types env =
 	(match Ast0.unwrap exp with
 	  Ast0.Paren(lpp,exp,rpp) ->
 	    (match Ast0.get_type exp with
-	      Some t -> Ast0.rewrap ty (Ast0.Pointer(t, dummy))
+	      Some t -> Ast0.rewrap ty (Ast0.Pointer(t, Ast0.make_mcode "&"))
 	    | None -> ty)
 	| _ -> ty)
     | _ -> ty
