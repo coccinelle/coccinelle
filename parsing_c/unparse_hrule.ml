@@ -130,14 +130,8 @@ let get_function_name rule env =
 	| _ -> [])
     | _ -> []) in
   let names =
-    (V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing donothing
-      donothing expression donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing).V.combiner_top_level
+    (V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+       ~expr:expression donothing).V.combiner_top_level
       rule in
   match names with
     [name] ->

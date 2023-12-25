@@ -263,16 +263,15 @@ let collect_refs include_constraints =
 	   (Ast.get_pos_var mc))
     (* else option_default *) in
 
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfrag astfvfmt astfvassignop astfvbinaryop
-    astfvpragmainfo
-    astfvfullType astfvtypeC astfvinit astfvparam donothing astfvdefine_param
-    astfvdecls donothing astfvfields astafvfields donothing
-    astfvrule_elem astfvstatement donothing donothing astfvattr_arg
-    donothing donothing_a
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+    ~ident:astfvident ~expr:astfvexpr ~string_fragment:astfvfrag ~fmt:astfvfmt
+    ~assignOp:astfvassignop ~binaryOp:astfvbinaryop
+    ~pragma_info:astfvpragmainfo
+    ~ft:astfvfullType ~ty:astfvtypeC ~init:astfvinit ~param:astfvparam
+    ~define_param:astfvdefine_param
+    ~decl:astfvdecls ~field:astfvfields ~annotated_field:astafvfields
+    ~rule:astfvrule_elem ~stmt:astfvstatement ~attr_arg:astfvattr_arg
+    donothing_a
 
 let collect_all_refs = collect_refs true
 let collect_non_constraint_refs = collect_refs false
@@ -315,14 +314,8 @@ let collect_pos_positions =
 	List.fold_left Common.inter_set (List.hd subres) (List.tl subres)
     | _ -> k s in
 
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing
-    cprule_elem cpstmt donothing donothing donothing donothing donothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+    ~rule:cprule_elem ~stmt:cpstmt donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -503,15 +496,11 @@ let collect_saved =
 	  | _ -> acc)
       option_default (Ast.get_pos_var e) in
 
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing donothing
-    astfvident astfvexpr astfvfrag astfvfmt astfvassign astfvbinary
-    astfvpragmainfo donothing
-    astfvtypeC astfvinit astfvparam donothing astfvdefine_param astfvdecls donothing
-    astfvfields donothing donothing astfvrule_elem donothing donothing
-    donothing astfvattr_arg donothing donothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+    ~ident:astfvident ~expr:astfvexpr ~string_fragment:astfvfrag ~fmt:astfvfmt ~assignOp:astfvassign
+    ~binaryOp:astfvbinary ~pragma_info:astfvpragmainfo ~ty:astfvtypeC ~init:astfvinit ~param:astfvparam
+    ~define_param:astfvdefine_param ~decl:astfvdecls ~field:astfvfields ~rule:astfvrule_elem
+    ~attr_arg:astfvattr_arg donothing
 
 (* ---------------------------------------------------------------- *)
 
@@ -639,13 +628,8 @@ let collect_in_plus_term =
 	bind (k s) (cip_mcodekind recursor aft)
     | _ -> k s in
 
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing astfvrule_elem
-    astfvstatement donothing donothing donothing donothing donothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+    ~rule:astfvrule_elem ~stmt:astfvstatement donothing
 
 let collect_in_plus metavars minirules =
   nub
@@ -947,15 +931,13 @@ let classify_variables metavar_decls minirules used_after =
 	Ast.rewrap e (Ast.MetaStmtList(name,lenname,cstr,unitary,inherited))
     | _ -> e in
 
-  let fn = V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing
-      ident expression string_fragment string_format assignop binaryop
-      pragmainfo donothing typeC
-      init param donothing define_param decl donothing field donothing donothing
-      rule_elem donothing donothing donothing attr_arg donothing donothing in
+  let fn =
+    V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing}
+      ~ident:ident ~expr:expression ~string_fragment:string_fragment ~fmt:string_format
+      ~assignOp:assignop ~binaryOp:binaryop
+      ~pragma_info:pragmainfo ~ty:typeC
+      ~init:init ~param:param ~define_param:define_param ~decl:decl ~field:field
+      ~rule:rule_elem ~attr_arg:attr_arg donothing in
 
   List.map fn.V.rebuilder_top_level minirules
 
@@ -1138,14 +1120,9 @@ let astfvs metavars bound =
   let mcode x = x in
   let donothing r k e = k e in
 
-  V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing astfvstatement_dots donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    astfvrule_elem astfvstatement astfvcase_line donothing donothing astfvtoplevel
+  V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing}
+    ~dotsstmt:astfvstatement_dots
+    ~stmt:astfvstatement ~rule:astfvrule_elem ~case:astfvcase_line ~top:astfvtoplevel
     donothing
 
 (*
@@ -1224,14 +1201,7 @@ let get_neg_pos_list (_,rule) used_after_list =
 	  | _ -> (pos_vars,neg_vars,all_vars)))
       option_default (Ast.get_pos_var mc) in
   let v =
-    V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing in
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing} donothing in
   match rule with
     Ast.CocciRule(rule_name,_,minirules,_,_) ->
       List.map

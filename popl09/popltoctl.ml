@@ -42,16 +42,8 @@ let contains_modif =
 	bind (mcode r ((),(),annotated_decl decl,[])) res
     | _ -> res in
   let recursor =
-    V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing in
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=do_nothing}
+      ~rule:rule_elem do_nothing in
   recursor.V.combiner_rule_elem
 
 let ctl_exists keep_wit v x =

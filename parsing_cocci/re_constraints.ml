@@ -38,13 +38,9 @@ let disj_free re =
   let statement r k e =
     match Ast.unwrap e with Ast.Disj _ -> false | _ -> k e in
   let v =
-    V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing donothing ident
-    expr donothing donothing donothing donothing donothing ty donothing donothing
-    donothing donothing donothing decl donothing donothing ann_field donothing
-    rule_elem statement donothing donothing donothing donothing donothing in
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+      ~ident:ident ~expr:expr ~ft:ty ~decl:decl ~annotated_field:ann_field
+      ~rule:rule_elem ~stmt:statement donothing in
   try Hashtbl.find disj_free_table re
   with Not_found ->
     let res = v.V.combiner_rule_elem re in
@@ -84,14 +80,8 @@ let ok_for_all_rule_elems cstr minirules =
     else true (* not relevant to this rule_elem *) in
 
   let v =
-    V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing rule_elem donothing donothing donothing
-      donothing donothing donothing in
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+      ~rule:rule_elem donothing in
   List.for_all v.V.combiner_top_level minirules
 
 let update_for_all_rule_elems cstr minirules =
@@ -107,15 +97,7 @@ let update_for_all_rule_elems cstr minirules =
     else re in
     
   let v =
-    V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing rule_elem donothing donothing donothing donothing
-      donothing donothing in
+    V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing} ~rule:rule_elem donothing in
   List.map v.V.rebuilder_top_level minirules
 
 let remove rule_name ((nm,_) as x) =

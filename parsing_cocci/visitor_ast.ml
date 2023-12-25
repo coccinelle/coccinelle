@@ -49,18 +49,85 @@ type 'a combiner =
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
-let combiner bind option_default
-    meta_mcodefn string_mcodefn const_mcodefn simpleassign_mcodefn
-    opassign_mcodefn fix_mcodefn
-    unary_mcodefn arithop_mcodefn logicalop_mcodefn
-    cv_mcodefn sign_mcodefn struct_mcodefn storage_mcodefn
-    inc_file_mcodefn
-    expdotsfn paramdotsfn template_paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
-    enumdecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
-    ftfn tyfn initfn paramfn template_paramfn define_paramfn declfn
-    annotated_declfn fieldfn annotated_fieldfn enum_declfn rulefn stmtfn
-    casefn attributefn attr_argfn topfn anyfn =
+type 'b cmcodefn = { cmcode: 'a. 'b combiner -> 'a Ast.mcode -> 'b }
+type 'b cdonothingfn =
+    { cdonothing: 'a. 'b combiner -> ('a Ast.wrap -> 'b) -> 'a Ast.wrap -> 'b }
+
+let combiner bind option_default mcode donothing
+    ?(meta_mcode=mcode.cmcode) ?(string_mcode=mcode.cmcode) ?(const_mcode=mcode.cmcode)
+    ?(simpleAssign_mcode=mcode.cmcode) ?(opAssign_mcode=mcode.cmcode)
+    ?(fixOp_mcode=mcode.cmcode) ?(unaryOp_mcode=mcode.cmcode) ?(arithOp_mcode=mcode.cmcode)
+    ?(logicalOp_mcode=mcode.cmcode) ?(cv_mcode=mcode.cmcode) ?(sign_mcode=mcode.cmcode)
+    ?(struct_mcode=mcode.cmcode) ?(storage_mcode=mcode.cmcode) ?(inc_mcode=mcode.cmcode)
+    ?(dotsexpr=donothing.cdonothing) ?(dotsinit=donothing.cdonothing)
+    ?(dotsparam=donothing.cdonothing) ?(dotstemplateparam=donothing.cdonothing)
+    ?(dotsstmt=donothing.cdonothing) ?(dotsanndecl=donothing.cdonothing)
+    ?(dotsannfield=donothing.cdonothing) ?(dotsenumdecl=donothing.cdonothing)
+    ?(dotsdefpar=donothing.cdonothing)
+    ?(ident=donothing.cdonothing) ?(expr=donothing.cdonothing)
+    ?(assignOp=donothing.cdonothing) ?(binaryOp=donothing.cdonothing)
+    ?(ty=donothing.cdonothing) ?(ft=donothing.cdonothing) ?(init=donothing.cdonothing)
+    ?(param=donothing.cdonothing) ?(template_param=donothing.cdonothing)
+    ?(define_param=donothing.cdonothing)
+    ?(decl=donothing.cdonothing) ?(annotated_decl=donothing.cdonothing)
+    ?(field=donothing.cdonothing) ?(annotated_field=donothing.cdonothing)
+    ?(enumdecl=donothing.cdonothing) ?(stmt=donothing.cdonothing)
+    ?(rule=donothing.cdonothing) ?(case=donothing.cdonothing)
+    ?(string_fragment=donothing.cdonothing) ?(fmt=donothing.cdonothing)
+    ?(attribute=donothing.cdonothing) ?(attr_arg=donothing.cdonothing)
+    ?(pragma_info=donothing.cdonothing)
+    ?(top=donothing.cdonothing) anyfn =
+
+  let meta_mcodefn = meta_mcode in
+  let string_mcodefn = string_mcode in
+  let const_mcodefn = const_mcode in
+  let simpleassign_mcodefn = simpleAssign_mcode in
+  let opassign_mcodefn = opAssign_mcode in
+  let fix_mcodefn = fixOp_mcode in
+  let unary_mcodefn = unaryOp_mcode in
+  let arithop_mcodefn = arithOp_mcode in
+  let logicalop_mcodefn = logicalOp_mcode in
+  let cv_mcodefn = cv_mcode in
+  let sign_mcodefn = sign_mcode in
+  let struct_mcodefn = struct_mcode in
+  let storage_mcodefn = storage_mcode in
+  let inc_file_mcodefn = inc_mcode in
+
+  let expdotsfn = dotsexpr in
+  let initdotsfn = dotsinit in
+  let paramdotsfn = dotsparam in
+  let template_paramdotsfn = dotstemplateparam in
+  let stmtdotsfn = dotsstmt in
+  let anndecldotsfn = dotsanndecl in
+  let annfielddotsfn = dotsannfield in
+  let enumdecldotsfn = dotsenumdecl in
+  let defpardotsfn = dotsdefpar in
+
+  let identfn = ident in
+  let exprfn = expr in
+  let assignOpfn = assignOp in
+  let binaryOpfn = binaryOp in
+  let tyfn = ty in
+  let ftfn = ft in
+  let initfn = init in
+  let paramfn = param in
+  let template_paramfn = template_param in
+  let define_paramfn = define_param in
+  let declfn = decl in
+  let annotated_declfn = annotated_decl in
+  let fieldfn = field in
+  let annotated_fieldfn = annotated_field in
+  let enum_declfn = enumdecl in
+  let stmtfn = stmt in
+  let rulefn = rule in
+  let casefn = case in
+  let fragfn = string_fragment in
+  let fmtfn = fmt in
+  let attributefn = attribute in
+  let attr_argfn = attr_arg in
+  let pragmainfofn = pragma_info in
+  let topfn = top in
+
   let multibind l =
     let rec loop = function
 	[] -> option_default
@@ -92,7 +159,6 @@ let combiner bind option_default
 
   and strdotsfn all_functions k arg = k arg
   and ecdotsfn all_functions k arg = k arg
-  and defpardotsfn all_functions k arg = k arg
 
   and expression_dots d = dotsfn expdotsfn expression all_functions d
   and parameter_dots d = dotsfn paramdotsfn parameterTypeDef all_functions d
@@ -1236,18 +1302,70 @@ type rebuilder =
 type 'mc rmcode = 'mc Ast.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
+type rmcodefn = { rmcode: 'a. 'a Ast.mcode -> 'a Ast.mcode }
+type rdonothingfn =
+    { rdonothing: 'a. rebuilder -> ('a Ast.wrap -> 'a Ast.wrap) -> 'a Ast.wrap -> 'a Ast.wrap }
 
-let rebuilder
-    meta_mcode string_mcode const_mcode simpleassign_mcode opassign_mcode
-    fix_mcode unary_mcode
-    arithop_mcode logicalop_mcode cv_mcode sign_mcode struct_mcode
-    storage_mcode inc_file_mcode
-    expdotsfn paramdotsfn template_paramdotsfn stmtdotsfn anndecldotsfn annfielddotsfn
-    enumdecldotsfn initdotsfn
-    identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
-    ftfn tyfn initfn
-    paramfn template_paramfn define_paramfn declfn annotated_declfn fieldfn annotated_fieldfn
-    enum_declfn rulefn stmtfn casefn attributefn attr_argfn topfn anyfn =
+let rebuilder mcode donothing
+    ?(meta_mcode=mcode.rmcode) ?(string_mcode=mcode.rmcode) ?(const_mcode=mcode.rmcode)
+    ?(simpleAssign_mcode=mcode.rmcode) ?(opAssign_mcode=mcode.rmcode)
+    ?(fixOp_mcode=mcode.rmcode) ?(unaryOp_mcode=mcode.rmcode) ?(arithOp_mcode=mcode.rmcode)
+    ?(logicalOp_mcode=mcode.rmcode) ?(cv_mcode=mcode.rmcode) ?(sign_mcode=mcode.rmcode)
+    ?(struct_mcode=mcode.rmcode) ?(storage_mcode=mcode.rmcode) ?(inc_mcode=mcode.rmcode)
+    ?(dotsexpr=donothing.rdonothing) ?(dotsinit=donothing.rdonothing)
+    ?(dotsparam=donothing.rdonothing) ?(dotstemplateparam=donothing.rdonothing)
+    ?(dotsstmt=donothing.rdonothing) ?(dotsanndecl=donothing.rdonothing)
+    ?(dotsannfield=donothing.rdonothing) ?(dotsenumdecl=donothing.rdonothing)
+    ?(dotsdefpar=donothing.rdonothing)
+    ?(ident=donothing.rdonothing) ?(expr=donothing.rdonothing)
+    ?(assignOp=donothing.rdonothing) ?(binaryOp=donothing.rdonothing)
+    ?(ty=donothing.rdonothing) ?(ft=donothing.rdonothing) ?(init=donothing.rdonothing)
+    ?(param=donothing.rdonothing) ?(template_param=donothing.rdonothing)
+    ?(define_param=donothing.rdonothing)
+    ?(decl=donothing.rdonothing) ?(annotated_decl=donothing.rdonothing)
+    ?(field=donothing.rdonothing) ?(annotated_field=donothing.rdonothing)
+    ?(enumdecl=donothing.rdonothing) ?(stmt=donothing.rdonothing)
+    ?(rule=donothing.rdonothing) ?(case=donothing.rdonothing)
+    ?(string_fragment=donothing.rdonothing) ?(fmt=donothing.rdonothing)
+    ?(attribute=donothing.rdonothing) ?(attr_arg=donothing.rdonothing)
+    ?(pragma_info=donothing.rdonothing)
+    ?(top=donothing.rdonothing) anyfn =
+
+  let expdotsfn = dotsexpr in
+  let initdotsfn = dotsinit in
+  let paramdotsfn = dotsparam in
+  let template_paramdotsfn = dotstemplateparam in
+  let stmtdotsfn = dotsstmt in
+  let anndecldotsfn = dotsanndecl in
+  let annfielddotsfn = dotsannfield in
+  let enumdecldotsfn = dotsenumdecl in
+  let defpardotsfn = dotsdefpar in
+
+  let identfn = ident in
+  let exprfn = expr in
+  let assignOpfn = assignOp in
+  let binaryOpfn = binaryOp in
+  let tyfn = ty in
+  let ftfn = ft in
+  let initfn = init in
+  let paramfn = param in
+  let template_paramfn = template_param in
+  let define_paramfn = define_param in
+  let declfn = decl in
+  let annotated_declfn = annotated_decl in
+  let fieldfn = field in
+  let annotated_fieldfn = annotated_field in
+  let enum_declfn = enumdecl in
+  let stmtfn = stmt in
+  let rulefn = rule in
+  let casefn = case in
+  let fragfn = string_fragment in
+  let fmtfn = fmt in
+  let attributefn = attribute in
+  let attr_argfn = attr_arg in
+  let pragmainfofn = pragma_info in
+  let topfn = top in
+
   let get_option f = function
       Some x -> Some (f x)
     | None -> None in
@@ -1272,6 +1390,7 @@ let rebuilder
   and initialiser_dots d = dotsfn initdotsfn initialiser all_functions d
   and string_fragment_dots d = dotsfn strdotsfn string_fragment all_functions d
   and exec_code_dots d = dotsfn ecdotsfn exec_code all_functions d
+  and define_param_dots d = dotsfn defpardotsfn define_param all_functions d
 
   and ident i =
     let k i =
@@ -1326,15 +1445,15 @@ let rebuilder
 	    Ast.CondExpr(lexp1, lwhy, lexp2, lcolon, lexp3)
 	| Ast.Postfix(exp,op) ->
 	    let lexp = expression exp in
-	    let lop = fix_mcode op in
+	    let lop = fixOp_mcode op in
 	    Ast.Postfix(lexp, lop)
 	| Ast.Infix(exp,op) ->
 	    let lexp = expression exp in
-	    let lop = fix_mcode op in
+	    let lop = fixOp_mcode op in
 	    Ast.Infix(lexp, lop)
 	| Ast.Unary(exp,op) ->
 	    let lexp = expression exp in
-	    let lop = unary_mcode op in
+	    let lop = unaryOp_mcode op in
 	    Ast.Unary(lexp, lop)
 	| Ast.Binary(left,op,right) ->
 	    let lleft = expression left in
@@ -1476,8 +1595,8 @@ let rebuilder
     let k op =
       Ast.rewrap op
         (match Ast.unwrap op with
-          Ast.SimpleAssign o -> Ast.SimpleAssign (simpleassign_mcode o)
-        | Ast.OpAssign o -> Ast.OpAssign (opassign_mcode o)
+          Ast.SimpleAssign o -> Ast.SimpleAssign (simpleAssign_mcode o)
+        | Ast.OpAssign o -> Ast.OpAssign (opAssign_mcode o)
         | Ast.MetaAssign (mv,x,y,z) -> Ast.MetaAssign ((meta_mcode mv),x,y,z)
         ) in
     assignOpfn all_functions k op
@@ -1486,8 +1605,8 @@ let rebuilder
     let k op =
       Ast.rewrap op
         (match Ast.unwrap op with
-          Ast.Arith o -> Ast.Arith (arithop_mcode o)
-        | Ast.Logical o -> Ast.Logical (logicalop_mcode o)
+          Ast.Arith o -> Ast.Arith (arithOp_mcode o)
+        | Ast.Logical o -> Ast.Logical (logicalOp_mcode o)
         | Ast.MetaBinary (mv,x,y,z) -> Ast.MetaBinary ((meta_mcode mv),x,y,z)
         ) in
     binaryOpfn all_functions k op
@@ -1986,7 +2105,7 @@ let rebuilder
 	   Ast.UsingMember(lusng, lname, lsem)
 	| Ast.Include(inc,name) ->
 	    let linc = string_mcode inc in
-	    let lname = inc_file_mcode name in
+	    let lname = inc_mcode name in
 	    Ast.Include(linc, lname)
 	| Ast.MetaInclude(inc,name) ->
 	    let linc = string_mcode inc in
@@ -2071,9 +2190,6 @@ let rebuilder
 	  let lrp = string_mcode rp in
 	  Ast.DParams(llp, lparams, lrp)) in
     k p
-
-  and define_param_dots d =
-    Ast.rewrap d (List.map define_param (Ast.unwrap d))
 
   and define_param p =
     let k p =

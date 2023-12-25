@@ -49,15 +49,7 @@ let mcode mc = mc
 let donothing r k e = k e
 
 let stmtlist_rebuilder =
-  V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing
-    statement donothing donothing donothing donothing donothing
+  V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing} ~stmt:statement donothing
 
 let stmtlist rule =
   match rule with

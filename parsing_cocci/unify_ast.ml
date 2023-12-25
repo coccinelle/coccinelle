@@ -794,14 +794,9 @@ and subexp f =
   let mcode r e = option_default in
   let expr r k e = f e && k e in
   let donothing r k e = k e in
-  let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing expr donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing in
+  let recursor =
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+      ~expr:expr donothing in
   recursor.V.combiner_rule_elem
 
 and subtype f =
@@ -810,14 +805,9 @@ and subtype f =
   let mcode r e = option_default in
   let fullType r k e = f e && k e in
   let donothing r k e = k e in
-  let recursor = V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      fullType  donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing in
+  let recursor =
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+      ~ft:fullType donothing in
   recursor.V.combiner_rule_elem
 
 let rec unify_statement s1 s2 =

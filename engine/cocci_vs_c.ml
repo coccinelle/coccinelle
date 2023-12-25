@@ -10,6 +10,7 @@ module A = Ast_cocci
 module B = Ast_c
 
 module F = Control_flow_c
+module V = Visitor_ast
 
 module FlagM = Flag_matcher
 
@@ -632,14 +633,7 @@ let check_allminus =
   let bind x y = x && y in
   let option_default = true in
   let donothing r k re = k re in
-  Visitor_ast.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing} donothing
 
 (*****************************************************************************)
 (* Functor parameter combinators *)
@@ -2509,17 +2503,8 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 		| _ -> failwith "only minus/context expected in pattern" in
 	      (x,info,newmc,pos) in
 	    let donothing r k e = k e in
-	    let v =
-	      Visitor_ast.rebuilder
-		mcode mcode mcode mcode mcode mcode mcode mcode mcode
-		mcode mcode mcode mcode mcode
-		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing donothing donothing donothing
-		donothing donothing donothing in
-	    v.Visitor_ast.rebuilder_declaration decla in
+	    let v = V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing} donothing in
+	    v.V.rebuilder_declaration decla in
 
 	  xs +> List.fold_left (fun acc var ->
 	  (* consider all possible matches *)

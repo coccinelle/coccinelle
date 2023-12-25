@@ -38,55 +38,60 @@ type 'a combiner =
 type ('mc,'a) cmcode = 'a combiner -> 'mc Ast_cocci.mcode -> 'a
 type ('cd,'a) ccode = 'a combiner -> ('cd -> 'a) -> 'cd -> 'a
 
+type 'b cmcodefn = { cmcode: 'a. 'b combiner -> 'a Ast_cocci.mcode -> 'b }
+type 'b cdonothingfn =
+    { cdonothing: 'a. 'b combiner -> ('a Ast_cocci.wrap -> 'b) -> 'a Ast_cocci.wrap -> 'b }
+
 val combiner :
-    ('a -> 'a -> 'a) -> 'a ->
-      ((Ast_cocci.meta_name,'a) cmcode) ->
-      ((string,'a) cmcode) ->
-      ((Ast_cocci.constant,'a) cmcode) ->
-      ((Ast_cocci.simpleAssignOp,'a) cmcode) ->
-      ((Ast_cocci.arithOp,'a) cmcode) ->
-      ((Ast_cocci.fixOp,'a) cmcode) ->
-      ((Ast_cocci.unaryOp,'a) cmcode) ->
-      ((Ast_cocci.arithOp,'a) cmcode) ->
-      ((Ast_cocci.logicalOp,'a) cmcode) ->
-      ((Ast_cocci.const_vol,'a) cmcode) ->
-      ((Ast_cocci.sign,'a) cmcode) ->
-      ((Ast_cocci.structUnion,'a) cmcode) ->
-      ((Ast_cocci.storage,'a) cmcode) ->
-      ((Ast_cocci.inc_file,'a) cmcode) ->
-      ((Ast_cocci.expression Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.parameterTypeDef Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.templateParameterTypeDef Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.statement Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.annotated_decl Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.annotated_field Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.enum_decl Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.initialiser Ast_cocci.dots,'a) ccode) ->
-      ((Ast_cocci.ident,'a) ccode) ->
-      ((Ast_cocci.expression,'a) ccode) ->
-      ((Ast_cocci.string_fragment,'a) ccode) ->
-      ((Ast_cocci.string_format,'a) ccode) ->
-      ((Ast_cocci.assignOp,'a) ccode) ->
-      ((Ast_cocci.binaryOp,'a) ccode) ->
-      ((Ast_cocci.pragmainfo,'a) ccode) ->
-      ((Ast_cocci.fullType,'a) ccode) ->
-      ((Ast_cocci.typeC,'a) ccode) ->
-      ((Ast_cocci.initialiser,'a) ccode) ->
-      ((Ast_cocci.parameterTypeDef,'a) ccode) ->
-      ((Ast_cocci.templateParameterTypeDef,'a) ccode) ->
-      ((Ast_cocci.define_param,'a) ccode) ->
-      ((Ast_cocci.declaration,'a) ccode) ->
-      ((Ast_cocci.annotated_decl,'a) ccode) ->
-      ((Ast_cocci.field,'a) ccode) ->
-      ((Ast_cocci.annotated_field,'a) ccode) ->
-      ((Ast_cocci.enum_decl,'a) ccode) ->
-      ((Ast_cocci.rule_elem,'a) ccode) ->
-      ((Ast_cocci.statement,'a) ccode) ->
-      ((Ast_cocci.case_line,'a) ccode) ->
-      ((Ast_cocci.attr,'a) ccode) ->
-      ((Ast_cocci.attr_arg,'a) ccode) ->
-      ((Ast_cocci.top_level,'a) ccode) ->
-      ((Ast_cocci.anything,'a) ccode) ->
+    ('a -> 'a -> 'a) -> 'a -> 'a cmcodefn -> 'a cdonothingfn ->
+    ?meta_mcode:((Ast_cocci.meta_name,'a) cmcode) ->
+    ?string_mcode:((string,'a) cmcode) ->
+    ?const_mcode:((Ast_cocci.constant,'a) cmcode) ->
+    ?simpleAssign_mcode:((Ast_cocci.simpleAssignOp,'a) cmcode) ->
+    ?opAssign_mcode:((Ast_cocci.arithOp,'a) cmcode) ->
+    ?fixOp_mcode:((Ast_cocci.fixOp,'a) cmcode) ->
+    ?unaryOp_mcode:((Ast_cocci.unaryOp,'a) cmcode) ->
+    ?arithOp_mcode:((Ast_cocci.arithOp,'a) cmcode) ->
+    ?logicalOp_mcode:((Ast_cocci.logicalOp,'a) cmcode) ->
+    ?cv_mcode:((Ast_cocci.const_vol,'a) cmcode) ->
+    ?sign_mcode:((Ast_cocci.sign,'a) cmcode) ->
+    ?struct_mcode:((Ast_cocci.structUnion,'a) cmcode) ->
+    ?storage_mcode:((Ast_cocci.storage,'a) cmcode) ->
+    ?inc_mcode:((Ast_cocci.inc_file,'a) cmcode) ->
+    ?dotsexpr:((Ast_cocci.expression Ast_cocci.dots,'a) ccode) ->
+    ?dotsinit:((Ast_cocci.initialiser Ast_cocci.dots,'a) ccode) ->
+    ?dotsparam:((Ast_cocci.parameterTypeDef Ast_cocci.dots,'a) ccode) ->
+    ?dotstemplateparam:((Ast_cocci.templateParameterTypeDef Ast_cocci.dots,'a) ccode) ->
+    ?dotsstmt:((Ast_cocci.statement Ast_cocci.dots,'a) ccode) ->
+    ?dotsanndecl:((Ast_cocci.annotated_decl Ast_cocci.dots,'a) ccode) ->
+    ?dotsannfield:((Ast_cocci.annotated_field Ast_cocci.dots,'a) ccode) ->
+    ?dotsenumdecl:((Ast_cocci.enum_decl Ast_cocci.dots,'a) ccode) ->
+    ?dotsdefpar:((Ast_cocci.define_param Ast_cocci.dots,'a) ccode) ->
+    ?ident:((Ast_cocci.ident,'a) ccode) ->
+    ?expr:((Ast_cocci.expression,'a) ccode) ->
+    ?assignOp:((Ast_cocci.assignOp,'a) ccode) ->
+    ?binaryOp:((Ast_cocci.binaryOp,'a) ccode) ->
+    ?ty:((Ast_cocci.typeC,'a) ccode) ->
+    ?ft:((Ast_cocci.fullType,'a) ccode) ->
+    ?init:((Ast_cocci.initialiser,'a) ccode) ->
+    ?param:((Ast_cocci.parameterTypeDef,'a) ccode) ->
+    ?template_param:((Ast_cocci.templateParameterTypeDef,'a) ccode) ->
+    ?define_param:((Ast_cocci.define_param,'a) ccode) ->
+    ?decl:((Ast_cocci.declaration,'a) ccode) ->
+    ?annotated_decl:((Ast_cocci.annotated_decl,'a) ccode) ->
+    ?field:((Ast_cocci.field,'a) ccode) ->
+    ?annotated_field:((Ast_cocci.annotated_field,'a) ccode) ->
+    ?enumdecl:((Ast_cocci.enum_decl,'a) ccode) ->
+    ?stmt:((Ast_cocci.statement,'a) ccode) ->
+    ?rule:((Ast_cocci.rule_elem,'a) ccode) ->
+    ?case:((Ast_cocci.case_line,'a) ccode) ->
+    ?string_fragment:((Ast_cocci.string_fragment,'a) ccode) ->
+    ?fmt:((Ast_cocci.string_format,'a) ccode) ->
+    ?attribute:((Ast_cocci.attr,'a) ccode) ->
+    ?attr_arg:((Ast_cocci.attr_arg,'a) ccode) ->
+    ?pragma_info:((Ast_cocci.pragmainfo,'a) ccode) ->
+    ?top:((Ast_cocci.top_level,'a) ccode) ->
+    ((Ast_cocci.anything,'a) ccode) ->
       'a combiner
 
 type 'a inout = 'a -> 'a (* for specifying the type of rebuilder *)
@@ -128,52 +133,59 @@ type rebuilder =
 type 'mc rmcode = 'mc Ast_cocci.mcode inout
 type 'cd rcode = rebuilder -> ('cd inout) -> 'cd inout
 
+type rmcodefn = { rmcode: 'a. 'a Ast_cocci.mcode -> 'a Ast_cocci.mcode }
+type rdonothingfn =
+    { rdonothing: 'a. rebuilder -> ('a Ast_cocci.wrap -> 'a Ast_cocci.wrap) ->
+      'a Ast_cocci.wrap -> 'a Ast_cocci.wrap }
+
 val rebuilder :
-    (Ast_cocci.meta_name rmcode) ->
-    (string rmcode) ->
-    (Ast_cocci.constant rmcode) ->
-    (Ast_cocci.simpleAssignOp rmcode) ->
-    (Ast_cocci.arithOp rmcode) ->
-    (Ast_cocci.fixOp rmcode) ->
-    (Ast_cocci.unaryOp rmcode) ->
-    (Ast_cocci.arithOp rmcode) ->
-    (Ast_cocci.logicalOp rmcode) ->
-    (Ast_cocci.const_vol rmcode) ->
-    (Ast_cocci.sign rmcode) ->
-    (Ast_cocci.structUnion rmcode) ->
-    (Ast_cocci.storage rmcode) ->
-    (Ast_cocci.inc_file rmcode) ->
-    (Ast_cocci.expression Ast_cocci.dots rcode) ->
-    (Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
-    (Ast_cocci.templateParameterTypeDef Ast_cocci.dots rcode) ->
-    (Ast_cocci.statement Ast_cocci.dots rcode) ->
-    (Ast_cocci.annotated_decl Ast_cocci.dots rcode) ->
-    (Ast_cocci.annotated_field Ast_cocci.dots rcode) ->
-    (Ast_cocci.enum_decl Ast_cocci.dots rcode) ->
-    (Ast_cocci.initialiser Ast_cocci.dots rcode) ->
-    (Ast_cocci.ident rcode) ->
-    (Ast_cocci.expression rcode) ->
-    (Ast_cocci.string_fragment rcode) ->
-    (Ast_cocci.string_format rcode) ->
-    (Ast_cocci.assignOp rcode) ->
-    (Ast_cocci.binaryOp rcode) ->
-    (Ast_cocci.pragmainfo rcode) ->
-    (Ast_cocci.fullType rcode) ->
-    (Ast_cocci.typeC rcode) ->
-    (Ast_cocci.initialiser rcode) ->
-    (Ast_cocci.parameterTypeDef rcode) ->
-    (Ast_cocci.templateParameterTypeDef rcode) ->
-    (Ast_cocci.define_param rcode) ->
-    (Ast_cocci.declaration rcode) ->
-    (Ast_cocci.annotated_decl rcode) ->
-    (Ast_cocci.field rcode) ->
-    (Ast_cocci.annotated_field rcode) ->
-    (Ast_cocci.enum_decl rcode) ->
-    (Ast_cocci.rule_elem rcode) ->
-    (Ast_cocci.statement rcode) ->
-    (Ast_cocci.case_line rcode) ->
-    (Ast_cocci.attr rcode) ->
-    (Ast_cocci.attr_arg rcode) ->
-    (Ast_cocci.top_level rcode) ->
+    rmcodefn -> rdonothingfn ->
+    ?meta_mcode:(Ast_cocci.meta_name rmcode) ->
+    ?string_mcode:(string rmcode) ->
+    ?const_mcode:(Ast_cocci.constant rmcode) ->
+    ?simpleAssign_mcode:(Ast_cocci.simpleAssignOp rmcode) ->
+    ?opAssign_mcode:(Ast_cocci.arithOp rmcode) ->
+    ?fixOp_mcode:(Ast_cocci.fixOp rmcode) ->
+    ?unaryOp_mcode:(Ast_cocci.unaryOp rmcode) ->
+    ?arithOp_mcode:(Ast_cocci.arithOp rmcode) ->
+    ?logicalOp_mcode:(Ast_cocci.logicalOp rmcode) ->
+    ?cv_mcode:(Ast_cocci.const_vol rmcode) ->
+    ?sign_mcode:(Ast_cocci.sign rmcode) ->
+    ?struct_mcode:(Ast_cocci.structUnion rmcode) ->
+    ?storage_mcode:(Ast_cocci.storage rmcode) ->
+    ?inc_mcode:(Ast_cocci.inc_file rmcode) ->
+    ?dotsexpr:(Ast_cocci.expression Ast_cocci.dots rcode) ->
+    ?dotsinit:(Ast_cocci.initialiser Ast_cocci.dots rcode) ->
+    ?dotsparam:(Ast_cocci.parameterTypeDef Ast_cocci.dots rcode) ->
+    ?dotstemplateparam:(Ast_cocci.templateParameterTypeDef Ast_cocci.dots rcode) ->
+    ?dotsstmt:(Ast_cocci.statement Ast_cocci.dots rcode) ->
+    ?dotsanndecl:(Ast_cocci.annotated_decl Ast_cocci.dots rcode) ->
+    ?dotsannfield:(Ast_cocci.annotated_field Ast_cocci.dots rcode) ->
+    ?dotsenumdecl:(Ast_cocci.enum_decl Ast_cocci.dots rcode) ->
+    ?dotsdefpar:(Ast_cocci.define_param Ast_cocci.dots rcode) ->
+    ?ident:(Ast_cocci.ident rcode) ->
+    ?expr:(Ast_cocci.expression rcode) ->
+    ?assignOp:(Ast_cocci.assignOp rcode) ->
+    ?binaryOp:(Ast_cocci.binaryOp rcode) ->
+    ?ty:(Ast_cocci.typeC rcode) ->
+    ?ft:(Ast_cocci.fullType rcode) ->
+    ?init:(Ast_cocci.initialiser rcode) ->
+    ?param:(Ast_cocci.parameterTypeDef rcode) ->
+    ?template_param:(Ast_cocci.templateParameterTypeDef rcode) ->
+    ?define_param:(Ast_cocci.define_param rcode) ->
+    ?decl:(Ast_cocci.declaration rcode) ->
+    ?annotated_decl:(Ast_cocci.annotated_decl rcode) ->
+    ?field:(Ast_cocci.field rcode) ->
+    ?annotated_field:(Ast_cocci.annotated_field rcode) ->
+    ?enumdecl:(Ast_cocci.enum_decl rcode) ->
+    ?stmt:(Ast_cocci.statement rcode) ->
+    ?rule:(Ast_cocci.rule_elem rcode) ->
+    ?case:(Ast_cocci.case_line rcode) ->
+    ?string_fragment:(Ast_cocci.string_fragment rcode) ->
+    ?fmt:(Ast_cocci.string_format rcode) ->
+    ?attribute:(Ast_cocci.attr rcode) ->
+    ?attr_arg:(Ast_cocci.attr_arg rcode) ->
+    ?pragma_info:(Ast_cocci.pragmainfo rcode) ->
+    ?top:(Ast_cocci.top_level rcode) ->
     (Ast_cocci.anything rcode) ->
     rebuilder

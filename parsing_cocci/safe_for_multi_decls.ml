@@ -36,15 +36,7 @@ let all_removed_recursor =
     | Ast.MINUS(_,_,_,Ast.REPLACEMENT(_,_)) -> Ast.Unsafe
     | Ast.PLUS _ -> failwith "not possible"
     | Ast.CONTEXT(_,info) -> Ast.Unsafe in
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-    do_nothing do_nothing do_nothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=do_nothing} do_nothing
 
 let all_removed_decl =
   all_removed_recursor.V.combiner_declaration
@@ -94,15 +86,8 @@ let contains_modif =
       Ast.StrInitList(allminus,_,_,_,_) -> allminus || res
     | _ -> res in
   let recursor =
-    V.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing init do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing in
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=do_nothing}
+      ~init:init ~rule:rule_elem do_nothing in
   recursor.V.combiner_fullType
 
 let attr_arg a =
@@ -191,14 +176,9 @@ let mcode e = e
 let donothing r k e = k e
 
 let process =
-  let fn = V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing
-      donothing donothing donothing donothing decl anndecl field annfield
-      donothing donothing donothing donothing donothing donothing donothing
+  let fn =
+    V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing}
+      ~decl:decl ~annotated_decl:anndecl ~field:field ~annotated_field:annfield
       donothing in
   List.map fn.V.rebuilder_top_level
 

@@ -669,14 +669,13 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.Dots(d,whn,_,_) -> option_default
     | _ -> k s in
 
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing donothing donothing
-    ident expression string_fragment string_format assign binary pragma_info
-    fullType typeC initialiser parameter donothing define_parameter declaration donothing
-    field ann_field donothing rule_elem statement donothing attribute attr_arg
-    donothing donothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+    ~ident:ident ~expr:expression ~string_fragment:string_fragment
+    ~fmt:string_format ~assignOp:assign ~binaryOp:binary ~pragma_info:pragma_info
+    ~ft:fullType ~ty:typeC ~init:initialiser ~param:parameter
+    ~define_param:define_parameter ~decl:declaration ~field:field
+    ~annotated_field:ann_field ~rule:rule_elem ~stmt:statement ~attribute:attribute
+    ~attr_arg:attr_arg donothing
 
 (* ------------------------------------------------------------------------ *)
 
@@ -739,15 +738,8 @@ let all_context =
 	bind (k e) (end_info ei)
     | _ -> k e in
 
-  V.combiner bind option_default
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing donothing donothing donothing initialiser
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing rule_elem statement donothing donothing
-    donothing donothing donothing
+  V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+    ~init:initialiser ~rule:rule_elem ~stmt:statement donothing
 
 (* ------------------------------------------------------------------------ *)
 

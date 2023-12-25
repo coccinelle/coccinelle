@@ -10,6 +10,7 @@ module CCI = Ctlcocci_integration
 module TAC = Type_annoter_c
 
 module Ast_to_flow = Control_flow_c_build
+module V = Visitor_ast
 
 (*****************************************************************************)
 (* This file is a kind of driver. It gathers all the important functions
@@ -589,19 +590,13 @@ let sp_contain_typed_metavar_z toplevel_list_list =
   in
 
   let combiner =
-    Visitor_ast.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing expression donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing}
+      ~expr:expression donothing
   in
   toplevel_list_list +>
     List.exists
     (function (nm,_,rule) ->
-      (List.exists combiner.Visitor_ast.combiner_top_level rule))
+      (List.exists combiner.V.combiner_top_level rule))
 
 let sp_contain_typed_metavar rules =
   sp_contain_typed_metavar_z

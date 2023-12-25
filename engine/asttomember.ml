@@ -42,15 +42,8 @@ let contains_modif used_after x =
 	  bind (mcode r ((),(),annotated_decl_bef decl,[])) res
       | _ -> res in
     let recursor =
-      V.combiner bind option_default
-	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	mcode mcode mcode
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing rule_elem do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing in
+      V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=do_nothing}
+	~rule:rule_elem do_nothing in
     recursor.V.combiner_rule_elem x
 
 (* contains an inherited metavariable or contains a constant *)
@@ -70,16 +63,8 @@ let contains_constant x =
 	  Ast.Constant(const) -> true
 	| _ -> k e in
       let recursor =
-	V.combiner bind option_default
-	  mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	  mcode mcode mcode
-	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing
-	  do_nothing ident expr do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	  do_nothing do_nothing do_nothing do_nothing do_nothing in
+	V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=do_nothing}
+	  ~ident:ident ~expr:expr do_nothing in
       recursor.V.combiner_rule_elem x
   | _ -> true
 
@@ -139,16 +124,10 @@ let strip x =
 			 rp))
     | _ -> res in
   let r =
-    V.rebuilder
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode mcode mcode
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-      do_nothing do_nothing do_nothing
-      decl_or_field do_absolutely_nothing decl_or_field do_absolutely_nothing
-      do_nothing rule_elem
-      do_nothing do_nothing do_nothing do_nothing do_nothing do_absolutely_nothing in
+    V.rebuilder {V.rmcode=mcode} {V.rdonothing=do_nothing}
+      ~decl:decl_or_field ~annotated_decl:do_absolutely_nothing
+      ~field:decl_or_field ~annotated_field:do_absolutely_nothing
+      ~rule:rule_elem do_absolutely_nothing in
   r.V.rebuilder_rule_elem x
 
 (* --------------------------------------------------------------------- *)
@@ -208,17 +187,8 @@ let find_commonalities res : Ast_cocci.rule_elem option =
 	  bind (one sz e) (k e)
       | _ -> k e in
     let recursor =
-      V.combiner bind option_default
-	mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	mcode mcode mcode
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing
-	do_nothing expression do_nothing do_nothing do_nothing do_nothing
-        do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing
-	do_nothing do_nothing do_nothing do_nothing do_nothing do_nothing
-	do_nothing in
+      V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=do_nothing}
+	~expr:expression do_nothing in
     recursor.V.combiner_rule_elem x in
   match res with
     [] -> failwith "bad disjunction"

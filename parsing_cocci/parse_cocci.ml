@@ -13,6 +13,7 @@ let smplparseerror s = raise (SMPLParseError s)
 
 module D = Data
 module PC = Parser_cocci_menhir
+module V = Visitor_ast
 module V0 = Visitor_ast0
 module VT0 = Visitor_ast0_types
 module Ast = Ast_cocci
@@ -2786,19 +2787,11 @@ let contains_modifs ast =
       Ast.CONTEXT _ -> false
     | Ast.MINUS _ | Ast.PLUS _ -> true in
   let recursor =
-    Visitor_ast.combiner bind option_default
-      mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode mcode
-      mcode mcode mcode
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing donothing donothing donothing
-      donothing donothing donothing in
+    V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing} donothing in
   List.exists
     (function
 	Ast.CocciRule(nm,infos,ast,_,_) ->
-	  List.exists recursor.Visitor_ast.combiner_top_level ast
+	  List.exists recursor.V.combiner_top_level ast
       | _ -> false)
     ast
 

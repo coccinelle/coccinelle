@@ -7,6 +7,7 @@
 open Common
 
 module F = Control_flow_c
+module V = Visitor_ast
 
 (*****************************************************************************)
 (* The functor argument  *)
@@ -322,16 +323,11 @@ module XTRANS = struct
           Ast_cocci.rewrap e
 	    (Ast_cocci.MetaExpr(name,Ast_cocci.CstrTrue,u,ty,form,i,bitfield))
       | _ -> e in
-    let fn = Visitor_ast.rebuilder
-	mcode mcode mcode mcode mcode mcode mcode mcode mcode
-	mcode mcode mcode mcode mcode
-	donothing donothing donothing donothing donothing donothing donothing
-	donothing ident expression donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing donothing donothing donothing
-	donothing donothing donothing donothing donothing in
+    let fn =
+      V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing}
+	~ident:ident ~expr:expression donothing in
 
-  fn.Visitor_ast.rebuilder_anything anything
+  fn.V.rebuilder_anything anything
 
   let strip_minus_code = function
       Ast_cocci.REPLACEMENT(l,c) ->

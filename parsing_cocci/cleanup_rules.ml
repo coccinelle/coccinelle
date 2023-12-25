@@ -262,15 +262,12 @@ let attr_arg r k a =
 
 let do_cleanup =
   let donothing r k e = k e in
-  V.rebuilder
-    mcode mcode mcode mcode mcode mcode mcode mcode mcode
-    mcode mcode mcode mcode mcode
-    donothing donothing donothing donothing donothing donothing
-    donothing donothing (* dots *)
-    ident expression string_fragment string_format assignOp
-    binaryOp pragmainfo fullType typeC initialiser parameterTypeDef donothing define_param
-    declaration donothing field ann_field donothing
-    rule_elem statement donothing donothing attr_arg donothing donothing
+  V.rebuilder {V.rmcode=mcode} {V.rdonothing=donothing}
+    ~ident:ident ~expr:expression ~string_fragment:string_fragment ~fmt:string_format
+    ~assignOp:assignOp ~binaryOp:binaryOp ~pragma_info:pragmainfo ~ft:fullType ~ty:typeC
+    ~init:initialiser ~param:parameterTypeDef ~define_param:define_param
+    ~decl:declaration ~field:field ~annotated_field:ann_field
+    ~rule:rule_elem ~stmt:statement ~attr_arg:attr_arg donothing
 
 let cleanup_rules rules d =
   dropped := d;
