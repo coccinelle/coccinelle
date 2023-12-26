@@ -453,6 +453,12 @@ and expression e =
 	let rp2 = get_option mcode rp_opt in
 	let args_opt = get_option argslist args_opt in
 	Ast.New(nw,pp_opt,lp2,ty,rp2,args_opt)
+    | Ast0.TemplateInst(tn,lp,args,rp) ->
+	let tn = ident tn in
+	let lp = mcode lp in
+	let args = dots expression args in
+	let rp = mcode rp in
+	Ast.TemplateInst(tn,lp,args,rp)
     | Ast0.TypeExp(ty) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.TypeExp(typeC allminus ty)

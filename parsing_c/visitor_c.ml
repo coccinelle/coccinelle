@@ -344,6 +344,9 @@ let rec vk_expr = fun bigf expr ->
 	vk_type bigf t;
 	do_option (vk_argument_list bigf) init
     | Delete (_,e) -> vk_expr bigf e
+    | TemplateInst(nm,args) ->
+	vk_name bigf nm;
+	vk_argument_list bigf args
     | Defined name -> vk_name bigf name
 
 
@@ -1383,6 +1386,12 @@ let rec vk_expr_s = fun bigf expr ->
 	    fmap (function init -> init +> List.map (fun (e,ii) ->
               vk_argument_s bigf e, iif ii)) init)
       | Delete (box,e) -> Delete (box,vk_expr_s bigf e)
+    | TemplateInst(nm,args) ->
+	TemplateInst(vk_name_s bigf nm,
+		     List.map
+		       (fun (e,ii) -> vk_argument_s bigf e, iif ii)
+		       args)
+
       | Defined name  -> Defined (vk_name_s bigf name)
 
     in

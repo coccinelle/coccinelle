@@ -143,6 +143,7 @@ let rec left_expression e =
   | Ast0.SizeOfType(szf,lp,ty,rp) -> modif_before_mcode szf
   | Ast0.Delete(dlt,exp) -> modif_before_mcode dlt
   | Ast0.DeleteArr(dlt,lb,rb,exp) -> modif_before_mcode dlt
+  | Ast0.TemplateInst(name,lab,args,rab) -> left_ident name
   | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) -> modif_before_mcode nw
   | Ast0.TypeExp(ty) -> left_typeC ty
   | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp

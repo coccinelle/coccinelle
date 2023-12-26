@@ -2580,6 +2580,9 @@ primary_expr(recurser,primary_extra):
        Ast0_cocci.wrap(Ast0_cocci.FunCall(fn,Parse_aux.clt2mcode "<<<" $2,
 			      $3,
 			      Parse_aux.clt2mcode ">>>" $4)) }
+ | mident TTemplateStart eexpr_list TTemplateEnd
+     { Printf.eprintf "have a template inst: %s\n" (Dumper.dump $1); Ast0_cocci.wrap
+	 (Ast0.TemplateInst($1,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
  | TAndLog ident
      { let op = Parse_aux.clt2mcode Ast_cocci.GetRefLabel (snd $1) in
      Ast0_cocci.wrap(Ast0_cocci.Unary(Ast0_cocci.wrap(Ast0_cocci.Ident($2)), op)) }
@@ -3026,12 +3029,6 @@ ident_or_template_type:
      | p=pure_ident_or_symbol
 	 { !Data.add_type_name (Parse_aux.id2name p);
 	   Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
-     | p=pure_ident_or_symbol TTemplateStart eexpr_list TTemplateEnd
-	 { !Data.add_type_name (Parse_aux.id2name p);
-	   let nm = Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode p)) in
-	   Ast0_cocci.wrap
-	   (Ast0_cocci.TemplateType
-	      (nm,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
 
 decl_ident:
        TDeclarerId

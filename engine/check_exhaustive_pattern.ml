@@ -134,6 +134,7 @@ let dumb_astcocci_expr = function
  | A.Delete (_, ea) -> ()
  | A.DeleteArr (_,_,_,ea) -> ()
  | A.New(_, _, _, _, _, _) -> ()
+ | A.TemplateInst(_,_,_,_) -> ()
  | A.TypeExp (typa) -> ()
  | A.Constructor (_, typa, _, ia) -> ()
  | A.Paren (_, ea, _) -> ()

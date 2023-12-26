@@ -295,6 +295,11 @@ let rec top_expression opt_allowed tgt expr =
       let rp2_opt = get_option mcode rp2_opt in
       let args_opt = get_option (arg_list arity) args_opt in
       make_exp expr tgt arity (Ast0.New(nw,pp_opt,lp2_opt,ty,rp2_opt,args_opt))
+  | Ast0.TemplateInst(tn,lb,args,rb) ->
+      let arity =  all_same false tgt (mcode2line lb) [mcode2arity lb;mcode2arity rb] in
+      let tn = ident false arity tn in
+      let (lb,args,rb) = arg_list tgt (lb,args,rb) in
+      make_exp expr tgt arity (Ast0.TemplateInst(tn,lb,args,rb))
   | Ast0.TypeExp(ty) -> Ast0.rewrap expr (Ast0.TypeExp(typeC tgt ty))
   | Ast0.MetaErr(name,constraints,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in

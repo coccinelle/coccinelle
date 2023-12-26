@@ -461,6 +461,7 @@ let rec expression e =
     | Ast_c.ParenExpr (e) -> primary
     | Ast_c.New (_, t, _) -> unary
     | Ast_c.Delete(_,t) -> unary
+    | Ast_c.TemplateInst(tn,args) -> unary
     | Ast_c.Defined _ -> primary
   in
 
@@ -524,6 +525,10 @@ let rec expression e =
       fullType ty;
       print_option (function e -> mcode print_string e) rp_opt;
       print_option print_args args_opt;
+  | Ast.TemplateInst(tn,lp,args,rp) ->
+      ident tn; mcode (print_string_with_hint StartBox) lp;
+      dots (function _ -> ()) arg_expression args;
+      mcode (print_string_with_hint EndBox) rp
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();

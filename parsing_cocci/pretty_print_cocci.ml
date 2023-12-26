@@ -274,6 +274,11 @@ let rec expression e =
       print_option (function e -> mcode print_string e) rp_opt;
       print_string " ";
       print_option print_args args_opt;
+  | Ast.TemplateInst(name,lp,args,rp) ->
+      ident name; print_string " ";
+      mcode print_string_box lp;
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rp
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();

@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 201, also unused: {none}
+(* current max is 202, also unused: {none}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -68,6 +68,7 @@ let expression e =
   | Ast0.Delete(dlt,exp) -> [85]
   | Ast0.DeleteArr(dlt,lb,rb,exp) -> [86]
   | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args) -> [57]
+  | Ast0.TemplateInst(name,lab,args,rab) -> [202]
   | Ast0.TypeExp(ty) -> [123] (* added after *)
   | Ast0.Constructor(lp,ty,rp,init) -> [155]
   | Ast0.MetaErr(name,_,_) -> [32]

@@ -266,6 +266,10 @@ and disjexp e =
       disjmult3 (disjoption disjargs pp_opt) (disjty ty) (disjoption disjargs args_opt)
 	(fun pp_opt ty args_opt ->
 	  Ast.rewrap e (Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt)))
+  | Ast.TemplateInst(tn,lp,args,rp) ->
+      disjmult2 (disjident tn) (disjdots disjexp args)
+	(fun tn args ->
+	  Ast.rewrap e (Ast.TemplateInst(tn,lp,args,rp)))
   | Ast.TypeExp(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty

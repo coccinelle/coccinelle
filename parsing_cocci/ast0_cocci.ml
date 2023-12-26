@@ -132,6 +132,8 @@ and base_expression =
   | New            of string mcode (* new *) * arguments option *
 	           string mcode (* ( *) option *  typeC *
 	           string mcode (* ) *) option * arguments option (* argument list *)
+  | TemplateInst of ident (* name *) * string mcode (* < *) *
+        expression dots * string mcode (* > *)
   | TypeExp        of typeC (* type name used as an expression, only in args *)
   | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *
 	              initialiser

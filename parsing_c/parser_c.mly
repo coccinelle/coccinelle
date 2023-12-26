@@ -971,7 +971,7 @@ cpp_type_noparen:
  | identifier_cpp
      { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
        fixSimpleTypeForCPPType st }
- | identifier_cpp TTemplateStart argument_list TTemplateEnd
+ | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
      { let st = (Right3 (TemplateType($1,$3)), [$2;$4]) in
        fixSimpleTypeForCPPType st }
 
@@ -1063,8 +1063,6 @@ postfix_expr:
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
  | postfix_expr TOPar argument_list TCPar
      { mk_e(FunCall ($1, $3)) [$2;$4] }
- | postfix_expr TTemplateStart argument_list TTemplateEnd
-     { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TInf3 argument_list TSup3
      { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
@@ -1098,6 +1096,8 @@ primary_expr_without_ident:
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
+ | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+     { Printf.eprintf "in C, have a template inst\n"; mk_e(TemplateInst ($1, $3)) [$2;$4] }
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
@@ -1481,7 +1481,7 @@ simple_type:
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
 
- | TypedefIdent TTemplateStart argument_list TTemplateEnd
+ | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TemplateType (name, $3)),[$2;$4] }
 
@@ -1815,7 +1815,7 @@ template_parameter_decl2:
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
        let (name, ftyp) = snd $3 in
        VarNameParam((ftyp returnType,name,Some $5),[$4]) }
- | Ttemplate TTemplateStart template_parameter_list TTemplateEnd template_parameter_decl2
+ | Ttemplate TTemplateStart template_parameter_list_ne TTemplateEnd template_parameter_decl2
      { TemplateParam(($3,$5),[$1;$2;$4]) }
 
 /*(*----------------------------*)*/
@@ -2753,7 +2753,7 @@ cpp_other:
 /*(*************************************************************************)*/
 
 external_declaration:
- | Ttemplate TTemplateStart template_parameter_list TTemplateEnd external_declaration
+ | Ttemplate TTemplateStart template_parameter_list_ne TTemplateEnd external_declaration
      { TemplateDefinition($3,$5,[$1;$2;$4]) }
  | function_definition               { Definition $1 }
  | decl                              { Declaration ($1 Ast_c.NotLocalDecl) }
@@ -2799,7 +2799,7 @@ base_class:
 
 base_class_name:
    ident_cpp                    { BaseClassName $1, [] }
- | ident_cpp TTemplateStart argument_list TTemplateEnd
+ | ident_cpp TTemplateStart argument_list_ne TTemplateEnd
    { TemplateClassName($1,$3), [$2;$4] }
 
 base_classes:
@@ -2953,10 +2953,6 @@ init_declarator_list:
 parameter_list:
  | parameter_decl                       { [$1, []] }
  | parameter_list TComma parameter_decl { $1 @ [$3,  [$2]] }
-
-template_parameter_list:
- | /* empty */ { [] }
- | template_parameter_list_ne { $1 }
 
 template_parameter_list_ne:
  | template_parameter_decl                                { [$1, []] }

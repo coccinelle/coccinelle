@@ -12,3 +12,11 @@ typedef xxx;
 @@
         T1 i1;
 +       xxx<g(3, 4)> d;
+
+@@
+symbol a,b;
+identifier foo;
+@@
+
+- foo<12,a> (3, 4);
++ bar<102,b> (30, 40);

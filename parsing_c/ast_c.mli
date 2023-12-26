@@ -127,6 +127,7 @@ and expressionbis =
   | ParenExpr of expression
   | New of (argument wrap2 list) option * fullType * (argument wrap2 list) option
   | Delete of bool (* true if [] *) * expression
+  | TemplateInst of name * argument wrap2 list
   | Defined of name
 and argument = (expression, weird_argument) Common.either
 and weird_argument = ArgType of parameterType | ArgAction of action_macro

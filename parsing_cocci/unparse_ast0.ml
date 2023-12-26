@@ -245,6 +245,10 @@ let rec expression e =
 	  print_option (function e -> mcode print_string e) rp_opt;
 	  print_string " ";
 	  print_option (print_args false) args_opt;
+      | Ast0.TemplateInst(tn,lp,args,rp) ->
+	  ident tn; mcode print_string_box lp;
+	  let _ = dots (function _ -> ()) expression args in
+	  close_box(); mcode print_string rp
       | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.Constructor(lp,ty,rp,init) ->
 	  mcode print_string_box lp; typeC ty; close_box();

@@ -1193,6 +1193,10 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	pr2_once "Type annotater:not handling Delete";
 	Type_c.noTypeHere (* TODO *)
 
+    | TemplateInst(name,args) ->
+	k expr;
+	Type_c.noTypeHere
+
     | Defined _ ->
 	make_info_def (type_of_s "int")
 

@@ -207,6 +207,10 @@ let mk_pretty_printers
     | Delete(true,t), [i1;i2;i3] ->
 	pr_elem i1; pr_space(); pr_elem i2; pr_elem i3; pr_space();
 	pp_expression t
+    | TemplateInst(name,es),[lab;rab] ->
+        pp_name name; pr_elem lab;
+	pp_arg_list es;
+        pr_elem rab
 
     | Defined name, [i1] ->
         pr_elem i1; (* defined *) pr_space();
@@ -223,7 +227,7 @@ let mk_pretty_printers
     | ArrayAccess (_,_) | RecordAccess (_,_) | RecordPtAccess (_,_)
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
-    | ParenExpr (_) | New (_) | Delete (_,_)
+    | ParenExpr (_) | New (_) | Delete (_,_) | TemplateInst(_,_)
     | Defined (_)),_ -> raise (Impossible 95)
     );
 
@@ -764,7 +768,7 @@ and pp_string_format (e,ii) =
 	  let (i1,i2) = Common.tuple_of_list2 ii in
           pp_name name; pr_elem i1;
 	  pp_arg_list es;
-          pr_elem i2;
+          pr_elem i2
 
       | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ | Decimal _
             (* | StructUnion _ | Enum _ | BaseType _ *)

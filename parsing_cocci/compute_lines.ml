@@ -462,6 +462,12 @@ let rec expression e =
       | (None,None) -> mkres e tmp (promote_mcode nw) ty
       | (None,Some x) -> mkres e tmp (promote_mcode nw) (promote_mcode x)
       | (Some (lp,args,rp),_) -> mkres e tmp (promote_mcode nw) (promote_mcode rp))
+  | Ast0.TemplateInst(tn,lp,args,rp) ->
+      let tn = ident tn in
+      let lp = normal_mcode lp in
+      let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
+      let rp = normal_mcode rp in
+      mkres e (Ast0.TemplateInst(tn,lp,args,rp)) tn (promote_mcode rp)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
   | Ast0.Constructor(lp,ty,rp,init) ->

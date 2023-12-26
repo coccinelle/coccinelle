@@ -303,6 +303,12 @@ let combiner bind option_default mcode donothing
 	  let lrp = get_option string_mcode rp_opt in
 	  let largs_opt = get_option argslist args_opt in
           multibind [lnw; lpp_opt; llp; lty; lrp; largs_opt]
+      | Ast.TemplateInst(name,lab,args,rab) ->
+	  let lname = ident name in
+	  let llab = string_mcode lab in
+	  let largs = expression_dots args in
+	  let lrab = string_mcode rab in
+	  multibind [lname; llab; largs; lrab]
       | Ast.TypeExp(ty) -> fullType ty
       | Ast.Constructor(lp,ty,rp,init) ->
 	  let llp = string_mcode lp in
@@ -521,12 +527,12 @@ let combiner bind option_default mcode donothing
 	  multibind [ltf; llp; lty; lrp]
       | Ast.TypeName(name) -> string_mcode name
       | Ast.AutoType(auto) -> string_mcode auto
-      | Ast.TemplateType(name,lp,args,rp) ->
+      | Ast.TemplateType(name,lab,args,rab) ->
 	  let lname = ident name in
-	  let llp = string_mcode lp in
+	  let llab = string_mcode lab in
 	  let largs = expression_dots args in
-	  let lrp = string_mcode rp in
-	  multibind [lname; llp; largs; lrp]
+	  let lrab = string_mcode rab in
+	  multibind [lname; llab; largs; lrab]
       | Ast.MetaType(name,_,_,_) -> meta_mcode name in
     tyfn all_functions k ty
 
@@ -1520,6 +1526,8 @@ let rebuilder mcode donothing
 	  let lrp_opt = get_option string_mcode rp_opt in
 	  let largs_opt = get_option argslist args_opt in
 	  Ast.New(lnw,lpp_opt,llp_opt,lty,lrp_opt,largs_opt)
+	| Ast.TemplateInst(name,lab,args,rab) ->
+	    Ast.TemplateInst(ident name,string_mcode lab,expression_dots args,string_mcode rab)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.Constructor(lp,ty,rp,init) ->
 	    let llp = string_mcode lp in
@@ -1707,8 +1715,8 @@ let rebuilder mcode donothing
 	    Ast.TypeOfType(ltf, llp, lty, lrp)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.AutoType(auto) -> Ast.AutoType(string_mcode auto)
-	| Ast.TemplateType(name,lp,args,rp) ->
-	    Ast.TemplateType(ident name,string_mcode lp,expression_dots args,string_mcode rp)
+	| Ast.TemplateType(name,lab,args,rab) ->
+	    Ast.TemplateType(ident name,string_mcode lab,expression_dots args,string_mcode rab)
 	| Ast.MetaType(name,cstr,keep,inherited) ->
 	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
     tyfn all_functions k ty

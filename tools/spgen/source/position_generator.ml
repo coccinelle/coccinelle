@@ -243,9 +243,9 @@ let rec type_pos t snp
   | Ast0.OptType(t) ->
       let constructor ~item = Ast0.OptType(item) in
       item_wrap ~item:t ~item_posfn:type_pos ~constructor snp
-  | Ast0.TemplateType(name, lp, dots, rp) ->
-      let constructor ~mc = Ast0.TemplateType(name, mc, dots, rp) in
-      mcode_wrap ~mc:lp ~constructor snp
+  | Ast0.TemplateType(name, lab, dots, rab) ->
+      let constructor ~mc = Ast0.TemplateType(name, mc, dots, rab) in
+      mcode_wrap ~mc:lab ~constructor snp
 
 (* NB: if implementing disj generation, make sure that the statement dots in
  * the clist are generated in no_gen mode...
@@ -383,6 +383,9 @@ let rec expression_pos exp snp
   | Ast0.DeleteArr(deletemc,lb,rb,exp) ->
       let constructor ~mc = Ast0.DeleteArr(mc,lb,rb,exp) in
       mcode_wrap ~mc:deletemc ~constructor snp
+  | Ast0.TemplateInst(name, lab, dots, rab) ->
+      let constructor ~mc = Ast0.TemplateInst(name, mc, dots, rab) in
+      mcode_wrap ~mc:lab ~constructor snp
   | Ast0.TypeExp(typec) ->
       let constructor ~item = Ast0.TypeExp(item) in
       item_wrap ~item:typec ~item_posfn:type_pos ~constructor snp
