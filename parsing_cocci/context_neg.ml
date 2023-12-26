@@ -502,11 +502,11 @@ let classify is_minus all_marked table code =
   let template_param r k e =
     compute_result Ast0.template_param e
       (match Ast0.unwrap e with
-	Ast0.VarNameParam(ty,id,Some(eq,exp)) ->
+	Ast0.VarNameParam(ty,id,Some(eq,ini)) ->
 	  (* needed for the same reason as in the Init and UnInit cases *)
 	  bind (r.VT0.combiner_rec_typeC ty)
             (bind (r.VT0.combiner_rec_ident id)
-	       (bind (mcode eq) (r.VT0.combiner_rec_expression exp)))
+	       (bind (mcode eq) (r.VT0.combiner_rec_initialiser ini)))
       |	Ast0.VarNameParam(ty,id,None) ->
 	  (* needed for the same reason as in the Init and UnInit cases *)
 	  bind (r.VT0.combiner_rec_typeC ty) (r.VT0.combiner_rec_ident id)

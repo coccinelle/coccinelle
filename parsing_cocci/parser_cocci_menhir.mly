@@ -1634,6 +1634,35 @@ one_arg(arg):
       let lenname = Parse_aux.dolen clt lenname in
       Ast0_cocci.wrap(Ast0_cocci.MetaParamList(nm,lenname,cstr,pure)) }
 
+/* Lists of arguments in template declarations */
+
+template_arg_list:
+    arglist=separated_list(TComma, template_argorellipsis(one_template_arg))
+     { let (args,_vararg) = cleanup_arglist arglist in
+       (Ast0_cocci.wrap args) }
+
+template_argorellipsis(arg):
+  arg=arg { Arg arg }
+| y=TEllipsis { Ellipsis (y) }
+
+one_template_arg:
+    typename_or_class type_ident
+    { Ast0_cocci.wrap(TypenameOrClassParam($1, $2, None)) }
+  | typename_or_class type_ident q=TEq t=ctype
+    { let q = Parse_aux.clt2mcode "=" q in
+      Ast0_cocci.wrap(TypenameOrClassParam($1, $2, Some(q,t))) }
+  | t=ctype d=direct_declarator(type_ident)
+    { let (i,fn) = d in
+    Ast0_cocci.wrap(Ast0_cocci.VarNameParam(fn t, i, None)) }
+  | t=ctype d=direct_declarator(type_ident) q=TEq e=initialize
+    { let (i,fn) = d in
+      let q = Parse_aux.clt2mcode "=" q in
+      Ast0_cocci.wrap(Ast0_cocci.VarNameParam(fn t, i, Some(q,e))) }
+
+typename_or_class:
+    Ttypename { Parse_aux.clt2mcode "typename" $1 }
+  | Tclass    { Parse_aux.clt2mcode "class" $1 }
+
 %inline separated_llist(separator, X):
   xs = reverse_separated_llist(separator, X)
     { xs }
@@ -3185,11 +3214,21 @@ when_body_sequence.
 
 /* doesn't allow only ... */
 minus_start:
-  fundecl                { [Ast0_cocci.wrap(Ast0_cocci.OTHER($1))] }
-| ctype                  { [Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.Ty($1))))] }
+  Ttemplate TTemplateStart template_arg_list TTemplateEnd minus_fun_or_type
+    { [Ast0_cocci.wrap
+	  (Ast0_cocci.OTHER
+	     (Ast0_cocci.wrap
+		(Ast0_cocci.TemplateDefinition
+		   (Parse_aux.clt2mcode "template" $1, Parse_aux.clt2mcode "<" $2, $3,
+		    Parse_aux.clt2mcode ">" $4, $5))))] }
+| minus_fun_or_type      { [Ast0_cocci.wrap(Ast0_cocci.OTHER($1))] }
 | top_init          { [Ast0_cocci.wrap(Ast0_cocci.OTHER(Ast0_cocci.wrap(Ast0_cocci.TopInit($1))))] }
 | toplevel_seq_startne(toplevel_after_dots_init)
     { List.map (function x -> Ast0_cocci.wrap(Ast0_cocci.OTHER(x))) $1 }
+
+minus_fun_or_type:
+  fundecl                { $1 }
+| ctype                  { Ast0_cocci.wrap(Ast0_cocci.Ty($1)) }
 
 toplevel_seq_startne(after_dots_init):
   a=stm_dots_ell b=after_dots_init           { a::b }

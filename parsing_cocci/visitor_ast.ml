@@ -788,8 +788,8 @@ let combiner bind option_default mcode donothing
 	  multibind [string_mcode tyorcl;ident id;string_mcode eq;fullType ty]
       | Ast.TypenameOrClassParam(tyorcl,id,None) ->
 	  multibind [string_mcode tyorcl;ident id]
-      | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
-	  multibind [fullType ty;ident id;string_mcode eq;expression exp]
+      | Ast.VarNameParam(ty,id,Some (eq,ini)) ->
+	  multibind [fullType ty;ident id;string_mcode eq;initialiser ini]
       | Ast.VarNameParam(ty,id,None) -> multibind [fullType ty;ident id]
       | Ast.TPComma(comma) -> string_mcode comma
       | Ast.TPDots(dots) -> string_mcode dots in
@@ -1973,11 +1973,13 @@ let rebuilder mcode donothing
       Ast.rewrap p
 	(match Ast.unwrap p with
           Ast.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
-            Ast.TypenameOrClassParam(string_mcode tyorcl,ident id,Some (string_mcode eq,fullType ty))
+            Ast.TypenameOrClassParam
+	      (string_mcode tyorcl,ident id,Some (string_mcode eq,fullType ty))
         | Ast.TypenameOrClassParam(tyorcl,id,None) ->
             Ast.TypenameOrClassParam(string_mcode tyorcl,ident id,None)
-        | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
-            Ast.VarNameParam(fullType ty,ident id,Some (string_mcode eq,expression exp))
+        | Ast.VarNameParam(ty,id,Some (eq,ini)) ->
+            Ast.VarNameParam
+	      (fullType ty,ident id,Some (string_mcode eq,initialiser ini))
         | Ast.VarNameParam(ty,id,None) ->
             Ast.VarNameParam(fullType ty,ident id,None)
         | Ast.TPComma(comma) ->

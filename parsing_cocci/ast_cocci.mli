@@ -622,8 +622,9 @@ and base_rule_elem =
   | DisjRuleElem  of rule_elem list
 
 and base_templateParameterTypeDef =
-    TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * fullType) option
-  | VarNameParam of fullType * ident (* name *) * (string mcode (* = *) * expression ) option
+    TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) *
+	(string mcode (* = *) * fullType) option
+  | VarNameParam of fullType * ident (* name *) * (string mcode (* = *) * initialiser) option
   | TPComma of string mcode
   | TPDots of string mcode (* ... *)
   (* Note: TemplateParam not supported yet. *)

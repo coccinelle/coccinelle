@@ -1118,24 +1118,28 @@ and parameterTypeDef p =
 
 and templateParameterTypeDef p =
     (match Ast0.unwrap p with
-       Ast0.TypenameOrClassParam(tyorcl,id,None) ->
-       let ln = promote_mcode tyorcl in
-       mkres p (Ast0.TypenameOrClassParam(normal_mcode tyorcl,ident id,None)) ln ln
-    |  Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
-       let ln = promote_mcode tyorcl in
-       mkres p (Ast0.TypenameOrClassParam(normal_mcode tyorcl,ident id,Some (normal_mcode eq,typeC ty))) ln ln
-    |  Ast0.VarNameParam(ty,id,None) ->
-       let ty = typeC ty in
-       mkres p (Ast0.VarNameParam(ty,ident id,None)) ty ty
-    |  Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
-       let ty = typeC ty in
-       mkres p (Ast0.VarNameParam(typeC ty,ident id,Some (normal_mcode eq,expression exp))) ty ty
-    |  Ast0.TPComma(cm) ->
-       let ln = promote_mcode cm in
-       mkres p (Ast0.TPComma(normal_mcode cm)) ln ln
-    |  Ast0.TPDots(dots) ->
-       let ln = promote_mcode dots in
-       mkres p (Ast0.TPDots(normal_mcode dots )) ln ln
+      Ast0.TypenameOrClassParam(tyorcl,id,None) ->
+	let ln = promote_mcode tyorcl in
+	mkres p (Ast0.TypenameOrClassParam(normal_mcode tyorcl,ident id,None)) ln ln
+    | Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+	let ln = promote_mcode tyorcl in
+	mkres p
+	  (Ast0.TypenameOrClassParam
+	     (normal_mcode tyorcl,ident id,Some (normal_mcode eq,typeC ty))) ln ln
+    | Ast0.VarNameParam(ty,id,None) ->
+	let ty = typeC ty in
+	mkres p (Ast0.VarNameParam(ty,ident id,None)) ty ty
+    | Ast0.VarNameParam(ty,id,Some (eq,ini)) ->
+	let ty = typeC ty in
+	mkres p
+	  (Ast0.VarNameParam
+	     (typeC ty,ident id,Some (normal_mcode eq,initialiser ini))) ty ty
+    | Ast0.TPComma(cm) ->
+	let ln = promote_mcode cm in
+	mkres p (Ast0.TPComma(normal_mcode cm)) ln ln
+    | Ast0.TPDots(dots) ->
+	let ln = promote_mcode dots in
+	mkres p (Ast0.TPDots(normal_mcode dots )) ln ln
     (* Note: TemplateParam not supported yet. *)
     )
 

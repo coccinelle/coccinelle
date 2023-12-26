@@ -632,9 +632,10 @@ and templateParameterTypeDef p =
           mcode print_string tyorcl;
           ident id;
           print_option (fun (eq,ty) -> mcode print_string eq; typeC ty) eqtyopt
-      | Ast0.VarNameParam(ty,id,eqexpopt) ->
+      | Ast0.VarNameParam(ty,id,eqiniopt) ->
           print_named_type ty id;
-          print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+          print_option (fun (eq,ini) -> mcode print_string eq; initialiser ini)
+	    eqiniopt
       | Ast0.TPComma(cm) ->
           mcode print_string cm
       | Ast0.TPDots(dots) ->

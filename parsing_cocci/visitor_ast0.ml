@@ -941,12 +941,12 @@ let visitor mode bind option_default
 	    let (tyorcl_n,tyorcl) = string_mcode tyorcl in
 	    let (id_n,id) = ident id in
 	    (bind tyorcl_n id_n, Ast0.TypenameOrClassParam(tyorcl,id,None))
-        | Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
+        | Ast0.VarNameParam(ty,id,Some (eq,ini)) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (id_n,id) = ident id in
 	    let (eq_n,eq) = string_mcode eq in
-	    let (exp_n,exp) = expression exp in
-	    (bind ty_n exp_n, Ast0.VarNameParam(ty,id,Some (eq,exp)))
+	    let (ini_n,ini) = initialiser ini in
+	    (bind ty_n ini_n, Ast0.VarNameParam(ty,id,Some (eq,ini)))
         | Ast0.VarNameParam(ty,id,None) ->
 	    let (ty_n,ty) = typeC ty in
 	    let (id_n,id) = ident id in

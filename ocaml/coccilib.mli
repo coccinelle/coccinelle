@@ -477,7 +477,7 @@ module Ast_c :
     and templateParameterType =
       Ast_c.templateParameterType =
 	TypenameOrClassParam of (name * fullType option) wrap
-      | VarNameParam of (fullType * name * expression option) wrap
+      | VarNameParam of (fullType * name * initialiser option) wrap
       | TemplateParam of (templateParameterType wrap2 list * templateParameterType) wrap
     and program = toplevel list
     and metavars_binding =

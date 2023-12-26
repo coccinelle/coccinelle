@@ -471,8 +471,9 @@ and base_statement =
   | OptStm   of statement
 
 and base_templateParameterTypeDef =
-    TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) * (string mcode (* = *) * typeC) option
-  | VarNameParam of typeC * ident (* name *) * (string mcode (* = *) * expression ) option
+    TypenameOrClassParam of string mcode (* typename|class *) * ident (* name *) *
+	(string mcode (* = *) * typeC) option
+  | VarNameParam of typeC * ident (* name *) * (string mcode (* = *) * initialiser) option
   | TPComma of string mcode
   | TPDots of string mcode (* ... *)
   (* Note: TemplateParam not supported yet. *)

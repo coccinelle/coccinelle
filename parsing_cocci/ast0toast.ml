@@ -933,12 +933,16 @@ and templateParameterTypeDef p =
   let allminus = check_allminus.VT0.combiner_rec_template_parameter p in
   rewrap p no_isos
     (match Ast0.unwrap p with
-       Ast0.TypenameOrClassParam(tyorcl,id,None) -> Ast.TypenameOrClassParam(mcode tyorcl,ident id,None)
-    |  Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) -> Ast.TypenameOrClassParam(mcode tyorcl,ident id,Some (mcode eq,typeC allminus ty))
+       Ast0.TypenameOrClassParam(tyorcl,id,None) ->
+	 Ast.TypenameOrClassParam(mcode tyorcl,ident id,None)
+    |  Ast0.TypenameOrClassParam(tyorcl,id,Some (eq,ty)) ->
+	Ast.TypenameOrClassParam
+	  (mcode tyorcl,ident id,Some (mcode eq,typeC allminus ty))
     |  Ast0.VarNameParam(ty,id,None) ->
        Ast.VarNameParam(typeC allminus ty,ident id,None)
-    |  Ast0.VarNameParam(ty,id,Some (eq,exp)) ->
-       Ast.VarNameParam(typeC allminus ty,ident id,Some (mcode eq,expression exp))
+    |  Ast0.VarNameParam(ty,id,Some (eq,ini)) ->
+       Ast.VarNameParam
+	  (typeC allminus ty,ident id,Some (mcode eq,initialiser ini))
     |  Ast0.TPComma(cm) -> Ast.TPComma(mcode cm)
     |  Ast0.TPDots(dots) -> Ast.TPDots(mcode dots)
     (* Note: TemplateParam not supported yet. *)

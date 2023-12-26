@@ -808,9 +808,9 @@ and templateParameterTypeDef p =
       mcode print_string tyorcl;
       ident id;
       print_option (fun (eq,ty) -> mcode print_string eq; fullType ty) eqtyopt
-  | Ast.VarNameParam(ty,id,eqexpopt) ->
+  | Ast.VarNameParam(ty,id,eqiniopt) ->
       print_named_type ty (fun _ -> ident id);
-      print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+      print_option (fun (eq,ini) -> mcode print_string eq; initialiser ini) eqiniopt
   | Ast.TPComma(comma) -> mcode print_string comma; force_newline()
   | Ast.TPDots(dots) -> mcode print_string dots; force_newline()
 

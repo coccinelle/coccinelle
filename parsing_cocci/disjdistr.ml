@@ -327,9 +327,9 @@ and disjtemplateparam p =
       List.map
 	(fun id -> Ast.rewrap p (Ast.TypenameOrClassParam(tyorcl,id,None)))
 	id
-  | Ast.VarNameParam(ty,id,Some (eq,exp)) ->
-      disjmult3 (disjty ty) (disjident id) (disjexp exp)
-	(fun ty id exp -> Ast.rewrap p (Ast.VarNameParam(ty,id,Some(eq,exp))))
+  | Ast.VarNameParam(ty,id,Some (eq,ini)) ->
+      disjmult3 (disjty ty) (disjident id) (disjini ini)
+	(fun ty id exp -> Ast.rewrap p (Ast.VarNameParam(ty,id,Some(eq,ini))))
   | Ast.VarNameParam(ty,id,None) ->
       disjmult2 (disjty ty) (disjident id)
 	(fun ty id -> Ast.rewrap p (Ast.VarNameParam(ty,id,None)))
