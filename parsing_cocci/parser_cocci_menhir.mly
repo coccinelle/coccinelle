@@ -2581,32 +2581,40 @@ primary_expr(recurser,primary_extra):
 			      $3,
 			      Parse_aux.clt2mcode ">>>" $4)) }
  | mident TTemplateStart eexpr_list TTemplateEnd
-     { Printf.eprintf "have a template inst: %s\n" (Dumper.dump $1); Ast0_cocci.wrap
-	 (Ast0.TemplateInst($1,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
+     { Ast0_cocci.wrap
+	 (Ast0.TemplateInst($1,Parse_aux.clt2mcode "<" $2,$3,
+			    Parse_aux.clt2mcode ">" $4)) }
  | TAndLog ident
      { let op = Parse_aux.clt2mcode Ast_cocci.GetRefLabel (snd $1) in
-     Ast0_cocci.wrap(Ast0_cocci.Unary(Ast0_cocci.wrap(Ast0_cocci.Ident($2)), op)) }
+     Ast0_cocci.wrap
+       (Ast0_cocci.Unary(Ast0_cocci.wrap(Ast0_cocci.Ident($2)),op)) }
  | TInt
      { let (x,clt) = $1 in
-     Ast0_cocci.wrap(Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Int x) clt)) }
+     Ast0_cocci.wrap
+       (Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Int x) clt)) }
  | TFloat
      { let (x,clt) = $1 in
-     Ast0_cocci.wrap(Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Float x) clt)) }
+     Ast0_cocci.wrap
+       (Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Float x) clt)) }
  | TString
      { let (x,sz,clt) = $1 in Parse_aux.parse_string x clt sz }
  | TChar
      { let (x,sz,clt) = $1 in
-     Ast0_cocci.wrap(Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Char(x,sz)) clt)) }
+     Ast0_cocci.wrap
+       (Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.Char(x,sz)) clt)) }
  | TDecimalCst
      { let (x,l,p,clt) = $1 in
-     Ast0_cocci.wrap(Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.DecimalConst(x,l,p)) clt)) }
+     Ast0_cocci.wrap
+       (Ast0_cocci.Constant (Parse_aux.clt2mcode (Ast_cocci.DecimalConst(x,l,p)) clt)) }
  | TMetaConst
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0_cocci.wrap
-       (Ast0_cocci.MetaExpr(Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.CONST,pure,None)) }
+       (Ast0_cocci.MetaExpr
+	  (Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.CONST,pure,None)) }
  | TMetaErr
      { let (nm,constraints,pure,clt) = $1 in
-     Ast0_cocci.wrap(Ast0_cocci.MetaErr(Parse_aux.clt2mcode nm clt,constraints,pure)) }
+     Ast0_cocci.wrap
+       (Ast0_cocci.MetaErr(Parse_aux.clt2mcode nm clt,constraints,pure)) }
  | TMetaExp
      { let (nm,constraints,pure,ty,clt,bitfield) = $1 in
      let bitfield' = Common.map_option (Parse_aux.dolen clt) bitfield in
@@ -2616,17 +2624,20 @@ primary_expr(recurser,primary_extra):
  | TMetaIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0_cocci.wrap
-       (Ast0_cocci.MetaExpr(Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.ID,pure,None)) }
+       (Ast0_cocci.MetaExpr
+	  (Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.ID,pure,None)) }
  | TMetaLocalIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0_cocci.wrap
        (Ast0_cocci.MetaExpr
-	  (Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.LocalID,pure,None)) }
+	  (Parse_aux.clt2mcode nm clt,constraints,ty,
+	   Ast_cocci.LocalID,pure,None)) }
  | TMetaGlobalIdExp
      { let (nm,constraints,pure,ty,clt) = $1 in
      Ast0_cocci.wrap
        (Ast0_cocci.MetaExpr
-	  (Parse_aux.clt2mcode nm clt,constraints,ty,Ast_cocci.GlobalID,pure,None)) }
+	  (Parse_aux.clt2mcode nm clt,constraints,ty,
+	   Ast_cocci.GlobalID,pure,None)) }
  | TOPar eexpr TCPar
      { Ast0_cocci.wrap(Ast0_cocci.Paren(Parse_aux.clt2mcode "(" $1,$2,
 			    Parse_aux.clt2mcode ")" $3)) }
