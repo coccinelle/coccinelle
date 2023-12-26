@@ -1677,7 +1677,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       expression expa expb >>= (fun expa expb ->
       tokenf dlta dltb >>= (fun dlta dltb ->
         return (
-          ((A.Delete (dlta, expa))) +> wa,
+          (A.Delete (dlta, expa)) +> wa,
           ((B.Delete (false, expb),typ),[dltb])
       )))
 
@@ -1688,7 +1688,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
       tokenf lba lbb >>= (fun lba lbb ->
       tokenf rba rbb >>= (fun rba rbb ->
         return (
-          ((A.DeleteArr (dlta, lba, rba, expa))) +> wa,
+          (A.DeleteArr (dlta, lba, rba, expa)) +> wa,
           ((B.Delete (true, expb),typ),[dltb;lbb;rbb])
       )))))
 
