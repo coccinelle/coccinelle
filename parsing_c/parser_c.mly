@@ -1097,7 +1097,7 @@ primary_expr_without_ident:
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
  | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
-     { Printf.eprintf "in C, have a template inst\n"; mk_e(TemplateInst ($1, $3)) [$2;$4] }
+     { mk_e(TemplateInst ($1, $3)) [$2;$4] }
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
