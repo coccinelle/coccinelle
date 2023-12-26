@@ -2049,7 +2049,8 @@ let lookahead2 ~pass next before =
 	msg_typedef s i1 40; LP.add_typedef_root s i1;
 	TypedefIdent (s,i1)
   | TIdent(s,i1)::TTemplateStart i2::_,_
-      when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context()) [LP.InParameter;LP.InStruct]) ->
+      when !Flag.c_plus_plus <> Flag.Off &&
+	(List.mem (LP.current_context()) [LP.InParameter;LP.InStruct]) ->
 	msg_typedef s i1 41; LP.add_typedef_root s i1;
 	TypedefIdent (s,i1)
   | TIdent(s,i1)::(Tclass i2|Tstruct i2|Toperator i2)::_,_
@@ -2062,7 +2063,8 @@ let lookahead2 ~pass next before =
 	TIdent (s,i1)
   (* yy xx(   and in function *)
   | TOPar i1::_,              TIdent(s,i2)::(TypedefIdent _|TTemplateEnd _|TautoType _)::_
-      when !Flag.c_plus_plus <> Flag.Off && (List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
+      when !Flag.c_plus_plus <> Flag.Off &&
+	(List.mem (LP.current_context ()) [LP.InFunction;LP.InStruct]) ->
         pr2_cpp("constructed_object: "  ^s);
         TOParCplusplusInit i1
   | TOPar i1::_,              TIdent(s,i2)::ptr
