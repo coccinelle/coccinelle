@@ -998,6 +998,12 @@ signable_types_no_ident:
 | p=TMetaType
     { let (nm,cstr,pure,clt) = p in
       Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) }
+| p=TMetaType TTemplateStart eexpr_list TTemplateEnd
+    { let (nm,cstr,pure,clt) = p in
+      let nm = Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) in
+      Ast0_cocci.wrap
+	(Ast0_cocci.TemplateType
+	   (nm,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
 | ty1=Tlong
     { Ast0_cocci.wrap(Ast0_cocci.BaseType(Ast_cocci.LongType,[Parse_aux.clt2mcode "long" ty1])) }
 | ty1=Tlong ty2=Tint
@@ -3031,7 +3037,7 @@ type_ident_or_template:
      | p=TTypeId
 	 { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
      | p=TTypeId TTemplateStart eexpr_list TTemplateEnd
-	 { let nm = Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.id2mcode p)) in
+	 { let nm = Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) in
 	   Ast0_cocci.wrap
 	   (Ast0_cocci.TemplateType
 	      (nm,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }

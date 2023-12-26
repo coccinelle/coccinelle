@@ -413,7 +413,7 @@ and typeC t =
       | Ast0.ConjType(_,types,_,_) -> do_disj types typeC "&"
       | Ast0.OptType(ty) -> print_string "?"; typeC ty
       | Ast0.TemplateType(tn,lp,args,rp) ->
-	  ident tn; mcode print_string_box lp;
+	  typeC tn; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp
       | Ast0.AsType(ty,asty) -> typeC ty; print_string "@"; typeC asty)

@@ -214,6 +214,9 @@ and expression context old_metas table minus e =
       typeC old_metas table minus ty;
       get_opt (check_args (expression ID old_metas table minus)) pp_opt;
       get_opt (check_args (expression ID old_metas table minus)) args_opt;
+  | Ast0.TemplateInst(name,lab,args,rab) ->
+      ident ID old_metas table minus name;
+      dots (expression ID old_metas table minus) args
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->
       typeC old_metas table minus ty; initialiser old_metas table minus init
@@ -285,6 +288,9 @@ and typeC old_metas table minus t =
       get_opt (expression ID old_metas table minus) precision_opt
   | Ast0.TypeOfExpr(_, _, exp, _) -> expression ID old_metas table minus exp
   | Ast0.TypeOfType(_, _, ty, _) -> typeC old_metas table minus ty
+  | Ast0.TemplateType(name,lab,args,rab) ->
+      typeC old_metas table minus name;
+      dots (expression ID old_metas table minus) args
   | Ast0.MetaType(name,cstr,_) ->
       check_table table minus name;
       constraints table minus cstr

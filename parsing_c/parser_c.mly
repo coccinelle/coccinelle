@@ -971,9 +971,6 @@ cpp_type_noparen:
  | identifier_cpp
      { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
        fixSimpleTypeForCPPType st }
- | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
-     { let st = (Right3 (TemplateType($1,$3)), [$2;$4]) in
-       fixSimpleTypeForCPPType st }
 
 arith_expr:
  | cast_expr                     { $1 }
@@ -1483,7 +1480,8 @@ simple_type:
 
  | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd
      { let name = RegularName (mk_string_wrap $1) in
-       Right3 (TemplateType (name, $3)),[$2;$4] }
+       let tname = Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
+       Right3 (TemplateType (fixSimpleTypeForCPPType tname, $3)),[$2;$4] }
 
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name   TCPar { Right3 (TypeOfType $3), [$1;$2;$4] }

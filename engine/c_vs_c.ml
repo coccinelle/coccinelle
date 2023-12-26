@@ -274,9 +274,9 @@ and typeC tya tyb =
         )) tin)
 
   | (TemplateType(namea, argsa), TemplateType(nameb, argsb)) ->
-      let sa = Ast_c.str_of_name namea in
-      let sb = Ast_c.str_of_name nameb in
-      sa = sb >&&>
+      let namea = Lib_parsing_c.al_type namea in
+      let nameb = Lib_parsing_c.al_type nameb in
+      namea = nameb >&&>
       let argsa = Lib_parsing_c.al_arguments argsa in
       let argsb = Lib_parsing_c.al_arguments argsb in
       argsa = argsb >&&> return (TemplateType(namea, argsa), iix)

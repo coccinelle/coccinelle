@@ -242,8 +242,8 @@ let token2c (tok,_) add_clt =
   | PC.TMetaLocalIdExp(_,_,_,_,clt) -> add_clt "localidexpmeta" clt
   | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
   | PC.TMetaExpList(_,_,_,_,clt) -> add_clt "explistmeta" clt
-  | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (Dumper.dump nm) clt
-  | PC.TMetaType(_,_,_,clt)    -> add_clt "typemeta" clt
+  | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (snd nm) clt
+  | PC.TMetaType(nm,_,_,clt)    -> "typemeta-" ^ add_clt (snd nm) clt
   | PC.TMetaInit(_,_,_,clt)    -> add_clt "initmeta" clt
   | PC.TMetaInitList(_,_,_,_,clt)    -> add_clt "initlistmeta" clt
   | PC.TMetaDecl(_,_,_,clt)    -> add_clt "declmeta" clt
@@ -326,9 +326,9 @@ let token2c (tok,_) add_clt =
   | PC.TUnderscore -> "_"
   | PC.TScriptData s -> s
   | PC.TWhitespace s -> "Whitespace(" ^ s ^ ")"
-  | PC.TTemplateStart s -> "TTemplateStart"
-  | PC.Ttemplate s -> "Ttemplate"
-  | PC.TTemplateEnd s -> "TTemplateEnd"
+  | PC.TTemplateStart clt -> add_clt "TTemplateStart" clt
+  | PC.Ttemplate clt -> add_clt "Ttemplate" clt
+  | PC.TTemplateEnd clt -> add_clt "TTemplateEnd" clt
   | PC.TTemplateEndTemplateEndTemplateEnd s -> "TTemplateEndTemplateEndTemplateEnd"
   | PC.TTemplateEndTemplateEnd s -> "TTemplateEndTemplateEnd"
   | PC.TTemplateEndSup s -> "TTemplateEndSup"
@@ -2060,8 +2060,16 @@ let convert_templates_cocci toks =
     cr := i3;
     match xs, repl with
       ((PC.TOPar _,_),cell)::_, _ -> ()
-    | _, Some (s,i1) -> ar := (PC.TTypeId(s,i1),snd at)
+    | _, Some (PC.TIdent(s,i1)) -> ar := (PC.TTypeId(s,i1),snd at)
+    | _, Some (PC.TMetaId(name,cstr,_,pure,clt)) ->
+	ar := (PC.TMetaType(name,cstr,pure,clt),snd at)
     | _ -> () in
+  let tok2c = function
+      PC.TIdent(s,_) -> s
+    | PC.TTypeId(s,_) -> s
+    | PC.TMetaId((_,s),_,_,_,_) -> s
+    | PC.TMetaType((_,s),_,_,_) -> s
+    | _ -> failwith "unexpected token" in
   let rec loop stack pdepth tdepth = function
     [] -> ()
   | ((PC.TOPar(clt),q),cell) :: xs
@@ -2079,19 +2087,22 @@ let convert_templates_cocci toks =
 	  stack in
       loop stack new_pdepth tdepth xs
   (* start point *)
-  | ((((PC.TIdent(s,i1)|PC.TTypeId(s,i1)),_),cell) as a) :: (* no space *)
+  | (((((PC.TIdent _|PC.TMetaId _|PC.TTypeId _|PC.TMetaType _) as t),_),cell) as a)
+    :: (* no space *)
     (((PC.TLogOp(Ast.Inf,i2),q),_) as b) :: rest ->
-      loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
-  | ((((PC.TIdent(s,i1)|PC.TTypeId(s,i1)),_),cell) as a) :: (spt,spr) ::
+      loop (((a,Some t,b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+  | (((((PC.TIdent _|PC.TMetaId _|PC.TTypeId _|PC.TMetaType _) as t),_),cell) as a)
+    :: (spt,spr) ::
     (((PC.TLogOp(Ast.Inf,i2),q),_) as b) :: ((c::_) as rest)
     (* allow one space or newline before < if none after *)
-    when is_space s a b && not(is_space "<" b c) ->
-      loop (((a,Some(s,i1),b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
+    when is_space (tok2c t) a b && not(is_space "<" b c) ->
+      loop (((a,Some t,b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
   | (((PC.Ttemplate(i1),q),cell) as a) :: rest ->
       (match rest with
 	((((PC.TLogOp(Ast.Inf,i2)),q),_) as b) ::rest ->
 	  loop (((a,None,b,(i2,q)),pdepth,tdepth)::stack) pdepth (tdepth+1) rest
-      | _ -> loop stack pdepth tdepth rest) (* just move on, template type name<...>(...) *)
+      | _ -> (* just move on, template type name<...>(...) *)
+	  loop stack pdepth tdepth rest)
   (* one possible end point *)
   | (((PC.TLogOp(Ast.Sup,i3),q),cell) as c) :: rest
     when top1 stack pdepth tdepth ->

@@ -766,7 +766,7 @@ and pp_string_format (e,ii) =
 
       | (TemplateType(name,es),ii) ->
 	  let (i1,i2) = Common.tuple_of_list2 ii in
-          pp_name name; pr_elem i1;
+          pp_type name; pr_elem i1;
 	  pp_arg_list es;
           pr_elem i2
 

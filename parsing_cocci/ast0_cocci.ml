@@ -229,7 +229,7 @@ and base_typeC =
                        typeC * string mcode (* ) *)
   | TypeName        of string mcode
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
-  | TemplateType    of ident (* name *) * string mcode (* < *) *
+  | TemplateType    of typeC (* name *) * string mcode (* < *) *
                        expression dots * string mcode (* > *)
   | MetaType        of Ast.meta_name mcode * constraints * pure
   | AsType          of typeC * typeC (* as type, always metavar *)

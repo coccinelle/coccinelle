@@ -642,7 +642,7 @@ and base_typeC allminus t =
       let cstr' = constraints cstr in
       Ast.MetaType(mcode name,cstr',unitary,false)
   | Ast0.TemplateType(tn,lp,args,rp) ->
-      let tn = ident tn in
+      let tn = typeC allminus tn in
       let lp = mcode lp in
       let args = dots expression args in
       let rp = mcode rp in

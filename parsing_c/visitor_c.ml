@@ -535,7 +535,7 @@ and vk_type = fun bigf t ->
     | TypeOfType t -> typef t
     | AutoType -> ()
     | TemplateType(name,es) ->
-        vk_name bigf name;
+        vk_type bigf name;
 	vk_argument_list bigf es
 
   in typef t
@@ -1638,7 +1638,7 @@ and vk_type_s = fun bigf t ->
       | TypeOfType t -> TypeOfType (typef t)
       | AutoType -> AutoType
       | TemplateType(name,es) ->
-          TemplateType(vk_name_s bigf name,
+          TemplateType(vk_type_s bigf name,
 		       es +> List.map (fun (e,ii) ->
 			 vk_argument_s bigf e, iif ii))
     in

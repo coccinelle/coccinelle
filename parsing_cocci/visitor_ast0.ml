@@ -450,7 +450,7 @@ let visitor mode bind option_default
 	    let (asty_n,asty) = typeC asty in
 	    (bind ty_n asty_n, Ast0.AsType(ty,asty))
 	| Ast0.TemplateType(tn,lp,args,rp) ->
-	    let (tn_n,tn) = ident tn in
+	    let (tn_n,tn) = typeC tn in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in

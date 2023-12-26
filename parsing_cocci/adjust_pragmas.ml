@@ -207,7 +207,7 @@ let rec left_ty t =
   | Ast0.TypeName(name) ->
       call_right left_mcode name t (function name -> Ast0.TypeName(name))
   | Ast0.TemplateType(name,lp,args,rp) ->
-      call_right left_ident name t (function name ->
+      call_right left_ty name t (function name ->
           Ast0.TemplateType(name,lp,args,rp))
   | Ast0.AutoType(auto) ->
       call_right left_mcode auto t (function auto -> Ast0.AutoType(auto))

@@ -360,7 +360,7 @@ and base_typeC =
                        fullType * string mcode (* ) *)
   | TypeName        of string mcode
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
-  | TemplateType    of ident (* name *) * string mcode (* < *) *
+  | TemplateType    of fullType (* name *) * string mcode (* < *) *
                        expression dots * string mcode (* > *)
 
   | MetaType        of meta_name mcode * constraints * keep_binding *

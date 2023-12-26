@@ -4257,7 +4257,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 
     | A.TemplateType(nma,laba,argsa,raba),
 	(B.TemplateType(nmb,argsb), [labb;rabb]) ->
-	  ident_cpp DontKnow nma nmb >>= (fun nma nmb ->
+	  fullType nma nmb >>= (fun nma nmb ->
 	  tokenf laba labb >>= (fun laba labb ->
           arguments (seqstyle argsa) (A.unwrap argsa) argsb >>= (fun argsaunwrap argsb ->
 	  tokenf raba rabb >>= (fun raba rabb ->

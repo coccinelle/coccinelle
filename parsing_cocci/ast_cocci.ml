@@ -377,7 +377,7 @@ and base_typeC =
                        fullType * string mcode (* ) *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
-  | TemplateType    of ident (* name *) * string mcode (* < *) *
+  | TemplateType    of fullType (* name *) * string mcode (* < *) *
         expression dots * string mcode (* > *)
 
   | MetaType        of meta_name mcode * constraints * keep_binding *
@@ -1228,7 +1228,7 @@ let rec string_of_typeC ty =
       let args =
 	String.concat ", "
 	  (List.map string_of_expression (unwrap args)) in
-      Printf.sprintf "%s<%s>" (string_of_ident name) args
+      Printf.sprintf "%s<%s>" (string_of_fullType name) args
   | AutoType _ -> "auto"
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =

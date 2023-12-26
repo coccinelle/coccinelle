@@ -20,3 +20,11 @@ identifier foo;
 
 - foo<12,a> (3, 4);
 + bar<102,b> (30, 40);
+
+@type@
+type x;
+typedef abc;
+@@
+
+- x<g(...)>
++ abc<2 + 2>

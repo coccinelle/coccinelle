@@ -73,7 +73,7 @@ module Ast_c :
       | TypeOfExpr of expression
       | TypeOfType of fullType
       | AutoType (* c++ >= 11 *)
-      | TemplateType of name * argument wrap2 (* , *) list (* C++ *)
+      | TemplateType of fullType * argument wrap2 (* , *) list (* C++ *)
     and baseType =
       Ast_c.baseType =
         Void
@@ -2845,7 +2845,7 @@ module Ast_cocci :
       | TypeOfType of string mcode * string mcode * fullType * string mcode
       | TypeName of string mcode
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
-      | TemplateType of ident (* name *) * string mcode (* < *) *
+      | TemplateType of fullType (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)
       | MetaType of meta_name mcode * constraints * keep_binding * inherited
     and fullType = base_fullType wrap
@@ -3561,7 +3561,7 @@ module Ast0_cocci :
       | TypeOfType of string mcode * string mcode * typeC * string mcode
       | TypeName of string mcode
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
-      | TemplateType of ident (* name *) * string mcode (* < *) *
+      | TemplateType of typeC (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)
       | MetaType of Ast_cocci.meta_name mcode * constraints * pure
       | AsType of typeC * typeC

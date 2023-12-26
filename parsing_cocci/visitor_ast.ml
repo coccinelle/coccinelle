@@ -528,7 +528,7 @@ let combiner bind option_default mcode donothing
       | Ast.TypeName(name) -> string_mcode name
       | Ast.AutoType(auto) -> string_mcode auto
       | Ast.TemplateType(name,lab,args,rab) ->
-	  let lname = ident name in
+	  let lname = fullType name in
 	  let llab = string_mcode lab in
 	  let largs = expression_dots args in
 	  let lrab = string_mcode rab in
@@ -1716,7 +1716,7 @@ let rebuilder mcode donothing
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.AutoType(auto) -> Ast.AutoType(string_mcode auto)
 	| Ast.TemplateType(name,lab,args,rab) ->
-	    Ast.TemplateType(ident name,string_mcode lab,expression_dots args,string_mcode rab)
+	    Ast.TemplateType(fullType name,string_mcode lab,expression_dots args,string_mcode rab)
 	| Ast.MetaType(name,cstr,keep,inherited) ->
 	    Ast.MetaType(meta_mcode name,cstr,keep,inherited)) in
     tyfn all_functions k ty
