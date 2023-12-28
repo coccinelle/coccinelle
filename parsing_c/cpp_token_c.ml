@@ -208,24 +208,13 @@ let rec get_ident_in_concat_op xs =
   | [] ->
       pr2_once "weird: ident after ## operator not found";
       "", []
-  | [x] ->
-      (match x with
-      | Parser_c.TIdent (s, i1) -> s, []
-      | _ ->
-          pr2_once "weird: ident after ## operator not found";
-          "", [x]
-      )
+  | [x] -> TH.str_of_tok x, []
   | x::y::xs ->
-      (match x, y with
-      | Parser_c.TIdent (s,i1), Parser_c.TCppConcatOp (i2) ->
+      (match y with
+	Parser_c.TCppConcatOp (i2) ->
           let (s2, rest) = get_ident_in_concat_op xs in
-          s ^ s2, rest
-      | Parser_c.TIdent (s, i1), _ ->
-          s, (y::xs)
-      | _ ->
-          pr2_once "weird: ident after ## operator not found";
-          "", x::y::xs
-      )
+          TH.str_of_tok x ^ s2, rest
+      | _ -> TH.str_of_tok x, (y::xs))
 
 (* must be run after the expansion has been done for the parameter so
  * that all idents are actually ident, not macro parameter names.
