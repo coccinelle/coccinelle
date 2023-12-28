@@ -487,6 +487,7 @@ let fix_add_params_ident x =
 let mk_e e ii = Ast_c.mk_e e ii
 
 let mk_string_wrap (s,info) = (s, [info])
+let mk_info_string info = (Ast_c.str_of_info info, [info])
 
 (*-------------------------------------------------------------------------- *)
 (* support for functions with no return type *)
@@ -851,8 +852,72 @@ ident_extra_cpp:
      { CppIdentBuilder ((fst $1, [snd $1;$2;$4]), $3) }
 
 identifier_cpp_list:
- | TIdent { [mk_string_wrap $1, []] }
- | identifier_cpp_list TCppConcatOp TIdent { $1 @ [mk_string_wrap $3, [$2]] }
+ | ident_or_kwd { [$1, []] }
+ | identifier_cpp_list TCppConcatOp ident_or_kwd { $1 @ [$3, [$2]] }
+
+ident_or_kwd:
+   TIdent { mk_string_wrap $1 }
+ | Talignas { mk_info_string $1 }
+ | Tasm { mk_info_string $1 }
+ | Tattribute { mk_info_string $1 }
+ | TattributeNoarg { mk_info_string $1 }
+ | Tauto { mk_info_string $1 }
+ | TautoType { mk_info_string $1 }
+ | Tbreak { mk_info_string $1 }
+ | Tcase { mk_info_string $1 }
+ | Tchar { mk_info_string $1 }
+ | Tclass { mk_info_string $1 }
+ | Tcomplex { mk_info_string $1 }
+ | Tconst { mk_info_string $1 }
+ | Tcontinue { mk_info_string $1 }
+ | Tcpp_struct { mk_info_string $1 }
+ | Tcpp_union { mk_info_string $1 }
+ | Tdecimal { mk_info_string $1 }
+ | Tdefault { mk_info_string $1 }
+ | Tdelete { mk_info_string $1 }
+ | Tdo { mk_info_string $1 }
+ | Tdouble { mk_info_string $1 }
+ | Telse { mk_info_string $1 }
+ | Tenum { mk_info_string $1 }
+ | Texec { mk_info_string $1 }
+ | Textern { mk_info_string $1 }
+ | Tfinal { mk_info_string $1 }
+ | Tfloat { mk_info_string $1 }
+ | Tfor { mk_info_string $1 }
+ | Tgoto { mk_info_string $1 }
+ | Tif { mk_info_string $1 }
+ | Tinline { mk_info_string $1 }
+ | Tint { mk_info_string $1 }
+ | Tlong { mk_info_string $1 }
+ | TMacroAttr { mk_string_wrap $1 }
+ | Tnamespace { mk_info_string $1 }
+ | Tnew { mk_info_string $1 }
+ | Toperator { mk_info_string $1 }
+ | Tprivate { mk_info_string $1 }
+ | Tprotected { mk_info_string $1 }
+ | Tptrdiff_t { mk_info_string $1 }
+ | Tpublic { mk_info_string $1 }
+ | Tregister { mk_info_string $1 }
+ | Trestrict { mk_info_string $1 }
+ | Treturn { mk_info_string $1 }
+ | Tshort { mk_info_string $1 }
+ | Tsigned { mk_info_string $1 }
+ | Tsizeof { mk_info_string $1 }
+ | Tsize_t { mk_info_string $1 }
+ | Tssize_t { mk_info_string $1 }
+ | Tstatic { mk_info_string $1 }
+ | Tstruct { mk_info_string $1 }
+ | Tswitch { mk_info_string $1 }
+ | Ttemplate { mk_info_string $1 }
+ | Ttypedef { mk_info_string $1 }
+ | Ttypename { mk_info_string $1 }
+ | Ttypeof { mk_info_string $1 }
+ | Tunion { mk_info_string $1 }
+ | Tunsigned { mk_info_string $1 }
+ | Tusing { mk_info_string $1 }
+ | Tvoid { mk_info_string $1 }
+ | Tvolatile { mk_info_string $1 }
+ | Twhile { mk_info_string $1 }
 
 /*(*************************************************************************)*/
 /*(* expr *)*/
