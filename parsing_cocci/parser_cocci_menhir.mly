@@ -1637,7 +1637,7 @@ one_arg(arg):
 /* Lists of arguments in template declarations */
 
 template_arg_list:
-    arglist=separated_list(TComma, template_argorellipsis(one_template_arg))
+    arglist=separated_llist(TComma, template_argorellipsis(one_template_arg))
      { let (args,_vararg) = cleanup_arglist arglist in
        (Ast0_cocci.wrap args) }
 
