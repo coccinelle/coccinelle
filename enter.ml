@@ -1425,12 +1425,8 @@ singleton lists are then just appended to each other during the merge. *)
         | Some extension -> Testing.compare_with_expected outfiles extension);
       if patching_failed
       then
-        begin
-          Printf.eprintf
-	    "An error occurred when attempting to transform some files.\n";
-          if !compare_with_expected == None
-	  then raise (UnixExit (-1))
-        end
+        Printf.eprintf
+	  "An error occurred when attempting to transform some files.\n";
 
 and debug_restart virt_rules virt_ids =
   if !Flag_parsing_cocci.debug_parse_cocci
