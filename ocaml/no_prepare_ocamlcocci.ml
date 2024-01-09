@@ -136,15 +136,12 @@ let do_toplevel =
 	Ast.MetaAttr(name,cstr,_,_) -> check_constraint cstr
       | _ -> option_default) in
 
-  (V.combiner bind option_default
-     mcodefn mcodefn mcodefn mcodefn mcodefn mcodefn
-     mcodefn mcodefn mcodefn
-     mcodefn mcodefn mcodefn mcodefn mcodefn
-     donothing donothing donothing donothing donothing donothing donothing
-     identfn exprfn fragfn fmtfn assignOpfn binaryOpfn pragmainfofn
-     donothing tyfn initfn paramfn define_paramfn declfn
-     donothing fieldfn donothing donothing rulefn donothing
-     donothing donothing attr_argfn donothing donothing_a).V.combiner_top_level
+  (V.combiner bind option_default {V.cmcode=mcodefn} {V.cdonothing=donothing}
+     ~ident:identfn ~expr:exprfn ~string_fragment:fragfn ~fmt:fmtfn
+     ~assignOp:assignOpfn ~binaryOp:binaryOpfn ~pragma_info:pragmainfofn
+     ~ty:tyfn ~init:initfn ~param:paramfn ~define_param:define_paramfn
+     ~decl:declfn ~field:fieldfn ~rule:rulefn
+     ~attr_arg:attr_argfn donothing_a).V.combiner_top_level
 
 let prepare coccifile code =
   let ocamls_rules =
