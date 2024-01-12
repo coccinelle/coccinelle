@@ -1093,7 +1093,7 @@ primary_expr_without_ident:
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
- | identifier_cpp TTemplateStart argument_list_ne TTemplateEnd
+ | postfix_expr TTemplateStart argument_list_ne TTemplateEnd
      { mk_e(TemplateInst ($1, $3)) [$2;$4] }
 
 primary_expr:
@@ -1793,7 +1793,7 @@ template_parameter_decl2:
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
        let (name, ftyp) = snd $2 in
        VarNameParam((ftyp returnType,name,None),[]) }
- | type_spec2_without_braces declaratorp TEq arith_expr_nosup
+ | type_spec2_without_braces declaratorp TEq initialize_arg
      // not assign_expr b/c of > conflict
      { let ds = ([], addTypeD ($1, nullDecl)) in
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
@@ -1806,7 +1806,7 @@ template_parameter_decl2:
        let ((returnType,_hasreg),_iihasreg) = fixDeclSpecForParam ds in
        let (name, ftyp) = snd $3 in
        VarNameParam((ftyp returnType,name,None),[]) }
- | Tconst type_spec2_without_braces declaratorp TEq arith_expr_nosup
+ | Tconst type_spec2_without_braces declaratorp TEq initialize_arg
      { let ty  = ([], addTypeD ($2,nullDecl)) in
        let cst = {const=true  ; volatile=false; restrict=false}, $1 in
        let ds  = (fst ty, addQualifD  (cst, snd ty)) in
@@ -2053,6 +2053,12 @@ gcc_asm_decl:
 /*(*-----------------------------------------------------------------------*)*/
 initialize:
  | assign_expr
+     { InitExpr $1,                [] }
+ | tobrace_ini outer_initialize_list  tcbrace_ini
+     { $2 $1 $3 }
+
+initialize_arg:
+ | arith_expr_nosup
      { InitExpr $1,                [] }
  | tobrace_ini outer_initialize_list  tcbrace_ini
      { $2 $1 $3 }

@@ -220,7 +220,7 @@ let visitor mode bind option_default
 	    let (args_n, args) = get_option argslist args_opt in
 	    (multibind [nw_n;pp_opt_n;lp2_n;ty_n;rp2_n;args_n], Ast0.New(nw,pp_opt,lp2,ty,rp2,args_opt))
 	| Ast0.TemplateInst(tn,lp,args,rp) ->
-	    let (tn_n,tn) = ident tn in
+	    let (tn_n,tn) = expression tn in
 	    let (lp_n,lp) = string_mcode lp in
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in

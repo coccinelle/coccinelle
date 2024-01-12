@@ -1695,7 +1695,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
     | A.TemplateInst(nma,laba,argsa,raba),
 	((B.TemplateInst(nmb,argsb), typ), ii) ->
 	  let (labb,rabb) = tuple_of_list2 ii in
-	  ident_cpp DontKnow nma nmb >>= (fun nma nmb ->
+	  expression nma nmb >>= (fun nma nmb ->
 	  tokenf laba labb >>= (fun laba labb ->
           arguments (seqstyle argsa) (A.unwrap argsa) argsb >>= (fun argsaunwrap argsb ->
 	  tokenf raba rabb >>= (fun raba rabb ->
@@ -2406,7 +2406,7 @@ and template_parameter = fun parama paramb ->
 	fullType typa typb >>= (fun typa typb ->
 	ident_cpp DontKnow ida idb >>= (fun ida idb ->
 	tokenf eqa eqb >>= (fun eqa eqb ->
-	expression expa expb >>= (fun expa expb ->
+	initialiser expa expb >>= (fun expa expb ->
 	  return(
 	  A.VarNameParam(typa,ida,Some (eqa,expa)) +> A.rewrap parama,
 	  B.VarNameParam((typb,idb,Some expb),[eqb]))))))

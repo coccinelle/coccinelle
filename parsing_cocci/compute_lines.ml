@@ -463,7 +463,7 @@ let rec expression e =
       | (None,Some x) -> mkres e tmp (promote_mcode nw) (promote_mcode x)
       | (Some (lp,args,rp),_) -> mkres e tmp (promote_mcode nw) (promote_mcode rp))
   | Ast0.TemplateInst(tn,lp,args,rp) ->
-      let tn = ident tn in
+      let tn = expression tn in
       let lp = normal_mcode lp in
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       let rp = normal_mcode rp in

@@ -345,7 +345,7 @@ let rec vk_expr = fun bigf expr ->
 	do_option (vk_argument_list bigf) init
     | Delete (_,e) -> vk_expr bigf e
     | TemplateInst(nm,args) ->
-	vk_name bigf nm;
+	exprf nm;
 	vk_argument_list bigf args
     | Defined name -> vk_name bigf name
 
@@ -864,7 +864,7 @@ and vk_template_param = fun bigf param ->
 	iif ii;
 	vk_type bigf ty;
 	vk_name bigf name;
-	do_option (vk_expr bigf) expopt
+	do_option (vk_ini bigf) expopt
     | TemplateParam((params,temp_param),ii) ->
 	iif ii;
 	params +> List.iter (fun (param,iicomma) ->
@@ -1387,7 +1387,7 @@ let rec vk_expr_s = fun bigf expr ->
               vk_argument_s bigf e, iif ii)) init)
       | Delete (box,e) -> Delete (box,vk_expr_s bigf e)
     | TemplateInst(nm,args) ->
-	TemplateInst(vk_name_s bigf nm,
+	TemplateInst(exprf nm,
 		     List.map
 		       (fun (e,ii) -> vk_argument_s bigf e, iif ii)
 		       args)
@@ -1974,7 +1974,7 @@ and vk_template_param_s = fun bigf param ->
 		      iif ii)
     | VarNameParam((ty,name,expopt),ii) ->
 	VarNameParam((vk_type_s bigf ty,vk_name_s bigf name,
-		      fmap (vk_expr_s bigf) expopt),
+		      fmap (vk_ini_s bigf) expopt),
 		     iif ii)
     | TemplateParam((params,temp_param),ii) ->
 	let params =

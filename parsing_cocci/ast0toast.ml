@@ -454,7 +454,7 @@ and expression e =
 	let args_opt = get_option argslist args_opt in
 	Ast.New(nw,pp_opt,lp2,ty,rp2,args_opt)
     | Ast0.TemplateInst(tn,lp,args,rp) ->
-	let tn = ident tn in
+	let tn = expression tn in
 	let lp = mcode lp in
 	let args = dots expression args in
 	let rp = mcode rp in

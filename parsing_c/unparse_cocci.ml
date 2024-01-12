@@ -526,7 +526,7 @@ let rec expression e =
       print_option (function e -> mcode print_string e) rp_opt;
       print_option print_args args_opt;
   | Ast.TemplateInst(tn,lp,args,rp) ->
-      ident tn; mcode (print_string_with_hint StartBox) lp;
+      loop tn postfix; mcode (print_string_with_hint StartBox) lp;
       dots (function _ -> ()) arg_expression args;
       mcode (print_string_with_hint EndBox) rp
   | Ast.TypeExp(ty) -> fullType ty
@@ -1276,7 +1276,7 @@ and templateParameterTypeDef p =
       print_option (fun (eq,ty) -> mcode print_string eq; fullType ty) eqtyopt
   | Ast.VarNameParam(ty,id,eqexpopt) ->
       print_named_type ty (fun _ -> ident id);
-      print_option (fun (eq,exp) -> mcode print_string eq; expression exp) eqexpopt
+      print_option (fun (eq,exp) -> mcode print_string eq; initialiser false exp) eqexpopt
   | Ast.TPComma(comma) -> mcode print_string comma; force_newline()
   | Ast.TPDots(dots) -> mcode print_string dots; force_newline()
 

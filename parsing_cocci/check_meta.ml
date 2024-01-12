@@ -215,7 +215,7 @@ and expression context old_metas table minus e =
       get_opt (check_args (expression ID old_metas table minus)) pp_opt;
       get_opt (check_args (expression ID old_metas table minus)) args_opt;
   | Ast0.TemplateInst(name,lab,args,rab) ->
-      ident ID old_metas table minus name;
+      expression ID old_metas table minus name;
       dots (expression ID old_metas table minus) args
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->

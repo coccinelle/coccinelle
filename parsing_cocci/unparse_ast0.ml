@@ -246,7 +246,7 @@ let rec expression e =
 	  print_string " ";
 	  print_option (print_args false) args_opt;
       | Ast0.TemplateInst(tn,lp,args,rp) ->
-	  ident tn; mcode print_string_box lp;
+	  expression tn; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp
       | Ast0.TypeExp(ty) -> typeC ty

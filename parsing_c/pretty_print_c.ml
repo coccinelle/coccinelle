@@ -208,7 +208,7 @@ let mk_pretty_printers
 	pr_elem i1; pr_space(); pr_elem i2; pr_elem i3; pr_space();
 	pp_expression t
     | TemplateInst(name,es),[lab;rab] ->
-        pp_name name; pr_elem lab;
+        pp_expression name; pr_elem lab;
 	pp_arg_list es;
         pr_elem rab
 
@@ -1531,7 +1531,16 @@ and pp_init (init, iinit) =
 	  None -> ()
 	| Some ty -> pr_elem (List.nth ii 1); pp_type ty)
     | VarNameParam((ty,nm,expopt),ii) ->
-	pp_type_with_ident (Some (function _ -> pp_name nm))
+	pp_type_with_ident
+	  (Some
+	     (function _ ->
+	       pp_name nm;
+	       match expopt with
+		 None -> ()
+	       | Some ini ->
+		   let i1 = Common.tuple_of_list1 ii in
+		   pr_space(); pr_elem i1; pr_space();
+		   pp_init ini))
 	  None ty []
     | TemplateParam((params,tmp),ii) ->
 	let (i1,i2,i3) = Common.tuple_of_list3 ii in

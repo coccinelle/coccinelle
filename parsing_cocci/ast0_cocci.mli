@@ -123,7 +123,7 @@ and base_expression =
   | New            of string mcode (* new *) * arguments option *
 	           string mcode (* ( *) option * typeC *
 	           string mcode (* ) *) option * arguments option
-  | TemplateInst of ident (* name *) * string mcode (* < *) *
+  | TemplateInst of expression (* name *) * string mcode (* < *) *
         expression dots * string mcode (* > *)
   | TypeExp        of typeC
   | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *

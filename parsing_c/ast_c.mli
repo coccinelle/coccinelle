@@ -127,7 +127,7 @@ and expressionbis =
   | ParenExpr of expression
   | New of (argument wrap2 list) option * fullType * (argument wrap2 list) option
   | Delete of bool (* true if [] *) * expression
-  | TemplateInst of name * argument wrap2 list
+  | TemplateInst of expression * argument wrap2 list
   | Defined of name
 and argument = (expression, weird_argument) Common.either
 and weird_argument = ArgType of parameterType | ArgAction of action_macro
@@ -359,7 +359,7 @@ and toplevel =
   | TemplateDefinition of templateParameterType wrap2 list * toplevel * il
 and templateParameterType =
     TypenameOrClassParam of (name * fullType option) wrap
-  | VarNameParam of (fullType * name * expression option) wrap
+  | VarNameParam of (fullType * name * initialiser option) wrap
   | TemplateParam of (templateParameterType wrap2 list * templateParameterType) wrap
 and program = toplevel list
 and metavars_binding =

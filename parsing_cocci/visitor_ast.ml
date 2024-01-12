@@ -304,7 +304,7 @@ let combiner bind option_default mcode donothing
 	  let largs_opt = get_option argslist args_opt in
           multibind [lnw; lpp_opt; llp; lty; lrp; largs_opt]
       | Ast.TemplateInst(name,lab,args,rab) ->
-	  let lname = ident name in
+	  let lname = expression name in
 	  let llab = string_mcode lab in
 	  let largs = expression_dots args in
 	  let lrab = string_mcode rab in
@@ -1527,7 +1527,8 @@ let rebuilder mcode donothing
 	  let largs_opt = get_option argslist args_opt in
 	  Ast.New(lnw,lpp_opt,llp_opt,lty,lrp_opt,largs_opt)
 	| Ast.TemplateInst(name,lab,args,rab) ->
-	    Ast.TemplateInst(ident name,string_mcode lab,expression_dots args,string_mcode rab)
+	    Ast.TemplateInst(expression name,string_mcode lab,
+			     expression_dots args,string_mcode rab)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.Constructor(lp,ty,rp,init) ->
 	    let llp = string_mcode lp in

@@ -788,7 +788,7 @@ let match_maker checks_needed context_required whencode_allowed =
 		  match_typeC ty1 ty2; match_option check_mcode rp1_opt rp2_opt; match_option check_args args1_opt args2_opt]
 	  | (Ast0.TemplateInst(namea,laba,argsa,raba),Ast0.TemplateInst(nameb,labb,argsb,rabb)) ->
 	      conjunct_many_bindings
-		[check_mcode laba labb; check_mcode raba rabb; match_ident namea nameb;
+		[check_mcode laba labb; check_mcode raba rabb; match_expr namea nameb;
 		  match_dots match_expr is_elist_matcher do_elist_match
 		    argsa argsb]
 	  | (Ast0.Constructor(lp1,tya,rp1,inita),

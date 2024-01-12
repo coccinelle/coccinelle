@@ -193,7 +193,7 @@ and base_expression =
   | New            of string mcode (* new *) * arguments option *
 	           string mcode (* ( *) option * fullType *
                    string mcode (* ) *) option * arguments option
-  | TemplateInst   of ident (* name *) * string mcode (* < *) *
+  | TemplateInst   of expression (* name *) * string mcode (* < *) *
                       expression dots * string mcode (* > *)
   | TypeExp        of fullType
 

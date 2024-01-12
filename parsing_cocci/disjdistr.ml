@@ -267,7 +267,7 @@ and disjexp e =
 	(fun pp_opt ty args_opt ->
 	  Ast.rewrap e (Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt)))
   | Ast.TemplateInst(tn,lp,args,rp) ->
-      disjmult2 (disjident tn) (disjdots disjexp args)
+      disjmult2 (disjexp tn) (disjdots disjexp args)
 	(fun tn args ->
 	  Ast.rewrap e (Ast.TemplateInst(tn,lp,args,rp)))
   | Ast.TypeExp(ty) ->

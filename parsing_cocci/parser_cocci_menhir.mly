@@ -61,10 +61,17 @@ let build_arg = function
   | VAEllipsis _ -> assert false
   | Nothing -> assert false
 
+let build_template_arg = function
+  | Arg arg -> arg
+  | Ellipsis e -> Ast0_cocci.wrap (Ast0_cocci.TPDots(P.clt2mcode "..." e))
+  | Separator comma -> Ast0_cocci.wrap (Ast0_cocci.TPComma (P.clt2mcode "," comma))
+  | VAEllipsis _ -> assert false
+  | Nothing -> assert false
+
 let string_of_arglist l =
   "[" ^ (String.concat ";" (List.map string_of_arg l)) ^ "]"
 
-let cleanup_arglist l =
+let cleanup_arglist l build_arg =
   if l=[] then ([], None)
   else begin
     let (args, vararg) = match l with
@@ -1618,7 +1625,7 @@ define_param_list_option:
 
 arg_list(arg):
   arglist=separated_llist(TComma, argorellipsis(one_arg(arg)))
-     { let (args,vararg) = cleanup_arglist arglist in
+     { let (args,vararg) = cleanup_arglist arglist build_arg in
        ((Ast0_cocci.wrap args), vararg) }
 
 argorellipsis(arg):
@@ -1638,7 +1645,7 @@ one_arg(arg):
 
 template_arg_list:
     arglist=separated_llist(TComma, template_argorellipsis(one_template_arg))
-     { let (args,_vararg) = cleanup_arglist arglist in
+     { let (args,_vararg) = cleanup_arglist arglist build_template_arg in
        (Ast0_cocci.wrap args) }
 
 template_argorellipsis(arg):
@@ -1647,14 +1654,14 @@ template_argorellipsis(arg):
 
 one_template_arg:
     typename_or_class type_ident
-    { Ast0_cocci.wrap(TypenameOrClassParam($1, $2, None)) }
+    { Ast0_cocci.wrap(Ast0_cocci.TypenameOrClassParam($1, $2, None)) }
   | typename_or_class type_ident q=TEq t=ctype
     { let q = Parse_aux.clt2mcode "=" q in
-      Ast0_cocci.wrap(TypenameOrClassParam($1, $2, Some(q,t))) }
+      Ast0_cocci.wrap(Ast0_cocci.TypenameOrClassParam($1, $2, Some(q,t))) }
   | t=ctype d=direct_declarator(type_ident)
     { let (i,fn) = d in
     Ast0_cocci.wrap(Ast0_cocci.VarNameParam(fn t, i, None)) }
-  | t=ctype d=direct_declarator(type_ident) q=TEq e=initialize
+  | t=ctype d=direct_declarator(type_ident) q=TEq e=initialize_arg
     { let (i,fn) = d in
       let q = Parse_aux.clt2mcode "=" q in
       Ast0_cocci.wrap(Ast0_cocci.VarNameParam(fn t, i, Some(q,e))) }
@@ -2169,6 +2176,11 @@ initialize:
       { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
   | initialize_meta_or_list { $1 }
 
+initialize_arg:
+    aexpr
+      { Ast0_cocci.wrap(Ast0_cocci.InitExpr($1)) }
+  | initialize_meta_or_list { $1 }
+
 initialize_meta_or_list:
   | TMetaInit
       {let (nm,cstr,pure,clt) = $1 in
@@ -2615,7 +2627,7 @@ primary_expr(recurser,primary_extra):
        Ast0_cocci.wrap(Ast0_cocci.FunCall(fn,Parse_aux.clt2mcode "<<<" $2,
 			      $3,
 			      Parse_aux.clt2mcode ">>>" $4)) }
- | mident TTemplateStart eexpr_list TTemplateEnd
+ | postfix_expr(recurser,primary_extra) TTemplateStart eexpr_list TTemplateEnd
      { Ast0_cocci.wrap
 	 (Ast0.TemplateInst($1,Parse_aux.clt2mcode "<" $2,$3,
 			    Parse_aux.clt2mcode ">" $4)) }

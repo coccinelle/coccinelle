@@ -275,7 +275,7 @@ let rec expression e =
       print_string " ";
       print_option print_args args_opt;
   | Ast.TemplateInst(name,lp,args,rp) ->
-      ident name; print_string " ";
+      expression name; print_string " ";
       mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
