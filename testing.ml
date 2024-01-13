@@ -270,7 +270,7 @@ let testall_bis setup extra_test expected_score_file update_score_file =
       with exn ->
         Common.reset_pr_indent();
 	Iteration.reset();
-	Flag.reset();
+	Flag.reset_virt();
         let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
 	(* clean up state *)
 	Flag.defined_virtual_rules := [];
