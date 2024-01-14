@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 202, also unused: {9,15,161,194}
+(* current max is 202, also unused: {9,15,161}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -211,6 +211,7 @@ let statement s =
   | Ast0.Ty(ty) -> [124]
   | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
+  | Ast0.CppTop(di) -> [194]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.Include(inc,name) -> [118]
   | Ast0.MetaInclude(inc,name) -> [111]

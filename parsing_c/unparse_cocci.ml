@@ -1130,6 +1130,37 @@ and field d =
       mcode print_string sem
   | Ast.CppField(di) -> directive di
 
+and pragmainfo pi =
+  match Ast.unwrap pi with
+    Ast.PragmaString(s) -> mcode print_string s
+  | Ast.PragmaDots (dots) -> mcode print_string dots
+  | Ast.MetaPragmaInfo(name,_,_,_) ->
+      handle_metavar name (function
+        | Ast_c.MetaPragmaInfoVal(rest) -> print_text (Ast_c.str_of_info rest)
+        | _ -> error name pi "pragma info value expected")
+
+and directive di =
+  match Ast.unwrap di with
+    Ast.Pragma(prg,id,body) ->
+      mcode print_string prg; pr_space(); ident id; pr_space();
+      pragmainfo body
+  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
+      mcode print_string usng; pr_space();
+      mcode print_string nmspc; pr_space();
+      ident name; pr_space();
+      mcode print_string sem
+  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      mcode print_string usng; pr_space();
+      ident name; pr_space();
+      mcode print_string eq  ; pr_space();
+      print_option (fun x -> mcode print_string x; pr_space()) tn;
+      fullType ty; pr_space();
+      mcode print_string sem
+  | Ast.UsingMember(usng,name,sem) ->
+      mcode print_string usng; pr_space();
+      ident name; pr_space();
+      mcode print_string sem
+
 and annotated_field d =
   match Ast.unwrap d with
     Ast.FElem(_,_,decl) -> field decl
@@ -1433,15 +1464,6 @@ and rule_elem arity re =
         | _ -> error name re "statement list value expected")
   | Ast.AsRe(re,asre) -> rule_elem arity re
 
-and pragmainfo pi =
-  match Ast.unwrap pi with
-    Ast.PragmaString(s) -> mcode print_string s
-  | Ast.PragmaDots (dots) -> mcode print_string dots
-  | Ast.MetaPragmaInfo(name,_,_,_) ->
-      handle_metavar name (function
-        | Ast_c.MetaPragmaInfoVal(rest) -> print_text (Ast_c.str_of_info rest)
-        | _ -> error name pi "pragma info value expected")
-
 and forinfo = function
     Ast.ForExp(e1,sem1,e2,sem2,e3) ->
       print_option expression e1; mcode print_string sem1;
@@ -1610,28 +1632,6 @@ let rec statement arity s =
       else raise CantBeInPlus
 
   | Ast.OptStm(s) -> raise CantBeInPlus
-
-and directive di =
-  match Ast.unwrap di with
-    Ast.Pragma(prg,id,body) ->
-      mcode print_string prg; print_string " "; ident id; pr_space();
-      pragmainfo body
-  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
-      mcode print_string usng; pr_space();
-      mcode print_string nmspc; pr_space();
-      ident name; print_string " ";
-      mcode print_string sem
-  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
-      mcode print_string usng; pr_space();
-      ident name; pr_space();
-      mcode print_string eq  ; pr_space();
-      print_option (fun x -> mcode print_string x; pr_space()) tn;
-      fullType ty; pr_space();
-      mcode print_string sem
-  | Ast.UsingMember(usng,name,sem) ->
-      mcode print_string usng; pr_space();
-      ident name; pr_space();
-      mcode print_string sem
 
 and whencode notfn alwaysfn = function
     Ast.WhenNot a ->

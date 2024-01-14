@@ -58,11 +58,8 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | Include of includ
 
-  | PragmaHeader of (name * string wrap list) wrap
   | TemplateHeader of templateParameterType wrap2 list wrap
-  | UsingTypenameHeader of (name * fullType) wrap
-  | UsingMemberHeader of name wrap
-  | UsingNamespaceHeader of name wrap
+  | CppTop of cpp_directive
 
   | MacroTop of string * argument wrap2 list * il
 

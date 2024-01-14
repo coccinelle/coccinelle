@@ -449,6 +449,26 @@ and disjfield d =
       disjmult2 (disjident name) (disjdots disjexp args)
 	(fun name args ->
 	  Ast.rewrap d (Ast.MacroDeclField(name,lp,args,rp,attr,sem)))
+  | Ast.CppField di ->
+      let di = disjdirective di in
+      List.map (fun di -> Ast.rewrap d (Ast.CppField di)) di
+
+and disjdirective di =
+  match Ast.unwrap di with
+    Ast.Pragma(prg,id,body) -> [di]
+  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
+      let name = disjident name in
+      List.map
+	(function name ->
+	  Ast.rewrap di (Ast.UsingNamespace(usng,nmspc,name,sem)))
+	name
+  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
+      disjmult2 (disjident name) (disjty ty)
+	(fun name ty ->
+	  Ast.rewrap di (Ast.UsingTypename(usng,name,eq,tn,ty,sem)))
+  | Ast.UsingMember(usng,name,sem) ->
+      let name = disjident name in
+      List.map (function name -> Ast.rewrap di (Ast.UsingMember(usng,name,sem))) name
 
 let generic_orify_rule_elem f re exp rebuild =
   match f exp with
@@ -560,23 +580,12 @@ let rec disj_rule_elem r k re =
   | Ast.TopInit(init) ->
       orify_rule_elem_ini re init
 	(function init -> Ast.rewrap init (Ast.TopInit(init)))
-  | Ast.UsingNamespace(usng,nmspc,name,sem) ->
-      orify_rule_elem_id re name
-	(function name -> Ast.rewrap re (Ast.UsingNamespace(usng,nmspc,name,sem)))
-  | Ast.UsingTypename(usng,name,eq,tn,ty,sem) ->
-      generic_orify_rule_elem
-        (disjtwoelems disjident disjty) re
-        (name,ty)
-        (fun (name,ty) ->
-          Ast.rewrap re
-            (Ast.UsingTypename(usng,name,eq,tn,ty,sem)))
-  | Ast.UsingMember(usng,name,sem) ->
-      orify_rule_elem_id re name
-        (function name -> Ast.rewrap re (Ast.UsingMember(usng,name,sem)))
+  | Ast.CppTop di ->
+      generic_orify_rule_elem disjdirective re di
+	(fun di -> Ast.rewrap re (Ast.CppTop di))
   | Ast.Include(inc,_) | Ast.MetaInclude(inc,_) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re
-  | Ast.Pragma(prg,id,body) -> re
   | Ast.Default(def,colon) -> re
   | Ast.Case(case,exp,colon) ->
       orify_rule_elem re exp

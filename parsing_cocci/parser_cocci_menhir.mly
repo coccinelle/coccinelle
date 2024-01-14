@@ -1302,6 +1302,7 @@ struct_decl_one:
 	    (Ast0_cocci.MacroDeclField
 	       (d,Parse_aux.clt2mcode "(" o,e,
 		Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode ";" (snd p))) }
+    | directive { Ast0_cocci.wrap(Ast0_cocci.CppField $1) }
     | t=ctype_only_signable d=direct_decl_option(type_ident) bf=struct_bitfield? pv=TPtVirg
 	 { let (id,fn,endar) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,bf,endar,Parse_aux.clt2mcode ";" (snd pv))) }
@@ -1525,6 +1526,9 @@ includes:
 	    | _ -> b)
 	| _ -> b in
       $1 (Ast0_cocci.wrap body) }
+| directive { Ast0_cocci.wrap(Ast0_cocci.CppTop $1) }
+
+directive:
 | TPragma TLineEnd
     { let (clt,ident,rest_ident,rest,rest_clt) = $1 in
       let aft = Parse_aux.get_aft clt in

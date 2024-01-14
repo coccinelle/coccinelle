@@ -504,15 +504,10 @@ let rec statement_pos s snp
   | Ast0.Ty _ -> None
   | Ast0.TopInit _ -> None
 
-  | Ast0.UsingNamespace (usngmc,nmspcmc,namemc,semmc) ->
-      let constructor ~mc = Ast0.UsingNamespace(usngmc, mc, namemc, semmc) in
-      mcode_wrap ~mc:nmspcmc ~constructor snp
-  | Ast0.UsingTypename (usngmc,namemc,eqmc,tnmc,tymc,semmc) ->
-      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tnmc, tymc, semmc) in
-      mcode_wrap ~mc:eqmc ~constructor snp
-  | Ast0.UsingMember(usngmc,namemc,semmc) ->
-      let constructor ~mc = Ast0.UsingMember(usngmc, namemc, mc) in
-      mcode_wrap ~mc:semmc ~constructor snp
+  | Ast0.CppTop di -> 
+      let c ~item = Ast0.CppTop item in
+      item_wrap ~item:di ~item_posfn:directive_pos ~constructor:c snp
+
   | Ast0.Include (incmc,filemc) ->
       let constructor ~mc = Ast0.Include(incmc, mc) in
       mcode_wrap ~mc:filemc ~constructor snp
@@ -536,9 +531,6 @@ let rec statement_pos s snp
        let defparam = Ast0.wrap (Ast0.DParams(lp, defp, newrp)) in
        wrap (c ~id ~defparam) snp
     )
-  | Ast0.Pragma (pragmc, id, praginfo) ->
-      let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
-      id_wrap ~id ~constructor snp
   | Ast0.OptStm stm ->
       let c ~item = Ast0.OptStm item in
       item_wrap ~item:stm ~item_posfn:statement_pos ~constructor:c snp
@@ -611,3 +603,19 @@ let rec statement_pos s snp
   | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
       let constructor ~mc = Ast0.TemplateDefinition(mc,lab,params,rab,stmt) in
       mcode_wrap ~mc:tmpkw ~constructor snp
+
+and directive_pos di snp
+: (Ast0.base_directive Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap di with
+    Ast0.Pragma (pragmc, id, praginfo) ->
+      let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
+      id_wrap ~id ~constructor snp
+  | Ast0.UsingNamespace (usngmc,nmspcmc,namemc,semmc) ->
+      let constructor ~mc = Ast0.UsingNamespace(usngmc, mc, namemc, semmc) in
+      mcode_wrap ~mc:nmspcmc ~constructor snp
+  | Ast0.UsingTypename (usngmc,namemc,eqmc,tnmc,tymc,semmc) ->
+      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tnmc, tymc, semmc) in
+      mcode_wrap ~mc:eqmc ~constructor snp
+  | Ast0.UsingMember(usngmc,namemc,semmc) ->
+      let constructor ~mc = Ast0.UsingMember(usngmc, namemc, mc) in
+      mcode_wrap ~mc:semmc ~constructor snp

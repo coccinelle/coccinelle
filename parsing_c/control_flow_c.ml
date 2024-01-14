@@ -385,8 +385,7 @@ let extract_fullstatement node =
   | Include _
   | DefineHeader _ | DefineType _ | DefineAttr _ | DefineExpr _
   | DefineDoWhileZeroHeader _
-  | DefineInit _ | DefineTodo | PragmaHeader _ | TemplateHeader _
-  | UsingTypenameHeader _ | UsingMemberHeader _ | UsingNamespaceHeader _
+  | DefineInit _ | DefineTodo | CppTop _ | TemplateHeader _
   | MacroTop _
       -> None
 

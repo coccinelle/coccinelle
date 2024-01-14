@@ -396,6 +396,8 @@ and field context old_metas table minus d =
       ident GLOBAL old_metas table minus name;
       dots (expression ID old_metas table minus) args;
       List.iter (attribute old_metas table minus) attr
+  | Ast0.CppField(di) ->
+      directive old_metas table minus di
   | Ast0.DisjField(_,decls,_,_)
   | Ast0.ConjField(_,decls,_,_) ->
       List.iter (field ID old_metas table minus) decls
@@ -582,9 +584,6 @@ and statement old_metas table minus s =
       ident GLOBAL old_metas table minus id;
       define_parameters old_metas table minus params;
       dots (statement old_metas table minus) body
-  | Ast0.Pragma(prg,id,body) ->
-      ident GLOBAL old_metas table minus id;
-      pragmainfo old_metas table minus body
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
@@ -597,6 +596,18 @@ and pragmainfo old_metas table minus pi =
       check_table table minus name;
       constraints table minus cstr
 
+and directive old_metas table minus di =
+  match Ast0.unwrap di with
+    Ast0.Pragma(prg,id,body) ->
+      ident GLOBAL old_metas table minus id;
+      pragmainfo old_metas table minus body
+  | Ast0.UsingNamespace(using,ns,nm,semi) ->
+      ident GLOBAL old_metas table minus nm
+  | Ast0.UsingTypename(using,nm,eq,tynm,ty,semi) ->
+      ident GLOBAL old_metas table minus nm;
+      typeC old_metas table minus ty
+  | Ast0.UsingMember(using,nm,semi) ->
+      ident GLOBAL old_metas table minus nm
 
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
