@@ -1452,34 +1452,34 @@ includes:
   TIncludeL
     { Ast0_cocci.wrap
 	(Ast0_cocci.Include(Parse_aux.clt2mcode "#include"
-			(Parse_aux.drop_pos (Parse_aux.drop_aft (Parse_aux.id2clt $1))),
-		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
-			Parse_aux.id2clt $1 in
-		      let clt = (* default to one space whitespace *)
-			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
-		      Parse_aux.clt2mcode
-			(Ast_cocci.Local (Parse_aux.str2inc (Parse_aux.id2name $1)))
-			(Parse_aux.drop_bef clt))) }
+			      (Parse_aux.drop_pos (Parse_aux.drop_aft (Parse_aux.id2clt $1))),
+			    let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
+			      Parse_aux.id2clt $1 in
+			    let clt = (* default to one space whitespace *)
+			      (arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
+			    Parse_aux.clt2mcode
+			      (Ast_cocci.Local (Parse_aux.str2inc (Parse_aux.id2name $1)))
+			      (Parse_aux.drop_bef clt))) }
 | TIncludeNL
     { Ast0_cocci.wrap
 	(Ast0_cocci.Include(Parse_aux.clt2mcode "#include"
 			(Parse_aux.drop_pos (Parse_aux.drop_aft (Parse_aux.id2clt $1))),
-		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
-			Parse_aux.id2clt $1 in
-		      let clt = (* default to one space whitespace *)
-			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
-		      Parse_aux.clt2mcode
-			(Ast_cocci.NonLocal (Parse_aux.str2inc (Parse_aux.id2name $1)))
-			(Parse_aux.drop_bef clt))) }
+			    let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
+			      Parse_aux.id2clt $1 in
+			    let clt = (* default to one space whitespace *)
+			      (arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
+			    Parse_aux.clt2mcode
+			      (Ast_cocci.NonLocal (Parse_aux.str2inc (Parse_aux.id2name $1)))
+			      (Parse_aux.drop_bef clt))) }
 | TIncludeAny
     { Ast0_cocci.wrap
 	(Ast0_cocci.Include(Parse_aux.clt2mcode "#include"
-			(Parse_aux.drop_pos (Parse_aux.drop_aft (Parse_aux.id2clt $1))),
-		      let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
-			Parse_aux.id2clt $1 in
-		      let clt = (* default to one space whitespace *)
-			(arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
-		      Parse_aux.clt2mcode Ast_cocci.AnyInc (Parse_aux.drop_bef clt))) }
+			      (Parse_aux.drop_pos (Parse_aux.drop_aft (Parse_aux.id2clt $1))),
+			    let (arity,ln,lln,llne,offset,col,strbef,straft,pos,_) =
+			      Parse_aux.id2clt $1 in
+			    let clt = (* default to one space whitespace *)
+			      (arity,ln,lln,llne,offset,0,strbef,straft,pos," ") in
+			    Parse_aux.clt2mcode Ast_cocci.AnyInc (Parse_aux.drop_bef clt))) }
 | TInclude TMetaExp
      { Ast0_cocci.wrap
 	 (Ast0_cocci.MetaInclude
