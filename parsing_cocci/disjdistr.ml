@@ -455,7 +455,7 @@ and disjfield d =
 
 and disjdirective di =
   match Ast.unwrap di with
-    Ast.Pragma(prg,id,body) -> [di]
+    Ast.Include _ | Ast.MetaInclude _ | Ast.Pragma _ -> [di]
   | Ast.UsingNamespace(usng,nmspc,name,sem) ->
       let name = disjident name in
       List.map
@@ -583,7 +583,6 @@ let rec disj_rule_elem r k re =
   | Ast.CppTop di ->
       generic_orify_rule_elem disjdirective re di
 	(fun di -> Ast.rewrap re (Ast.CppTop di))
-  | Ast.Include(inc,_) | Ast.MetaInclude(inc,_) -> re
   | Ast.Undef(def,id) -> re
   | Ast.DefineHeader(def,id,params) -> re
   | Ast.Default(def,colon) -> re

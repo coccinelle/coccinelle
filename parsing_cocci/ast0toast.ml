@@ -957,9 +957,11 @@ and template_parameter_list l = dots templateParameterTypeDef l
 and directive d =
   rewrap d no_isos
     (match Ast0.unwrap d with
-      Ast0.Pragma(prg,id,body) ->
+      Ast0.Include(inc,str) -> Ast.Include(mcode inc,mcode str)
+    | Ast0.MetaInclude(inc,str) -> Ast.MetaInclude(mcode inc,expression str)
+    | Ast0.Pragma(prg,id,body) ->
 	Ast.Pragma(mcode prg,ident id,pragmainfo body)
-    |	Ast0.UsingNamespace(nmspc,usng,name,sem) ->
+    | Ast0.UsingNamespace(nmspc,usng,name,sem) ->
         Ast.UsingNamespace(mcode nmspc,mcode usng,ident name,mcode sem)
     | Ast0.UsingTypename(usng,name,eq,tn,ty,sem) ->
         Ast.UsingTypename(mcode usng,ident name,mcode eq,get_option mcode tn,
@@ -1155,11 +1157,6 @@ and statement s =
 	    (rewrap_rule_elem s (Ast.TemplateDefinitionHeader(tmpkw,lab,params,rab)),
 	     stmt)
       | Ast0.CppTop(di) -> Ast.Atomic(rewrap_rule_elem s (Ast.CppTop(directive di)))
-      |	Ast0.Include(inc,str) ->
-         Ast.Atomic(rewrap_rule_elem s (Ast.Include(mcode inc,mcode str)))
-      |	Ast0.MetaInclude(inc,str) ->
-	  Ast.Atomic
-	    (rewrap_rule_elem s (Ast.MetaInclude(mcode inc,expression str)))
       |	Ast0.Undef(def,id) ->
 	  Ast.Atomic(rewrap_rule_elem s (Ast.Undef(mcode def,ident id)))
       | Ast0.Define(def,id,params,body) ->

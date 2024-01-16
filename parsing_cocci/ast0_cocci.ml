@@ -458,8 +458,6 @@ and base_statement =
         template_parameter_list * string mcode (* > *) *
         statement
 
-  | Include of string mcode (* #include *) * Ast.inc_file mcode (* file *)
-  | MetaInclude of string mcode (* #include *) * expression (* file *)
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
 	define_parameters (*params*) * statement dots
@@ -529,6 +527,8 @@ and ('a,'b) whencode =
 and statement = base_statement wrap
 
 and base_directive = 
+  | Include of string mcode (* #include *) * Ast.inc_file mcode (* file *)
+  | MetaInclude of string mcode (* #include *) * expression (* file *)
   | Pragma of string mcode (* #pragma *) * ident * pragmainfo
   | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
       ident (*name*) * string mcode (*;*)

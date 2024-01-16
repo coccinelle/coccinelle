@@ -1449,6 +1449,44 @@ filespec:
 			 Parse_aux.id2mcode $2))] }
 
 includes:
+| TUndef TLineEnd
+    { let (clt,ident) = $1 in
+      let aft = Parse_aux.get_aft clt in (* move stuff after the define to the ident *)
+      Ast0_cocci.wrap
+      (Ast0_cocci.Undef
+	 (Parse_aux.clt2mcode "#undef" (Parse_aux.drop_aft clt),
+	  (match ident with
+	    TMetaId((nm,constraints,seed,pure,clt)) ->
+	      let clt = Parse_aux.set_aft aft clt in
+	      Ast0_cocci.wrap(Ast0_cocci.MetaId(Parse_aux.clt2mcode nm clt,constraints,seed,pure))
+	  | TIdent((nm,clt)) ->
+	      let clt = Parse_aux.set_aft aft clt in
+	      Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.clt2mcode nm clt))
+	  | TSymId(nm,clt) ->
+	      let clt = Parse_aux.set_aft aft clt in
+	      Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.clt2mcode nm clt))
+	  | _ ->
+	      raise
+		(Semantic_cocci.Semantic
+		   "unexpected name for a #define")))) }
+| d=defineop TLineEnd
+    { d (Ast0_cocci.wrap []) }
+| d=defineop t=ctype TLineEnd
+    { let ty = Ast0_cocci.wrap(Ast0_cocci.TopExp(Ast0_cocci.wrap(Ast0_cocci.TypeExp(t)))) in
+      d (Ast0_cocci.wrap [ty]) }
+| defineop b=toplevel_seq_start(toplevel_after_dots) TLineEnd
+    { let body =
+	match b with
+	  [e] ->
+	    (match Ast0_cocci.unwrap e with
+	      Ast0_cocci.Exp(e1) ->
+		[Ast0_cocci.rewrap e (Ast0_cocci.TopExp(Ast0_cocci.set_arg_exp (e1)))]
+	    | _ -> b)
+	| _ -> b in
+      $1 (Ast0_cocci.wrap body) }
+| directive { Ast0_cocci.wrap(Ast0_cocci.CppTop $1) }
+
+directive:
   TIncludeL
     { Ast0_cocci.wrap
 	(Ast0_cocci.Include(Parse_aux.clt2mcode "#include"
@@ -1491,44 +1529,6 @@ includes:
 				  pure,None))
 	     | _ -> failwith "length not allowed for include argument")) }
 
-| TUndef TLineEnd
-    { let (clt,ident) = $1 in
-      let aft = Parse_aux.get_aft clt in (* move stuff after the define to the ident *)
-      Ast0_cocci.wrap
-      (Ast0_cocci.Undef
-	 (Parse_aux.clt2mcode "#undef" (Parse_aux.drop_aft clt),
-	  (match ident with
-	    TMetaId((nm,constraints,seed,pure,clt)) ->
-	      let clt = Parse_aux.set_aft aft clt in
-	      Ast0_cocci.wrap(Ast0_cocci.MetaId(Parse_aux.clt2mcode nm clt,constraints,seed,pure))
-	  | TIdent((nm,clt)) ->
-	      let clt = Parse_aux.set_aft aft clt in
-	      Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.clt2mcode nm clt))
-	  | TSymId(nm,clt) ->
-	      let clt = Parse_aux.set_aft aft clt in
-	      Ast0_cocci.wrap(Ast0_cocci.Id(Parse_aux.clt2mcode nm clt))
-	  | _ ->
-	      raise
-		(Semantic_cocci.Semantic
-		   "unexpected name for a #define")))) }
-| d=defineop TLineEnd
-    { d (Ast0_cocci.wrap []) }
-| d=defineop t=ctype TLineEnd
-    { let ty = Ast0_cocci.wrap(Ast0_cocci.TopExp(Ast0_cocci.wrap(Ast0_cocci.TypeExp(t)))) in
-      d (Ast0_cocci.wrap [ty]) }
-| defineop b=toplevel_seq_start(toplevel_after_dots) TLineEnd
-    { let body =
-	match b with
-	  [e] ->
-	    (match Ast0_cocci.unwrap e with
-	      Ast0_cocci.Exp(e1) ->
-		[Ast0_cocci.rewrap e (Ast0_cocci.TopExp(Ast0_cocci.set_arg_exp (e1)))]
-	    | _ -> b)
-	| _ -> b in
-      $1 (Ast0_cocci.wrap body) }
-| directive { Ast0_cocci.wrap(Ast0_cocci.CppTop $1) }
-
-directive:
 | TPragma TLineEnd
     { let (clt,ident,rest_ident,rest,rest_clt) = $1 in
       let aft = Parse_aux.get_aft clt in

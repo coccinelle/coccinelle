@@ -959,7 +959,15 @@ and pragmainfo pi =
 
 and directive d =
   match Ast0.unwrap d with
-    Ast0.Pragma(prg,id,body) ->
+    Ast0.Include(inc,stm) ->
+      let inc = normal_mcode inc in
+      let stm = normal_mcode stm in
+      mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
+  | Ast0.MetaInclude(inc,s) ->
+      let inc = normal_mcode inc in
+      let s = expression s in
+      mkres s (Ast0.MetaInclude(inc,s)) (promote_mcode inc) s
+  | Ast0.Pragma(prg,id,body) ->
       let prg = normal_mcode prg in
       let id = ident id in
       let body = pragmainfo body in
@@ -1549,14 +1557,6 @@ let rec statement s =
     | Ast0.CppTop(di) ->
 	let di = directive di in
 	mkres s (Ast0.CppTop(di)) di di
-    | Ast0.Include(inc,stm) ->
-	let inc = normal_mcode inc in
-	let stm = normal_mcode stm in
-	mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
-    | Ast0.MetaInclude(inc,s) ->
-	let inc = normal_mcode inc in
-	let s = expression s in
-	mkres s (Ast0.MetaInclude(inc,s)) (promote_mcode inc) s
 
     | Ast0.Undef(def,id) ->
 	let def = normal_mcode def in

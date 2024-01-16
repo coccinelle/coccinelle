@@ -576,8 +576,6 @@ and statement old_metas table minus s =
       parameter_list old_metas table minus params;
       List.iter (attribute old_metas table minus) attrs;
       dots (statement old_metas table minus) body
-  | Ast0.Include(inc,s) -> () (* no metavariables possible *)
-  | Ast0.MetaInclude(inc,s) -> expression ID old_metas table minus s
   | Ast0.Undef(def,id) ->
       ident GLOBAL old_metas table minus id
   | Ast0.Define(def,id,params,body) ->
@@ -598,7 +596,9 @@ and pragmainfo old_metas table minus pi =
 
 and directive old_metas table minus di =
   match Ast0.unwrap di with
-    Ast0.Pragma(prg,id,body) ->
+    Ast0.Include(inc,s) -> () (* no metavariables possible *)
+  | Ast0.MetaInclude(inc,s) -> expression ID old_metas table minus s
+  | Ast0.Pragma(prg,id,body) ->
       ident GLOBAL old_metas table minus id;
       pragmainfo old_metas table minus body
   | Ast0.UsingNamespace(using,ns,nm,semi) ->

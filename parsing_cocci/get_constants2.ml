@@ -635,8 +635,14 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	bind (keywords "goto") (k re)
     | Ast.Default(def,colon) ->
 	bind (keywords "default") (k re)
-    | Ast.Include(inc,s) ->
-	bind (k re)
+    | Ast.DisjRuleElem(res) ->
+	disj_union_all (List.map r.V.combiner_rule_elem res)
+    | _ -> k re) in
+
+  let directive r k di =
+    match Ast.unwrap di with
+      Ast.Include(inc,s) ->
+	bind (k di)
 	  (match Ast.unwrap_mcode s with
 	    Ast.AnyInc -> True
 	  | Ast.Local l | Ast.NonLocal l ->
@@ -652,9 +658,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	      (match strings with
 		[] -> True
 	      | x::xs -> List.fold_left bind x xs))
-    | Ast.DisjRuleElem(res) ->
-	disj_union_all (List.map r.V.combiner_rule_elem res)
-    | _ -> k re) in
+    | _ -> k di in
 
   let statement r k s =
     match Ast.unwrap s with
@@ -673,7 +677,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     ~ft:fullType ~ty:typeC ~init:initialiser ~param:parameter
     ~define_param:define_parameter ~decl:declaration ~field:field
     ~annotated_field:ann_field ~rule:rule_elem ~stmt:statement ~attribute:attribute
-    ~attr_arg:attr_arg donothing
+    ~attr_arg:attr_arg ~directve:directive donothing
 
 (* ------------------------------------------------------------------------ *)
 

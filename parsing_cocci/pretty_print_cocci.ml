@@ -913,10 +913,6 @@ and rule_elem arity re =
   | Ast.TopId(id) -> print_string arity; ident id
   | Ast.TopInit(init) -> initialiser init
   | Ast.CppTop(di) -> directive di
-  | Ast.Include(inc,s) ->
-      mcode print_string inc; print_string " "; mcode inc_file s
-  | Ast.MetaInclude(inc,s) ->
-      mcode print_string inc; print_string " "; expression s
   | Ast.Undef(def,id) ->
       mcode print_string def; print_string " "; ident id
   | Ast.DefineHeader(def,id,params) ->
@@ -1055,7 +1051,11 @@ and statement arity s =
 
 and directive di =
   match Ast.unwrap di with
-    Ast.Pragma(prg,id,body) ->
+    Ast.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode inc_file s
+  | Ast.MetaInclude(inc,s) ->
+      mcode print_string inc; print_string " "; expression s
+  | Ast.Pragma(prg,id,body) ->
       mcode print_string prg; print_string " "; ident id; print_string " ";
       pragmainfo body
   | Ast.UsingNamespace(usng,nmspc,name,sem) ->

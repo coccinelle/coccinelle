@@ -90,6 +90,7 @@ val combiner :
     ?attribute:((Ast_cocci.attr,'a) ccode) ->
     ?attr_arg:((Ast_cocci.attr_arg,'a) ccode) ->
     ?pragma_info:((Ast_cocci.pragmainfo,'a) ccode) ->
+    ?directive:((Ast_cocci.directive,'a) ccode) ->
     ?top:((Ast_cocci.top_level,'a) ccode) ->
     ((Ast_cocci.anything,'a) ccode) ->
       'a combiner
@@ -186,6 +187,7 @@ val rebuilder :
     ?attribute:(Ast_cocci.attr rcode) ->
     ?attr_arg:(Ast_cocci.attr_arg rcode) ->
     ?pragma_info:(Ast_cocci.pragmainfo rcode) ->
+    ?directive:(Ast_cocci.directive rcode) ->
     ?top:(Ast_cocci.top_level rcode) ->
     (Ast_cocci.anything rcode) ->
     rebuilder

@@ -75,7 +75,7 @@ let combiner bind option_default mcode donothing
     ?(rule=donothing.cdonothing) ?(case=donothing.cdonothing)
     ?(string_fragment=donothing.cdonothing) ?(fmt=donothing.cdonothing)
     ?(attribute=donothing.cdonothing) ?(attr_arg=donothing.cdonothing)
-    ?(pragma_info=donothing.cdonothing)
+    ?(pragma_info=donothing.cdonothing) ?(directive=donothing.cdonothing)
     ?(top=donothing.cdonothing) anyfn =
 
   let meta_mcodefn = meta_mcode in
@@ -126,6 +126,7 @@ let combiner bind option_default mcode donothing
   let attributefn = attribute in
   let attr_argfn = attr_arg in
   let pragmainfofn = pragma_info in
+  let directivefn = directive in
   let topfn = top in
 
   let multibind l =
@@ -898,14 +899,6 @@ let combiner bind option_default mcode donothing
       | Ast.Ty(ty) -> fullType ty
       | Ast.TopId(ty) -> ident ty
       | Ast.TopInit(init) -> initialiser init
-      | Ast.Include(inc,name) ->
-	  let linc = string_mcode inc in
-	  let lname = inc_file_mcode name in
-	  bind linc lname
-      | Ast.MetaInclude(inc,name) ->
-	  let linc = string_mcode inc in
-	  let lname = expression name in
-	  bind linc lname
       |	Ast.Undef(def,id) ->
 	  let ldef = string_mcode def in
 	  let lid = ident id in
@@ -1126,11 +1119,18 @@ let combiner bind option_default mcode donothing
 	  multibind [lattr; llp; largs; lrp] in
     attr_argfn all_functions k a
 
-  (* not parameterisable, for now *)
   and directive d =
     let k d =
       match Ast.unwrap d with
-	Ast.Pragma(prg,id,body) ->
+	Ast.Include(inc,name) ->
+	  let linc = string_mcode inc in
+	  let lname = inc_mcode name in
+	  Ast.Include(linc, lname)
+      | Ast.MetaInclude(inc,name) ->
+	  let linc = string_mcode inc in
+	  let lname = expression name in
+	  Ast.MetaInclude(linc, lname)
+      | Ast.Pragma(prg,id,body) ->
 	  let lprg = string_mcode prg in
 	  let lid = ident id in
 	  let lbody = pragmainfo body in
@@ -1154,7 +1154,7 @@ let combiner bind option_default mcode donothing
           let lname = ident name in
           let lsem = string_mcode sem in
           multibind [lusng; lname; lsem] in
-    k d
+    directivefn all_functions k d
 
   and whencode notfn alwaysfn = function
       Ast.WhenNot a -> notfn a
@@ -1342,7 +1342,7 @@ let rebuilder mcode donothing
     ?(rule=donothing.rdonothing) ?(case=donothing.rdonothing)
     ?(string_fragment=donothing.rdonothing) ?(fmt=donothing.rdonothing)
     ?(attribute=donothing.rdonothing) ?(attr_arg=donothing.rdonothing)
-    ?(pragma_info=donothing.rdonothing)
+    ?(pragma_info=donothing.rdonothing) ?(directive=donothing.rdonothing)
     ?(top=donothing.rdonothing) anyfn =
 
   let expdotsfn = dotsexpr in
@@ -1378,6 +1378,7 @@ let rebuilder mcode donothing
   let attributefn = attribute in
   let attr_argfn = attr_arg in
   let pragmainfofn = pragma_info in
+  let directivefn = directive in
   let topfn = top in
 
   let get_option f = function
@@ -2104,14 +2105,6 @@ let rebuilder mcode donothing
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.TopId(id) -> Ast.TopId(ident id)
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
-	| Ast.Include(inc,name) ->
-	    let linc = string_mcode inc in
-	    let lname = inc_mcode name in
-	    Ast.Include(linc, lname)
-	| Ast.MetaInclude(inc,name) ->
-	    let linc = string_mcode inc in
-	    let lname = expression name in
-	    Ast.MetaInclude(linc, lname)
 	| Ast.Undef(def,id) ->
 	    let ldef = string_mcode def in
 	    let lid = ident id in
@@ -2356,7 +2349,15 @@ let rebuilder mcode donothing
     let k d =
       Ast.rewrap d
         (match Ast.unwrap d with
-	  Ast.Pragma(prg,id,body) ->
+	  Ast.Include(inc,name) ->
+	    let linc = string_mcode inc in
+	    let lname = inc_file_mcode name in
+	    bind linc lname
+	| Ast.MetaInclude(inc,name) ->
+	    let linc = string_mcode inc in
+	    let lname = expression name in
+	    bind linc lname
+	| Ast.Pragma(prg,id,body) ->
 	    let lprg = string_mcode prg in
 	    let lid = ident id in
 	    let lbody = pragmainfo body in
@@ -2380,7 +2381,7 @@ let rebuilder mcode donothing
 	    let lname = ident name in
 	    let lsem = string_mcode sem in
 	    Ast.UsingMember(lusng, lname, lsem)) in
-    k d
+    directivefn all_functions k d
 
   and case_line c =
     let k c =

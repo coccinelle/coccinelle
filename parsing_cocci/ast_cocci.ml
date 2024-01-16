@@ -622,8 +622,6 @@ and base_rule_elem =
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
   | CppTop        of directive
-  | Include       of string mcode (*#include*) * inc_file mcode (*file *)
-  | MetaInclude   of string mcode (* #include *) * expression (* file *)
   | Undef         of string mcode (* #define *) * ident (* name *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
 	             define_parameters (*params*)
@@ -724,7 +722,9 @@ and base_statement =
   | OptStm        of statement
 
 and base_directive =
-    Pragma        of string mcode (* #pragma *) * ident * pragmainfo
+    Include       of string mcode (*#include*) * inc_file mcode (*file *)
+  | MetaInclude   of string mcode (* #include *) * expression (* file *)
+  | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
   | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
       ident (*name*) * string mcode (*;*)
   | UsingTypename of string mcode (*using*) * ident (*name*) *

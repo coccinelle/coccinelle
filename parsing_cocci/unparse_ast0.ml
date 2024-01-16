@@ -803,11 +803,7 @@ and statement arity s =
 	  List.iter
 	    (whencode (dots force_newline (statement "")) (statement ""))
 	    whn
-      | Ast0.Include(inc,s) ->
-	  mcode print_string inc; print_string " "; mcode U.inc_file s
       | Ast0.CppTop(di) -> directive di
-      | Ast0.MetaInclude(inc,s) ->
-	  mcode print_string inc; print_string " "; expression s
       | Ast0.Undef(def,id) ->
 	  mcode print_string def; print_string " "; ident id
       | Ast0.Define(def,id,params,body) ->
@@ -886,7 +882,11 @@ and pragmainfo pi =
 
 and directive d =
   match Ast0.unwrap d with
-    Ast0.Pragma(prg,id,body) ->
+    Ast0.Include(inc,s) ->
+      mcode print_string inc; print_string " "; mcode U.inc_file s
+  | Ast0.MetaInclude(inc,s) ->
+      mcode print_string inc; print_string " "; expression s
+  | Ast0.Pragma(prg,id,body) ->
       mcode print_string prg; print_string " "; ident id;
       print_string " "; pragmainfo body
   | Ast0.UsingNamespace(usng,nmspc,s,sem) ->

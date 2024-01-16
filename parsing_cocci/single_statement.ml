@@ -558,9 +558,9 @@ let rec statement dots_before dots_after s =
   | Ast0.CppTop(di) ->
       (match Ast0.unwrap di with
 	Ast0.Pragma(prg,id,body) -> s (* same as include *)
+      | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
+      | Ast0.MetaInclude(inc,name) -> s (* doesn't affect the need for braces *)
       | _ -> do_one s)
-  | Ast0.Include(inc,string) -> s (* doesn't affect the need for braces *)
-  | Ast0.MetaInclude(inc,name) -> s (* doesn't affect the need for braces *)
   | Ast0.Undef(def,id) -> s (* same as include *)
   | Ast0.Define(def,id,params,body) -> s (* same as include *)
   | Ast0.OptStm(re) ->

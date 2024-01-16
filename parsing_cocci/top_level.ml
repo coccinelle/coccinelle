@@ -32,8 +32,6 @@ let rec is_toplevel s =
   | Ast0.FunDecl(_,_,_,_,_,_,_,_,_,_,_,_) -> true
   | Ast0.Disj(_,stmts,_,_) -> isall is_toplevel stmts
   | Ast0.ExprStatement(Some fc,_) -> false
-  | Ast0.Include(_,_) -> true
-  | Ast0.MetaInclude(_,_) -> true
   | Ast0.Undef(_,_) -> true
   | Ast0.Define(_,_,_,_) -> true
   | Ast0.CppTop(_) -> true
