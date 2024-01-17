@@ -677,7 +677,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     ~ft:fullType ~ty:typeC ~init:initialiser ~param:parameter
     ~define_param:define_parameter ~decl:declaration ~field:field
     ~annotated_field:ann_field ~rule:rule_elem ~stmt:statement ~attribute:attribute
-    ~attr_arg:attr_arg ~directve:directive donothing
+    ~attr_arg:attr_arg ~directive:directive donothing
 
 (* ------------------------------------------------------------------------ *)
 

@@ -962,11 +962,11 @@ and directive d =
     Ast0.Include(inc,stm) ->
       let inc = normal_mcode inc in
       let stm = normal_mcode stm in
-      mkres s (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
+      mkres d (Ast0.Include(inc,stm)) (promote_mcode inc) (promote_mcode stm)
   | Ast0.MetaInclude(inc,s) ->
       let inc = normal_mcode inc in
       let s = expression s in
-      mkres s (Ast0.MetaInclude(inc,s)) (promote_mcode inc) s
+      mkres d (Ast0.MetaInclude(inc,s)) (promote_mcode inc) s
   | Ast0.Pragma(prg,id,body) ->
       let prg = normal_mcode prg in
       let id = ident id in

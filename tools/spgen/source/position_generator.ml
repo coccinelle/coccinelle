@@ -508,12 +508,6 @@ let rec statement_pos s snp
       let c ~item = Ast0.CppTop item in
       item_wrap ~item:di ~item_posfn:directive_pos ~constructor:c snp
 
-  | Ast0.Include (incmc,filemc) ->
-      let constructor ~mc = Ast0.Include(incmc, mc) in
-      mcode_wrap ~mc:filemc ~constructor snp
-  | Ast0.MetaInclude (incmc,filemc) ->
-      let constructor ~mc = Ast0.MetaInclude(mc, filemc) in
-      mcode_wrap ~mc:incmc ~constructor snp
   | Ast0.Undef (defmc, id) ->
       let constructor ~id = Ast0.Undef(defmc, id) in
       id_wrap ~id ~constructor snp
@@ -607,7 +601,13 @@ let rec statement_pos s snp
 and directive_pos di snp
 : (Ast0.base_directive Ast0.wrap * Snap.t) option =
   match Ast0.unwrap di with
-    Ast0.Pragma (pragmc, id, praginfo) ->
+    Ast0.Include (incmc,filemc) ->
+      let constructor ~mc = Ast0.Include(incmc, mc) in
+      mcode_wrap ~mc:filemc ~constructor snp
+  | Ast0.MetaInclude (incmc,filemc) ->
+      let constructor ~mc = Ast0.MetaInclude(mc, filemc) in
+      mcode_wrap ~mc:incmc ~constructor snp
+  | Ast0.Pragma (pragmc, id, praginfo) ->
       let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
       id_wrap ~id ~constructor snp
   | Ast0.UsingNamespace (usngmc,nmspcmc,namemc,semmc) ->

@@ -1304,17 +1304,6 @@ and statement tgt stm =
       let stmt = statement arity stmt in
       let params = template_parameter_list arity params in
       make_rule_elem stm tgt arity (Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt))
-  | Ast0.Include(inc,s) ->
-      let arity =
-	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
-      let inc = mcode inc in
-      let s = mcode s in
-      make_rule_elem stm tgt arity (Ast0.Include(inc,s))
-  | Ast0.MetaInclude(inc,s) ->
-      let arity = all_same true tgt (mcode2line inc) [mcode2arity inc] in
-      let inc = mcode inc in
-      let s = expression arity s in
-      make_rule_elem stm tgt arity (Ast0.MetaInclude(inc,s))
   | Ast0.Undef(def,id) ->
       let arity = all_same true tgt (mcode2line def) [mcode2arity def] in
       let def = mcode def in
@@ -1358,7 +1347,18 @@ and make_directive =
 
 and directive tgt di =
   match Ast0.unwrap di with
-    Ast0.Pragma(prg,id,body) ->
+    Ast0.Include(inc,s) ->
+      let arity =
+	all_same true tgt (mcode2line inc) [mcode2arity inc; mcode2arity s] in
+      let inc = mcode inc in
+      let s = mcode s in
+      make_directive di tgt arity (Ast0.Include(inc,s))
+  | Ast0.MetaInclude(inc,s) ->
+      let arity = all_same true tgt (mcode2line inc) [mcode2arity inc] in
+      let inc = mcode inc in
+      let s = expression arity s in
+      make_directive di tgt arity (Ast0.MetaInclude(inc,s))
+  | Ast0.Pragma(prg,id,body) ->
       let arity = all_same true tgt (mcode2line prg) [mcode2arity prg] in
       let prg = mcode prg in
       let id = ident false arity id in

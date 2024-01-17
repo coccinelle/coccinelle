@@ -1141,7 +1141,11 @@ and pragmainfo pi =
 
 and directive di =
   match Ast.unwrap di with
-    Ast.Pragma(prg,id,body) ->
+    Ast.Include(inc,s) ->
+      mcode print_string inc; print_text " "; mcode inc_file s
+  | Ast.MetaInclude(inc,s) ->
+      mcode print_string inc; print_text " "; expression s
+  | Ast.Pragma(prg,id,body) ->
       mcode print_string prg; pr_space(); ident id; pr_space();
       pragmainfo body
   | Ast.UsingNamespace(usng,nmspc,name,sem) ->
@@ -1425,10 +1429,6 @@ and rule_elem arity re =
   | Ast.TopId(id) -> pr_arity arity; ident id
   | Ast.TopInit(init) -> initialiser false init
   | Ast.CppTop(di) -> directive di
-  | Ast.Include(inc,s) ->
-      mcode print_string inc; print_text " "; mcode inc_file s
-  | Ast.MetaInclude(inc,s) ->
-      mcode print_string inc; print_text " "; expression s
   | Ast.Undef(def,id) ->
       mcode print_string def; pr_space(); ident id
   | Ast.DefineHeader(def,id,params) ->

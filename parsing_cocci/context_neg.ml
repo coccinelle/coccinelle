@@ -895,6 +895,27 @@ let equal_declaration d1 d2 =
        equal_mcode ender1 ender2
   | _ -> false
 
+let equal_directive di1 di2 =
+  match (Ast0.unwrap di1,Ast0.unwrap di2) with
+    (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
+      equal_mcode inc1 inc2 && equal_mcode name1 name2
+  | (Ast0.MetaInclude(inc1,name1),Ast0.MetaInclude(inc2,name2)) ->
+      equal_mcode inc1 inc2
+  | (Ast0.Pragma(prg1,id1,body1),Ast0.Pragma(prg2,id2,body2)) ->
+      equal_mcode prg1 prg2
+  | (Ast0.UsingNamespace(usng1,nmspc1,s1,sem1),
+     Ast0.UsingNamespace(usng2,nmspc2,s2,sem2)) ->
+       equal_mcode usng1 usng2 && equal_mcode nmspc1 nmspc2 &&
+       equal_mcode sem1 sem2
+  | (Ast0.UsingTypename(usng1,name1,eq1,tn1,ty1,sem1),
+     Ast0.UsingTypename(usng2,name2,eq2,tn2,ty2,sem2)) ->
+       equal_mcode usng1 usng2 && equal_mcode eq1 eq2 &&
+       equal_mcode sem1 sem2
+  | (Ast0.UsingMember(usng1,_,sem1),
+     Ast0.UsingMember(usng2,_,sem2)) ->
+       equal_mcode usng1 usng2 && equal_mcode sem1 sem2
+  | _ -> false
+
 let equal_field d1 d2 =
   match (Ast0.unwrap d1,Ast0.unwrap d2) with
     (Ast0.MetaField(name1,_,_),Ast0.MetaField(name2,_,_))
@@ -910,7 +931,7 @@ let equal_field d1 d2 =
       List.for_all2 equal_attribute endattr1 endattr2 &&
       equal_mcode lp1 lp2 && equal_mcode lp1 lp2 &&
       equal_mcode sem1 sem2
-  | (Ast0.CppField(_),Ast0.CppField(_)) -> true
+  | (Ast0.CppField di1,Ast0.CppField di2) -> equal_directive di1 di2
        
   | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
   | (Ast0.OptField(_),Ast0.OptField(_)) -> true
@@ -1069,15 +1090,11 @@ let equal_statement s1 s2 =
   | (Ast0.TopId(_),Ast0.TopId(_)) -> true
   | (Ast0.TopInit(_),Ast0.TopInit(_)) -> true
   | (Ast0.Dots(d1,_),Ast0.Dots(d2,_)) -> equal_mcode d1 d2
-  | (Ast0.Include(inc1,name1),Ast0.Include(inc2,name2)) ->
-      equal_mcode inc1 inc2 && equal_mcode name1 name2
-  | (Ast0.MetaInclude(inc1,name1),Ast0.MetaInclude(inc2,name2)) ->
-      equal_mcode inc1 inc2
   | (Ast0.Undef(def1,_),Ast0.Undef(def2,_)) ->
       equal_mcode def1 def2
   | (Ast0.Define(def1,_,_,_),Ast0.Define(def2,_,_,_)) ->
       equal_mcode def1 def2
-  | (Ast0.CppTop(_),Ast0.CppTop(_)) -> true
+  | (Ast0.CppTop di1,Ast0.CppTop di2) -> equal_directive di1 di2
   | (Ast0.OptStm(_),Ast0.OptStm(_)) -> true
   | _ -> false
 
@@ -1345,7 +1362,6 @@ let rec is_toplevel s =
       (match Ast0.unwrap fc with
 	Ast0.FunCall(_,_,_,_) -> true
       |	_ -> false)
-  | Ast0.Include(_,_) -> true
   | Ast0.Undef(_,_) -> true
   | Ast0.CppTop(_) -> true
   | Ast0.Define(_,_,_,_) -> true
