@@ -1239,41 +1239,13 @@ and aux_statement_list starti (xi, newxi) statxs =
     | Ast_c.StmtElem statement ->
         aux_statement (starti, newxi') statement
 
-    | Ast_c.CppDirectiveStmt (Ast_c.Pragma ((id,rest),ii)) ->
-	let elem = PragmaHeader ((id,rest),ii) in
-	let str = "#pragma" in
+    | Ast_c.CppDirectiveStmt s ->
+	let elem = CppTop s in
+	let str = "CppTop" in
 	let ei =   !g +> add_node elem    lbl_0 str in
 
 	!g +> add_arc_opt (starti, ei);
 	Some ei
-
-    | Ast_c.CppDirectiveStmt (Ast_c.UsingTypename ((id,ty),ii)) ->
-	let elem = UsingTypenameHeader ((id,ty),ii) in
-	let str = "using" in
-	let ei =   !g +> add_node elem    lbl_0 str in
-
-	!g +> add_arc_opt (starti, ei);
-	Some ei
-
-    | Ast_c.CppDirectiveStmt (Ast_c.UsingMember (id,ii)) ->
-	let elem = UsingMemberHeader (id,ii) in
-	let str = "using" in
-	let ei =   !g +> add_node elem    lbl_0 str in
-
-	!g +> add_arc_opt (starti, ei);
-	Some ei
-
-    | Ast_c.CppDirectiveStmt (Ast_c.UsingNamespace (id,ii)) ->
-	let elem = UsingNamespaceHeader (id,ii) in
-	let str = "using" in
-	let ei =   !g +> add_node elem    lbl_0 str in
-
-	!g +> add_arc_opt (starti, ei);
-	Some ei
-
-    | Ast_c.CppDirectiveStmt directive ->
-        pr2_once ("ast_to_flow: filter a directive");
-        starti
 
     | Ast_c.IfdefStmt ifdef ->
         pr2_once ("ast_to_flow: filter a directive");
@@ -1455,8 +1427,6 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
   | Ast_c.Declaration decl ->
       do_decl topi (Control_flow_c.Decl decl) "decl"
-  | Ast_c.CppTop (Ast_c.Include inc) ->
-      do_decl topi (Control_flow_c.Include inc) "#include"
   | Ast_c.MacroTop (s, args, ii) ->
       let (st, (e, ii)) = specialdeclmacro_to_stmt (s, args, ii) in
       do_decl topi (Control_flow_c.ExprStatement (st, (Some e, ii))) "macrotoplevel"
@@ -1551,6 +1521,15 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 *)
       );
 
+      [(outer_e,Some !g)]
+
+  | Ast_c.CppTop ((Ast_c.Include inc) as elem) ->
+      let str = "#include" in
+      let ei =   !g +> add_node (CppTop elem) lbl_0 str in
+      let endi = !g +> add_node EndNode lbl_0 "[end]" in
+
+      !g#add_arc ((topi, ei),Direct);
+      !g#add_arc ((ei, endi),Direct);
       [(outer_e,Some !g)]
 
   | Ast_c.CppTop ((Ast_c.Pragma ((id,rest),ii)) as elem)  ->

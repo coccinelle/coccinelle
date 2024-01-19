@@ -463,9 +463,34 @@ let rec field_pos decl snp
   | Ast0.MacroDeclField (id,lp,ed,rp,attr,sem) ->
       let constructor ~id = Ast0.MacroDeclField (id, lp, ed, rp, attr, sem) in
       id_wrap ~id ~constructor snp
+  | Ast0.CppField di ->
+      let constructor ~item = Ast0.CppField item in
+      item_wrap ~item:di ~item_posfn:directive_pos ~constructor snp
   | Ast0.OptField(dec) ->
       let constructor ~item = Ast0.OptField item in
       item_wrap ~item:dec ~item_posfn:field_pos ~constructor snp
+
+and directive_pos di snp
+: (Ast0.base_directive Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap di with
+    Ast0.Include (incmc,filemc) ->
+      let constructor ~mc = Ast0.Include(incmc, mc) in
+      mcode_wrap ~mc:filemc ~constructor snp
+  | Ast0.MetaInclude (incmc,filemc) ->
+      let constructor ~mc = Ast0.MetaInclude(mc, filemc) in
+      mcode_wrap ~mc:incmc ~constructor snp
+  | Ast0.Pragma (pragmc, id, praginfo) ->
+      let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
+      id_wrap ~id ~constructor snp
+  | Ast0.UsingNamespace (usngmc,nmspcmc,namemc,semmc) ->
+      let constructor ~mc = Ast0.UsingNamespace(usngmc, mc, namemc, semmc) in
+      mcode_wrap ~mc:nmspcmc ~constructor snp
+  | Ast0.UsingTypename (usngmc,namemc,eqmc,tnmc,tymc,semmc) ->
+      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tnmc, tymc, semmc) in
+      mcode_wrap ~mc:eqmc ~constructor snp
+  | Ast0.UsingMember(usngmc,namemc,semmc) ->
+      let constructor ~mc = Ast0.UsingMember(usngmc, namemc, mc) in
+      mcode_wrap ~mc:semmc ~constructor snp
 
 let forinfo_pos f snp
 : (Ast0.base_forinfo Ast0.wrap * Snap.t) option =
@@ -597,25 +622,3 @@ let rec statement_pos s snp
   | Ast0.TemplateDefinition(tmpkw,lab,params,rab,stmt) ->
       let constructor ~mc = Ast0.TemplateDefinition(mc,lab,params,rab,stmt) in
       mcode_wrap ~mc:tmpkw ~constructor snp
-
-and directive_pos di snp
-: (Ast0.base_directive Ast0.wrap * Snap.t) option =
-  match Ast0.unwrap di with
-    Ast0.Include (incmc,filemc) ->
-      let constructor ~mc = Ast0.Include(incmc, mc) in
-      mcode_wrap ~mc:filemc ~constructor snp
-  | Ast0.MetaInclude (incmc,filemc) ->
-      let constructor ~mc = Ast0.MetaInclude(mc, filemc) in
-      mcode_wrap ~mc:incmc ~constructor snp
-  | Ast0.Pragma (pragmc, id, praginfo) ->
-      let constructor ~id = Ast0.Pragma(pragmc, id, praginfo) in
-      id_wrap ~id ~constructor snp
-  | Ast0.UsingNamespace (usngmc,nmspcmc,namemc,semmc) ->
-      let constructor ~mc = Ast0.UsingNamespace(usngmc, mc, namemc, semmc) in
-      mcode_wrap ~mc:nmspcmc ~constructor snp
-  | Ast0.UsingTypename (usngmc,namemc,eqmc,tnmc,tymc,semmc) ->
-      let constructor ~mc = Ast0.UsingTypename(usngmc, namemc, mc, tnmc, tymc, semmc) in
-      mcode_wrap ~mc:eqmc ~constructor snp
-  | Ast0.UsingMember(usngmc,namemc,semmc) ->
-      let constructor ~mc = Ast0.UsingMember(usngmc, namemc, mc) in
-      mcode_wrap ~mc:semmc ~constructor snp

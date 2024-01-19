@@ -1320,13 +1320,10 @@ and parameter_list l = dots (function _ -> ()) parameterTypeDef l
 
 and template_parameter_list l = dots (function _ -> ()) templateParameterTypeDef l
 
-in
-
-
 (* --------------------------------------------------------------------- *)
 (* CPP code *)
 
-let rec inc_file = function
+and inc_file = function
     Ast.Local(elems) ->
       print_string ("\""^(String.concat "/" (List.map inc_elem elems))^"\"")
   | Ast.NonLocal(elems) ->

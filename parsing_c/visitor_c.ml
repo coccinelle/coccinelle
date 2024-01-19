@@ -1085,19 +1085,7 @@ and vk_node = fun bigf node ->
         pr2_once "DefineTodo";
         ()
 
-    | F.PragmaHeader ((id,rest),ii) ->
-	vk_name bigf id;
-	rest +> List.iter (fun (str,ii) -> iif ii);
-	iif ii
-    | F.UsingTypenameHeader ((id,ty),ii) ->
-	vk_name bigf id; vk_type bigf ty;
-	iif ii
-    | F.UsingMemberHeader (id,ii) ->
-	vk_name bigf id;
-	iif ii
-    | F.UsingNamespaceHeader (id,ii) ->
-	vk_name bigf id;
-	iif ii
+    | F.CppTop directive -> vk_cpp_directive bigf directive
     | F.TemplateHeader(params,ii) ->
 	iif ii;
 	params +> List.iter (fun (param,iicomma) ->
@@ -2198,18 +2186,7 @@ and vk_node_s = fun bigf node ->
     | F.DefineInit i -> F.DefineInit (vk_ini_s bigf i)
     | F.DefineTodo -> F.DefineTodo
 
-    | F.PragmaHeader ((id,rest),ii) ->
-	F.PragmaHeader((vk_name_s bigf id,
-			rest +> List.map (fun (str,ii) -> (str,iif ii))),
-		       iif ii)
-    | F.UsingTypenameHeader ((id,ty),ii) ->
-	F.UsingTypenameHeader((vk_name_s bigf id, vk_type_s bigf ty),
-			      iif ii)
-    | F.UsingMemberHeader (id,ii) ->
-	F.UsingMemberHeader(vk_name_s bigf id, iif ii)
-
-    | F.UsingNamespaceHeader (id,ii) ->
-	F.UsingNamespaceHeader(vk_name_s bigf id, iif ii)
+    | F.CppTop directive -> F.CppTop(vk_cpp_directive_s bigf directive)
 
     | F.TemplateHeader(params,ii) ->
 	F.TemplateHeader

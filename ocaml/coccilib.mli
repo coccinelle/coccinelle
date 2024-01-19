@@ -3024,21 +3024,12 @@ module Ast_cocci :
       | Ty of fullType
       | TopId of ident
       | TopInit of initialiser
-      | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
-          ident (*name *) * string mcode (*;*)
-      | UsingTypename of string mcode (*using*) * ident (*name*) *
-          string mcode (*=*) * string mcode option (*typename*) *
-          fullType (*full_type*) * string mcode (*;*)
-      | UsingMember of string mcode (*using*) * ident (*name*) *
-          string mcode (*;*)
-      | Include of string mcode * inc_file mcode
-      | MetaInclude of string mcode * expression
+      | CppTop of directive
       | Undef of string mcode * ident
       | DefineHeader of string mcode * ident * define_parameters
       | TemplateDefinitionHeader
                      of string mcode (* template *) * string mcode (* < *) *
 			 template_parameter_list * string mcode (* > *)
-      | Pragma of string mcode * ident * pragmainfo
       | Case of string mcode * expression * string mcode
       | Default of string mcode * string mcode
       | AsRe of rule_elem * rule_elem
@@ -3126,6 +3117,20 @@ module Ast_cocci :
       | Dots of string mcode * (statement dots, statement) whencode list *
           dots_whencode list * dots_whencode list
       | OptStm of statement
+    and base_directive =
+	Ast_cocci.base_directive =
+	Include       of string mcode (*#include*) * inc_file mcode (*file*)
+      | MetaInclude   of string mcode (* #include *) * expression (* file *)
+      | Pragma        of string mcode (* #pragma *) * ident * pragmainfo
+      | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
+	    ident (*name*) * string mcode (*;*)
+      | UsingTypename of string mcode (*using*) * ident (*name*) *
+	    string mcode (*=*) * string mcode option (*typename*) *
+	    fullType (*full_type*) * string mcode (*;*)
+      | UsingMember of string mcode (*using*) * ident (*name*) *
+	    string mcode (*;*)
+
+    and directive = base_directive wrap
     and ('a, 'b) whencode =
       ('a, 'b) Ast_cocci.whencode =
         WhenNot of 'a
@@ -3608,6 +3613,7 @@ module Ast0_cocci :
       | Field of typeC * ident option * bitfield option * attr list * string mcode
       | MacroDeclField of ident * string mcode *
           expression dots * string mcode * attr list * string mcode
+      | CppField    of directive
       | DisjField of string mcode * field list * string mcode list *
           string mcode
       | ConjField of string mcode * field list * string mcode list *
@@ -3707,6 +3713,7 @@ module Ast0_cocci :
       | Ty of typeC
       | TopId of ident
       | TopInit of initialiser
+      | CppTop of directive
       | Disj of string mcode * statement dots list * string mcode list *
           string mcode
       | Conj of string mcode * statement dots list * string mcode list *
@@ -3722,14 +3729,8 @@ module Ast0_cocci :
             string mcode (* template *) * string mcode (* < *) *
             template_parameter_list * string mcode (* > *) *
             statement
-      | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) * ident (*name*) * string mcode (*;*)
-      | UsingTypename of string mcode (*using*) * ident (*name*) * string mcode (*=*) * string mcode option (*typename*) * typeC (*full_type*) * string mcode (*;*)
-      | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
-      | Include of string mcode * Ast_cocci.inc_file mcode
-      | MetaInclude of string mcode * expression
       | Undef of string mcode * ident
       | Define of string mcode * ident * define_parameters * statement dots
-      | Pragma of string mcode * ident * pragmainfo
       | OptStm of statement
     and base_templateParameterTypeDef =
       Ast0_cocci.base_templateParameterTypeDef =
@@ -3740,6 +3741,20 @@ module Ast0_cocci :
       (* Note: TemplateParam not supported yet. *)
     and templateParameterTypeDef = base_templateParameterTypeDef wrap
     and template_parameter_list = templateParameterTypeDef dots
+
+    and base_directive =
+	Ast0_cocci.base_directive =
+      | Include of string mcode (* #include *) * Ast_cocci.inc_file mcode (* file *)
+      | MetaInclude of string mcode (* #include *) * expression (* file *)
+      | Pragma of string mcode (* #pragma *) * ident * pragmainfo
+      | UsingNamespace of string mcode (*using*) * string mcode (*namespace*) *
+	    ident (*name*) * string mcode (*;*)
+      | UsingTypename of string mcode (*using*) * ident (*name*) *
+	    string mcode (*=*) * string mcode option (*typename*) *
+	    typeC (*full_type*) * string mcode (*;*)
+      | UsingMember of string mcode (*using*) * ident (*name*) * string mcode (*;*)
+
+    and directive = base_directive wrap
 
     and base_pragmainfo =
       Ast0_cocci.base_pragmainfo =

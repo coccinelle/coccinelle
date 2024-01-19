@@ -5029,6 +5029,63 @@ and define_parameter = fun parama paramb ->
 
 and directive = fun dira dirb ->
   match A.unwrap dira, dirb with
+  | A.Include(incla,filea),
+    B.Include {B.i_include = (fileb, ii);
+               B.i_rel_pos = h_rel_pos;
+               B.i_overall_rel_pos = o_rel_pos;
+               B.i_is_in_ifdef = inifdef;
+               B.i_content = copt;
+              } ->
+      assert (copt = None);
+
+      let include_requirment =
+        match mcodekind incla, mcodekind filea with
+        | A.CONTEXT (_, A.BEFORE _), _ ->
+            IncludeMcodeBefore
+        | _, A.CONTEXT (_, A.AFTER _) ->
+            IncludeMcodeAfter
+        | _ ->
+            IncludeNothing
+      in
+
+      let (inclb, iifileb) = tuple_of_list2 ii in
+      if inc_file (term filea,include_requirment) (fileb,h_rel_pos,o_rel_pos)
+      then
+        tokenf incla inclb >>= (fun incla inclb ->
+        tokenf filea iifileb >>= (fun filea iifileb ->
+          return (
+            A.Include(incla, filea),
+            B.Include {B.i_include = (fileb, [inclb;iifileb]);
+                       B.i_rel_pos = h_rel_pos;
+		       B.i_overall_rel_pos = o_rel_pos;
+                       B.i_is_in_ifdef = inifdef;
+                       B.i_content = copt;
+            }
+          )))
+      else fail
+
+  | A.MetaInclude(incla,filea),
+    B.Include {B.i_include = (fileb, ii);
+               B.i_rel_pos = h_rel_pos;
+               B.i_overall_rel_pos = o_rel_pos;
+               B.i_is_in_ifdef = inifdef;
+               B.i_content = copt;
+              } ->
+      let (inclb, iifileb) = tuple_of_list2 ii in
+      tokenf incla inclb >>= (fun incla inclb ->
+      expression filea
+	  (Ast_c.mk_e (B.Constant(B.String(B.str_of_info(iifileb),B.IsChar)))
+	     [iifileb]) >>=
+	(fun filea _ (* no change allowed *) ->
+	  return (
+	    A.MetaInclude(incla,filea),
+	    B.Include {B.i_include = (fileb, ii);
+               B.i_rel_pos = h_rel_pos;
+               B.i_overall_rel_pos = o_rel_pos;
+               B.i_is_in_ifdef = inifdef;
+               B.i_content = copt;
+              }
+	)))
   | A.Pragma(prga,ida,pragmainfoa),
     B.Pragma ((idb, [(restb,[rest_iidb])]), ii) ->
       let (prgb, ieol) = tuple_of_list2 ii in
@@ -5121,8 +5178,7 @@ and directive = fun dira dirb ->
           B.UsingTypename ((nameb,tyb), [usngb;eqb;semb])
         ) )))))
 
-  | _ -> fail
-in
+  | _ -> fail in
 
   let rec check_constraints ida idb env c =
     let get_assignOp op = assignOpA_of_assignOpB op in
@@ -5760,64 +5816,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.ReturnExpr (st, (eb, [ib1;ib2]))
         ))))
 
-  | A.Include(incla,filea),
-    F.Include {B.i_include = (fileb, ii);
-               B.i_rel_pos = h_rel_pos;
-               B.i_overall_rel_pos = o_rel_pos;
-               B.i_is_in_ifdef = inifdef;
-               B.i_content = copt;
-              } ->
-      assert (copt = None);
-
-      let include_requirment =
-        match mcodekind incla, mcodekind filea with
-        | A.CONTEXT (_, A.BEFORE _), _ ->
-            IncludeMcodeBefore
-        | _, A.CONTEXT (_, A.AFTER _) ->
-            IncludeMcodeAfter
-        | _ ->
-            IncludeNothing
-      in
-
-      let (inclb, iifileb) = tuple_of_list2 ii in
-      if inc_file (term filea,include_requirment) (fileb,h_rel_pos,o_rel_pos)
-      then
-        tokenf incla inclb >>= (fun incla inclb ->
-        tokenf filea iifileb >>= (fun filea iifileb ->
-          return (
-            A.Include(incla, filea),
-            F.Include {B.i_include = (fileb, [inclb;iifileb]);
-                       B.i_rel_pos = h_rel_pos;
-		       B.i_overall_rel_pos = o_rel_pos;
-                       B.i_is_in_ifdef = inifdef;
-                       B.i_content = copt;
-            }
-          )))
-      else fail
-
-  | A.MetaInclude(incla,filea),
-    F.Include {B.i_include = (fileb, ii);
-               B.i_rel_pos = h_rel_pos;
-               B.i_overall_rel_pos = o_rel_pos;
-               B.i_is_in_ifdef = inifdef;
-               B.i_content = copt;
-              } ->
-      let (inclb, iifileb) = tuple_of_list2 ii in
-      tokenf incla inclb >>= (fun incla inclb ->
-      expression filea
-	  (Ast_c.mk_e (B.Constant(B.String(B.str_of_info(iifileb),B.IsChar)))
-	     [iifileb]) >>=
-	(fun filea _ (* no change allowed *) ->
-	  return (
-	    A.MetaInclude(incla,filea),
-	    F.Include {B.i_include = (fileb, ii);
-               B.i_rel_pos = h_rel_pos;
-               B.i_overall_rel_pos = o_rel_pos;
-               B.i_is_in_ifdef = inifdef;
-               B.i_content = copt;
-              }
-	)))
-
   | A.Undef(undefa,ida), F.DefineHeader ((idb, ii), B.Undef) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
       ident DontKnow ida (idb, iidb) >>= (fun ida (idb, iidb) ->
@@ -5874,7 +5872,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 	    F.TemplateHeader(paramsb,[tmpkwb;labb;rabb]))))))
 
   | A.CppTop(dia), F.CppTop(dib) ->
-      directive dia dib (fun dia dib ->
+      directive dia dib >>= (fun diaunwrap dib ->
+	let dia = A.rewrap dia diaunwrap in
 	return(
 	A.CppTop(dia),
 	F.CppTop(dib)))
