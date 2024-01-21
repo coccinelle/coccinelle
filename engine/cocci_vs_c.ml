@@ -3611,8 +3611,16 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 				    [iisb;lpb;rpb;iiendb;iifakestart] @ iistob)))
 		   ))))))))
 
+	| A.CppField dia,B.CppDirectiveStruct dib ->
+	    directive dia dib >>= (fun diaunwrap dib ->
+	      let dia = A.rewrap dia diaunwrap in
+	      return(
+	      (A.FElem(mckstart,allminus,(A.CppField(dia)) +> A.rewrap ifa)
+		 +> A.rewrap fa),
+	      B.CppDirectiveStruct(dib)))
+
         | _,B.MacroDeclField ((sb,ebs,attrs),ii) -> fail
-	| _,B.CppDirectiveStruct directive -> fail
+	| _,B.CppDirectiveStruct dib -> fail
 	| _,B.IfdefStruct directive -> fail
 	| _,B.FunctionField _ -> fail
 	| _,B.PublicLabel _ -> fail
