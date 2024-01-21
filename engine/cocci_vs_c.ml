@@ -3072,26 +3072,29 @@ and onefield = fun allminus decla (declb, iiptvirgb) ->
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
    A.Field (typa, Some ida, None, endattrs, ptvirga),
-   (B.Simple ((NoSto,false,NoAlign), [], Some(nameidb,B.NoInit), typb, attrs), iivirg) ->
+   (B.Simple ((B.NoSto,false,B.NoAlign), [],
+	      Some(nameidb,B.NoInit), typb, attrs), iivirg) ->
      ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
      attribute_list allminus endattrs attrs >>= (fun endattrs attrs ->
        return (
        (A.Field (typa, Some ida, None, endattrs, ptvirga) +>  A.rewrap decla),
-       ((B.Simple ((NoSto,false,NoAlign), [], Some(nameidb,B.NoInit), typb, attrs),iivirg), iiptvirgb))))))
+       ((B.Simple ((B.NoSto,false,B.NoAlign), [],
+		   Some(nameidb,B.NoInit), typb, attrs),iivirg), iiptvirgb))))))
  | A.Field (typa, ida, None, endattrs, ptvirga),
    (B.Simple (_, _, Some(nameidb,_), typb, attrs), iivirg) ->
      (* initializations not supported in SmPL *)
      fail
  | A.Field (typa, None, None, endattrs, ptvirga),
-   (B.Simple ((NoSto,false,NoAlign), [], None, typb, attrs), iivirg) ->
+   (B.Simple ((B.NoSto,false,B.NoAlign), [], None, typb, attrs), iivirg) ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
      attribute_list allminus endattrs attrs >>= (fun endattrs attrs ->
        return (
        (A.Field (typa, None, None, endattrs, ptvirga) +>  A.rewrap decla),
-       ((B.Simple ((NoSto,false,NoAlign), [], None, typb, attrs),iivirg), iiptvirgb)))))
+       ((B.Simple ((B.NoSto,false,B.NoAlign), [], None, typb, attrs),iivirg),
+	iiptvirgb)))))
  | A.Field (typa, None, None, endattrs, ptvirga),
    (B.Simple (_, _, None, typb, attrs), iivirg) ->
      (* storage/attributes not supported in SmPL *)
