@@ -100,9 +100,9 @@ module Ast_c :
       | PublicLabel of info list
       | ProtectedLabel of info list
       | PrivateLabel of info list
-      | DeclField of declaration (* C++ *)
       | ConstructDestructField of c_plus_plus_constructor
       | MacroDeclField of (string * argument wrap2 list * attribute list) wrap
+      | MacroDeclFieldInit of (string * argument wrap2 list * attribute list * initialiser) wrap
       | CppDirectiveStruct of cpp_directive
       | IfdefStruct of ifdef_directive
     and field_declaration =
@@ -110,7 +110,7 @@ module Ast_c :
         FieldDeclList of fieldkind wrap2 list wrap
     and fieldkind =
       Ast_c.fieldkind =
-        Simple of name option * fullType * attribute list
+	Simple   of storage * attribute list * (name * v_init) option * fullType * attribute list (* endattrs *)
       | BitField of name option * fullType * info * constExpression
     and enumType = oneEnumType wrap2 list
     and oneEnumType = name * (info * constExpression) option

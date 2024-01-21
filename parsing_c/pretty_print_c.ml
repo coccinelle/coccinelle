@@ -777,9 +777,37 @@ and pp_string_format (e,ii) =
          ), _ -> raise (Impossible 107)
 
   and pp_field_list fields = fields +>  Common.print_between pr_nl pp_field
+  (* common to fields and top-level variables *)
+  and firstvar attrs storage var returnType endattrs iisto =
+    match var with
+    | Some (name, iniopt) -> 
+	assert (attrs = []); (* can only be non-null for later variables *)
+	pp_type_with_ident
+	  (Some (function _ -> pp_name name)) (Some (storage, iisto))
+	  returnType endattrs;
+	(match iniopt with
+	  Ast_c.NoInit -> ()
+	| Ast_c.ValInit(init,[iini]) ->
+	    pr_space(); pr_elem iini; pr_space(); pp_init init
+	| Ast_c.ValInit(init,[]) -> pr_space(); pp_init init
+	| Ast_c.ValInit _ -> raise (Impossible 112))
+    | None -> pp_type returnType
+  and restvar iivirg var returnType attrs endattrs =
+    match var with
+      Some (name,iniopt) ->
+	iivirg +> List.iter pr_elem; pr_space();
+	pp_type_with_ident_rest (Some (function _ -> pp_name name))
+	  returnType attrs endattrs;
+	(match iniopt with
+	  Ast_c.NoInit -> ()
+	| Ast_c.ValInit(init,[iini]) ->
+	    pr_space(); pr_elem iini; pr_space(); pp_init init
+	| Ast_c.ValInit(init,[]) -> pr_space(); pp_init init
+	| Ast_c.ValInit _ -> raise (Impossible 113))
+    | None -> raise (Impossible 113)
   and pp_field = function
       DeclarationField
-	(FieldDeclList(onefield_multivars,[iiptvirg;ifakestart])) ->
+	(FieldDeclList(onefield_multivars,iiptvirg::ifakestart::iisto)) ->
 	pr_elem ifakestart;
         (match onefield_multivars with
           x::xs ->
@@ -787,15 +815,10 @@ and pp_string_format (e,ii) =
                first var, we print the whole type *)
 
 	    (match x with
-	      (Simple (nameopt, typ, attrs)), iivirg ->
+	      (Simple (storage, attrs, nameopt, typ, endattrs)), iivirg ->
               (* first var cannot have a preceding ',' *)
 		assert (List.length iivirg = 0);
-		let identinfo =
-                  match nameopt with
-		  | None -> None
-                  | Some name -> Some (function _ -> pp_name name)
-                in
-		pp_type_with_ident identinfo None typ attrs;
+		firstvar attrs storage nameopt typ endattrs iisto
 
 	    | (BitField (nameopt, typ, iidot, expr)), iivirg ->
                       (* first var cannot have a preceding ',' *)
@@ -814,14 +837,8 @@ and pp_string_format (e,ii) =
 
                       (* for other vars *)
 	    xs +> List.iter (function
-	      | (Simple (nameopt, typ, attrs)), iivirg ->
-		  iivirg +> List.iter pr_elem;
-		  let identinfo =
-		    match nameopt with
-		    | None -> None
-		    | Some name -> Some (function _ -> pp_name name)
-		  in
-		  pp_type_with_ident_rest identinfo typ Ast_c.noattr attrs
+	      | (Simple (storage, attrs, nameopt, typ, endattrs)), iivirg ->
+		  restvar iivirg nameopt typ attrs endattrs
 
 	      | (BitField (nameopt, typ, iidot, expr)), iivirg ->
 		  iivirg +> List.iter pr_elem;
@@ -861,6 +878,22 @@ and pp_string_format (e,ii) =
 	pp_attributes attrs;
 	pr_elem iiend;
 
+    | MacroDeclFieldInit ((s, es, attrs, ini), ii) ->
+        let (iis, lp, rp, eq, iiend, ifakestart) =
+          Common.tuple_of_list6 ii in
+                 (* iis::lp::rp::eq::iiend::ifakestart::iisto
+	            iisto +> List.iter pr_elem; (* static and const *)
+                 *)
+	pr_elem ifakestart;
+	pr_elem iis;
+	pr_elem lp;
+	pp_arg_list es;
+	pr_elem rp;
+	pp_attributes attrs;
+	pr_space(); pr_elem eq; pr_space();
+	pp_init ini;
+	pr_elem iiend;
+
 
 
     | EmptyField iipttvirg_when_emptyfield ->
@@ -874,7 +907,6 @@ and pp_string_format (e,ii) =
     | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii ->
 	let (kwd,dotdot) = Common.tuple_of_list2 ii in
 	pr_elem kwd; pr_elem dotdot
-    | DeclField decl -> pp_decl decl
     | ConstructDestructField cd -> pp_construct_destruct cd
 
 (* used because of DeclList, in    int i,*j[23];  we don't print anymore the
@@ -1126,44 +1158,18 @@ and pp_string_format (e,ii) =
 
 
         (* handling the first var. Special case, we print the whole type *)
-	(match var with
-	| Some (name, iniopt) ->
-	    assert (attrs = []); (* can only be non-null for later variables *)
-	    pp_type_with_ident
-	      (Some (function _ -> pp_name name)) (Some (storage, iisto))
-	      returnType endattrs;
-	    (match iniopt with
-	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(init,[iini]) ->
-		pr_space(); pr_elem iini; pr_space(); pp_init init
-	    | Ast_c.ValInit(init,[]) -> pr_space(); pp_init init
-	    | Ast_c.ValInit _ -> raise (Impossible 112))
-	| None -> pp_type returnType
-	);
+	firstvar attrs storage var returnType endattrs iisto;
 
       (* for other vars, we just call pp_type_with_ident_rest. *)
 	xs +> List.iter (function
-	| ({v_namei = Some (name, iniopt);
-	    v_type = returnType;
-	    v_storage = storage2;
-	    v_attr = attrs;
-	    v_endattr = endattrs;
-	  }, iivirg) ->
-
-	    assert (storage2 = storage);
-	    iivirg +> List.iter pr_elem; pr_space();
-	    pp_type_with_ident_rest (Some (function _ -> pp_name name))
-	      returnType attrs endattrs;
-	    (match iniopt with
-	      Ast_c.NoInit -> ()
-	    | Ast_c.ValInit(init,[iini]) ->
-		pr_space(); pr_elem iini; pr_space(); pp_init init
-	    | Ast_c.ValInit(init,[]) -> pr_space(); pp_init init
-	    | Ast_c.ValInit _ -> raise (Impossible 113));
-
-
-	| x -> raise (Impossible 114)
-	);
+	    ({v_namei = var;
+	       v_type = returnType;
+	       v_storage = storage2;
+	       v_attr = attrs;
+	       v_endattr = endattrs;
+	     }, iivirg) ->
+	       assert (storage2 = storage);
+	       restvar iivirg var returnType attrs endattrs);
 
 	pr_elem iivirg;
 

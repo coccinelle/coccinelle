@@ -687,6 +687,12 @@ and vk_struct_field = fun bigf field ->
         vk_argument_list bigf args;
         attrs +> List.iter (vk_attribute bigf)
 
+    | MacroDeclFieldInit ((s, args, attrs, ini),ii) ->
+        iif ii;
+        vk_argument_list bigf args;
+        attrs +> List.iter (vk_attribute bigf);
+	vk_ini bigf ini
+
     | CppDirectiveStruct directive ->
         vk_cpp_directive bigf directive
     | IfdefStruct ifdef ->
@@ -695,7 +701,6 @@ and vk_struct_field = fun bigf field ->
       (* C++ *)
     | FunctionField def -> vk_def bigf def
     | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii -> iif ii
-    | DeclField decl -> vk_decl bigf decl
     | ConstructDestructField cd -> vk_constr_destr bigf cd
   in
   f (k, bigf) field
@@ -708,10 +713,15 @@ and vk_struct_fieldkinds = fun bigf onefield_multivars ->
   onefield_multivars +> List.iter (fun (field, iicomma) ->
     iif iicomma;
     match field with
-    | Simple (nameopt, t, attrs) ->
-        Common.do_option (vk_name bigf) nameopt;
+    | Simple (_storage, attrs, var, t, endattrs) ->
+	attrs +> List.iter (vk_attribute bigf);
+	var +> Common.do_option (fun (name, iniopt) ->
+	  vk_name bigf name;
+	  (match iniopt with
+	    Ast_c.NoInit -> ()
+	  | Ast_c.ValInit(init,iini) -> iif iini; vk_ini bigf init));
         vk_type bigf t;
-	attrs +> List.iter (vk_attribute bigf)
+	endattrs +> List.iter (vk_attribute bigf)
     | BitField (nameopt, t, info, expr) ->
         Common.do_option (vk_name bigf) nameopt;
         vk_info bigf info;
@@ -1780,10 +1790,17 @@ and vk_struct_fieldkinds_s = fun bigf onefield_multivars ->
 
   onefield_multivars +> List.map (fun (field, iicomma) ->
     (match field with
-    | Simple (nameopt, t, attrs) ->
-        Simple (Common.map_option (vk_name_s bigf) nameopt,
-		vk_type_s bigf t,
-		attrs +> List.map (vk_attribute_s bigf))
+    | Simple (storage, attrs, var, t, endattrs) ->
+	let var =
+	  var +> map_option (fun (name, iniopt) ->
+            vk_name_s bigf name,
+	    (match iniopt with
+	      Ast_c.NoInit -> iniopt
+	    | Ast_c.ValInit(init,iini) ->
+		Ast_c.ValInit(vk_ini_s bigf init, iif iini))) in
+        Simple (storage, attrs +> List.map (vk_attribute_s bigf),
+		var, vk_type_s bigf t,
+		endattrs +> List.map (vk_attribute_s bigf))
     | BitField (nameopt, t, info, expr) ->
         BitField (Common.map_option (vk_name_s bigf) nameopt,
                  vk_type_s bigf t,
@@ -1808,6 +1825,14 @@ and vk_struct_field_s = fun bigf field ->
           attrs +> List.map (vk_attribute_s bigf)),
          iif ii)
 
+  | MacroDeclFieldInit ((s, args, attrs, ini),ii) ->
+      MacroDeclFieldInit
+        ((s,
+          args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii),
+          attrs +> List.map (vk_attribute_s bigf),
+	  vk_ini_s bigf ini),
+         iif ii)
+
   | CppDirectiveStruct directive ->
       CppDirectiveStruct (vk_cpp_directive_s bigf directive)
   | IfdefStruct ifdef ->
@@ -1816,7 +1841,6 @@ and vk_struct_field_s = fun bigf field ->
   | PublicLabel ii -> PublicLabel(iif ii)
   | ProtectedLabel ii -> ProtectedLabel(iif ii)
   | PrivateLabel ii -> PrivateLabel(iif ii)
-  | DeclField decl -> DeclField(vk_decl_s bigf decl)
   | ConstructDestructField cd ->
       ConstructDestructField(vk_constr_destr_s bigf cd)
 

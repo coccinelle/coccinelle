@@ -459,7 +459,7 @@ let (type_field:
       | DeclarationField (FieldDeclList (onefield_multivars, iiptvirg)) ->
           onefield_multivars +> List.iter (fun (fieldkind, iicomma) ->
             match fieldkind with
-            | Simple (Some name, t, attrs) ->
+            | Simple (storage, attrs, Some (name,_), t, endattrs) ->
                 let s = Ast_c.str_of_name name in
                 if s = fld
                 then Common.push2 t res
@@ -472,7 +472,7 @@ let (type_field:
 		    (rewrap_typeC t (FieldType (t, name, Some align))) res
                 else ()
 
-            | Simple (None, t, attrs) ->
+            | Simple (storage, attrs, None, t, endattrs) ->
                 (match Ast_c.unwrap_typeC t with
 
                 (* union *)
@@ -495,10 +495,10 @@ let (type_field:
 
       | EmptyField info -> ()
       | FunctionField def -> ()
-      | DeclField decl -> ()
       | PublicLabel info | ProtectedLabel info | PrivateLabel info -> ()
       | ConstructDestructField _ -> pr2_once "ConstructorDestructorTodo"; ()
-      | MacroDeclField _ -> pr2_once "DeclTodo"; ()
+      | MacroDeclField _ -> pr2_once "MacroDeclField Todo"; ()
+      | MacroDeclFieldInit _ -> pr2_once "MacroDeclFieldInit Todo"; ()
 
       | CppDirectiveStruct _
       | IfdefStruct _ -> pr2_once "StructCpp";

@@ -139,13 +139,18 @@ let cache_name_visitor file =
   let cache_struct_fields sname def =
     let _cache_field field =
       match (Ast_c.unwrap field) with
-        Ast_c.Simple (name, _, _)
+        Ast_c.Simple (_, _, name, _, _) ->
+	  name +>
+          do_option
+            (fun (n,_) ->
+              add_to_name_cache (Ast_c.str_of_name n)
+                (file, CacheField(sname)))
       | Ast_c.BitField (name, _, _, _) ->
           name +>
-            do_option
-              (fun n ->
-                 add_to_name_cache (Ast_c.str_of_name n)
-                 (file, CacheField(sname))) in
+          do_option
+            (fun n ->
+              add_to_name_cache (Ast_c.str_of_name n)
+                (file, CacheField(sname))) in
     let _cache_struct_fields field =
       match field with
         Ast_c.DeclarationField(Ast_c.FieldDeclList(l)) ->

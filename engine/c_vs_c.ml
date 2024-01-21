@@ -57,16 +57,31 @@ let option: 'a matcher -> ('a option matcher) = fun f t1 t2 ->
   | (None, None) -> return None
   | _ -> fail
 
+let same_name namea nameb =
+  let sa = Ast_c.str_of_name namea in
+  let sb = Ast_c.str_of_name nameb in
+  sa = sb
 
 let same_s saopt sbopt =
   match saopt, sbopt with
   | None, None -> true
-  | Some namea, Some nameb ->
-      let sa = Ast_c.str_of_name namea in
-      let sb = Ast_c.str_of_name nameb in
-      sa = sb
+  | Some namea, Some nameb -> same_name namea nameb
   | _ -> false
 
+let same_name_val saopt sbopt =
+  match saopt, sbopt with
+  | None, None -> true
+  | Some (namea,inia), Some (nameb,inib) ->
+      same_name namea nameb &&
+      (match inia, inib with
+	(NoInit,NoInit) -> true
+      | (ValInit inia,ValInit inib) ->
+	  (* reuse code for init list, but the ii is actually an = *)
+	  let inia = Lib_parsing_c.al_inits [inia] in
+	  let inib = Lib_parsing_c.al_inits [inib] in
+	  inia = inib
+      | _ -> false)
+  | _ -> false
 
 let rec fullType a b =
   let ((qua,iiqa), attra, tya) = a in
@@ -235,11 +250,12 @@ and typeC tya tyb =
                     let iix = iia in
                     acc2 >>= (fun xs ->
                       match fielda, fieldb with
-                      | Simple (nameaopt, ta, attrsa), Simple (namebopt, tb, attrsb)
-			when attrsa = attrsb ->
-                          same_s nameaopt namebopt >&&>
+                      | Simple (stoa, attrsa, nameaopt, ta, endattrsa),
+			Simple (stob, attrsb, namebopt, tb, endattrsb)
+			when stoa = stob && attrsa = attrsb && endattrsa = endattrsb ->
+                          same_name_val nameaopt namebopt >&&>
                           fullType ta tb >>= (fun tx ->
-                            return (((Simple (nameaopt, tx, attrsa)), iix)::xs)
+                            return (((Simple (stoa, attrsa, nameaopt, tx, attrsa)), iix)::xs)
                           )
 
                       | BitField (nameopta, ta, infoa, ea),
@@ -259,6 +275,7 @@ and typeC tya tyb =
 	    (* TODO: MacroDeclField args may contain typedefs that will not be
 	       handled by eq_type *)
 	    | (MacroDeclField _,MacroDeclField _)
+	    | (MacroDeclFieldInit _,MacroDeclFieldInit _)
 	    | (CppDirectiveStruct _,CppDirectiveStruct _)
 	    | (IfdefStruct _,IfdefStruct _) ->
 		if Lib_parsing_c.al_field fielda = Lib_parsing_c.al_field fieldb

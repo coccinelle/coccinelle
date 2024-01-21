@@ -2189,7 +2189,30 @@ with function definitions because the rule for matching the type
 is different, so a decision has to be made in an awkward place */
 cpp_struct_decl2:
  | function_definition               { FunctionField $1 }
- | decl                              { DeclField ($1 Ast_c.NotLocalDecl) }
+ | decl
+     { match $1 Ast_c.NotLocalDecl with
+       DeclList (onedecllist,odii) ->
+	 DeclarationField
+	   (FieldDeclList
+	      (onedecllist +>
+	       (List.map
+		  (fun (dec,comma) ->
+		    (Simple(dec.v_storage, dec.v_attr,dec.v_namei, dec.v_type, dec.v_endattr),comma))),
+	       odii))
+     | MacroDecl ((NoSto, [], s, es, attrs, true), ([iis;lp;rp;iiend;ifakestart] as ii)) ->
+	 MacroDeclField ((s, es, attrs), ii)
+     | MacroDecl ((sto, preattrs, s, es, attrs, true), ii (*iis::lp::rp::iiend::ifakestart::iisto*)) ->
+	 let iis = List.hd ii in
+	 raise (Semantic ("storage or preattrs unexpected in field",Ast_c.parse_info_of_info iis))
+     | MacroDecl ((sto, preattrs, s, es, attrs, false), ii (*iis::lp::rp::ifakestart::iisto*)) ->
+	 let iis = List.hd ii in
+	 raise (Semantic ("no semicolon case not supported",Ast_c.parse_info_of_info iis))
+     | MacroDeclInit ((NoSto, [], s, es, attrs, ini), ([iis;lp;rp;eq;iiend;ifakestart] as ii)) ->
+	 MacroDeclFieldInit ((s, es, attrs, ini), ii)
+     | MacroDeclInit ((sto, preattrs, s, es, attrs, ini), ii(*iis::lp::rp::eq::iiend::ifakestart::iisto*)) ->
+	 let iis = List.hd ii in
+	 raise (Semantic ("storage unexpected in field",Ast_c.parse_info_of_info iis))
+     }
  | TPtVirg { EmptyField $1  }
 
  /*(* no conflict ? no need for a TMacroStruct ? apparently not as at struct
@@ -2262,7 +2285,8 @@ field_declaration:
 	       Ast_c.parse_info_of_info $2)));
 
        let iistart = Ast_c.fakeBeforeInfo() in (* for parallel with DeclList *)
-       FieldDeclList ([(Simple (None, returnType, Ast_c.noattr)) , []], [$2;iistart])
+       FieldDeclList
+	 ([(Simple ((NoSto,false,NoAlign), [], None, returnType, Ast_c.noattr)) , []], [$2;iistart])
      }
  | simple_type dotdot const_expr2 TPtVirg
      /* specialized for the only thing that makes sense for an anonymous
@@ -2285,11 +2309,11 @@ field_declaration:
 
 struct_declarator:
  | declarator attributes_opt
-     { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
+     { (fun x -> Simple   ((NoSto,false,NoAlign), [], Some (fst $1,NoInit), (snd $1) x, $2)) }
  | declarator dotdot const_expr2
      { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
  | declarator_fn attributes_opt
-     { (fun x -> Simple   (Some (fst $1), (snd $1) x, $2)) }
+     { (fun x -> Simple   ((NoSto,false,NoAlign), [], Some (fst $1,NoInit), (snd $1) x, $2)) }
  | declarator_fn dotdot const_expr2
      { (fun x -> BitField (Some (fst $1), ((snd $1) x), $2, $3)) }
 

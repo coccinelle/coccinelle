@@ -3071,15 +3071,31 @@ and onefield = fun allminus decla (declb, iiptvirgb) ->
     | None, Some _ | Some _, None -> fail in
  X.all_bound (A.get_inherited decla) >&&>
  match A.unwrap decla, declb with
-   A.Field (typa, ida, None, endattrs, ptvirga),
-   (B.Simple (nameidb, typb, attrs), iivirg) ->
-     match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
+   A.Field (typa, Some ida, None, endattrs, ptvirga),
+   (B.Simple ((NoSto,false,NoAlign), [], Some(nameidb,B.NoInit), typb, attrs), iivirg) ->
+     ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
      tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
      fullType typa typb >>= (fun typa typb ->
      attribute_list allminus endattrs attrs >>= (fun endattrs attrs ->
        return (
-       (A.Field (typa, ida, None, endattrs, ptvirga) +>  A.rewrap decla),
-       ((B.Simple (nameidb, typb, attrs),iivirg), iiptvirgb))))))
+       (A.Field (typa, Some ida, None, endattrs, ptvirga) +>  A.rewrap decla),
+       ((B.Simple ((NoSto,false,NoAlign), [], Some(nameidb,B.NoInit), typb, attrs),iivirg), iiptvirgb))))))
+ | A.Field (typa, ida, None, endattrs, ptvirga),
+   (B.Simple (_, _, Some(nameidb,_), typb, attrs), iivirg) ->
+     (* initializations not supported in SmPL *)
+     fail
+ | A.Field (typa, None, None, endattrs, ptvirga),
+   (B.Simple ((NoSto,false,NoAlign), [], None, typb, attrs), iivirg) ->
+     tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+     fullType typa typb >>= (fun typa typb ->
+     attribute_list allminus endattrs attrs >>= (fun endattrs attrs ->
+       return (
+       (A.Field (typa, None, None, endattrs, ptvirga) +>  A.rewrap decla),
+       ((B.Simple ((NoSto,false,NoAlign), [], None, typb, attrs),iivirg), iiptvirgb)))))
+ | A.Field (typa, None, None, endattrs, ptvirga),
+   (B.Simple (_, _, None, typb, attrs), iivirg) ->
+     (* storage/attributes not supported in SmPL *)
+     fail
  | A.Field (typa, ida, Some (ca, ea), endattrs, ptvirga),
      (B.BitField (nameidb, typb, info, eb), iivirg) ->
      match_option (ident_cpp DontKnow) ida nameidb >>= (fun ida nameidb ->
@@ -3455,6 +3471,7 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
 	     Ast_c.DeclarationField fld -> true
 	   | Ast_c.EmptyField info -> true
 	   | Ast_c.MacroDeclField decl -> true
+	   | Ast_c.MacroDeclFieldInit decl -> true
 	   | Ast_c.CppDirectiveStruct cpp -> false
 	   | Ast_c.IfdefStruct ifdef -> false
 	   (* C++ stuff; not supported in SmPL *)
@@ -3462,7 +3479,6 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
 	   | Ast_c.PublicLabel _ -> false
 	   | Ast_c.ProtectedLabel _ -> false
 	   | Ast_c.PrivateLabel _ -> false
-	   | Ast_c.DeclField _ -> false
 	   | Ast_c.ConstructDestructField _ -> false)
 	 l) in
   list_matcher match_dots build_dots match_comma build_comma
@@ -3610,6 +3626,10 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 				    [iisb;lpb;rpb;iiendb;iifakestart] @ iistob)))
 		   ))))))))
 
+	| _, B.MacroDeclFieldInit ((sb,ebs,attrsb,init),ii) ->
+	      (* not supported yet in SmPL *)
+	      fail
+
 	| A.CppField dia,B.CppDirectiveStruct dib ->
 	    directive dia dib >>= (fun diaunwrap dib ->
 	      let dia = A.rewrap dia diaunwrap in
@@ -3625,7 +3645,6 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	| _,B.PublicLabel _ -> fail
 	| _,B.ProtectedLabel _ -> fail
 	| _,B.PrivateLabel _ -> fail
-	| _,B.DeclField _ -> fail
 	| _,B.ConstructDestructField _ -> fail)
 
 (* ---------------------------------------------------------------------- *)

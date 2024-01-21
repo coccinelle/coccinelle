@@ -260,11 +260,12 @@ and fullType = typeQualifier * attribute list * typeC
 	   | PublicLabel of info list
 	   | ProtectedLabel of info list
 	   | PrivateLabel of info list
-           | DeclField of declaration
            | ConstructDestructField of c_plus_plus_constructor
 
             (* cppext: *)
            | MacroDeclField of (string * argument wrap2 list * attribute list)
+                               wrap (* optional ';'*)
+           | MacroDeclFieldInit of (string * argument wrap2 list * attribute list * initialiser)
                                wrap (* optional ';'*)
 
             (* cppext: *)
@@ -281,7 +282,8 @@ and fullType = typeQualifier * attribute list * typeC
            * can cast into int so enum too, ...
            *)
            and fieldkind =
-             | Simple   of name option * fullType * attribute list (* endattrs *)
+               (* storage, attr, and init are for C++; none are currently supported in SmPL *)
+             | Simple   of storage * attribute list * (name * v_init) option * fullType * attribute list (* endattrs *)
              | BitField of name option * fullType *
                  info (* : *) * constExpression
               (* fullType => BitFieldInt | BitFieldUnsigned *)
@@ -1400,7 +1402,10 @@ let s_of_inc_file_bis inc_file =
 
 let fieldname_of_fieldkind fieldkind =
   match fieldkind with
-  | Simple (sopt, ft, attrs) -> sopt
+  | Simple (storage, attrs, sopt, ft, endattrs) ->
+      (match sopt with
+	None -> None
+      | Some(nm,v) -> Some nm)
   | BitField (sopt, ft, info, expr) -> sopt
 
 
