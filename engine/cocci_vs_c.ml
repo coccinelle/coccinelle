@@ -3506,7 +3506,6 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	| A.MetaField (ida,cstr,keep,inherited), B.PublicLabel _
 	| A.MetaField (ida,cstr,keep,inherited), B.ProtectedLabel _
 	| A.MetaField (ida,cstr,keep,inherited), B.PrivateLabel _
-	| A.MetaField (ida,cstr,keep,inherited), B.DeclField _
 	| A.MetaField (ida,cstr,keep,inherited), B.ConstructDestructField _ ->
 	    (* not really fields *) fail
 	| A.MetaField (ida,cstr,keep,inherited), _ ->
