@@ -1733,6 +1733,11 @@ let rebuilder mcode donothing
 	    let lty = fullType ty in
 	    let lrp = string_mcode rp in
 	    Ast.TypeOfType(ltf, llp, lty, lrp)
+        | Ast.QualifiedType(ty,coloncolon,name) ->
+            let lty = get_option fullType ty in
+            let lcoloncolon = string_mcode coloncolon in
+            let lname = ident name in
+            Ast.QualifiedType(lty,lcoloncolon,lname)
 	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
 	| Ast.AutoType(auto) -> Ast.AutoType(string_mcode auto)
 	| Ast.TemplateType(name,lab,args,rab) ->

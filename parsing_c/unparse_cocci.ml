@@ -822,6 +822,9 @@ and typeC endattrs ty =
       mcode print_string typeof;
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
+  | Ast.QualifiedType(ty,coloncolon,name) ->
+      print_option fullType ty; mcode print_string coloncolon;
+      ident name 
   | Ast.TypeName(name)-> mcode print_string name
   | Ast.TemplateType(tn,lp,args,rp) ->
       fullType tn; mcode (print_string_with_hint StartBox) lp;

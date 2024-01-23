@@ -2600,7 +2600,7 @@ unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef (snd $1) }
 	| TBang   { Parse_aux.clt2mcode (Ast_cocci.Not (fst $1)) (snd $1) }
 
 postfix_expr(r,pe):
-   primary_expr(r,pe)                            { $1 }
+   qual_expr(r,pe)                            { $1 }
  | postfix_expr(r,pe) TOCro eexpr_list TCCro
      { Ast0_cocci.wrap(Ast0_cocci.ArrayAccess ($1,Parse_aux.tok2mcode $2,$3,
 				       Parse_aux.tok2mcode $4)) }
@@ -2608,10 +2608,6 @@ postfix_expr(r,pe):
      { Ast0_cocci.wrap(Ast0_cocci.RecordAccess ($1, Parse_aux.clt2mcode "." $2, $3)) }
  | postfix_expr(r,pe) TPtrOp type_ident
      { Ast0_cocci.wrap(Ast0_cocci.RecordPtAccess ($1, Parse_aux.clt2mcode "->" $2, $3)) }
- | typedef_ident TColonColon type_ident
-     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess ($1, Parse_aux.clt2mcode "::" $2, $3)) }
- | TColonColon type_ident
-     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess (None, Parse_aux.clt2mcode "::" $1, $2)) }
  | postfix_expr(r,pe) TInc
      { Ast0_cocci.wrap(Ast0_cocci.Postfix ($1, Parse_aux.clt2mcode Ast_cocci.Inc $2)) }
  | postfix_expr(r,pe) TDec
@@ -2626,6 +2622,20 @@ postfix_expr(r,pe):
      { Ast0_cocci.wrap
 	 (Ast0_cocci.Constructor(Parse_aux.clt2mcode "(" $1, $2, Parse_aux.clt2mcode ")" $3, $4)) }
 
+qual_expr(r,pe):
+   primary_expr(r,pe)          {$1}
+ | qual_type TColonColon type_ident
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess (Some $1, Parse_aux.clt2mcode "::" $2, $3)) }
+ | TColonColon type_ident
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess (None, Parse_aux.clt2mcode "::" $1, $2)) }
+     
+qual_type:
+   typedef_ident          {$1}
+ | qual_type TColonColon type_ident
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedType (Some $1, Parse_aux.clt2mcode "::" $2, $3)) }
+ | TColonColon type_ident
+     { Ast0_cocci.wrap(Ast0_cocci.QualifiedType (None, Parse_aux.clt2mcode "::" $1, $2)) }
+ 
 primary_expr(recurser,primary_extra):
    func_ident   { Ast0_cocci.wrap(Ast0_cocci.Ident($1)) }
  | func_ident TInf3 eexpr_list TSup3

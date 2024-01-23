@@ -185,6 +185,8 @@ and left_typeC t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
   | Ast0.TypeOfExpr(tf,_,_,_) -> modif_before_mcode tf
   | Ast0.TypeOfType(tf,_,_,_) -> modif_before_mcode tf
+  | Ast0.QualifiedType(Some ty,coloncolon,name) -> left_typeC ty
+  | Ast0.QualifiedType(None,coloncolon,name) -> modif_before_mcode coloncolon
   | Ast0.TypeName(name) -> modif_before_mcode name
   | Ast0.TemplateType(name,_,_,_) -> left_typeC name
   | Ast0.AutoType(auto) -> modif_before_mcode auto

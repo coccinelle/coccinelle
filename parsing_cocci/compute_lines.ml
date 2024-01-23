@@ -707,6 +707,15 @@ and typeC t =
       let rp = normal_mcode rp in
       mkres t (Ast0.TypeOfType(tf,lp,typeC ty,rp))
         (promote_mcode tf) (promote_mcode rp)
+  | Ast0.QualifiedType(Some ty,coloncolon,name) ->
+      let ty = typeC ty in
+      let coloncolon = normal_mcode coloncolon in
+      let name = ident name in
+      mkres t (Ast0.QualifiedType(Some ty,coloncolon,name)) ty name
+  | Ast0.QualifiedType(None,coloncolon,name) ->
+      let coloncolon = normal_mcode coloncolon in
+      let name = ident name in
+      mkres t (Ast0.QualifiedType(None,coloncolon,name)) (promote_mcode coloncolon) name
   | Ast0.TypeName(name) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

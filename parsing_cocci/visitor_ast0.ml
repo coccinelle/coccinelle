@@ -434,6 +434,11 @@ let visitor mode bind option_default
 	| Ast0.TypeName(name) ->
 	    let (name_n,name) = string_mcode name in
 	    (name_n,Ast0.TypeName(name))
+        | Ast0.QualifiedType(ty,coloncolon,name) ->
+            let (ty_n,ty) = get_option typeC ty in
+            let (coloncolon_n,coloncolon) = string_mcode coloncolon in
+            let (name_n,name) = ident name in
+            (multibind [ty_n;coloncolon_n;coloncolon_n;name_n], Ast0.QualifiedType(ty,coloncolon,name))
 	| Ast0.AutoType(auto) ->
 	    let (lauto, auto) = string_mcode auto in
 	    (lauto, Ast0.AutoType(auto))

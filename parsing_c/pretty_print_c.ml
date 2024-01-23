@@ -737,6 +737,9 @@ and pp_string_format (e,ii) =
           print_sto_qu (fun _ -> print_order_ty [dec]);
 	  pr_elem lp; pp_expression l; pr_elem cm;
 	  do_option pp_expression p; pr_elem rp
+      
+      | (QualifiedType (typ,name), [iis]) ->
+         Common.do_option  pp_type typ; pr_elem iis; pp_name name
 
       | (TypeName (name,typ), noii) ->
           assert (noii = []);
@@ -961,6 +964,7 @@ and pp_string_format (e,ii) =
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  (key, s), iis)               -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
+      | (QualifiedType(_typ,_name), iis)             -> print_ident ident 
       | (TypeName (_name,_typ), iis)            -> print_ident ident
       | (FieldType (_typ,_,_), iis)             -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident

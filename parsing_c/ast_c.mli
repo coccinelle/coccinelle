@@ -39,6 +39,7 @@ and typeCbis =
   | EnumName of structUnion option * string option
   | StructUnionName of structUnion * string
   | TypeName of name * fullType option
+  | QualifiedType of fullType option * name
   | FieldType of fullType * name * constExpression option
   | ParenType of fullType
   | TypeOfExpr of expression

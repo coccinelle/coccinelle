@@ -390,6 +390,10 @@ and unify_typeC t1 t2 =
       unify_expression e1 e2
   | (Ast.TypeOfType(szf1,lp1,ty1,rp1),Ast.TypeOfType(szf2,lp2,ty2,rp2)) ->
       unify_fullType ty1 ty2
+  | (Ast.QualifiedType(Some ty1,coloncolon1,fld1),Ast.QualifiedType(Some ty2,coloncolon2,fld2)) ->
+      unify_fullType ty1 ty2 && unify_ident fld1 fld2
+  | (Ast.QualifiedType(None,coloncolon,fld1),Ast.QualifiedType(None,coloncolon2,fld2)) ->
+      unify_ident fld1 fld2
   | (Ast.TypeName(t1),Ast.TypeName(t2)) -> unify_mcode t1 t2
   | (Ast.AutoType(auto1), Ast.AutoType(auto2)) -> unify_mcode auto1 auto2
 

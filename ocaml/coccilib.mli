@@ -68,6 +68,7 @@ module Ast_c :
       | EnumName of structUnion option * string option
       | StructUnionName of structUnion * string
       | TypeName of name * fullType option
+      | QualifiedType of fullType option * name
       | FieldType of fullType * name * constExpression option
       | ParenType of fullType
       | TypeOfExpr of expression
@@ -165,6 +166,7 @@ module Ast_c :
       | ArrayAccess of expression * argument wrap2 list
       | RecordAccess of expression * name
       | RecordPtAccess of expression * name
+      | QualifiedAccess of fullType option * name
       | SizeOfExpr of expression
       | SizeOfType of fullType
       | Cast of fullType * expression
@@ -733,6 +735,7 @@ module Parser_c :
       | TKRParam of (string * Ast_c.info)
       | Tconstructorname of (string * Ast_c.info)
       | TypedefIdent of (string * Ast_c.info)
+      | TypedefIdentQual of (string * Ast_c.info)
       | TOPar of Ast_c.info
       | TCPar of Ast_c.info
       | TOBrace of Ast_c.info
@@ -741,6 +744,7 @@ module Parser_c :
       | TCCro of Ast_c.info
       | TOCroCro of Ast_c.info
       | TDot of Ast_c.info
+      | TColonColon of Ast_c.info
       | TComma of Ast_c.info
       | TNoComma of Ast_c.info
       | TPtrOp of Ast_c.info
@@ -2685,6 +2689,7 @@ module Ast_cocci :
       | ArrayAccess of expression * string mcode * expression dots * string mcode
       | RecordAccess of expression * string mcode * ident
       | RecordPtAccess of expression * string mcode * ident
+      | QualifiedAccess of fullType option * string mcode * ident
       | Cast of string mcode * fullType * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * fullType * string mcode
@@ -2850,6 +2855,7 @@ module Ast_cocci :
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
       | TypeOfType of string mcode * string mcode * fullType * string mcode
       | TypeName of string mcode
+      | QualifiedType of fullType option * string mcode * ident
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
       | TemplateType of fullType (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)
@@ -3491,6 +3497,7 @@ module Ast0_cocci :
       | ArrayAccess of expression * string mcode * expression dots * string mcode
       | RecordAccess of expression * string mcode * ident
       | RecordPtAccess of expression * string mcode * ident
+      | QualifiedAccess of typeC option * string mcode * ident
       | Cast of string mcode * typeC * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * typeC * string mcode
@@ -3572,6 +3579,7 @@ module Ast0_cocci :
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
       | TypeOfType of string mcode * string mcode * typeC * string mcode
       | TypeName of string mcode
+      | QualifiedType of typeC option * string mcode * ident
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
       | TemplateType of typeC (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)

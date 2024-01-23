@@ -201,6 +201,8 @@ and fullType = typeQualifier * attribute list * typeC
 
   | TypeName   of name * fullType option (* semantic: filled later *)
 
+  | QualifiedType of fullType option * name 
+
   | FieldType of fullType * name * constExpression option
 
   | ParenType of fullType (* for unparser: *)

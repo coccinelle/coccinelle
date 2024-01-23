@@ -556,7 +556,7 @@ let args_to_params l pb =
 %token <string * Ast_c.info> TKRParam
 %token <string * Ast_c.info> Tconstructorname /* parsing_hack for C++ */
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
-%token <string * Ast_c.info> TypedefIdent
+%token <string * Ast_c.info> TypedefIdent TypedefIdentQual
 
 /*
 (* Some tokens like TOPar and TCPar are used as synchronisation stuff,
@@ -1060,7 +1060,7 @@ unary_op:
  | TAndLog { GetRefLabel, $1 }
 
 postfix_expr:
- | primary_expr               { $1 }
+ | qual_expr               { $1 }
  | postfix_expr TOCro argument_list_ne TCCro
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
  | postfix_expr TOPar argument_list TCPar
@@ -1069,13 +1069,29 @@ postfix_expr:
      { mk_e(FunCall ($1, $3)) [$2;$4] }
  | postfix_expr TDot   ident_cpp { mk_e(RecordAccess   ($1,$3)) [$2] }
  | postfix_expr TPtrOp ident_cpp { mk_e(RecordPtAccess ($1,$3)) [$2] }
- | postfix_expr TColonColon ident_cpp { mk_e(QualifiedAccess ($1,$3)) [$2] }
  | postfix_expr TInc          { mk_e(Postfix ($1, Inc)) [$2] }
  | postfix_expr TDec          { mk_e(Postfix ($1, Dec)) [$2] }
 
  /*(* gccext: also called compound literals *)*/
  | topar2 type_name tcpar2 TOBrace outer_initialize_list TCBrace
      { mk_e(Constructor ($2, ($5 $4 $6))) [$1;$3] }
+
+
+qual_expr:
+   primary_expr          {$1}
+ | qual_type TColonColon ident_cpp
+     { mk_e(QualifiedAccess (Some $1, $3)) [$2] }
+ | TColonColon ident_cpp
+     { mk_e(QualifiedAccess (None, $2)) [$1]}
+     
+qual_type:
+   TypedefIdentQual          
+   { let name = RegularName (mk_string_wrap $1) in
+       mk_ty (TypeName (name, Ast_c.noTypedefDef())) [] }
+ | qual_type TColonColon ident_cpp
+     { mk_ty(QualifiedType (Some $1, $3)) [$2]}
+ | TColonColon ident_cpp
+     { mk_ty(QualifiedType (None, $2)) [$1]}
 
 primary_expr_without_ident:
  | TInt

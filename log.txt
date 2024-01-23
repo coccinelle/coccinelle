@@ -1,0 +1,1191 @@
+OCAMLDEP  commons/ocamlextra/dumper.ml
+OCAMLDEP  commons/commands.ml
+OCAMLDEP  commons/common.ml
+OCAMLDEP  commons/ograph_simple.ml
+OCAMLDEP  commons/ograph_extended.ml
+OCAMLDEP  globals/config.ml
+OCAMLDEP  globals/flag.ml
+OCAMLDEP  globals/iteration.ml
+OCAMLDEP  globals/regexp_pcre.ml
+OCAMLDEP  globals/regexp.ml
+OCAMLDEP  parsing_cocci/flag_parsing_cocci.ml
+OCAMLDEP  parsing_cocci/ast_cocci.ml
+OCAMLDEP  parsing_cocci/ast0_cocci.ml
+OCAMLDEP  parsing_cocci/pretty_print_cocci.ml
+OCAMLDEP  parsing_cocci/visitor_ast0_types.ml
+OCAMLDEP  parsing_cocci/visitor_ast.ml
+OCAMLDEP  parsing_cocci/visitor_ast0.ml
+OCAMLDEP  parsing_cocci/ast0toast.ml
+OCAMLDEP  parsing_cocci/unparse_ast0.ml
+OCAMLDEP  parsing_cocci/unify_ast.ml
+OCAMLDEP  parsing_cocci/compute_lines.ml
+OCAMLDEP  parsing_cocci/iso_pattern.ml
+OCAMLDEP  parsing_cocci/comm_assoc.ml
+OCAMLDEP  parsing_cocci/iso_compile.ml
+OCAMLDEP  parsing_cocci/single_statement.ml
+OCAMLDEP  parsing_cocci/simple_assignments.ml
+OCAMLDEP  parsing_cocci/get_metas.ml
+OCAMLDEP  parsing_cocci/stmtlist.ml
+OCAMLDEP  parsing_cocci/top_level.ml
+OCAMLDEP  parsing_cocci/type_infer.ml
+OCAMLDEP  parsing_cocci/test_exps.ml
+OCAMLDEP  parsing_cocci/unitary_ast0.ml
+OCAMLDEP  parsing_cocci/arity.ml
+OCAMLDEP  parsing_cocci/index.ml
+OCAMLDEP  parsing_cocci/context_neg.ml
+OCAMLDEP  parsing_cocci/adjust_pragmas.ml
+OCAMLDEP  parsing_cocci/insert_plus.ml
+OCAMLDEP  parsing_cocci/function_prototypes.ml
+OCAMLDEP  parsing_cocci/semantic_cocci.ml
+OCAMLDEP  parsing_cocci/data.ml
+OCAMLDEP  parsing_cocci/free_vars.ml
+OCAMLDEP  parsing_cocci/check_meta.ml
+OCAMLDEP  parsing_cocci/safe_for_multi_decls.ml
+OCAMLDEP  parsing_cocci/parse_printf.ml
+OCAMLDEP  parsing_cocci/parse_aux.ml
+OCAMLDEP  parsing_cocci/cleanup_rules.ml
+OCAMLDEP  parsing_cocci/disjdistr.ml
+OCAMLDEP  parsing_cocci/cocci_grep.ml
+OCAMLDEP  parsing_cocci/dpll.ml
+OCAMLDEP  parsing_cocci/get_constants2.ml
+OCAMLDEP  parsing_cocci/id_utils.ml
+OCAMLDEP  parsing_cocci/git_grep.ml
+OCAMLDEP  parsing_cocci/patch_diff.ml
+OCAMLDEP  parsing_cocci/adjacency.ml
+OCAMLDEP  parsing_cocci/commas_on_lists.ml
+OCAMLDEP  parsing_cocci/re_constraints.ml
+OCAMLDEP  parsing_cocci/parse_cocci.ml
+OCAMLDEP  parsing_cocci/command_line.ml
+OCAMLDEP  parsing_cocci/cocci_args.ml
+OCAMLDEP  parsing_c/token_annot.ml
+OCAMLDEP  parsing_c/flag_parsing_c.ml
+OCAMLDEP  parsing_c/parsing_stat.ml
+OCAMLDEP  parsing_c/token_c.ml
+OCAMLDEP  parsing_c/ast_c.ml
+OCAMLDEP  parsing_c/includes.ml
+OCAMLDEP  parsing_c/control_flow_c.ml
+OCAMLDEP  parsing_c/visitor_c.ml
+OCAMLDEP  parsing_c/lib_parsing_c.ml
+OCAMLDEP  parsing_c/includes_cache.ml
+OCAMLDEP  parsing_c/pretty_print_c.ml
+OCAMLDEP  parsing_c/control_flow_c_build.ml
+OCAMLDEP  parsing_c/semantic_c.ml
+OCAMLDEP  parsing_c/lexer_parser.ml
+OCAMLDEP  parsing_c/parse_string_c.ml
+OCAMLDEP  parsing_c/token_helpers.ml
+OCAMLDEP  parsing_c/token_views_c.ml
+OCAMLDEP  parsing_c/cpp_token_c.ml
+OCAMLDEP  parsing_c/parsing_hacks.ml
+OCAMLDEP  parsing_c/cpp_analysis_c.ml
+OCAMLDEP  parsing_c/unparse_cocci.ml
+OCAMLDEP  parsing_c/parsing_recovery_c.ml
+OCAMLDEP  parsing_c/parsing_consistency_c.ml
+OCAMLDEP  parsing_c/danger.ml
+OCAMLDEP  parsing_c/parse_c.ml
+OCAMLDEP  parsing_c/unparse_c.ml
+OCAMLDEP  parsing_c/unparse_hrule.ml
+OCAMLDEP  parsing_c/type_c.ml
+OCAMLDEP  parsing_c/cpp_ast_c.ml
+OCAMLDEP  parsing_c/type_annoter_c.ml
+OCAMLDEP  parsing_c/comment_annotater_c.ml
+OCAMLDEP  parsing_c/compare_c.ml
+OCAMLDEP  parsing_c/test_parsing_c.ml
+OCAMLDEP  ctl/flag_ctl.ml
+OCAMLDEP  ctl/ast_ctl.ml
+OCAMLDEP  ctl/pretty_print_ctl.ml
+OCAMLDEP  ctl/ctl_engine.ml
+OCAMLDEP  ctl/wrapper_ctl.ml
+OCAMLDEP  ocaml/externalanalysis.ml
+OCAMLDEP  ocaml/exposed_modules.ml
+OCAMLDEP  ocaml/coccilib.ml
+OCAMLDEP  ocaml/ocamlcocci_aux.ml
+OCAMLDEP  ocaml/yes_prepare_ocamlcocci.ml
+OCAMLDEP  ocaml/prepare_ocamlcocci.ml
+OCAMLDEP  ocaml/run_ocamlcocci.ml
+OCAMLDEP  python/pycocci_aux.ml
+OCAMLDEP  python/yes_pycocci.ml
+OCAMLDEP  python/pycocci.ml
+OCAMLDEP  engine/flag_matcher.ml
+OCAMLDEP  engine/lib_engine.ml
+OCAMLDEP  engine/pretty_print_engine.ml
+OCAMLDEP  engine/check_exhaustive_pattern.ml
+OCAMLDEP  engine/check_reachability.ml
+OCAMLDEP  engine/c_vs_c.ml
+OCAMLDEP  engine/isomorphisms_c_c.ml
+OCAMLDEP  engine/cocci_vs_c.ml
+OCAMLDEP  engine/pattern_c.ml
+OCAMLDEP  engine/transformation_c.ml
+OCAMLDEP  engine/asttomember.ml
+OCAMLDEP  engine/asttoctl2.ml
+OCAMLDEP  engine/ctltotex.ml
+OCAMLDEP  engine/postprocess_transinfo.ml
+OCAMLDEP  engine/ctlcocci_integration.ml
+OCAMLDEP  popl09/ast_popl.ml
+OCAMLDEP  popl09/asttopopl.ml
+OCAMLDEP  popl09/insert_quantifiers.ml
+OCAMLDEP  popl09/pretty_print_popl.ml
+OCAMLDEP  popl09/flag_popl.ml
+OCAMLDEP  popl09/popltoctl.ml
+OCAMLDEP  popl09/popl.ml
+OCAMLDEP  extra/classic_patch.ml
+OCAMLDEP  extra/kbuild.ml
+OCAMLDEP  extra/maintainers.ml
+OCAMLDEP  flag_cocci.ml
+OCAMLDEP  cocci.ml
+OCAMLDEP  testing.ml
+OCAMLDEP  read_options.ml
+OCAMLDEP  enter.ml
+OCAMLDEP  main.ml
+OCAMLDEP  tools/spgen/source/globals.ml
+OCAMLDEP  tools/spgen/source/ast_tostring.ml
+OCAMLDEP  tools/spgen/source/detect_patch.ml
+OCAMLDEP  tools/spgen/source/meta_variable.ml
+OCAMLDEP  tools/spgen/source/snapshot.ml
+OCAMLDEP  tools/spgen/source/user_input.ml
+OCAMLDEP  tools/spgen/source/position_generator.ml
+OCAMLDEP  tools/spgen/source/disj_generator.ml
+OCAMLDEP  tools/spgen/source/rule_body.ml
+OCAMLDEP  tools/spgen/source/rule_header.ml
+OCAMLDEP  tools/spgen/source/context_rule.ml
+OCAMLDEP  tools/spgen/source/script_rule.ml
+OCAMLDEP  tools/spgen/source/file_transform.ml
+OCAMLDEP  tools/spgen/source/spgen_interactive.ml
+OCAMLDEP  tools/spgen/source/spgen_config.ml
+OCAMLDEP  tools/spgen/source/spgen.ml
+OCAMLDEP  tools/spgen/source/spgen_test.ml
+OCAMLDEP  tools/spgen/source/main.ml
+OCAMLLEX  parsing_cocci/lexer_cocci.mll
+403 states, 6934 transitions, table size 30154 bytes
+4123 additional bytes used for bindings
+OCAMLDEP  parsing_cocci/lexer_cocci.ml
+OCAMLLEX  parsing_cocci/lexer_cli.mll
+14 states, 681 transitions, table size 2808 bytes
+OCAMLDEP  parsing_cocci/lexer_cli.ml
+OCAMLLEX  parsing_cocci/lexer_script.mll
+27 states, 322 transitions, table size 1450 bytes
+OCAMLDEP  parsing_cocci/lexer_script.ml
+OCAMLLEX  parsing_c/lexer_c.mll
+404 states, 15896 transitions, table size 66008 bytes
+16334 additional bytes used for bindings
+OCAMLDEP  parsing_c/lexer_c.ml
+OCAMLDEP  tools/spgen/source/spgen_lexer.ml
+OCAMLYACC parsing_c/parser_c.mly
+OCAMLDEP  parsing_c/parser_c.ml
+OCAMLDEP  commons/ocamlextra/dumper.mli
+OCAMLDEP  commons/commands.mli
+OCAMLDEP  commons/common.mli
+OCAMLDEP  commons/ograph_simple.mli
+OCAMLDEP  commons/ograph_extended.mli
+OCAMLDEP  globals/config.mli
+OCAMLDEP  globals/flag.mli
+OCAMLDEP  globals/iteration.mli
+OCAMLDEP  globals/regexp_pcre.mli
+OCAMLDEP  globals/regexp.mli
+OCAMLDEP  parsing_cocci/flag_parsing_cocci.mli
+OCAMLDEP  parsing_cocci/ast_cocci.mli
+OCAMLDEP  parsing_cocci/ast0_cocci.mli
+OCAMLDEP  parsing_cocci/pretty_print_cocci.mli
+OCAMLDEP  parsing_cocci/visitor_ast0_types.mli
+OCAMLDEP  parsing_cocci/visitor_ast.mli
+OCAMLDEP  parsing_cocci/visitor_ast0.mli
+OCAMLDEP  parsing_cocci/ast0toast.mli
+OCAMLDEP  parsing_cocci/unparse_ast0.mli
+OCAMLDEP  parsing_cocci/unify_ast.mli
+OCAMLDEP  parsing_cocci/compute_lines.mli
+OCAMLDEP  parsing_cocci/iso_pattern.mli
+OCAMLDEP  parsing_cocci/comm_assoc.mli
+OCAMLDEP  parsing_cocci/iso_compile.mli
+OCAMLDEP  parsing_cocci/single_statement.mli
+OCAMLDEP  parsing_cocci/simple_assignments.mli
+OCAMLDEP  parsing_cocci/get_metas.mli
+OCAMLDEP  parsing_cocci/stmtlist.mli
+OCAMLDEP  parsing_cocci/top_level.mli
+OCAMLDEP  parsing_cocci/type_infer.mli
+OCAMLDEP  parsing_cocci/test_exps.mli
+OCAMLDEP  parsing_cocci/unitary_ast0.mli
+OCAMLDEP  parsing_cocci/arity.mli
+OCAMLDEP  parsing_cocci/index.mli
+OCAMLDEP  parsing_cocci/context_neg.mli
+OCAMLDEP  parsing_cocci/adjust_pragmas.mli
+OCAMLDEP  parsing_cocci/insert_plus.mli
+OCAMLDEP  parsing_cocci/function_prototypes.mli
+OCAMLDEP  parsing_cocci/semantic_cocci.mli
+OCAMLDEP  parsing_cocci/data.mli
+OCAMLDEP  parsing_cocci/free_vars.mli
+OCAMLDEP  parsing_cocci/check_meta.mli
+OCAMLDEP  parsing_cocci/safe_for_multi_decls.mli
+OCAMLDEP  parsing_cocci/parse_printf.mli
+OCAMLDEP  parsing_cocci/parse_aux.mli
+OCAMLDEP  parsing_cocci/cleanup_rules.mli
+OCAMLDEP  parsing_cocci/disjdistr.mli
+OCAMLDEP  parsing_cocci/cocci_grep.mli
+OCAMLDEP  parsing_cocci/dpll.mli
+OCAMLDEP  parsing_cocci/get_constants2.mli
+OCAMLDEP  parsing_cocci/id_utils.mli
+OCAMLDEP  parsing_cocci/git_grep.mli
+OCAMLDEP  parsing_cocci/patch_diff.mli
+OCAMLDEP  parsing_cocci/adjacency.mli
+OCAMLDEP  parsing_cocci/commas_on_lists.mli
+OCAMLDEP  parsing_cocci/re_constraints.mli
+OCAMLDEP  parsing_cocci/parse_cocci.mli
+OCAMLDEP  parsing_cocci/command_line.mli
+OCAMLDEP  parsing_cocci/cocci_args.mli
+OCAMLDEP  parsing_c/token_annot.mli
+OCAMLDEP  parsing_c/flag_parsing_c.mli
+OCAMLDEP  parsing_c/parsing_stat.mli
+OCAMLDEP  parsing_c/token_c.mli
+OCAMLDEP  parsing_c/ast_c.mli
+OCAMLDEP  parsing_c/includes.mli
+OCAMLDEP  parsing_c/control_flow_c.mli
+OCAMLDEP  parsing_c/visitor_c.mli
+OCAMLDEP  parsing_c/lib_parsing_c.mli
+OCAMLDEP  parsing_c/includes_cache.mli
+OCAMLDEP  parsing_c/pretty_print_c.mli
+OCAMLDEP  parsing_c/control_flow_c_build.mli
+OCAMLDEP  parsing_c/semantic_c.mli
+OCAMLDEP  parsing_c/lexer_parser.mli
+OCAMLDEP  parsing_c/parse_string_c.mli
+OCAMLDEP  parsing_c/token_helpers.mli
+OCAMLDEP  parsing_c/token_views_c.mli
+OCAMLDEP  parsing_c/cpp_token_c.mli
+OCAMLDEP  parsing_c/parsing_hacks.mli
+OCAMLDEP  parsing_c/cpp_analysis_c.mli
+OCAMLDEP  parsing_c/unparse_cocci.mli
+OCAMLDEP  parsing_c/parsing_recovery_c.mli
+OCAMLDEP  parsing_c/parsing_consistency_c.mli
+OCAMLDEP  parsing_c/danger.mli
+OCAMLDEP  parsing_c/parse_c.mli
+OCAMLDEP  parsing_c/unparse_c.mli
+OCAMLDEP  parsing_c/unparse_hrule.mli
+OCAMLDEP  parsing_c/type_c.mli
+OCAMLDEP  parsing_c/cpp_ast_c.mli
+OCAMLDEP  parsing_c/type_annoter_c.mli
+OCAMLDEP  parsing_c/comment_annotater_c.mli
+OCAMLDEP  parsing_c/compare_c.mli
+OCAMLDEP  parsing_c/test_parsing_c.mli
+OCAMLDEP  ctl/flag_ctl.mli
+OCAMLDEP  ctl/ast_ctl.mli
+OCAMLDEP  ctl/pretty_print_ctl.mli
+OCAMLDEP  ctl/ctl_engine.mli
+OCAMLDEP  ctl/wrapper_ctl.mli
+OCAMLDEP  ocaml/externalanalysis.mli
+OCAMLDEP  ocaml/exposed_modules.mli
+OCAMLDEP  ocaml/coccilib.mli
+OCAMLDEP  ocaml/ocamlcocci_aux.mli
+OCAMLDEP  ocaml/yes_prepare_ocamlcocci.mli
+OCAMLDEP  ocaml/prepare_ocamlcocci.mli
+OCAMLDEP  ocaml/run_ocamlcocci.mli
+OCAMLDEP  python/pycocci_aux.mli
+OCAMLDEP  python/yes_pycocci.mli
+OCAMLDEP  python/pycocci.mli
+OCAMLDEP  engine/flag_matcher.mli
+OCAMLDEP  engine/lib_engine.mli
+OCAMLDEP  engine/pretty_print_engine.mli
+OCAMLDEP  engine/check_exhaustive_pattern.mli
+OCAMLDEP  engine/check_reachability.mli
+OCAMLDEP  engine/c_vs_c.mli
+OCAMLDEP  engine/isomorphisms_c_c.mli
+OCAMLDEP  engine/cocci_vs_c.mli
+OCAMLDEP  engine/pattern_c.mli
+OCAMLDEP  engine/transformation_c.mli
+OCAMLDEP  engine/asttomember.mli
+OCAMLDEP  engine/asttoctl2.mli
+OCAMLDEP  engine/ctltotex.mli
+OCAMLDEP  engine/postprocess_transinfo.mli
+OCAMLDEP  engine/ctlcocci_integration.mli
+OCAMLDEP  popl09/ast_popl.mli
+OCAMLDEP  popl09/asttopopl.mli
+OCAMLDEP  popl09/insert_quantifiers.mli
+OCAMLDEP  popl09/pretty_print_popl.mli
+OCAMLDEP  popl09/flag_popl.mli
+OCAMLDEP  popl09/popltoctl.mli
+OCAMLDEP  popl09/popl.mli
+OCAMLDEP  extra/classic_patch.mli
+OCAMLDEP  extra/kbuild.mli
+OCAMLDEP  extra/maintainers.mli
+OCAMLDEP  flag_cocci.mli
+OCAMLDEP  cocci.mli
+OCAMLDEP  testing.mli
+OCAMLDEP  read_options.mli
+OCAMLDEP  enter.mli
+OCAMLDEP  main.mli
+OCAMLDEP  tools/spgen/source/globals.mli
+OCAMLDEP  tools/spgen/source/ast_tostring.mli
+OCAMLDEP  tools/spgen/source/detect_patch.mli
+OCAMLDEP  tools/spgen/source/meta_variable.mli
+OCAMLDEP  tools/spgen/source/snapshot.mli
+OCAMLDEP  tools/spgen/source/user_input.mli
+OCAMLDEP  tools/spgen/source/position_generator.mli
+OCAMLDEP  tools/spgen/source/disj_generator.mli
+OCAMLDEP  tools/spgen/source/rule_body.mli
+OCAMLDEP  tools/spgen/source/rule_header.mli
+OCAMLDEP  tools/spgen/source/context_rule.mli
+OCAMLDEP  tools/spgen/source/script_rule.mli
+OCAMLDEP  tools/spgen/source/file_transform.mli
+OCAMLDEP  tools/spgen/source/spgen_interactive.mli
+OCAMLDEP  tools/spgen/source/spgen_config.mli
+OCAMLDEP  tools/spgen/source/spgen.mli
+OCAMLDEP  tools/spgen/source/spgen_test.mli
+OCAMLDEP  tools/spgen/source/main.mli
+OCAMLDEP  parsing_cocci/lexer_cocci.mli
+OCAMLDEP  parsing_cocci/lexer_cli.mli
+OCAMLDEP  parsing_cocci/lexer_script.mli
+OCAMLDEP  parsing_c/lexer_c.mli
+OCAMLDEP  tools/spgen/source/spgen_lexer.mli
+OCAMLDEP  parsing_c/parser_c.mli
+OCAMLC    commons/ocamlextra/dumper.mli
+OCAMLOPT  commons/ocamlextra/dumper.ml
+OCAMLC    commons/commands.mli
+OCAMLOPT  commons/commands.ml
+OCAMLC    commons/common.mli
+make -C bundles/stdcompat all
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/stdcompat'
+cd stdcompat-current; make && cp *.mli *.cmi *.cmx *.cma *.cmxa *.a *.h *.so ..
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/stdcompat/stdcompat-current'
+make  all-am
+make[3]: Entering directory '/home/okabe/coccinelle/bundles/stdcompat/stdcompat-current'
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__native.mli -o stdcompat__native.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__init.mli -o stdcompat__init.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__root.mli -o stdcompat__root.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__either_s.mli -o stdcompat__either_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__either.mli -o stdcompat__either.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__seq_s.mli -o stdcompat__seq_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__seq.mli -o stdcompat__seq.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__tools.mli -o stdcompat__tools.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__pervasives_s.mli -o stdcompat__pervasives_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arg_s.mli -o stdcompat__arg_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lazy_s.mli -o stdcompat__lazy_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__char_s.mli -o stdcompat__char_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__uchar_s.mli -o stdcompat__uchar_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__uchar.mli -o stdcompat__uchar.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__buffer_s.mli -o stdcompat__buffer_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__string_s.mli -o stdcompat__string_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stringLabels_s.mli -o stdcompat__stringLabels_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytes_s.mli -o stdcompat__bytes_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytesLabels_s.mli -o stdcompat__bytesLabels_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__list_s.mli -o stdcompat__list_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__listLabels_s.mli -o stdcompat__listLabels_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stack_s.mli -o stdcompat__stack_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__list.mli -o stdcompat__list.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl_ext.mli -o stdcompat__hashtbl_ext.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl_s.mli -o stdcompat__hashtbl_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__set_s.mli -o stdcompat__set_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__map_s.mli -o stdcompat__map_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__weak_s.mli -o stdcompat__weak_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__sys_s.mli -o stdcompat__sys_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__digest_s.mli -o stdcompat__digest_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__nativeint_s.mli -o stdcompat__nativeint_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int_s.mli -o stdcompat__int_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int64_s.mli -o stdcompat__int64_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int32_s.mli -o stdcompat__int32_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__filename_s.mli -o stdcompat__filename_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__array_s.mli -o stdcompat__array_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arrayLabels_s.mli -o stdcompat__arrayLabels_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__float_s.mli -o stdcompat__float_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__queue_s.mli -o stdcompat__queue_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl.mli -o stdcompat__hashtbl.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__ephemeron_s.mli -o stdcompat__ephemeron_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__moreLabels_s.mli -o stdcompat__moreLabels_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lexing_s.mli -o stdcompat__lexing_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__pervasives.mli -o stdcompat__pervasives.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__option_s.mli -o stdcompat__option_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__result_s.mli -o stdcompat__result_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bool_s.mli -o stdcompat__bool_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__fun_s.mli -o stdcompat__fun_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printf_s.mli -o stdcompat__printf_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printexc_s.mli -o stdcompat__printexc_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__format_s.mli -o stdcompat__format_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__atomic_s.mli -o stdcompat__atomic_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__in_channel_s.mli -o stdcompat__in_channel_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__out_channel_s.mli -o stdcompat__out_channel_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__random_s.mli -o stdcompat__random_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__unit_s.mli -o stdcompat__unit_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stdlib_s.mli -o stdcompat__stdlib_s.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arg.mli -o stdcompat__arg.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lazy.mli -o stdcompat__lazy.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__char.mli -o stdcompat__char.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__option.mli -o stdcompat__option.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__buffer.mli -o stdcompat__buffer.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__sys.mli -o stdcompat__sys.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytes.mli -o stdcompat__bytes.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytesLabels.mli -o stdcompat__bytesLabels.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__string.mli -o stdcompat__string.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stringLabels.mli -o stdcompat__stringLabels.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__filename.mli -o stdcompat__filename.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__listLabels.mli -o stdcompat__listLabels.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stack.mli -o stdcompat__stack.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__set.mli -o stdcompat__set.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__map.mli -o stdcompat__map.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__weak.mli -o stdcompat__weak.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__random.mli -o stdcompat__random.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__digest.mli -o stdcompat__digest.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__nativeint.mli -o stdcompat__nativeint.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int.mli -o stdcompat__int.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int64.mli -o stdcompat__int64.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int32.mli -o stdcompat__int32.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__array.mli -o stdcompat__array.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arrayLabels.mli -o stdcompat__arrayLabels.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__float.mli -o stdcompat__float.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__queue.mli -o stdcompat__queue.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__ephemeron.mli -o stdcompat__ephemeron.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__moreLabels.mli -o stdcompat__moreLabels.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lexing.mli -o stdcompat__lexing.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printexc.mli -o stdcompat__printexc.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__result.mli -o stdcompat__result.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bool.mli -o stdcompat__bool.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__fun.mli -o stdcompat__fun.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__format.mli -o stdcompat__format.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printf.mli -o stdcompat__printf.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__atomic.mli -o stdcompat__atomic.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__in_channel.mli -o stdcompat__in_channel.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__out_channel.mli -o stdcompat__out_channel.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__unit.mli -o stdcompat__unit.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stdlib.mli -o stdcompat__stdlib.cmi
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat.mli -o stdcompat.cmi
+ocamlfind ocamlmklib -o stdcompat__stubs stdcompat__stubs.o
+ocamlfind ocamlc -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated -c -impl stdcompat__native.ml_byte
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__init.ml -o stdcompat__init.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__root.ml -o stdcompat__root.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__either_s.ml -o stdcompat__either_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__either.ml -o stdcompat__either.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__seq_s.ml -o stdcompat__seq_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__seq.ml -o stdcompat__seq.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__tools.ml -o stdcompat__tools.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__pervasives_s.ml -o stdcompat__pervasives_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arg_s.ml -o stdcompat__arg_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lazy_s.ml -o stdcompat__lazy_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__char_s.ml -o stdcompat__char_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__uchar_s.ml -o stdcompat__uchar_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__uchar.ml -o stdcompat__uchar.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__buffer_s.ml -o stdcompat__buffer_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__string_s.ml -o stdcompat__string_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stringLabels_s.ml -o stdcompat__stringLabels_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytes_s.ml -o stdcompat__bytes_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytesLabels_s.ml -o stdcompat__bytesLabels_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__list_s.ml -o stdcompat__list_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__listLabels_s.ml -o stdcompat__listLabels_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stack_s.ml -o stdcompat__stack_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__list.ml -o stdcompat__list.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl_ext.ml -o stdcompat__hashtbl_ext.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl_s.ml -o stdcompat__hashtbl_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__set_s.ml -o stdcompat__set_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__map_s.ml -o stdcompat__map_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__weak_s.ml -o stdcompat__weak_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__sys_s.ml -o stdcompat__sys_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__digest_s.ml -o stdcompat__digest_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__nativeint_s.ml -o stdcompat__nativeint_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int_s.ml -o stdcompat__int_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int64_s.ml -o stdcompat__int64_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int32_s.ml -o stdcompat__int32_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__filename_s.ml -o stdcompat__filename_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__array_s.ml -o stdcompat__array_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arrayLabels_s.ml -o stdcompat__arrayLabels_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__float_s.ml -o stdcompat__float_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__queue_s.ml -o stdcompat__queue_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl.ml -o stdcompat__hashtbl.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__ephemeron_s.ml -o stdcompat__ephemeron_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__moreLabels_s.ml -o stdcompat__moreLabels_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lexing_s.ml -o stdcompat__lexing_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__pervasives.ml -o stdcompat__pervasives.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__option_s.ml -o stdcompat__option_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__result_s.ml -o stdcompat__result_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bool_s.ml -o stdcompat__bool_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__fun_s.ml -o stdcompat__fun_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printf_s.ml -o stdcompat__printf_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printexc_s.ml -o stdcompat__printexc_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__format_s.ml -o stdcompat__format_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__atomic_s.ml -o stdcompat__atomic_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__in_channel_s.ml -o stdcompat__in_channel_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__out_channel_s.ml -o stdcompat__out_channel_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__random_s.ml -o stdcompat__random_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__unit_s.ml -o stdcompat__unit_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stdlib_s.ml -o stdcompat__stdlib_s.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arg.ml -o stdcompat__arg.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lazy.ml -o stdcompat__lazy.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__char.ml -o stdcompat__char.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__option.ml -o stdcompat__option.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__buffer.ml -o stdcompat__buffer.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__sys.ml -o stdcompat__sys.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytes.ml -o stdcompat__bytes.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytesLabels.ml -o stdcompat__bytesLabels.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__string.ml -o stdcompat__string.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stringLabels.ml -o stdcompat__stringLabels.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__filename.ml -o stdcompat__filename.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__listLabels.ml -o stdcompat__listLabels.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stack.ml -o stdcompat__stack.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__set.ml -o stdcompat__set.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__map.ml -o stdcompat__map.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__weak.ml -o stdcompat__weak.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__random.ml -o stdcompat__random.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__digest.ml -o stdcompat__digest.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__nativeint.ml -o stdcompat__nativeint.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int.ml -o stdcompat__int.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int64.ml -o stdcompat__int64.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int32.ml -o stdcompat__int32.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__array.ml -o stdcompat__array.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arrayLabels.ml -o stdcompat__arrayLabels.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__float.ml -o stdcompat__float.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__queue.ml -o stdcompat__queue.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__ephemeron.ml -o stdcompat__ephemeron.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__moreLabels.ml -o stdcompat__moreLabels.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lexing.ml -o stdcompat__lexing.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printexc.ml -o stdcompat__printexc.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__result.ml -o stdcompat__result.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bool.ml -o stdcompat__bool.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__fun.ml -o stdcompat__fun.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__format.ml -o stdcompat__format.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printf.ml -o stdcompat__printf.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__atomic.ml -o stdcompat__atomic.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__in_channel.ml -o stdcompat__in_channel.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__out_channel.ml -o stdcompat__out_channel.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__unit.ml -o stdcompat__unit.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stdlib.ml -o stdcompat__stdlib.cmo
+ocamlfind ocamlc -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat.ml -o stdcompat.cmo
+ocamlfind ocamlc -package seq -package uchar -bin-annot -no-alias-deps -a stdcompat__native.cmo stdcompat__init.cmo stdcompat__root.cmo stdcompat__either_s.cmo stdcompat__either.cmo stdcompat__seq_s.cmo stdcompat__seq.cmo stdcompat__tools.cmo stdcompat__pervasives_s.cmo stdcompat__arg_s.cmo stdcompat__lazy_s.cmo stdcompat__char_s.cmo stdcompat__uchar_s.cmo stdcompat__uchar.cmo stdcompat__buffer_s.cmo stdcompat__string_s.cmo stdcompat__stringLabels_s.cmo stdcompat__bytes_s.cmo stdcompat__bytesLabels_s.cmo stdcompat__list_s.cmo stdcompat__listLabels_s.cmo stdcompat__stack_s.cmo stdcompat__list.cmo stdcompat__hashtbl_ext.cmo stdcompat__hashtbl_s.cmo stdcompat__set_s.cmo stdcompat__map_s.cmo stdcompat__weak_s.cmo stdcompat__sys_s.cmo stdcompat__digest_s.cmo stdcompat__nativeint_s.cmo stdcompat__int_s.cmo stdcompat__int64_s.cmo stdcompat__int32_s.cmo stdcompat__filename_s.cmo stdcompat__array_s.cmo stdcompat__arrayLabels_s.cmo stdcompat__float_s.cmo stdcompat__queue_s.cmo stdcompat__hashtbl.cmo stdcompat__ephemeron_s.cmo stdcompat__moreLabels_s.cmo stdcompat__lexing_s.cmo stdcompat__pervasives.cmo stdcompat__option_s.cmo stdcompat__result_s.cmo stdcompat__bool_s.cmo stdcompat__fun_s.cmo stdcompat__printf_s.cmo stdcompat__printexc_s.cmo stdcompat__format_s.cmo stdcompat__atomic_s.cmo stdcompat__in_channel_s.cmo stdcompat__out_channel_s.cmo stdcompat__random_s.cmo stdcompat__unit_s.cmo stdcompat__stdlib_s.cmo stdcompat__arg.cmo stdcompat__lazy.cmo stdcompat__char.cmo stdcompat__option.cmo stdcompat__buffer.cmo stdcompat__sys.cmo stdcompat__bytes.cmo stdcompat__bytesLabels.cmo stdcompat__string.cmo stdcompat__stringLabels.cmo stdcompat__filename.cmo stdcompat__listLabels.cmo stdcompat__stack.cmo stdcompat__set.cmo stdcompat__map.cmo stdcompat__weak.cmo stdcompat__random.cmo stdcompat__digest.cmo stdcompat__nativeint.cmo stdcompat__int.cmo stdcompat__int64.cmo stdcompat__int32.cmo stdcompat__array.cmo stdcompat__arrayLabels.cmo stdcompat__float.cmo stdcompat__queue.cmo stdcompat__ephemeron.cmo stdcompat__moreLabels.cmo stdcompat__lexing.cmo stdcompat__printexc.cmo stdcompat__result.cmo stdcompat__bool.cmo stdcompat__fun.cmo stdcompat__format.cmo stdcompat__printf.cmo stdcompat__atomic.cmo stdcompat__in_channel.cmo stdcompat__out_channel.cmo stdcompat__unit.cmo stdcompat__stdlib.cmo stdcompat.cmo \
+  -cclib "-L. -lstdcompat__stubs" -dllib -lstdcompat__stubs -o stdcompat.cma
+ocamlfind ocamlopt -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated -c -impl stdcompat__native.ml_native
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__init.ml -o stdcompat__init.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__root.ml -o stdcompat__root.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__either_s.ml -o stdcompat__either_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__either.ml -o stdcompat__either.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__seq_s.ml -o stdcompat__seq_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__seq.ml -o stdcompat__seq.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__tools.ml -o stdcompat__tools.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__pervasives_s.ml -o stdcompat__pervasives_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arg_s.ml -o stdcompat__arg_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lazy_s.ml -o stdcompat__lazy_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__char_s.ml -o stdcompat__char_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__uchar_s.ml -o stdcompat__uchar_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__uchar.ml -o stdcompat__uchar.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__buffer_s.ml -o stdcompat__buffer_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__string_s.ml -o stdcompat__string_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stringLabels_s.ml -o stdcompat__stringLabels_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytes_s.ml -o stdcompat__bytes_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytesLabels_s.ml -o stdcompat__bytesLabels_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__list_s.ml -o stdcompat__list_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__listLabels_s.ml -o stdcompat__listLabels_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stack_s.ml -o stdcompat__stack_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__list.ml -o stdcompat__list.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl_ext.ml -o stdcompat__hashtbl_ext.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl_s.ml -o stdcompat__hashtbl_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__set_s.ml -o stdcompat__set_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__map_s.ml -o stdcompat__map_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__weak_s.ml -o stdcompat__weak_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__sys_s.ml -o stdcompat__sys_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__digest_s.ml -o stdcompat__digest_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__nativeint_s.ml -o stdcompat__nativeint_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int_s.ml -o stdcompat__int_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int64_s.ml -o stdcompat__int64_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int32_s.ml -o stdcompat__int32_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__filename_s.ml -o stdcompat__filename_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__array_s.ml -o stdcompat__array_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arrayLabels_s.ml -o stdcompat__arrayLabels_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__float_s.ml -o stdcompat__float_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__queue_s.ml -o stdcompat__queue_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__hashtbl.ml -o stdcompat__hashtbl.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__ephemeron_s.ml -o stdcompat__ephemeron_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__moreLabels_s.ml -o stdcompat__moreLabels_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lexing_s.ml -o stdcompat__lexing_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__pervasives.ml -o stdcompat__pervasives.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__option_s.ml -o stdcompat__option_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__result_s.ml -o stdcompat__result_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bool_s.ml -o stdcompat__bool_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__fun_s.ml -o stdcompat__fun_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printf_s.ml -o stdcompat__printf_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printexc_s.ml -o stdcompat__printexc_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__format_s.ml -o stdcompat__format_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__atomic_s.ml -o stdcompat__atomic_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__in_channel_s.ml -o stdcompat__in_channel_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__out_channel_s.ml -o stdcompat__out_channel_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__random_s.ml -o stdcompat__random_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__unit_s.ml -o stdcompat__unit_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stdlib_s.ml -o stdcompat__stdlib_s.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arg.ml -o stdcompat__arg.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lazy.ml -o stdcompat__lazy.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__char.ml -o stdcompat__char.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__option.ml -o stdcompat__option.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__buffer.ml -o stdcompat__buffer.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__sys.ml -o stdcompat__sys.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytes.ml -o stdcompat__bytes.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bytesLabels.ml -o stdcompat__bytesLabels.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__string.ml -o stdcompat__string.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stringLabels.ml -o stdcompat__stringLabels.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__filename.ml -o stdcompat__filename.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__listLabels.ml -o stdcompat__listLabels.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stack.ml -o stdcompat__stack.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__set.ml -o stdcompat__set.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__map.ml -o stdcompat__map.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__weak.ml -o stdcompat__weak.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__random.ml -o stdcompat__random.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__digest.ml -o stdcompat__digest.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__nativeint.ml -o stdcompat__nativeint.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int.ml -o stdcompat__int.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int64.ml -o stdcompat__int64.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__int32.ml -o stdcompat__int32.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__array.ml -o stdcompat__array.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__arrayLabels.ml -o stdcompat__arrayLabels.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__float.ml -o stdcompat__float.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__queue.ml -o stdcompat__queue.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__ephemeron.ml -o stdcompat__ephemeron.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__moreLabels.ml -o stdcompat__moreLabels.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__lexing.ml -o stdcompat__lexing.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printexc.ml -o stdcompat__printexc.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__result.ml -o stdcompat__result.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__bool.ml -o stdcompat__bool.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__fun.ml -o stdcompat__fun.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__format.ml -o stdcompat__format.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__printf.ml -o stdcompat__printf.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__atomic.ml -o stdcompat__atomic.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__in_channel.ml -o stdcompat__in_channel.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__out_channel.ml -o stdcompat__out_channel.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__unit.ml -o stdcompat__unit.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat__stdlib.ml -o stdcompat__stdlib.cmx
+ocamlfind ocamlopt -c -package seq -package uchar -bin-annot -no-alias-deps -nolabels -I . -alert -deprecated stdcompat.ml -o stdcompat.cmx
+ocamlfind ocamlopt -package seq -package uchar -bin-annot -no-alias-deps -a stdcompat__native.cmx stdcompat__init.cmx stdcompat__root.cmx stdcompat__either_s.cmx stdcompat__either.cmx stdcompat__seq_s.cmx stdcompat__seq.cmx stdcompat__tools.cmx stdcompat__pervasives_s.cmx stdcompat__arg_s.cmx stdcompat__lazy_s.cmx stdcompat__char_s.cmx stdcompat__uchar_s.cmx stdcompat__uchar.cmx stdcompat__buffer_s.cmx stdcompat__string_s.cmx stdcompat__stringLabels_s.cmx stdcompat__bytes_s.cmx stdcompat__bytesLabels_s.cmx stdcompat__list_s.cmx stdcompat__listLabels_s.cmx stdcompat__stack_s.cmx stdcompat__list.cmx stdcompat__hashtbl_ext.cmx stdcompat__hashtbl_s.cmx stdcompat__set_s.cmx stdcompat__map_s.cmx stdcompat__weak_s.cmx stdcompat__sys_s.cmx stdcompat__digest_s.cmx stdcompat__nativeint_s.cmx stdcompat__int_s.cmx stdcompat__int64_s.cmx stdcompat__int32_s.cmx stdcompat__filename_s.cmx stdcompat__array_s.cmx stdcompat__arrayLabels_s.cmx stdcompat__float_s.cmx stdcompat__queue_s.cmx stdcompat__hashtbl.cmx stdcompat__ephemeron_s.cmx stdcompat__moreLabels_s.cmx stdcompat__lexing_s.cmx stdcompat__pervasives.cmx stdcompat__option_s.cmx stdcompat__result_s.cmx stdcompat__bool_s.cmx stdcompat__fun_s.cmx stdcompat__printf_s.cmx stdcompat__printexc_s.cmx stdcompat__format_s.cmx stdcompat__atomic_s.cmx stdcompat__in_channel_s.cmx stdcompat__out_channel_s.cmx stdcompat__random_s.cmx stdcompat__unit_s.cmx stdcompat__stdlib_s.cmx stdcompat__arg.cmx stdcompat__lazy.cmx stdcompat__char.cmx stdcompat__option.cmx stdcompat__buffer.cmx stdcompat__sys.cmx stdcompat__bytes.cmx stdcompat__bytesLabels.cmx stdcompat__string.cmx stdcompat__stringLabels.cmx stdcompat__filename.cmx stdcompat__listLabels.cmx stdcompat__stack.cmx stdcompat__set.cmx stdcompat__map.cmx stdcompat__weak.cmx stdcompat__random.cmx stdcompat__digest.cmx stdcompat__nativeint.cmx stdcompat__int.cmx stdcompat__int64.cmx stdcompat__int32.cmx stdcompat__array.cmx stdcompat__arrayLabels.cmx stdcompat__float.cmx stdcompat__queue.cmx stdcompat__ephemeron.cmx stdcompat__moreLabels.cmx stdcompat__lexing.cmx stdcompat__printexc.cmx stdcompat__result.cmx stdcompat__bool.cmx stdcompat__fun.cmx stdcompat__format.cmx stdcompat__printf.cmx stdcompat__atomic.cmx stdcompat__in_channel.cmx stdcompat__out_channel.cmx stdcompat__unit.cmx stdcompat__stdlib.cmx stdcompat.cmx -cclib "-L. -lstdcompat__stubs" -o stdcompat.cmxa
+ocamlfind ocamlopt -package seq -package uchar -bin-annot -no-alias-deps -shared stdcompat__native.cmx stdcompat__init.cmx stdcompat__root.cmx stdcompat__either_s.cmx stdcompat__either.cmx stdcompat__seq_s.cmx stdcompat__seq.cmx stdcompat__tools.cmx stdcompat__pervasives_s.cmx stdcompat__arg_s.cmx stdcompat__lazy_s.cmx stdcompat__char_s.cmx stdcompat__uchar_s.cmx stdcompat__uchar.cmx stdcompat__buffer_s.cmx stdcompat__string_s.cmx stdcompat__stringLabels_s.cmx stdcompat__bytes_s.cmx stdcompat__bytesLabels_s.cmx stdcompat__list_s.cmx stdcompat__listLabels_s.cmx stdcompat__stack_s.cmx stdcompat__list.cmx stdcompat__hashtbl_ext.cmx stdcompat__hashtbl_s.cmx stdcompat__set_s.cmx stdcompat__map_s.cmx stdcompat__weak_s.cmx stdcompat__sys_s.cmx stdcompat__digest_s.cmx stdcompat__nativeint_s.cmx stdcompat__int_s.cmx stdcompat__int64_s.cmx stdcompat__int32_s.cmx stdcompat__filename_s.cmx stdcompat__array_s.cmx stdcompat__arrayLabels_s.cmx stdcompat__float_s.cmx stdcompat__queue_s.cmx stdcompat__hashtbl.cmx stdcompat__ephemeron_s.cmx stdcompat__moreLabels_s.cmx stdcompat__lexing_s.cmx stdcompat__pervasives.cmx stdcompat__option_s.cmx stdcompat__result_s.cmx stdcompat__bool_s.cmx stdcompat__fun_s.cmx stdcompat__printf_s.cmx stdcompat__printexc_s.cmx stdcompat__format_s.cmx stdcompat__atomic_s.cmx stdcompat__in_channel_s.cmx stdcompat__out_channel_s.cmx stdcompat__random_s.cmx stdcompat__unit_s.cmx stdcompat__stdlib_s.cmx stdcompat__arg.cmx stdcompat__lazy.cmx stdcompat__char.cmx stdcompat__option.cmx stdcompat__buffer.cmx stdcompat__sys.cmx stdcompat__bytes.cmx stdcompat__bytesLabels.cmx stdcompat__string.cmx stdcompat__stringLabels.cmx stdcompat__filename.cmx stdcompat__listLabels.cmx stdcompat__stack.cmx stdcompat__set.cmx stdcompat__map.cmx stdcompat__weak.cmx stdcompat__random.cmx stdcompat__digest.cmx stdcompat__nativeint.cmx stdcompat__int.cmx stdcompat__int64.cmx stdcompat__int32.cmx stdcompat__array.cmx stdcompat__arrayLabels.cmx stdcompat__float.cmx stdcompat__queue.cmx stdcompat__ephemeron.cmx stdcompat__moreLabels.cmx stdcompat__lexing.cmx stdcompat__printexc.cmx stdcompat__result.cmx stdcompat__bool.cmx stdcompat__fun.cmx stdcompat__format.cmx stdcompat__printf.cmx stdcompat__atomic.cmx stdcompat__in_channel.cmx stdcompat__out_channel.cmx stdcompat__unit.cmx stdcompat__stdlib.cmx stdcompat.cmx -cclib "-L. -lstdcompat__stubs" -o stdcompat.cmxs
+make[3]: Leaving directory '/home/okabe/coccinelle/bundles/stdcompat/stdcompat-current'
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/stdcompat/stdcompat-current'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/stdcompat'
+OCAMLOPT  commons/common.ml
+OCAMLC    commons/ograph_simple.mli
+OCAMLOPT  commons/ograph_simple.ml
+OCAMLC    commons/ograph_extended.mli
+OCAMLOPT  commons/ograph_extended.ml
+OCAMLOPT  -o commons/commons.cmxa
+OCAMLC    globals/config.mli
+OCAMLOPT  globals/config.ml
+OCAMLC    globals/flag.mli
+OCAMLOPT  globals/flag.ml
+OCAMLC    globals/iteration.mli
+OCAMLOPT  globals/iteration.ml
+make -C bundles/pcre all
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/pcre'
+make depend-rec
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/pcre'
+/usr/bin/ocamldep  -I pcre-ocaml/src pcre-ocaml/src/pcre.mli  pcre-ocaml/src/pcre.ml     >.depend
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/pcre'
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/pcre'
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pcre-ocaml/src  -cclib -lpcre -c pcre-ocaml/src/pcre.mli -o pcre-ocaml/src/pcre.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pcre-ocaml/src  -cclib -lpcre  -c pcre-ocaml/src/pcre.ml -o pcre-ocaml/src/pcre.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pcre-ocaml/src  -cclib -lpcre -custom -cclib -lpcre_stubs -cclib -lpcre -a pcre-ocaml/src/pcre.cmo -o pcre-ocaml/src/pcre.cma
+cp pcre-ocaml/src/pcre.cma pcre.cma
+cp pcre-ocaml/src/pcre.cmi pcre.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pcre-ocaml/src  -cclib -lpcre -ccopt -fPIC pcre-ocaml/src/pcre_stubs.c -o pcre-ocaml/src/pcre_stubs.o
+mv pcre_stubs.o pcre-ocaml/src/pcre_stubs.o
+/usr/bin/ocamlmklib -linkall -ldopt -lpcre -o pcre-ocaml/src/pcre_stubs pcre-ocaml/src/pcre_stubs.o
+cp pcre-ocaml/src/libpcre_stubs.a libpcre_stubs.a
+cp pcre-ocaml/src/dllpcre_stubs.so dllpcre_stubs.so
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/pcre'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/pcre'
+make -C bundles/pcre all.opt
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/pcre'
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/pcre'
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pcre-ocaml/src  -cclib -lpcre  -c pcre-ocaml/src/pcre.ml -o pcre-ocaml/src/pcre.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pcre-ocaml/src  -cclib -lpcre -cclib -lpcre_stubs -cclib -lpcre -a pcre-ocaml/src/pcre.cmx -o pcre-ocaml/src/pcre.cmxa
+cp pcre-ocaml/src/pcre.cmxa pcre.cmxa
+cp pcre-ocaml/src/pcre.cmx pcre.cmx
+cp pcre-ocaml/src/pcre.a pcre.a
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/pcre'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/pcre'
+OCAMLC    globals/regexp_pcre.mli
+OCAMLOPT  globals/regexp_pcre.ml
+OCAMLC    globals/regexp.mli
+OCAMLOPT  globals/regexp.ml
+OCAMLOPT  -o globals/globals.cmxa
+OCAMLC    parsing_cocci/flag_parsing_cocci.mli
+OCAMLOPT  parsing_cocci/flag_parsing_cocci.ml
+OCAMLC    parsing_cocci/ast_cocci.mli
+OCAMLOPT  parsing_cocci/ast_cocci.ml
+OCAMLC    parsing_cocci/ast0_cocci.mli
+OCAMLOPT  parsing_cocci/ast0_cocci.ml
+OCAMLC    parsing_cocci/pretty_print_cocci.mli
+OCAMLOPT  parsing_cocci/pretty_print_cocci.ml
+OCAMLC    parsing_cocci/visitor_ast0_types.mli
+OCAMLOPT  parsing_cocci/visitor_ast0_types.ml
+OCAMLC    parsing_cocci/visitor_ast.mli
+OCAMLOPT  parsing_cocci/visitor_ast.ml
+OCAMLC    parsing_cocci/visitor_ast0.mli
+OCAMLOPT  parsing_cocci/visitor_ast0.ml
+OCAMLC    parsing_cocci/ast0toast.mli
+OCAMLOPT  parsing_cocci/ast0toast.ml
+OCAMLC    parsing_cocci/unparse_ast0.mli
+OCAMLOPT  parsing_cocci/unparse_ast0.ml
+OCAMLC    parsing_cocci/unify_ast.mli
+OCAMLOPT  parsing_cocci/unify_ast.ml
+OCAMLC    parsing_cocci/compute_lines.mli
+OCAMLOPT  parsing_cocci/compute_lines.ml
+OCAMLC    parsing_cocci/iso_pattern.mli
+OCAMLOPT  parsing_cocci/iso_pattern.ml
+OCAMLC    parsing_cocci/comm_assoc.mli
+OCAMLOPT  parsing_cocci/comm_assoc.ml
+OCAMLC    parsing_cocci/iso_compile.mli
+OCAMLOPT  parsing_cocci/iso_compile.ml
+OCAMLC    parsing_cocci/single_statement.mli
+OCAMLOPT  parsing_cocci/single_statement.ml
+OCAMLC    parsing_cocci/simple_assignments.mli
+OCAMLOPT  parsing_cocci/simple_assignments.ml
+OCAMLC    parsing_cocci/get_metas.mli
+OCAMLOPT  parsing_cocci/get_metas.ml
+OCAMLC    parsing_cocci/stmtlist.mli
+OCAMLOPT  parsing_cocci/stmtlist.ml
+OCAMLC    parsing_cocci/top_level.mli
+OCAMLOPT  parsing_cocci/top_level.ml
+OCAMLC    parsing_cocci/type_infer.mli
+OCAMLOPT  parsing_cocci/type_infer.ml
+OCAMLC    parsing_cocci/test_exps.mli
+OCAMLOPT  parsing_cocci/test_exps.ml
+OCAMLC    parsing_cocci/unitary_ast0.mli
+OCAMLOPT  parsing_cocci/unitary_ast0.ml
+OCAMLC    parsing_cocci/arity.mli
+OCAMLOPT  parsing_cocci/arity.ml
+OCAMLC    parsing_cocci/index.mli
+OCAMLOPT  parsing_cocci/index.ml
+OCAMLC    parsing_cocci/context_neg.mli
+OCAMLOPT  parsing_cocci/context_neg.ml
+OCAMLC    parsing_cocci/adjust_pragmas.mli
+OCAMLOPT  parsing_cocci/adjust_pragmas.ml
+OCAMLC    parsing_cocci/insert_plus.mli
+OCAMLOPT  parsing_cocci/insert_plus.ml
+OCAMLC    parsing_cocci/function_prototypes.mli
+OCAMLOPT  parsing_cocci/function_prototypes.ml
+OCAMLC    parsing_cocci/semantic_cocci.mli
+OCAMLOPT  parsing_cocci/semantic_cocci.ml
+OCAMLC    parsing_cocci/data.mli
+OCAMLOPT  parsing_cocci/data.ml
+OCAMLC    parsing_cocci/free_vars.mli
+OCAMLOPT  parsing_cocci/free_vars.ml
+OCAMLC    parsing_cocci/check_meta.mli
+OCAMLOPT  parsing_cocci/check_meta.ml
+OCAMLC    parsing_cocci/safe_for_multi_decls.mli
+OCAMLOPT  parsing_cocci/safe_for_multi_decls.ml
+OCAMLC    parsing_cocci/parse_printf.mli
+OCAMLOPT  parsing_cocci/parse_printf.ml
+OCAMLC    parsing_cocci/parse_aux.mli
+OCAMLOPT  parsing_cocci/parse_aux.ml
+OCAMLC    parsing_cocci/cleanup_rules.mli
+OCAMLOPT  parsing_cocci/cleanup_rules.ml
+OCAMLC    parsing_cocci/disjdistr.mli
+OCAMLOPT  parsing_cocci/disjdistr.ml
+MENHIR    parsing_cocci/parser_cocci_menhir.mly
+OCAMLDEP  parsing_cocci/parser_cocci_menhir.ml
+OCAMLDEP  parsing_cocci/parser_cocci_menhir.mli
+OCAMLC    parsing_cocci/parser_cocci_menhir.mli
+OCAMLOPT  parsing_cocci/parser_cocci_menhir.ml
+OCAMLC    parsing_cocci/lexer_cocci.mli
+OCAMLOPT  parsing_cocci/lexer_cocci.ml
+OCAMLC    parsing_cocci/lexer_cli.mli
+OCAMLOPT  parsing_cocci/lexer_cli.ml
+OCAMLC    parsing_cocci/lexer_script.mli
+OCAMLOPT  parsing_cocci/lexer_script.ml
+OCAMLC    parsing_cocci/cocci_grep.mli
+OCAMLOPT  parsing_cocci/cocci_grep.ml
+OCAMLC    parsing_cocci/dpll.mli
+OCAMLOPT  parsing_cocci/dpll.ml
+OCAMLC    parsing_cocci/get_constants2.mli
+OCAMLOPT  parsing_cocci/get_constants2.ml
+OCAMLC    parsing_cocci/id_utils.mli
+OCAMLOPT  parsing_cocci/id_utils.ml
+OCAMLC    parsing_cocci/git_grep.mli
+OCAMLOPT  parsing_cocci/git_grep.ml
+OCAMLC    parsing_cocci/patch_diff.mli
+OCAMLOPT  parsing_cocci/patch_diff.ml
+OCAMLC    parsing_cocci/adjacency.mli
+OCAMLOPT  parsing_cocci/adjacency.ml
+OCAMLC    parsing_cocci/commas_on_lists.mli
+OCAMLOPT  parsing_cocci/commas_on_lists.ml
+OCAMLC    parsing_cocci/re_constraints.mli
+OCAMLOPT  parsing_cocci/re_constraints.ml
+OCAMLC    parsing_cocci/parse_cocci.mli
+OCAMLOPT  parsing_cocci/parse_cocci.ml
+OCAMLC    parsing_cocci/command_line.mli
+OCAMLOPT  parsing_cocci/command_line.ml
+OCAMLC    parsing_cocci/cocci_args.mli
+OCAMLOPT  parsing_cocci/cocci_args.ml
+OCAMLOPT  -o parsing_cocci/parsing_cocci.cmxa
+OCAMLC    parsing_c/token_annot.mli
+OCAMLOPT  parsing_c/token_annot.ml
+OCAMLC    parsing_c/flag_parsing_c.mli
+OCAMLOPT  parsing_c/flag_parsing_c.ml
+OCAMLC    parsing_c/parsing_stat.mli
+OCAMLOPT  parsing_c/parsing_stat.ml
+OCAMLC    parsing_c/token_c.mli
+OCAMLOPT  parsing_c/token_c.ml
+OCAMLC    parsing_c/ast_c.mli
+OCAMLOPT  parsing_c/ast_c.ml
+OCAMLC    parsing_c/includes.mli
+make -C bundles/parmap all
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/parmap'
+make depend-rec
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/parmap'
+/usr/bin/ocamldep  -I parmap/src parmap/src/bytearray.mli parmap/src/parmap_utils.mli parmap/src/parmap.mli  parmap/src/parmap_compat.ml parmap/src/bytearray.ml parmap/src/parmap_utils.ml parmap/src/setcore.ml parmap/src/parmap.ml     >.depend
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/parmap'
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/parmap'
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/parmap_compat.ml -o parmap/src/parmap_compat.cmx
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/parmap_compat.ml -o parmap/src/parmap_compat.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -c parmap/src/bytearray.mli -o parmap/src/bytearray.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/bytearray.ml -o parmap/src/bytearray.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -c parmap/src/parmap_utils.mli -o parmap/src/parmap_utils.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/parmap_utils.ml -o parmap/src/parmap_utils.cmo
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/setcore.ml -o parmap/src/setcore.cmx
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/setcore.ml -o parmap/src/setcore.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -c parmap/src/parmap.mli -o parmap/src/parmap.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/parmap.ml -o parmap/src/parmap.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -custom -cclib -lparmap_stubs  -a parmap/src/parmap_compat.cmo parmap/src/bytearray.cmo parmap/src/parmap_utils.cmo parmap/src/setcore.cmo parmap/src/parmap.cmo -o parmap/src/parmap.cma
+cp parmap/src/parmap.cma parmap.cma
+cp parmap/src/parmap_compat.cmi parmap_compat.cmi
+cp parmap/src/bytearray.cmi bytearray.cmi
+cp parmap/src/parmap_utils.cmi parmap_utils.cmi
+cp parmap/src/setcore.cmi setcore.cmi
+cp parmap/src/parmap.cmi parmap.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -ccopt -D_GNU_SOURCE -ccopt -fPIC parmap/src/bytearray_stubs.c -o parmap/src/bytearray_stubs.o
+mv bytearray_stubs.o parmap/src/bytearray_stubs.o
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -ccopt -D_GNU_SOURCE -ccopt -fPIC parmap/src/setcore_stubs.c -o parmap/src/setcore_stubs.o
+mv setcore_stubs.o parmap/src/setcore_stubs.o
+/usr/bin/ocamlmklib -linkall  -o parmap/src/parmap_stubs parmap/src/bytearray_stubs.o parmap/src/setcore_stubs.o
+cp parmap/src/libparmap_stubs.a libparmap_stubs.a
+cp parmap/src/dllparmap_stubs.so dllparmap_stubs.so
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/parmap'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/parmap'
+make -C bundles/parmap all.opt
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/parmap'
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/parmap'
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/bytearray.ml -o parmap/src/bytearray.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/parmap_utils.ml -o parmap/src/parmap_utils.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix   -c parmap/src/parmap.ml -o parmap/src/parmap.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I parmap/src -I +unix  -cclib -lparmap_stubs  -a parmap/src/parmap_compat.cmx parmap/src/bytearray.cmx parmap/src/parmap_utils.cmx parmap/src/setcore.cmx parmap/src/parmap.cmx -o parmap/src/parmap.cmxa
+cp parmap/src/parmap.cmxa parmap.cmxa
+cp parmap/src/parmap_compat.cmx parmap_compat.cmx
+cp parmap/src/bytearray.cmx bytearray.cmx
+cp parmap/src/parmap_utils.cmx parmap_utils.cmx
+cp parmap/src/setcore.cmx setcore.cmx
+cp parmap/src/parmap.cmx parmap.cmx
+cp parmap/src/parmap.a parmap.a
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/parmap'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/parmap'
+OCAMLOPT  parsing_c/includes.ml
+OCAMLC    parsing_c/control_flow_c.mli
+OCAMLOPT  parsing_c/control_flow_c.ml
+OCAMLC    parsing_c/visitor_c.mli
+OCAMLOPT  parsing_c/visitor_c.ml
+OCAMLC    parsing_c/lib_parsing_c.mli
+OCAMLOPT  parsing_c/lib_parsing_c.ml
+OCAMLC    parsing_c/includes_cache.mli
+OCAMLOPT  parsing_c/includes_cache.ml
+OCAMLC    parsing_c/pretty_print_c.mli
+OCAMLOPT  parsing_c/pretty_print_c.ml
+OCAMLC    parsing_c/control_flow_c_build.mli
+OCAMLOPT  parsing_c/control_flow_c_build.ml
+OCAMLC    parsing_c/semantic_c.mli
+OCAMLOPT  parsing_c/semantic_c.ml
+OCAMLC    parsing_c/lexer_parser.mli
+OCAMLOPT  parsing_c/lexer_parser.ml
+OCAMLC    parsing_c/parser_c.mli
+OCAMLOPT  parsing_c/parser_c.ml
+OCAMLC    parsing_c/lexer_c.mli
+OCAMLOPT  parsing_c/lexer_c.ml
+OCAMLC    parsing_c/parse_string_c.mli
+OCAMLOPT  parsing_c/parse_string_c.ml
+OCAMLC    parsing_c/token_helpers.mli
+OCAMLOPT  parsing_c/token_helpers.ml
+OCAMLC    parsing_c/token_views_c.mli
+OCAMLOPT  parsing_c/token_views_c.ml
+OCAMLC    parsing_c/cpp_token_c.mli
+OCAMLOPT  parsing_c/cpp_token_c.ml
+OCAMLC    parsing_c/parsing_hacks.mli
+OCAMLOPT  parsing_c/parsing_hacks.ml
+OCAMLC    parsing_c/cpp_analysis_c.mli
+OCAMLOPT  parsing_c/cpp_analysis_c.ml
+OCAMLC    parsing_c/unparse_cocci.mli
+OCAMLOPT  parsing_c/unparse_cocci.ml
+OCAMLC    parsing_c/parsing_recovery_c.mli
+OCAMLOPT  parsing_c/parsing_recovery_c.ml
+OCAMLC    parsing_c/parsing_consistency_c.mli
+OCAMLOPT  parsing_c/parsing_consistency_c.ml
+OCAMLC    parsing_c/danger.mli
+OCAMLOPT  parsing_c/danger.ml
+OCAMLC    parsing_c/parse_c.mli
+OCAMLOPT  parsing_c/parse_c.ml
+OCAMLC    parsing_c/unparse_c.mli
+OCAMLOPT  parsing_c/unparse_c.ml
+OCAMLC    parsing_c/unparse_hrule.mli
+OCAMLOPT  parsing_c/unparse_hrule.ml
+OCAMLC    parsing_c/type_c.mli
+OCAMLOPT  parsing_c/type_c.ml
+OCAMLC    parsing_c/cpp_ast_c.mli
+OCAMLOPT  parsing_c/cpp_ast_c.ml
+OCAMLC    parsing_c/type_annoter_c.mli
+OCAMLOPT  parsing_c/type_annoter_c.ml
+OCAMLC    parsing_c/comment_annotater_c.mli
+OCAMLOPT  parsing_c/comment_annotater_c.ml
+OCAMLC    parsing_c/compare_c.mli
+OCAMLOPT  parsing_c/compare_c.ml
+OCAMLC    parsing_c/test_parsing_c.mli
+OCAMLOPT  parsing_c/test_parsing_c.ml
+OCAMLOPT  -o parsing_c/parsing_c.cmxa
+OCAMLC    ctl/flag_ctl.mli
+OCAMLOPT  ctl/flag_ctl.ml
+OCAMLC    ctl/ast_ctl.mli
+OCAMLOPT  ctl/ast_ctl.ml
+OCAMLC    ctl/pretty_print_ctl.mli
+OCAMLOPT  ctl/pretty_print_ctl.ml
+OCAMLC    ctl/ctl_engine.mli
+OCAMLOPT  ctl/ctl_engine.ml
+OCAMLC    ctl/wrapper_ctl.mli
+OCAMLOPT  ctl/wrapper_ctl.ml
+OCAMLOPT  -o ctl/ctl.cmxa
+OCAMLC    ocaml/externalanalysis.mli
+OCAMLOPT  ocaml/externalanalysis.ml
+OCAMLC    ocaml/exposed_modules.mli
+OCAMLOPT  ocaml/exposed_modules.ml
+OCAMLC    ocaml/coccilib.mli
+OCAMLOPT  ocaml/coccilib.ml
+OCAMLC    ocaml/ocamlcocci_aux.mli
+OCAMLOPT  ocaml/ocamlcocci_aux.ml
+OCAMLC    ocaml/yes_prepare_ocamlcocci.mli
+OCAMLOPT  ocaml/yes_prepare_ocamlcocci.ml
+OCAMLC    ocaml/prepare_ocamlcocci.mli
+OCAMLOPT  ocaml/prepare_ocamlcocci.ml
+OCAMLC    ocaml/run_ocamlcocci.mli
+OCAMLOPT  ocaml/run_ocamlcocci.ml
+OCAMLOPT  -o ocaml/ocaml.cmxa
+OCAMLC    python/pycocci_aux.mli
+OCAMLOPT  python/pycocci_aux.ml
+make -C bundles/pyml all
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/pyml'
+make depend-rec
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/pyml'
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pyutils.mli -o pyml-current/pyutils.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pyutils.ml -o pyml-current/pyutils.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/generate.ml -o pyml-current/generate.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -I /home/okabe/.opam/default/lib/result result.cma stdcompat.cma unix.cma pyml-current/pyutils.cmo pyml-current/generate.cmo -o pyml-current/generate
+cd pyml-current && LD_LIBRARY_PATH=/home/okabe/coccinelle/bundles/stdcompat: ./generate
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pytypes.mli -o pyml-current/pytypes.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pyml_arch.mli -o pyml-current/pyml_arch.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -i pyml-current/pywrappers.ml >pyml-current/pywrappers.mli
+/usr/bin/ocamldep  -I pyml-current pyml-current/pyml_arch.mli pyml-current/pyutils.mli pyml-current/pytypes.mli pyml-current/pywrappers.mli pyml-current/py.mli pyml-current/pycaml.mli  pyml-current/pyutils.ml pyml-current/pytypes.ml pyml-current/pywrappers.ml pyml-current/py.ml pyml-current/pycaml.ml    pyml-current/pywrappers.ml pyml-current/pywrappers.mli >.depend
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/pyml'
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/pyml'
+gcc -E pyml-current/pyml_arch.ml.c | sed '/^#/d' >pyml-current/pyml_arch.ml
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pyml_arch.ml -o pyml-current/pyml_arch.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pytypes.ml -o pyml-current/pytypes.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pywrappers.mli -o pyml-current/pywrappers.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pywrappers.ml -o pyml-current/pywrappers.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/py.mli -o pyml-current/py.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/py.ml -o pyml-current/py.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pycaml.mli -o pyml-current/pycaml.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pycaml.ml -o pyml-current/pycaml.cmo
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -custom -cclib -lpyml_stubs  -a pyml-current/pyml_arch.cmo pyml-current/pyutils.cmo pyml-current/pytypes.cmo pyml-current/pywrappers.cmo pyml-current/py.cmo pyml-current/pycaml.cmo -o pyml-current/pyml.cma
+cp pyml-current/pyml.cma pyml.cma
+cp pyml-current/pywrappers.cmi pywrappers.cmi
+cp pyml-current/py.cmi py.cmi
+cp pyml-current/pycaml.cmi pycaml.cmi
+/usr/bin/ocamlc.opt -unsafe -w @42 -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -ccopt -I/home/okabe/coccinelle/bundles/stdcompat -ccopt -fPIC pyml-current/pyml_stubs.c -o pyml-current/pyml_stubs.o
+mv pyml_stubs.o pyml-current/pyml_stubs.o
+/usr/bin/ocamlmklib -linkall  -o pyml-current/pyml_stubs pyml-current/pyml_stubs.o
+cp pyml-current/libpyml_stubs.a libpyml_stubs.a
+cp pyml-current/dllpyml_stubs.so dllpyml_stubs.so
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/pyml'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/pyml'
+make -C bundles/pyml all.opt
+make[1]: Entering directory '/home/okabe/coccinelle/bundles/pyml'
+make[2]: Entering directory '/home/okabe/coccinelle/bundles/pyml'
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -c pyml-current/pyml_arch.ml -o pyml-current/pyml_arch.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pyutils.ml -o pyml-current/pyutils.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pytypes.ml -o pyml-current/pytypes.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pywrappers.ml -o pyml-current/pywrappers.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/py.ml -o pyml-current/py.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix   -c pyml-current/pycaml.ml -o pyml-current/pycaml.cmx
+/usr/bin/ocamlopt.opt  -I /home/okabe/coccinelle/bundles/stdcompat -I pyml-current -I +unix  -cclib -lpyml_stubs  -a pyml-current/pyml_arch.cmx pyml-current/pyutils.cmx pyml-current/pytypes.cmx pyml-current/pywrappers.cmx pyml-current/py.cmx pyml-current/pycaml.cmx -o pyml-current/pyml.cmxa
+cp pyml-current/pyml.cmxa pyml.cmxa
+cp pyml-current/pywrappers.cmx pywrappers.cmx
+cp pyml-current/py.cmx py.cmx
+cp pyml-current/pycaml.cmx pycaml.cmx
+cp pyml-current/pyml.a pyml.a
+make[2]: Leaving directory '/home/okabe/coccinelle/bundles/pyml'
+make[1]: Leaving directory '/home/okabe/coccinelle/bundles/pyml'
+OCAMLC    python/yes_pycocci.mli
+OCAMLOPT  python/yes_pycocci.ml
+OCAMLC    python/pycocci.mli
+OCAMLOPT  python/pycocci.ml
+OCAMLOPT  -o python/python.cmxa
+OCAMLC    engine/flag_matcher.mli
+OCAMLOPT  engine/flag_matcher.ml
+OCAMLC    engine/lib_engine.mli
+OCAMLOPT  engine/lib_engine.ml
+OCAMLC    engine/pretty_print_engine.mli
+OCAMLOPT  engine/pretty_print_engine.ml
+OCAMLC    engine/check_exhaustive_pattern.mli
+OCAMLOPT  engine/check_exhaustive_pattern.ml
+OCAMLC    engine/check_reachability.mli
+OCAMLOPT  engine/check_reachability.ml
+OCAMLC    engine/c_vs_c.mli
+OCAMLOPT  engine/c_vs_c.ml
+OCAMLC    engine/isomorphisms_c_c.mli
+OCAMLOPT  engine/isomorphisms_c_c.ml
+OCAMLC    engine/cocci_vs_c.mli
+OCAMLOPT  engine/cocci_vs_c.ml
+OCAMLC    engine/pattern_c.mli
+OCAMLOPT  engine/pattern_c.ml
+OCAMLC    engine/transformation_c.mli
+OCAMLOPT  engine/transformation_c.ml
+OCAMLC    engine/asttomember.mli
+OCAMLOPT  engine/asttomember.ml
+OCAMLC    engine/asttoctl2.mli
+OCAMLOPT  engine/asttoctl2.ml
+OCAMLC    engine/ctltotex.mli
+OCAMLOPT  engine/ctltotex.ml
+OCAMLC    engine/postprocess_transinfo.mli
+OCAMLOPT  engine/postprocess_transinfo.ml
+OCAMLC    engine/ctlcocci_integration.mli
+OCAMLOPT  engine/ctlcocci_integration.ml
+OCAMLOPT  -o engine/engine.cmxa
+OCAMLC    popl09/ast_popl.mli
+OCAMLOPT  popl09/ast_popl.ml
+OCAMLC    popl09/asttopopl.mli
+OCAMLOPT  popl09/asttopopl.ml
+OCAMLC    popl09/insert_quantifiers.mli
+OCAMLOPT  popl09/insert_quantifiers.ml
+OCAMLC    popl09/pretty_print_popl.mli
+OCAMLOPT  popl09/pretty_print_popl.ml
+OCAMLC    popl09/flag_popl.mli
+OCAMLOPT  popl09/flag_popl.ml
+OCAMLC    popl09/popltoctl.mli
+OCAMLOPT  popl09/popltoctl.ml
+OCAMLC    popl09/popl.mli
+OCAMLOPT  popl09/popl.ml
+OCAMLOPT  -o popl09/popl09.cmxa
+OCAMLC    extra/classic_patch.mli
+OCAMLOPT  extra/classic_patch.ml
+OCAMLC    extra/kbuild.mli
+OCAMLOPT  extra/kbuild.ml
+OCAMLC    extra/maintainers.mli
+OCAMLOPT  extra/maintainers.ml
+OCAMLOPT  -o extra/extra.cmxa
+OCAMLC    flag_cocci.mli
+OCAMLOPT  flag_cocci.ml
+OCAMLC    cocci.mli
+OCAMLOPT  cocci.ml
+OCAMLC    testing.mli
+OCAMLOPT  testing.ml
+OCAMLC    read_options.mli
+OCAMLOPT  read_options.ml
+OCAMLC    enter.mli
+OCAMLOPT  enter.ml
+OCAMLC    main.mli
+OCAMLOPT  main.ml
+OCAMLOPT  -o spatch.opt
+OCAMLC    tools/spgen/source/globals.mli
+OCAMLOPT  tools/spgen/source/globals.ml
+OCAMLC    tools/spgen/source/ast_tostring.mli
+OCAMLOPT  tools/spgen/source/ast_tostring.ml
+OCAMLC    tools/spgen/source/detect_patch.mli
+OCAMLOPT  tools/spgen/source/detect_patch.ml
+OCAMLC    tools/spgen/source/meta_variable.mli
+OCAMLOPT  tools/spgen/source/meta_variable.ml
+OCAMLC    tools/spgen/source/snapshot.mli
+OCAMLOPT  tools/spgen/source/snapshot.ml
+OCAMLC    tools/spgen/source/user_input.mli
+OCAMLOPT  tools/spgen/source/user_input.ml
+OCAMLC    tools/spgen/source/position_generator.mli
+OCAMLOPT  tools/spgen/source/position_generator.ml
+OCAMLC    tools/spgen/source/disj_generator.mli
+OCAMLOPT  tools/spgen/source/disj_generator.ml
+OCAMLC    tools/spgen/source/rule_body.mli
+OCAMLOPT  tools/spgen/source/rule_body.ml
+OCAMLC    tools/spgen/source/rule_header.mli
+OCAMLOPT  tools/spgen/source/rule_header.ml
+OCAMLC    tools/spgen/source/context_rule.mli
+OCAMLOPT  tools/spgen/source/context_rule.ml
+OCAMLC    tools/spgen/source/script_rule.mli
+OCAMLOPT  tools/spgen/source/script_rule.ml
+OCAMLC    tools/spgen/source/file_transform.mli
+OCAMLOPT  tools/spgen/source/file_transform.ml
+OCAMLC    tools/spgen/source/spgen_interactive.mli
+OCAMLOPT  tools/spgen/source/spgen_interactive.ml
+OCAMLC    tools/spgen/source/spgen_lexer.mli
+OCAMLOPT  tools/spgen/source/spgen_lexer.ml
+OCAMLC    tools/spgen/source/spgen_config.mli
+OCAMLOPT  tools/spgen/source/spgen_config.ml
+OCAMLC    tools/spgen/source/spgen.mli
+OCAMLOPT  tools/spgen/source/spgen.ml
+OCAMLC    tools/spgen/source/spgen_test.mli
+OCAMLOPT  tools/spgen/source/spgen_test.ml
+OCAMLC    tools/spgen/source/main.mli
+OCAMLOPT  tools/spgen/source/main.ml
+OCAMLOPT  -o tools/spgen/source/spgen.opt
+cp parsing_c/token_c.cmi ocaml/token_c.cmi
+cp parsing_c/ast_c.cmi ocaml/ast_c.cmi
+cp parsing_c/parse_c.cmi ocaml/parse_c.cmi
+cp parsing_c/parser_c.cmi ocaml/parser_c.cmi
+cp parsing_c/lexer_c.cmi ocaml/lexer_c.cmi
+cp parsing_c/pretty_print_c.cmi ocaml/pretty_print_c.cmi
+cp parsing_c/lib_parsing_c.cmi ocaml/lib_parsing_c.cmi
+cp parsing_c/visitor_c.cmi ocaml/visitor_c.cmi
+cp globals/regexp.cmi ocaml/regexp.cmi
+cp globals/config.cmi ocaml/config.cmi
+cp globals/flag.cmi ocaml/flag.cmi
+cp parsing_c/flag_parsing_c.cmi ocaml/flag_parsing_c.cmi
+cp globals/iteration.cmi ocaml/iteration.cmi
+cp commons/commands.cmi ocaml/commands.cmi
+cp commons/common.cmi ocaml/common.cmi
+cp parsing_cocci/ast_cocci.cmi ocaml/ast_cocci.cmi
+cp parsing_cocci/ast0_cocci.cmi ocaml/ast0_cocci.cmi
+cp commons/ocamlextra/dumper.cmi ocaml/dumper.cmi
+OCAMLC    parsing_c/token_c.ml
+cp parsing_c/token_c.cmo ocaml/token_c.cmo
+OCAMLC    parsing_c/ast_c.ml
+cp parsing_c/ast_c.cmo ocaml/ast_c.cmo
+OCAMLC    parsing_c/parse_c.ml
+cp parsing_c/parse_c.cmo ocaml/parse_c.cmo
+OCAMLC    parsing_c/parser_c.ml
+cp parsing_c/parser_c.cmo ocaml/parser_c.cmo
+OCAMLC    parsing_c/lexer_c.ml
+cp parsing_c/lexer_c.cmo ocaml/lexer_c.cmo
+OCAMLC    parsing_c/pretty_print_c.ml
+cp parsing_c/pretty_print_c.cmo ocaml/pretty_print_c.cmo
+OCAMLC    parsing_c/lib_parsing_c.ml
+cp parsing_c/lib_parsing_c.cmo ocaml/lib_parsing_c.cmo
+OCAMLC    parsing_c/visitor_c.ml
+cp parsing_c/visitor_c.cmo ocaml/visitor_c.cmo
+OCAMLC    globals/regexp.ml
+cp globals/regexp.cmo ocaml/regexp.cmo
+OCAMLC    globals/config.ml
+cp globals/config.cmo ocaml/config.cmo
+OCAMLC    globals/flag.ml
+cp globals/flag.cmo ocaml/flag.cmo
+OCAMLC    parsing_c/flag_parsing_c.ml
+cp parsing_c/flag_parsing_c.cmo ocaml/flag_parsing_c.cmo
+OCAMLC    globals/iteration.ml
+cp globals/iteration.cmo ocaml/iteration.cmo
+OCAMLC    commons/commands.ml
+cp commons/commands.cmo ocaml/commands.cmo
+OCAMLC    commons/common.ml
+cp commons/common.cmo ocaml/common.cmo
+OCAMLC    parsing_cocci/ast_cocci.ml
+cp parsing_cocci/ast_cocci.cmo ocaml/ast_cocci.cmo
+OCAMLC    parsing_cocci/ast0_cocci.ml
+cp parsing_cocci/ast0_cocci.cmo ocaml/ast0_cocci.cmo
+OCAMLC    commons/ocamlextra/dumper.ml
+cp commons/ocamlextra/dumper.cmo ocaml/dumper.cmo
+cp parsing_c/token_c.cmx ocaml/token_c.cmx
+cp parsing_c/ast_c.cmx ocaml/ast_c.cmx
+cp parsing_c/parse_c.cmx ocaml/parse_c.cmx
+cp parsing_c/parser_c.cmx ocaml/parser_c.cmx
+cp parsing_c/lexer_c.cmx ocaml/lexer_c.cmx
+cp parsing_c/pretty_print_c.cmx ocaml/pretty_print_c.cmx
+cp parsing_c/lib_parsing_c.cmx ocaml/lib_parsing_c.cmx
+cp parsing_c/visitor_c.cmx ocaml/visitor_c.cmx
+cp globals/regexp.cmx ocaml/regexp.cmx
+cp globals/config.cmx ocaml/config.cmx
+cp globals/flag.cmx ocaml/flag.cmx
+cp parsing_c/flag_parsing_c.cmx ocaml/flag_parsing_c.cmx
+cp globals/iteration.cmx ocaml/iteration.cmx
+cp commons/commands.cmx ocaml/commands.cmx
+cp commons/common.cmx ocaml/common.cmx
+cp parsing_cocci/ast_cocci.cmx ocaml/ast_cocci.cmx
+cp parsing_cocci/ast0_cocci.cmx ocaml/ast0_cocci.cmx
+cp commons/ocamlextra/dumper.cmx ocaml/dumper.cmx
+cp /home/okabe/coccinelle/bundles/parmap/parmap.cmi ocaml/parmap.cmi
+if test -f /home/okabe/coccinelle/bundles/parmap/parmap.cmx; then \
+	cp /home/okabe/coccinelle/bundles/parmap/parmap.cmx ocaml/parmap.cmx; \
+fi

@@ -562,6 +562,10 @@ and typeC ty =
       mcode print_string typeof;
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
+  | Ast.QualifiedType(ty,coloncolon,name) ->
+      print_option fullType ty;
+      mcode print_string coloncolon;
+      ident name
   | Ast.TypeName(name) -> mcode print_string name; print_string " "
   | Ast.AutoType(auto) -> mcode print_string auto; print_string " "
   | Ast.MetaType(name,_,_,_) ->

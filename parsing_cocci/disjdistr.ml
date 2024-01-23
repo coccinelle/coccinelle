@@ -135,6 +135,9 @@ and disjtypeC bty =
       disjmult2 (disjty tn) (disjdots disjexp args)
 	(fun tn args ->
 	  Ast.rewrap bty (Ast.TemplateType(tn,lp,args,rp)))
+  | Ast.QualifiedType(ty,coloncolon,name) ->
+      disjmult2 (disjoption disjty ty) (disjident name)
+      (function ty -> function name -> Ast.rewrap bty (Ast.QualifiedType(ty,coloncolon,name)))
   | Ast.TypeName(_) | Ast.AutoType(_) | Ast.MetaType(_,_,_,_) -> [bty]
 
 and anndisjdecl d =

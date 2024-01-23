@@ -557,6 +557,12 @@ and top_typeC tgt opt_allowed typ =
       let ty = typeC arity ty in
       let rp = mcode rp in
       make_typeC typ tgt arity (Ast0.TypeOfType(tf,lp,ty,rp))
+  | Ast0.QualifiedType(ty,coloncolon,name) ->
+      let arity = all_same opt_allowed tgt (mcode2line coloncolon) [mcode2arity coloncolon] in
+      let ty = get_option (typeC arity) ty in
+      let coloncolon = mcode coloncolon in
+      let name = ident false arity name in
+      make_typeC typ tgt arity (Ast0.QualifiedType(ty,coloncolon,name))
   | Ast0.TypeName(name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in

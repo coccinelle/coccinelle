@@ -974,6 +974,11 @@ let match_maker checks_needed context_required whencode_allowed =
 	       conjunct_many_bindings
 		 [check_mcode lp1 lp; check_mcode rp1 rp;
 		   check_mcode tf1 tf; match_typeC tya tyb]
+          | (Ast0.QualifiedType(Some tya,coloncolon1,namea),
+             Ast0.QualifiedType(Some tyb,coloncolon,nameb)) ->
+               conjunct_many_bindings
+                 [check_mcode coloncolon1 coloncolon;
+                   match_typeC tya tyb; match_ident namea nameb]
 	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb

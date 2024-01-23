@@ -532,6 +532,9 @@ and vk_type = fun bigf t ->
     (* don't go in _typ *)
     | TypeName (name,_typ) ->
         vk_name bigf name
+    | QualifiedType(t,name) ->
+        do_option (vk_type bigf) t;
+        vk_name bigf name
     | FieldType (t, _, _) -> typef t
 
     | ParenType t -> typef t

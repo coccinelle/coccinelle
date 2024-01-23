@@ -377,6 +377,7 @@ and base_typeC =
   | TypeOfType      of string mcode (* sizeof *) * string mcode (* ( *) *
                        fullType * string mcode (* ) *)
   | TypeName        of string mcode (* pad: should be 'of ident' ? *)
+  | QualifiedType   of fullType option * string mcode (* :: *) * ident
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
   | TemplateType    of fullType (* name *) * string mcode (* < *) *
         expression dots * string mcode (* > *)
