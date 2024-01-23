@@ -102,14 +102,7 @@ let al_ii    x = Visitor_c.vk_ii_s (strip_info_visitor()) x
 
 let strip_inh_info_visitor _ =  (* for inherited metavariables *)
   let drop_test_lv ty bigf =
-    let (ty,_) = !ty in
-    let ty =
-      match ty with
-	None -> None
-      |	Some (ty,_) ->
-	  let ty = Visitor_c.vk_type_s bigf ty in
-	  Some (ty,Ast_c.NotLocalVar) in
-    ref ((ty,Ast_c.NotTest) : Ast_c.exp_info) in
+    ref ((None,Ast_c.NotTest) : Ast_c.exp_info) in
 
   { Visitor_c.default_visitor_c_s with
     Visitor_c.kinfo_s =
@@ -120,7 +113,8 @@ let strip_inh_info_visitor _ =  (* for inherited metavariables *)
 
     Visitor_c.kexpr_s = (fun (k,bigf) e ->
       let (e', ty), ii' = k e in
-      (e', drop_test_lv ty bigf), ii' (* keep type, but process it - jll *)
+      (* drop type, which may be affected by a previous change *)
+      (e', drop_test_lv ty bigf), ii'
     );
 
 (*
