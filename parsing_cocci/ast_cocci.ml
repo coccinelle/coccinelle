@@ -1237,6 +1237,8 @@ let rec string_of_typeC ty =
 	String.concat ", "
 	  (List.map string_of_expression (unwrap args)) in
       Printf.sprintf "%s<%s>" (string_of_fullType name) args
+  | QualifiedType(Some ty,_,name) -> string_of_fullType ty ^ "::" ^ string_of_ident name ^ " "
+  | QualifiedType(None,_,name) -> "::" ^ string_of_ident name ^ " "
   | AutoType _ -> "auto"
   | MetaType (m, _, _, _) -> string_of_meta_name (unwrap_mcode m) ^ " "
 and string_of_fullType ty =
