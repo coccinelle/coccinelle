@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 202, also unused: {9,15,111,118,161}
+(* current max is 202, also unused: {9,15,161}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -62,6 +62,7 @@ let expression e =
   | Ast0.ArrayAccess(exp1,lb,exp2,rb) -> [27]
   | Ast0.RecordAccess(exp,pt,field) -> [28]
   | Ast0.RecordPtAccess(exp,ar,field) -> [29]
+  | Ast0.QualifiedAccess(ty,coloncolon,field) -> [111]
   | Ast0.Cast(lp,ty,rp,exp) -> [30]
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
@@ -109,6 +110,7 @@ let typeC t =
   | Ast0.TypeOfExpr(tf,lp,exp,rp) -> [135]
   | Ast0.TypeOfType(tf,lp,ty,rp) -> [136]
   | Ast0.TypeName(name) -> [52]
+  | Ast0.QualifiedType(ty,coloncolon,name) -> [118]
   | Ast0.TemplateType(_,_,_,_) -> [195]
   | Ast0.AutoType _ -> [192]
   | Ast0.MetaType(name,_,_) -> [53]

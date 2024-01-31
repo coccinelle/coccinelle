@@ -124,6 +124,7 @@ let dumb_astcocci_expr = function
  | A.ArrayAccess (ea1, _, ea2, _) -> ()
  | A.RecordAccess (ea, _, ida) -> ()
  | A.RecordPtAccess (ea, _, ida) -> ()
+ | A.QualifiedAccess (typa,_,ida) -> ()
  | A.Cast (_, typa, _, ea) -> ()
  | A.SizeOfExpr (_, ea) -> ()
  | A.SizeOfType (_, _, typa, _) -> ()
@@ -164,6 +165,7 @@ let dumb_astcocci_type = function
  | A.TypeOfExpr(tf, lp, exp, rp) -> ()
  | A.TypeOfType(tf, lp, ty, rp) -> ()
  | A.TypeName sa -> ()
+ | A.QualifiedType(ty,_,ida) -> ()
  | A.AutoType _ -> ()
  | A.TemplateType _ -> ()
 

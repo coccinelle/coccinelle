@@ -305,6 +305,7 @@ let token2c (tok,_) add_clt =
   | PC.TOpAssign(_,clt) -> add_clt "=op" clt
   | PC.TDot(clt) -> add_clt "." clt
   | PC.TComma(clt) -> add_clt "," clt
+  | PC.TColonColon(clt) -> add_clt "::" clt
   | PC.TPtVirg(s,clt) -> add_clt s clt
 
   | PC.EOF -> "eof"
@@ -508,7 +509,7 @@ let get_clt (tok,_) =
 
   | PC.TPtrOp(clt)
 
-  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) | PC.TColonColon(clt)
   | PC.TPArob(clt) | PC.TPtVirg(_,clt)
 
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TAnd0(_,clt) | PC.TCPar0(_,clt)
@@ -767,6 +768,7 @@ let update_clt (tok,x) clt =
   | PC.TOpAssign(s,_) -> (PC.TOpAssign(s,clt),x)
   | PC.TDot(_) -> (PC.TDot(clt),x)
   | PC.TComma(_) -> (PC.TComma(clt),x)
+  | PC.TColonColon(_) -> (PC.TColonColon(clt),x)
   | PC.TPArob(_) -> (PC.TPArob(clt),x)
   | PC.TPtVirg(s,_) -> (PC.TPtVirg(s,clt),x)
 
@@ -1038,7 +1040,7 @@ let split_token ((tok,_) as t) =
 
   | PC.TPtrOp(clt) -> split t clt
 
-  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt)
+  | PC.TEq(clt) | PC.TOpAssign(_,clt) | PC.TDot(clt) | PC.TComma(clt) | PC.TColonColon(clt)
   | PC.TPtVirg(_,clt) -> split t clt
 
   | PC.EOF | PC.TInvalid | PC.TUnderscore -> ([t],[t])

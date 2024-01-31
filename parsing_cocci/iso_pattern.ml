@@ -2015,6 +2015,7 @@ let instantiate bindings mv_bindings model =
                       | Ast0.TemplateType _
                       | Ast0.TypeOfExpr(_, _, _, _)
                       | Ast0.TypeName _
+                      | Ast0.QualifiedType(_,_,_)
                       | Ast0.AutoType _ -> ty
                           in
 		    Some(List.map renamer types) in

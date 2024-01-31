@@ -135,6 +135,12 @@ let rec is_completed_and_simplified ty =
           (* recurse cos what if it's an alias of an alias ? *)
           is_completed_and_simplified t
       )
+  | QualifiedType (typ, _name) ->
+      (match typ with
+      | None -> false
+      | Some t ->
+              is_completed_and_simplified t
+      )
 
   | FieldType (t, _, _) ->
       is_completed_and_simplified t

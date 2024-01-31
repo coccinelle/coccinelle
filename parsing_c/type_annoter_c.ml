@@ -448,6 +448,7 @@ let rec type_unfold_one_step ty env =
               Ast_c.rewrap_typeC ty)
             (fun () -> ty)
       )
+  | QualifiedType(typ, _name) -> ty
 
   | FieldType (t, _, _) -> type_unfold_one_step t env
 
@@ -555,7 +556,8 @@ let rec typedef_fix ty env =
                    Ast_c.rewrap_typeC ty)
                 (fun () -> ty)
               ))
-
+    | QualifiedType (typ,_name) ->
+    QualifiedType (typ,_name) +> Ast_c.rewrap_typeC ty
     | FieldType (t, a, b) ->
 	FieldType (typedef_fix t env, a, b) +> Ast_c.rewrap_typeC ty
 
@@ -1097,8 +1099,10 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
           )
         )
 
-
-
+    | QualifiedAccess(Some ty,_) ->
+        k expr;
+        make_info_def_fix(Lib.al_type ty)
+    | QualifiedAccess(None,_) -> Type_c.noTypeHere
     (* -------------------------------------------------- *)
     | Cast (t, e) ->
         k expr;

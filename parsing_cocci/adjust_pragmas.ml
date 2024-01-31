@@ -196,6 +196,12 @@ let rec left_ty t =
       call_right left_mcode tf t (function tf -> Ast0.TypeOfType(tf,lb,ty,rb))
   | Ast0.TypeName(name) ->
       call_right left_mcode name t (function name -> Ast0.TypeName(name))
+  | Ast0.QualifiedType(Some ty,coloncolon,name) ->
+      call_right left_ty ty t
+    (function ty -> Ast0.QualifiedType(Some ty,coloncolon,name))
+  | Ast0.QualifiedType(None,coloncolon,name) ->
+      call_right left_mcode coloncolon t
+    (function coloncolon -> Ast0.QualifiedType(None,coloncolon,name))
   | Ast0.TemplateType(name,lp,args,rp) ->
       call_right left_ty name t (function name ->
           Ast0.TemplateType(name,lp,args,rp))

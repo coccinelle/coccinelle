@@ -1595,6 +1595,23 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
    * todo?: do some iso-by-absence on cast ?
    *    by trying | ea, B.Case (typb, eb) -> match_e_e ea eb ?
    *)
+  | A.QualifiedAccess(Some typa,ia1,ida), ((B.QualifiedAccess(Some typb,idb), typ), ii) ->
+      let (ib1) = tuple_of_list1 ii in
+      fullType typa typb >>= (fun typa typb ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      ident_cpp DontKnow ida idb >>= (fun ida idb ->
+        return (
+            ((A.QualifiedAccess (Some typa, ia1, ida))) +> wa,
+            ((B.QualifiedAccess (Some typb, idb),typ), [ib1])
+        ))))
+  | A.QualifiedAccess(None,ia1,ida), ((B.QualifiedAccess(None,idb), typ), ii) ->
+      let (ib1) = tuple_of_list1 ii in
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      ident_cpp DontKnow ida idb >>= (fun ida idb ->
+        return (
+            ((A.QualifiedAccess (None,ia1, ida))) +> wa,
+            ((B.QualifiedAccess (None,idb), typ), [ib1])
+        )))
 
   | A.Cast (ia1, typa, ia2, ea),
     ((B.Cast (typb, eb), typ),ii) ->
@@ -1812,7 +1829,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      (((B.Cast ( _, _)|B.ParenExpr _|B.SizeOfType _|B.SizeOfExpr _|
      B.Constructor (_, _)|
      B.RecordPtAccess (_, _)|
-     B.RecordAccess (_, _)|B.ArrayAccess (_, _)|
+     B.RecordAccess (_, _)|B.ArrayAccess (_, _)| B.QualifiedAccess(_,_) |
      B.Binary (_, _, _)|B.Unary (_, _)|
      B.Infix (_, _)|B.Postfix (_, _)|
      B.Assignment (_, _, _)|B.CondExpr (_, _, _)|
@@ -4297,6 +4314,24 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                -> raise Todo
         )
 
+    | A.QualifiedType(Some typa,ia1,ida), (B.QualifiedType(Some typb,idb), ii) ->
+        let ib1 = tuple_of_list1 ii in
+        fullType typa typb >>= (fun typa typb ->
+        tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        ident_cpp DontKnow ida idb >>= (fun ida idb ->
+          return (
+              ((A.QualifiedType (Some typa, ia1, ida))) +> A.rewrap ta,
+              (B.QualifiedType (Some typb, idb), [ib1])
+        ))))
+    | A.QualifiedType(None,ia1,ida), (B.QualifiedType(None, idb), ii) ->
+        let (ib1) = tuple_of_list1 ii in
+        tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        ident_cpp DontKnow ida idb >>= (fun ida idb ->
+            return (
+              ((A.QualifiedType (None,ia1, ida))) +> A.rewrap ta,
+              (B.QualifiedType (None, idb),[ib1])
+        )))
+
     | A.TemplateType(nma,laba,argsa,raba),
 	(B.TemplateType(nmb,argsb), [labb;rabb]) ->
 	  fullType nma nmb >>= (fun nma nmb ->
@@ -4387,7 +4422,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           ))
 
     | _,
-     ((B.AutoType | B.TemplateType _ | B.TypeName _ | B.StructUnionName (_, _) |
+     ((B.AutoType | B.TemplateType _ | B.TypeName _ | B.QualifiedType (_, _) | B.StructUnionName (_, _) |
       B.EnumName _ | B.StructUnion (_, _, _, _, _) |
       B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
       B.Pointer _ | B.BaseType _),
@@ -4916,7 +4951,7 @@ and compatible_typeC a (b,local) =
        B.EnumName (_, _ )|B.StructUnion (_, _, _, _, _)|B.EnumDef (_, _, _)|
        B.StructUnionName (_, _)|
        B.FunctionType _|
-       B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _|
+       B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _| B.QualifiedType(_, _) |
        B.BaseType _
       ),
       _))) -> fail

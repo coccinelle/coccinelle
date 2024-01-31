@@ -1661,8 +1661,9 @@ and vk_type_s = fun bigf t ->
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
       | EnumName  (s, key) -> EnumName  (s, key)
       | TypeName (name, typ) -> TypeName (vk_name_s bigf name, typ)
+      | QualifiedType(typ,fields) ->
+          QualifiedType (map_option(vk_type_s bigf) typ,fields)
       | FieldType (t, a, b) -> FieldType (typef t, a, b)
-
       | ParenType t -> ParenType (typef t)
       | TypeOfExpr e -> TypeOfExpr (vk_expr_s bigf e)
       | TypeOfType t -> TypeOfType (typef t)

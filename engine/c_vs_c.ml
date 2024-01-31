@@ -141,7 +141,6 @@ and typeC tya tyb =
       let ea = get_option Lib_parsing_c.al_expr ea in
       let eb = get_option Lib_parsing_c.al_expr eb in
       ea = eb >&&> fullType a b >>= (fun x -> return (Array (ea, x), iix))
-
   | FunctionType (returna, paramsa), FunctionType (returnb, paramsb) ->
       let (tsa, (ba,iihas3dotsa)) = paramsa in
       let (tsb, (bb,iihas3dotsb)) = paramsb in
@@ -323,6 +322,7 @@ and typeC tya tyb =
   | (EnumName _, _) | (_, EnumName _)
   | (StructUnionName _, _) | (_, StructUnionName _)
   | (TypeName _, _) | (_, TypeName _)
+  | (QualifiedType _, _)
   | (FieldType _, _) | (_, FieldType _)
   | (ParenType _, _) | (_, ParenType _)
   | (TypeOfExpr _, _) | (_, TypeOfExpr _)

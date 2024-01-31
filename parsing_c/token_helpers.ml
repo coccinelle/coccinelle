@@ -308,6 +308,7 @@ let info_of_tok = function
   | TKRParam  (s, i) -> i
   | Tconstructorname  (s, i) -> i
   | TypedefIdent  (s, i) -> i
+  | TypedefIdentQual (s, i) -> i
 
   | TInt  (s, i) -> i
 
@@ -377,6 +378,7 @@ let info_of_tok = function
   | TCCro                (i) -> i
   | TOCroCro             (i) -> i
   | TDot                 (i) -> i
+  | TColonColon          (i) -> i
   | TComma               (i) -> i
   | TNoComma             (i) -> i
   | TPtrOp               (i) -> i
@@ -505,6 +507,7 @@ let visitor_info_of_tok f = function
   | TKRParam(s, i)         -> TKRParam(s, f i)
   | Tconstructorname(s, i) -> Tconstructorname  (s, f i)
   | TypedefIdent  (s, i)   -> TypedefIdent  (s, f i)
+  | TypedefIdentQual (s, i) -> TypedefIdentQual (s, f  i)
   | TInt  (s, i)           -> TInt  (s, f i)
 
   | TDefine (i1) -> TDefine(f i1)
@@ -580,6 +583,7 @@ let visitor_info_of_tok f = function
   | TCCro                (i) -> TCCro                (f i)
   | TOCroCro             (i) -> TOCroCro             (f i)
   | TDot                 (i) -> TDot                 (f i)
+  | TColonColon          (i) -> TColonColon          (f i)
   | TComma               (i) -> TComma               (f i)
   | TNoComma             (i) -> TNoComma             (f i)
   | TPtrOp               (i) -> TPtrOp               (f i)
@@ -719,6 +723,7 @@ let string_of_token = function
   | TKRParam _ -> "TKRParam"
   | Tconstructorname _ -> "Tconstructorname"
   | TypedefIdent _ -> "TypedefIdent"
+  | TypedefIdentQual _ -> "TypedefIdentQual"
   | TOPar _ -> "TOPar"
   | TCPar _ -> "TCPar"
   | TOBrace _ -> "TOBrace"
@@ -728,6 +733,7 @@ let string_of_token = function
   | TOCroCro _ -> "TOCroCro"
   | TDot _ -> "TDot"
   | TComma _ -> "TComma"
+  | TColonColon _ -> "TColonColon"
   | TNoComma _ -> "TNoComma"
   | TPtrOp _ -> "TPtrOp"
   | TInc _ -> "TInc"

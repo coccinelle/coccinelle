@@ -532,6 +532,11 @@ let combiner bind option_default mcode donothing
 	  let lrp = string_mcode rp in
 	  multibind [ltf; llp; lty; lrp]
       | Ast.TypeName(name) -> string_mcode name
+      | Ast.QualifiedType(ty,coloncolon,name) ->
+      let lty = get_option fullType ty in
+      let lcoloncolon = string_mcode coloncolon in
+      let lname = ident name in
+      multibind [lty;lcoloncolon;lname]
       | Ast.AutoType(auto) -> string_mcode auto
       | Ast.TemplateType(name,lab,args,rab) ->
 	  let lname = fullType name in

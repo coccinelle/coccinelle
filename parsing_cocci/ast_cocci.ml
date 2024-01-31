@@ -1336,6 +1336,9 @@ and typeC_map tr ty =
           None -> ty
         | Some f -> rewrap ty (f name)
       end
+  | QualifiedType(Some ty',coloncolon,ident) ->
+      rewrap ty (QualifiedType (Some(fullType_map tr ty'), coloncolon, ident))
+  | QualifiedType(None,coloncolon,ident) -> ty
   | AutoType _ -> ty
   | MetaType (name, cstr, keep, inherited) ->
       begin
@@ -1388,6 +1391,7 @@ and typeC_fold tr ty v =
   | TypeOfType(_,_,t,_) -> fullType_fold tr t v
   | TemplateType (_,_,_,_) -> v
   | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
+  | QualifiedType(ty',_,ident) -> v
   | AutoType _ -> v
   | MetaType (name, cstr, keep, inherited) ->
       Common.default v (fun f -> f name cstr keep inherited v) tr.metaType
