@@ -234,6 +234,13 @@ let rec type_pos t snp
   | Ast0.TypeName(nm) ->
       let constructor ~mc = Ast0.TypeName(mc) in
       mcode_wrap ~mc:nm ~constructor snp
+  | Ast0.QualifiedType(Some typec,coloncolon,name) ->
+      let _ = type_pos typec snp in
+      let constructor ~id = Ast0.QualifiedType(Some typec, coloncolon, id) in
+      id_wrap ~id:name ~constructor snp
+  | Ast0.QualifiedType(None,coloncolon,name) ->
+      let constructor ~id = Ast0.QualifiedType(None, coloncolon, id) in
+      id_wrap ~id:name ~constructor snp
   | Ast0.AutoType(auto) ->
       let constructor ~mc = Ast0.AutoType(mc) in
       mcode_wrap ~mc:auto ~constructor snp
@@ -362,6 +369,13 @@ let rec expression_pos exp snp
       let c ~exp ~id = Ast0.RecordPtAccess(exp, arrow, id) in
       let alt() = id_wrap ~id ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~id) ~alt snp
+  | Ast0.QualifiedAccess(Some typec, coloncolon, id) ->
+      let _ = type_pos typec snp in
+      let constructor ~id = Ast0.QualifiedAccess(Some typec, coloncolon, id) in
+      id_wrap ~id:id ~constructor snp
+  | Ast0.QualifiedAccess(None, coloncolon, id) ->
+      let constructor ~id = Ast0.QualifiedAccess(None, coloncolon, id) in
+      id_wrap ~id:id ~constructor snp
   | Ast0.Cast(lp, typec, rp, exp) ->
       let _ = type_pos typec snp in (* sanity check for disj *)
       let c ~exp ~mc = Ast0.Cast(lp, typec, mc, exp) in
