@@ -1830,14 +1830,6 @@ and statement stmt top after quantified minus_quantified
 		let fvs = get_unquantified quantified stmt_fvs in
 		quantify guard fvs (make_match ast) in
 	  match Ast.unwrap ast with
-	    Ast.Break(brk,semi) ->
-	      let term = term ast in
-	      (match (llabel,slabel) with
-		(_,Some(lv,used)) -> (* use switch label if there is one *)
-		  ctl_and term (bclabel_pred_maker slabel)
-	      | _ -> ctl_and term (bclabel_pred_maker llabel))
-	  | Ast.Continue(brk,semi) ->
-	      ctl_and (term ast) (bclabel_pred_maker llabel)
 	  | Ast.Return((_,info,retmc,pos),(_,_,semmc,spos)) ->
 	      (* discard pattern that comes after return *)
 	      let normal_res = make_seq_after (term ast) after in
@@ -1915,6 +1907,16 @@ and statement stmt top after quantified minus_quantified
 	      (* should try to deal with the dots_bef_aft problem elsewhere,
 		 but don't have the courage... *)
 	      let term = term ast in
+	      let term =
+		match Ast.unwrap ast with
+		  Ast.Break(brk,semi) ->
+		    (match (llabel,slabel) with
+		      (_,Some(lv,used)) -> (* use switch label if there is one *)
+			ctl_and term (bclabel_pred_maker slabel)
+		    | _ -> ctl_and term (bclabel_pred_maker llabel))
+		| Ast.Continue(brk,semi) ->
+		    ctl_and term (bclabel_pred_maker llabel)
+		| _ -> term in
 	      let term =
 		if guard
 		then term
