@@ -1027,7 +1027,8 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	    if is_fn_ar
 	    then t
 	    else
-              let fake = Ast_c.fakeAfterInfo() in
+	      (* NoPos because a type generated on the fly *)
+	      let fake = Ast_c.fakeAfterInfoNoPos() in
               let fake = Ast_c.rewrap_str "*" fake in
               Ast_c.mk_ty (Pointer ((inherited e) t)) [fake] in
           make_info_def_fix ft

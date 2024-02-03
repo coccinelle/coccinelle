@@ -1010,8 +1010,20 @@ let no_virt_pos _ =
   nonpos := !nonpos - 1;
   ({str="";charpos=0;line=0;column=0;file=""},!nonpos)
 
+(* for types only *)
+let no_virt_pos_no_pos _ =
+  ({str="";charpos=0;line=0;column=0;file=""},0)
+
 let fakeInfo befaft =
   { pinfo = FakeTok ("",no_virt_pos(),befaft);
+    cocci_tag = ref emptyAnnot;
+    annots_tag = Token_annot.empty;
+    comments_tag = ref emptyComments;
+    danger = ref NoDanger;
+  }
+
+let fakeInfoNoPos befaft =
+  { pinfo = FakeTok ("",no_virt_pos_no_pos(),befaft);
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
@@ -1022,6 +1034,7 @@ let fakeInfo befaft =
 after fake tokens don't move, stay at the end of something. *)
 let fakeBeforeInfo _ = fakeInfo Before
 let fakeAfterInfo _  = fakeInfo After
+let fakeAfterInfoNoPos _  = fakeInfoNoPos After
 
 let noii = []
 let noattr = []

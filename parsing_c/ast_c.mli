@@ -430,6 +430,7 @@ val reset_nonpos : unit -> unit
 val fakeInfo : befaft -> info
 val fakeBeforeInfo : unit -> info
 val fakeAfterInfo : unit -> info
+val fakeAfterInfoNoPos : unit -> info
 val noii : 'a list
 val noattr : 'a list
 val noi_content : (Common.filename * program) option
