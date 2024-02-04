@@ -2044,6 +2044,8 @@ let lookahead2 ~pass next before =
       t
 
   (* c++ hacks *)
+  | (TIdent(s,i1)|TypedefIdent(s,i1)) :: TColonColon _ :: _,_ ->
+      TypedefIdentQual (s,i1)
   | TIdent(s,i1)::_,TEq _ :: _ :: Ttypename _ :: _
       when !Flag.c_plus_plus <> Flag.Off ->
 	msg_typedef s i1 40; LP.add_typedef_root s i1;

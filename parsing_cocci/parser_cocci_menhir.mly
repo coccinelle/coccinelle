@@ -259,14 +259,14 @@ let inline_id aft = function
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl TFunProto TNew Tdelete
 %token <string * Data.clt> TTypeof
 %token <Data.clt> Tdecimal Texec
-%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId
+%token <string * Data.clt> TIdent TTypeId TDeclarerId TIteratorId TSymId TQualId
 %token <Ast_cocci.added_string * Data.clt> TDirective
 %token <Data.clt> TAttr_
 
 %token <Parse_aux.midinfo>       TMetaId
 %token <Parse_aux.cstrinfo>        TMetaFunc TMetaLocalFunc
 %token <Parse_aux.cstrinfo>        TMetaIterator TMetaDeclarer
-%token <Parse_aux.assignOpinfo>  TMetaAssignOp TMetaType
+%token <Parse_aux.assignOpinfo>  TMetaAssignOp TMetaType TMetaQual
 %token <Parse_aux.binaryOpinfo>  TMetaBinaryOp TMetaPragmaInfo
 %token <Parse_aux.expinfo>       TMetaErr
 %token <Parse_aux.cstrinfo>          TMetaParam TMetaStm
@@ -2630,7 +2630,7 @@ qual_expr(r,pe):
      { Ast0_cocci.wrap(Ast0_cocci.QualifiedAccess (None, Parse_aux.clt2mcode "::" $1, $2)) }
      
 qual_type:
-   typedef_ident          {$1}
+   qual_ident          {$1}
  | qual_type TColonColon type_ident
      { Ast0_cocci.wrap(Ast0_cocci.QualifiedType (Some $1, Parse_aux.clt2mcode "::" $2, $3)) }
  | TColonColon type_ident
@@ -3124,6 +3124,13 @@ typedef_ident:
          { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode $1)) }
      | TMeta { tmeta_to_type $1 }
      | TMetaType
+         { let (nm,cstr,pure,clt) = $1 in
+	 Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) }
+
+qual_ident:
+       TQualId
+         { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode $1)) }
+     | TMetaQual
          { let (nm,cstr,pure,clt) = $1 in
 	 Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) }
 

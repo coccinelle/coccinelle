@@ -177,6 +177,7 @@ let token2c (tok,_) add_clt =
   | PC.TGoto(clt) -> add_clt "goto" clt
   | PC.TIdent(s,clt) -> add_clt (prkey "ident-" s) clt
   | PC.TTypeId(s,clt) -> add_clt (prkey "typename-" s) clt
+  | PC.TQualId(s,clt) -> add_clt (prkey "qualid-" s) clt
   | PC.TDeclarerId(s,clt) -> add_clt (prkey "declarername-" s) clt
   | PC.TIteratorId(s,clt) -> add_clt (prkey "iteratorname-" s) clt
   | PC.TSymId(s,clt)      -> add_clt (prkey "symbol-" s) clt
@@ -243,6 +244,7 @@ let token2c (tok,_) add_clt =
   | PC.TMetaGlobalIdExp(_,_,_,_,clt) -> add_clt "globalidexpmeta" clt
   | PC.TMetaExpList(_,_,_,_,clt) -> add_clt "explistmeta" clt
   | PC.TMetaId(nm,_,_,_,clt)    -> "idmeta-"^add_clt (snd nm) clt
+  | PC.TMetaQual(nm,_,_,clt)    -> "qualmeta-" ^ add_clt (snd nm) clt
   | PC.TMetaType(nm,_,_,clt)    -> "typemeta-" ^ add_clt (snd nm) clt
   | PC.TMetaInit(_,_,_,clt)    -> add_clt "initmeta" clt
   | PC.TMetaInitList(_,_,_,_,clt)    -> add_clt "initlistmeta" clt
@@ -370,7 +372,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
-  | PC.TSymId(_,clt)
+  | PC.TSymId(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
@@ -393,7 +395,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
-  | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
+  | PC.TMetaQual(_,_,_,clt) | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
   | PC.TMetaInitList(_,_,_,_,clt)
   | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,_,clt)
@@ -464,7 +466,7 @@ let get_clt (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
-  | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
+  | PC.TQualId(_,clt) | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
@@ -487,7 +489,7 @@ let get_clt (tok,_) =
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaId(_,_,_,_,clt)
-  | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
+  | PC.TMetaQual(_,_,_,clt) | PC.TMetaType(_,_,_,clt) | PC.TMetaInit(_,_,_,clt)
   | PC.TMetaInitList(_,_,_,_,clt)
   | PC.TMetaStm(_,_,_,clt) | PC.TMetaStmList(_,_,_,_,clt)
   | PC.TMetaDParamList(_,_,_,_,clt)
@@ -667,6 +669,7 @@ let update_clt (tok,x) clt =
   | PC.TContinue(_) -> (PC.TContinue(clt),x)
   | PC.TGoto(_) -> (PC.TGoto(clt),x)
   | PC.TIdent(s,_) -> (PC.TIdent(s,clt),x)
+  | PC.TQualId(s,_) -> (PC.TQualId(s,clt),x)
   | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
   | PC.TDeclarerId(s,_) -> (PC.TDeclarerId(s,clt),x)
   | PC.TIteratorId(s,_) -> (PC.TIteratorId(s,clt),x)
@@ -715,6 +718,7 @@ let update_clt (tok,x) clt =
   | PC.TMetaAssignOp(a,b,c,_)    -> (PC.TMetaAssignOp(a,b,c,clt),x)
   | PC.TMetaBinaryOp(a,b,c,_)    -> (PC.TMetaBinaryOp(a,b,c,clt),x)
   | PC.TMetaPragmaInfo(a,b,c,_)    -> (PC.TMetaPragmaInfo(a,b,c,clt),x)
+  | PC.TMetaQual(a,b,c,_)    -> (PC.TMetaQual(a,b,c,clt),x)
   | PC.TMetaType(a,b,c,_)    -> (PC.TMetaType(a,b,c,clt),x)
   | PC.TMetaInit(a,b,c,_)    -> (PC.TMetaInit(a,b,c,clt),x)
   | PC.TMetaInitList(a,b,c,d,_) -> (PC.TMetaInitList(a,b,c,d,clt),x)
@@ -984,7 +988,7 @@ let split_token ((tok,_) as t) =
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
-  | PC.TIdent(_,clt)
+  | PC.TIdent(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
   | PC.TMeta(_,_,_,clt) | PC.TMetaConst(_,_,_,_,clt)
@@ -994,7 +998,7 @@ let split_token ((tok,_) as t) =
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
   | PC.TMetaParam(_,_,_,clt) | PC.TMetaParamList(_,_,_,_,clt)
-  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaQual(_,_,_,clt) | PC.TMetaType(_,_,_,clt)
   | PC.TMetaInit(_,_,_,clt) | PC.TMetaInitList(_,_,_,_,clt)
   | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
   | PC.TMetaFieldList(_,_,_,_,clt)
@@ -1344,6 +1348,7 @@ let detect_types in_meta_decls l =
     | (PC.TMetaPragmaInfo(_,_,_,_),_)
     | (PC.TMetaGlobalIdExp(_,_,_,_,_),_)
     | (PC.TMetaExpList(_,_,_,_,_),_)
+    | (PC.TMetaQual(_,_,_,_),_)
     | (PC.TMetaType(_,_,_,_),_)
     | (PC.TMetaInit(_,_,_,_),_)
     | (PC.TMetaInitList(_,_,_,_,_),_)
@@ -1438,7 +1443,7 @@ let token2line (tok,_) =
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt)
   | PC.TSizeof (clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
-  | PC.TIdent(_,clt)
+  | PC.TIdent(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 
@@ -1460,7 +1465,7 @@ let token2line (tok,_) =
   | PC.TMetaLocalIdExp(_,_,_,_,clt) | PC.TMetaGlobalIdExp(_,_,_,_,clt)
   | PC.TMetaAssignOp(_,_,_,clt) | PC.TMetaBinaryOp(_,_,_,clt) | PC.TMetaPragmaInfo(_,_,_,clt)
   | PC.TMetaExpList(_,_,_,_,clt)
-  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaType(_,_,_,clt)
+  | PC.TMetaId(_,_,_,_,clt) | PC.TMetaQual(_,_,_,clt) | PC.TMetaType(_,_,_,clt)
   | PC.TMetaInit(_,_,_,clt) | PC.TMetaInitList(_,_,_,_,clt)
   | PC.TMetaDecl(_,_,_,clt) | PC.TMetaField(_,_,_,clt)
   | PC.TMetaFieldList(_,_,_,_,clt)
@@ -2074,6 +2079,16 @@ let convert_templates_cocci toks =
     | _ -> failwith "unexpected token" in
   let rec loop stack pdepth tdepth = function
     [] -> ()
+    (* qualifiers *)
+  | (((PC.TIdent(s,clt)|PC.TTypeId(s,clt)),q),cell) ::
+    ((((PC.TColonColon(_),_),_)::_) as xs) ->
+      cell := (PC.TQualId(s,clt),q);
+      loop stack pdepth tdepth xs
+  | ((PC.TMetaType(name,cstr,pure,clt),q),cell) ::
+    ((((PC.TColonColon(_),_),_)::_) as xs) ->
+      cell := (PC.TMetaQual(name,cstr,pure,clt),q);
+      loop stack pdepth tdepth xs
+    (* templates *)
   | ((PC.TOPar(clt),q),cell) :: xs
   | ((PC.TOCro(_,clt),q),cell) :: xs
   | ((PC.TOBrace(_,clt),q),cell) :: xs ->
