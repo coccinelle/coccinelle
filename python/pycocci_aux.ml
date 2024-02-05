@@ -9,14 +9,7 @@ open Common
 
 let caller s f a =
   let str = ref ([] : string list) in
-  let pr_elem info =
-    let comments_before =
-      List.map Token_c.str_of_token (Ast_c.get_comments_before info) in
-    let comments_after =
-      List.map Token_c.str_of_token (Ast_c.get_comments_after info) in
-    (* constructed backwards *)
-    str := (List.rev comments_after) @ (Ast_c.str_of_info info) ::
-	   (List.rev comments_before) @ !str in
+  let pr_elem info = str := (Ast_c.str_of_info info) :: !str in
   let pr_sp _ = () in
   f ~pr_elem ~pr_space:pr_sp a;
   String.concat s (List.rev !str)
