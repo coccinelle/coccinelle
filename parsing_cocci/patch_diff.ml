@@ -28,11 +28,22 @@ let fetch_file_name line =
   decompose_list s
 
 let fetch_line_number line  =
-  let pat_line_num = Str.regexp "\\(\\+\\([0-9]+,[0-9]+\\)\\)" in
-  let s = Str.full_split pat_line_num line in
-  let fa = List.hd (decompose_list s) in
-  let (b, e) = extract_numbers fa in
-  (b, (b + e)) (*start of diff, end of diff *)
+  match String.split_on_char ' ' line with
+    "@@"::min::pls::"@@"::_ ->
+	let check_plus s =
+	  if String.get s 0 = '+'
+	  then int_of_string(String.sub s 1 (String.length s - 1))
+	  else failwith ("missing + in @@ line: "^line) in
+	(match String.split_on_char ',' pls with
+	  [start;length] ->
+	    let start = check_plus start in
+	    (*start of diff, (just past) end of diff *)
+	    (start, start + int_of_string length)
+	| [start] ->
+	    let start = check_plus start in
+	    (start, start + 1)
+	| _ -> failwith ("badly formed + part of @@ line: "^line))
+  | _ -> failwith ("badly formed @@ line: "^line)
 
 type diff_info =
 {
