@@ -28,13 +28,13 @@ let fetch_file_name line =
   decompose_list s
 
 let fetch_line_number line  =
-  match String.split_on_char ' ' line with
+  match Stdcompat.String.split_on_char ' ' line with
     "@@"::min::pls::"@@"::_ ->
 	let check_plus s =
 	  if String.get s 0 = '+'
 	  then int_of_string(String.sub s 1 (String.length s - 1))
 	  else failwith ("missing + in @@ line: "^line) in
-	(match String.split_on_char ',' pls with
+	(match Stdcompat.String.split_on_char ',' pls with
 	  [start;length] ->
 	    let start = check_plus start in
 	    (*start of diff, (just past) end of diff *)
