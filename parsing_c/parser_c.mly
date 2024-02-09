@@ -1083,16 +1083,9 @@ qual_expr:
      { mk_e(QualifiedAccess (Some $1, $3)) [$2] }
  | TColonColon ident_cpp
      { mk_e(QualifiedAccess (None, $2)) [$1]}
+ | qual_type TTemplateStart argument_list_ne TTemplateEnd
+     { mk_e(TemplateInst ($1, $3)) [$2;$4] }
      
-qual_type:
-   TypedefIdentQual          
-   { let name = RegularName (mk_string_wrap $1) in
-       mk_ty (TypeName (name, Ast_c.noTypedefDef())) [] }
- | qual_type TColonColon ident_cpp
-     { mk_ty(QualifiedType (Some $1, $3)) [$2]}
- | TColonColon ident_cpp
-     { mk_ty(QualifiedType (None, $2)) [$1]}
-
 primary_expr_without_ident:
  | TInt
     { let (str,(sign,base)) = fst $1 in
@@ -1115,8 +1108,6 @@ primary_expr_without_ident:
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
  | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
- | postfix_expr TTemplateStart argument_list_ne TTemplateEnd
-     { mk_e(TemplateInst ($1, $3)) [$2;$4] }
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
@@ -1513,17 +1504,23 @@ simple_type:
   * parse_typedef_fix4: try also to do now some consistency checking in
   * Parse_c
   *)*/
- | TypedefIdent
-     { let name = RegularName (mk_string_wrap $1) in
-       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
-
- | TypedefIdent TTemplateStart argument_list_ne TTemplateEnd
-     { let name = RegularName (mk_string_wrap $1) in
-       let tname = Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
-       Right3 (TemplateType (fixSimpleTypeForCPPType tname, $3)),[$2;$4] }
 
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name   TCPar { Right3 (TypeOfType $3), [$1;$2;$4] }
+ | qual_type { $1 }
+
+qual_type:
+ | TypedefIdent
+     { let name = RegularName (mk_string_wrap $1) in
+       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
+ | qual_type TColonColon ident_cpp
+     { Right3 (QualifiedType (Some $1, $3)), [$2]}
+ | TColonColon ident_cpp
+     { Right3 (QualifiedType (None, $2)), [$1]}
+ | qual_type TTemplateStart argument_list_ne TTemplateEnd
+     { let name = RegularName (mk_string_wrap $1) in
+       let tname = Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
+       Right3 (TemplateType (fixSimpleTypeForCPPType tname, $3)),[$2;$4] }
 
 type_spec2_without_braces:
      simple_type { $1 }
