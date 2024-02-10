@@ -735,7 +735,6 @@ module Parser_c :
       | TKRParam of (string * Ast_c.info)
       | Tconstructorname of (string * Ast_c.info)
       | TypedefIdent of (string * Ast_c.info)
-      | TypedefIdentQual of (string * Ast_c.info)
       | TOPar of Ast_c.info
       | TCPar of Ast_c.info
       | TOBrace of Ast_c.info

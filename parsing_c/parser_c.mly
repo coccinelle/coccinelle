@@ -556,7 +556,7 @@ let args_to_params l pb =
 %token <string * Ast_c.info> TKRParam
 %token <string * Ast_c.info> Tconstructorname /* parsing_hack for C++ */
 /*(* appears mostly after some fix_xxx in parsing_hack *)*/
-%token <string * Ast_c.info> TypedefIdent TypedefIdentQual
+%token <string * Ast_c.info> TypedefIdent
 
 /*
 (* Some tokens like TOPar and TCPar are used as synchronisation stuff,

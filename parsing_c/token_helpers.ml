@@ -308,7 +308,6 @@ let info_of_tok = function
   | TKRParam  (s, i) -> i
   | Tconstructorname  (s, i) -> i
   | TypedefIdent  (s, i) -> i
-  | TypedefIdentQual (s, i) -> i
 
   | TInt  (s, i) -> i
 
@@ -507,7 +506,6 @@ let visitor_info_of_tok f = function
   | TKRParam(s, i)         -> TKRParam(s, f i)
   | Tconstructorname(s, i) -> Tconstructorname  (s, f i)
   | TypedefIdent  (s, i)   -> TypedefIdent  (s, f i)
-  | TypedefIdentQual (s, i) -> TypedefIdentQual (s, f  i)
   | TInt  (s, i)           -> TInt  (s, f i)
 
   | TDefine (i1) -> TDefine(f i1)
@@ -723,7 +721,6 @@ let string_of_token = function
   | TKRParam _ -> "TKRParam"
   | Tconstructorname _ -> "Tconstructorname"
   | TypedefIdent _ -> "TypedefIdent"
-  | TypedefIdentQual _ -> "TypedefIdentQual"
   | TOPar _ -> "TOPar"
   | TCPar _ -> "TCPar"
   | TOBrace _ -> "TOBrace"

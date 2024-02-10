@@ -2044,8 +2044,6 @@ let lookahead2 ~pass next before =
       t
 
   (* c++ hacks *)
-  | (TIdent(s,i1)|TypedefIdent(s,i1)) :: TColonColon _ :: _,_ ->
-      TypedefIdentQual (s,i1)
   | TIdent(s,i1)::_,TEq _ :: _ :: Ttypename _ :: _
       when !Flag.c_plus_plus <> Flag.Off ->
 	msg_typedef s i1 40; LP.add_typedef_root s i1;
@@ -3168,3 +3166,56 @@ let convert_templates toks =
 	   | x -> x :: prev)
 	 [] tokens2)
   else Common.acc_map (fun x -> x.TV.tok) tokens2
+
+(* if the sequence of :: ends with a left paren we have an expression,
+   otherwise we have a type *)
+let rec choose_qualtype toks =
+  let skip_to_template_end a toks =
+    let rec loop ct acc = function
+	| ((TTemplateStart i1) as a)::rest ->
+	    loop (ct+1) (a::acc) rest
+	| ((TTemplateEnd i1) as a)::rest ->
+	    let ct = ct - 1 in
+	    if ct = 0
+	    then (List.rev (a::acc),rest)
+	    else loop (ct-1) (a::acc) rest
+	| x::rest -> loop ct (x::acc) rest
+	| [] -> failwith "no template end" in
+    let (cur,rest) = loop 1 [a] toks in
+    (choose_qualtype cur,rest) in
+  let revapp l acc =
+    List.fold_left (fun prev x -> x :: prev) acc l in
+  let rec loop seencolon localacc acc = function
+      ((TIdent(s,i1)|TypedefIdent(s,i1)) as a)::rest ->
+	let (skipped,rest) = span TH.is_just_comment_or_space rest in
+	(match rest with
+	  ((TColonColon i1) as b)::rest ->
+	    loop true (revapp (b::skipped) (a::localacc)) acc rest
+	| ((TTemplateStart i1) as b)::rest ->
+	    let (skipped2, rest) = skip_to_template_end b rest in
+	    let (skipped3,rest) = span TH.is_just_comment_or_space rest in
+	    (match rest with
+	      ((TColonColon i1) as c)::rest ->
+		loop true (c :: (revapp (skipped2@skipped3) (revapp skipped (a::localacc)))) acc rest
+	    | ((TOPar i1) as c)::rest ->
+		let acc =
+		  if seencolon
+		  then localacc@TQualExp::acc
+		  else localacc@acc in
+		loop false [] (c :: (revapp (skipped2@skipped3) (revapp skipped (a::acc)))) rest
+	    | rest ->
+		let acc =
+		  if seencolon
+		  then localacc@TQualType::acc
+		  else localacc@acc in
+		loop false [] (revapp (skipped2@skipped3) (revapp skipped (a::acc))) rest)
+	| _ -> loop false [] (revapp skipped (a::localacc@acc)) rest)
+    | x::xs ->
+	if localacc <> []
+	then failwith "localacc should be empty"
+	else loop false [] (x::acc) xs
+    | [] ->
+	if localacc <> []
+	then failwith "localacc should be empty"
+	else List.rev acc in
+  loop false [] [] toks

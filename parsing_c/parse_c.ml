@@ -1124,7 +1124,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
     else toks in
   let toks =
     if !Flag.c_plus_plus <> Flag.Off
-    then Parsing_hacks.convert_templates toks
+    then Parsing_hacks.choose_qualtype(Parsing_hacks.convert_templates toks)
     else toks in
 
   (* List.iter
