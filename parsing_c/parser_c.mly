@@ -1505,26 +1505,20 @@ simple_type:
  | TQualType qual_type { fst $2 () }
 
 qual_type:
- | TypedefIdent
+ | ident
      { let tyval _ =
        let name = RegularName (mk_string_wrap $1) in
        Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
      let expval _ = mk_e(Ident  (RegularName (mk_string_wrap $1))) [] in
      (tyval,expval) }
- | TIdent
-     { let tyval _ =
-       let name = RegularName (mk_string_wrap $1) in
-       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
-     let expval _ = mk_e(Ident  (RegularName (mk_string_wrap $1))) [] in
-     (tyval,expval) }
- | qual_type TColonColon TIdent
+ | qual_type TColonColon ident
      { 
        let name = RegularName (mk_string_wrap $3) in
        let front = Some (fixSimpleTypeForCPPType (fst $1 ())) in
        let tyval _ = Right3 (QualifiedType (front, name)), [$2] in
        let expval _ = mk_e(QualifiedAccess (front, name)) [$2] in
        (tyval,expval) }
- | TColonColon TIdent
+ | TColonColon ident
      { let name = RegularName (mk_string_wrap $2) in
      let tyval _ = Right3 (QualifiedType (None, name)), [$1] in
      let expval _ = mk_e(QualifiedAccess (None, name)) [$1] in
