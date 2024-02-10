@@ -3180,7 +3180,10 @@ let rec choose_qualtype toks =
 	    then (List.rev (a::acc),rest)
 	    else loop (ct-1) (a::acc) rest
 	| x::rest -> loop ct (x::acc) rest
-	| [] -> failwith "no template end" in
+	| [] ->
+	    failwith
+	      (Printf.sprintf "%s:%d: no template end"
+		 (TH.file_of_tok a) (TH.line_of_tok a)) in
     let (cur,rest) = loop 1 [a] toks in
     (choose_qualtype cur,rest) in
   let revapp l acc =
