@@ -823,7 +823,9 @@ rule token = parse
   | "->"   { TPtrOp(tokinfo lexbuf) }  | '.'  { TDot(tokinfo lexbuf) }
   | ','    { TComma(tokinfo lexbuf) }
   | ";"    { TPtVirg(tokinfo lexbuf) }
-  | "?"    { TWhy(tokinfo lexbuf) }    | ":"   { TDotDot(tokinfo lexbuf) }
+  | "?"    { TWhy(tokinfo lexbuf) }
+  | ":"    { TDotDot(tokinfo lexbuf) }
+  | "::"   { TColonColon(tokinfo lexbuf) }
   | "!" | "not" { TBang(tokinfo lexbuf) }
   | "~" | "compl" { TTilde(tokinfo lexbuf) }
 
