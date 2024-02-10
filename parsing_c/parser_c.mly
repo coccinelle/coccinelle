@@ -567,7 +567,7 @@ let args_to_params l pb =
 
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro
 %token <Ast_c.info> TDot TColonColon TComma TNoComma TPtrOp
-%token TQualType TQualExp
+%token <Ast_c.info> TQualType TQualExp
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq

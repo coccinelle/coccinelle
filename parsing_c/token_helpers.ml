@@ -483,9 +483,11 @@ let info_of_tok = function
   | Tdefined             (i) -> i
   | TOParCplusplusInit   (i) -> i
 
-  | EOF                  (i) -> i
+  | TQualType            (i) -> i
+  | TQualExp             (i) -> i
   | Tnamespace           (i) -> i
-  | TQualType | TQualExp | TTODO _ -> failwith "fake token, should not occur"
+  | EOF                  (i) -> i
+  | TTODO _ -> failwith "fake token, should not occur"
 
 
 
@@ -686,9 +688,11 @@ let visitor_info_of_tok f = function
   | Ttypename            (i) -> Ttypename            (f i)
   | Tdefined             (i) -> Tdefined             (f i)
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
-  | EOF                  (i) -> EOF                  (f i)
+  | TQualType            (i) -> TQualType            (f i)
+  | TQualExp             (i) -> TQualExp             (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
-  | TQualType | TQualExp | TTODO _ -> failwith "fake token, should not occur"
+  | EOF                  (i) -> EOF                  (f i)
+  | TTODO _ -> failwith "fake token, should not occur"
 
 (*****************************************************************************)
 (* Accessors *)
@@ -874,9 +878,9 @@ let string_of_token = function
   | TAction _ -> "TAction"
   | TCommentMisc _ -> "TCommentMisc"
   | TCommentCpp _ -> "TCommentCpp"
+  | TQualType _ -> "TQualType"
+  | TQualExp _ -> "TQualExp"
   | EOF _ -> "EOF"
-  | TQualType -> "TQualType"
-  | TQualExp -> "TQualExp"
   | TTODO _ -> failwith "fake token, should not occur"
 
 let file_of_tok x = Ast_c.file_of_info (info_of_tok x)
