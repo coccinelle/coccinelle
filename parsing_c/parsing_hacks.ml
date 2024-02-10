@@ -3178,7 +3178,7 @@ let rec choose_qualtype toks =
 	    let ct = ct - 1 in
 	    if ct = 0
 	    then (List.rev (a::acc),rest)
-	    else loop (ct-1) (a::acc) rest
+	    else loop ct (a::acc) rest
 	| x::rest -> loop ct (x::acc) rest
 	| [] ->
 	    failwith
