@@ -567,6 +567,7 @@ let args_to_params l pb =
 
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro
 %token <Ast_c.info> TDot TColonColon TComma TNoComma TPtrOp
+%token TQualType TQualExp
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
@@ -1060,7 +1061,8 @@ unary_op:
  | TAndLog { GetRefLabel, $1 }
 
 postfix_expr:
- | qual_expr               { $1 }
+   primary_expr          {$1}
+ | TQualExp qual_type    { snd $2 () }
  | postfix_expr TOCro argument_list_ne TCCro
      { mk_e(ArrayAccess ($1, $3)) [$2;$4] }
  | postfix_expr TOPar argument_list TCPar
@@ -1076,16 +1078,6 @@ postfix_expr:
  | topar2 type_name tcpar2 TOBrace outer_initialize_list TCBrace
      { mk_e(Constructor ($2, ($5 $4 $6))) [$1;$3] }
 
-
-qual_expr:
-   primary_expr          {$1}
- | qual_type TColonColon ident_cpp
-     { mk_e(QualifiedAccess (Some $1, $3)) [$2] }
- | TColonColon ident_cpp
-     { mk_e(QualifiedAccess (None, $2)) [$1]}
- | qual_type TTemplateStart argument_list_ne TTemplateEnd
-     { mk_e(TemplateInst ($1, $3)) [$2;$4] }
-     
 primary_expr_without_ident:
  | TInt
     { let (str,(sign,base)) = fst $1 in
@@ -1507,20 +1499,43 @@ simple_type:
 
  | Ttypeof TOPar assign_expr TCPar { Right3 (TypeOfExpr ($3)), [$1;$2;$4] }
  | Ttypeof TOPar type_name   TCPar { Right3 (TypeOfType $3), [$1;$2;$4] }
- | qual_type { $1 }
-
-qual_type:
  | TypedefIdent
      { let name = RegularName (mk_string_wrap $1) in
        Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
- | qual_type TColonColon ident_cpp
-     { Right3 (QualifiedType (Some $1, $3)), [$2]}
- | TColonColon ident_cpp
-     { Right3 (QualifiedType (None, $2)), [$1]}
+ | TQualType qual_type { fst $2 () }
+
+qual_type:
+ | TypedefIdent
+     { let tyval _ =
+       let name = RegularName (mk_string_wrap $1) in
+       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
+     let expval _ = mk_e(Ident  (RegularName (mk_string_wrap $1))) [] in
+     (tyval,expval) }
+ | TIdent
+     { let tyval _ =
+       let name = RegularName (mk_string_wrap $1) in
+       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
+     let expval _ = mk_e(Ident  (RegularName (mk_string_wrap $1))) [] in
+     (tyval,expval) }
+ | qual_type TColonColon TIdent
+     { 
+       let name = RegularName (mk_string_wrap $3) in
+       let front = Some (fixSimpleTypeForCPPType (fst $1 ())) in
+       let tyval _ = Right3 (QualifiedType (front, name)), [$2] in
+       let expval _ = mk_e(QualifiedAccess (front, name)) [$2] in
+       (tyval,expval) }
+ | TColonColon TIdent
+     { let name = RegularName (mk_string_wrap $2) in
+     let tyval _ = Right3 (QualifiedType (None, name)), [$1] in
+     let expval _ = mk_e(QualifiedAccess (None, name)) [$1] in
+     (tyval,expval) }
  | qual_type TTemplateStart argument_list_ne TTemplateEnd
-     { let name = RegularName (mk_string_wrap $1) in
-       let tname = Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
-       Right3 (TemplateType (fixSimpleTypeForCPPType tname, $3)),[$2;$4] }
+     { let tyval _ =
+       let tname = fst $1 () in
+       Right3 (TemplateType (fixSimpleTypeForCPPType tname, $3)),[$2;$4] in
+     let expval _ = mk_e(TemplateInst (snd $1 (), $3)) [$2;$4] in
+     (tyval,expval) }
+
 
 type_spec2_without_braces:
      simple_type { $1 }

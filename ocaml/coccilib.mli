@@ -748,6 +748,8 @@ module Parser_c :
       | TComma of Ast_c.info
       | TNoComma of Ast_c.info
       | TPtrOp of Ast_c.info
+      | TQualType
+      | TQualExp
       | TInc of Ast_c.info
       | TDec of Ast_c.info
       | TAssign of Ast_c.assignOp
