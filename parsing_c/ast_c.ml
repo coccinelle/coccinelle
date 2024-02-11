@@ -147,6 +147,7 @@ and 'a wrap3 = 'a * il (* * evotype*)
 and name =
    | RegularName of string wrap
    | Operator of bool wrap
+   | QualName of name wrap2 (* the :: separators *) list
    | CppConcatenatedName of (string wrap) wrap2 (* the ## separators *) list
    (* normally only used inside list of things, as in parameters or arguments
     * in which case, cf cpp-manual, it has a special meaning *)
@@ -1451,12 +1452,14 @@ let s_of_attr attr =
 
 
 (* ------------------------------------------------------------------------- *)
-let str_of_name ident =
+let rec str_of_name ident =
   match ident with
   | RegularName (s,ii) -> s
   | Operator(space_needed,ii) ->
       "operator" ^ (if space_needed then " " else "") ^
       (String.concat "" (List.map str_of_info (List.tl ii)))
+  | QualName xs ->
+      xs +> List.map (fun (nm,ii) -> str_of_name nm) +> String.concat "##"
   | CppConcatenatedName xs ->
       xs +> List.map (fun (x,iiop) -> unwrap x) +> String.concat "##"
   | CppVariadicName (s, ii) -> "##" ^ s
@@ -1465,7 +1468,7 @@ let str_of_name ident =
         (xs +> List.map (fun ((x,iix), iicomma) -> x) +> String.concat ",") ^
         ")"
 
-let get_s_and_ii_of_name name =
+let rec get_s_and_ii_of_name name =
   match name with
   | RegularName (s, iis) -> s, iis
   | Operator (space_needed,iis) -> str_of_name name, iis
@@ -1473,6 +1476,10 @@ let get_s_and_ii_of_name name =
   | CppVariadicName (s,iis)  ->
       let (iop, iis) = Common.tuple_of_list2 iis in
       s, [iis]
+  | QualName xs ->
+      (match xs with
+      | [] -> raise (Impossible 60)
+      | (nm,noiiop)::xs -> get_s_and_ii_of_name nm)
   | CppConcatenatedName xs ->
       (match xs with
       | [] -> raise (Impossible 60)

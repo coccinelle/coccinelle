@@ -567,7 +567,7 @@ let args_to_params l pb =
 
 %token <Ast_c.info> TOPar TCPar TOBrace TCBrace TOCro TCCro TOCroCro
 %token <Ast_c.info> TDot TColonColon TComma TNoComma TPtrOp
-%token <Ast_c.info> TQualType TQualExp
+%token <Ast_c.info> TQualType TQualExp TQualId
 %token <Ast_c.info> TInc TDec
 %token <Ast_c.assignOp> TAssign
 %token <Ast_c.info> TEq
@@ -855,10 +855,15 @@ ident_extra_cpp:
      { CppVariadicName (fst $2, [$1; snd $2]) }
  | TMacroIdentBuilder TOPar param_define_list TCPar
      { CppIdentBuilder ((fst $1, [snd $1;$2;$4]), $3) }
+ | TQualId qual_id { QualName $2 }
 
 identifier_cpp_list:
  | ident_or_kwd { [$1, []] }
  | identifier_cpp_list TCppConcatOp ident_or_kwd { $1 @ [$3, [$2]] }
+
+qual_id:
+   ident { [RegularName (mk_string_wrap $1), []] }
+ | qual_id TColonColon ident { $1 @ [RegularName (mk_string_wrap $3), [$2]] }
 
 ident_or_kwd:
    TIdent { mk_string_wrap $1 }

@@ -287,6 +287,11 @@ let mk_pretty_printers
     | Operator(space_needed,_) ->
 	failwith "pretty print: bad operator"
 
+    | QualName xs ->
+        xs +> List.iter (fun (nm, ii2) ->
+          ii2 +> List.iter pr_elem;
+          pp_name nm)
+
     | CppConcatenatedName xs ->
         xs +> List.iter (fun ((x,ii1), ii2) ->
           ii2 +> List.iter pr_elem;

@@ -370,6 +370,11 @@ and vk_name = fun bigf ident ->
     match id with
     | RegularName (s, ii) -> iif ii
     | Operator(space_needed,ii) -> iif ii
+    | QualName xs ->
+        xs +> List.iter (fun (nm, ii2) ->
+          iif ii2;
+          namef nm;
+        );
     | CppConcatenatedName xs ->
         xs +> List.iter (fun ((x,ii1), ii2) ->
           iif ii2;
@@ -1451,6 +1456,10 @@ and vk_name_s = fun bigf ident ->
     (match id with
     | RegularName (s,ii) -> RegularName (s, iif ii)
     | Operator(space_needed,ii) -> Operator(space_needed,iif ii)
+    | QualName xs ->
+        QualName (xs +> List.map (fun (nm, ii2) ->
+          (namef nm), iif ii2
+        ))
     | CppConcatenatedName xs ->
         CppConcatenatedName (xs +> List.map (fun ((x,ii1), ii2) ->
           (x, iif ii1), iif ii2

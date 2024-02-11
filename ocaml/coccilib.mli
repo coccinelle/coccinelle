@@ -49,6 +49,7 @@ module Ast_c :
       Ast_c.name =
         RegularName of string wrap
       | Operator of bool wrap
+      | QualName of name wrap2 (* the :: separators *) list
       | CppConcatenatedName of string wrap wrap2 list
       | CppVariadicName of string wrap
       | CppIdentBuilder of string wrap * string wrap wrap2 list
@@ -749,6 +750,7 @@ module Parser_c :
       | TPtrOp of Ast_c.info
       | TQualType of Ast_c.info
       | TQualExp of Ast_c.info
+      | TQualId of Ast_c.info
       | TInc of Ast_c.info
       | TDec of Ast_c.info
       | TAssign of Ast_c.assignOp

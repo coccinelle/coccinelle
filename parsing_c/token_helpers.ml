@@ -485,6 +485,7 @@ let info_of_tok = function
 
   | TQualType            (i) -> i
   | TQualExp             (i) -> i
+  | TQualId              (i) -> i
   | Tnamespace           (i) -> i
   | EOF                  (i) -> i
   | TTODO _ -> failwith "fake token, should not occur"
@@ -690,6 +691,7 @@ let visitor_info_of_tok f = function
   | TOParCplusplusInit   (i) -> TOParCplusplusInit   (f i)
   | TQualType            (i) -> TQualType            (f i)
   | TQualExp             (i) -> TQualExp             (f i)
+  | TQualId              (i) -> TQualId              (f i)
   | Tnamespace           (i) -> Tnamespace           (f i)
   | EOF                  (i) -> EOF                  (f i)
   | TTODO _ -> failwith "fake token, should not occur"
@@ -880,6 +882,7 @@ let string_of_token = function
   | TCommentCpp _ -> "TCommentCpp"
   | TQualType _ -> "TQualType"
   | TQualExp _ -> "TQualExp"
+  | TQualId _ -> "TQualId"
   | EOF _ -> "EOF"
   | TTODO _ -> failwith "fake token, should not occur"
 

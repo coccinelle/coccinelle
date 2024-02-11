@@ -3189,50 +3189,46 @@ let rec choose_qualtype toks =
   let revapp l acc =
     List.fold_left (fun prev x -> x :: prev) acc l in
   let mkinfo info = Ast_c.fakeBeforeInfo() in
-  let rec loop seencolon localacc acc = function
+  let rec loop seencolon seentemplate localacc acc = function
       ((TIdent(s,i1)|TypedefIdent(s,i1)) as a)::rest ->
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	(match rest with
 	  ((TColonColon i1) as b)::rest ->
-	    loop true (revapp (b::skipped) (a::localacc)) acc rest
+	    loop true seentemplate (revapp (b::skipped) (a::localacc)) acc rest
 	| ((TTemplateStart i1) as b)::rest ->
 	    let (skipped2, rest) = skip_to_template_end b rest in
 	    let (skipped3,rest) = span TH.is_just_comment_or_space rest in
 	    (match rest with
 	      ((TColonColon i1) as c)::rest ->
-		loop true (c :: (revapp (skipped2@skipped3) (revapp skipped (a::localacc)))) acc rest
+		loop true seentemplate (c :: (revapp (skipped2@skipped3) (revapp skipped (a::localacc)))) acc rest
 	    | ((TOPar i2) as c)::rest ->
-		let acc =
-		  if seencolon
-		  then localacc@TQualExp(mkinfo i1)::acc
-		  else localacc@acc in
-		loop false [] (c :: (revapp (skipped2@skipped3) (revapp skipped (a::acc)))) rest
+		let acc = localacc@TQualExp(mkinfo i1)::acc in
+		loop false false [] (c :: (revapp (skipped2@skipped3) (revapp skipped (a::acc)))) rest
 	    | rest ->
 		let acc = localacc@TQualType(mkinfo i1)::acc in
-		loop false [] (revapp (skipped2@skipped3) (revapp skipped (a::acc))) rest)
+		loop false false [] (revapp (skipped2@skipped3) (revapp skipped (a::acc))) rest)
 	| ((TIdent _) as b)::rest when seencolon->
 	    let acc = localacc@TQualType(mkinfo i1)::acc in
-	    loop false [] (b :: (revapp skipped (a::acc))) rest
+	    loop false false [] (b :: (revapp skipped (a::acc))) rest
 	| ((TAnd _|TMul _) as b)::((x::_) as rest)
 	  when skipped <> [] && (not(TH.is_just_comment_or_space x)) && seencolon ->
 	    let acc = localacc@TQualType(mkinfo i1)::acc in
-	    loop false [] (b :: (revapp skipped (a::acc))) rest
+	    loop false false [] (b :: (revapp skipped (a::acc))) rest
 	| _ ->
 	    let acc =
 	      if seencolon
-	      then localacc@TQualExp(mkinfo i1)::acc
+	      then
+		if seentemplate
+		then localacc@TQualExp(mkinfo i1)::acc
+		else localacc@TQualId(mkinfo i1)::acc
 	      else localacc@acc in
-	    loop false [] (revapp skipped (a::acc)) rest)
-    | ((TOBrace _| TCBrace _|TPtVirg _) as x)::xs ->
-	if localacc <> []
-	then failwith "localacc should be empty"
-	else loop false [] (x::acc) xs
+	    loop false false [] (revapp skipped (a::acc)) rest)
     | x::xs ->
 	if localacc <> []
 	then failwith "localacc should be empty"
-	else loop false [] (x::acc) xs
+	else loop false false [] (x::acc) xs
     | [] ->
 	if localacc <> []
 	then failwith "localacc should be empty"
 	else List.rev acc in
-  loop false [] [] toks
+  loop false false [] [] toks
