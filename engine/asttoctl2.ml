@@ -674,10 +674,7 @@ and get_before_e s a =
       let (dsl,dsla) =
 	List.split (List.map (function e -> get_before e a) stmt_dots_list) in
       (Ast.rewrap s (Ast.Conj(dsl)),List.fold_left Common.union_set [] dsla)
-  | Ast.Atomic(ast) ->
-      (match Ast.unwrap ast with
-	Ast.MetaStmt(_,_,_,_,_) -> (s,[])
-      |	_ -> (s,[Ast.Other s]))
+  | Ast.Atomic(ast) -> (s,[Ast.Other s])
   | Ast.Seq(lbrace,body,rbrace) ->
       let index = count_nested_braces s in
       let (bd,_) = get_before body [Ast.WParen(lbrace,index)] in
@@ -817,7 +814,6 @@ and get_after_e s a =
 		(Ast.rewrap s
 		   (Ast.MetaStmt
 		      (nm,cstr,keep,Ast.SequencibleAfterDots a,i)))),[])
-      |	Ast.MetaStmt(_,_,_,_,_) -> (s,[])
       |	_ -> (s,[Ast.Other s]))
   | Ast.Seq(lbrace,body,rbrace) ->
       let index = count_nested_braces s in
@@ -1746,6 +1742,26 @@ let rec statement_list stmt_list top after quantified minus_quantified
 	    (compute_label label e dots_before)
 	    llabel slabel guard
       | (e::sl,fv::fvs,mfv::mfvs) ->
+	  (* account for when code that will be added to implement shortest path *)
+	  let (fvs,mfvs) =
+	    match sl with
+	      e1::rest ->
+		(match Ast.unwrap e1 with
+		  Ast.Dots(_,whn,_,_) | Ast.Nest(_,_,_,whn,_,_,_) ->
+		    let has_any =
+		      List.exists
+			(function Ast.WhenModifier(WhenAny) -> true | _ -> false)
+			whn in
+		    if has_any
+		    then (fvs,mfvs)
+		    else
+		      (* there is necessarily a first element to fvs, because there
+			 is a first element of sl *)
+		      let addfront fv fvs =
+			(Common.union_set fv (List.hd fvs)) :: (List.tl fvs) in
+		      (addfront fv fvs,addfront mfv mfvs)
+		| _ -> (fvs,mfvs))
+	    | _ -> (fvs,mfvs) in
 	  let shared = intersectll fv fvs in
 	  let unqshared = get_unquantified quantified shared in
 	  let new_quantified = Common.union_set unqshared quantified in
