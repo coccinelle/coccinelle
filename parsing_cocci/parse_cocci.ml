@@ -2289,6 +2289,12 @@ let consume_minus_positions toks =
     | x::((PC.TPArob _,_) as x')::x''::xs ->
 	x::loop_other (x'::x''::xs)
 
+    | (PC.TMetaPos(name,constraints,per,clt),_)::_ ->
+	let (c,l,ll,lle,lex_start,preceeding_spaces,bef,aft,pos,ws) = clt in
+	failwith
+	  (Printf.sprintf "position variable %s on line %d must be attached to some other token using @"
+	     (Ast.string_of_meta_name name) l)
+
     | x::xs -> x::loop_other xs in
   loop_other(loop_pos toks)
 
