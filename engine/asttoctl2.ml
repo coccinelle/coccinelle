@@ -1750,7 +1750,7 @@ let rec statement_list stmt_list top after quantified minus_quantified
 		  Ast.Dots(_,whn,_,_) | Ast.Nest(_,_,_,whn,_,_,_) ->
 		    let has_any =
 		      List.exists
-			(function Ast.WhenModifier(WhenAny) -> true | _ -> false)
+			(function Ast.WhenModifier(Ast.WhenAny) -> true | _ -> false)
 			whn in
 		    if has_any
 		    then (fvs,mfvs)
