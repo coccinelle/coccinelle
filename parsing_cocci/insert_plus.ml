@@ -1279,4 +1279,4 @@ let insert_plus minus plus ei =
   let minus_stream = process_minus minus in
   let plus_stream = process_plus plus in
   merge minus_stream plus_stream;
-  List.iter (function x -> let _ =  reevaluate_contextness x in ()) minus
+  List.iter (function x -> ignore(reevaluate_contextness x)) minus
