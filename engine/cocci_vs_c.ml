@@ -635,6 +635,19 @@ let check_allminus =
   let donothing r k re = k re in
   V.combiner bind option_default {V.cmcode=mcode} {V.cdonothing=donothing} donothing
 
+(* for matching an Edots against a decl in a for loop; must be context or all minus
+with no additions *)
+let safe_dots ea1 ia1 =
+  match A.unwrap ea1 with
+    A.Edots(dt,None) ->
+      let mc1 = mcodekind dt in
+      let mc2 = mcodekind ia1 in
+      (match mc1, mc2 with
+      | A.CONTEXT (_,A.NOTHING),A.CONTEXT (_,A.NOTHING) -> true
+      | A.MINUS (_,_,_,A.NOREPLACEMENT), A.MINUS (_,_,_,A.NOREPLACEMENT) -> true
+      | _-> false)
+  | _ -> false
+
 (*****************************************************************************)
 (* Functor parameter combinators *)
 (*****************************************************************************)
@@ -5778,6 +5791,22 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
              A.ForDecl(decla, ea2opt, ia4, ea3opt),
              B.ForDecl(declb, (eb2opt,[ib4]), (eb3opt,ib4vide))
              )))))
+      | (A.ForExp(Some ea1, ia3, ea2opt, ia4, ea3opt),
+	 B.ForDecl(declb, (eb2opt,ib4s), (eb3opt,ib4vide)))
+	when safe_dots ea1 ia3 ->
+	  (match A.unwrap ea1 with
+	    A.Edots(dt,None) ->
+	      assert (ib4vide = []);
+	      let ib4 = tuple_of_list1 ib4s in
+	      tokenf ia4 ib4 >>= (fun ia4 ib4 ->
+	      X.distrf_decl (dots2metavar dt) declb >>= (fun dt expb ->
+	      eoption expression ea2opt eb2opt >>= (fun ea2opt eb2opt ->
+	      eoption expression ea3opt eb3opt >>= (fun ea3opt eb3opt ->
+		return (
+		A.ForExp(Some (A.rewrap ea1 (A.Edots(metavar2dots dt,None))), ia3, ea2opt, ia4, ea3opt),
+		B.ForDecl(declb, (eb2opt,[ib4]), (eb3opt,ib4vide))
+	      )))))
+	  | _ -> failwith "not possible")
       |	(A.ForRange(decla, ia2), B.ForRange(declb, ib2)) ->
 	  annotated_decl decla declb >>= (fun decla declb ->
 	  initialiser ia2 ib2 >>= (fun ia2 ib2 ->
