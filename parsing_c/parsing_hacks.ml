@@ -3224,13 +3224,15 @@ let rec choose_qualtype toks =
 	      else localacc@acc in
 	    loop false false [] (revapp skipped (a::acc)) rest)
     | ((TColonColon i1) as a)::rest ->
-	loop true false [a] acc rest
+	loop true false (a::localacc) acc rest
+    | ((TTilde i1) as a)::rest ->
+	loop true false (a::localacc) acc rest
     | x::xs ->
 	if localacc <> []
-	then failwith "localacc should be empty"
+	then failwith "localacc should be empty at unexpected qualifier token"
 	else loop false false [] (x::acc) xs
     | [] ->
 	if localacc <> []
-	then failwith "localacc should be empty"
+	then failwith "localacc should be empty at end of stream"
 	else List.rev acc in
   loop false false [] [] toks
