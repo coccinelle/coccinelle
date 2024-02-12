@@ -588,7 +588,8 @@ let args_to_params l pb =
        Ttypedef
        Tconst Tvolatile
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
-       Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Tif  Twhile Treturn
+       Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Ttry Tif Twhile
+       Tcatch Treturn
        Tgoto Tdefault
        Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
@@ -876,6 +877,7 @@ ident_or_kwd:
  | Tdefault { mk_info_string $1 }
  | Tdelete { mk_info_string $1 }
  | Tdo { mk_info_string $1 }
+ | Ttry { mk_info_string $1 }
  | Tdouble { mk_info_string $1 }
  | Telse { mk_info_string $1 }
  | Tenum { mk_info_string $1 }
@@ -1262,6 +1264,14 @@ expr_statement:
  | TPtVirg                     { None,    [$1] }
  | expr TPtVirg                { Some $1, [$2] }
 
+handler:
+ | Tcatch TOPar parameter_decl TCPar statement    { ($3,$5), [$1;$2;$4] }
+/* Note: catch-all handler missing */
+
+handler_sequence:
+ | handler                     { [$1] }
+ | handler_sequence handler    { $1@[$2] }
+
 selection:
  | Tif TOPar expr TCPar cpp_ifdef_statement              %prec SHIFTHERE
      { If ($3, $5, (mk_st (ExprStatement None) Ast_c.noii)),   [$1;$2;$4] }
@@ -1275,6 +1285,8 @@ selection:
  /* [Nasty Undisciplined Cpp] #ifdef A if e S1 else #else S2 #endif S3 */
  | TUifdef Tif TOPar expr TCPar statement Telse TUelseif statement TUendif statement
      { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
+ /* NOTE: perhaps compound_list instead of statement? */
+ | Ttry statement handler_sequence { TryCatch ($2,$3), [$1] }
 
 iteration:
  | Twhile TOPar expr TCPar cpp_ifdef_statement

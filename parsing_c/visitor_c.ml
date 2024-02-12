@@ -418,6 +418,9 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
         statf st1;
         statf st2;
         statf st3;
+    | Selection  (TryCatch (st, cal)) ->
+        statf st;
+        cal +> List.iter (fun ((param,st),ii) -> vk_param bigf param; statf st; iif ii)
     | Selection  (Switch (e, st)) ->
         vk_expr bigf e; statf st;
     | Iteration  (While (e, st)) ->
@@ -1480,6 +1483,10 @@ and vk_statement_s = fun bigf st ->
           Selection  (Ifdef_Ite2 (vk_expr_s bigf e,statf st1
                                                   ,statf st2
                                                   ,statf st3))
+      | Selection  (TryCatch (st, cal)) ->
+          Selection  (TryCatch (statf st, 
+          cal +> List.map (fun ((param,st),ii) ->
+                  ((vk_param_s bigf param, statf st), vk_ii_s bigf ii))))
       | Selection (Switch (e, st))   ->
           Selection  (Switch ((vk_expr_s bigf) e, statf st))
       | Iteration (While (e, st))    ->

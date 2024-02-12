@@ -372,6 +372,18 @@ and pp_string_format (e,ii) =
             indent_if_needed st3 (function _ -> pp_statement st3);
             pr_elem iifakend
 	| _ -> raise (Impossible 90))
+    | Selection (TryCatch (st, cal)), [it;iifakend] ->
+        pr_elem it;
+        pp_statement st;
+        cal +> List.iter (fun ((param,st), ii) ->
+          let (ic,lp,rp) = Common.tuple_of_list3 ii in
+          pr_elem ic;
+          pr_elem lp;
+          pp_param param;
+          pp_statement st;
+          pr_elem rp;
+        );
+        pr_elem iifakend
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
@@ -466,6 +478,7 @@ and pp_string_format (e,ii) =
     | Compound _ | ExprStatement _
     | Selection  (If (_, _, _)) | Selection  (Switch (_, _))
     | Selection (Ifdef_Ite _) | Selection (Ifdef_Ite2 _)
+    | Selection (TryCatch (_, _))
     | Iteration  (While (_, _)) | Iteration  (DoWhile (_, _))
     | Iteration  (For (_, _))
     | Iteration  (MacroIteration (_,_,_))

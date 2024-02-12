@@ -150,6 +150,7 @@ let is_if_or_else = function
 
 let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _
+  | Ttry _ | Tcatch _
   | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
   | Tgoto _
   | TPtVirg _
@@ -451,6 +452,8 @@ let info_of_tok = function
   | Tcontinue            (i) -> i
   | Tfor                 (i) -> i
   | Tdo                  (i) -> i
+  | Ttry                 (i) -> i
+  | Tcatch               (i) -> i
   | Tif                  (i) -> i
   | Twhile               (i) -> i
   | Treturn              (i) -> i
@@ -652,6 +655,8 @@ let visitor_info_of_tok f = function
   | Tcontinue            (i) -> Tcontinue            (f i)
   | Tfor                 (i) -> Tfor                 (f i)
   | Tdo                  (i) -> Tdo                  (f i)
+  | Ttry                 (i) -> Ttry                 (f i)
+  | Tcatch               (i) -> Tcatch               (f i)
   | Tif                  (i) -> Tif                  (f i)
   | Twhile               (i) -> Twhile               (f i)
   | Treturn              (i) -> Treturn              (f i)
@@ -795,6 +800,8 @@ let string_of_token = function
   | Tcontinue _ -> "Tcontinue"
   | Tfor _ -> "Tfor"
   | Tdo _ -> "Tdo"
+  | Ttry _ -> "Ttry"
+  | Tcatch _ -> "Tcatch"
   | Tif _ -> "Tif"
   | Twhile _ -> "Twhile"
   | Treturn _ -> "Treturn"

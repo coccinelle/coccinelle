@@ -538,6 +538,7 @@ and statement = statementbis wrap3
    | Ifdef_Ite of expression * statement * statement
    (* #ifdef A if e S1 else #else S2 #endif S3 *)
    | Ifdef_Ite2 of expression * statement * statement * statement
+   | TryCatch of statement * (parameterType * statement) wrap list
 
 
   and iteration     =

@@ -687,6 +687,21 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
   | Selection (Ast_c.Ifdef_Ite2 _) -> mk_Ifdef_Ite2 starti lbl xi_lbl stmt
 
    (* ------------------------- *)
+   (* 
+  | Selection  (Ast_c.TryCatch ()) ->
+     (*             /------------> afteri --------------------v
+      *  starti -> tryi --> S1 ... SM ---> finalstmt (opt)---> lasti
+      *             |      v||  v-||
+      *             \----- catch1 ----> handler1 -------------^
+      *              |      v|    v|
+      *              \---- ...............................----^
+      *              |       v     v
+      *               \----- catchN --> handlerN -------------^
+      *)
+        TODO: continue here.
+    * *)
+
+   (* ------------------------- *)
   | Iteration  (Ast_c.While (e, st)) ->
      (* starti -> newi ---> newfakethen -> ... -> finalthen -
       *             |---|-----------------------------------|

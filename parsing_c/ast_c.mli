@@ -204,6 +204,7 @@ and selection =
   | Switch of expression * statement
   | Ifdef_Ite of expression * statement * statement
   | Ifdef_Ite2 of expression * statement * statement * statement
+  | TryCatch of statement * (parameterType * statement) wrap list
 and iteration =
     While of expression * statement
   | DoWhile of statement * expression

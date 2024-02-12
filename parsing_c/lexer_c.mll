@@ -182,6 +182,7 @@ let keyword_table = Common.hash_of_list [
   "default", (fun ii -> Tdefault ii);
   "for",     (fun ii -> Tfor ii);
   "do",      (fun ii -> Tdo ii);
+  "try",     (fun ii -> Ttry ii);
   "while",   (fun ii -> Twhile ii);
   "return",  (fun ii -> Treturn ii);
   "goto",    (fun ii -> Tgoto ii);
