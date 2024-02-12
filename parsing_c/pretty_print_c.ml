@@ -1519,19 +1519,10 @@ and pp_init (init, iinit) =
 
   and pp_base_class (bc,ii) =
     match bc with
-      ClassName name -> pp_base_class_name name
+      ClassName name -> pp_name name
     | CPublic name | CProtected name | CPrivate name ->
 	let tag = Common.tuple_of_list1 ii in
-	pr_elem tag; pr_space(); pp_base_class_name name
-
-  and pp_base_class_name (bc,ii) =
-    match bc with
-      BaseClassName name -> pp_name name
-    | TemplateClassName(name,es) ->
-	let (i1,i2) = Common.tuple_of_list2 ii in
-        pp_name name; pr_elem i1;
-	pp_arg_list es;
-        pr_elem i2 in
+	pr_elem tag; pr_space(); pp_name name in
 
   let rec pp_toplevel = function
     | Declaration decl -> pp_decl decl

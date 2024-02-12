@@ -839,20 +839,10 @@ and vk_base_class = fun bigf bc -> (* not parametrizable *)
   let (unwrap_bc, ii) = bc in
   iif ii;
   match unwrap_bc with
-    ClassName name -> vk_base_class_name bigf name
-  | CPublic name -> vk_base_class_name bigf name
-  | CProtected name -> vk_base_class_name bigf name
-  | CPrivate name -> vk_base_class_name bigf name
-
-and vk_base_class_name = fun bigf bc -> (* not parametrizable *)
-  let iif ii = vk_ii bigf ii in
-  let (unwrap_bc, ii) = bc in
-  iif ii;
-  match unwrap_bc with
-    BaseClassName name -> vk_name bigf name
-  | TemplateClassName(name,es) ->
-      vk_name bigf name;
-      vk_argument_list bigf es
+    ClassName name -> vk_name bigf name
+  | CPublic name -> vk_name bigf name
+  | CProtected name -> vk_name bigf name
+  | CPrivate name -> vk_name bigf name
 
 and vk_base_class_list = fun bigf ts ->
   let iif ii = vk_ii bigf ii in
@@ -1973,23 +1963,10 @@ and vk_base_class_s = fun bigf bc -> (* not parametrizable *)
   let (unwrap_bc, ii) = bc in
   let bc' =
     match unwrap_bc with
-      ClassName name -> ClassName(vk_base_class_name_s bigf name)
-    | CPublic name -> CPublic(vk_base_class_name_s bigf name)
-    | CProtected name -> CProtected(vk_base_class_name_s bigf name)
-    | CPrivate name -> CPrivate(vk_base_class_name_s bigf name) in
-  bc', iif ii
-
-and vk_base_class_name_s = fun bigf bc -> (* not parametrizable *)
-  let iif ii = vk_ii_s bigf ii in
-  let (unwrap_bc, ii) = bc in
-  let bc' =
-    match unwrap_bc with
-      BaseClassName name -> BaseClassName(vk_name_s bigf name)
-    | TemplateClassName(name,es) ->
-	TemplateClassName
-	  (vk_name_s bigf name,
-           es +> List.map (fun (e,ii) ->
-             vk_argument_s bigf e, iif ii)) in
+      ClassName name -> ClassName(vk_name_s bigf name)
+    | CPublic name -> CPublic(vk_name_s bigf name)
+    | CProtected name -> CProtected(vk_name_s bigf name)
+    | CPrivate name -> CPrivate(vk_name_s bigf name) in
   bc', iif ii
 
 and vk_base_class_list_s = fun bigf ts ->

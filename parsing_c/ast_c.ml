@@ -680,15 +680,10 @@ and constr_init = (name * argument wrap2 (* , *) list) wrap
 
 and base_class = base_class_bis wrap
   and base_class_bis =
-    ClassName of base_class_name
-  | CPublic of base_class_name
-  | CProtected of base_class_name
-  | CPrivate of base_class_name
-
-and base_class_name = base_class_name_bis wrap
-  and base_class_name_bis =
-    BaseClassName of name
-  | TemplateClassName of name * argument wrap2 (* , *) list
+    ClassName of name
+  | CPublic of name
+  | CProtected of name
+  | CPrivate of name
 
 (* ------------------------------------------------------------------------- *)
 (* cppext: cpp directives, #ifdef, #define and #include body *)

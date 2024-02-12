@@ -3223,6 +3223,8 @@ let rec choose_qualtype toks =
 		else localacc@TQualId(mkinfo i1)::acc
 	      else localacc@acc in
 	    loop false false [] (revapp skipped (a::acc)) rest)
+    | ((TColonColon i1) as a)::rest ->
+	loop true false [a] acc rest
     | x::xs ->
 	if localacc <> []
 	then failwith "localacc should be empty"

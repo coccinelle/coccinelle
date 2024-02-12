@@ -863,6 +863,7 @@ identifier_cpp_list:
 
 qual_id:
    ident { [RegularName (mk_string_wrap $1), []] }
+ | TColonColon ident { [RegularName (mk_string_wrap $2), [$1]] }
  | qual_id TColonColon ident { $1 @ [RegularName (mk_string_wrap $3), [$2]] }
 
 ident_or_kwd:
@@ -2885,15 +2886,13 @@ celem:
 /*(*************************************************************************)*/
 
 base_class:
-   base_class_name              { ClassName $1, [] }
+   base_class_name              { ClassName $1,   [] }
  | Tpublic base_class_name      { CPublic $2,   [$1] }
  | Tprotected base_class_name   { CProtected $2,[$1] }
  | Tprivate base_class_name     { CPrivate $2,  [$1] }
 
 base_class_name:
-   ident_cpp                    { BaseClassName $1, [] }
- | ident_cpp TTemplateStart argument_list_ne TTemplateEnd
-   { TemplateClassName($1,$3), [$2;$4] }
+   ident_cpp                    { $1 }
 
 base_classes:
    base_class { [$1,[]] }

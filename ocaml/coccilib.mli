@@ -392,16 +392,10 @@ module Ast_c :
     and base_class = base_class_bis wrap
     and base_class_bis =
       Ast_c.base_class_bis =
-	ClassName of base_class_name
-      | CPublic of base_class_name
-      | CProtected of base_class_name
-      | CPrivate of base_class_name
-
-    and base_class_name = base_class_name_bis wrap
-    and base_class_name_bis =
-      Ast_c.base_class_name_bis =
-	BaseClassName of name
-      | TemplateClassName of name * argument wrap2 (* , *) list
+	ClassName of name
+      | CPublic of name
+      | CProtected of name
+      | CPrivate of name
 
     and cpp_directive =
       Ast_c.cpp_directive =
