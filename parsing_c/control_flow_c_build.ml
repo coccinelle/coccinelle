@@ -68,6 +68,8 @@ exception Error of error
 (* true for non-Coccinelle uses of this code where full code is needed *)
 let realstring = ref false
 
+let basic_add_node node g =
+   g#add_node node
 let add_node node labels nodestr g =
   let nodestr =
     if !realstring && (nodestr = "" || String.get nodestr 0 <> '[')
@@ -78,7 +80,6 @@ let add_bc_node node labels parent_labels nodestr g =
    g#add_node (Control_flow_c.mk_node node labels parent_labels  nodestr)
 let add_arc_opt (starti, nodei) g =
   starti +> do_option (fun starti -> g#add_arc ((starti, nodei), Direct))
-
 
 let lbl_0 = []
 
