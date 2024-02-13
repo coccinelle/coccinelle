@@ -22,6 +22,8 @@ type node = node1 * string (* For debugging. Used by print_graph *)
 
   | IfHeader      of statement * expression wrap
   | Else          of info
+  | TryHeader     of statement * info
+  | CatchHeader   of parameterType wrap
   | WhileHeader   of statement * expression wrap
   | DoHeader      of statement * info
   | DoWhileTail   of expression wrap

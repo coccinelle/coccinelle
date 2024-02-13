@@ -68,16 +68,18 @@ exception Error of error
 (* true for non-Coccinelle uses of this code where full code is needed *)
 let realstring = ref false
 
-let basic_add_node node g =
-   g#add_node node
-let add_node node labels nodestr g =
+let basic_add_node node children g =
+  let nodei = g#add_node node in
+  List.iter (fun child -> g#add_arc((nodei,child), Direct)) children;
+  nodei
+let add_node node labels nodestr children g =
   let nodestr =
     if !realstring && (nodestr = "" || String.get nodestr 0 <> '[')
     then Pretty_print_c.string_of_flow (Control_flow_c.mk_node node labels [] "")
     else nodestr in
-  g#add_node (Control_flow_c.mk_node node labels [] nodestr)
+  g +> basic_add_node (Control_flow_c.mk_node node labels [] nodestr) children
 let add_bc_node node labels parent_labels nodestr g =
-   g#add_node (Control_flow_c.mk_node node labels parent_labels  nodestr)
+  g +> basic_add_node (Control_flow_c.mk_node node labels parent_labels nodestr) []
 let add_arc_opt (starti, nodei) g =
   starti +> do_option (fun starti -> g#add_arc ((starti, nodei), Direct))
 
@@ -213,7 +215,7 @@ let compute_labels_and_create_them st =
             (* at this point I put a lbl_0, but later I will put the
              * good labels. *)
             let s = Ast_c.str_of_name name in
-            let newi = !g +> add_node (Label (st,name, ((),ii))) lbl_0  (s^":")
+            let newi = !g +> add_node (Label (st,name, ((),ii))) lbl_0  (s^":") []
             in
             begin
               (* the C label already exists ? *)
@@ -236,7 +238,7 @@ let compute_labels_and_create_them st =
 
 
 (* ctl_braces: *)
-let insert_all_braces xs starti nodety str =
+let insert_all_braces xs starti nodety str children =
   xs  +> List.fold_left (fun acc nodeinfo ->
     (* Have to build a new node (clone), cos cannot share it.
      * update: This is now done by the caller. The clones are in xs.
@@ -246,7 +248,7 @@ let insert_all_braces xs starti nodety str =
 	Common.Left(node,mkafter) ->
 	  (node,mkafter) (* statements where after link needed *)
       | Common.Right node -> (node,fun _ _ _ -> ()) in (* ifdefs *)
-    let newi = !g#add_node node in
+    let newi = !g +> basic_add_node node children in
     fn nodety str newi;
     !g#add_arc ((acc, newi), Direct);
     newi
@@ -303,8 +305,8 @@ let insert_all_braces xs starti nodety str =
  *
  *)
 
-let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
- fun (starti, xi) stmt ->
+let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nodei option =
+ fun (starti, xi) stmt children ->
 
   if not !Flag_parsing_c.label_strategy_2
   then incr counter_for_labels;
@@ -352,7 +354,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
         | Switch _ -> xi.labels
       in
 
-      let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 in
+      let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 children in
       let endnode     = mk_node      (SeqEnd (brace, i2)) lbl [] s2 in
       let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
 (*
@@ -369,7 +371,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let mkafter ty str endi =
 	if xi.compound_caller = Statement
 	then
-	  (let afteri = !g +> add_node (AfterNode ty) lbl str in
+	  (let afteri = !g +> add_node (AfterNode ty) lbl str children in
 	  let a1 = ((newi, afteri), Control) in
 	  !g#add_arc a1;
 	  let a2 = ((afteri, endi), Control) in
@@ -389,7 +391,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g +> add_arc_opt (starti, newi);
       let finishi = Some newi in
 
-      aux_statement_list finishi (xi, newxi) statxs
+      aux_statement_list finishi (xi, newxi) statxs children
 
       (* braces: *)
       +> Common.fmap (fun finishi ->
@@ -402,7 +404,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
              * ca veut dire que le programme boucle. Pour qu'il boucle pas
              * il faut forcement au moins un return.
              *)
-            let endi = !g#add_node endnode in
+            let endi = !g +> basic_add_node endnode children in
 	    List.iter
 	      (function (node,a1,a2) ->
 		!g#del_arc a1; !g#del_arc a2; !g#del_node node)
@@ -420,14 +422,14 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let node = mk_node (unwrap (KeyMap.find ilabel !g#nodes)) lbl [] (s ^ ":") in
       !g#replace_node (ilabel, node);
       !g +> add_arc_opt (starti, ilabel);
-      aux_statement (Some ilabel, xi_lbl) st
+      aux_statement (Some ilabel, xi_lbl) st children
 
 
   | Jump (Ast_c.Goto name) ->
      let s = Ast_c.str_of_name name in
      (* special_cfg_ast: *)
      let newi = !g +>
-          add_node (Goto (stmt, name, ((),ii))) lbl ("goto "^s^":") in
+          add_node (Goto (stmt, name, ((),ii))) lbl ("goto "^s^":") children in
      !g +> add_arc_opt (starti, newi);
 
      if !Flag_parsing_c.no_gotos
@@ -447,8 +449,8 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
         * todo?: can perhaps report when a goto is not a classic error_goto ?
         * that is when it does not jump to the toplevel of the function.
         *)
-       let newi = insert_all_braces (Common.list_init xi.braces) newi
-                                    GotoAfterNode "[goto after]" in
+       let newi = insert_all_braces (Common.list_init xi.braces) newi 
+                                    GotoAfterNode "[goto after]" children in
        !g#add_arc ((newi, ilabel), Direct);
        None
      end
@@ -486,18 +488,18 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
             | _ -> "statement"
             )
       in
-      let newi = !g +> add_node (ExprStatement (stmt, (opte, ii))) lbl s in
+      let newi = !g +> add_node (ExprStatement (stmt, (opte, ii))) lbl s children in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
   | Ast_c.Exec(code) ->
       let s = "exec" in
-      let newi = !g +> add_node (Exec (stmt, (code, ii))) lbl s in
+      let newi = !g +> add_node (Exec (stmt, (code, ii))) lbl s children in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
    (* ------------------------- *)
-  | Selection (Ast_c.If _) -> snd (mk_If starti lbl xi_lbl stmt)
+  | Selection (Ast_c.If _) -> snd (mk_If starti lbl xi_lbl stmt children)
 
    (* ------------------------- *)
   | Selection  (Ast_c.Switch (e, st)) ->
@@ -508,9 +510,9 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       (* The newswitchi is for the labels to know where to attach.
        * The newendswitch (endi) is for the 'break'. *)
       let newswitchi=
-        !g +> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" in
+        !g +> add_node (SwitchHeader(stmt,(e,ii))) lbl "switch" children in
       let newendswitch =
-        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" in
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endswitch]" children in
 
       !g +> add_arc_opt (starti, newswitchi);
 
@@ -555,7 +557,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
                   * add a Fallthrough.
                   *)
 
-                 let newafter = !g+>add_node FallThroughNode lbl "[switchfall]"
+                 let newafter = !g+>add_node FallThroughNode lbl "[switchfall]" children
                  in
                  !g#add_arc ((newafter, newendswitch), Direct);
                  !g#add_arc ((newswitchi, newafter), Direct);
@@ -569,7 +571,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
                  Switch todo_in_compound
              }
              in
-             aux_statement (None (* no starti *), newxi) st
+             aux_statement (None (* no starti *), newxi) st children
          | _x ->
              (* apparently gcc allows some switch body such as
               *   switch (i) case 0 : printf("here\n");
@@ -592,7 +594,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
          | Some finalthen ->
 
              let afteri =
-	       !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
+	       !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" children in
              !g#add_arc ((newswitchi, afteri),  Control);
              !g#add_arc ((afteri, newendswitch), Control);
 
@@ -609,7 +611,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
              else begin
 
                let afteri =
-		 !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
+		 !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" children in
                !g#add_arc ((newswitchi, afteri),  Control);
                !g#add_arc ((afteri, newendswitch), Control);
 
@@ -635,7 +637,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
         | _ -> raise (Impossible 63)
       in
 
-      let newi = !g +> add_node node  lbl "case:" in
+      let newi = !g +> add_node node  lbl "case:" children in
 
       (match Common.optionise (fun () ->
         (* old: xi.ctx *)
@@ -653,30 +655,30 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
             );
 
           let s = ("[casenode] " ^ string_of_int switchrank) in
-          let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
+          let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s children in
           !g#add_arc ((startbrace, newcasenodei), Direct);
           !g#add_arc ((newcasenodei, newi), Direct);
       | None -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
       );
-      aux_statement (Some newi, xi_lbl) st
+      aux_statement (Some newi, xi_lbl) st children
 
 
   | Labeled (Ast_c.Default st) ->
       incr counter_for_switch;
       let switchrank = !counter_for_switch in
 
-      let newi = !g +> add_node (Default(stmt, ((),ii))) lbl "case default:" in
+      let newi = !g +> add_node (Default(stmt, ((),ii))) lbl "case default:" children in
       !g +> add_arc_opt (starti, newi);
 
       (match xi.ctx with
       | SwitchInfo (startbrace, switchendi, _braces, _parent_lbl) ->
           let s = ("[casenode] " ^ string_of_int switchrank) in
-          let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s in
+          let newcasenodei = !g +> add_node (CaseNode switchrank) lbl s children in
           !g#add_arc ((startbrace, newcasenodei), Direct);
           !g#add_arc ((newcasenodei, newi), Direct);
       | _ -> raise (Error (CaseNoSwitch (pinfo_of_ii ii)))
       );
-      aux_statement (Some newi, xi_lbl) st
+      aux_statement (Some newi, xi_lbl) st children
 
 
 
@@ -701,29 +703,31 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       *)
     * *)
       let (i1, iifakeend) = tuple_of_list2 ii in
-      let tryi = !g +> add_node (TryHeader (stmt, i1))  lbl "try" in
+      let tryi = !g +> add_node (TryHeader (stmt, i1))  lbl "try" children in
       !g +> add_arc_opt (starti, tryi);
 
-      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
-      !g +> add_arc (tryi, afteri);
-      !g +> add_arc (afteri, lasti);
+      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" children in
 
-      let endnode = mk_node (EndStatement(Some iifakeend)) labels [] "[endtry]" in
-      let lasti = !g#add_node endnode in
+      !g#add_arc ((tryi, afteri), Direct);
+      let endnode = mk_node (EndStatement(Some iifakeend)) lbl [] "[endtry]" in
+      let lasti = !g +> basic_add_node endnode children in
+      !g#add_arc ((afteri, lasti), Direct);
+
 
       let starts =
         cal +>
         List.map
           (fun ((param,st),ii) ->
-             let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
-             let cai = !g +> add_node (CatchHeader (param, ii))  lbl "catch" in
-             !g +> add_arc_opt (errorexiti, cai);
-             let finalstmt = aux_statement (Some cai, newxi) st in
+             let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" children in
+             let cai = !g +> add_node (CatchHeader (param, ii))  lbl "catch" children in
+             !g#add_arc ((errorexiti, cai), Direct);
+             let finalstmt = aux_statement (Some cai, xi_lbl) st children in
              !g +> add_arc_opt (finalstmt, lasti);
              errorexiti) in
 
-      let finalstmt = aux_statement (Some tryi, newxi) st in
+      let finalstmt = aux_statement (Some tryi, xi_lbl) st (starts @ children) in
       !g +> add_arc_opt (finalstmt, lasti);
+      finalstmt
 
   (* TODO: code is broken, continue from here. *)
   (* ------------------------- *)
@@ -736,13 +740,13 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
 
-      let newi = !g +> add_node (WhileHeader (stmt, (e,ii))) lbl "while" in
+      let newi = !g +> add_node (WhileHeader (stmt, (e,ii))) lbl "while" children in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node InLoopNode  lbl "[whiletrue]" in
-      (* let newfakeelse = !g +> add_node FalseNode lbl "[endwhile]" in *)
-      let newafter = !g +> add_node LoopFallThroughNode lbl "[whilefall]" in
+      let newfakethen = !g +> add_node InLoopNode  lbl "[whiletrue]" children in
+      (* let newfakeelse = !g +> add_node FalseNode lbl "[endwhile]" children in *)
+      let newafter = !g +> add_node LoopFallThroughNode lbl "[whilefall]" children in
       let newfakeelse =
-        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" in
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endwhile]" children in
 
       let newxi = { xi_lbl with
          ctx = LoopInfo (newi, newfakeelse,  xi_lbl.braces, lbl);
@@ -753,7 +757,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g#add_arc ((newi, newfakethen), Direct);
       !g#add_arc ((newafter, newfakeelse), Direct);
       !g#add_arc ((newi, newafter), Direct);
-      let finalthen = aux_statement (Some newfakethen, newxi) st in
+      let finalthen = aux_statement (Some newfakethen, newxi) st children in
       !g +> add_arc_opt
 	(finalthen, if !Flag_parsing_c.no_loops then newafter else newi);
       Some newfakeelse
@@ -778,18 +782,18 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
         | [i1;i2;i3;i4;i5;i6] -> i1, [i2;i3;i4;i5], i6
         | _ -> raise (Impossible 64)
       in
-      let doi = !g +> add_node (DoHeader (stmt, iido))  lbl "do" in
+      let doi = !g +> add_node (DoHeader (stmt, iido))  lbl "do" children in
       !g +> add_arc_opt (starti, doi);
-      let taili = !g +> add_node (DoWhileTail (e, iiwhiletail)) lbl "whiletail"
+      let taili = !g +> add_node (DoWhileTail (e, iiwhiletail)) lbl "whiletail" children
       in
 
 
-      (*let newfakeelse = !g +> add_node FalseNode lbl "[enddowhile]" in *)
-      let newafter = !g +> add_node FallThroughNode lbl "[dowhilefall]" in
+      (*let newfakeelse = !g +> add_node FalseNode lbl "[enddowhile]" children in *)
+      let newafter = !g +> add_node FallThroughNode lbl "[dowhilefall]" children in
       let newfakeelse =
-        !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" in
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[enddowhile]" children in
 
-      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
+      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" children in
       !g#add_arc ((doi,afteri), Control);
       !g#add_arc ((afteri,newfakeelse), Control);
 
@@ -801,7 +805,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
 
       if not is_zero && (not !Flag_parsing_c.no_loops)
       then begin
-        let newfakethen = !g +> add_node InLoopNode lbl "[dowhiletrue]" in
+        let newfakethen = !g +> add_node InLoopNode lbl "[dowhiletrue]" children in
         !g#add_arc ((taili, newfakethen), Direct);
         !g#add_arc ((newfakethen, doi), Direct);
       end;
@@ -810,7 +814,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g#add_arc ((taili, newafter), Direct);
 
 
-      let finalthen = aux_statement (Some doi, newxi) st in
+      let finalthen = aux_statement (Some doi, newxi) st children in
       (match finalthen with
       | None ->
           if (KeyEdgeSet.is_empty (!g#predecessors taili))
@@ -828,13 +832,13 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let ii = [i1;i2;i3] in
 
       let newi =
-        !g+>add_node(ForHeader(stmt,(first,ii))) lbl "for" in
+        !g+>add_node(ForHeader(stmt,(first,ii))) lbl "for" children in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
-      (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
-      let newafter = !g +> add_node LoopFallThroughNode lbl "[forfall]" in
+      let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" children in
+      (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" children in*)
+      let newafter = !g +> add_node LoopFallThroughNode lbl "[forfall]" children in
       let newfakeelse =
-        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" in
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endfor]" children in
 
       let newxi = { xi_lbl with
            ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl);
@@ -845,7 +849,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g#add_arc ((newi, newfakethen), Direct);
       !g#add_arc ((newafter, newfakeelse), Direct);
       !g#add_arc ((newi, newafter), Direct);
-      let finalthen = aux_statement (Some newfakethen, newxi) st in
+      let finalthen = aux_statement (Some newfakethen, newxi) st children in
       !g +> add_arc_opt
 	(finalthen,
 	 if !Flag_parsing_c.no_loops then newafter else newi);
@@ -865,13 +869,13 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       let ii = [i1;i2;i3] in
 
       let newi =
-        !g+>add_node(MacroIterHeader(stmt,((s,es),ii))) lbl "foreach" in
+        !g+>add_node(MacroIterHeader(stmt,((s,es),ii))) lbl "foreach" children in
       !g +> add_arc_opt (starti, newi);
-      let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" in
-      (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" in*)
-      let newafter = !g +> add_node LoopFallThroughNode lbl "[foreachfall]" in
+      let newfakethen = !g +> add_node InLoopNode  lbl "[fortrue]" children in
+      (*let newfakeelse = !g +> add_node FalseNode lbl "[endfor]" children in*)
+      let newafter = !g +> add_node LoopFallThroughNode lbl "[foreachfall]" children in
       let newfakeelse =
-        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endforeach]" in
+        !g +> add_node (EndStatement (Some iifakeend)) lbl "[endforeach]" children in
 
       let newxi = { xi_lbl with
            ctx = LoopInfo (newi, newfakeelse, xi_lbl.braces, lbl);
@@ -882,7 +886,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
       !g#add_arc ((newi, newfakethen), Direct);
       !g#add_arc ((newafter, newfakeelse), Direct);
       !g#add_arc ((newi, newafter), Direct);
-      let finalthen = aux_statement (Some newfakethen, newxi) st in
+      let finalthen = aux_statement (Some newfakethen, newxi) st children in
       !g +> add_arc_opt (finalthen,
                           if !Flag_parsing_c.no_loops then newafter else newi);
       Some newfakeelse
@@ -954,7 +958,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
           let difference = List.length xi.braces - List.length braces in
           assert (difference >= 0);
           let toend = take difference xi.braces in
-          let newi = insert_all_braces toend newi nodety str in
+          let newi = insert_all_braces toend newi nodety str children in
           !g#add_arc ((newi, desti), Direct);
           None
 
@@ -964,7 +968,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
           assert (difference >= 0);
           let toend = take difference xi.braces in
           let newi =
-	    insert_all_braces toend newi SWBreakAfterNode "[swbreak after]" in
+	    insert_all_braces toend newi SWBreakAfterNode "[swbreak after]" children in
           !g#add_arc ((newi, loopendi), Direct);
           None
       | NoInfo -> raise (Impossible 68)
@@ -989,10 +993,10 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
           | Ast_c.ReturnExpr e -> ReturnExpr (stmt, (e, ii))
           | _ -> raise (Impossible 70)
           )
-          lbl s
+          lbl s children
       in
       !g +> add_arc_opt (starti, newi);
-      let newi = insert_all_braces xi.braces newi RetAfterNode "[ret after]" in
+      let newi = insert_all_braces xi.braces newi RetAfterNode "[ret after]" children in
 
       if xi.under_ifthen
       then !g#add_arc ((newi, errorexiti), Direct)
@@ -1013,33 +1017,34 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
        | _ -> "decl_novar_or_multivar"
      in
 
-     let newi = !g +> add_node (Decl (decl)) lbl s in
+     let newi = !g +> add_node (Decl (decl)) lbl s children in
      !g +> add_arc_opt (starti, newi);
      Some newi
 
   (* ------------------------- *)
   | Ast_c.Asm body ->
-      let newi = !g +> add_node (Asm (stmt, ((body,ii)))) lbl "asm;" in
+      let newi = !g +> add_node (Asm (stmt, ((body,ii)))) lbl "asm;" children in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
   | Ast_c.MacroStmt ->
-      let newi = !g +> add_node (MacroStmt (stmt, ((),ii))) lbl "macro;" in
+      let newi = !g +> add_node (MacroStmt (stmt, ((),ii))) lbl "macro;" children in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
   | Ast_c.IfdefStmt1 (ifdefs, xs) ->
       aux_statement_list starti (xi,xi_lbl)
-	[Ast_c.IfdefStmt2 (ifdefs, List.map (fun x -> [StmtElem x]) xs)]
+        [Ast_c.IfdefStmt2 (ifdefs, List.map (fun x -> [StmtElem x]) xs)]
+        []
 
   (* ------------------------- *)
   | Ast_c.NestedFunc def ->
-      let newi = !g +> add_node (NestedFunc (stmt, ((def,ii)))) lbl "asm;" in
+      let newi = !g +> add_node (NestedFunc (stmt, ((def,ii)))) lbl "asm;" children in
       !g +> add_arc_opt (starti, newi);
       Some newi
 
 and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
-          (stmt :statement)
+          (stmt :statement) (children :nodei list)
           : nodei (* first node of the else branch *)
           * nodei option =
   let ii = Ast_c.get_ii_st_take_care stmt in
@@ -1065,7 +1070,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
        *)
 
       (* starti -> newi *)
-      let newi = !g +> add_node (IfHeader (stmt, (e, ii'))) labels "if" in
+      let newi = !g +> add_node (IfHeader (stmt, (e, ii'))) labels "if" children in
       !g +> add_arc_opt (starti, newi);
 
       (* newi ---> newfakethen -> ... -> lasti
@@ -1073,17 +1078,17 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
        *       |-> newfakeelse ----------->|
        *)
       let escapes = ref false in
-      let newfakethen = !g +> add_node (TrueNode escapes) labels "[then]" in
-      let newfakeelse = !g +> add_node FallThroughNode labels "[fallthrough]" in
+      let newfakethen = !g +> add_node (TrueNode escapes) labels "[then]" children in
+      let newfakeelse = !g +> add_node FallThroughNode labels "[fallthrough]" children in
       let lasti  = !g +>
-            add_node (EndStatement (Some iifakeend)) labels "[endif]" in
+            add_node (EndStatement (Some iifakeend)) labels "[endif]" children in
       !g#add_arc ((newi, newfakethen), Direct);
       !g#add_arc ((newi, newfakeelse), Direct);
       !g#add_arc ((newfakeelse, lasti), Direct);
 
       (* if -> [after] -> [endif] *)
       let afteri = !g +>
-            add_node (AfterNode NormalAfterNode) labels "[after]" in
+            add_node (AfterNode NormalAfterNode) labels "[after]" children in
       !g#add_arc ((newi, afteri), Control);
       !g#add_arc ((afteri, lasti), Control);
 
@@ -1091,7 +1096,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       let newxi = { xi_lbl with  under_ifthen = true; } in
 
       (* [then] -> {st1} -> lasti *)
-      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
+      let finalthen = aux_statement (Some newfakethen, newxi) st1 children in
       (match finalthen with None -> escapes := true | _ -> ());
       !g +> add_arc_opt (finalthen, lasti);
       lasti, Some lasti
@@ -1108,7 +1113,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
         in
 
       (* starti -> "if" *)
-      let newi = !g +> add_node (IfHeader (stmt, (e, iiheader))) labels "if" in
+      let newi = !g +> add_node (IfHeader (stmt, (e, iiheader))) labels "if" children in
       !g +> add_arc_opt (starti, newi);
 
       (* if ---> [then] -> ...
@@ -1116,9 +1121,9 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
        *     |-> [else] -> else -> ...
        *)
       let escapes = ref false in
-      let newfakethen = !g +> add_node (TrueNode escapes) labels "[then]" in
-      let newfakeelse = !g +> add_node FalseNode labels "[else]" in
-      let elsenode = !g +> add_node (Else iielse) labels "else" in
+      let newfakethen = !g +> add_node (TrueNode escapes) labels "[then]" children in
+      let newfakeelse = !g +> add_node FalseNode labels "[else]" children in
+      let elsenode = !g +> add_node (Else iielse) labels "else" children in
       !g#add_arc ((newi, newfakethen), Direct);
       !g#add_arc ((newi, newfakeelse), Direct);
       !g#add_arc ((newfakeelse, elsenode), Direct);
@@ -1131,7 +1136,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       let ret_afters = ref [] in
       let mkafter ty str lasti = begin
             (* if -> [after] -> [endif] *)
-            let afteri = !g +> add_node (AfterNode ty) labels str in
+            let afteri = !g +> add_node (AfterNode ty) labels str children in
             let a1 = ((newi, afteri), Control) in
             !g#add_arc a1;
             let a2 = ((afteri, lasti), Control) in
@@ -1143,8 +1148,8 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
             braces = Common.Left (endnode_dup,mkafter) :: xi_lbl.braces
         } in
 
-      let finalthen = aux_statement (Some newfakethen, newxi) st1 in
-      let finalelse = aux_statement (Some elsenode, newxi) st2 in
+      let finalthen = aux_statement (Some newfakethen, newxi) st1 children in
+      let finalelse = aux_statement (Some elsenode, newxi) st2 children in
 
       (match finalthen with None -> escapes := true | _ -> ());
 
@@ -1157,7 +1162,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       elsenode_succ, begin match finalthen, finalelse with
         | (None, None) -> None
         | __else__ ->
-          let lasti = !g#add_node endnode in
+          let lasti = !g +> basic_add_node endnode children in
           !ret_afters +> List.iter (function (node,a1,a2) ->
                             !g#del_arc a1; !g#del_arc a2; !g#del_node node);
           mkafter NormalAfterNode "[after]" lasti;
@@ -1208,11 +1213,11 @@ and mk_Ifdef_Ite (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
 
       (* starti -> #ifdef-if *)
       let ifdefite = !g +>
-        add_node (IfdefIteHeader [i1;i6]) labels "#ifdef-if" in
+        add_node (IfdefIteHeader [i1;i6]) labels "#ifdef-if" [] in
       !g +> add_arc_opt (starti, ifdefite);
 
       begin
-	match mk_If (Some ifdefite) labels xi_lbl if_stmt with
+        match mk_If (Some ifdefite) labels xi_lbl if_stmt [] with
 	  (elsenode,endnode_opt) ->
             !g#add_arc ((ifdefite, elsenode), Direct);
             endnode_opt
@@ -1247,13 +1252,13 @@ and mk_Ifdef_Ite2 (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
 
       (* starti -> #ifdef-if *)
       let ifdefite = !g +>
-        add_node (IfdefIteHeader [i1;i6;i7]) labels "#ifdef-if" in
+        add_node (IfdefIteHeader [i1;i6;i7]) labels "#ifdef-if" [] in
       !g +> add_arc_opt (starti, ifdefite);
 
       begin
-	match mk_If (Some ifdefite) labels xi_lbl if_stmt with
+        match mk_If (Some ifdefite) labels xi_lbl if_stmt [] with
 	  (elsenode,endnode_opt) ->
-	    let finalelse = aux_statement (Some ifdefite, xi_lbl) st2 in
+            let finalelse = aux_statement (Some ifdefite, xi_lbl) st2 [] in
 	    begin
 	      match finalelse with
 		Some st2_node -> !g#add_arc ((st2_node, elsenode), Direct)
@@ -1263,7 +1268,7 @@ and mk_Ifdef_Ite2 (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
       end
   | x -> error_cant_have x
 
-and aux_statement_list starti (xi, newxi) statxs =
+and aux_statement_list starti (xi, newxi) statxs children =
   statxs
   +> List.fold_left (fun starti statement_seq ->
     if !Flag_parsing_c.label_strategy_2
@@ -1277,12 +1282,12 @@ and aux_statement_list starti (xi, newxi) statxs =
 
     match statement_seq with
     | Ast_c.StmtElem statement ->
-        aux_statement (starti, newxi') statement
+        aux_statement (starti, newxi') statement children
 
     | Ast_c.CppDirectiveStmt s ->
 	let elem = CppTop s in
 	let str = "CppTop" in
-	let ei =   !g +> add_node elem    lbl_0 str in
+	let ei =   !g +> add_node elem    lbl_0 str children in
 
 	!g +> add_arc_opt (starti, ei);
 	Some ei
@@ -1296,9 +1301,9 @@ and aux_statement_list starti (xi, newxi) statxs =
         let (head, body, tail) = Common.head_middle_tail ifdefs in
 
         let newi =
-          !g +> add_node (IfdefHeader (head)) newxi'.labels "[ifdef]" in
+          !g +> add_node (IfdefHeader (head)) newxi'.labels "[ifdef]" children in
         let taili =
-          !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" in
+          !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" children in
         (* do like for a close brace, see endi.{c,cocci} *)
         let taili_dup =
           mk_fake_node (IfdefEndif (tail)) newxi'.labels [] "[endif]" in
@@ -1307,7 +1312,7 @@ and aux_statement_list starti (xi, newxi) statxs =
         if body = [] then
         begin
           let newfakeelse = !g +> add_node FallThroughNode newxi'.labels
-                                           "[fallthrough]" in
+                                           "[fallthrough]" children in
           !g#add_arc ((newi, newfakeelse), Direct);
           !g#add_arc ((newfakeelse,taili), Direct);
         end;
@@ -1315,7 +1320,7 @@ and aux_statement_list starti (xi, newxi) statxs =
         let elsenodes =
           body +> List.map (fun elseif ->
             let elsei =
-              !g +> add_node (IfdefElse (elseif)) newxi'.labels "[elseif]" in
+              !g +> add_node (IfdefElse (elseif)) newxi'.labels "[elseif]" children in
             !g#add_arc ((newi, elsei), Direct);
             elsei
           ) in
@@ -1327,7 +1332,7 @@ and aux_statement_list starti (xi, newxi) statxs =
               let newerxi =
                 { newxi with braces = Common.Right taili_dup:: newxi.braces } in
               let finalthen =
-                aux_statement_list (Some start_nodei) (newxi, newerxi) xs in
+                aux_statement_list (Some start_nodei) (newxi, newerxi) xs children in
               !g +> add_arc_opt (finalthen, taili);
               )
         in
@@ -1338,7 +1343,7 @@ and aux_statement_list starti (xi, newxi) statxs =
         Not sure if this is a good or bad thing, at least if there is no else
 	because then no statement might be there.
 	let afteri =
-          !g +> add_node (AfterNode NormalAfterNode) newxi'.labels "[after]" in
+          !g +> add_node (AfterNode NormalAfterNode) newxi'.labels "[after]" children in
 	!g#add_arc ((newi, afteri), Control);
 	!g#add_arc ((afteri, taili), Control);
 *)
@@ -1386,11 +1391,11 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
       f_body = [] (* empty body *);
       f_old_c_style = oldstyle;
       }, iifunheader))
-    lbl_start ("function " ^ Ast_c.str_of_name namefuncs) in
-  let enteri     = !g +> add_node Enter     lbl_0 "[enter]"     in
-  let preexiti   = !g +> add_node (PreExit iiend) lbl_0 "[preexit]"      in
-  let exiti      = !g +> add_node Exit lbl_0 "[exit]"      in
-  let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
+    lbl_start ("function " ^ Ast_c.str_of_name namefuncs) [] in
+  let enteri     = !g +> add_node Enter     lbl_0 "[enter]" []     in
+  let preexiti   = !g +> add_node (PreExit iiend) lbl_0 "[preexit]" []      in
+  let exiti      = !g +> add_node Exit lbl_0 "[exit]" []      in
+  let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" [] in
 
   !g#add_arc ((topi, headi), Direct);
   !g#add_arc ((headi, enteri), Direct);
@@ -1408,7 +1413,7 @@ let aux_definition: nodei -> definition -> unit = fun topi funcdef ->
     }
   in
 
-  let lasti = aux_statement (Some enteri, info) topstatement in
+  let lasti = aux_statement (Some enteri, info) topstatement [] in
   !g +> add_arc_opt (lasti, preexiti) in
 
 (*****************************************************************************)
@@ -1438,7 +1443,7 @@ let specialdeclmacro_to_stmt (s, args, ii) =
   counter_for_braces := 0;
   counter_for_switch := 0;
 
-  let topi = !g +> add_node TopNode lbl_0 "[top]" in
+  let topi = !g +> add_node TopNode lbl_0 "[top]" [] in
 
   let do_definition topi ((defbis,_) as def) =
     let _funcs = defbis.f_name in
@@ -1448,8 +1453,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
     [(outer_e,Some !g)] in
 
   let do_decl topi elem str =
-    let ei =   !g +> add_node elem    lbl_0 str in
-    let endi = !g +> add_node EndNode lbl_0 "[end]" in
+    let ei =   !g +> add_node elem    lbl_0 str [] in
+    let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
 
     !g#add_arc ((topi, ei),Direct);
     !g#add_arc ((ei, endi),Direct);
@@ -1477,13 +1482,13 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 	  Ast_c.Undef -> "#undef " ^ id
 	| _ -> "#define " ^ id in
       let (_,_,defeol) = tuple_of_list3 ii in
-      let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s in
+      let headeri = !g+>add_node (DefineHeader ((id, ii), defkind)) lbl_0 s [] in
       !g#add_arc ((topi, headeri),Direct);
 
       let atomic_for_matching node txt =
-        let ei   = !g +> add_node node lbl_0 txt in
-        let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
-        let endi = !g +> add_node EndNode lbl_0 "[end]" in
+        let ei   = !g +> add_node node lbl_0 txt [] in
+        let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" [] in
+        let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
         !g#add_arc ((headeri, ei) ,Direct);
         !g#add_arc ((ei, pri) ,Direct);
         !g#add_arc ((pri, endi) ,Direct) in
@@ -1496,8 +1501,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
       | Ast_c.DefineStmt st ->
           (* can have some return; inside the statement *)
-          let exiti      = !g +> add_node Exit      lbl_0 "[exit]"      in
-          let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
+          let exiti      = !g +> add_node Exit      lbl_0 "[exit]" []      in
+          let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" [] in
           let goto_labels = compute_labels_and_create_them st in
 
           let info = { initial_info with
@@ -1507,11 +1512,11 @@ let specialdeclmacro_to_stmt (s, args, ii) =
           }
           in
 
-          let lasti = aux_statement (Some headeri , info) st in
+          let lasti = aux_statement (Some headeri , info) st [] in
           lasti +> do_option (fun lasti ->
             (* todo? if don't have a lasti ? no EndNode ? CTL will work ? *)
-            let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
-            let endi = !g +> add_node EndNode lbl_0 "[end]" in
+            let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" [] in
+            let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
             !g#add_arc ((lasti, pri), Direct);
             !g#add_arc ((pri, endi), Direct)
           )
@@ -1523,12 +1528,12 @@ let specialdeclmacro_to_stmt (s, args, ii) =
             labels_assoc = goto_labels } in
 
           let headerdoi =
-            !g +> add_node (DefineDoWhileZeroHeader ((),ii)) lbl_0 "do0" in
+            !g +> add_node (DefineDoWhileZeroHeader ((),ii)) lbl_0 "do0" [] in
           !g#add_arc ((headeri, headerdoi), Direct);
-          let lasti = aux_statement (Some headerdoi , info) st in
+          let lasti = aux_statement (Some headerdoi , info) st [] in
           lasti +> do_option (fun lasti ->
-            let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
-            let endi = !g +> add_node EndNode  lbl_0 "[end]" in
+            let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" [] in
+            let endi = !g +> add_node EndNode  lbl_0 "[end]" [] in
             !g#add_arc ((lasti, pri), Direct);
             !g#add_arc ((pri, endi), Direct)
           )
@@ -1539,8 +1544,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
       | Ast_c.DefineText (s, s_ii) ->
           raise (Error(Define(pinfo_of_ii ii)))
       | Ast_c.DefineEmpty ->
-          let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" in
-          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          let pri = !g +> add_node (PreExit defeol) lbl_0 "[preexit]" [] in
+          let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
           !g#add_arc ((headeri, pri),Direct);
           !g#add_arc ((pri, endi),Direct);
       | Ast_c.DefineMulti sts -> (* christia: todo *)
@@ -1550,13 +1555,13 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
 (* old:
       | Ast_c.DefineText (s, ii) ->
-          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
           !g#add_arc ((headeri, endi),Direct);
       | Ast_c.DefineInit _ ->
-          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
           !g#add_arc ((headeri, endi),Direct);
       | Ast_c.DefineTodo ->
-          let endi = !g +> add_node EndNode lbl_0 "[end]" in
+          let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
           !g#add_arc ((headeri, endi),Direct);
 *)
       );
@@ -1565,8 +1570,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
   | Ast_c.CppTop ((Ast_c.Include inc) as elem) ->
       let str = "#include" in
-      let ei =   !g +> add_node (CppTop elem) lbl_0 str in
-      let endi = !g +> add_node EndNode lbl_0 "[end]" in
+      let ei =   !g +> add_node (CppTop elem) lbl_0 str [] in
+      let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
 
       !g#add_arc ((topi, ei),Direct);
       !g#add_arc ((ei, endi),Direct);
@@ -1574,8 +1579,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
   | Ast_c.CppTop ((Ast_c.Pragma ((id,rest),ii)) as elem)  ->
       let str = "#pragma" in
-      let ei =   !g +> add_node (CppTop elem) lbl_0 str in
-      let endi = !g +> add_node EndNode lbl_0 "[end]" in
+      let ei =   !g +> add_node (CppTop elem) lbl_0 str [] in
+      let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
 
       !g#add_arc ((topi, ei),Direct);
       !g#add_arc ((ei, endi),Direct);
@@ -1583,8 +1588,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
     | Ast_c.CppTop ((Ast_c.UsingTypename ((id,ty),ii)) as elem) ->
 	let str = "using type" in
-	let ei =   !g +> add_node (CppTop elem) lbl_0 str in
-	let endi = !g +> add_node EndNode lbl_0 "[end]" in
+	let ei =   !g +> add_node (CppTop elem) lbl_0 str [] in
+	let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
 
 	!g#add_arc ((topi, ei),Direct);
 	!g#add_arc ((ei, endi),Direct);
@@ -1592,8 +1597,8 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
     | Ast_c.CppTop ((Ast_c.UsingMember (id,ii)) as elem) ->
 	let str = "using member" in
-	let ei =   !g +> add_node (CppTop elem) lbl_0 str in
-	let endi = !g +> add_node EndNode lbl_0 "[end]" in
+	let ei =   !g +> add_node (CppTop elem) lbl_0 str [] in
+	let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
 
 	!g#add_arc ((topi, ei),Direct);
 	!g#add_arc ((ei, endi),Direct);
@@ -1601,15 +1606,15 @@ let specialdeclmacro_to_stmt (s, args, ii) =
 
     | Ast_c.CppTop ((Ast_c.UsingNamespace (id,ii)) as elem) ->
 	let str = "using namespace" in
-	let ei =   !g +> add_node (CppTop elem) lbl_0 str in
-	let endi = !g +> add_node EndNode lbl_0 "[end]" in
+	let ei =   !g +> add_node (CppTop elem) lbl_0 str [] in
+	let endi = !g +> add_node EndNode lbl_0 "[end]" [] in
 
 	!g#add_arc ((topi, ei),Direct);
 	!g#add_arc ((ei, endi),Direct);
 	[(outer_e,Some !g)]
 
   | Ast_c.TemplateDefinition(tmp,top,ii) ->
-      let headeri = !g+>add_node (TemplateHeader (tmp,ii)) lbl_0 "template" in
+      let headeri = !g+>add_node (TemplateHeader (tmp,ii)) lbl_0 "template" [] in
       !g#add_arc ((topi, headeri),Direct);
       (match top with
       | Ast_c.Definition def -> do_definition headeri def
