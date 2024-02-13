@@ -151,6 +151,8 @@ type node = node1 * string
 
   | IfHeader  of fullstatement * expression wrap
   | Else of info
+  | TryHeader of fullstatement * info
+  | CatchHeader of parameterType wrap
   | WhileHeader of fullstatement * expression wrap
   | DoHeader of fullstatement * info
   | DoWhileTail of expression wrap

@@ -687,21 +687,45 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei option =
   | Selection (Ast_c.Ifdef_Ite2 _) -> mk_Ifdef_Ite2 starti lbl xi_lbl stmt
 
    (* ------------------------- *)
+  | Selection  (Ast_c.TryCatch (st, cal)) ->
    (* 
-  | Selection  (Ast_c.TryCatch ()) ->
      (*             /------------> afteri --------------------v
       *  starti -> tryi --> S1 ... SM ---> finalstmt (opt)---> lasti
-      *             |      v||  v-||
-      *             \----- catch1 ----> handler1 -------------^
-      *              |      v|    v|
-      *              \---- ...............................----^
-      *              |       v     v
-      *               \----- catchN --> handlerN -------------^
+      *                    v||  v-||
+      *                    catch1 ----> handler1 -------------^
+      *                     v|    v|
+      *                    catch... ..> handler... .......----^
+      *                      v     v
+      *                      catchN --> handlerN -------------^
       *)
-        TODO: continue here.
     * *)
+      let (i1, iifakeend) = tuple_of_list2 ii in
+      let tryi = !g +> add_node (TryHeader (stmt, i1))  lbl "try" in
+      !g +> add_arc_opt (starti, tryi);
 
-   (* ------------------------- *)
+      let afteri = !g +> add_node (AfterNode NormalAfterNode) lbl "[after]" in
+      !g +> add_arc (tryi, afteri);
+      !g +> add_arc (afteri, lasti);
+
+      let endnode = mk_node (EndStatement(Some iifakeend)) labels [] "[endtry]" in
+      let lasti = !g#add_node endnode in
+
+      let starts =
+        cal +>
+        List.map
+          (fun ((param,st),ii) ->
+             let errorexiti = !g +> add_node ErrorExit lbl_0 "[errorexit]" in
+             let cai = !g +> add_node (CatchHeader (param, ii))  lbl "catch" in
+             !g +> add_arc_opt (errorexiti, cai);
+             let finalstmt = aux_statement (Some cai, newxi) st in
+             !g +> add_arc_opt (finalstmt, lasti);
+             errorexiti) in
+
+      let finalstmt = aux_statement (Some tryi, newxi) st in
+      !g +> add_arc_opt (finalstmt, lasti);
+
+  (* TODO: code is broken, continue from here. *)
+  (* ------------------------- *)
   | Iteration  (Ast_c.While (e, st)) ->
      (* starti -> newi ---> newfakethen -> ... -> finalthen -
       *             |---|-----------------------------------|
