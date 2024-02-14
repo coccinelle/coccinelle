@@ -6031,6 +6031,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
     F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|
     F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|
+    F.TryHeader _|F.CatchHeader _|
     F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
     F.Decl _|F.FunHeader _)
       -> fail

@@ -282,6 +282,7 @@ module Ast_c :
       | Switch of expression * statement
       | Ifdef_Ite of expression * statement * statement
       | Ifdef_Ite2 of expression * statement * statement * statement
+      | TryCatch of statement * (parameterType * statement) wrap list
     and iteration =
       Ast_c.iteration =
         While of expression * statement
@@ -810,8 +811,10 @@ module Parser_c :
       | Tcontinue of Ast_c.info
       | Tfor of Ast_c.info
       | Tdo of Ast_c.info
+      | Ttry of (Ast_c.info)
       | Tif of Ast_c.info
       | Twhile of Ast_c.info
+      | Tcatch of Ast_c.info
       | Treturn of Ast_c.info
       | Tgoto of Ast_c.info
       | Tdefault of Ast_c.info

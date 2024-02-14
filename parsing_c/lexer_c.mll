@@ -182,7 +182,6 @@ let keyword_table = Common.hash_of_list [
   "default", (fun ii -> Tdefault ii);
   "for",     (fun ii -> Tfor ii);
   "do",      (fun ii -> Tdo ii);
-  "try",     (fun ii -> Ttry ii);
   "while",   (fun ii -> Twhile ii);
   "return",  (fun ii -> Treturn ii);
   "goto",    (fun ii -> Tgoto ii);
@@ -254,6 +253,8 @@ let cpp_keyword_table = Common.hash_of_list [
   "override",  (fun ii -> TMacroAttr("override",ii));
   "noexcept",  (fun ii -> TMacroAttr("noexcept",ii));
   "decltype",  (fun ii -> Ttypeof ii);
+  "try",       (fun ii -> Ttry ii);
+  "catch",     (fun ii -> Tcatch ii);
   "typeof_unequal", (fun ii -> Ttypeof ii)]
 
 let ibm_keyword_table = Common.hash_of_list [

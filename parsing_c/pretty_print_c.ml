@@ -1706,6 +1706,12 @@ and pp_init (init, iinit) =
     | F.Label (st, name, ((),ii)) ->
 	let (i2) = Common.tuple_of_list1 ii in
 	pp_name name; pr_elem i2
+    | F.TryHeader (_,i1) ->
+	pr_elem i1
+    | F.CatchHeader (param,ii) ->
+	let (i1, i2, i3) = Common.tuple_of_list3 ii in
+	pr_elem i1; pr_space();
+	pr_elem i2; pp_param param; pr_elem i3
     | F.EndStatement iopt ->
         (* do_option infof iopt *)
 	pr2 "EndStatement"

@@ -399,6 +399,7 @@ let extract_fullstatement node =
 
   | SeqStart (st,_,_)
   | ExprStatement (st, _)
+  | TryHeader (st, _)
   | IfHeader  (st, _)
   | WhileHeader (st, _)
   | DoHeader (st, _)
@@ -425,6 +426,7 @@ let extract_fullstatement node =
   | Else _
   | EndStatement _
   | DoWhileTail _
+  | CatchHeader _
   | Enter
   | PreExit _
   | Exit

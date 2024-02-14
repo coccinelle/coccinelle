@@ -1069,6 +1069,12 @@ and vk_node = fun bigf node ->
         iif ii;
         vk_expr bigf e
 
+    | F.TryHeader (_,info) ->
+        infof info
+    | F.CatchHeader (param,ii) ->
+        iif ii;
+        vk_param bigf param
+
     | F.ForHeader (_st, ((ForExp((e1opt,i1), (e2opt,i2), (e3opt,i3))), ii)) ->
         iif i1; iif i2; iif i3;
         iif ii;
@@ -2190,6 +2196,10 @@ and vk_node_s = fun bigf node ->
         F.IfHeader    (st, (vk_expr_s bigf e, iif ii))
     | F.SwitchHeader (st, (e,ii)) ->
         F.SwitchHeader(st, (vk_expr_s bigf e, iif ii))
+    | F.TryHeader (st,info) ->
+        F.TryHeader (st, infof info)
+    | F.CatchHeader (param,ii) ->
+        F.CatchHeader (vk_param_s bigf param, iif ii)
     | F.WhileHeader (st, (e,ii))  ->
         F.WhileHeader (st, (vk_expr_s bigf e, iif ii))
     | F.DoWhileTail (e,ii)  ->
