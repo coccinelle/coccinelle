@@ -2288,6 +2288,14 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 2; LP.add_typedef_root s i1;
       TypedefIdent (s, i1)
 
+  (* xx yy is a typedef ident *)
+  | (TIdent (s, i1)::TQualId _::_ , _)
+    when not_struct_enum before
+	&& ok_typedef s
+        ->
+      msg_typedef s i1 212; LP.add_typedef_root s i1;
+      TypedefIdent (s, i1)
+
   (* xx yy * zz : xx is a macro *)
   | (TIdent (s, i1)::TIdent (s2, i2)::ptr , _)
     when pointer ~followed_by:(function TIdent _ -> true | _ -> false) ptr
