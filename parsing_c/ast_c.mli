@@ -276,8 +276,11 @@ and c_plus_plus_constructor = c_plus_plus_constructorbis wrap
 and c_plus_plus_constructorbis =
   | ConstructorDecl of string * (parameterType wrap2 list * bool wrap) * bool wrap
   | DestructorDecl  of string * (parameterType wrap2 list * bool wrap) * bool wrap
-  | ConstructorDef  of string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+  | ConstructorDef  of string * (parameterType wrap2 list * bool wrap) *
+	(constr_init wrap2 (* , *) list) wrap * bool wrap * compound
   | DestructorDef   of string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+
+and constr_init = (name * argument wrap2 (* , *) list) wrap
 
 and base_class = base_class_bis wrap
   and base_class_bis =

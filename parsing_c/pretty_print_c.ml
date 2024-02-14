@@ -1359,9 +1359,17 @@ and pp_init (init, iinit) =
   and pp_param_list paramst = pp_list pp_param paramst
 
   and pp_construct_destruct (cd,ii) =
-    let constructor_start iis lp paramst rp final =
+    let constructor_start iis lp paramst rp constr_init final =
       pr_elem iis;
       pr_elem lp; pp_params paramst; pr_elem rp;
+      (match constr_init with
+	(inits,[i1]) ->
+	  let pp_init ((name,args),parens) =
+	    let (lp,rp) = Common.tuple_of_list2 parens in
+	    pp_name name; pr_elem lp; pp_arg_list args; pr_elem rp in
+	  pr_space(); pr_elem i1; pr_space();
+	  pp_list pp_init inits
+      | _ -> ());
       snd final +> List.iter pr_elem in
     match cd with
     | ConstructorDecl (s, paramst, final)  ->
@@ -1370,7 +1378,7 @@ and pp_init (init, iinit) =
 	            iisto +> List.iter pr_elem; (* static and const *)
                  *)
 	pr_elem ifakestart;
-	constructor_start iis lp paramst rp final;
+	constructor_start iis lp paramst rp ([],[]) final;
 	pr_elem iiend
     | DestructorDecl (s, paramst, final)  ->
 	let (itil, iis, lp, rp, iiend, ifakestart) = Common.tuple_of_list6 ii in
@@ -1379,19 +1387,20 @@ and pp_init (init, iinit) =
                  *)
 	pr_elem ifakestart;
 	pr_elem itil;
-	constructor_start iis lp paramst rp final;
+	constructor_start iis lp paramst rp ([],[]) final;
 	pr_elem iiend
-    | ConstructorDef (s, paramst, final, body)  ->
+    | ConstructorDef (s, paramst, constr_init, final, body)  ->
+	Printf.eprintf "ii: %d\n" (List.length ii);
 	let (iis, lp, rp, iilb, iirb, ifakestart) = Common.tuple_of_list6 ii in
 	pr_elem ifakestart;
-	constructor_start iis lp paramst rp final;
+	constructor_start iis lp paramst rp constr_init final;
 	pr_elem iilb; start_block(); pp_statement_seq_list body;
         end_block(); pr_elem iirb
     | DestructorDef (s, paramst, final, body)  ->
 	let (itil, iis, lp, rp, iilb, iirb, ifakestart) = Common.tuple_of_list7 ii in
 	pr_elem ifakestart;
 	pr_elem itil;
-	constructor_start iis lp paramst rp final;
+	constructor_start iis lp paramst rp ([],[]) final;
 	pr_elem iilb; start_block(); pp_statement_seq_list body;
         end_block(); pr_elem iirb
 

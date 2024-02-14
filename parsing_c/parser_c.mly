@@ -2233,17 +2233,32 @@ cpp_struct_decl2:
  | Tprivate TDotDot   { PrivateLabel [$1;$2] }
 
 c_plus_plus_constructor_decl:
- | identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
-     { (ConstructorDecl (fst $1, $3, $5)), [snd $1;$2;$4;$6;fakeBeforeInfo()] }
+ | identifier TOPar parameter_type_list TCPar constr_inits post_constructor TPtVirg
+     { (* allowing constr_inits solves a parser conflict, because we don't know if
+       a ; will be reached *)
+       assert ($5 = ([],[]));
+       (ConstructorDecl (fst $1, $3, $6)), [snd $1;$2;$4;$7;fakeBeforeInfo()] }
  | TTilde identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
      { (DestructorDecl (fst $2, $4, $6)), [$1;snd $2;$3;$5;$7;fakeBeforeInfo()] }
 
- | identifier TOPar parameter_type_list TCPar post_constructor compound
-     { (ConstructorDef (fst $1, $3, $5, fst $6)),
-       (snd $1) :: $2 :: $4 :: snd $6 @[fakeBeforeInfo()] }
+ | identifier TOPar parameter_type_list TCPar constr_inits post_constructor compound
+     { (ConstructorDef (fst $1, $3, $5, $6, fst $7)),
+       (snd $1) :: $2 :: $4 :: snd $7 @[fakeBeforeInfo()] }
  | TTilde identifier TOPar parameter_type_list TCPar post_constructor compound
      { (DestructorDef (fst $2, $4, $6, fst $7)),
        $1 :: snd $2 :: $3 :: $5 :: snd $7 @[fakeBeforeInfo()] }
+
+constr_inits:
+  TDotDot constructor_init_list { $2,[$1] }
+| /* empty */ { ([],[]) }
+
+constructor_init_list:
+   constructor_init { [$1,[]] }
+ | constructor_init_list TComma constructor_init { $1 @ [$3,    [$2]] }
+
+constructor_init:
+   ident_cpp TOPar argument_list TCPar { (($1,$3),[$2;$4]) }
+ | ident_cpp TOBrace argument_list TCBrace { (($1,$3),[$2;$4]) }
 
 post_constructor:
   Tfinal      { (true, [$1]) }

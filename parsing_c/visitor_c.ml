@@ -796,7 +796,20 @@ and vk_constr_destr = fun bigf d ->
     | ConstructorDecl (s, paramst, final)
     | DestructorDecl (s, paramst, final) ->
 	visit ii final paramst
-    | ConstructorDef (s, paramst, final, body)
+    | ConstructorDef (s, paramst, constr_inits, final, body) ->
+	visit ii final paramst;
+	(match constr_inits with
+	  (inits,[i1]) ->
+	    iif [i1];
+	    List.iter
+	      (fun (((nm,args),parens),comma) ->
+		iif comma;
+		vk_name bigf nm;
+		iif parens;
+		vk_argument_list bigf args)
+	      inits
+	| _ -> ());
+	vk_statement_sequencable_list bigf body
     | DestructorDef (s, paramst, final, body) ->
 	visit ii final paramst;
 	vk_statement_sequencable_list bigf body
@@ -1905,9 +1918,18 @@ and vk_constr_destr_s = fun bigf d ->
 	(ConstructorDecl (s, vk_paramst_s bigf paramst, do_final final),iif ii)
     | DestructorDecl (s, paramst, final) ->
 	(DestructorDecl (s, vk_paramst_s bigf paramst, do_final final),iif ii)
-    | ConstructorDef (s, paramst, final, body) ->
+    | ConstructorDef (s, paramst, (inits,ii2), final, body) ->
 	(ConstructorDef
-	   (s, vk_paramst_s bigf paramst, do_final final,
+	   (s, vk_paramst_s bigf paramst,
+	    (List.map
+	      (fun (((nm,args),parens),comma) ->
+		(((vk_name_s bigf nm,
+		   args +> List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii)),
+		  iif parens),
+		 iif comma))
+	      inits,
+	     iif ii2),
+	    do_final final,
 	    vk_statement_sequencable_list_s bigf body),
 	   iif ii)
     | DestructorDef (s, paramst, final, body) ->

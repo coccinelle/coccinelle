@@ -378,9 +378,12 @@ module Ast_c :
       | DestructorDecl  of
 	  string * (parameterType wrap2 list * bool wrap) * bool wrap
       | ConstructorDef  of
-	  string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+	  string * (parameterType wrap2 list * bool wrap) *
+	    (constr_init wrap2 (* , *) list) wrap * bool wrap * compound
       | DestructorDef   of
 	  string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+
+    and constr_init = (name * argument wrap2 (* , *) list) wrap
 
     and base_class = base_class_bis wrap
     and base_class_bis =
