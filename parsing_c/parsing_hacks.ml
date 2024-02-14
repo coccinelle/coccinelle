@@ -3211,7 +3211,8 @@ let rec choose_qualtype toks =
 	    let acc = localacc@TQualType(mkinfo i1)::acc in
 	    loop false false [] (b :: (revapp skipped (a::acc))) rest
 	| ((TAnd _|TMul _) as b)::((x::_) as rest)
-	  when skipped <> [] && (not(TH.is_just_comment_or_space x)) && seencolon ->
+	  when ((skipped <> [] && (not(TH.is_just_comment_or_space x))) ||
+	        (skipped = [] && (TH.is_just_comment_or_space x))) && seencolon ->
 	    let acc = localacc@TQualType(mkinfo i1)::acc in
 	    loop false false [] (b :: (revapp skipped (a::acc))) rest
 	| _ ->
