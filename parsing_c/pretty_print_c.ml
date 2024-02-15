@@ -380,8 +380,8 @@ and pp_string_format (e,ii) =
           pr_elem ic;
           pr_elem lp;
           pp_param param;
-          pp_statement st;
           pr_elem rp;
+          pp_statement st
         );
         pr_elem iifakend
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
