@@ -1265,7 +1265,9 @@ expr_statement:
  | expr TPtVirg                { Some $1, [$2] }
 
 handler:
- | Tcatch TOPar parameter_decl TCPar statement    { ($3,$5), [$1;$2;$4] }
+ | Tcatch TOPar parameter_decl TCPar compound
+   { let (st,braces) = $5 in
+     ($3,Compound st), [$1;$2;$4]@braces }
 /* Note: catch-all handler missing */
 
 handler_sequence:
@@ -1286,7 +1288,10 @@ selection:
  | TUifdef Tif TOPar expr TCPar statement Telse TUelseif statement TUendif statement
      { Ifdef_Ite2 ($4,$6,$9,$11), [$1;$2;$3;$5;$7;$8;$10] }
  /* NOTE: perhaps compound_list instead of statement? */
- | Ttry statement handler_sequence { TryCatch ($2,$3), [$1] }
+ | Ttry compound handler_sequence
+   {
+     let (st,braces) = $2 in
+     TryCatch (Compound st,$3), [$1]@braces }
 
 iteration:
  | Twhile TOPar expr TCPar cpp_ifdef_statement
