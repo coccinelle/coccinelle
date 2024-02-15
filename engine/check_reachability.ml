@@ -157,6 +157,7 @@ let test_formula state formula cfg =
 	       (fun (nodei, node) ->
 		 match Control_flow_c.unwrap node with
 		   Control_flow_c.AfterNode _ -> [(nodei,[],[])]
+                 | Control_flow_c.CatchExit -> [(nodei,[],[])]
 		 | _ -> [])
 	       (Control_flow_c.KeyMap.bindings cfg#nodes)) in
     let preproc _ = true in

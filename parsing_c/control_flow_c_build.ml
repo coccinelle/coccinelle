@@ -177,7 +177,7 @@ let rec do_ast_to_control_flow isouter e = (* entry point! *)
 let outer_e =
   if isouter
   then Outer e
-  else Inner e in  
+  else Inner e in
 
 (*****************************************************************************)
 (* (Semi) Globals, Julia's style. *)
@@ -724,7 +724,12 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
              let cai = !g +> add_node (CatchHeader (param, ii))  lbl "catch" nochildren in
              !g#add_arc ((errorexiti, cai), Direct);
              let finalstmt = aux_statement (Some cai, xi_lbl) st children in
-             !g +> add_arc_opt (finalstmt, lasti);
+             do_option
+               (fun finalstmt ->
+                 let catchexiti = !g +> add_node CatchExit lbl_0 "[catchexit]" nochildren in
+                 !g#add_arc ((finalstmt, catchexiti), Direct);
+                 !g#add_arc ((catchexiti, lasti), Direct))
+               finalstmt;
              errorexiti) in
 
       let finalstmt = aux_statement (Some tryi, xi_lbl) st (starts @ children) in

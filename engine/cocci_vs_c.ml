@@ -5356,7 +5356,8 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
   | A.MetaRuleElem(mcode,A.CstrExit,keep,inherited), _ -> fail2()
 
-  | _, F.Enter | _, F.PreExit _ | _, F.Exit | _, F.ErrorExit -> fail2()
+  | _, F.Enter | _, F.PreExit _ | _, F.Exit | _, F.ErrorExit
+  | _, F.CatchExit -> fail2()
 
   (* the metaRuleElem contains just '-' information. We don't need to add
    * stuff in the environment. If we need stuff in environment, because

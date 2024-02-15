@@ -1751,6 +1751,7 @@ and pp_init (init, iinit) =
     | F.TopNode -> pr2 "TopNode"
     | F.EndNode -> pr2 "EndNode"
     | F.ErrorExit -> pr2 "ErrorExit"
+    | F.CatchExit -> pr2 "CatchExit"
     | F.PreExit _ -> pr2 "PreExit"
     | F.Exit -> pr2 "Exit"
     | F.Enter -> pr2 "Enter"

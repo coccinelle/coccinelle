@@ -99,6 +99,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | AfterNode of after_type
   | FallThroughNode
   | LoopFallThroughNode
+  | CatchExit
   | ErrorExit
 
 and after_type =
