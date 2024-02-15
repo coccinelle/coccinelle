@@ -1267,7 +1267,8 @@ expr_statement:
 handler:
  | Tcatch TOPar parameter_decl TCPar compound
    { let (st,braces) = $5 in
-     ($3,Compound st), [$1;$2;$4]@braces }
+     let wrappedst = (Compound st,braces) in
+     ($3,wrappedst), [$1;$2;$4] }
 /* Note: catch-all handler missing */
 
 handler_sequence:
@@ -1291,7 +1292,8 @@ selection:
  | Ttry compound handler_sequence
    {
      let (st,braces) = $2 in
-     TryCatch (Compound st,$3), [$1]@braces }
+     let wrappedst = (Compound st,braces) in
+     TryCatch (wrappedst,$3), [$1] }
 
 iteration:
  | Twhile TOPar expr TCPar cpp_ifdef_statement
