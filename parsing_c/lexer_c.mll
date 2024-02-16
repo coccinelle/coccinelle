@@ -252,6 +252,7 @@ let cpp_keyword_table = Common.hash_of_list [
   "template",  (fun ii -> Ttemplate ii);
   "operator",  (fun ii -> Toperator ii);
   "final",     (fun ii -> Tfinal ii);
+  "virtual",   (fun ii -> Tvirtual ii);
   "typename",  (fun ii -> Ttypename ii);
   "override",  (fun ii -> TMacroAttr("override",ii));
   "noexcept",  (fun ii -> TMacroAttr("noexcept",ii));
