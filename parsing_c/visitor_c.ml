@@ -796,20 +796,21 @@ and vk_constr_destr = fun bigf d ->
 
   let f = bigf.kcondes in
   let k (d,ii) =
-    let visit ii final paramst =
+    let visit ii final paramst vrtl =
         iif ii;
 	iif (snd final);
+	iif (snd vrtl);
 	(match paramst with
         | (ts, (b,iihas3dots)) ->
             iif iihas3dots;
             vk_param_list bigf ts
         ) in
     match d with
-    | ConstructorDecl (s, paramst, final)
-    | DestructorDecl (s, paramst, final) ->
-	visit ii final paramst
-    | ConstructorDef (s, paramst, constr_inits, final, body) ->
-	visit ii final paramst;
+    | ConstructorDecl (vrtl, s, paramst, final)
+    | DestructorDecl (vrtl, s, paramst, final) ->
+	visit ii final paramst vrtl
+    | ConstructorDef (vrtl, s, paramst, constr_inits, final, body) ->
+        visit ii final paramst vrtl;
 	(match constr_inits with
 	  (inits,[i1]) ->
 	    iif [i1];
@@ -822,8 +823,8 @@ and vk_constr_destr = fun bigf d ->
 	      inits
 	| _ -> ());
 	vk_statement_sequencable_list bigf body
-    | DestructorDef (s, paramst, final, body) ->
-	visit ii final paramst;
+    | DestructorDef (vrtl, s, paramst, final, body) ->
+        visit ii final paramst vrtl;
 	vk_statement_sequencable_list bigf body
   in f (k, bigf) d
 
@@ -1932,14 +1933,15 @@ and vk_constr_destr_s = fun bigf d ->
   let f = bigf.kcondes_s in
   let k (d,ii) =
     let do_final (final,ii) = (final, iif ii) in
+    let do_vrtl (vrtl,ii) = (vrtl, iif ii) in
     match d with
-    | ConstructorDecl (s, paramst, final) ->
-	(ConstructorDecl (s, vk_paramst_s bigf paramst, do_final final),iif ii)
-    | DestructorDecl (s, paramst, final) ->
-	(DestructorDecl (s, vk_paramst_s bigf paramst, do_final final),iif ii)
-    | ConstructorDef (s, paramst, (inits,ii2), final, body) ->
+    | ConstructorDecl (vrtl, s, paramst, final) ->
+	(ConstructorDecl (do_vrtl vrtl, s, vk_paramst_s bigf paramst, do_final final),iif ii)
+    | DestructorDecl (vrtl, s, paramst, final) ->
+	(DestructorDecl (do_vrtl vrtl, s, vk_paramst_s bigf paramst, do_final final),iif ii)
+    | ConstructorDef (vrtl, s, paramst, (inits,ii2), final, body) ->
 	(ConstructorDef
-	   (s, vk_paramst_s bigf paramst,
+	   (do_vrtl vrtl, s, vk_paramst_s bigf paramst,
 	    (List.map
 	      (fun (((nm,args),parens),comma) ->
 		(((vk_name_s bigf nm,
@@ -1951,9 +1953,9 @@ and vk_constr_destr_s = fun bigf d ->
 	    do_final final,
 	    vk_statement_sequencable_list_s bigf body),
 	   iif ii)
-    | DestructorDef (s, paramst, final, body) ->
+    | DestructorDef (vrtl, s, paramst, final, body) ->
 	(DestructorDef
-	   (s, vk_paramst_s bigf paramst, do_final final,
+	   (do_vrtl vrtl, s, vk_paramst_s bigf paramst, do_final final,
 	    vk_statement_sequencable_list_s bigf body),
 	   iif ii)
   in f (k, bigf) d

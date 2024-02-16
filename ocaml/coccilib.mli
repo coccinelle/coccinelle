@@ -378,14 +378,14 @@ module Ast_c :
     and c_plus_plus_constructorbis =
       Ast_c.c_plus_plus_constructorbis =
       | ConstructorDecl of
-	  string * (parameterType wrap2 list * bool wrap) * bool wrap
+	  bool wrap * string * (parameterType wrap2 list * bool wrap) * bool wrap
       | DestructorDecl  of
-	  string * (parameterType wrap2 list * bool wrap) * bool wrap
+	  bool wrap * string * (parameterType wrap2 list * bool wrap) * bool wrap
       | ConstructorDef  of
-	  string * (parameterType wrap2 list * bool wrap) *
+	  bool wrap * string * (parameterType wrap2 list * bool wrap) *
 	    (constr_init wrap2 (* , *) list) wrap * bool wrap * compound
       | DestructorDef   of
-	  string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
+	  bool wrap * string * (parameterType wrap2 list * bool wrap) * bool wrap * compound
 
     and constr_init = (name * argument wrap2 (* , *) list) wrap
 
@@ -839,6 +839,7 @@ module Parser_c :
       | TTemplateEndTemplateEnd of Ast_c.info
       | TTemplateEndTemplateEndTemplateEnd of Ast_c.info
       | Tfinal of Ast_c.info
+      | Tvirtual of Ast_c.info
       | Ttypename of Ast_c.info
       | Trestrict of Ast_c.info
       | Tasm of Ast_c.info

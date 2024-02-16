@@ -595,7 +595,7 @@ let args_to_params l pb =
        Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd
-       TTemplateEndTemplateEndTemplateEnd Tfinal Ttypename
+       TTemplateEndTemplateEndTemplateEnd Tfinal Tvirtual Ttypename
 
 /*(* C99 *)*/
 %token <Ast_c.info>
@@ -894,6 +894,7 @@ ident_or_kwd:
  | Texec { mk_info_string $1 }
  | Textern { mk_info_string $1 }
  | Tfinal { mk_info_string $1 }
+ | Tvirtual { mk_info_string $1 }
  | Tfloat { mk_info_string $1 }
  | Tfor { mk_info_string $1 }
  | Tgoto { mk_info_string $1 }
@@ -2283,21 +2284,22 @@ cpp_struct_decl2:
  | Tprotected TDotDot { ProtectedLabel [$1;$2] }
  | Tprivate TDotDot   { PrivateLabel [$1;$2] }
 
+/*(* note: compilers may be instructed to tolerate 'virtual' before constructors *)*/
 c_plus_plus_constructor_decl:
- | identifier TOPar parameter_type_list TCPar constr_inits post_constructor TPtVirg
+ pre_member_function identifier TOPar parameter_type_list TCPar constr_inits post_constructor TPtVirg
      { (* allowing constr_inits solves a parser conflict, because we don't know if
        a ; will be reached *)
-       assert ($5 = ([],[]));
-       (ConstructorDecl (fst $1, $3, $6)), [snd $1;$2;$4;$7;fakeBeforeInfo()] }
- | TTilde identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
-     { (DestructorDecl (fst $2, $4, $6)), [$1;snd $2;$3;$5;$7;fakeBeforeInfo()] }
+       assert ($6 = ([],[]));
+       (ConstructorDecl ($1,fst $2, $4, $7)), [snd $2;$3;$5;$8;fakeBeforeInfo()] }
+ | pre_member_function TTilde identifier TOPar parameter_type_list TCPar post_constructor TPtVirg
+     { (DestructorDecl ($1, fst $3, $5, $7)), [$2;snd $3;$4;$6;$8;fakeBeforeInfo()] }
 
- | identifier TOPar parameter_type_list TCPar constr_inits post_constructor compound
-     { (ConstructorDef (fst $1, $3, $5, $6, fst $7)),
-       (snd $1) :: $2 :: $4 :: snd $7 @[fakeBeforeInfo()] }
- | TTilde identifier TOPar parameter_type_list TCPar post_constructor compound
-     { (DestructorDef (fst $2, $4, $6, fst $7)),
-       $1 :: snd $2 :: $3 :: $5 :: snd $7 @[fakeBeforeInfo()] }
+ | pre_member_function identifier TOPar parameter_type_list TCPar constr_inits post_constructor compound
+     { (ConstructorDef ($1, fst $2, $4, $6, $7, fst $8)),
+       (snd $2) :: $3 :: $5 :: snd $8 @[fakeBeforeInfo()] }
+ | pre_member_function TTilde identifier TOPar parameter_type_list TCPar post_constructor compound
+     { (DestructorDef ($1, fst $3, $5, $7, fst $8)),
+       $2 :: snd $3 :: $4 :: $6 :: snd $8 @[fakeBeforeInfo()] }
 
 constr_inits:
   TDotDot constructor_init_list { $2,[$1] }
@@ -2310,6 +2312,10 @@ constructor_init_list:
 constructor_init:
    ident_cpp TOPar argument_list TCPar { (($1,$3),[$2;$4]) }
  | ident_cpp TOBrace argument_list TCBrace { (($1,$3),[$2;$4]) }
+
+pre_member_function:
+  Tvirtual    { (true, [$1]) }
+| /* empty */ { (false, []) }
 
 post_constructor:
   Tfinal      { (true, [$1]) }
