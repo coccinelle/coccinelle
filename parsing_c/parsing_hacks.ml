@@ -3236,6 +3236,9 @@ let rec choose_qualtype toks =
     | ((TColonColon i1) as a)::rest ->
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	loop true false (revapp skipped (a::localacc)) acc rest
+    | ((Ttemplate i1) as a)::rest ->
+	let (skipped,rest) = span TH.is_just_comment_or_space rest in
+	loop true false (revapp skipped (a::localacc)) acc rest
     | ((TTilde i1) as a)::rest when localacc <> [] ->
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	loop true false (revapp skipped (a::localacc)) acc rest
