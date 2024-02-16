@@ -280,7 +280,9 @@ let id_tokens lexbuf =
   | "int" ->        Tint      linetype
   | "double" ->     Tdouble   linetype
   | "float" ->      Tfloat    linetype
-  | "complex" ->    Tcomplex  linetype
+  | "complex" ->    if !Flag.c_plus_plus == Flag.Off
+		    then (*C*) Tcomplex  linetype
+		    else (*C++*) TTypeId ("complex",linetype)
   | "long" ->       Tlong     linetype
   | "void" ->       Tvoid     linetype
   | "size_t" ->     if !Flag.c_plus_plus == Flag.Off
