@@ -138,7 +138,10 @@ let keyword_table = Common.hash_of_list [
   "float",     (fun ii -> Tfloat ii);
   "double",    (fun ii -> Tdouble ii);
   "complex",   (fun ii -> Tcomplex ii);
-  "size_t",    (fun ii -> Tsize_t ii);
+  "size_t",    (fun ii ->
+		  if !Flag.c_plus_plus == Flag.Off
+		  then (*C*) Tsize_t ii
+		  else (*C++*) TypedefIdent("size_t",ii));
   "ssize_t",   (fun ii -> Tssize_t ii);
   "ptrdiff_t", (fun ii -> Tptrdiff_t ii);
 
