@@ -1419,7 +1419,6 @@ and pp_init (init, iinit) =
 	constructor_start vrtl iis lp paramst rp ([],[]) final;
 	pr_elem iiend
     | ConstructorDef (vrtl, s, paramst, constr_init, final, body)  ->
-	Printf.eprintf "ii: %d\n" (List.length ii);
 	let (iis, lp, rp, iilb, iirb, ifakestart) = Common.tuple_of_list6 ii in
 	pr_elem ifakestart;
 	constructor_start vrtl iis lp paramst rp constr_init final;
