@@ -3202,7 +3202,8 @@ let rec choose_qualtype toks =
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	(match rest with
 	  ((TColonColon i1) as b)::rest ->
-	    loop true seentemplate (revapp (b::skipped) (a::localacc)) acc rest
+	    let (skipped2,rest) = span TH.is_just_comment_or_space rest in
+	    loop true seentemplate (revapp skipped2 (b::(revapp skipped (a::localacc)))) acc rest
 	| ((TTemplateStart i1) as b)::rest ->
 	    let (skipped2, rest) = skip_to_template_end b rest in
 	    let (skipped3,rest) = span TH.is_just_comment_or_space rest in
@@ -3233,12 +3234,18 @@ let rec choose_qualtype toks =
 	      else localacc@acc in
 	    loop false false [] (revapp skipped (a::acc)) rest)
     | ((TColonColon i1) as a)::rest ->
-	loop true false (a::localacc) acc rest
-    | ((TTilde i1) as a)::rest ->
-	loop true false (a::localacc) acc rest
+	let (skipped,rest) = span TH.is_just_comment_or_space rest in
+	loop true false (revapp skipped (a::localacc)) acc rest
+    | ((TTilde i1) as a)::rest when localacc <> [] ->
+	let (skipped,rest) = span TH.is_just_comment_or_space rest in
+	loop true false (revapp skipped (a::localacc)) acc rest
     | x::xs ->
 	if localacc <> []
-	then failwith "localacc should be empty at unexpected qualifier token"
+	then
+	  failwith
+	    (Printf.sprintf
+	       "%s:%d.%d: localacc should be empty at unexpected qualifier token"
+	       (TH.file_of_tok x) (TH.line_of_tok x) (TH.col_of_tok x))
 	else loop false false [] (x::acc) xs
     | [] ->
 	if localacc <> []
