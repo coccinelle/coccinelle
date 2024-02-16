@@ -3209,7 +3209,10 @@ let rec choose_qualtype toks =
 	    let (skipped3,rest) = span TH.is_just_comment_or_space rest in
 	    (match rest with
 	      ((TColonColon i1) as c)::rest ->
-		loop true seentemplate (c :: (revapp (skipped2@skipped3) (revapp skipped (a::localacc)))) acc rest
+		let (skipped4,rest) = span TH.is_just_comment_or_space rest in
+		loop true seentemplate
+		  (revapp skipped4 (c :: (revapp (skipped2@skipped3) (revapp skipped (a::localacc)))))
+		  acc rest
 	    | ((TOPar i2) as c)::rest ->
 		let acc = localacc@TQualExp(mkinfo i1)::acc in
 		loop false false [] (c :: (revapp (skipped2@skipped3) (revapp skipped (a::acc)))) rest
