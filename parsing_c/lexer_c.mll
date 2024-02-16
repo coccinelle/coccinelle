@@ -127,7 +127,8 @@ let function_cpp_eat_until_nl cpp_eat_until_nl cpp_in_comment_eat_until_nl
     | _ -> check_continue s (* no comment *)
 
 (* opti: less convenient, but using a hash is faster than using a match *)
-let keyword_table = Common.hash_of_list [
+let keyword_table =
+  Common.hash_of_list [
 
   (* c: *)
   "void",      (fun ii -> Tvoid ii);
@@ -146,7 +147,10 @@ let keyword_table = Common.hash_of_list [
 		  then (*C*) Tsize_t ii
 		  else (*C++*) TypedefIdent("size_t",ii));
   "ssize_t",   (fun ii -> Tssize_t ii);
-  "ptrdiff_t", (fun ii -> Tptrdiff_t ii);
+  "ptrdiff_t", (fun ii ->
+                  if !Flag.c_plus_plus == Flag.Off
+		  then (*C*) Tptrdiff_t ii
+		  else (*C++*) TypedefIdent("ptrdiff_t",ii));
 
   "unsigned", (fun ii -> Tunsigned ii);
   "signed",   (fun ii -> Tsigned ii);

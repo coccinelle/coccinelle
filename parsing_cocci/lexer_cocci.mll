@@ -289,7 +289,9 @@ let id_tokens lexbuf =
 		    then (*C*) Tsize_t linetype
 		    else (*C++*) TTypeId ("size_t",linetype)
   | "ssize_t" ->    Tssize_t  linetype
-  | "ptrdiff_t" ->  Tptrdiff_t linetype
+  | "ptrdiff_t" ->  if !Flag.c_plus_plus == Flag.Off
+		    then (*C*) Tptrdiff_t linetype
+		    else (*C++*) TTypeId ("ptrdiff_t",linetype)
   (* in_meta is only for the first keyword; drop it now to allow any type
      name *)
   | "struct" ->     Data.saw_struct := true; Tstruct   linetype
