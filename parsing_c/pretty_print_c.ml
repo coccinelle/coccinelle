@@ -971,7 +971,7 @@ and pp_string_format (e,ii) =
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  (key, s), iis)               -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
-      | (QualifiedType(_typ,_name), iis)             -> print_ident ident 
+      | (QualifiedType(_typ,_name), iis)        -> print_ident ident 
       | (TypeName (_name,_typ), iis)            -> print_ident ident
       | (FieldType (_typ,_,_), iis)             -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
