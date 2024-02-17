@@ -3256,6 +3256,9 @@ let rec choose_qualtype toks =
     | ((Tnew i1) as a)::rest when seencolon ->
         let acc = a::localacc@TQualExp(mkinfo i1)::acc in
         loop false false [] acc rest
+    | ((Tinline i1) as a)::rest when seencolon -> (* for namespaces, not supported *)
+        let acc = a::localacc@acc in
+        loop false false [] acc rest
     | ((TColonColon i1) as a)::rest ->
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	loop true false (revapp skipped (a::localacc)) acc rest
