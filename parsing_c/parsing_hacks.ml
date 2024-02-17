@@ -3200,9 +3200,9 @@ let rec choose_qualtype toks =
 	  loop (ct+1) (a::acc) rest
       | ((TCPar i1) as a) :: rest ->
 	  if ct = 1
-	  then (acc,rest)
+	  then (a::acc,rest)
 	  else loop (ct-1) (a::acc) rest
-      | x::xs -> loop ct (x::acc) xs
+      | x::xs ->loop ct (x::acc) xs
       | [] -> ([],toks) in
     loop 0 [] toks in
   let revapp l acc =
@@ -3247,12 +3247,12 @@ let rec choose_qualtype toks =
 		else localacc@TQualId(mkinfo i1)::acc
 	      else localacc@acc in
 	    loop false false [] (revapp skipped (a::acc)) rest)
-    | (Tasm ii)::rest -> (* skip, to avoid uses of :: *)
+    | ((Tasm ii) as a)::rest -> (* skip, to avoid uses of :: *)
 	let (skipped,rest) = skip_parens rest in
 	assert (seencolon = false);
 	assert (seentemplate = false);
 	assert (localacc = []);
-	loop false false [] (revapp skipped acc) rest
+	loop false false [] (skipped @ (a::acc)) rest
     | ((TColonColon i1) as a)::rest ->
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	loop true false (revapp skipped (a::localacc)) acc rest
