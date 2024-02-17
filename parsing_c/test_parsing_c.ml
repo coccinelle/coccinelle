@@ -34,10 +34,10 @@ let get_files path =
     cmd_to_list
       (if !Flag.include_headers
       then
-        "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
+        "find "^ path ^" -type f -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
         ^"-o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
       else
-        "find "^ path ^" -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
+        "find "^ path ^" -type f -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
   else
     (* only .c files and .h files *)
     cmd_to_list (* same as "true, "", _" case *)
@@ -45,11 +45,11 @@ let get_files path =
 	  (* FIXME : Could we remove xs ?
 	     -use_glimpse requires a singleton.
 	     This is checked some lines before.
-	     then ("find "^(join " " (x::xs))^" -name \"*.[ch]\"")
-	     else ("find "^(join " " (x::xs))^" -name \"*.c\"")
+	     then ("find "^(join " " (x::xs))^" -type f -name \"*.[ch]\"")
+	     else ("find "^(join " " (x::xs))^" -type f -name \"*.c\"")
 	  *)
-      then ("find "^ path ^" -name \"*.[ch]\"")
-      else ("find "^ path ^" -name \"*.c\""))
+      then ("find "^ path ^" -type f -name \"*.[ch]\"")
+      else ("find "^ path ^" -type f -name \"*.c\""))
 
 let new_test_parse_gen xs =
 
@@ -67,7 +67,7 @@ let new_test_parse_gen xs =
 
   (* old:
      let xs = if !Flag.dir then
-     process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
+     process_output_to_list ("find " ^ x ^" -type f -name \"*.c\"") else x::xs in
   *)
   let fullxs = xs +> List.map get_files +> List.concat in
 
@@ -137,7 +137,7 @@ let test_parse_gen xs ext =
 
   (* old:
      let xs = if !Flag.dir then
-     process_output_to_list ("find " ^ x ^" -name \"*.c\"") else x::xs in
+     process_output_to_list ("find " ^ x ^" -type f -name \"*.c\"") else x::xs in
   *)
   let fullxs = Common.files_of_dir_or_files_no_vcs ext xs in
 
