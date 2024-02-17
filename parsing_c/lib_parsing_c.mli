@@ -2,6 +2,8 @@ val pr2 : string -> unit
 val pr2_once : string -> unit
 val strip_info_visitor : 'a -> Visitor_c.visitor_c_s
 val al_expr : Ast_c.expression -> Ast_c.expression
+val al_assignOp : Ast_c.assignOp -> Ast_c.assignOp
+val al_binaryOp : Ast_c.binaryOp -> Ast_c.binaryOp
 val al_declaration : Ast_c.declaration -> Ast_c.declaration
 val al_field : Ast_c.field -> Ast_c.field
 val al_statement : Ast_c.statement -> Ast_c.statement
@@ -58,6 +60,8 @@ val al_inh_info : Ast_c.info -> Ast_c.info
 val al_inh_ii : Ast_c.info list -> Ast_c.info list
 val semi_strip_info_visitor : Visitor_c.visitor_c_s
 val semi_al_expr : Ast_c.expression -> Ast_c.expression
+val semi_al_assignOp : Ast_c.assignOp -> Ast_c.assignOp
+val semi_al_binaryOp : Ast_c.binaryOp -> Ast_c.binaryOp
 val semi_al_declaration : Ast_c.declaration -> Ast_c.declaration
 val semi_al_field : Ast_c.field -> Ast_c.field
 val semi_al_fields : Ast_c.field list -> Ast_c.field list

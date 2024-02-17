@@ -416,8 +416,16 @@ module XMATCH = struct
             Ast_c.MetaIdVal (a)    ->
 	      success(Ast_c.MetaIdVal(a))
           | Ast_c.MetaAssignOpVal op      ->
+	      let op =
+		if strip
+		then Lib_parsing_c.al_assignOp op
+		else Lib_parsing_c.semi_al_assignOp op in
 	      success(Ast_c.MetaAssignOpVal op)
           | Ast_c.MetaBinaryOpVal op      ->
+	      let op =
+		if strip
+		then Lib_parsing_c.al_binaryOp op
+		else Lib_parsing_c.semi_al_binaryOp op in
 	      success(Ast_c.MetaBinaryOpVal op)
           | Ast_c.MetaPragmaInfoVal pi      ->
 	      let stripped =

@@ -68,6 +68,8 @@ let strip_info_visitor _ =
   }
 
 let al_expr      x = Visitor_c.vk_expr_s      (strip_info_visitor()) x
+let al_assignOp  x = Visitor_c.vk_assignOp_s  (strip_info_visitor()) x
+let al_binaryOp  x = Visitor_c.vk_binaryOp_s  (strip_info_visitor()) x
 let al_declaration x = Visitor_c.vk_decl_s    (strip_info_visitor()) x
 let al_field     x = Visitor_c.vk_struct_field_s (strip_info_visitor()) x
 let al_statement x = Visitor_c.vk_statement_s (strip_info_visitor()) x
@@ -169,6 +171,8 @@ let semi_strip_info_visitor = (* keep position information *)
   }
 
 let semi_al_expr      = Visitor_c.vk_expr_s      semi_strip_info_visitor
+let semi_al_assignOp  = Visitor_c.vk_assignOp_s  semi_strip_info_visitor
+let semi_al_binaryOp  = Visitor_c.vk_binaryOp_s  semi_strip_info_visitor
 let semi_al_declaration = Visitor_c.vk_decl_s    semi_strip_info_visitor
 let semi_al_field = Visitor_c.vk_struct_field_s  semi_strip_info_visitor
 let semi_al_fields = Visitor_c.vk_struct_fields_s semi_strip_info_visitor
