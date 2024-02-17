@@ -3194,6 +3194,17 @@ let rec choose_qualtype toks =
 		 (TH.file_of_tok a) (TH.line_of_tok a)) in
     let (cur,rest) = loop 1 [a] toks in
     (choose_qualtype cur,rest) in
+  let skip_parens toks =
+    let rec loop ct acc = function
+	((TOPar i1) as a) :: rest ->
+	  loop (ct+1) (a::acc) rest
+      | ((TCPar i1) as a) :: rest ->
+	  if ct = 1
+	  then (acc,rest)
+	  else loop (ct-1) (a::acc) rest
+      | x::xs -> loop ct (x::acc) xs
+      | [] -> ([],toks) in
+    loop 0 [] toks in
   let revapp l acc =
     List.fold_left (fun prev x -> x :: prev) acc l in
   let mkinfo info = Ast_c.fakeBeforeInfo() in
@@ -3236,6 +3247,12 @@ let rec choose_qualtype toks =
 		else localacc@TQualId(mkinfo i1)::acc
 	      else localacc@acc in
 	    loop false false [] (revapp skipped (a::acc)) rest)
+    | (Tasm ii)::rest -> (* skip, to avoid uses of :: *)
+	let (skipped,rest) = skip_parens rest in
+	assert (seencolon = false);
+	assert (seentemplate = false);
+	assert (localacc = []);
+	loop false false [] (revapp skipped acc) rest
     | ((TColonColon i1) as a)::rest ->
 	let (skipped,rest) = span TH.is_just_comment_or_space rest in
 	loop true false (revapp skipped (a::localacc)) acc rest
