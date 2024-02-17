@@ -146,7 +146,10 @@ let keyword_table =
 		  if !Flag.c_plus_plus == Flag.Off
 		  then (*C*) Tsize_t ii
 		  else (*C++*) TypedefIdent("size_t",ii));
-  "ssize_t",   (fun ii -> Tssize_t ii);
+  "ssize_t",   (fun ii ->
+		  if !Flag.c_plus_plus == Flag.Off
+		  then (*C*) Tssize_t ii
+		  else (*C++*) TypedefIdent("ssize_t",ii));
   "ptrdiff_t", (fun ii ->
                   if !Flag.c_plus_plus == Flag.Off
 		  then (*C*) Tptrdiff_t ii

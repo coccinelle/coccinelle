@@ -288,7 +288,9 @@ let id_tokens lexbuf =
   | "size_t" ->     if !Flag.c_plus_plus == Flag.Off
 		    then (*C*) Tsize_t linetype
 		    else (*C++*) TTypeId ("size_t",linetype)
-  | "ssize_t" ->    Tssize_t  linetype
+  | "ssize_t" ->    if !Flag.c_plus_plus == Flag.Off
+		    then (*C*) Tssize_t linetype
+		    else (*C++*) TTypeId ("ssize_t",linetype)
   | "ptrdiff_t" ->  if !Flag.c_plus_plus == Flag.Off
 		    then (*C*) Tptrdiff_t linetype
 		    else (*C++*) TTypeId ("ptrdiff_t",linetype)
