@@ -3279,8 +3279,8 @@ let rec choose_qualtype toks =
 	then
 	  failwith
 	    (Printf.sprintf
-	       "%s:%d.%d: localacc should be empty at unexpected qualifier token"
-	       (TH.file_of_tok x) (TH.line_of_tok x) (TH.col_of_tok x))
+	       "%s:%d.%d: localacc should be empty at unexpected qualifier token %s"
+	       (TH.file_of_tok x) (TH.line_of_tok x) (TH.col_of_tok x) (TH.str_of_tok x))
 	else loop false false [] (x::acc) xs
     | [] ->
 	if localacc <> []
