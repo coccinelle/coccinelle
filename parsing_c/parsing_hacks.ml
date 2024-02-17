@@ -3228,7 +3228,10 @@ let rec choose_qualtype toks =
 		let acc = localacc@TQualExp(mkinfo i1)::acc in
 		loop false false [] (c :: (revapp (skipped2@skipped3) (revapp skipped (a::acc)))) rest
 	    | rest ->
-		let acc = localacc@TQualType(mkinfo i1)::acc in
+		let acc =
+                  if seencolon
+                  then localacc@TQualType(mkinfo i1)::acc
+                  else localacc@acc in
 		loop false false [] (revapp (skipped2@skipped3) (revapp skipped (a::acc))) rest)
 	| ((TIdent _) as b)::rest when seencolon->
 	    let acc = localacc@TQualType(mkinfo i1)::acc in
