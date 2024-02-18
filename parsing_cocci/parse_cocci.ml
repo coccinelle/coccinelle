@@ -2038,7 +2038,7 @@ let is_space str1 (tleft,_) (tright,_) =
   let (_,rline,_,_,_,rcol,_,_,_,_) = get_clt tright in
   lline = rline && lcol + String.length str1 + 1 = rcol
 
-let convert_templates_cocci toks =
+let do_convert_templates_cocci toks =
   let tokens2 =
     List.fold_left (fun prev tok -> (tok,ref tok) :: prev) [] toks in
   let tokens2 = List.rev tokens2 in
@@ -2190,6 +2190,11 @@ let convert_templates_cocci toks =
 	   | x -> (x,q) :: prev)
 	 [] tokens2)
   else Common.acc_map (fun (tok,tokr) -> !tokr) tokens2
+
+let convert_templates_cocci toks =
+  if !Flag.c_plus_plus = Flag.Off
+  then toks
+  else do_convert_templates_cocci toks
 
 let prepare_tokens plus tokens =
   convert_templates_cocci

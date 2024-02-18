@@ -252,7 +252,7 @@ let id_tokens lexbuf =
 
   | "using" when in_rule_name || in_prolog ->
      check_context_linetype s; TIsoUsing
-  | "using" -> start_line true; TUsing linetype
+  | "using" when !Flag.c_plus_plus <> Flag.Off -> start_line true; TUsing linetype
   | "namespace" when !Flag.c_plus_plus <> Flag.Off -> start_line true; TNamespace linetype
   | "virtual" when in_prolog || in_rule_name || in_meta ->
       (* don't want to allow virtual as a rule name *)
