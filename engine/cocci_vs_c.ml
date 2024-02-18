@@ -207,11 +207,13 @@ let equal_storage a b =
 
 (*---------------------------------------------------------------------------*)
 
+let equal_unwrap a b = B.unwrap a = B.unwrap b
+
 let equal_metavarval valu valu' =
   match valu, valu' with
   | Ast_c.MetaIdVal a, Ast_c.MetaIdVal b -> a = b
-  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> a = b
-  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> a = b
+  | Ast_c.MetaAssignOpVal a, Ast_c.MetaAssignOpVal b -> equal_unwrap a b
+  | Ast_c.MetaBinaryOpVal a, Ast_c.MetaBinaryOpVal b -> equal_unwrap a b
   | Ast_c.MetaPragmaInfoVal a, Ast_c.MetaPragmaInfoVal b ->
       Lib_parsing_c.al_info a = Lib_parsing_c.al_info b
   | Ast_c.MetaFuncVal a, Ast_c.MetaFuncVal b -> a = b
@@ -302,8 +304,6 @@ let equal_metavarval valu valu' =
       |B.MetaFmtVal _|B.MetaFragListVal _|B.MetaAttrArgVal _
     ), _
       -> raise (Impossible 16)
-
-let equal_unwrap a b = B.unwrap a = B.unwrap b
 
 (* probably only one argument needs to be stripped, because inherited
 metavariables containing expressions are stripped in advance. But don't
