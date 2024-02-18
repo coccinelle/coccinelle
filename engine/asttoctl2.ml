@@ -49,16 +49,22 @@ let ctl_and s x y    =
   | _ -> CTL.And(s,x,y)
 
 let ctl_or x y     =
-  match (x,y) with
-    (CTL.True,_) | (_,CTL.True) -> CTL.True
-  | (CTL.False,a) | (a,CTL.False) -> a
-  | _ -> CTL.Or(x,y)
+  if x = CTL.Not y || y = CTL.Not x
+  then CTL.True
+  else
+    match (x,y) with
+      (CTL.True,_) | (_,CTL.True) -> CTL.True
+    | (CTL.False,a) | (a,CTL.False) -> a
+    | _ -> CTL.Or(x,y)
 
 let ctl_or_fl x y     =
-  match (x,y) with
-    (CTL.True,_) | (_,CTL.True) -> CTL.True
-  | (CTL.False,a) | (a,CTL.False) -> a
-  | _ -> CTL.Or(y,x)
+  if x = CTL.Not y || y = CTL.Not x
+  then CTL.True
+  else
+    match (x,y) with
+      (CTL.True,_) | (_,CTL.True) -> CTL.True
+    | (CTL.False,a) | (a,CTL.False) -> a
+    | _ -> CTL.Or(y,x)
 
 let ctl_seqor x y     =
   match (x,y) with
