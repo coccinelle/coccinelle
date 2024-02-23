@@ -735,6 +735,10 @@ let other_options = [
     "--external-analysis-file", Arg.String
       (Externalanalysis.load_external_results),
     "  import results from an external analysis";
+    "--ocaml-lib-search-path",
+    Arg.String (function s ->
+      Flag.ocaml_lib_search_path := s :: !Flag.ocaml_lib_search_path),
+    "  add a path when searching for dynamically loadable modules";
   ];
 
   "concurrency",

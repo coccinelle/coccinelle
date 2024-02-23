@@ -501,9 +501,19 @@ let filter_dep existing_deps (accld, accinc) dep =
 	  (accld, dep::accinc)
 
 let get_dir p =
-  let inclcmd = !Flag.ocamlfind ^" query "^p in
-  let dir = List.hd (Common.cmd_to_list inclcmd) in
-    (dir, p)
+  (* Search user-provided paths first *)
+  let inc = List.find_map (fun dir->
+    let path = Printf.sprintf "%s/%s" dir (p ^ ext) in
+    if Sys.file_exists path then Some dir else None
+    ) !Flag.ocaml_lib_search_path in
+  match inc with
+  | Some dir -> (dir,p)
+  | None ->
+    (* If not found in user-provided paths, then use ocamlfind *)
+    let inclcmd = !Flag.ocamlfind ^" query "^p in
+    (match Common.cmd_to_list inclcmd with
+    | dir::_ -> (dir,p)
+    | _ -> raise (LinkFailure ((p ^ "("^(p^ext)^")", "Not found"))))
 
 let parse_dep cmifile mlfile depout =
   let empty_deps = ([], "") in

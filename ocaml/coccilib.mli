@@ -1486,6 +1486,7 @@ module Flag :
     val ocamlopt : string ref
     val ocamldep : string ref
     val ocamlfind : string ref
+    val ocaml_lib_search_path : string list ref
     val patch : string option ref
     val make_hrule : string option ref
     val hrule_per_file : bool ref

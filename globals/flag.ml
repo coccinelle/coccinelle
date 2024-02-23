@@ -28,6 +28,8 @@ let ocamlopt = ref Commands.ocamlopt_cmd
 let ocamldep = ref Commands.ocamldep_cmd
 let ocamlfind = ref Commands.ocamlfind_cmd
 
+let ocaml_lib_search_path = ref ([]: string list)
+
 (*"Some" value is the path with respect to which the patch should be created*)
 let patch = ref (None : string option)
 

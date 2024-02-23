@@ -793,6 +793,12 @@ the source locations that references an integer memory location.
 This database can be inspected with coccilib functions, e.g. to
 control the pattern match process.}
 
+\developer{-{}-ocaml-lib-search-path}{Adds the specified path when searching
+for dynamically loadable modules. The specified path is expected to include
+the loadable module that the OCaml scripts in the semantic patch refer to.
+Also, the module should end with the extension {\tt .cmxs} for native code or
+{\tt .cma} for byte code.}
+
 \subsection{Miscellaneous}
 
 \rare{-{}-quiet}{Suppress most output.  This is the default.}
