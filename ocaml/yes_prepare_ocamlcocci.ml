@@ -502,10 +502,16 @@ let filter_dep existing_deps (accld, accinc) dep =
 
 let get_dir p =
   (* Search user-provided paths first *)
-  let inc = List.find_map (fun dir->
-    let path = Printf.sprintf "%s/%s" dir (p ^ ext) in
-    if Sys.file_exists path then Some dir else None
-    ) !Flag.ocaml_lib_search_path in
+  let inc =
+    try
+      let res =
+	List.find
+	  (fun dir ->
+	    let path = Printf.sprintf "%s/%s" dir (p ^ ext) in
+	    Sys.file_exists path)
+	  !Flag.ocaml_lib_search_path in
+      Some res
+    with Not_found -> None in
   match inc with
   | Some dir -> (dir,p)
   | None ->
