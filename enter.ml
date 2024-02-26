@@ -711,7 +711,7 @@ let other_options = [
     "  make a small attempt to parse C++ files";
     (* Special case, for when a user gives a specific C++ version *)
     "--c++=",
-    Arg.Symbol (["98"; "03"; "0x"; "11"; "1y"; "14"; "1z"; "17"; "2a"; "20"],
+    Arg.Symbol (["98"; "03"; "0x"; "11"; "1y"; "14"; "1z"; "17"; "2a"; "20"; "23"],
                 (fun i -> Flag.set_c_plus_plus (Some i))),
     "  <int> same as --c++ but allows to specify a version (e.g. --c++=11)";
     "--ibm", Arg.Set Flag.ibm,
