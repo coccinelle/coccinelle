@@ -71,6 +71,7 @@ let set_c_plus_plus version =
     | Some "1y" | Some "14" -> Some 2014
     | Some "1z" | Some "17" -> Some 2017
     | Some "2a" | Some "20" -> Some 2020
+    | Some "23" -> Some 2023
     | Some version -> failwith ("Invalid C++ version: " ^ version) in
   c_plus_plus := On version
 
