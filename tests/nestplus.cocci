@@ -1,6 +1,5 @@
 @one disable all@
 identifier foo;
-statement S;
 @@
 
 foo(...) {

@@ -1591,7 +1591,6 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
   (* whencode goes in the negated part of the nest; if no nest, just goes
       on the "true" in between code *)
   let plus_var = if plus then get_label_ctr() else string2var "" in
-  let plus_var2 = if plus then get_label_ctr() else string2var "" in
   let (ornest,just_nest) =
     (* just_nest is used when considering whether to stop early, to continue
        to collect nest information in the if branch *)
@@ -1602,16 +1601,8 @@ let rec dots_and_nests plus nest whencodes bef aft dotcode after label
 	let is_plus x =
 	  if plus
 	  then
-	    (* the idea is that BindGood is sort of a witness; a witness to
-	       having found the subterm in at least one place.  If there is
-	       not a witness, then there is a risk that it will get thrown
-	       away, if it is merged with a node that has an empty
-	       environment.  See tests/nestplus.  But this all seems
-	       rather suspicious *)
 	    CTL.And(CTL.NONSTRICT,x,
-		    CTL.Exists(true,plus_var2,
-			       CTL.Pred(Lib_engine.BindGood(plus_var),
-					CTL.Modif plus_var2)))
+		    CTL.Pred(Lib_engine.BindGood(plus_var),CTL.Control))
 	  else x in
 	let body =
 	  CTL.Let(v,nest,
