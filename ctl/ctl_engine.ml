@@ -261,8 +261,10 @@ let unionBy compare eq xs = function
 let union xs ys = unionBy state_compare (=) xs ys;;
 
 let setdiff xs ys = filter (fun x -> not (List.mem x ys)) xs;;
+let setdiffBy eq xs ys = filter (fun x -> not (memBy eq x ys)) xs;;
 
 let subseteqBy eq xs ys = List.for_all (fun x -> memBy eq x ys) xs;;
+let supseteqBy eq xs ys = subseteqBy eq ys xs
 
 let subseteq xs ys = List.for_all (fun x -> List.mem x ys) xs;;
 let supseteq xs ys = subseteq ys xs
@@ -278,7 +280,7 @@ let rec fix eq f x =
 
 (* Fix point calculation on set-valued functions *)
 let setfix f x = (fix subseteq f x) (*if new is a subset of old, stop*)
-let setgfix f x = (fix supseteq f x) (*if new is a supset of old, stop*)
+let setgfix eq f x = (fix (supseteqBy eq) f x) (*if new is a supset of old, stop*)
 
 let get_states l = Common.nub (List.map (function (s,_,_) -> s) l)
 
@@ -674,9 +676,9 @@ let triples_conj trips trips' =
     if false && !pTRIPLES_CONJ_OPT (* see comment above *)
     then
       let (shared,trips) =
-	List.partition (function t -> List.mem t trips') trips in
+	List.partition (function t -> memBy eq_trip t trips') trips in
       let trips' =
-	List.filter (function t -> not(List.mem t shared)) trips' in
+	List.filter (function t -> not(memBy eq_trip t shared)) trips' in
       (trips,shared,trips')
     else (trips,[],trips') in
   foldl (* returns a set - setify inlined *)
@@ -689,7 +691,7 @@ let triples_conj trips trips' =
 		(match (conj_subst th1 th2) with
 		  Some th ->
 		    let t = (s1,th,union_wit wit1 wit2) in
-		    if List.mem t rest then rest else t::rest
+		    if memBy eq_trip t rest then rest else t::rest
 		| _       -> rest)
 	      else rest)
 	  rest trips')
@@ -704,9 +706,9 @@ let triples_conj_none trips trips' =
     if false && !pTRIPLES_CONJ_OPT (* see comment above *)
     then
       let (shared,trips) =
-	List.partition (function t -> List.mem t trips') trips in
+	List.partition (function t -> memBy eq_trip t trips') trips in
       let trips' =
-	List.filter (function t -> not(List.mem t shared)) trips' in
+	List.filter (function t -> not(memBy eq_trip t shared)) trips' in
       (trips,shared,trips')
     else (trips,[],trips') in
   foldl (* returns a set - setify inlined *)
@@ -718,7 +720,7 @@ let triples_conj_none trips trips' =
 	      match (conj_subst_none th1 th2) with
 		Some th ->
 		  let t = (s1,th,union_wit wit1 wit2) in
-		  if List.mem t rest then rest else t::rest
+		  if memBy eq_trip t rest then rest else t::rest
 	      | _       -> rest)
 	  rest trips')
     shared trips
@@ -731,9 +733,9 @@ let triples_conj_AW trips trips' =
     if false && !pTRIPLES_CONJ_OPT
     then
       let (shared,trips) =
-	List.partition (function t -> List.mem t trips') trips in
+	List.partition (function t -> memBy eq_trip t trips') trips in
       let trips' =
-	List.filter (function t -> not(List.mem t shared)) trips' in
+	List.filter (function t -> not(memBy eq_trip t shared)) trips' in
       (trips,shared,trips')
     else (trips,[],trips') in
   foldl (* returns a set - setify inlined *)
@@ -746,7 +748,7 @@ let triples_conj_AW trips trips' =
 		(match (conj_subst th1 th2) with
 		  Some th ->
 		    let t = (s1,th,union_wit wit1 wit2) in
-		    if List.mem t rest then rest else t::rest
+		    if memBy eq_trip t rest then rest else t::rest
 		| _ -> raise AW)
 	      else rest)
 	  rest trips')
@@ -779,9 +781,9 @@ let triples_state_conj trips trips' =
     if !pTRIPLES_CONJ_OPT
     then
       let (shared,trips) =
-	List.partition (function t -> List.mem t trips') trips in
+	List.partition (function t -> memBy eq_trip t trips') trips in
       let trips' =
-	List.filter (function t -> not(List.mem t shared)) trips' in
+	List.filter (function t -> not(memBy eq_trip t shared)) trips' in
       (trips,shared,trips')
     else (trips,[],trips') in
   foldl
@@ -795,7 +797,7 @@ let triples_state_conj trips trips' =
 		  (match (conj_subst th1 th2) with
 		    Some th ->
 		      let t = (s,th,union_wit wit1 wit2) in
-		      if List.mem t rest then rest else t::rest
+		      if memBy eq_trip t rest then rest else t::rest
 		  | _ -> rest)
 	      | _ -> rest)
 	  rest trips')
@@ -1060,7 +1062,8 @@ let pre_forall dir (grp,_,states) y all reqst =
   let rec up_nodes child s = function
       [] -> []
     | (s1,th,wit)::xs ->
-	(match compare s1 child with
+	(match
+	  compare s1 child with
 	  -1 -> up_nodes child s xs
 	| 0 -> (s,th,wit)::(up_nodes child s xs)
 	| _ -> []) in
@@ -1107,7 +1110,7 @@ let satEU dir ((_,_,states) as m) s1 s2 reqst print_graph =
 	    print_graph y ctr;*)
 	    let first = triples_conj s1 (pre_exist dir m new_info reqst) in
 	    let res = triples_union first y in
-	    let new_info = setdiff res y in
+	    let new_info = setdiffBy eq_trip res y in
 	    (*Printf.printf "iter %d res %d new_info %d\n"
 	    !ctr (List.length res) (List.length new_info);
 	    print_state "res" res;
@@ -1141,7 +1144,7 @@ let satEU_forAW dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 	      let first =
 		triples_conj s1 (pre_exist_direct dir m new_info reqst) in
 	      let res = triples_union first y in
-	      let new_info = setdiff res y in
+	      let new_info = setdiffBy eq_trip res y in
 	      f res new_info in
       f s2 s2
     else
@@ -1166,7 +1169,7 @@ let satEF dir m s2 reqst =
 	  print_state (Printf.sprintf "iteration %d\n" !ctr) y;*)
 	  let first = pre_exist dir m new_info reqst in
 	  let res = triples_union first y in
-	  let new_info = setdiff res y in
+	  let new_info = setdiffBy eq_trip res y in
 	  (*Printf.printf "EF %s iter %d res %d new_info %d\n"
 	    (if dir = A.BACKWARD then "reachable" else "real ef")
 	    !ctr (List.length res) (List.length new_info);
@@ -1210,7 +1213,7 @@ let satAU dir ((cfg,_,states) as m) s1 s2 reqst print_graph =
 		let new_info =
 		  if not !something_dropped
 		  then first
-		  else setdiff res y in
+		  else setdiffBy eq_trip res y in
 		f res new_info in
       try
 	(if !Flag_ctl.loop_in_src_code
@@ -1290,13 +1293,14 @@ let satAW dir ((grp,_,states) as m) s1 s2 reqst =
 	(*print_state "pre" pre;*)
 	let conj = triples_conj s1 pre in (* or triples_conj_AW *)
 	triples_union s2 conj in
-      let drop_wits = List.map (function (s,e,_) -> (s,e,[])) in
+      let drop_wits =
+	List.map (function (s,e,_) -> (s,e,[])) in
       (* drop wits on s1 represents that we don't want any witnesses from
 	 the case that infinitely loops, only from the case that gets
 	 out of the loop. s1 is like a guard. To see the problem, consider
 	 an example where both s1 and s2 match some code after the loop.
 	 we only want the witness from s2. *)
-      setgfix f (triples_union (Common.nub(drop_wits s1)) s2)
+      setgfix eq_trip f (triples_union (nubBy eq_trip (drop_wits s1)) s2)
 ;;
 
 let satAF dir m s reqst =
@@ -1310,7 +1314,7 @@ let satAF dir m s reqst =
       | new_info ->
 	  let first = pre_forall dir m new_info y reqst in
 	  let res = triples_union first y in
-	  let new_info = setdiff res y in
+	  let new_info = setdiffBy eq_trip res y in
 	  f res new_info in
     f s s
   else
@@ -1326,7 +1330,7 @@ let satAG dir ((_,_,states) as m) s reqst =
     inc_step();
     let pre = pre_forall dir m y y reqst in
     triples_conj y pre in
-  setgfix f s
+  setgfix eq_trip f s
 
 let satEG dir ((_,_,states) as m) s reqst =
   inc satEG_calls;
@@ -1334,7 +1338,7 @@ let satEG dir ((_,_,states) as m) s reqst =
     inc_step();
     let pre = pre_exist dir m y reqst in
     triples_conj y pre in
-  setgfix f s
+  setgfix eq_trip f s
 
 (* **************************************************************** *)
 (* Inner And - a way of dealing with multiple matches within a node *)

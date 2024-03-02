@@ -198,7 +198,9 @@ let fold_left_with_index f acc =
 	fold_lwi_aux (f acc x n) xs
   in fold_lwi_aux acc
 
-let numberify trees =
+let numberify same_env trees =
+  let same_env (a1,env1,b1) (a2,env2,b2) =
+    a1 = a2 && b1 = b2 && same_env env1 env2 in
   let trees =
     fold_left_with_index
       (function acc -> function xs -> function n ->
@@ -207,7 +209,7 @@ let numberify trees =
   List.fold_left
     (function res ->
       function (n,x) ->
-	let (same,diff) = List.partition (function (ns,xs) -> x = xs) res in
+	let (same,diff) = List.partition (function (ns,xs) -> same_env x xs) res in
 	match same with
 	  [(ns,xs)] -> (n::ns,xs)::diff
 	| _ -> ([n],x)::res)
@@ -216,8 +218,8 @@ let numberify trees =
 (* ----------------------------------------------------------------------- *)
 (* entry point *)
 
-let process used_after inherited_env l =
+let process used_after inherited_env same_env l =
   let (trees, fresh_envs) =
     List.split (List.map (process_tree inherited_env) l) in
-  let trees = numberify trees in
+  let trees = numberify same_env trees in
   (trees, collect_used_after used_after fresh_envs l inherited_env)

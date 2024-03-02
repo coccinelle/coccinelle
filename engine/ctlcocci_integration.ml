@@ -629,6 +629,31 @@ let strip env =
 (*****************************************************************************)
 (* Call ctl engine *)
 (*****************************************************************************)
+
+let same_env e1 e2 =
+  let rec loop e1 e2 =
+    match (e1,e2) with
+      ((x1,x1v)::rest1,(x2,x2v)::rest2) ->
+	ENV.eq_mvar x1 x2 &&
+	ENV.eq_val
+	  (Lib_engine.NormalMetaVal x1v)
+	  (Lib_engine.NormalMetaVal x2v) &&
+	loop rest1 rest2
+    | ([],[]) -> true
+    | _ -> false in
+  loop e1 e2
+
+let same_env2 e1 e2 =
+  let rec loop e1 e2 =
+    match (e1,e2) with
+      ((x1,x1v)::rest1,(x2,x2v)::rest2) ->
+	ENV.eq_mvar x1 x2 &&
+	ENV.eq_val x1v x2v &&
+	loop rest1 rest2
+    | ([],[]) -> true
+    | _ -> false in
+  loop e1 e2
+
 let (mysat2:
   Lib_engine.model ->
   (Lib_engine.ctlcocci * (pred list list)) ->
@@ -644,7 +669,7 @@ let (mysat2:
             !Flag_matcher.allow_inconsistent_paths)
     then Check_reachability.check_reachability rulename triples flow;
     let (trans_info2,used_after_fresh_envs) =
-      Postprocess_transinfo.process used_after binding2 trans_info2 in
+      Postprocess_transinfo.process used_after binding2 same_env2 trans_info2 in
     let used_after_envs =
       Common.nub (List.map2 (@) used_after_fresh_envs used_after_envs) in
     let trans_info = satbis_to_trans_info trans_info2 in
@@ -656,16 +681,3 @@ let (mysat2:
 
 let mysat a b c =
   Common.profile_code "mysat" (fun () -> mysat2 a b c)
-
-let same_env e1 e2 =
-  let rec loop e1 e2 =
-    match (e1,e2) with
-      ((x1,x1v)::rest1,(x2,x2v)::rest2) ->
-	ENV.eq_mvar x1 x2 &&
-	ENV.eq_val
-	  (Lib_engine.NormalMetaVal x1v)
-	  (Lib_engine.NormalMetaVal x2v) &&
-	loop rest1 rest2
-    | ([],[]) -> true
-    | _ -> false in
-  loop e1 e2
