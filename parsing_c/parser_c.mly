@@ -1530,7 +1530,7 @@ qual_type:
      let tyval _ = Right3 (QualifiedType (None, name)), [$1] in
      let expval _ = mk_e(QualifiedAccess (None, name)) [$1] in
      (tyval,expval) }
- | qual_type TTemplateStart argument_list_ne TTemplateEnd
+ | qual_type TTemplateStart argument_list TTemplateEnd
      { let tyval _ =
        let tname = fst $1 () in
        Right3 (TemplateType (fixSimpleTypeForCPPType tname, $3)),[$2;$4] in
@@ -2863,6 +2863,10 @@ celem:
  | Tnamespace TIdent TOBrace translation_unit TCBrace
      { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
        Namespace ($4, [$1; snd $2; $3; $5]) }
+
+ | Tnamespace TOBrace translation_unit TCBrace
+     { !LP._lexer_hint.context_stack <- [LP.InTopLevel];
+       Namespace ($3, [$1; $2; $4]) }
 
  | external_declaration                         { $1 }
 
