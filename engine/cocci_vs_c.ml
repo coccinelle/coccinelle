@@ -4207,7 +4207,12 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
 	 match ii with
 	   [iisub; lbb; rbb] -> (Common.Left iisub,lbb,rbb)
 	 | [iisub; iisb; lbb; rbb] -> (Common.Right (iisub,iisb),lbb,rbb)
-	 | _ -> error ii "list of length 3 or 4 expected" in
+	 | _ ->
+	     error ii
+	       (Printf.sprintf
+		  "list of length 3 or 4 expected: found: %s of length %d\n"
+		  (String.concat " " (List.map B.str_of_info ii))
+		  (List.length ii)) in
 
        let process_type =
          match (sbopt,ii_sub_sb) with
