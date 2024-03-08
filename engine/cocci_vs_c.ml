@@ -4203,10 +4203,12 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     | A.StructUnionDef(ty, lba, declsa, rba),
      (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb), ii) ->
 
-       let (ii_sub_sb, lbb, rbb) =
+       let (ii_sub_sb, dots, lbb, rbb) =
 	 match ii with
-	   [iisub; lbb; rbb] -> (Common.Left iisub,lbb,rbb)
-	 | [iisub; iisb; lbb; rbb] -> (Common.Right (iisub,iisb),lbb,rbb)
+	   [iisub; lbb; rbb] -> (Common.Left iisub,None,lbb,rbb)
+	 | [iisub; dots; lbb; rbb] when sbopt = None -> (Common.Left iisub,Some dots,lbb,rbb)
+	 | [iisub; iisb; lbb; rbb] -> (Common.Right (iisub,iisb),None,lbb,rbb)
+	 | [iisub; iisb; dots; lbb; rbb] -> (Common.Right (iisub,iisb),Some dots,lbb,rbb)
 	 | _ ->
 	     error ii
 	       (Printf.sprintf
