@@ -42,13 +42,13 @@ let path =
     else
       (* Otherwise, we suppose that coccinelle has been installed (make
          install), and that standard.iso is installed in $libdir, where
-         $libdir is $exec_prefix/lib.
-         The default value for $bindir is $exec_prefix/bin.
-         Therefore, we should take for $exec_prefix the parent directory
-         of $bindir.*)
+         $libdir is ${exec_prefix}/lib by default. Rewrite "${exec_prefix}"
+         into its actual value, considering that it could also contain
+         "${prefix}". *)
       let libdir =
-        Str.global_replace (Str.regexp "[$]{exec_prefix}")
-          (Filename.dirname bin_dir) "@libdir@"
+        Str.global_replace (Str.regexp "[$]{prefix}") "@prefix@"
+          (Str.global_replace (Str.regexp "[$]{exec_prefix}")
+            "@exec_prefix@" "@libdir@")
       in
       Filename.concat libdir "coccinelle"
 
