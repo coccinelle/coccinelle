@@ -1614,6 +1614,12 @@ defineop:
 
 dparam: mident { Ast0_cocci.wrap(Ast0_cocci.DParam $1) }
 | TMetaDParamList { Parse_aux.meta_dparam_list $1 }
+| TVAEllipsis
+    { let id = ("...",$1) in
+      Ast0_cocci.wrap
+	(Ast0_cocci.DParam
+	   (Ast0_cocci.wrap
+	      (Ast0_cocci.Id(Parse_aux.id2mcode id)))) }
 
 define_param_list_option:
     empty_list_start(dparam,TEllipsis)
