@@ -2577,9 +2577,13 @@ let lookahead2 ~pass next before =
   | (TIdent (s, i1)::ptr ,
      (TOBrace _| TPtVirg _)::_) when not_struct_enum before
 	&& ok_typedef s
-	&& pointer ~followed_by:(function TIdent _ -> true | _ -> false)
-              ~followed_by_more:(function TPtVirg _ :: _ -> true | _ -> false) ptr
-        ->
+	&& let enddec = function
+	    TPtVirg _ :: _ -> true
+	  | TMacroAttr _ :: _ -> true
+	  | TMacroAttrArgs _ :: _ -> true
+	  | _ -> false in
+       pointer ~followed_by:(function TIdent _ -> true | _ -> false)
+          ~followed_by_more:enddec ptr ->
 
       msg_typedef s i1 23;  LP.add_typedef_root s i1;
       msg_maybe_dangereous_typedef s;
