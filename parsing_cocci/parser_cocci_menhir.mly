@@ -1966,7 +1966,8 @@ the language is ambiguous: what is foo * bar; */
 a disjunction on a statement with a declaration in each branch */
 decl_var:
     t=ctype pv=TPtVirg
-      { [Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,Parse_aux.clt2mcode ";" (snd pv)))] }
+      { [Ast0_cocci.wrap
+	    (Ast0_cocci.TyDecl(t,Parse_aux.clt2mcode ";" (snd pv)))] }
   | TMetaDecl { [Parse_aux.meta_decl $1] }
   | al=ioption(alignas) s=ioption(storage) t=ctype
       d=comma_list_attr(direct_declarator(type_ident)) pv=TPtVirg
@@ -1978,21 +1979,25 @@ decl_var:
 		 (al,s,fn t,id,endattrs,Parse_aux.clt2mcode ";" (snd pv))))
 	  vars }
   | f=funproto { [f] }
-  | al=ioption(alignas) s=ioption(storage) t=ctype d=direct_declarator(type_ident)
-    endattrs=attr_list q=TEq e=initialize
-      pv=TPtVirg
+  | al=ioption(alignas) s=ioption(storage) t=ctype
+      d=direct_declarator(type_ident)
+      endattrs=attr_list q=TEq e=initialize pv=TPtVirg
       {let (id,fn) = d in
       [Ast0_cocci.wrap
 	  (Ast0_cocci.Init
-	     (al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,Parse_aux.clt2mcode ";" (snd pv)))]}
+	     (al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,
+	      Parse_aux.clt2mcode ";" (snd pv)))]}
   /* type is a typedef name */
-  | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type
+  | al=ioption(alignas) s=ioption(storage) cv=const_vol
+      i=ident_or_template_type
       midattrs=const_vol_attr_list d=comma_list(d_ident) pv=TPtVirg
       { let cv = List.map (fun x -> Ast0.CV x) cv in
         List.map
 	  (function (id,fn) ->
 	    let idtype = Parse_aux.make_cv cv i midattrs in
-	    Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn idtype,id,[],Parse_aux.clt2mcode ";" (snd pv))))
+	    Ast0_cocci.wrap
+	      (Ast0_cocci.UnInit
+		 (al,s,fn idtype,id,[],Parse_aux.clt2mcode ";" (snd pv))))
 	  d }
   | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type
       midattrs=const_vol_attr_list d=d_ident endattrs=attr_list q=TEq e=initialize
@@ -2000,15 +2005,19 @@ decl_var:
       { let cv = List.map (fun x -> Ast0.CV x) cv in
         let (id,fn) = d in
 	let idtype = Parse_aux.make_cv cv i midattrs in
-	[Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode "=" q,e,
-					 Parse_aux.clt2mcode ";" (snd pv)))] }
-  | s=ioption(storage) prear=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
-      ar=attr_list p=TPtVirg
-      { [Ast0_cocci.wrap(Ast0_cocci.MacroDecl(s,prear,d,Parse_aux.clt2mcode "(" o,e,
-				  Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode ";" (snd p)))] }
+	[Ast0_cocci.wrap
+	    (Ast0_cocci.Init
+	       (al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode "=" q,e,
+		Parse_aux.clt2mcode ";" (snd pv)))] }
+  | s=ioption(storage) prear=attr_list d=decl_ident
+      o=TOPar e=eexpr_list_option c=TCPar ar=attr_list p=TPtVirg
+      { [Ast0_cocci.wrap
+	    (Ast0_cocci.MacroDecl(s,prear,d,Parse_aux.clt2mcode "(" o,e,
+				  Parse_aux.clt2mcode ")" c,ar,
+				  Parse_aux.clt2mcode ";" (snd p)))] }
   | s=ioption(storage) prear=attr_list
-      d=decl_ident o=TOPar e=eexpr_list_option c=TCPar ar=attr_list q=TEq i=initialize
-      p=TPtVirg
+      d=decl_ident o=TOPar e=eexpr_list_option c=TCPar ar=attr_list q=TEq
+      i=initialize p=TPtVirg
       { [Ast0_cocci.wrap
 	    (Ast0_cocci.MacroDeclInit
 	       (s,prear,d,Parse_aux.clt2mcode "(" o,e,
@@ -2019,7 +2028,8 @@ decl_var:
       { let s = Parse_aux.clt2mcode "typedef" s in
         List.map
 	  (function (id,fn) ->
-	    Ast0_cocci.wrap(Ast0_cocci.Typedef(s,fn t,id,Parse_aux.clt2mcode ";" (snd pv))))
+	    Ast0_cocci.wrap
+	      (Ast0_cocci.Typedef(s,fn t,id,Parse_aux.clt2mcode ";" (snd pv))))
 	  d }
 
 no_decl_var(ender):
