@@ -1436,7 +1436,7 @@ let token2line (tok,_) =
   | PC.Talignas(clt) | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt)
   | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
-  | PC.Tvolatile(clt) | PC.TAttrArg(_,clt) | TVAEllipsis(clt)
+  | PC.Tvolatile(clt) | PC.TAttrArg(_,clt) | PC.TVAEllipsis(clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
 
