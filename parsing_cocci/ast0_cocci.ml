@@ -374,6 +374,7 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
+  | DParamEll     of ident * string mcode (* ... *)
   | MetaDParamList of Ast.meta_name mcode * listlen * constraints * pure
   | DPComma       of string mcode
   | DPdots        of string mcode (* ... *)

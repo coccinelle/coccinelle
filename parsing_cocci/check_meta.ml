@@ -615,6 +615,7 @@ and directive old_metas table minus di =
 and define_param old_metas table minus p =
   match Ast0.unwrap p with
     Ast0.DParam(id) -> ident GLOBAL old_metas table minus id
+  | Ast0.DParamEll(id,dots) -> ident GLOBAL old_metas table minus id
   | Ast0.MetaDParamList(name,len,cstr,_) ->
       check_table table minus name;
       check_len table minus len;

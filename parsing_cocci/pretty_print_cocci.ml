@@ -968,6 +968,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast.unwrap param with
     Ast.DParam(id) -> ident id
+  | Ast.DParamEll(id,dots) -> ident id; mcode print_string dots
   | Ast.MetaDParamList(name,_,_,_,_) -> mcode print_meta name
   | Ast.DPComma(comma) -> mcode print_string comma
   | Ast.DPdots(dots) -> mcode print_string dots

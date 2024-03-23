@@ -2723,10 +2723,8 @@ param_define:
  | TIdent               { mk_string_wrap $1 }
  | TypedefIdent         { mk_string_wrap $1 }
  | TEllipsis            { "...", [$1] }
- | TIdent TEllipsis
-     { fst $1 ^ "...", [snd $1; $2] }
- | TypedefIdent TEllipsis
-     { fst $1 ^ "...", [snd $1; $2] }
+ | TIdent TEllipsis     { fst $1, [snd $1; $2] }
+ | TypedefIdent TEllipsis { fst $1, [snd $1; $2] }
  /*(* they reuse keywords :(  *)*/
  | Tregister            { "register", [$1] }
 

@@ -1433,6 +1433,11 @@ and define_param tgt param =
 	  Ast0.OptIdent(id) ->
 	    Ast0.OptDParam(Ast0.rewrap param (Ast0.DParam(id)))
 	| _ -> Ast0.DParam(new_id))
+  | Ast0.DParamEll(id,dots) ->
+      let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in
+      let new_id = ident true tgt id in
+      let new_dots = mcode dots in
+      make_define_param param tgt arity (Ast0.DParamEll(new_id,new_dots))
   | Ast0.MetaDParamList(name,lenname,cstr,pure) ->
       let arity = all_same true tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in

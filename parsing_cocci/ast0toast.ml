@@ -1273,6 +1273,7 @@ and define_param p =
   rewrap p no_isos
     (match Ast0.unwrap p with
       Ast0.DParam(id) -> Ast.DParam(ident id)
+    | Ast0.DParamEll(id,dots) -> Ast.DParamEll(ident id,mcode dots)
     | Ast0.MetaDParamList(name,lenname,cstr,_) ->
 	let cstr' = constraints cstr in
 	Ast.MetaDParamList(mcode name,do_lenname lenname,cstr',unitary,false)

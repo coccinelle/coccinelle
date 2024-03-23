@@ -2978,6 +2978,7 @@ module Ast_cocci :
     and base_define_param =
       Ast_cocci.base_define_param =
         DParam of ident
+      | DParamEll of ident * string mcode (* ... *)
       | MetaDParamList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
       | DPComma of string mcode
@@ -3679,6 +3680,7 @@ module Ast0_cocci :
     and base_define_param =
       Ast0_cocci.base_define_param =
         DParam of ident
+      | DParamEll of ident * string mcode (* ... *)
       | MetaDParamList of Ast_cocci.meta_name mcode * listlen * constraints *
           pure
       | DPComma of string mcode

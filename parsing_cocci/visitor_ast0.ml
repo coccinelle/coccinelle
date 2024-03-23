@@ -1236,6 +1236,10 @@ let visitor mode bind option_default
       rewrap p
 	(match Ast0.unwrap p with
 	  Ast0.DParam(id) -> let (n,id) = ident id in (n,Ast0.DParam(id))
+	| Ast0.DParamEll(id,dots) ->
+	    let (n,id) = ident id in
+	    let (d,dots) = string_mcode dots in
+	    (bind n d,Ast0.DParamEll(id,dots))
 	| Ast0.MetaDParamList(name,lenname,constraints,pure) ->
 	    let (n,name) = meta_mcode name in
 	    (n,Ast0.MetaDParamList(name,lenname,constraints,pure))

@@ -989,6 +989,7 @@ let combiner bind option_default mcode donothing
     let k p =
       match Ast.unwrap p with
 	Ast.DParam(id) -> ident id
+      | Ast.DParamEll(id,dots) -> ident id; string_mcode dots
       | Ast.MetaDParamList(name,_,_,_,_) -> meta_mcode name
       | Ast.DPComma(comma) -> string_mcode comma
       | Ast.DPdots(d) -> string_mcode d
@@ -2206,6 +2207,7 @@ let rebuilder mcode donothing
       Ast.rewrap p
 	(match Ast.unwrap p with
 	  Ast.DParam(id) -> Ast.DParam(ident id)
+	| Ast.DParamEll(id,dots) -> Ast.DParamEll(ident id, string_mcode dots)
 	| Ast.MetaDParamList(name,lenname_inh,constraints,keep,inherited) ->
 	    Ast.MetaDParamList
 	      (meta_mcode name,lenname_inh,constraints,keep,inherited)

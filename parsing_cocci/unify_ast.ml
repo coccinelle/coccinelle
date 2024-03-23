@@ -635,6 +635,8 @@ and unify_define_param p1 p2 =
   match (Ast.unwrap p1,Ast.unwrap p2) with
     (Ast.DParam(i1),Ast.DParam(i2)) ->
 	(unify_ident i1 i2)
+  | (Ast.DParamEll(i1,dots1),Ast.DParamEll(i2,dots2)) ->
+	(unify_ident i1 i2)
   | (Ast.MetaDParamList(_,_,_,_,_),_)
   | (_,Ast.MetaDParamList(_,_,_,_,_)) -> true
   | (Ast.DPComma(_),Ast.DPComma(_)) -> true

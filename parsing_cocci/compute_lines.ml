@@ -1235,6 +1235,11 @@ let rec define_param p =
   match Ast0.unwrap p with
     Ast0.DParam(id) ->
       let id = ident id in mkres p (Ast0.DParam(id)) id id
+  | Ast0.DParamEll(id,dots) ->
+      let dots = normal_mcode dots in
+      let ln = promote_mcode dots in
+      let id = ident id in
+      mkres p (Ast0.DParamEll(id,dots)) id ln
   | Ast0.MetaDParamList(name,a,b,c) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in

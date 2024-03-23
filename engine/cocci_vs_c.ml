@@ -5104,10 +5104,13 @@ and define_paramsbis = fun eas ebs ->
 
 and define_parameter = fun parama paramb ->
   match A.unwrap parama, paramb with
-    A.DParam ida, (idb, ii) ->
-      let ib1 = tuple_of_list1 ii in
+    A.DParam ida, (idb, [ib1]) ->
       ident DontKnow ida (idb, ib1) >>= (fun ida (idb, ib1) ->
         return ((A.DParam ida)+> A.rewrap parama,(idb, [ib1])))
+  | A.DParamEll (ida,dotsa), (idb, [ib;ibdots]) ->
+      ident DontKnow ida (idb, ib) >>= (fun ida (idb, ib) ->
+      tokenf dotsa ibdots >>= (fun dotsa ibdots ->
+        return ((A.DParamEll(ida,dotsa))+> A.rewrap parama,(idb, [ib;ibdots]))))
   | A.OptDParam _, _ -> failwith "handling Opt for define parameters"
   | _ -> fail
 

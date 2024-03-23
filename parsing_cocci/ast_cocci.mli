@@ -521,6 +521,7 @@ and parameter_list = parameterTypeDef dots
 
 and base_define_param =
     DParam        of ident
+  | DParamEll     of ident * string mcode (* ... *)
   | MetaDParamList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited
   | DPComma       of string mcode

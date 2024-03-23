@@ -831,6 +831,7 @@ and print_define_parameters params =
 and print_define_param param =
   match Ast0.unwrap param with
     Ast0.DParam(id) -> ident id
+  | Ast0.DParamEll(id,dots) -> ident id; mcode print_string dots
   | Ast0.MetaDParamList(name,_,_,_) -> mcode print_meta name
   | Ast0.DPComma(comma) -> mcode print_string comma
   | Ast0.DPdots(dots) -> mcode print_string dots
