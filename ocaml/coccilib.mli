@@ -177,6 +177,7 @@ module Ast_c :
       | New of argument wrap2 list option * fullType * argument wrap2 list option
       | Delete of bool * expression
       | TemplateInst of expression * argument wrap2 list
+      | TupleExpr of argument wrap2 list
       | Defined of name
     and argument = (expression, weird_argument) Common.either
     and weird_argument =
@@ -2698,6 +2699,7 @@ module Ast_cocci :
 	    arguments option
       | TemplateInst of expression (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)
+      | TupleExpr of string mcode (* { *) * expression dots * string mcode (* } *)
       | TypeExp of fullType
       | Paren of string mcode * expression * string mcode
       | Constructor of string mcode * fullType * string mcode * initialiser
@@ -3507,6 +3509,7 @@ module Ast0_cocci :
 	    arguments option
       | TemplateInst of expression (* name *) * string mcode (* < *) *
             expression dots * string mcode (* > *)
+      | TupleExpr of string mcode (* { *) * expression dots * string mcode (* } *)
       | TypeExp of typeC
       | Constructor of string mcode * typeC * string mcode * initialiser
       | MetaErr of Ast_cocci.meta_name mcode * constraints * pure

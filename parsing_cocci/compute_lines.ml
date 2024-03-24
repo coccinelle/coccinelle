@@ -479,6 +479,11 @@ let rec expression e =
       let args = dots is_exp_dots (Some(promote_mcode lp)) expression args in
       let rp = normal_mcode rp in
       mkres e (Ast0.TemplateInst(tn,lp,args,rp)) tn (promote_mcode rp)
+  | Ast0.TupleExpr(lb,args,rb) ->
+      let lb = normal_mcode lb in
+      let args = dots is_exp_dots (Some(promote_mcode lb)) expression args in
+      let rb = normal_mcode rb in
+      mkres e (Ast0.TupleExpr(lb,args,rb)) args (promote_mcode rb)
   | Ast0.TypeExp(ty) ->
       let ty = typeC ty in mkres e (Ast0.TypeExp(ty)) ty ty
   | Ast0.Constructor(lp,ty,rp,init) ->

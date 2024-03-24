@@ -281,6 +281,10 @@ let rec expression e =
       mcode print_string_box lp;
       dots (function _ -> ()) expression args;
       close_box(); mcode print_string rp
+  | Ast.TupleExpr(lb,args,rb) ->
+      mcode print_string lb; 
+      dots (function _ -> ()) expression args;
+      close_box(); mcode print_string rb;
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();

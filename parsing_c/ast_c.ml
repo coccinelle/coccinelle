@@ -383,6 +383,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | New of (argument wrap2 (* , *) list) option * fullType * (argument wrap2 (* , *) list) option
   | Delete of bool (* true if [] *) * expression
   | TemplateInst of expression * argument wrap2 list
+  | TupleExpr of argument wrap2 list
 
   (* CPP [defined] operator, e.g. #if defined(A) *)
   | Defined of name

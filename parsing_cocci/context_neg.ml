@@ -727,6 +727,8 @@ let rec equal_expression e1 e2 =
   | (Ast0.TypeExp(_),Ast0.TypeExp(_)) -> true
   | (Ast0.Constructor(lp1,_,rp1,_),Ast0.Constructor(lp2,_,rp2,_)) ->
       equal_mcode lp1 lp2 && equal_mcode rp1 rp2
+  | (Ast0.TupleExpr(lb1,_,rb1),Ast0.TupleExpr(lb2,_,rb2)) ->
+      equal_mcode lb1 lb2 && equal_mcode rb1 rb2
   | (Ast0.MetaErr(name1,_,_),Ast0.MetaErr(name2,_,_))
   | (Ast0.MetaExpr(name1,_,_,_,_,_),Ast0.MetaExpr(name2,_,_,_,_,_))
   | (Ast0.MetaExprList(name1,_,_,_),Ast0.MetaExprList(name2,_,_,_)) ->

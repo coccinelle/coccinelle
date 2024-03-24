@@ -348,6 +348,8 @@ let rec vk_expr = fun bigf expr ->
     | TemplateInst(nm,args) ->
 	exprf nm;
 	vk_argument_list bigf args
+    | TupleExpr(args) ->
+    vk_argument_list bigf args
     | Defined name -> vk_name bigf name
 
 
@@ -1413,7 +1415,10 @@ let rec vk_expr_s = fun bigf expr ->
 		     List.map
 		       (fun (e,ii) -> vk_argument_s bigf e, iif ii)
 		       args)
-
+      | TupleExpr(args) ->
+    TupleExpr(List.map
+               (fun (e,ii) -> vk_argument_s bigf e, iif ii)
+                args)
       | Defined name  -> Defined (vk_name_s bigf name)
 
     in

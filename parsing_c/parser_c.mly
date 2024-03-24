@@ -1335,8 +1335,11 @@ jump:
  | Tbreak       { Break,          [$1] }
  | Treturn      { Return,         [$1] }
  | Treturn expr { ReturnExpr $2,  [$1] }
+ | Treturn tuple_expr { ReturnExpr $2, [$1] }
  | Tgoto TMul expr { GotoComputed $3, [$1;$2] }
 
+tuple_expr:
+ | TOBrace argument_list TCBrace { mk_e (TupleExpr $2) [$1;$3] }
 
 
 /*(*----------------------------*)*/

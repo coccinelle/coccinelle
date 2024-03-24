@@ -796,6 +796,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		[check_mcode laba labb; check_mcode raba rabb; match_expr namea nameb;
 		  match_dots match_expr is_elist_matcher do_elist_match
 		    argsa argsb]
+      | (Ast0.TupleExpr(lba,argsa,rba),Ast0.TupleExpr(lbb,argsb,rbb)) ->
+          conjunct_many_bindings
+        [check_mcode lba lbb; check_mcode rba rbb;
+         match_dots match_expr is_elist_matcher do_elist_match argsa argsb]
 	  | (Ast0.Constructor(lp1,tya,rp1,inita),
 	     Ast0.Constructor(lp,tyb,rp,initb)) ->
 	       conjunct_many_bindings

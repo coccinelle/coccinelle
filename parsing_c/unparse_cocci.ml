@@ -463,6 +463,7 @@ let rec expression e =
     | Ast_c.New (_, t, _) -> unary
     | Ast_c.Delete(_,t) -> unary
     | Ast_c.TemplateInst(tn,args) -> unary
+    | Ast_c.TupleExpr(args) -> unary
     | Ast_c.Defined _ -> primary
   in
 
@@ -532,6 +533,10 @@ let rec expression e =
       loop tn postfix; mcode (print_string_with_hint StartBox) lp;
       dots (function _ -> ()) arg_expression args;
       mcode (print_string_with_hint EndBox) rp
+  | Ast.TupleExpr(lb,args,rb) ->
+      mcode print_string lb;
+      dots (function _ -> ()) arg_expression args;
+      mcode print_string rb
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();

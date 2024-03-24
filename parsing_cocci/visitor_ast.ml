@@ -315,6 +315,11 @@ let combiner bind option_default mcode donothing
 	  let largs = expression_dots args in
 	  let lrab = string_mcode rab in
 	  multibind [lname; llab; largs; lrab]
+      | Ast.TupleExpr(lb,args,rb) ->
+      let llb = string_mcode lb in
+      let largs = expression_dots args in
+      let lrb = string_mcode rb in
+      multibind [llb; largs; lrb]
       | Ast.TypeExp(ty) -> fullType ty
       | Ast.Constructor(lp,ty,rp,init) ->
 	  let llp = string_mcode lp in
@@ -1554,6 +1559,11 @@ let rebuilder mcode donothing
 	| Ast.TemplateInst(name,lab,args,rab) ->
 	    Ast.TemplateInst(expression name,string_mcode lab,
 			     expression_dots args,string_mcode rab)
+    | Ast.TupleExpr(lb,args,rb) ->
+        let llb = string_mcode lb in
+        let largs = expression_dots args in
+        let lrb = string_mcode rb in
+        Ast.TupleExpr(llb, largs, lrb)
 	| Ast.TypeExp(ty) -> Ast.TypeExp(fullType ty)
 	| Ast.Constructor(lp,ty,rp,init) ->
 	    let llp = string_mcode lp in
