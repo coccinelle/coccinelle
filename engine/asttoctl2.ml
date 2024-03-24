@@ -1201,10 +1201,17 @@ let forwhile header body ((afvs,_,_,_) as aft) after
 	 (Some(ctl_ex after_pred)) None aft after label guard) in
   match (Ast.unwrap body,aft) with
     (Ast.Atomic(re),(_,_,_,Ast.CONTEXT(_,Ast.NOTHING))) ->
+      let pos_unitary pos =
+	List.for_all
+	  (function
+	      Ast.MetaPos(name,constraints,per,unitary,inherited) ->
+		unitary = Ast.Unitary
+	    | _ -> true)
+	  pos in
       (match Ast.unwrap re with
-	Ast.MetaStmt((_,_,Ast.CONTEXT(_,Ast.NOTHING),_),
+	Ast.MetaStmt((name,_,Ast.CONTEXT(_,Ast.NOTHING),pos),
 		     Ast.CstrTrue, Ast.Unitary,_,false)
-	when after = Tail || after = End || after = VeryEnd ->
+	when (after = Tail || after = End || after = VeryEnd) && pos_unitary pos ->
 	  let (efvs) =
 	    match seq_fvs quantified [Ast.get_fvs header] with
 	      [(efvs,_)] -> efvs
@@ -1813,7 +1820,7 @@ and statement stmt top after quantified minus_quantified
       |	Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.BEFOREAFTER(_,_,_)) as d),_),cstr,
 		     keep,seqible,_)
       | Ast.MetaStmt((s,_,(Ast.CONTEXT(_,Ast.AFTER(_,_)) as d),_),cstr,
-		     keep,seqible,_)->
+		     keep,seqible,_) ->
 	  svar_context_with_add_after stmt s label quantified d ast seqible
 	    after
 	    (process_bef_aft quantified minus_quantified
