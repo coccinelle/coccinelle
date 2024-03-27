@@ -648,6 +648,8 @@ and attr_arg old_metas table minus x =
     Ast0.MetaAttr(name,cstr,_) ->
       check_table table minus name;
       constraints table minus cstr
+  | Ast0.MacroAttrArgs(attr,lp,args,rp) ->
+      dots (expression ID old_metas table minus) args
   | _ -> ()
 
 and whencode notfn alwaysfn expression = function
