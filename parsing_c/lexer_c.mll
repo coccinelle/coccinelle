@@ -281,20 +281,31 @@ let error_radix s =
 
 (* julia: functions for figuring out the type of integers *)
 
+
+(* Compare two numbers in string form by zero padding to the same
+   length. *)
+let ge_str a b =
+  let alen = String.length a in
+  let blen = String.length b in
+  let n = max alen blen in
+  let apad = (String.make (n - alen) '0') ^ a in
+  let bpad = (String.make (n - blen) '0') ^ b in
+  apad >= bpad
+
 let is_long_dec s int uint long ulong longlong ulonglong =
   match !Flag_parsing_c.int_thresholds with
     None -> int
   | Some (_,_,int_threshold, uint_threshold,long_threshold,ulong_threshold) ->
-      if s >= ulong_threshold
+      if ge_str s ulong_threshold
       then longlong
       else
-	if s >= long_threshold
+	if ge_str s long_threshold
 	then ulong
 	else
-	  if s >= uint_threshold
+	  if ge_str s uint_threshold
 	  then long
 	  else
-	    if s >= int_threshold
+	    if ge_str s int_threshold
 	    then uint
 	    else int
 
