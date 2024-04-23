@@ -1734,6 +1734,17 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  (A.TemplateInst(nma,laba,argsa,raba)) +> wa,
 	  ((B.TemplateInst(nmb,argsb),typ), [labb;rabb]))))))
 
+    | A.TupleExpr(lba,argsa,rba), ((B.TupleExpr(argsb),typ),ii) ->
+      let (lbb, rbb) = tuple_of_list2 ii in
+      tokenf rba rbb >>= (fun rba rbb ->
+      tokenf lba lbb >>= (fun lba lbb ->
+      arguments (seqstyle argsa) (A.unwrap argsa) argsb >>= (fun argsunwrap argsb ->
+        let argsa = A.rewrap argsa argsunwrap in
+            return (
+              ((A.TupleExpr (lba, argsa, rba)) +> wa,
+              ((B.TupleExpr (argsb), typ), [lbb;rbb]))))))
+
+
   (* todo? iso ? allow all the combinations ? *)
   | A.Paren (ia1, ea, ia2), ((B.ParenExpr (eb), typ),ii) ->
       let (ib1, ib2) = tuple_of_list2 ii in
@@ -1833,7 +1844,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
      B.Binary (_, _, _)|B.Unary (_, _)|
      B.Infix (_, _)|B.Postfix (_, _)|
      B.Assignment (_, _, _)|B.CondExpr (_, _, _)|
-     B.FunCall (_, _)|B.TemplateInst (_, _)|B.Constant _|B.StringConstant _|
+     B.FunCall (_, _)|B.TemplateInst (_, _)|B.TupleExpr(_)|B.Constant _|B.StringConstant _|
      B.Ident _),
      _),_)
        -> fail

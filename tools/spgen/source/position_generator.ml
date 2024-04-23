@@ -400,6 +400,9 @@ let rec expression_pos exp snp
   | Ast0.TemplateInst(name, lab, dots, rab) ->
       let constructor ~mc = Ast0.TemplateInst(name, mc, dots, rab) in
       mcode_wrap ~mc:lab ~constructor snp
+  | Ast0.TupleExpr(lb, expdots, rb) ->
+      let constructor ~mc = Ast0.TupleExpr(lb, expdots, rb) in
+      mcode_wrap ~mc:lb ~constructor snp
   | Ast0.TypeExp(typec) ->
       let constructor ~item = Ast0.TypeExp(item) in
       item_wrap ~item:typec ~item_posfn:type_pos ~constructor snp
