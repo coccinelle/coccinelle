@@ -307,8 +307,10 @@ let rec top_expression opt_allowed tgt expr =
       let (lb,args,rb) = arg_list tgt (lb,args,rb) in
       make_exp expr tgt arity (Ast0.TemplateInst(tn,lb,args,rb))
   | Ast0.TupleExpr(lb,args,rb) ->
-      let (lb,args,rb) = arg_list tgt (lb,args,rb) in
-      make_exp expr tgt tgt (Ast0.TupleExpr(lb,args,rb))
+      let arity =
+	all_same false tgt (mcode2line lb) [mcode2arity lb;mcode2arity rb] in
+      let (lb,args,rb) = arg_list arity (lb,args,rb) in
+      make_exp expr tgt arity (Ast0.TupleExpr(lb,args,rb))
   | Ast0.TypeExp(ty) -> Ast0.rewrap expr (Ast0.TypeExp(typeC tgt ty))
   | Ast0.MetaErr(name,constraints,pure)  ->
       let arity = exp_same (mcode2line name) [mcode2arity name] in
