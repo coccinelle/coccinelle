@@ -10,7 +10,7 @@ let rec decompose_list (l: Str.split_result list)  =
 
 let get_root fpath =
   let current_dir = List.hd (Common.cmd_to_list "pwd") in
-  let command_get_root = "cd " ^ fpath ^ " && git rev-parse --show-toplevel" in
+  let command_get_root = "cd " ^ fpath ^ " > /dev/null && git rev-parse --show-toplevel" in
   let root = List.hd (Common.cmd_to_list command_get_root) in
   ignore (Sys.command ("cd " ^ current_dir));
   root
