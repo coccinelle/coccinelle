@@ -1001,8 +1001,9 @@ rule token = parse
 	  TString(string lexbuf,Ast.Isuchar,(get_current_line_type lexbuf)) }
   | "u8" '\"' { start_line true;
 	  TString(string lexbuf,Ast.Isu8char,(get_current_line_type lexbuf)) }
-  | (real as x)    { start_line true;
-		     TFloat(x,(get_current_line_type lexbuf)) }
+  | ((real ( ['f' 'F'] | ['l' 'L'] ))?) as x
+      { start_line true;
+	TFloat(x,(get_current_line_type lexbuf)) }
   | ((( decimal | hexa | octal)
       ( ['u' 'U']
       | ['l' 'L']
