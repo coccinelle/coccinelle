@@ -11,6 +11,9 @@
 You must first install a recent version of OCaml (at least 3.12.1).
 See http://caml.inria.fr/download.en.html
 
+The 5.2.x versions do, however, not yet work with Coccinelle, so
+use a 5.1.x version for the most recent versions of OCaml.
+
 On Debian/Ubuntu, install the following packages
  - pkg-config (optional, but strongly recommended)
  - ocaml-native-compilers (or alternatively ocaml)
