@@ -1,4 +1,0 @@
-namespace ns {};
-int main()
-{
-}

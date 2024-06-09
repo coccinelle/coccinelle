@@ -1,7 +1,0 @@
-# spatch --c++
-
-@@
-@@
-
-- int
-+ char

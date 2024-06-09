@@ -1,6 +1,0 @@
-class Ball
-{};
-
-int main()
-{
-}

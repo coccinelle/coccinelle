@@ -1,0 +1,7 @@
+@@
+identifier func;
+@@
+func(...)
+{
+-...
+}

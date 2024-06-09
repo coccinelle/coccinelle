@@ -1,5 +1,0 @@
-@type@
-@@
-
-- double
-+ int
