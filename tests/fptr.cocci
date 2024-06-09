@@ -11,7 +11,7 @@ t << r.T;
 x;
 @@
 
-if t = "int ( * ) ( int c , int d )"
+if t = "int(*)(int c, int d)"
 then x := make_ident "success"
 else x := make_ident "failure"
 
