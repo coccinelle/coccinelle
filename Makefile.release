@@ -110,6 +110,7 @@ fix-expected:
 	./configure --disable-python $(extra_configure_flags)
 	$(MAKE) opt-only
 	yes | ./spatch.opt -testall --iso-file ./standard.iso --macro-file-builtins ./standard.h
+	yes | ./spatch.opt -cpptestall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
 	@echo "generated: test/SCORE_expected_orig.sexp"
 

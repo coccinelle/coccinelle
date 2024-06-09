@@ -70,6 +70,7 @@ build-and-test:
     - sudo trace-cmd start -e sched -v -e sched_stat_runtime
     - eval $(opam env) && ./autogen && ./configure && make
     - ./spatch.opt --batch_mode -testall
+    - ./spatch.opt --batch_mode -cpptestall
     - sudo trace-cmd extract
     # trace.dat is owned by root:root and xz tries to reproduce user and group
     - sudo chown gitlab-runner:gitlab-runner trace.dat

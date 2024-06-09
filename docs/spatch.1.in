@@ -481,6 +481,9 @@ The test options don't work with the \fB\-\-sp\-file\fR and so on.
 \fB\-\-testall\fR
 launch spatch on all files in tests/ having a .res
 .TP
+\fB\-\-cpptestall\fR
+launch spatch on all files in cpptests/ (C++ code) having a .res
+.TP
 \fB\-\-test\-okfailed\fR
 generates .{ok,failed,spatch_ok} files using .res files
 .TP
@@ -491,10 +494,10 @@ process the .{ok,failed,spatch_ok} files in current dir
 use also file.res
 .TP
 \fB\-\-expected\-score\-file\fR
-which score file to compare with in \fB\-\-testall\fR
+which score file to compare with in \fB\-\-testall\fR or \fB\-\-cpptestall\fR
 .TP
 \fB\-\-no\-update\-score\-file\fR
-do not update the score file when \fB\-\-testall\fR succeeds
+do not update the score file when \fB\-\-testall\fR or \fB\-\-cpptestall\fR succeeds
 .HP
 \fB\-\-relax\-include\-path\fR
 .PP

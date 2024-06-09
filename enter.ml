@@ -39,6 +39,7 @@ let macro_file = ref ""
 (* test mode *)
 let test_mode = ref false
 let test_all = ref false
+let cpp_test_all = ref false
 let test_spacing = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
@@ -789,6 +790,8 @@ let other_options = [
     "   <file> launch spatch on tests/file.[c,cocci]";
     "--testall", Arg.Set test_all,
     "   launch spatch on all files in tests/ having a .res";
+    "--cpptestall", Arg.Set cpp_test_all,
+    "   launch spatch on all files in cpptests/ (C++) having a .res";
     "--test-spacing", Arg.Set test_spacing,
     "    check that the result matches the .res file exactly";
     "--test-okfailed", Arg.Set test_okfailed,
@@ -803,12 +806,12 @@ let other_options = [
     Arg.String (fun x -> compare_with_expected := Some x),
     "   extension for --compare-with-expected; implicitly sets --compare-with-expected";
     "--expected-score-file", Arg.Set_string expected_score_file,
-    "   which score file to compare with in --testall";
+    "   which score file to compare with in --testall or --cpptestall";
     "--expected-spacing-score-file",
     Arg.Set_string expected_spacing_score_file,
     "   which score file to compare with in --test-spacing";
     "--no-update-score-file", Arg.Clear allow_update_score_file,
-    "   do not update the score file when -testall succeeds";
+    "   do not update the score file when --testall or --cpptestall succeeds";
     "--relax-include-path", Arg.Set Inc.relax_include_path,
     " ";
     "--batch_mode", Arg.Set _batch_mode,
@@ -1565,7 +1568,7 @@ let main arglist =
         && not (List.mem "--parse-cocci" arglist)
 	&& not (List.mem "--rule-dependencies" arglist) in
     if (Common.inter_set arglist
-	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";
+	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";"--cpptestall";
                       "--test-okfailed";"--test-regression-okfailed"]) <> []
          || contains_cocci
     then run_profile quiet_profile;
@@ -1716,6 +1719,20 @@ let main arglist =
                          then !expected_score_file
                          else "tests/SCORE_expected.sexp" in
         Testing.testall
+	  (fun file ->
+	    run_profile testing_profile;
+	    let cocci_args =
+	      Cocci_args.read_args [file] +> normalize_args in
+	    arg_parse cocci_args "in the cocci file")
+	  score_file !allow_update_score_file
+
+    | []  when !cpp_test_all ->
+        (if !Inc.include_path = []
+         then Inc.include_path := ["cpptests/include"]);
+        let score_file = if !expected_score_file <> ""
+                         then !expected_score_file
+                         else "cpptests/SCORE_expected.sexp" in
+        Testing.cpptestall
 	  (fun file ->
 	    run_profile testing_profile;
 	    let cocci_args =

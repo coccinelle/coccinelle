@@ -186,12 +186,12 @@ let add_file_to_score score res correct diffxs =
 (* If extra test is provided, then all failing tests with the standard
    comparison are considered ok, and only the correct result are subjected to
    the extra test *)
-let testall_bis setup extra_test expected_score_file update_score_file =
+let testall_bis testdir setup extra_test expected_score_file update_score_file =
 
   let score  = empty_score () in
 
   let expected_result_files =
-    Common.glob "tests/*.res"
+    Common.glob (testdir^"/*.res")
     +> List.filter (fun f -> Common.filesize f > 0)
     +> List.map Filename.basename
     +> List.sort compare
@@ -204,11 +204,11 @@ let testall_bis setup extra_test expected_score_file update_score_file =
 	then matched1 res
 	else raise (Impossible 164) in
       let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
-      let cocci_file = "tests/" ^ base ^ ".cocci" in
+      let cocci_file = testdir ^ "/" ^ base ^ ".cocci" in
       setup cocci_file;
-      let cfile      = "tests/" ^ x ^ ".c" in
+      let cfile      = testdir ^ "/" ^ x ^ ".c" in
       let cfile      =
-        let cppfile = "tests/" ^ x ^ ".cpp" in
+        let cppfile = testdir ^ "/" ^ x ^ ".cpp" in
         if not (Sys.file_exists cfile) && Sys.file_exists cppfile
         then
           begin
@@ -220,9 +220,9 @@ let testall_bis setup extra_test expected_score_file update_score_file =
             Flag.c_plus_plus := Flag.Off;
             cfile
           end in
-      let expected = "tests/" ^ res in
+      let expected = testdir ^ "/" ^ res in
       let out = base ^ out_suffix in
-      let expected_out = "tests/" ^ out in
+      let expected_out = testdir ^ "/" ^ out in
 
       let timeout_testall = 60 in
 
@@ -298,9 +298,9 @@ let testall_bis setup extra_test expected_score_file update_score_file =
     pr2 "regression testing  information";
     pr2 "--------------------------------";
 
-    let expected_score_file_orig = "tests/SCORE_expected_orig.sexp" in
-    let best_of_both_file = "tests/SCORE_best_of_both.sexp" in
-    let actual_score_file = "tests/SCORE_actual.sexp" in
+    let expected_score_file_orig = testdir ^ "/SCORE_expected_orig.sexp" in
+    let best_of_both_file = testdir ^ "/SCORE_best_of_both.sexp" in
+    let actual_score_file = testdir ^ "/SCORE_actual.sexp" in
 
     pr2 ("regression file: "^ expected_score_file);
     let (expected_score : score) =
@@ -372,8 +372,9 @@ let testall_bis setup extra_test expected_score_file update_score_file =
 
   end
 
-let testall setup = testall_bis setup None
-let test_spacing setup = testall_bis setup (Some Compare_c.exact_compare)
+let testall setup = testall_bis "tests" setup None
+let cpptestall setup = testall_bis "cpptests" setup None
+let test_spacing setup = testall_bis "tests" setup (Some Compare_c.exact_compare)
 
 (* ------------------------------------------------------------------------ *)
 

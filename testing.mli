@@ -12,6 +12,7 @@ open Common
 val testone : string (*prefix*) -> string (*test*) ->
   string option (*compare_expected*) -> unit
 val testall : (string -> unit) -> string -> bool -> unit
+val cpptestall : (string -> unit) -> string -> bool -> unit
 val test_spacing : (string -> unit) -> string -> bool -> unit
 
 (*****************************************************************************)
