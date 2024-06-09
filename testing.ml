@@ -361,7 +361,7 @@ let testall_bis testdir setup extra_test expected_score_file update_score_file =
         (* when there are sufficient number of tests, abort if a substantial
          * amount of tests fail, which would indicate a broken build.
          *)
-        if total > 40 && good < (total * 3) / 4 && testdir = "tests"
+        if total > 100 && good < (total * 3) / 4
         then begin
 	  pr2 "Still, less 75% the tests passed. Returning a nonzero exit status.";
           raise (UnixExit 1);
