@@ -363,7 +363,7 @@ let testall_bis testdir setup extra_test expected_score_file update_score_file =
          *)
         if total > 40 && good < (total * 3) / 4
         then begin
-	  pr2 "Still, less 75% the tests passed. Returning a nonzero exist status.";
+	  pr2 "Still, less 75% the tests passed. Returning a nonzero exit status.";
           raise (UnixExit 1);
         end;
 
