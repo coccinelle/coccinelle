@@ -358,7 +358,10 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
 
       let newi = !g +> add_node (SeqStart (stmt, brace, i1)) lbl s1 nochildren in
       let endnode     = mk_node      (SeqEnd (brace, i2)) lbl [] s2 in
-      let endnode_dup = mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
+      let endnode_dup =
+	if xi.compound_caller = Statement
+	then endnode
+	else mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
 (*
       let _endnode_dup =
 	mk_node (SeqEnd (brace, Ast_c.fakeAfterInfo())) lbl [] s2 in
@@ -1137,8 +1140,6 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
 
       let endnode =
         mk_node (EndStatement(Some iifakeend)) labels [] "[endif]" in
-      let endnode_dup =
-        mk_node (EndStatement(Some iifakeend)) labels [] "[endif]" in
 
       let ret_afters = ref [] in
       let mkafter ty str lasti = begin
@@ -1152,7 +1153,7 @@ and mk_If (starti :nodei option) (labels :int list) (xi_lbl :xinfo)
         end in
 
       let newxi = { xi_lbl with
-            braces = Common.Left (endnode_dup,mkafter) :: xi_lbl.braces
+            braces = Common.Left (endnode,mkafter) :: xi_lbl.braces
         } in
 
       let finalthen = aux_statement (Some newfakethen, newxi) st1 children in
