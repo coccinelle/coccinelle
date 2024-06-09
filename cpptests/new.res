@@ -1,0 +1,6 @@
+class Ball
+{};
+
+int main()
+{
+}
