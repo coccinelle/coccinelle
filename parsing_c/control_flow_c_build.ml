@@ -361,7 +361,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
       let endnode_dup =
 	if xi.compound_caller = Statement
 	then endnode
-	else mk_fake_node (SeqEnd (brace, i2))    lbl [] s2 in
+	else mk_fake_node (SeqEnd (brace, i2))    lbl [] ("fake"^s2) in
 (*
       let _endnode_dup =
 	mk_node (SeqEnd (brace, Ast_c.fakeAfterInfo())) lbl [] s2 in
@@ -1314,7 +1314,7 @@ and aux_statement_list starti (xi, newxi) statxs children =
           !g +> add_node (IfdefEndif (tail)) newxi'.labels "[endif]" nochildren in
         (* do like for a close brace, see endi.{c,cocci} *)
         let taili_dup =
-          mk_fake_node (IfdefEndif (tail)) newxi'.labels [] "[endif]" in
+          mk_fake_node (IfdefEndif (tail)) newxi'.labels [] "fake [endif]" in
         !g +> add_arc_opt (starti, newi);
 
         if body = [] then
