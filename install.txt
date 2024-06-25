@@ -54,6 +54,14 @@ Then simply type
  make
  sudo make install
 
+If you prefer using Flatpak, you can build it and install it using:
+
+flatpak run org.flatpak.Builder --force-clean --install \
+  --install-deps-from=flathub --ccache --repo=_flatpak-repo/ \
+  _flatpak-build/ extra/flatpak/fr.inria.Coccinelle.yaml
+
+It will install the `spatch` program as `fr.inria.Coccinelle`.
+
 
 Other configuration flags of interest:
 --prefix                default: /usr/local

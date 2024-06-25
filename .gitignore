@@ -22,6 +22,10 @@ scripts/spatch.byte
 .depend
 version.ml
 
+.flatpak-builder/
+_flatpak-build/
+_flatpak-repo/
+
 /configure
 Makefile.config
 Makefile.override
