@@ -346,7 +346,7 @@ let id_tokens lexbuf =
 
   | "sizeof" ->     TSizeof   linetype
   | "typeof" ->     TTypeof   ("typeof", linetype)
-  | "typeof_uequal" when !Flag.c_plus_plus <> Flag.Off ->
+  | "typeof_unequal" when !Flag.c_plus_plus <> Flag.Off ->
       TTypeof   ("typeof_unequal", linetype)
   | "decltype" when !Flag.c_plus_plus <> Flag.Off ->
       TTypeof   ("decltype", linetype)
