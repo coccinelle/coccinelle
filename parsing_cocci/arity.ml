@@ -805,21 +805,11 @@ and field tgt decl =
       then failwith "unexpected code");
       let res = Ast0.ConjField(starter,decls,mids,ender) in
       Ast0.rewrap decl res
-  | Ast0.TPrivate(name,dd) ->
+  | Ast0.TAccSpec(name,dd) ->
       let arity = all_same true tgt (mcode2line name) [mcode2arity name; mcode2arity dd] in
       let name = mcode name in
       let dd = mcode dd in
-      make_field decl tgt arity (Ast0.TPrivate(name,dd))
-  | Ast0.TProtected(name,dd) ->
-      let arity = all_same true tgt (mcode2line name) [mcode2arity name; mcode2arity dd] in
-      let name = mcode name in
-      let dd = mcode dd in
-      make_field decl tgt arity (Ast0.TProtected(name,dd))
-  | Ast0.TPublic(name,dd) ->
-      let arity = all_same true tgt (mcode2line name) [mcode2arity name; mcode2arity dd] in
-      let name = mcode name in
-      let dd = mcode dd in
-      make_field decl tgt arity (Ast0.TPublic(name,dd))
+      make_field decl tgt arity (Ast0.TAccSpec(name,dd))
   | Ast0.Fdots(dots,whencode) ->
       let arity = all_same true tgt (mcode2line dots) [mcode2arity dots] in
       let dots = mcode dots in

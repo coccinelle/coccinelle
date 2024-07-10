@@ -930,7 +930,7 @@ and pp_string_format (e,ii) =
 
     (* C++ *)
     | FunctionField def -> pp_def def
-    | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii ->
+    | AccSpec ii ->
 	let (kwd,dotdot) = Common.tuple_of_list2 ii in
 	pr_elem kwd; pr_elem dotdot
     | ConstructDestructField cd -> pp_construct_destruct cd

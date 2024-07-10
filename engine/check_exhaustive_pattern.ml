@@ -91,7 +91,7 @@ let dumb_astcocci_field = function
   | A.CppField _ -> ()
   | A.MetaField _ -> ()
   | A.MetaFieldList _ -> ()
-  | A.TPrivate _ | A.TProtected _ | A.TPublic _ -> ()
+  | A.TAccSpec _ -> ()
 
 let dumb_astcocci_ann_field = function
   | A.FElem(bef,allminus,fld) -> ()

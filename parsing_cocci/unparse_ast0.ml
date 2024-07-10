@@ -550,9 +550,7 @@ and field d =
       | Ast0.ConjField(_,fields,_,_) ->
 	  do_disj fields field "&"
       | Ast0.OptField(decl) -> print_string "?"; field decl
-      | Ast0.TPrivate(decl,dd)
-      | Ast0.TProtected(decl,dd)
-      | Ast0.TPublic(decl,dd) -> mcode print_string decl; mcode print_string dd
+      | Ast0.TAccSpec(decl,dd) -> mcode print_string decl; mcode print_string dd
       | Ast0.Fdots(dots,Some (_,_,whencode)) ->
 	  mcode print_string dots; print_string "   when != ";
 	  field whencode

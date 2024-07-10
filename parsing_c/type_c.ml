@@ -501,7 +501,7 @@ let (type_field:
 
       | EmptyField info -> ()
       | FunctionField def -> ()
-      | PublicLabel info | ProtectedLabel info | PrivateLabel info -> ()
+      | AccSpec info -> ()
       | ConstructDestructField _ -> pr2_once "ConstructorDestructorTodo"; ()
       | MacroDeclField _ -> pr2_once "MacroDeclField Todo"; ()
       | MacroDeclFieldInit _ -> pr2_once "MacroDeclFieldInit Todo"; ()

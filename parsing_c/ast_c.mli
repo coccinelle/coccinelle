@@ -67,9 +67,7 @@ and field =
     DeclarationField of field_declaration
   | EmptyField of info
   | FunctionField of definition (* C++ *)
-  | PublicLabel of info list (* C++ *)
-  | ProtectedLabel of info list (* C++ *)
-  | PrivateLabel of info list (* C++ *)
+  | AccSpec of info list (* C++ *)
   | ConstructDestructField of c_plus_plus_constructor
   | MacroDeclField of (string * argument wrap2 list * attribute list) wrap
   | MacroDeclFieldInit of (string * argument wrap2 list * attribute list * initialiser) wrap

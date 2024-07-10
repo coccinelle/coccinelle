@@ -787,9 +787,7 @@ and field d =
 	let sem = mcode sem in
 	Ast.MacroDeclField(name,lp,args,rp,attr,sem)
     | Ast0.CppField(di) -> Ast.CppField(directive di)
-    | Ast0.TPrivate(decl,dd) -> Ast.TPrivate(mcode decl,mcode dd)
-    | Ast0.TProtected(decl,dd) -> Ast.TProtected(mcode decl,mcode dd)
-    | Ast0.TPublic(decl,dd) -> Ast.TPublic(mcode decl,mcode dd)
+    | Ast0.TAccSpec(decl,dd) -> Ast.TAccSpec(mcode decl,mcode dd)
     | Ast0.ConjField(_,_,_,_)
     | Ast0.DisjField(_,_,_,_)
     | Ast0.OptField(_)

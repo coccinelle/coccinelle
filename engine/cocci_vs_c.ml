@@ -3520,9 +3520,7 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
 	   | Ast_c.IfdefStruct ifdef -> false
 	   (* C++ stuff; not supported in SmPL *)
 	   | Ast_c.FunctionField _ -> false
-	   | Ast_c.PublicLabel _ -> false
-	   | Ast_c.ProtectedLabel _ -> false
-	   | Ast_c.PrivateLabel _ -> false
+	   | Ast_c.AccSpec _ -> false
 	   | Ast_c.ConstructDestructField _ -> false)
 	 l) in
   list_matcher match_dots build_dots match_comma build_comma
@@ -3563,9 +3561,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	| A.MetaField (ida,cstr,keep,inherited), B.IfdefStruct _
 	  (* C++: should these be matched? *)
 	| A.MetaField (ida,cstr,keep,inherited), B.FunctionField _
-	| A.MetaField (ida,cstr,keep,inherited), B.PublicLabel _
-	| A.MetaField (ida,cstr,keep,inherited), B.ProtectedLabel _
-	| A.MetaField (ida,cstr,keep,inherited), B.PrivateLabel _
+	| A.MetaField (ida,cstr,keep,inherited), B.AccSpec _
 	| A.MetaField (ida,cstr,keep,inherited), B.ConstructDestructField _ ->
 	    (* not really fields *) fail
 	| A.MetaField (ida,cstr,keep,inherited), _ ->
@@ -3682,43 +3678,24 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 		 +> A.rewrap fa),
 	      B.CppDirectiveStruct(dib)))
 
-	| A.TPrivate (deca,dda),
-	    B.PrivateLabel (ii) ->
+	| A.TAccSpec (deca,dda),
+	    B.AccSpec (ii) ->
 	        let decb, ddb = tuple_of_list2 ii in
-		tokenf deca decb >>= (fun deca decb ->
-		tokenf dda ddb >>= (fun dda ddb ->
-		return (
-	        (A.FElem(mckstart,allminus,(A.TPrivate(deca,dda)) +> A.rewrap ifa)
-		   +> A.rewrap fa),
-                 B.PrivateLabel([decb;ddb]))))
-
-	| A.TProtected (deca,dda),
-	    B.ProtectedLabel (ii) ->
-	        let decb, ddb = tuple_of_list2 ii in
-		tokenf deca decb >>= (fun deca decb ->
-		tokenf dda ddb >>= (fun dda ddb ->
-		return (
-	        (A.FElem(mckstart,allminus,(A.TProtected(deca,dda)) +> A.rewrap ifa)
-		   +> A.rewrap fa),
-                 B.ProtectedLabel([decb;ddb]))))
-
-	| A.TPublic (deca,dda),
-	    B.PublicLabel (ii) ->
-	        let decb, ddb = tuple_of_list2 ii in
-		tokenf deca decb >>= (fun deca decb ->
-		tokenf dda ddb >>= (fun dda ddb ->
-		return (
-	        (A.FElem(mckstart,allminus,(A.TPublic(deca,dda)) +> A.rewrap ifa)
-		   +> A.rewrap fa),
-                 B.PublicLabel([decb;ddb]))))
+                if A.unwrap_mcode deca = B.str_of_info decb
+                then
+	          tokenf deca decb >>= (fun deca decb ->
+	          tokenf dda ddb >>= (fun dda ddb ->
+	          return (
+	             (A.FElem(mckstart,allminus,(A.TAccSpec(deca,dda)) +> A.rewrap ifa)
+	                +> A.rewrap fa),
+	              B.AccSpec ([decb;ddb]))))
+	        else fail
 
         | _,B.MacroDeclField ((sb,ebs,attrs),ii) -> fail
 	| _,B.CppDirectiveStruct dib -> fail
 	| _,B.IfdefStruct directive -> fail
 	| _,B.FunctionField _ -> fail
-	| _,B.PublicLabel _ -> fail
-	| _,B.ProtectedLabel _ -> fail
-	| _,B.PrivateLabel _ -> fail
+	| _,B.AccSpec _ -> fail
 	| _,B.ConstructDestructField _ -> fail)
 
 (* ---------------------------------------------------------------------- *)

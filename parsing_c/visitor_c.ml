@@ -714,7 +714,7 @@ and vk_struct_field = fun bigf field ->
 
       (* C++ *)
     | FunctionField def -> vk_def bigf def
-    | PublicLabel ii | ProtectedLabel ii | PrivateLabel ii -> iif ii
+    | AccSpec ii -> iif ii
     | ConstructDestructField cd -> vk_constr_destr bigf cd
   in
   f (k, bigf) field
@@ -1877,9 +1877,7 @@ and vk_struct_field_s = fun bigf field ->
   | IfdefStruct ifdef ->
       IfdefStruct (vk_ifdef_directive_s bigf ifdef)
   | FunctionField def -> FunctionField (vk_def_s bigf def)
-  | PublicLabel ii -> PublicLabel(iif ii)
-  | ProtectedLabel ii -> ProtectedLabel(iif ii)
-  | PrivateLabel ii -> PrivateLabel(iif ii)
+  | AccSpec ii -> AccSpec (iif ii)
   | ConstructDestructField cd ->
       ConstructDestructField(vk_constr_destr_s bigf cd)
 

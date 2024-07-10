@@ -2283,9 +2283,9 @@ cpp_struct_decl2:
      { IfdefStruct $1 }
 
  /* C++ */
- | Tpublic TDotDot    { PublicLabel [$1;$2] }
- | Tprotected TDotDot { ProtectedLabel [$1;$2] }
- | Tprivate TDotDot   { PrivateLabel [$1;$2] }
+ | Tpublic TDotDot    { AccSpec [$1;$2] }
+ | Tprotected TDotDot { AccSpec [$1;$2] }
+ | Tprivate TDotDot   { AccSpec [$1;$2] }
 
 /*(* note: compilers may be instructed to tolerate 'virtual' before constructors *)*/
 c_plus_plus_constructor_decl:

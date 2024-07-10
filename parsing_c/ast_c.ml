@@ -260,9 +260,7 @@ and fullType = typeQualifier * attribute list * typeC
 
 	   (* C++ *)
 	   | FunctionField of definition
-	   | PublicLabel of info list
-	   | ProtectedLabel of info list
-	   | PrivateLabel of info list
+	   | AccSpec of info list
            | ConstructDestructField of c_plus_plus_constructor
 
             (* cppext: *)

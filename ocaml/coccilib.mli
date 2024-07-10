@@ -99,9 +99,7 @@ module Ast_c :
         DeclarationField of field_declaration
       | EmptyField of info
       | FunctionField of definition
-      | PublicLabel of info list
-      | ProtectedLabel of info list
-      | PrivateLabel of info list
+      | AccSpec of info list
       | ConstructDestructField of c_plus_plus_constructor
       | MacroDeclField of (string * argument wrap2 list * attribute list) wrap
       | MacroDeclFieldInit of (string * argument wrap2 list * attribute list * initialiser) wrap
@@ -2927,9 +2925,7 @@ module Ast_cocci :
       | MetaField of meta_name mcode * constraints * keep_binding * inherited
       | MetaFieldList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
-      | TPrivate of string mcode * string mcode
-      | TProtected of string mcode * string mcode
-      | TPublic of string mcode * string mcode
+      | TAccSpec of string mcode * string mcode
     and bitfield = string mcode * expression
     and field = base_field wrap
     and base_annotated_field =
@@ -3638,9 +3634,7 @@ module Ast0_cocci :
           string mcode
       | ConjField of string mcode * field list * string mcode list *
           string mcode
-      | TPrivate of string mcode * string mcode
-      | TProtected of string mcode * string mcode
-      | TPublic of string mcode * string mcode
+      | TAccSpec of string mcode * string mcode
       | Fdots of string mcode * (string mcode * string mcode * field) option
       | OptField of field
     and bitfield = string mcode * expression

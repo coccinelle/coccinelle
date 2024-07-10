@@ -1310,11 +1310,11 @@ struct_decl_one:
 	 { let (id,fn,endar) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,None,endar,Parse_aux.clt2mcode ";" (snd pv))) }
     | fas=TPrivate dd=TDotDot
-         { Ast0_cocci.wrap(Ast0_cocci.TPrivate(Parse_aux.clt2mcode "private" fas, Parse_aux.clt2mcode ":" (snd dd))) }
-    | fas=TPublic dd=TDotDot
-         { Ast0_cocci.wrap(Ast0_cocci.TPublic(Parse_aux.clt2mcode "public" fas, Parse_aux.clt2mcode ":" (snd dd))) }
+         { Ast0_cocci.wrap(Ast0_cocci.TAccSpec(Parse_aux.clt2mcode "private" fas, Parse_aux.clt2mcode ":" (snd dd))) }
     | fas=TProtected dd=TDotDot
-         { Ast0_cocci.wrap(Ast0_cocci.TProtected(Parse_aux.clt2mcode "protected" fas, Parse_aux.clt2mcode ":" (snd dd))) }
+         { Ast0_cocci.wrap(Ast0_cocci.TAccSpec(Parse_aux.clt2mcode "protected" fas, Parse_aux.clt2mcode ":" (snd dd))) }
+    | fas=TPublic dd=TDotDot
+         { Ast0_cocci.wrap(Ast0_cocci.TAccSpec(Parse_aux.clt2mcode "public" fas, Parse_aux.clt2mcode ":" (snd dd))) }
     | cv=const_vol_attr_list i=pure_ident_or_symbol
       d=direct_decl_option(type_ident)
 	 bf=struct_bitfield?
