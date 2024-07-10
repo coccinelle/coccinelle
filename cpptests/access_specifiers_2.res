@@ -1,4 +1,4 @@
 struct A {
 	public:
-	// after public
+	int a;// after public
 };

@@ -4,5 +4,6 @@
 @@ @@
   struct A {
 	public:
-+       // after public
+// note: inserting only a comment would go unnoticed by coccinelle
++       int a;// after public
   };
