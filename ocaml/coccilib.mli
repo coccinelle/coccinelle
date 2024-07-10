@@ -2925,7 +2925,7 @@ module Ast_cocci :
       | MetaField of meta_name mcode * constraints * keep_binding * inherited
       | MetaFieldList of meta_name mcode * listlen * constraints *
           keep_binding * inherited
-      | TAccSpec of string mcode * string mcode
+      | AccSpec of string mcode * string mcode
     and bitfield = string mcode * expression
     and field = base_field wrap
     and base_annotated_field =
@@ -3634,7 +3634,7 @@ module Ast0_cocci :
           string mcode
       | ConjField of string mcode * field list * string mcode list *
           string mcode
-      | TAccSpec of string mcode * string mcode
+      | AccSpec of string mcode * string mcode
       | Fdots of string mcode * (string mcode * string mcode * field) option
       | OptField of field
     and bitfield = string mcode * expression

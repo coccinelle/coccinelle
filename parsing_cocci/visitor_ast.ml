@@ -679,7 +679,7 @@ let combiner bind option_default mcode donothing
 	  let lsem = string_mcode sem in
 	  multibind [lname; llp; largs; lrp; lattr; lsem]
       | Ast.CppField(di) -> directive di
-      | Ast.TAccSpec(decl,dd) ->
+      | Ast.AccSpec(decl,dd) ->
 	  let ldecl = string_mcode decl in
 	  let ldd = string_mcode dd in
 	  multibind [ldecl; ldd] in
@@ -1887,8 +1887,8 @@ let rebuilder mcode donothing
 	    let lsem = string_mcode sem in
 	    Ast.MacroDeclField(lname, llp, largs, lrp, lattr, lsem)
 	| Ast.CppField(di) -> Ast.CppField(directive di)
-	| Ast.TAccSpec(decl,dd) ->
-	    Ast.TAccSpec(string_mcode decl,string_mcode dd)) in
+	| Ast.AccSpec(decl,dd) ->
+	    Ast.AccSpec(string_mcode decl,string_mcode dd)) in
     fieldfn all_functions k d
 
   and annotated_field d =

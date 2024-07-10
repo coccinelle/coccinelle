@@ -144,7 +144,7 @@ let field d =
   | Ast0.CppField(_) -> [202]
   | Ast0.DisjField(_,decls,_,_) -> [189] (* added after *)
   | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
-  | Ast0.TAccSpec(_) -> [203]
+  | Ast0.AccSpec(_) -> [203]
   | Ast0.Fdots(dots,whencode) -> [133]
   | Ast0.OptField(decl) -> [191]
 

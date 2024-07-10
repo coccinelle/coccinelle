@@ -3678,7 +3678,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 		 +> A.rewrap fa),
 	      B.CppDirectiveStruct(dib)))
 
-	| A.TAccSpec (deca,dda),
+	| A.AccSpec (deca,dda),
 	    B.AccSpec (ii) ->
 	        let decb, ddb = tuple_of_list2 ii in
                 if A.unwrap_mcode deca = B.str_of_info decb
@@ -3686,7 +3686,7 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	          tokenf deca decb >>= (fun deca decb ->
 	          tokenf dda ddb >>= (fun dda ddb ->
 	          return (
-	             (A.FElem(mckstart,allminus,(A.TAccSpec(deca,dda)) +> A.rewrap ifa)
+	             (A.FElem(mckstart,allminus,(A.AccSpec(deca,dda)) +> A.rewrap ifa)
 	                +> A.rewrap fa),
 	              B.AccSpec ([decb;ddb]))))
 	        else fail

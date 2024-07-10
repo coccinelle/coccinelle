@@ -459,7 +459,7 @@ and base_field =
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited
-  | TAccSpec of string mcode * string mcode   (* C++ *)
+  | AccSpec of string mcode * string mcode   (* C++ *)
 
 and bitfield = string mcode (* : *) * expression
 

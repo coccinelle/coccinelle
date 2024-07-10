@@ -938,12 +938,12 @@ and field d =
       do_disj d starter decls mids ender field
 	(fun starter decls mids ender ->
 	  Ast0.ConjField(starter,decls,mids,ender))
-  | Ast0.TAccSpec(decl,dd) ->
+  | Ast0.AccSpec(decl,dd) ->
       let l = promote_mcode decl in
       let r = promote_mcode dd in
       let decl = normal_mcode decl in
       let dd = normal_mcode dd in
-      mkres d (Ast0.TAccSpec(decl,dd)) l r
+      mkres d (Ast0.AccSpec(decl,dd)) l r
   | Ast0.OptField(decl) ->
       let decl = field decl in
       mkres d (Ast0.OptField(field decl)) decl decl

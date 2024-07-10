@@ -292,7 +292,7 @@ and base_field =
 	          string mcode
   | ConjField   of string mcode * field list * string mcode list *
 	          string mcode
-  | TAccSpec of string mcode * string mcode   (* C++ *)
+  | AccSpec of string mcode * string mcode   (* C++ *)
   | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
                   field) option (* whencode *)
   | OptField    of field

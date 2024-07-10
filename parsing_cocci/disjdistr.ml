@@ -465,7 +465,7 @@ and disjfield d =
   | Ast.CppField di ->
       let di = disjdirective di in
       List.map (fun di -> Ast.rewrap d (Ast.CppField di)) di
-  | Ast.TAccSpec(_) -> [d]
+  | Ast.AccSpec(_) -> [d]
 
 and disjdirective di =
   match Ast.unwrap di with
