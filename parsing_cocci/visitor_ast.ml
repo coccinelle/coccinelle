@@ -680,6 +680,8 @@ let combiner bind option_default mcode donothing
 	  multibind [lname; llp; largs; lrp; lattr; lsem]
       | Ast.CppField(di) -> directive di
       | Ast.TAccSpec(decl,dd) ->
+	  let ldecl = string_mcode decl in
+	  let ldd = string_mcode dd in
 	  multibind [ldecl; ldd] in
     fieldfn all_functions k d
 
