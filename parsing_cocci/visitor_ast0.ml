@@ -806,11 +806,13 @@ let visitor mode bind option_default
 	    (multibind [dd_n;decl_n], Ast0.AccSpec(decl,dd))
 	| Ast0.Fdots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = match whencode with
-              | Some (a,b,c) ->
+	    let (whencode_n, whencode) =
+	      match whencode with
+		Some (a,b,c) ->
                   let (_,a2) = string_mcode a in
                   let (_,b2) = string_mcode b in
-                  let (c1,c2) = field c in (c1, Some (a2,b2,c2))
+                  let (c1,c2) = field c in
+		  (c1, Some (a2,b2,c2))
               | None -> (option_default, None) in
 	    (bind dots_n whencode_n, Ast0.Fdots(dots,whencode))
 	| Ast0.OptField(decl) ->
@@ -841,11 +843,13 @@ let visitor mode bind option_default
 	    (cm_n,Ast0.EnumComma(cm))
 	| Ast0.EnumDots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
-	    let (whencode_n, whencode) = match whencode with
-              | Some (a,b,c) ->
+	    let (whencode_n, whencode) =
+	      match whencode with
+		Some (a,b,c) ->
                   let (_,a2) = string_mcode a in
                   let (_,b2) = string_mcode b in
-                  let (c1,c2) = enum_decl c in (c1, Some (a2,b2,c2))
+                  let (c1,c2) = enum_decl c in
+		  (c1, Some (a2,b2,c2))
               | None -> (option_default, None) in
 	    (bind dots_n whencode_n, Ast0.EnumDots(dots,whencode))) in
     enumdeclfn all_functions k d
@@ -884,11 +888,13 @@ let visitor mode bind option_default
 	    let (n,cm) = string_mcode cm in (n,Ast0.IComma(cm))
 	| Ast0.Idots(d,whencode) ->
 	    let (d_n,d) = string_mcode d in
-	    let (whencode_n, whencode) = match whencode with
-	      | Some (a,b,c) ->
+	    let (whencode_n, whencode) =
+	      match whencode with
+		Some (a,b,c) ->
 		  let (_,a2) = string_mcode a in
 		  let (_,b2) = string_mcode b in
-		  let (c1,c2) = initialiser c in (c1, Some (a2,b2,c2))
+		  let (c1,c2) = initialiser c in
+		  (c1, Some (a2,b2,c2))
 	      | None -> (option_default, None) in
 	    (bind d_n whencode_n, Ast0.Idots(d,whencode))
 	| Ast0.OptIni(i) ->
@@ -1382,22 +1388,26 @@ let visitor mode bind option_default
       Ast0.WhenNot (w,e,a) ->
 	let (_,w) = string_mcode w in
 	let (_,e) = string_mcode e in
-	let (n,a) = notfn a in (n,Ast0.WhenNot(w,e,a))
+	let (n,a) = notfn a in
+	(n,Ast0.WhenNot(w,e,a))
     | Ast0.WhenAlways (w,e,a) ->
 	let (_,w) = string_mcode w in
 	let (_,e) = string_mcode e in
-	let (n,a) = alwaysfn a in (n,Ast0.WhenAlways(w,e,a))
+	let (n,a) = alwaysfn a in
+	(n,Ast0.WhenAlways(w,e,a))
     | Ast0.WhenModifier(w,x) ->
 	let (_,w) = string_mcode w in
 	(option_default,Ast0.WhenModifier(w,x))
     | Ast0.WhenNotTrue(w,ee,e) ->
 	let (_,w) = string_mcode w in
 	let (_,ee) = string_mcode ee in
-	let (n,e) = expression e in (n,Ast0.WhenNotTrue(w,ee,e))
+	let (n,e) = expression e in
+	(n,Ast0.WhenNotTrue(w,ee,e))
     | Ast0.WhenNotFalse(w,ee,e) ->
 	let (_,w) = string_mcode w in
 	let (_,ee) = string_mcode ee in
-	let (n,e) = expression e in (n,Ast0.WhenNotFalse(w,ee,e))
+	let (n,e) = expression e in
+	(n,Ast0.WhenNotFalse(w,ee,e))
 
   (* for whencodes that do not have any of the above modifiers
    * returns (the new whencode expression, the updated whencode) *)
@@ -1405,7 +1415,8 @@ let visitor mode bind option_default
     | Some (a,b,c) ->
 	let (_,a2) = string_mcode a in
 	let (_,b2) = string_mcode b in
-	let (c1,c2) = cfn c in (c1, Some (a2,b2,c2))
+	let (c1,c2) = cfn c in
+	(c1, Some (a2,b2,c2))
     | None -> (option_default, None)
 
   and case_line c =
