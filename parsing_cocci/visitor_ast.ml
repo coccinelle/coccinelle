@@ -679,7 +679,8 @@ let combiner bind option_default mcode donothing
 	  let lsem = string_mcode sem in
 	  multibind [lname; llp; largs; lrp; lattr; lsem]
       | Ast.CppField(di) -> directive di
-      | Ast.TAccSpec(decl,dd) -> multibind [string_mcode decl;string_mcode dd] in
+      | Ast.TAccSpec(decl,dd) ->
+	  multibind [ldecl; ldd] in
     fieldfn all_functions k d
 
   and annotated_field d =
