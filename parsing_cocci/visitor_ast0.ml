@@ -800,6 +800,18 @@ let visitor mode bind option_default
 	    do_disj starter decls mids ender field
 	      (fun starter decls mids ender ->
 		Ast0.ConjField(starter,decls,mids,ender))
+	| Ast0.TPrivate(decl,dd) ->
+	    let (decl_n,decl) = string_mcode decl in
+	    let (dd_n,dd) = string_mcode dd in
+            (multibind [dd_n;decl_n], Ast0.TPrivate(decl,dd))
+	| Ast0.TProtected(decl,dd) ->
+	    let (decl_n,decl) = string_mcode decl in
+	    let (dd_n,dd) = string_mcode dd in
+            (multibind [dd_n;decl_n], Ast0.TProtected(decl,dd))
+	| Ast0.TPublic(decl,dd) ->
+	    let (decl_n,decl) = string_mcode decl in
+	    let (dd_n,dd) = string_mcode dd in
+            (multibind [dd_n;decl_n], Ast0.TPublic(decl,dd))
 	| Ast0.Fdots(dots,whencode) ->
 	    let (dots_n,dots) = string_mcode dots in
 	    let (whencode_n, whencode) = match whencode with

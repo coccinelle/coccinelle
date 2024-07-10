@@ -1140,6 +1140,9 @@ and field d =
       print_attribute_list attr;
       mcode print_string sem
   | Ast.CppField(di) -> directive di
+  | Ast.TPrivate(decl,dd)
+  | Ast.TProtected(decl,dd)
+  | Ast.TPublic(decl,dd) -> mcode print_string_box decl;mcode print_string_box dd
 
 and pragmainfo pi =
   match Ast.unwrap pi with

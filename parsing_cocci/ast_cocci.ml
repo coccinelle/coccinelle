@@ -459,6 +459,9 @@ and base_field =
   | MetaField of meta_name mcode * constraints * keep_binding * inherited
   | MetaFieldList of meta_name mcode * listlen * constraints * keep_binding *
 	inherited
+  | TPrivate of string mcode * string mcode
+  | TProtected of string mcode * string mcode
+  | TPublic of string mcode * string mcode
 
 and bitfield = string mcode (* : *) * expression
 

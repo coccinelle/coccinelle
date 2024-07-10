@@ -483,6 +483,15 @@ let rec field_pos decl snp
   | Ast0.CppField di ->
       let constructor ~item = Ast0.CppField item in
       item_wrap ~item:di ~item_posfn:directive_pos ~constructor snp
+  | Ast0.TPrivate (mc,dd) ->
+      let constructor ~mc = Ast0.TPrivate (mc,dd) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.TProtected (mc,dd) ->
+      let constructor ~mc = Ast0.TProtected (mc,dd) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.TPublic (mc,dd) ->
+      let constructor ~mc = Ast0.TPublic (mc,dd) in
+      mcode_wrap ~mc ~constructor snp
   | Ast0.OptField(dec) ->
       let constructor ~item = Ast0.OptField item in
       item_wrap ~item:dec ~item_posfn:field_pos ~constructor snp

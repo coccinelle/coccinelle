@@ -298,6 +298,9 @@ let id_tokens lexbuf =
      name *)
   | "struct" ->     Data.saw_struct := true; Tstruct   linetype
   | "class" ->      Data.saw_struct := true; Tclass    linetype
+  | "private"   when (*C++*) !Flag.c_plus_plus <> Flag.Off -> TPrivate  linetype
+  | "protected" when (*C++*) !Flag.c_plus_plus <> Flag.Off -> TProtected linetype
+  | "public"    when (*C++*) !Flag.c_plus_plus <> Flag.Off -> TPublic linetype
   | "typename" ->   Data.saw_struct := true; Ttypename  linetype
   | "union" ->      Data.saw_struct := true; Tunion    linetype
   | "enum" ->       Data.saw_struct := true; Tenum     linetype

@@ -244,6 +244,7 @@ let inline_id aft = function
 %token<Data.clt> Tchar Tshort Tint Tdouble Tfloat Tcomplex Tlong
 %token<Data.clt> Tsize_t Tssize_t Tptrdiff_t
 %token<Data.clt> Tvoid Tstruct Tunion Tenum Tclass
+%token<Data.clt> TPrivate TProtected TPublic
 %token<Data.clt> Ttypename
 %token<Data.clt> Tunsigned Tsigned
 %token<Data.clt> TautoType
@@ -1308,6 +1309,12 @@ struct_decl_one:
     | t=ctype_only_non_signable d=direct_decl_option(type_ident) pv=TPtVirg
 	 { let (id,fn,endar) = d in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn t,id,None,endar,Parse_aux.clt2mcode ";" (snd pv))) }
+    | fas=TPrivate dd=TDotDot
+         { Ast0_cocci.wrap(Ast0_cocci.TPrivate(Parse_aux.clt2mcode "private" fas, Parse_aux.clt2mcode ":" (snd dd))) }
+    | fas=TPublic dd=TDotDot
+         { Ast0_cocci.wrap(Ast0_cocci.TPublic(Parse_aux.clt2mcode "public" fas, Parse_aux.clt2mcode ":" (snd dd))) }
+    | fas=TProtected dd=TDotDot
+         { Ast0_cocci.wrap(Ast0_cocci.TProtected(Parse_aux.clt2mcode "protected" fas, Parse_aux.clt2mcode ":" (snd dd))) }
     | cv=const_vol_attr_list i=pure_ident_or_symbol
       d=direct_decl_option(type_ident)
 	 bf=struct_bitfield?
@@ -3811,6 +3818,9 @@ anything: /* used for script code */
  | Tvoid { "void" }
  | Tstruct { "struct" }
  | Tclass { "class" }
+ | TPrivate { "private" }
+ | TProtected { "protected" }
+ | TPublic { "public" }
  | Ttypename { "typename" }
  | Tunion { "union" }
  | Tenum { "enum" }

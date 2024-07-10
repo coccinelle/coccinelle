@@ -3682,6 +3682,36 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 		 +> A.rewrap fa),
 	      B.CppDirectiveStruct(dib)))
 
+	| A.TPrivate (deca,dda),
+	    B.PrivateLabel (ii) ->
+	        let decb, ddb = tuple_of_list2 ii in
+		tokenf deca decb >>= (fun deca decb ->
+		tokenf dda ddb >>= (fun dda ddb ->
+		return (
+	        (A.FElem(mckstart,allminus,(A.TPrivate(deca,dda)) +> A.rewrap ifa)
+		   +> A.rewrap fa),
+                 B.PrivateLabel([decb;ddb]))))
+
+	| A.TProtected (deca,dda),
+	    B.ProtectedLabel (ii) ->
+	        let decb, ddb = tuple_of_list2 ii in
+		tokenf deca decb >>= (fun deca decb ->
+		tokenf dda ddb >>= (fun dda ddb ->
+		return (
+	        (A.FElem(mckstart,allminus,(A.TProtected(deca,dda)) +> A.rewrap ifa)
+		   +> A.rewrap fa),
+                 B.ProtectedLabel([decb;ddb]))))
+
+	| A.TPublic (deca,dda),
+	    B.PublicLabel (ii) ->
+	        let decb, ddb = tuple_of_list2 ii in
+		tokenf deca decb >>= (fun deca decb ->
+		tokenf dda ddb >>= (fun dda ddb ->
+		return (
+	        (A.FElem(mckstart,allminus,(A.TPublic(deca,dda)) +> A.rewrap ifa)
+		   +> A.rewrap fa),
+                 B.PublicLabel([decb;ddb]))))
+
         | _,B.MacroDeclField ((sb,ebs,attrs),ii) -> fail
 	| _,B.CppDirectiveStruct dib -> fail
 	| _,B.IfdefStruct directive -> fail

@@ -123,6 +123,9 @@ let token2c (tok,_) add_clt =
   | PC.Tstruct(clt) -> add_clt "struct" clt
   | PC.Tunion(clt) -> add_clt "union" clt
   | PC.Tclass(clt) -> add_clt "class" clt
+  | PC.TPrivate(clt) -> add_clt "private" clt
+  | PC.TProtected(clt) -> add_clt "protected" clt
+  | PC.TPublic(clt) -> add_clt "public" clt
   | PC.Ttypename(clt) -> add_clt "typename" clt
   | PC.Tenum(clt) -> add_clt "enum" clt
   | PC.Tunsigned(clt) -> add_clt "unsigned" clt
@@ -445,6 +448,7 @@ let get_clt (tok,_) =
   | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt) | PC.Tclass(clt)
+  | PC.TPrivate(clt) | PC.TProtected(clt) | PC.TPublic(clt)
   | PC.Ttypename(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tunsigned(clt) | PC.Tsigned(clt)
   | PC.TautoType(clt)
@@ -619,6 +623,9 @@ let update_clt (tok,x) clt =
   | PC.Tptrdiff_t(_) -> (PC.Tptrdiff_t(clt),x)
   | PC.Tstruct(_) -> (PC.Tstruct(clt),x)
   | PC.Tclass(_) -> (PC.Tclass(clt),x)
+  | PC.TPrivate(_) -> (PC.TPrivate(clt),x)
+  | PC.TProtected(_) -> (PC.TProtected(clt),x)
+  | PC.TPublic(_) -> (PC.TPublic(clt),x)
   | PC.Ttypename(_) -> (PC.Ttypename(clt),x)
   | PC.Tunion(_) -> (PC.Tunion(clt),x)
   | PC.Tenum(_) -> (PC.Tenum(clt),x)
@@ -957,6 +964,7 @@ let split_token ((tok,_) as t) =
   | PC.Tfloat(clt) | PC.Tcomplex(clt) | PC.Tlong(clt) | PC.Tvoid(clt)
   | PC.Tsize_t(clt) | PC.Tssize_t(clt) | PC.Tptrdiff_t(clt)
   | PC.Tstruct(clt) | PC.Tclass(clt)
+  | PC.TPrivate(clt) | PC.TProtected(clt) | PC.TPublic(clt)
   | PC.Ttypename(clt)
   | PC.Tunion(clt) | PC.Tenum(clt) | PC.Tdecimal(clt) | PC.Texec(clt)
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)

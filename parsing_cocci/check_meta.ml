@@ -406,6 +406,7 @@ and field context old_metas table minus d =
   | Ast0.DisjField(_,decls,_,_)
   | Ast0.ConjField(_,decls,_,_) ->
       List.iter (field ID old_metas table minus) decls
+  | Ast0.TPrivate(_) | Ast0.TProtected(_) | Ast0.TPublic(_) -> ()
   | Ast0.OptField(_) ->
       failwith "unexpected code"
   | Ast0.Fdots(_,Some (_,_,x)) -> field ID old_metas table minus x

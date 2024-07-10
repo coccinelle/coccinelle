@@ -678,7 +678,10 @@ let combiner bind option_default mcode donothing
 	  let lattr = multibind (List.map attribute attr) in
 	  let lsem = string_mcode sem in
 	  multibind [lname; llp; largs; lrp; lattr; lsem]
-      | Ast.CppField(di) -> directive di in
+      | Ast.CppField(di) -> directive di
+      | Ast.TPrivate(decl,dd)
+      | Ast.TProtected(decl,dd)
+      | Ast.TPublic(decl,dd) -> multibind [string_mcode decl;string_mcode dd] in
     fieldfn all_functions k d
 
   and annotated_field d =
@@ -1882,7 +1885,13 @@ let rebuilder mcode donothing
 	    let lattr = List.map attribute attr in
 	    let lsem = string_mcode sem in
 	    Ast.MacroDeclField(lname, llp, largs, lrp, lattr, lsem)
-	| Ast.CppField(di) -> Ast.CppField(directive di)) in
+	| Ast.CppField(di) -> Ast.CppField(directive di)
+	| Ast.TPrivate(decl,dd) ->
+	    Ast.TPrivate(string_mcode decl,string_mcode dd)
+	| Ast.TProtected(decl,dd) ->
+	    Ast.TProtected(string_mcode decl,string_mcode dd)
+	| Ast.TPublic(decl,dd) ->
+	    Ast.TPublic(string_mcode decl,string_mcode dd)) in
     fieldfn all_functions k d
 
   and annotated_field d =

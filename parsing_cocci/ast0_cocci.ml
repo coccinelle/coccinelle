@@ -305,6 +305,9 @@ and base_field =
 	          string mcode
   | ConjField   of string mcode * field list * string mcode list *
 	          string mcode
+  | TPrivate of string mcode * string mcode   (* C++ *)
+  | TProtected of string mcode * string mcode (* C++ *)
+  | TPublic of string mcode * string mcode    (* C++ *)
   | Fdots      of string mcode (* ... *) * (string mcode * string mcode *
                   field) option (* whencode *)
   | OptField    of field

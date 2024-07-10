@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 202, also unused: {9,161}
+(* current max is 205, also unused: {9,161}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -144,6 +144,9 @@ let field d =
   | Ast0.CppField(_) -> [202]
   | Ast0.DisjField(_,decls,_,_) -> [189] (* added after *)
   | Ast0.ConjField(_,decls,_,_) -> [190] (* added after *)
+  | Ast0.TPrivate(_) -> [203]
+  | Ast0.TProtected(_) -> [204]
+  | Ast0.TPublic(_) -> [205]
   | Ast0.Fdots(dots,whencode) -> [133]
   | Ast0.OptField(decl) -> [191]
 
