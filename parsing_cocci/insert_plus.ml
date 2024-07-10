@@ -670,13 +670,6 @@ let collect_plus_nodes root =
 	do_nothing_extra [] (info aft) mk_statement r k e
     | _ -> do_nothing mk_statement r k e in
 
-  (* statementTag is preferred, because it indicates that one statement is
-  replaced by one statement, in single_statement *)
-  let stmt_dots r k e =
-    match Ast0.unwrap e with
-      [s] -> r.VT0.combiner_rec_statement s
-    | _ -> do_nothing mk_stmtdots r k e in
-
   let toplevel r k e =
     match Ast0.unwrap e with
       Ast0.NONDECL(s) -> r.VT0.combiner_rec_statement s
@@ -694,7 +687,7 @@ let collect_plus_nodes root =
     ~storage_mcode:(mcode mk_storage) ~inc_mcode:(mcode mk_inc_file)
     ~dotsexpr:(do_nothing mk_exprdots) ~dotsinit:initdots
     ~dotsparam:(do_nothing mk_paramdots) ~dotstemplateparam:(do_nothing mk_templateparamdots)
-    ~dotsstmt:stmt_dots ~dotsdecl:(do_nothing mk_decldots)
+    ~dotsstmt:(do_nothing mk_stmtdots) ~dotsdecl:(do_nothing mk_decldots)
     ~dotsfield:(do_nothing mk_fielddots) ~dotsenumdecl:(do_nothing mk_enumdecldots)
     ~dotscase:(do_nothing mk_casedots) ~dotsdefpar:(do_nothing mk_defpardots)
     ~ident:(do_nothing mk_ident) ~expr:(do_nothing mk_expression)
