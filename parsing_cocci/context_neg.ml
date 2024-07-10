@@ -938,11 +938,7 @@ let equal_field d1 d2 =
       equal_mcode lp1 lp2 && equal_mcode lp1 lp2 &&
       equal_mcode sem1 sem2
   | (Ast0.CppField di1,Ast0.CppField di2) -> equal_directive di1 di2
-  | (Ast0.TPrivate(decl1,dd1), Ast0.TPrivate(decl2,dd2)) ->
-      equal_mcode decl1 decl2 && equal_mcode dd1 dd2
-  | (Ast0.TProtected(decl1,dd1), Ast0.TProtected(decl2,dd2)) ->
-      equal_mcode decl1 decl2 && equal_mcode dd1 dd2
-  | (Ast0.TPublic(decl1,dd1), Ast0.TPublic(decl2,dd2)) ->
+  | (Ast0.TAccSpec(decl1,dd1), Ast0.TAccSpec(decl2,dd2)) ->
       equal_mcode decl1 decl2 && equal_mcode dd1 dd2
        
   | (Ast0.Fdots(dots1,_),Ast0.Fdots(dots2,_)) -> equal_mcode dots1 dots2
