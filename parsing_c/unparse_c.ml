@@ -1965,11 +1965,16 @@ let is_pragma t =
     "" -> false
   | _ -> String.get str 0 = '#'
 
+let is_access t =
+  let str = str_of_token2 t in
+  List.mem str ["private";"protected";"public"]
+
 let is_label op xs =
   let is_whitespace t = is_whitespace t || is_added_whitespace t in
   match skip_unlike_me op xs is_whitespace with
     [] -> false
   | t::_ when is_pragma t -> true
+  | t::_ when is_access t -> false
   | _::rest ->
       (match skip_unlike_me op rest is_whitespace with
 	t::_ when str_of_token2 t = ":" -> true
