@@ -814,6 +814,8 @@ module type PARAM =
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_attributes_flag :
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val list_and_aggregate_initialization_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
 
@@ -2853,7 +2855,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          ))))))
 
    | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
-     ({B.v_namei = Some(nameidb, B.ValInit (inib, [iieqb]));
+     ({B.v_namei = Some(nameidb, B.ValInit (inib, iieqb));
        B.v_type = typb;
        B.v_storage = stob;
        B.v_local = local;
@@ -2861,9 +2863,15 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
      },iivirg) ->
+       X.list_and_aggregate_initialization_flag (fun list_and_aggregate_initialization ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
-       tokenf eqa iieqb >>= (fun eqa iieqb ->
+       (match iieqb with
+	 [iieqb] -> tokenf eqa iieqb >>= (fun eqa iieqb -> return (eqa, [iieqb]))
+       | _ -> (* must be [] *)
+	   if list_and_aggregate_initialization
+	   then return (eqa, iieqb)
+	   else fail) >>= (fun eqa iieqb ->
        fullType typa typb >>= (fun typa typb ->
        attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
        storage_optional_allminus allminus align stoa (stob, iistob) >>=
@@ -2871,7 +2879,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        initialiser inia inib >>= (fun inia inib ->
          return (
            (A.Init (align,stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some(nameidb, B.ValInit (inib, [iieqb]));
+           (({B.v_namei = Some(nameidb, B.ValInit (inib, iieqb));
               B.v_type = typb;
               B.v_storage = stob;
               B.v_local = local;
@@ -2880,18 +2888,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_type_bis = typbbis;
            },iivirg),
            iiptvirgb,iistob)
-         ))))))))
-
-   | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
-     ({B.v_namei = Some(nameidb, B.ValInit (inib, []));
-       B.v_type = typb;
-       B.v_storage = stob;
-       B.v_local = local;
-       B.v_attr = attrs;
-       B.v_endattr = endattrs;
-       B.v_type_bis = typbbis;
-     },iivirg)
-       -> fail (* C++ constructor declaration not supported in SmPL *)
+         )))))))))
 
    | A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema),
      ({B.v_namei = Some (idb, B.NoInit);

@@ -239,6 +239,8 @@ module type PARAM =
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
     val optional_attributes_flag :
 	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
+    val list_and_aggregate_initialization_flag :
+	(bool -> tin -> 'x tout) -> (tin -> 'x tout)
 
   end
 

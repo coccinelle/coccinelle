@@ -18,6 +18,7 @@ type xinfo = {
   value_format_iso : bool;
   optional_declarer_semicolon_iso : bool;
   optional_attributes_iso : bool;
+  list_and_aggregate_initialization_iso : bool;
 }
 
 module XMATCH = struct
@@ -698,6 +699,9 @@ module XMATCH = struct
   let optional_attributes_flag f = fun tin ->
     f (tin.extra.optional_attributes_iso) tin
 
+  let list_and_aggregate_initialization_flag f = fun tin ->
+    f (tin.extra.list_and_aggregate_initialization_iso) tin
+
   (* ------------------------------------------------------------------------*)
   (* Tokens *)
   (* ------------------------------------------------------------------------*)
@@ -742,6 +746,8 @@ let match_re_node2 dropped_isos a b binding0 =
         not(List.mem "optional_declarer_semicolon"   dropped_isos);
       optional_attributes_iso =
         not(List.mem "optional_attributes" dropped_isos);
+      list_and_aggregate_initialization_iso =
+        not(List.mem "list_and_aggregate_initialization" dropped_isos);
     };
     XMATCH.binding = [];
     XMATCH.binding0 = binding0;
