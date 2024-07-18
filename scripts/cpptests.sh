@@ -5,11 +5,123 @@
 # shellcheck disable=SC2086
 set -e
 #set -x
+
 spatch=../spatch.opt
 declare -A FAILED_RUN
 declare -A FAILED_PP
 declare -A FAILED_CP
 declare -A TEST_CASE_BROKEN
+declare -A REFTAGS
+declare -A REFTOTEST
+
+cat_tags_file() {
+cat << EOF
+access_specifiers_0.cocci v20240610:language/access
+access_specifiers_1.cocci v20240610:language/access
+access_specifiers_2.cocci v20240610:language/access
+access_specifiers_3.cocci v20240610:language/access
+access_specifiers_4.cocci v20240610:language/access
+addremvec.cocci v20240610:language/template_parameters#Template_arguments
+aggregate_initialization.cocci v20240610:language/aggregate_initialization#Syntax
+attributeu.cocci v20240610:language/attributes
+auto.cocci v20240610:language/auto
+autoloop.cocci v20240610:language/range-for
+bool1.cocci v20240610:language/function
+bracket.cocci v20240610:language/aggregate_initialization#Syntax
+bracketed_expression_assignment.cocci v20240610:language/aggregate_initialization#Syntax
+cdstr.cocci v20240610:language/constructor
+cex_snip_field_bad.cocci v20240610:language/class
+classfinal.cocci v20240610:language/final
+complexcpp.cocci v20240610:numeric/complex v20240610:header/complex
+cuda1.cocci v20240610:language/operator_other#Built-in_function_call_operator
+cuda.cocci v20240610:language/function#Function_definition
+cuda_noattr.cocci v20240610:language/operator_other#Built-in_function_call_operator
+decl_andand_ref.cocci v20240610:language/reference#Rvalue_references
+decl_and_ref.cocci v20240610:language/reference#Rvalue_references
+decl_ptr_ref.cocci v20240610:language/pointer#Pointers
+decltype.cocci v20240610:language/decltype
+decltype_matches_type.cocci v20240610:language/decltype
+delete_array.cocci v20240610:language/delete#Syntax
+delete.cocci v20240610:language/delete#Syntax
+emptytmp.cocci v20240610:language/template_parameters#Template_arguments
+endcolon.cocci v20240610:language/qualified_lookup
+endline.cocci v20240610:language/template_parameters#Template_arguments v20240610:language/qualified_lookup
+enumcpp.cocci v20240610:language/enum
+fieldtmp.cocci v20240610:language/operator_member_access
+finalclass.cocci v20240610:language/final#Syntax
+forc.cocci v20240610:language/template_parameters#Template_arguments
+forrange2.cocci v20240610:language/range-for
+forrange.cocci v20240610:language/range-for
+inh1.cocci v20240610:language/derived_class
+init3tst.cocci v20240610:language/aggregate_initialization#Syntax
+instfour.cocci v20240610:language/template_parameters#Template_arguments
+instruct.cocci v20240610:language/using_declaration v20240610:preprocessor/impl
+list_and_aggregate_initialization_isomorphism_off.cocci v20240610:language/aggregate_initialization#Syntax
+list_and_aggregate_initialization_isomorphism_on.cocci v20240610:language/aggregate_initialization#Syntax
+list_initialization.cocci v20240610:language/aggregate_initialization#Syntax
+local_macro_fn_def_and_call.cocci v20240610:preprocessor
+macro_stmt_when_fn_type.cocci v20240610:preprocessor
+match_bracket_expressions_assignment_broken.cocci v20240610:language/aggregate_initialization#Syntax
+miniclass.cocci v20240610:language/class
+namespace_alias_definition.cocci v20240610:language/namespace_alias
+new2.cocci v20240610:language/new#Syntax
+new3.cocci v20240610:language/new#Syntax
+new.cocci v20240610:language/new#Syntax
+newsimple.cocci v20240610:language/new#Syntax
+noexcept.cocci v20240610:language/noexcept_spec
+notpp.cocci v20240610:keyword/not
+opeq.cocci v20240610:language/operators
+protocpp.cocci v20240610:language/reference#Rvalue_references
+qualclass.cocci v20240610:language/derived_class v20240610:language/qualified_lookup
+qual.cocci v20240610:language/qualified_lookup
+sizet.cocci v20240610:cpp/types/size_t
+snip_field.cocci v20240610:language/class
+tempinstfour.cocci v20240610:language/template_parameters#Template_arguments
+templates1.cocci v20240610:language/template_parameters#Template_arguments
+template_test.cocci v20240610:language/template_parameters#Template_arguments
+tmpinit.cocci v20240610:language/template_parameters#Template_arguments
+tmpinst2.cocci v20240610:language/template_parameters#Template_arguments
+tmpinst4.cocci v20240610:language/template_parameters#Template_arguments
+tmpinst5.cocci v20240610:language/template_parameters#Template_arguments
+try_catch1.cocci v20240610:language/try v20240610:language/catch
+try_catch2.cocci v20240610:language/try v20240610:language/catch
+try_catch.cocci v20240610:language/try v20240610:language/catch
+using1.cocci v20240610:language/using_declaration
+using2.cocci v20240610:language/using_declaration
+using3.cocci v20240610:language/using_declaration
+using4.cocci v20240610:language/using_declaration
+usingtest.cocci v20240610:language/using_declaration
+usingtype.cocci v20240610:language/using_declaration
+vconstr.cocci v20240610:language/virtual
+virtual_constructor.cocci v20240610:language/virtual
+EOF
+}
+
+read_tags_file() {
+	while read cf tags;
+	do
+		if test $cf = '#'; then continue; fi
+		tn=${cf/.cocci/};
+		REFTAGS[$tn]=$tags
+		#echo ${REFTAGS[$cf]}
+	done < <( cat_tags_file )
+}
+
+populate_ref_to_test_array() {
+	for tn in ${!REFTAGS[*]}; do
+	for tag in ${REFTAGS[$tn]}; do
+		if [[ $tag =~ v20240610: ]] ; then
+			url='https://en.cppreference.com/w/cpp/'${tag/v20240610:/};
+			REFTOTEST[$url]+=" $tn"
+		fi
+	done
+	done
+}
+
+read_tags_file
+populate_ref_to_test_array
+
+########################################
 for cf in *.cocci; do
 	tn=${cf/.cocci/};
 	set +e
@@ -83,4 +195,17 @@ for tn in ${!FAILED_RUN[*]}; do
 		echo "$tn "
 	fi
 done | sort | tr -d '\n'
+echo
+
+echo 'REFERENCE TO TEST: '
+for rn in ${!REFTOTEST[*]}; do
+	if test "${REFTOTEST[$rn]}" != ''; then
+		echo -n "	$rn -> "
+		for tn in ${REFTOTEST[$rn]}; do
+			echo -n ${tn};
+			if test ${FAILED_RUN[$tn]} != 0; then echo -n '* '; else echo -n ' '; fi
+		done
+		echo
+	fi
+done | sort
 echo
