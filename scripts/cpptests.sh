@@ -119,17 +119,19 @@ populate_ref_to_test_array() {
 }
 
 check_tags_sanity() {
+	local rc=0;
 	local UNTAGGED_TEST_FILES=''
 	for cf in *.cocci; do
 		tn=${cf/.cocci/};
-		if test -z "${REFTAGS[$tn]}"; then UNTAGGED_TEST_FILES+=" $tn"; fi
+		if test -z "${REFTAGS[$tn]}"; then UNTAGGED_TEST_FILES+=" $cf"; fi
 	done
 	local ORPHANED_TEST_LINES=''
 	for tn in ${!REFTAGS[*]}; do
 		if ! test -f $tn.cocci ; then ORPHANED_TEST_LINES+=" $tn"; fi
 	done
-	if test -n "${UNTAGGED_TEST_FILES}"; then echo "ERROR: Untagged test files: ${UNTAGGED_TEST_FILES}"; fi
-	if test -n "${ORPHANED_TEST_LINES}"; then echo "ERROR: Orphaned test lines: ${ORPHANED_TEST_LINES}"; fi
+	if test -n "${UNTAGGED_TEST_FILES}"; then echo "ERROR: Untagged test files: ${UNTAGGED_TEST_FILES}"; rc=1; fi
+	if test -n "${ORPHANED_TEST_LINES}"; then echo "ERROR: Orphaned test lines: ${ORPHANED_TEST_LINES}"; rc=1; fi
+	if test "${rc}" != 0; then exit $rc; fi
 }
 
 read_tags_file
