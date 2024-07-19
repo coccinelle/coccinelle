@@ -1188,6 +1188,7 @@ let find_function_names l =
     | (PC.TMetaExp(_),_)::_
     | (PC.TMetaId(_),_)::_
     | (PC.TMetaLocalIdExp(_),_)::_
+    | (PC.TOpAssign(_),_)::_
     | (PC.TEq(_),_)::_
     | (PC.TEqEq(_),_)::_
     | (PC.TNotEq(_),_)::_
