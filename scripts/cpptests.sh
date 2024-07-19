@@ -118,10 +118,24 @@ populate_ref_to_test_array() {
 	done
 }
 
+check_tags_sanity() {
+	local UNTAGGED_TEST_FILES=''
+	for cf in *.cocci; do
+		tn=${cf/.cocci/};
+		if test -z "${REFTAGS[$tn]}"; then UNTAGGED_TEST_FILES+=" $tn"; fi
+	done
+	local ORPHANED_TEST_LINES=''
+	for tn in ${!REFTAGS[*]}; do
+		if ! test -f $tn.cocci ; then ORPHANED_TEST_LINES+=" $tn"; fi
+	done
+	if test -n "${UNTAGGED_TEST_FILES}"; then echo "ERROR: Untagged test files: ${UNTAGGED_TEST_FILES}"; fi
+	if test -n "${ORPHANED_TEST_LINES}"; then echo "ERROR: Orphaned test lines: ${ORPHANED_TEST_LINES}"; fi
+}
+
 read_tags_file
 populate_ref_to_test_array
+check_tags_sanity
 
-########################################
 for cf in *.cocci; do
 	tn=${cf/.cocci/};
 	set +e
