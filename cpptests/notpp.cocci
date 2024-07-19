@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 symbol m2n;
 @@

@@ -1,3 +1,4 @@
+# spatch --c++
 @@ type L; @@
 -new (1) (L) (1);
 @@ type L; @@

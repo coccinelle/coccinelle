@@ -1,3 +1,4 @@
+# spatch --c++
 // namespace name = qualified-namespace;
 @@
 identifier i;

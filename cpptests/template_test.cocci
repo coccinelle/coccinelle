@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 identifier i1;
 type T1;

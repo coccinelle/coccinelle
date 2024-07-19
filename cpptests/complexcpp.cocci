@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 type T;
 identifier x;

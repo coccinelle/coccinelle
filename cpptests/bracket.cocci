@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 symbol flags_;
 @@

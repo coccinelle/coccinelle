@@ -1,3 +1,4 @@
+# spatch --c++
 @@ @@
 -	int*a = new int(2);
 @@ @@

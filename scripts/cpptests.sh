@@ -11,6 +11,7 @@ declare -A FAILED_RUN
 declare -A FAILED_PP
 declare -A FAILED_CP
 declare -A TEST_CASE_BROKEN
+declare -A TEST_CASE_FAILS
 declare -A REFTAGS
 declare -A REFTOTEST
 
@@ -142,31 +143,39 @@ check_tags_sanity
 for cf in *.cocci; do
 	tn=${cf/.cocci/};
 	set +e
-	$spatch --c++ --test $tn
+	$spatch --test $tn
 	FAILED_RUN[$tn]=$?
 	set -e
 	set +e
-	$spatch --c++ --parse-cocci $tn.cocci
+	$spatch --parse-cocci $tn.cocci
 	FAILED_PP[$tn]=$?
 	set -e
 	set +e
-	$spatch --c++ --parse-c $tn.cocci
+	$spatch --parse-c $tn.cocci
 	FAILED_CP[$tn]=$?
 	set -e
 	if test ${FAILED_RUN[$tn]} = 0; then
 		cmpfile=$tn.cmp
-		$spatch --c++ --sp-file $tn.cocci $tn.cpp -o $cmpfile
 		set +e
-		cmp $tn.res $cmpfile
+		$spatch --sp-file $tn.cocci $tn.cpp -o $cmpfile
 		TEST_CASE_BROKEN[$tn]=$?
+		cmp $tn.res $cmpfile
+		TEST_CASE_FAILS[$tn]=$?
 		set -e
 	fi
 	rm -f $cmpfile
 	set -e
 done
-echo -n 'TEST CASE BROKEN (spatch --test ... exits non-zero): '
+echo -n 'TEST CASE BROKEN (spatch ... exits non-zero): '
 for tn in ${!TEST_CASE_BROKEN[*]}; do
 	if test ${TEST_CASE_BROKEN[$tn]} != 0; then
+		echo "$tn "
+	fi
+done | sort | tr -d '\n'
+echo
+echo -n 'TEST FAILS (patches differ): '
+for tn in ${!TEST_CASE_FAILS[*]}; do
+	if test ${TEST_CASE_FAILS[$tn]} != 0; then
 		echo "$tn "
 	fi
 done | sort | tr -d '\n'
@@ -199,14 +208,14 @@ for tn in ${!FAILED_CP[*]}; do
 	fi
 done | sort | tr -d '\n'
 echo
-echo -n 'PASSED TESTS: '
+echo -n 'PASSED TEST RUNS: '
 for tn in ${!FAILED_RUN[*]}; do
 	if test ${FAILED_RUN[$tn]} = 0; then
 		echo "$tn "
 	fi
 done | sort | tr -d '\n'
 echo
-echo -n 'FAILED TESTS: '
+echo -n 'FAILED TEST RUNS: '
 for tn in ${!FAILED_RUN[*]}; do
 	if test ${FAILED_RUN[$tn]} != 0; then
 		echo "$tn "

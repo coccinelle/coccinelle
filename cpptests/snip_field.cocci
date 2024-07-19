@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 field lfld;
 field list [n={2}] f2fld;

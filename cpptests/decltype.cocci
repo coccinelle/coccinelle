@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 idexpression int x;
 @@

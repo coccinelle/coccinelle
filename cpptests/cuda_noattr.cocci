@@ -1,3 +1,4 @@
+# spatch --c++
 @@
 // attribute name __global__; // not needed
 @@

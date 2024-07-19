@@ -1,3 +1,4 @@
+# spatch --c++
 @identifier@
 symbol x;
 @@
