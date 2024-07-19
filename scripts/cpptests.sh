@@ -31,6 +31,7 @@ bracket.cocci v20240610:language/aggregate_initialization#Syntax
 bracketed_expression_assignment.cocci v20240610:language/aggregate_initialization#Syntax
 cdstr.cocci v20240610:language/constructor
 cex_snip_field_bad.cocci v20240610:language/class
+cex_snip_field_and_keep_access_specifier.cocci v20240610:language/class v20240610:language/access
 classfinal.cocci v20240610:language/final
 complexcpp.cocci v20240610:numeric/complex v20240610:header/complex
 cuda1.cocci v20240610:language/operator_other#Built-in_function_call_operator
