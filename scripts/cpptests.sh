@@ -156,8 +156,8 @@ for cf in *.cocci; do
 	FAILED_PP[$tn]=$?
 	set -e
 	set +e
-	$spatch --parse-c $tn.cocci
-	FAILED_CP[$tn]=$?
+	( $spatch --c++ --parse-c $tn.cpp && $spatch --c++ --parse-c $tn.cpp | grep -q '100.*good.or.passed' );
+	FAILED_CP[$tn]=$?;
 	set -e
 	if test ${FAILED_RUN[$tn]} = 0; then
 		cmpfile=$tn.cmp
