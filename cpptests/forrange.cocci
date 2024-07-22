@@ -1,4 +1,4 @@
-# spatch --c++
+# spatch --c++=11
 @@
 identifier i, IA;
 statement S;
