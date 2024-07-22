@@ -146,6 +146,7 @@ check_tags_sanity
 
 for cf in *.cocci; do
 	tn=${cf/.cocci/};
+	if ! ( head -n1 $cf | grep -q -- --c++ ) ; then echo "you forgot --c++ flag in $cf file"; false; fi # --c++ is required
 	set +e
 	$spatch --test $tn
 	FAILED_RUN[$tn]=$?
