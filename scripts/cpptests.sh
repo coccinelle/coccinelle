@@ -46,8 +46,8 @@ decltype.cocci v20240610:language/decltype
 decltype_matches_type.cocci v20240610:language/decltype
 delete_array.cocci v20240610:language/delete#Syntax
 delete.cocci v20240610:language/delete#Syntax
-destructor_constructor_parse v20240610:language/access v20240610:language/class v20240610:language/destructor.html
-destructor_constructor_parse_smpl v20240610:language/access v20240610:language/class v20240610:language/destructor.html
+destructor_constructor_parse v20240610:language/access v20240610:language/class v20240610:language/destructor
+destructor_constructor_parse_smpl v20240610:language/access v20240610:language/class v20240610:language/destructor
 emptytmp.cocci v20240610:language/template_parameters#Template_arguments
 endcolon.cocci v20240610:language/qualified_lookup
 endline.cocci v20240610:language/template_parameters#Template_arguments v20240610:language/qualified_lookup
@@ -84,6 +84,7 @@ snip_field.cocci v20240610:language/class
 tempinstfour.cocci v20240610:language/template_parameters#Template_arguments
 templates1.cocci v20240610:language/template_parameters#Template_arguments
 template_test.cocci v20240610:language/template_parameters#Template_arguments
+templates_partial_specialization v20240610:language/template_parameters#Template_arguments v20240610:language/partial_specialization
 tmpinit.cocci v20240610:language/template_parameters#Template_arguments
 tmpinst2.cocci v20240610:language/template_parameters#Template_arguments
 tmpinst4.cocci v20240610:language/template_parameters#Template_arguments
@@ -97,8 +98,8 @@ using3.cocci v20240610:language/using_declaration
 using4.cocci v20240610:language/using_declaration
 usingtest.cocci v20240610:language/using_declaration
 usingtype.cocci v20240610:language/using_declaration
-vconstr.cocci v20240610:language/virtual v20240610:language/destructor.html
-virtual_constructor.cocci v20240610:language/virtual v20240610:language/destructor.html
+vconstr.cocci v20240610:language/virtual v20240610:language/destructor
+virtual_constructor.cocci v20240610:language/virtual v20240610:language/destructor
 EOF
 }
 
