@@ -19,6 +19,7 @@ cat_tags_file() {
 cat << EOF
 access_specifiers_0.cocci v20240610:language/access
 access_specifiers_1.cocci v20240610:language/access
+access_specifiers_1_class.cocci v20240610:language/access v20240610:language/class
 access_specifiers_2.cocci v20240610:language/access
 access_specifiers_3.cocci v20240610:language/access
 access_specifiers_4.cocci v20240610:language/access
@@ -45,6 +46,8 @@ decltype.cocci v20240610:language/decltype
 decltype_matches_type.cocci v20240610:language/decltype
 delete_array.cocci v20240610:language/delete#Syntax
 delete.cocci v20240610:language/delete#Syntax
+destructor_constructor_parse v20240610:language/access v20240610:language/class v20240610:language/destructor.html
+destructor_constructor_parse_smpl v20240610:language/access v20240610:language/class v20240610:language/destructor.html
 emptytmp.cocci v20240610:language/template_parameters#Template_arguments
 endcolon.cocci v20240610:language/qualified_lookup
 endline.cocci v20240610:language/template_parameters#Template_arguments v20240610:language/qualified_lookup
@@ -94,8 +97,8 @@ using3.cocci v20240610:language/using_declaration
 using4.cocci v20240610:language/using_declaration
 usingtest.cocci v20240610:language/using_declaration
 usingtype.cocci v20240610:language/using_declaration
-vconstr.cocci v20240610:language/virtual
-virtual_constructor.cocci v20240610:language/virtual
+vconstr.cocci v20240610:language/virtual v20240610:language/destructor.html
+virtual_constructor.cocci v20240610:language/virtual v20240610:language/destructor.html
 EOF
 }
 
@@ -229,7 +232,7 @@ for rn in ${!REFTOTEST[*]}; do
 		echo -n "	$rn -> "
 		for tn in ${REFTOTEST[$rn]}; do
 			echo -n ${tn};
-			if test ${FAILED_RUN[$tn]} != 0; then echo -n '* '; else echo -n ' '; fi
+			if test "${FAILED_PP[$tn]}" != 0 -o "${TEST_CASE_FAILS[$tn]}" != 0 -o "${FAILED_RUN[$tn]}" != 0; then echo -n '* '; else echo -n ' '; fi
 		done
 		echo
 	fi
