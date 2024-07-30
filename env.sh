@@ -34,7 +34,7 @@ else
 ##############################################################################
 
 # To find the data/ files such as the default standard.h file.
-# Cf also globals/config.ml
+# Cf also globals/cocciconfig.ml
 echo setting COCCINELLE_HOME=$DIR
 COCCINELLE_HOME=$DIR				; export COCCINELLE_HOME
 

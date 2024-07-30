@@ -15,7 +15,7 @@ module Inc = Includes
 (* In addition to flags that can be tweaked via -xxx options (cf the
  * full list of options in "the spatch options" section below), the
  * spatch program also depends on external files, described in
- * globals/config.ml, mainly a standard.h and standard.iso file *)
+ * globals/cocciconfig.ml, mainly a standard.h and standard.iso file *)
 
 let cocci_file = ref ""
 let opt_c_files = ref []
@@ -312,11 +312,11 @@ let print_version () =
     if !Regexp.pcre_support then "PCRE"
     else "Str" in
   let flags =
-    if Config.configure_flags<>"" then Config.configure_flags
+    if Cocciconfig.configure_flags<>"" then Cocciconfig.configure_flags
     else "[none]" in
   (* let mode = if Dynlink.is_native then "native" else "byte-code" in *)
   Printf.printf "spatch version %s compiled with OCaml version %s\n"
-    (* mode *) Config.version Config.ocaml_version;
+    (* mode *) Cocciconfig.version Cocciconfig.ocaml_version;
   Printf.printf "Flags passed to the configure script: %s\n" flags;
   Printf.printf "OCaml scripting support: %s\n" withocaml;
   Printf.printf "Python scripting support: %s\n" withpython;
@@ -354,12 +354,12 @@ let short_options = [
   "--partial-match",        Arg.Set Flag_ctl.partial_match,
   "    report partial matches of the SP on the C file";
 
-  "--iso-file", Arg.Set_string Config.std_iso,
-  " <file> (default=" ^ !Config.std_iso ^")";
+  "--iso-file", Arg.Set_string Cocciconfig.std_iso,
+  " <file> (default=" ^ !Cocciconfig.std_iso ^")";
   "--macro-file", Arg.Set_string macro_file,
   " <file>";
-  "--macro-file-builtins", Arg.Set_string Config.std_h,
-  " <file> (default=" ^ !Config.std_h ^ ")";
+  "--macro-file-builtins", Arg.Set_string Cocciconfig.std_h,
+  " <file> (default=" ^ !Cocciconfig.std_h ^ ")";
 
   "--recursive-includes",
   Arg.Unit (function _ -> Inc.set_parsing_style Inc.Parse_really_all_includes),
@@ -428,7 +428,7 @@ let short_options = [
    "    \"\" for a file in the current directory");
   "--kbuild-info", Arg.Set_string kbuild_info,
   "    <file> improve -dir by grouping related c files";
-  "--python", Arg.Set_string Config.python_interpreter,
+  "--python", Arg.Set_string Cocciconfig.python_interpreter,
   "    Sets the path to the python interpreter";
   "--pyoutput", Arg.Set_string Flag.pyoutput,
   "    Sets output routine: Default value: coccilib.output.Console";
@@ -480,7 +480,7 @@ let other_options = [
   [
     "--sp", Arg.Unit (function _ -> failwith "impossible"),
     " command line semantic patch";
-    "--iso", Arg.Set_string Config.std_iso,   " short option of --iso-file";
+    "--iso", Arg.Set_string Cocciconfig.std_iso,   " short option of --iso-file";
 
     "--cocci-file", Arg.Set_string cocci_file,
     "   <file> the semantic patch file";
@@ -1123,7 +1123,7 @@ let rec main_action xs =
 	    Inc.setup_unique_search !Flag.parmap_cores !Inc.include_path));
 
 	let (cocci_infos,constants) =
-	  Cocci.pre_engine (!cocci_file, !Config.std_iso) in
+	  Cocci.pre_engine (!cocci_file, !Cocciconfig.std_iso) in
 
         let infiles =
             Common.profile_code "Main.infiles computation" (fun () ->
@@ -1660,13 +1660,13 @@ let main arglist =
     if !cocci_file <> "" && (not (!cocci_file =~ ".*\\.\\(sgrep\\|spatch\\)$"))
     then cocci_file := Common.adjust_ext_if_needed !cocci_file ".cocci";
 
-    if !Config.std_iso <> ""
-    then Config.std_iso := Common.adjust_ext_if_needed !Config.std_iso ".iso";
-    if !Config.std_h <> ""
-    then Config.std_h := Common.adjust_ext_if_needed !Config.std_h ".h";
+    if !Cocciconfig.std_iso <> ""
+    then Cocciconfig.std_iso := Common.adjust_ext_if_needed !Cocciconfig.std_iso ".iso";
+    if !Cocciconfig.std_h <> ""
+    then Cocciconfig.std_h := Common.adjust_ext_if_needed !Cocciconfig.std_h ".h";
 
-    if !Config.std_h <> ""
-    then Parse_c.init_defs_builtins !Config.std_h;
+    if !Cocciconfig.std_h <> ""
+    then Parse_c.init_defs_builtins !Cocciconfig.std_h;
 
     if !macro_file <> ""
     then Parse_c.init_defs_macros !macro_file;

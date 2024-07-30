@@ -150,6 +150,7 @@ AC_MSG_NOTICE([the following OCaml packages should be provided by your ocaml ins
 AC_REQ_COCCI_STDPKG([unix])
 AS_IF([test "x$OCAMLATLEAST50" = xno],[AC_REQ_COCCI_STDPKG([bigarray])])
 AC_REQ_COCCI_STDPKG([str])
+AC_REQ_COCCI_STDPKG([compiler-libs])
 
 dnl  required modules (Some are available locally too)
 AC_REQ_COCCI_EXTPKG([dynlink])
@@ -581,7 +582,7 @@ AC_CONFIG_FILES([
   Makefile.config
   version.ml
   commons/commands.ml
-  globals/config.ml globals/regexp.ml python/pycocci.ml
+  globals/cocciconfig.ml globals/regexp.ml python/pycocci.ml
   ocaml/prepare_ocamlcocci.ml
   scripts/spatch.sh
   tools/spgen/scripts/spgen.sh

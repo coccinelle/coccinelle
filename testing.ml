@@ -47,7 +47,7 @@ let end_redirect_output = Common.map_option (
     out_file)
 
 let rec test_loop previous_merges cocci_file cfiles =
-  let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Config.std_iso) in
+  let (cocci_infos,_) = Cocci.pre_engine (cocci_file, !Cocciconfig.std_iso) in
   let (res, merges) = Cocci.full_engine cocci_infos cfiles in
   let merges = Cocci.union_merge_vars previous_merges merges in
   let next_merges, pending_instance =
@@ -115,7 +115,7 @@ let testone prefix x compare_with_expected =
           then pr2 ("note that not just " ^ cfile ^ " was involved");
           let tmpfile =
 	    Printf.sprintf
-	      "%s/%s" Config.get_temp_dir_name (Filename.basename cfile) in
+	      "%s/%s" Cocciconfig.get_temp_dir_name (Filename.basename cfile) in
           pr2 (Printf.sprintf "One file modified. Result is here: %s" tmpfile);
           Common.command2 ("mv "^outfile^" "^tmpfile);
           tmpfile
@@ -602,7 +602,7 @@ let test_parse_cocci file =
   then pr2 "warning: seems not a .cocci file";
 
   let (mvs,xs,_,_,_,_,_,query,_,_) =
-    Parse_cocci.process file (Some !Config.std_iso) false in
+    Parse_cocci.process file (Some !Cocciconfig.std_iso) false in
   xs +> List.iter2 Pretty_print_cocci.unparse mvs;
   Format.print_newline();
   (* compile ocaml script code *)
@@ -667,7 +667,7 @@ let test_rule_dependencies file =
   then pr2 "warning: seems not a .cocci file";
   Iso_pattern.verbose_iso := false;
   let (_,xs,_,fvs,_,_,_,_,_,_) =
-    Parse_cocci.process file (Some !Config.std_iso) false in
+    Parse_cocci.process file (Some !Cocciconfig.std_iso) false in
   Printf.printf "digraph {\n";
   let prevrule = ref "" in
   List.iter2

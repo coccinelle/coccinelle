@@ -29,7 +29,7 @@ Makefile.local
 result
 setup/Makefile.in
 
-globals/config.ml
+globals/cocciconfig.ml
 python/pycocci.ml
 commons/commands.ml
 globals/regexp.ml

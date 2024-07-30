@@ -172,7 +172,7 @@ let _pycocci_setargs argv0 =
 
 let initialize_python_path () =
   let sep = ":" in
-  let python_libdir = Filename.concat Config.path "python" in
+  let python_libdir = Filename.concat Cocciconfig.path "python" in
   match Common.optionise (fun () -> Sys.getenv "PYTHONPATH") with
     None -> Unix.putenv "PYTHONPATH" python_libdir
   | Some paths ->
@@ -197,7 +197,7 @@ let pycocci_init () =
     initialize_python_path ();
     let _ = if not (Py.is_initialized ()) then
       (if !Flag.show_misc then Common.pr2 "Initializing python\n%!";
-	Py.initialize ~interpreter:!Config.python_interpreter ()) in
+	Py.initialize ~interpreter:!Cocciconfig.python_interpreter ()) in
 
   (* set argv *)
   let argv0 = Sys.executable_name in

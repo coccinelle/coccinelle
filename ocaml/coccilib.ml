@@ -229,7 +229,7 @@ let dir () = !Flag.dir
 
 let files () = !Flag.currentfiles
 
-let cocci_version () = Config.version
+let cocci_version () = Cocciconfig.version
 
 (* ---------------------------------------------------------------------- *)
 (* org mode *)

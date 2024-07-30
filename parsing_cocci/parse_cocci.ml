@@ -2566,7 +2566,7 @@ let parse_iso_files existing_isos iso_files extra_path =
 	  let file =
 	    match file with
 	      Common.Left(fl)  -> Filename.concat extra_path fl
-	    | Common.Right(fl) -> Filename.concat Config.path fl in
+	    | Common.Right(fl) -> Filename.concat Cocciconfig.path fl in
 	  Lexer_cocci.init ();
 	  let current = parse_iso file in
 	  let new_names = get_names current in

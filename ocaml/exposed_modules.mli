@@ -20,8 +20,8 @@ module Visitor_c      : module type of struct include Visitor_c end
 
 module Regexp     : module type of struct include Regexp end
     (* globals/regexp.ml *)
-module Config     : module type of struct include Config end
-    (* globals/config.ml *)
+module Cocciconfig     : module type of struct include Cocciconfig end
+    (* globals/cocciconfig.ml *)
 module Flag       : module type of struct include Flag end
     (* globals/flag.ml *)
 module Flag_parsing_c : module type of struct include Flag_parsing_c end

@@ -27,7 +27,7 @@ SOURCES_commons := \
 	ocamlextra/dumper.ml commands.ml common.ml ograph_simple.ml \
 	ograph_extended.ml
 SOURCES_globals := \
-	config.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
+	cocciconfig.ml flag.ml iteration.ml $(REGEXP_FILE) regexp.ml
 CLEAN_globals := regexp_pcre.ml regexp_str.ml
 SOURCES_ctl := \
 	flag_ctl.ml ast_ctl.ml pretty_print_ctl.ml ctl_engine.ml wrapper_ctl.ml
@@ -98,7 +98,7 @@ PREFIX_spatch :=
 
 PREFIX_spgen := tools/spgen/source/
 
-CORE_LIBS := unix str \
+CORE_LIBS := unix str ocamlcommon \
 	$(STDCOMPATDIR)/stdcompat \
 	$(patsubst %,bytes,$(BYTESDIR)) \
 	$(patsubst %,pcre,$(filter %/pcre.cma,$(LNKLIBS)))
@@ -189,7 +189,7 @@ SEARCH_PATHS := \
 	$(PARMAPDIR) $(BYTESDIR) $(STDCOMPATDIR)
 
 ifneq ($(OCAMLATLEAST50),no)
-SEARCH_PATHS += +str +unix +dynlink
+SEARCH_PATHS += +str +unix +dynlink +compiler-libs
 endif
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))

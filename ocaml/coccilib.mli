@@ -1454,7 +1454,7 @@ module Regexp :
     val regexp : string -> regexp
     val string_match : regexp -> string -> bool
   end
-module Config :
+module Cocciconfig :
   sig
     val version : string
     val path : string

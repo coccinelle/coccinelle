@@ -10,7 +10,7 @@ module Ast = Ast_cocci
 exception CompileFailure of string
 exception LinkFailure of string * string
 
-let ext = if Config.dynlink_is_native then ".cmxs" else ".cma"
+let ext = if Cocciconfig.dynlink_is_native then ".cmxs" else ".cma"
 
 let sysdir () =
   let sysdircmd = !Flag.ocamlfind ^ " printconf stdlib" in
@@ -45,7 +45,7 @@ let check_runtime () =
       if has_c then
 	Common.pr2 "Using bytecode version of ocamlc/ocamlopt/ocamldep"
       else
-	if Config.dynlink_is_native then
+	if Cocciconfig.dynlink_is_native then
 	  failwith
 	    "No OCaml compiler found! Install either ocamlopt or ocamlopt.opt"
 	else
@@ -416,9 +416,9 @@ let prepare_simple ml_file =
 
 (* give a path to the coccilib cmi file *)
 let find_cmifile name =
-  let path1 = Printf.sprintf "%s/ocaml/%s.cmi" Config.path name in
+  let path1 = Printf.sprintf "%s/ocaml/%s.cmi" Cocciconfig.path name in
   if Sys.file_exists path1 then path1 else
-  let path2 = Printf.sprintf "%s/ocaml/coccilib/%s.cmi" Config.path name in
+  let path2 = Printf.sprintf "%s/ocaml/coccilib/%s.cmi" Cocciconfig.path name in
   if Sys.file_exists path2 then path2 else
   raise (CompileFailure ("No coccilib.cmi in " ^ path1 ^ " or " ^ path2))
 
@@ -431,42 +431,14 @@ let find_cmifile name =
 module ModuleSet = Set.Make(String)
 
 let approx_coccilib_deps cmi =
-  let chan = open_in_bin cmi in
   let tbl = Hashtbl.create 1024 in
-  let buf = Buffer.create 140 in
-  begin
-  try
-    while true do
-      let c = input_char chan in
-      let has_ident = Buffer.length buf > 0 in
-      if has_ident
-      then begin
-        if (c >= 'a' && c <= 'z') ||
-           (c >= 'A' && c <= 'Z') ||
-           (c >= '0' && c <= '9') ||
-           c == '_' || c == '\''
-        then Buffer.add_char buf c
-        else begin
-          if Buffer.length buf >= 3
-          then begin
-            let key = Buffer.contents buf in
-            if Hashtbl.mem tbl key
-            then ()
-            else Hashtbl.add tbl (Buffer.contents buf) ()
-          end;
-          Buffer.clear buf
-        end
-      end
-      else begin
-        if c >= 'A' && c <= 'Z'
-        then (* perhaps the begin of a capitalized identifier *)
-          Buffer.add_char buf c
-        else ()
-      end
-    done
-  with End_of_file -> ()
-  end;
-  close_in chan;
+  let infos = Cmi_format.read_cmi cmi in
+  List.iter
+    (function
+	Types.Sig_module(id,_,_,_,Types.Exported) ->
+	  Hashtbl.add tbl (Ident.name id) ()
+      | _ -> ())
+    infos.Cmi_format.cmi_sign;
   tbl
 
 let filter_dep existing_deps (accld, accinc) dep =
@@ -613,7 +585,7 @@ let load_file mlfile =
       "-g -I %s %s -I %s"
       (Filename.dirname cmifile) inc (sysdir ()) in
   let (obj, cmd) =
-    if Config.dynlink_is_native
+    if Cocciconfig.dynlink_is_native
     then compile_native_cmd flags mlfile
     else compile_bytecode_cmd flags mlfile in
   compile mlfile cmd;
@@ -625,7 +597,7 @@ let load_file mlfile =
 let clean_file mlfile =
   let basefile = Filename.chop_extension mlfile in
   let files =
-    if Config.dynlink_is_native then
+    if Cocciconfig.dynlink_is_native then
       [basefile ^ ".cmxs";
        basefile ^ ".cmx";
        basefile ^ ".o";

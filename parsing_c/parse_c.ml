@@ -1402,12 +1402,12 @@ let parse_cache typedefs parse_strings cache file has_changes =
 
     [
       (* TOFIX
-      Config.path ^ "/parsing_c/c_parser.cma";
+      Cocciconfig.path ^ "/parsing_c/c_parser.cma";
       (* we may also depend now on the semantic patch because
          the SP may use macro and so we will disable some of the
          macro expansions from standard.h.
       *)
-      !Config.std_h;
+      !Cocciconfig.std_h;
       *)
     ] in
   let need_no_changed_variables =
