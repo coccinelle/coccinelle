@@ -1,4 +1,4 @@
-ocamlfind query (unix|bigarray|num|dynlink|str|threads)
+ocamlfind query (unix|bigarray|num|dynlink|str|threads|compiler-libs)
 
 $(ocamllibdir)
 

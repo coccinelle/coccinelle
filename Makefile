@@ -189,8 +189,9 @@ SEARCH_PATHS := \
 	$(PARMAPDIR) $(BYTESDIR) $(STDCOMPATDIR)
 
 ifneq ($(OCAMLATLEAST50),no)
-SEARCH_PATHS += +str +unix +dynlink +compiler-libs
+SEARCH_PATHS += +str +unix +dynlink
 endif
+SEARCH_PATHS += +compiler-libs
 
 SEARCH_PATH_FLAGS := $(addprefix -I ,$(SEARCH_PATHS))
 
