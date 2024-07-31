@@ -5295,6 +5295,7 @@ and directive = fun dira dirb ->
 	    Some (A.string_of_assignOp (A.make_term (get_assignOp op)))
 	| B.MetaBinaryOpVal op ->
 	    Some (A.string_of_binaryOp (A.make_term (get_binaryOp op)))
+	| B.MetaPragmaInfoVal s -> Some (B.str_of_info s)
 	| _ -> None in
       match s with
 	Some s -> f s
