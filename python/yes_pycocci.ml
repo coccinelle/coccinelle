@@ -225,6 +225,7 @@ let pycocci_init () =
 	("make_stmt", wrap_make Coccilib.make_stmt);
 	("make_stmt_with_env", wrap_make_stmt_with_env);
 	("make_type", wrap_make Coccilib.make_type);
+	("make_pragmainfo", wrap_make Coccilib.make_pragmainfo);
 	("make_listlen", wrap_make_listlen);
 	("make_position", wrap_make_position);
         ("files", wrap_files);

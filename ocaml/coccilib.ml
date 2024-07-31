@@ -186,6 +186,11 @@ let make_type s =
     (function s ->
       let t = Lib_parsing_c.al_type(Parse_c.type_of_string s) in
       Ast_c.MetaTypeVal(t,t))
+let make_pragmainfo s =
+  parse_failure "pragmainfo" s
+    (function s ->
+      let info = Ast_c.al_info_of_string 0 s in
+      Ast_c.MetaPragmaInfoVal info)
 let make_listlen i = Ast_c.MetaListlenVal i
 let make_full_position fl fn ce_startl ce_startc ce_endl ce_endc
     startl startc endl endc =

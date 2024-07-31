@@ -489,6 +489,7 @@ val equal_posl : 'a * 'b -> 'a * 'b -> bool
 val compare_posl : int * int -> int * int -> int
 val info_to_fixpos : info -> Ast_cocci.fixpos
 val is_test : expression -> bool
+val al_info_of_string : int -> string -> info
 val al_info : int -> info -> info
 val semi_al_info : info -> info
 val magic_real_number : int

@@ -1256,19 +1256,22 @@ let is_test (e : expression) =
  * true al_info is in fact real_al_info.
  *)
 
-let al_info tokenindex x =
+let al_info_of_string tokenindex x =
   { pinfo =
     (AbstractLineTok
        {charpos = tokenindex;
 	 line = tokenindex;
 	 column = tokenindex;
 	 file = "";
-	 str = str_of_info x});
+	 str = x});
     cocci_tag = ref emptyAnnot;
     annots_tag = Token_annot.empty;
     comments_tag = ref emptyComments;
     danger = ref NoDanger;
   }
+
+let al_info tokenindex x =
+  al_info_of_string tokenindex (str_of_info x)
 
 let semi_al_info x =
   { x with

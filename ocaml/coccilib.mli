@@ -4063,6 +4063,7 @@ val make_expr_with_env : string -> string -> Ast_c.metavar_binding_kind
 val make_stmt : string -> Ast_c.metavar_binding_kind
 val make_stmt_with_env : string -> string -> Ast_c.metavar_binding_kind
 val make_type : string -> Ast_c.metavar_binding_kind
+val make_pragmainfo : string -> Ast_c.metavar_binding_kind
 val make_listlen : int -> Ast_c.metavar_binding_kind
 val make_full_position :
   Common.filename ->

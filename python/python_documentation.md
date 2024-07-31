@@ -60,6 +60,12 @@ Example: tests/python_mdecl.cocci
 
 Parses the string `type` as a C type and returns the type.
 
+## cocci.make_pragmainfo(s)
+
+Creates a representation of the string `s` suitable for storing in a
+pragmainfo metavariable.  Coccinelle represents a pragma as, essentially,
+\#pragma name pragmainfo where pragmainfo is an arbitrary sequence of tokens.
+
 ## cocci.make_listlen(len)
 
 Converts the integer `len` to a list length.
