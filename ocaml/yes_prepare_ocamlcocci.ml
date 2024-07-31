@@ -433,6 +433,7 @@ module ModuleSet = Set.Make(String)
 let approx_coccilib_deps cmi =
   let tbl = Hashtbl.create 1024 in
   let infos = Cmi_format.read_cmi cmi in
+  Hashtbl.add tbl infos.Cmi_format.cmi_name ();
   List.iter
     (function
 	Types.Sig_module(id,_,_,_,Types.Exported) ->
