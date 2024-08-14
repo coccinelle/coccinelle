@@ -582,8 +582,7 @@ let load_file mlfile =
   let (ldlibs, inc) = dep_flag cmifile mlfile in
   (* add ocaml and ocaml/coccilib as search directories for the ocaml scripting *)
   let flags =
-    Printf.sprintf
-      "-g -I %s %s -I %s"
+    Printf.sprintf "-g -I %s %s -I %s -for-pack Coccinelle_modules"
       (Filename.dirname cmifile) inc (sysdir ()) in
   let (obj, cmd) =
     if Cocciconfig.dynlink_is_native
