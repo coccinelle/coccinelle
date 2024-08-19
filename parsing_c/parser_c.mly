@@ -944,6 +944,8 @@ assign_expr:
  | cond_expr                     { $1 }
  | unary_expr TAssign assign_expr { mk_e(Assignment ($1, $2, $3)) []}
  | unary_expr TEq     assign_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
+ | unary_expr TAssign tuple_expr { mk_e(Assignment ($1, $2, $3)) []}
+ | unary_expr TEq     tuple_expr { mk_e (Assignment ($1, (SimpleAssign, [$2]),$3)) []}
 
 /*(* gccext: allow optional then part hence gcc_opt_expr *)*/
 cond_expr:
@@ -1140,6 +1142,7 @@ argument_ne_without_paramdecl:
 
 argument:
  | assign_expr { Left $1 }
+ | tuple_expr { Left $1 }
  | parameter_decl_arg { Right (ArgType $1) }
  /*(* had conflicts before, but julia fixed them *)*/
  | action_higherordermacro { Right (ArgAction $1) }
@@ -1339,7 +1342,7 @@ jump:
  | Tgoto TMul expr { GotoComputed $3, [$1;$2] }
 
 tuple_expr:
- | TOBrace argument_list TCBrace { mk_e (TupleExpr $2) [$1;$3] }
+ | TOBrace outer_initialize_list TCBrace { mk_e (TupleExpr $2) [$1;$3] }
 
 
 /*(*----------------------------*)*/
