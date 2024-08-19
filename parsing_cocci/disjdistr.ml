@@ -279,10 +279,10 @@ and disjexp e =
       disjmult2 (disjexp tn) (disjdots disjexp args)
 	(fun tn args ->
 	  Ast.rewrap e (Ast.TemplateInst(tn,lp,args,rp)))
-  | Ast.TupleExpr(lb,args,rb) ->
-      let args = disjdots disjexp args in
-      List.map (function args ->
-	   Ast.rewrap e (Ast.TupleExpr(lb,args,rb))) args
+  | Ast.TupleExpr(init) ->
+      let init = disjini init in
+      List.map (function init ->
+	   Ast.rewrap e (Ast.TupleExpr(init))) init
   | Ast.TypeExp(ty) ->
       let ty = disjty ty in
       List.map (function ty -> Ast.rewrap e (Ast.TypeExp(ty))) ty

@@ -317,7 +317,7 @@ let rec propagate_types env =
 	| Ast0.DeleteArr(dlr,lb,rb,exp) -> Some (Ast0.wrap void_type)
 	| Ast0.New(nw,pp,lp_opt,ty,rp_opt,args) -> Some ty
 	| Ast0.TemplateInst(name,lab,args,rab) -> None
-    | Ast0.TupleExpr(lb,args,rb) -> None (* TODO: Make a proper return type for tuples *)
+	| Ast0.TupleExpr(args) -> None (* TODO: Make a proper return type for tuples *)
 	| Ast0.TypeExp(ty) -> None
 	| Ast0.Constructor(lp,ty,rp,init) -> Some ty
 	| Ast0.MetaErr(name,_,_) -> None

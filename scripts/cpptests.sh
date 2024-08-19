@@ -31,6 +31,7 @@ autoloop.cocci v20240610:language/range-for
 bool1.cocci v20240610:language/function
 bracket.cocci v20240610:language/aggregate_initialization#Syntax
 bracketed_expression_assignment.cocci v20240610:language/aggregate_initialization#Syntax
+braced_init_list.cocci v20240610:language/explicit_cast#Explanation
 cdstr.cocci v20240610:language/constructor
 snip_field_bad.cocci v20240610:language/class
 snip_field_and_keep_access_specifier.cocci v20240610:language/class v20240610:language/access

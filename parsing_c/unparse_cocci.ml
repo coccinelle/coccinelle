@@ -533,10 +533,8 @@ let rec expression e =
       loop tn postfix; mcode (print_string_with_hint StartBox) lp;
       dots (function _ -> ()) arg_expression args;
       mcode (print_string_with_hint EndBox) rp
-  | Ast.TupleExpr(lb,args,rb) ->
-      mcode print_string lb;
-      dots (function _ -> ()) arg_expression args;
-      mcode print_string rb
+  | Ast.TupleExpr(init) ->
+      initialiser true init
   | Ast.TypeExp(ty) -> fullType ty
   | Ast.Constructor(lp,ty,rp,init) ->
       mcode print_string_box lp; fullType ty; close_box();

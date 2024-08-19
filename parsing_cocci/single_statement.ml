@@ -129,7 +129,7 @@ let rec left_expression e =
   | Ast0.Delete(dlt,exp) -> modif_before_mcode dlt
   | Ast0.DeleteArr(dlt,lb,rb,exp) -> modif_before_mcode dlt
   | Ast0.TemplateInst(name,lab,args,rab) -> left_expression name
-  | Ast0.TupleExpr(lb,args,rb) -> modif_before_mcode lb
+  | Ast0.TupleExpr(init) -> left_init init
   | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) -> modif_before_mcode nw
   | Ast0.TypeExp(ty) -> left_typeC ty
   | Ast0.Constructor(lp,ty,rp,init) -> modif_before_mcode lp
@@ -144,6 +144,30 @@ let rec left_expression e =
   | Ast0.Edots(dots,_) -> false
   | Ast0.OptExp(exp) -> left_expression exp
   | Ast0.AsExpr _ | Ast0.AsSExpr _ -> failwith "not possible"
+
+and left_init i =
+  modif_before i ||
+  (match Ast0.unwrap i with
+    Ast0.MetaInit(name,_,_)-> modif_before_mcode name
+  | Ast0.MetaInitList(name,_,_,_)-> modif_before_mcode name
+  | Ast0.InitExpr(exp) -> left_expression exp
+  | Ast0.InitList(lb,initlist,rb,ordered) ->
+        modif_before_mcode lb
+  | Ast0.InitGccExt(designators,eq,ini) ->
+        (match designators with
+           d::_ -> left_designator d
+        |  [] -> failwith "empty designator")
+  | Ast0.InitGccName(name,eq,ini) ->
+        left_ident name
+  | Ast0.IComma(cm) -> modif_before_mcode cm
+  | Ast0.Idots(d,_) -> false
+  | Ast0.OptIni(ini) -> left_init ini
+  | Ast0.AsInit(ini,asini) -> failwith "not possible")
+
+and left_designator = function
+      Ast0.DesignatorField(dot,id) -> modif_before_mcode dot
+    | Ast0.DesignatorIndex(lb,exp,rb) -> modif_before_mcode lb
+    | Ast0.DesignatorRange(lb,min,dots,max,rb) -> modif_before_mcode rb
 
 (* --------------------------------------------------------------------- *)
 (* Types *)

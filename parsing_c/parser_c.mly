@@ -1342,7 +1342,8 @@ jump:
  | Tgoto TMul expr { GotoComputed $3, [$1;$2] }
 
 tuple_expr:
- | TOBrace outer_initialize_list TCBrace { mk_e (TupleExpr $2) [$1;$3] }
+ | TOBrace outer_initialize_list TCBrace
+     { mk_e(TupleExpr ($2 $1 $3)) [] }
 
 
 /*(*----------------------------*)*/

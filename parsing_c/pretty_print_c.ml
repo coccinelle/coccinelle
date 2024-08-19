@@ -213,8 +213,8 @@ let mk_pretty_printers
         pp_expression name; pr_elem lab;
 	pp_arg_list es;
         pr_elem rab
-    | TupleExpr(arg), [i1] ->
-            pp_arg_list arg; pr_elem i1;
+    | TupleExpr(init), [] ->
+	pp_init init
     | Defined name, [i1] ->
         pr_elem i1; (* defined *) pr_space();
         pp_name name;

@@ -211,7 +211,7 @@ and base_expression =
 	           string mcode (* ) *) option * arguments option
   | TemplateInst   of expression (* name *) * string mcode (* < *) *
         expression dots * string mcode (* > *)
-  | TupleExpr      of string mcode (* { *) * expression dots * string mcode (* } *)
+  | TupleExpr      of initialiser
   | TypeExp        of fullType (*type name used as an expression, only in
 				  arg or #define*)
 

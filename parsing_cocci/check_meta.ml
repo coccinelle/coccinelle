@@ -220,8 +220,8 @@ and expression context old_metas table minus e =
   | Ast0.TemplateInst(name,lab,args,rab) ->
       expression ID old_metas table minus name;
       dots (expression ID old_metas table minus) args
-  | Ast0.TupleExpr(lb,args,rb) ->
-      dots (expression ID old_metas table minus) args
+  | Ast0.TupleExpr(init) ->
+      initialiser old_metas table minus init
   | Ast0.TypeExp(ty) -> typeC old_metas table minus ty
   | Ast0.Constructor(lp,ty,rp,init) ->
       typeC old_metas table minus ty; initialiser old_metas table minus init

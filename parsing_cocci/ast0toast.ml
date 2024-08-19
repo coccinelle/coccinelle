@@ -462,11 +462,8 @@ and expression e =
 	let args = dots expression args in
 	let rp = mcode rp in
 	Ast.TemplateInst(tn,lp,args,rp)
-    | Ast0.TupleExpr(lb,args,rb) ->
-    let lb = mcode lb in
-    let args = dots expression args in
-    let rb = mcode rb in
-    Ast.TupleExpr(lb,args,rb)
+    | Ast0.TupleExpr(init) ->
+        Ast.TupleExpr(initialiser init)
     | Ast0.TypeExp(ty) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.TypeExp(typeC allminus ty)

@@ -230,11 +230,9 @@ let visitor mode bind option_default
 	    let (args_n,args) = expression_dots args in
 	    let (rp_n,rp) = string_mcode rp in
 	    (multibind [tn_n;lp_n;args_n;rp_n], Ast0.TemplateInst(tn,lp,args,rp))
-    | Ast0.TupleExpr(lb,args,rb) ->
-        let (lb_n,lb) = string_mcode lb in
-        let (args_n,args) = expression_dots args in
-        let (rb_n,rb) = string_mcode rb in
-        (multibind [lb_n;args_n;rb_n], Ast0.TupleExpr(lb,args,rb))
+        | Ast0.TupleExpr(init) ->
+            let (init_n,init) = initialiser init in
+            (init_n, Ast0.TupleExpr(init))
 	| Ast0.TypeExp(ty) ->
 	    let (ty_n,ty) = typeC ty in
 	    (ty_n,Ast0.TypeExp(ty))

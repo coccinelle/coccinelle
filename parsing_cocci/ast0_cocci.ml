@@ -135,7 +135,7 @@ and base_expression =
 	           string mcode (* ) *) option * arguments option (* argument list *)
   | TemplateInst of expression (* name *) * string mcode (* < *) *
         expression dots * string mcode (* > *)
-  | TupleExpr      of string mcode (* { *) * expression dots * string mcode (* } *)
+  | TupleExpr      of initialiser
   | TypeExp        of typeC (* type name used as an expression, only in args *)
   | Constructor    of string mcode (* ( *) * typeC * string mcode (* ) *) *
 	              initialiser

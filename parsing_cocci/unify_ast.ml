@@ -240,8 +240,8 @@ and unify_expression e1 e2 =
   | (Ast.TypeExp(ty1),Ast.TypeExp(ty2)) -> unify_fullType ty1 ty2
   | (Ast.Constructor(lp1,ty1,rp1,i1),Ast.Constructor(lp2,ty2,rp2,i2)) ->
       unify_fullType ty1 ty2 && unify_initialiser i1 i2
-  | Ast.TupleExpr(lb1,args1,rb1),Ast.TupleExpr(lb2,args2,rb2) ->
-      unify_dots unify_expression edots args1 args2
+  | Ast.TupleExpr(init1),Ast.TupleExpr(init2) ->
+      unify_initialiser init1 init2
   | (Ast.Paren(lp1,e1,rp1),Ast.Paren(lp2,e2,rp2)) ->
       unify_expression e1 e2
 

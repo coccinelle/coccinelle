@@ -1736,16 +1736,12 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
 	  (A.TemplateInst(nma,laba,argsa,raba)) +> wa,
 	  ((B.TemplateInst(nmb,argsb),typ), [labb;rabb]))))))
 
-    | A.TupleExpr(lba,argsa,rba), ((B.TupleExpr(argsb),typ),ii) ->
-      let (lbb, rbb) = tuple_of_list2 ii in
-      tokenf rba rbb >>= (fun rba rbb ->
-      tokenf lba lbb >>= (fun lba lbb ->
-      arguments (seqstyle argsa) (A.unwrap argsa) argsb >>= (fun argsunwrap argsb ->
-        let argsa = A.rewrap argsa argsunwrap in
-            return (
-              ((A.TupleExpr (lba, argsa, rba)) +> wa,
-              ((B.TupleExpr (argsb), typ), [lbb;rbb]))))))
-
+    | A.TupleExpr(inita), ((B.TupleExpr(initb),typ),ii) ->
+        initialiser inita initb >>= (fun inita initb ->
+        return (
+          ((A.TupleExpr(inita))) +> wa,
+          ((B.TupleExpr(initb),typ),[])
+        ))
 
   (* todo? iso ? allow all the combinations ? *)
   | A.Paren (ia1, ea, ia2), ((B.ParenExpr (eb), typ),ii) ->

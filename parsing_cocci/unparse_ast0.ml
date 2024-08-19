@@ -251,10 +251,8 @@ let rec expression e =
 	  expression tn; mcode print_string_box lp;
 	  let _ = dots (function _ -> ()) expression args in
 	  close_box(); mcode print_string rp
-      | Ast0.TupleExpr(lb,args,rb) ->
-      mcode print_string lb;
-      let _ = dots (function _ -> ()) expression args in
-      close_box(); mcode print_string rb
+      | Ast0.TupleExpr(init) ->
+	  initialiser init
       | Ast0.TypeExp(ty) -> typeC ty
       | Ast0.Constructor(lp,ty,rp,init) ->
 	  mcode print_string_box lp; typeC ty; close_box();

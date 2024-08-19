@@ -400,9 +400,9 @@ let rec expression_pos exp snp
   | Ast0.TemplateInst(name, lab, dots, rab) ->
       let constructor ~mc = Ast0.TemplateInst(name, mc, dots, rab) in
       mcode_wrap ~mc:lab ~constructor snp
-  | Ast0.TupleExpr(lb, expdots, rb) ->
-      let constructor ~mc = Ast0.TupleExpr(lb, expdots, rb) in
-      mcode_wrap ~mc:lb ~constructor snp
+  | Ast0.TupleExpr(init) ->
+      let constructor ~item = Ast0.TupleExpr(item) in
+      item_wrap ~item:init ~item_posfn:initialiser_pos ~constructor snp
   | Ast0.TypeExp(typec) ->
       let constructor ~item = Ast0.TypeExp(item) in
       item_wrap ~item:typec ~item_posfn:type_pos ~constructor snp
@@ -419,6 +419,36 @@ let rec expression_pos exp snp
   | Ast0.OptExp exp ->
       let constructor ~exp = Ast0.OptExp exp in
       exp_wrap ~exp ~constructor snp
+
+and initialiser_pos init snp
+: (Ast0.base_initialiser Ast0.wrap * Snap.t) option =
+  match Ast0.unwrap init with
+    Ast0.MetaInit(mc,b,c) ->
+      let constructor ~mc = Ast0.MetaInit(mc,b,c) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.MetaInitList(mc,b,c,d) ->
+      let constructor ~mc = Ast0.MetaInitList(mc,b,c,d) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.InitExpr(exp) ->
+      let constructor ~item = Ast0.InitExpr(item) in
+      item_wrap ~item:exp ~item_posfn:expression_pos ~constructor snp
+  | Ast0.InitList(mc,initlist,rb,ordered) ->
+      let constructor ~mc = Ast0.InitList(mc,initlist,rb,ordered) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.InitGccExt(designators,mc,ini) ->
+      let constructor ~mc = Ast0.InitGccExt(designators,mc,ini) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.InitGccName(name,mc,ini) ->
+      let constructor ~mc = Ast0.InitGccName(name,mc,ini) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.IComma(mc) ->
+      let constructor ~mc = Ast0.IComma(mc) in
+      mcode_wrap ~mc ~constructor snp
+  | Ast0.Idots(a,b) -> None
+  | Ast0.OptIni(ini) ->
+      let constructor ~item = Ast0.OptIni(item) in
+      item_wrap ~item:ini ~item_posfn:initialiser_pos ~constructor snp
+  | Ast0.AsInit(ini,asini) -> None
 
 (* redefine exp_wrap outside scope of expression_pos due to internal exp_wrap
  * being typed to only work for expression constructors and not 'a constructors
