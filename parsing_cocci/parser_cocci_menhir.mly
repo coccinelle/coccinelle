@@ -2392,25 +2392,29 @@ basic_expr(recurser,primary_extra):
 
 assign_expr(r,pe):
     cond_expr(r,pe)                        { $1 }
-  | unary_expr(r,pe) TOpAssign assign_expr_bis
+  | unary_expr(r,pe) TOpAssign assignable_expression
       { let (op,clt) = $2 in
       let op' = Parse_aux.clt2mcode op clt in
       let op'' = Ast0_cocci.wrap (Ast0_cocci.OpAssign op') in
       Ast0_cocci.wrap(Ast0_cocci.Assignment($1, op'', Ast0_cocci.set_arg_exp $3,false)) }
-  | unary_expr(r,pe) TEq assign_expr_bis
+  | unary_expr(r,pe) TEq assignable_expression
       { let (op,clt) = ("=",$2) in
       let op' = Parse_aux.clt2mcode op clt in
       let op'' = Ast0_cocci.wrap (Ast0_cocci.SimpleAssign op') in
       Ast0_cocci.wrap
 	  (Ast0_cocci.Assignment
 	     ($1, op'', Ast0_cocci.set_arg_exp $3,false)) }
-  | unary_expr(r,pe) TMetaAssignOp assign_expr_bis
+  | unary_expr(r,pe) TMetaAssignOp assignable_expression
       { let (mv, cstrt, pure, clt) = $2 in
       let op' = Parse_aux.clt2mcode mv clt in
       let op'' = Ast0_cocci.wrap (Ast0_cocci.MetaAssign (op', cstrt, pure)) in
       Ast0_cocci.wrap
 	  (Ast0_cocci.Assignment
 	     ($1, op'', Ast0_cocci.set_arg_exp $3,false)) }
+
+assignable_expression:
+    initialize_metalist_or_list(TOBrace) { Ast0.wrap(Ast0.TupleExpr $1) }
+  | assign_expr_bis { $1 }
 
 assign_expr_bis:
     cond_expr(eexpr,dot_expressions)                        { $1 }
