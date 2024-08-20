@@ -1108,7 +1108,7 @@ primary_expr_without_ident:
      { mk_e(Constant (MultiString ["TODO: MultiString"])) ($1 @ $2) }
 
  /*(* gccext: allow statement as expressions via ({ statement }) *)*/
- | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }     
+ | TOPar compound TCPar  { mk_e(StatementExpr ($2)) [$1;$3] }
 
 primary_expr:
    identifier_cpp  { mk_e(Ident  ($1)) [] }
@@ -1133,6 +1133,7 @@ string_format:
 /*(* to avoid conflicts have to introduce a _not_empty (ne) version *)*/
 argument_ne:
  | assign_expr { Left $1 }
+ | tuple_expr { Left $1 }
  | parameter_decl_arg { Right (ArgType $1) }
  | action_higherordermacro_ne { Right (ArgAction $1) }
 
@@ -1140,6 +1141,7 @@ argument_ne_without_paramdecl:
  | primary_expr_without_ident { Left $1 }
  | action_higherordermacro_ne { Right (ArgAction $1) }
 
+/*(* argument should stay in sync with argument_ne *)*/
 argument:
  | assign_expr { Left $1 }
  | tuple_expr { Left $1 }
