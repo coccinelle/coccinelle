@@ -1882,6 +1882,8 @@ statement:
 | TSwitch TOPar eexpr TCPar TOBrace list(decl_var) list(case_line) TCBrace
     { Parse_aux.switch $1 $2 $3 $4 $5 (List.concat $6) $7 $8 }
 | TReturn eexpr TPtVirg { Parse_aux.ret_exp $1 $2 (snd $3) }
+| TReturn initialize_metalist_or_list(TOBrace) TPtVirg
+  { Parse_aux.ret_exp $1 (Ast0.wrap(Ast0.TupleExpr $2)) (snd $3) }
 | TReturn TPtVirg { Parse_aux.ret $1 (snd $2) }
 | TBreak TPtVirg { Parse_aux.break $1 (snd $2) }
 | TContinue TPtVirg { Parse_aux.cont $1 (snd $2) }
