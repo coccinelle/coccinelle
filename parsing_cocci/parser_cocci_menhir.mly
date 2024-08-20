@@ -3450,6 +3450,10 @@ aexpr:
   | ctype
       { Ast0_cocci.set_arg_exp(Ast0_cocci.wrap(Ast0_cocci.TypeExp($1))) }
 
+aexpr_or_list:
+    aexpr { $1 }
+  | initialize_metalist_or_list(TOBrace) { Ast0.wrap(Ast0.TupleExpr $1) }
+
 aexpr_without_ctype:
     dargexpr { Ast0_cocci.set_arg_exp $1 }
   | TMetaExpList
@@ -3459,7 +3463,7 @@ aexpr_without_ctype:
       Ast0_cocci.wrap(Ast0_cocci.MetaExprList(nm,lenname,constraints,pure)) }
 
 eexpr_list_option:
-    empty_list_start(aexpr,TEllipsis)
+    empty_list_start(aexpr_or_list,TEllipsis)
       { Ast0_cocci.wrap
 	  ($1
 	     (fun _ d -> Ast0_cocci.wrap(Ast0_cocci.Edots(Parse_aux.clt2mcode "..." d,None)))
