@@ -1312,7 +1312,9 @@ selection:
 
 iteration:
  | Twhile TOPar expr TCPar cpp_ifdef_statement
-     { While ($3,$5),                [$1;$2;$4] }
+     { While (WhileExp ($3),$5),     [$1;$2;$4] }
+ | Twhile TOPar decl_spec TCPar cpp_ifdef_statement
+     { failwith "WhileDecl support not yet complete!" }
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
  | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement

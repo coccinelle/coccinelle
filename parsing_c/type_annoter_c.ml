@@ -1612,7 +1612,17 @@ let annotate_test_expressions prog =
 	  k st;
       |	Iteration(i) ->
 	  (match i with
-	    While(e,s) -> propagate_test e
+	    While(WhileExp (e),s) -> propagate_test e
+	  | While(WhileDecl (DeclList dl),s) ->
+              (match unwrap dl with
+                   [x] ->
+                     (match (unwrap2 x).v_namei with
+                      Some (n,ValInit z) ->
+                         (match unwrap (unwrap z ) with
+                            InitExpr e -> propagate_test e
+                          | _ -> ())
+                       | _ -> ())
+                 | _ -> ())
 	  | DoWhile(s,e) -> propagate_test e
 	  | For(ForExp(_,(Some e,_),_),_) -> propagate_test e
 	  | For(ForDecl(_,(Some e,_),_),_) -> propagate_test e

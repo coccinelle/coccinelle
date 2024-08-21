@@ -431,8 +431,14 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
         cal +> List.iter (fun ((param,st),ii) -> vk_param bigf param; statf st; iif ii)
     | Selection  (Switch (e, st)) ->
         vk_expr bigf e; statf st;
-    | Iteration  (While (e, st)) ->
-        vk_expr bigf e; statf st;
+    | Iteration  (While (first, st)) ->
+	(match first with
+	  WhileExp(e) ->
+            vk_expr bigf e;
+            statf (mk_st (ExprStatement (Some e)) [])
+	| WhileDecl(d) ->
+	    vk_decl bigf d);
+        statf st;
     | Iteration  (DoWhile (st, e)) -> statf st; vk_expr bigf e;
     | Iteration  (For (first, st)) ->
 	(match first with
@@ -1503,8 +1509,12 @@ and vk_statement_s = fun bigf st ->
                   ((vk_param_s bigf param, statf st), vk_ii_s bigf ii))))
       | Selection (Switch (e, st))   ->
           Selection  (Switch ((vk_expr_s bigf) e, statf st))
-      | Iteration (While (e, st))    ->
-          Iteration  (While ((vk_expr_s bigf) e, statf st))
+      | Iteration (While (first, st))    ->
+	(match first with
+	  WhileExp(e) ->
+            Iteration  (While (WhileExp ((vk_expr_s bigf) e), statf st))
+	| WhileDecl(d) ->
+            Iteration  (While (WhileDecl((vk_decl_s bigf) d), statf st)))
       | Iteration (DoWhile (st, e))  ->
           Iteration  (DoWhile (statf st, (vk_expr_s bigf) e))
       | Iteration (For (first, st)) ->

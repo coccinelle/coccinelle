@@ -395,8 +395,11 @@ and pp_string_format (e,ii) =
     | Selection  (Switch (e, st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
-    | Iteration  (While (e, st)), [i1;i2;i3;iifakend] ->
+    | Iteration  (While (WhileExp (e), st)), [i1;i2;i3;iifakend] ->
         pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
+	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
+    | Iteration  (While (WhileDecl (d), st)), [i1;i2;i3;iifakend] ->
+        pr_elem i1; pr_space(); pr_elem i2; pp_decl d; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
     | Iteration  (DoWhile (st, e)), [i1;i2;i3;i4;i5;iifakend] ->
         pr_elem i1;

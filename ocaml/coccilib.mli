@@ -278,6 +278,10 @@ module Ast_c :
       | ForExp of
 	  expression option wrap * exprStatement wrap * exprStatement wrap
       | ForRange of declaration * initialiser
+    and whileDeclOrExpr =
+      Ast_c.whileDeclOrExpr =
+        WhileDecl of declaration
+      | WhileExp of expression
     and selection =
       Ast_c.selection =
         If of expression * statement * statement
@@ -287,7 +291,7 @@ module Ast_c :
       | TryCatch of statement * (parameterType * statement) wrap list
     and iteration =
       Ast_c.iteration =
-        While of expression * statement
+        While of whileDeclOrExpr * statement
       | DoWhile of statement * expression
       | For of declOrExpr * statement
       | MacroIteration of string * argument wrap2 list * statement

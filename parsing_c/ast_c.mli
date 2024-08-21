@@ -201,6 +201,9 @@ and declOrExpr =
   | ForExp of
       expression option wrap * exprStatement wrap * exprStatement wrap
   | ForRange of declaration * initialiser
+and whileDeclOrExpr =
+    WhileDecl of declaration
+  | WhileExp of expression
 and selection =
     If of expression * statement * statement
   | Switch of expression * statement
@@ -208,7 +211,7 @@ and selection =
   | Ifdef_Ite2 of expression * statement * statement * statement
   | TryCatch of statement * (parameterType * statement) wrap list
 and iteration =
-    While of expression * statement
+    While of whileDeclOrExpr * statement
   | DoWhile of statement * expression
   | For of declOrExpr * statement
   | MacroIteration of string * argument wrap2 list * statement
