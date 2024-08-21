@@ -104,6 +104,7 @@ usingtest.cocci v20240610:language/using_declaration
 usingtype.cocci v20240610:language/using_declaration
 vconstr.cocci v20240610:language/virtual v20240610:language/destructor
 virtual_constructor.cocci v20240610:language/virtual v20240610:language/destructor
+while_init_condition.cocci v20240610:language/while
 EOF
 }
 

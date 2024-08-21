@@ -2693,6 +2693,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      B.v_attr = []; (* no var, so attrs in type *)
      B.v_endattr = [];
      B.v_type_bis = typb0bis;
+     B.v_has_ender = has_ender;
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
@@ -2765,6 +2766,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 				  B.v_attr = [];
 				  B.v_endattr = [];
 				  B.v_type_bis = typb0bis;
+				  B.v_has_ender = has_ender;
 				},
 				 iivirg),iiptvirgb,iistob)
 			      ))
@@ -2797,6 +2799,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_attr = [];
                         B.v_endattr = [];
                         B.v_type_bis = typb0bis;
+                        B.v_has_ender = has_ender;
                      },
                       iivirg),iiptvirgb,iistob)
                    )
@@ -2830,6 +2833,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
+       B.v_has_ender = has_ender;
      }, iivirg) ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
@@ -2846,6 +2850,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_attr = attrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
+              B.v_has_ender = has_ender;
            },iivirg),
 	    iiptvirgb,iistob)
          ))))))
@@ -2858,6 +2863,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
+       B.v_has_ender = has_ender;
      },iivirg) ->
        X.list_and_aggregate_initialization_flag (fun list_and_aggregate_initialization ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
@@ -2882,6 +2888,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_attr = attrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
+              B.v_has_ender = has_ender;
            },iivirg),
            iiptvirgb,iistob)
          )))))))))
@@ -2896,6 +2903,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs; (* should be []? *)
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
+       B.v_has_ender = has_ender;
      }, iivirg) ->
        (match (va,isvaargs) with
         | (None,false) -> return (va,(isvaargs, iidotsb))
@@ -2934,6 +2942,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_attr = attrs;
 		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
+		  B.v_has_ender = has_ender;
 		}, iivirg), iiptvirgb, iistob))))
 	      ))))))))
 
@@ -2945,6 +2954,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
+       B.v_has_ender = has_ender;
      }, iivirg)  ->
 
        if stob = (B.NoSto, false, B.NoAlign)
@@ -2960,6 +2970,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_attr = attrs;
                 B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
+                B.v_has_ender = has_ender;
              }, iivirg), iiptvirgb, iistob)
            )))
        else fail
@@ -3006,6 +3017,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
+       B.v_has_ender = has_ender;
      },iivirg) ->
 
        fullType typa typb >>= (fun typa typb ->
@@ -3061,6 +3073,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_attr = attrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
+              B.v_has_ender = has_ender;
            },
 	     iivirg),
             iiptvirgb, iistob)
@@ -5778,7 +5791,13 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
   | A.WhileHeader (ia1, ia2, ea, ia3), F.WhileHeader (st, (eb, ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
-      expression ea eb >>= (fun ea eb ->
+      (match (ea,eb) with
+          (ea,B.WhileExp  eb) ->
+           expression ea eb >>= (fun ea eb ->
+           return (ea, B.WhileExp eb))
+        | (ea,B.WhileDecl eb) -> fail
+      )
+      >>= (fun ea eb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia3 ib3 >>= (fun ia3 ib3 ->

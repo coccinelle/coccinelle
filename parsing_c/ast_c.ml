@@ -612,6 +612,7 @@ and declaration =
          v_local: local_decl; (* cocci: *)
          v_attr: attribute list; (* gccext: *)
          v_endattr: attribute list; (* gccext: *)
+         v_has_ender: bool; (* declarations in WhileDecl and ForDecl don't have semicolons *)
        }
      and v_init =
        NoInit | ValInit of initialiser wrap

@@ -1072,11 +1072,13 @@ and vk_node = fun bigf node ->
 
     | F.IfHeader (_, (e,ii))
     | F.SwitchHeader (_, (e,ii))
-    | F.WhileHeader (_, (e,ii))
+    | F.WhileHeader (_, (WhileExp (e), ii))
     | F.DoWhileTail (e,ii) ->
         iif ii;
         vk_expr bigf e
-
+    | F.WhileHeader (_, (WhileDecl (d), ii)) ->
+        iif ii;
+        d +> (vk_decl bigf);
     | F.TryHeader (_,info) ->
         infof info
     | F.CatchHeader (param,ii) ->
@@ -1763,7 +1765,9 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
             v_storage = sto;
             v_local= local;
             v_attr = attrs;
-            v_endattr = endattrs} =
+            v_endattr = endattrs;
+            v_has_ender = has_ender;
+            } =
   let iif ii = vk_ii_s bigf ii in
     {v_namei =
       (var +> map_option (fun (name, iniopt) ->
@@ -1780,6 +1784,7 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
      v_endattr = endattrs +> List.map (vk_attribute_s bigf);
+     v_has_ender = has_ender;
     }
 
 and vk_onedecl_s bigf d = vk_onedecl_opt_s true bigf d
@@ -2206,8 +2211,10 @@ and vk_node_s = fun bigf node ->
         F.TryHeader (st, infof info)
     | F.CatchHeader (param,ii) ->
         F.CatchHeader (vk_param_s bigf param, iif ii)
-    | F.WhileHeader (st, (e,ii))  ->
-        F.WhileHeader (st, (vk_expr_s bigf e, iif ii))
+    | F.WhileHeader (st, ((WhileExp e),ii))  ->
+        F.WhileHeader (st, (WhileExp (vk_expr_s bigf e), iif ii))
+    | F.WhileHeader (st, ((WhileDecl d),ii))  ->
+        F.WhileHeader (st, (WhileDecl (vk_decl_s bigf d), iif ii))
     | F.DoWhileTail (e,ii)  ->
         F.DoWhileTail (vk_expr_s bigf e, iif ii)
 

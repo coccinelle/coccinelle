@@ -153,7 +153,7 @@ type node = node1 * string
   | Else of info
   | TryHeader of fullstatement * info
   | CatchHeader of parameterType wrap
-  | WhileHeader of fullstatement * expression wrap
+  | WhileHeader of fullstatement * whileDeclOrExpr wrap
   | DoHeader of fullstatement * info
   | DoWhileTail of expression wrap
   | ForHeader of fullstatement * declOrExpr wrap

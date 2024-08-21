@@ -1613,9 +1613,12 @@ and pp_init (init, iinit) =
     | F.SwitchHeader (_, (e,ii)) ->
 	let (i1,i2,i3) = tuple_of_list3 ii in
 	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3
-    | F.WhileHeader (_, (e,ii)) ->
+    | F.WhileHeader (_, (WhileExp e,ii)) ->
 	let (i1,i2,i3) = tuple_of_list3 ii in
 	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3
+    | F.WhileHeader (_, (WhileDecl d,ii)) ->
+	let (i1,i2,i3) = tuple_of_list3 ii in
+	pr_elem i1; pr_space(); pr_elem i2; pp_decl d; pr_elem i3
     | F.DoWhileTail (e,ii) ->
 	let (i1,i2,i3,i4) = tuple_of_list4 ii in
 	pr_elem i1; pr_elem i2; pp_expression e;

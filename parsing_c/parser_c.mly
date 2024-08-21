@@ -331,6 +331,10 @@ let (fixOldCDecl: fullType -> fullType) = fun ty ->
 let create_decls decl_spec init_decl_list ender local =
   let (returnType,storage) = fixDeclSpecForDecl decl_spec in
   let iistart = Ast_c.fakeBeforeInfo() in
+  let ii =
+    match ender with
+      Some ender -> ender::iistart::snd storage
+    | None -> iistart::snd storage in
   DeclList (
   (init_decl_list +> List.map (fun ((attrs, ((name,f),endattrs), ini), iivirg) ->
     let s = str_of_name name in
@@ -342,8 +346,9 @@ let create_decls decl_spec init_decl_list ender local =
       v_local = local;
       v_attr = attrs; (* extra attrs as compared to the common type *)
       v_endattr = endattrs;
-      v_type_bis = ref None},
-    iivirg)), (ender::iistart::snd storage))
+      v_type_bis = ref None;
+      v_has_ender = not (ender = None)},
+    iivirg)), ii)
   
 
 (* For fake info added at the end of a conditional or iteration, to have the
@@ -1313,8 +1318,8 @@ selection:
 iteration:
  | Twhile TOPar expr TCPar cpp_ifdef_statement
      { While (WhileExp ($3),$5),     [$1;$2;$4] }
- | Twhile TOPar decl_spec TCPar cpp_ifdef_statement
-     { failwith "WhileDecl support not yet complete!" }
+ | Twhile TOPar decl_spec init_declarator_list TCPar cpp_ifdef_statement
+     { While (WhileDecl (create_decls $3 $4 None Ast_c.LocalDecl),$6), [$1;$2;$5] }
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
  | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement
@@ -1329,7 +1334,7 @@ iteration:
  | Tfor TOPar decl_spec declaratorifn TDotDot initialize TCPar cpp_ifdef_statement
      { let decl = (* should share with code in decl2 *)
          let di = (fst $3, $4, NoInit) in
-         create_decls $3 [di,[]] $5 Ast_c.LocalDecl in
+         create_decls $3 [di,[]] (Some $5) Ast_c.LocalDecl in
        For (ForRange(decl,$6),$8), [$1;$2;$7] }
  /*(* cppext: *)*/
  | TMacroIterator TOPar argument_list TCPar cpp_ifdef_statement
@@ -1947,10 +1952,11 @@ decl2:
                    v_storage = unwrap storage; v_local = local;
 		   v_attr = Ast_c.noattr;
                    v_endattr = []; v_type_bis = ref None;
+                   v_has_ender = true;
                 },[]],
                 ($2::iistart::snd storage))
      }
- | decl_spec init_declarator_list TPtVirg { create_decls $1 $2 $3 }
+ | decl_spec init_declarator_list TPtVirg { create_decls $1 $2 (Some $3) }
  /*(* cppext: *)*/
  /* using full decl spec allows too much,but avoids conflicts */
  | TMacroDecl TOPar macro_argument_list TCPar attributes_opt
@@ -2817,6 +2823,7 @@ cpp_other:
                       v_storage = unwrap sto; v_local = NotLocalDecl;
                       v_attr = attrs; v_endattr = $5;
 		      v_type_bis = ref None;
+                      v_has_ender = true;
                     },[]],
                    ($6::iistart::snd sto)))
        else

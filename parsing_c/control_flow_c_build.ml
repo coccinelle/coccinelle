@@ -741,7 +741,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
 
   (* TODO: code is broken, continue from here. *)
   (* ------------------------- *)
-  | Iteration  (Ast_c.While (WhileExp (e), st)) ->
+  | Iteration  (Ast_c.While (e, st)) ->
      (* starti -> newi ---> newfakethen -> ... -> finalthen -
       *             |---|-----------------------------------|
       *                 |-> newfakelse
