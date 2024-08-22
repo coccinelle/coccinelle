@@ -229,7 +229,7 @@ and colon_option_bis = ColonMisc | ColonExpr of expression
 and exec_code_bis = ExecEval of expression | ExecToken
 and exec_code = exec_code_bis wrap
 and declaration =
-    DeclList of onedecl wrap2 list wrap
+    DeclList of (onedecl wrap2 list * bool) wrap
   | MacroDecl of
       (storagebis * attribute list * string *
 	 argument wrap2 list * attribute list * bool)

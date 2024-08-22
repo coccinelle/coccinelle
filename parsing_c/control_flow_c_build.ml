@@ -1022,7 +1022,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
      let s =
        match decl with
        | (Ast_c.DeclList
-             ([{v_namei = Some (name, _); v_type = typ; v_storage = sto}, _], _)) ->
+             (([{v_namei = Some (name, _); v_type = typ; v_storage = sto}, _], has_ender), _)) ->
 	   "decl:" ^ Ast_c.str_of_name name
        | _ -> "decl_novar_or_multivar"
      in

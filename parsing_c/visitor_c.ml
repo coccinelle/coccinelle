@@ -595,7 +595,7 @@ and vk_decl = fun bigf d ->
   let f = bigf.kdecl in
   let k decl =
     match decl with
-    | DeclList (xs,ii) ->
+    | DeclList ((xs, has_ender),ii) ->
 	iif ii;
 	xs +> List.iter (fun (x,ii) ->
         iif ii;
@@ -1735,8 +1735,8 @@ and vk_decl_s = fun bigf d ->
   let iif ii = vk_ii_s bigf ii in
   let rec k decl =
     match decl with
-    | DeclList (xs, ii) ->
-        DeclList (List.map (fun (x,ii) -> (vk_onedecl_s bigf x, iif ii)) xs,
+    | DeclList ((xs,has_ender), ii) ->
+        DeclList ((List.map (fun (x,ii) -> (vk_onedecl_s bigf x, iif ii)) xs, has_ender),
 		  iif ii)
     | MacroDecl ((stob, preattrs, s, args, attrs, ptvg),ii) ->
         MacroDecl

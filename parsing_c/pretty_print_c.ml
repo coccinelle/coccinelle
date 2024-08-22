@@ -1181,8 +1181,7 @@ and pp_string_format (e,ii) =
                    v_storage = storage;
                    v_attr = attrs;
                    v_endattr = endattrs;
-                   v_has_ender = has_ender;
-                  },[])::xs),
+                  },[])::xs, has_ender),
 	       vfs) ->
 
         let (iivirg,ifakestart,iisto) =

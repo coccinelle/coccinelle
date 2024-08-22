@@ -414,7 +414,7 @@ let get_celem celem : string =
       Ast_c.Definition ({Ast_c.f_name = namefuncs;},_) ->
         Ast_c.str_of_name namefuncs
     | Ast_c.Declaration
-	(Ast_c.DeclList ([{Ast_c.v_namei = Some (name, _);}, _], _)) ->
+	(Ast_c.DeclList (([{Ast_c.v_namei = Some (name, _);}, _], _), _)) ->
         Ast_c.str_of_name name
     | _ -> ""
 
@@ -431,7 +431,7 @@ let show_or_not_celem2 prelude celem start_end =
       Flag.current_element := funcs;
       (" function: ",Some (funcs,namefuncs))
   |  Ast_c.Declaration
-      (Ast_c.DeclList ([{Ast_c.v_namei = Some (name,_)}, _], _)) ->
+      (Ast_c.DeclList (([{Ast_c.v_namei = Some (name,_)}, _], _), _)) ->
       let s = Ast_c.str_of_name name in
       Flag.current_element := s;
       (" variable ",Some(s,name));

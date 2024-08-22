@@ -217,7 +217,7 @@ module XMATCH = struct
 	Visitor_c.kdecl = (fun (k, bigf) expb ->
 	  let iif ii = List.iter (Visitor_c.vk_info bigf) ii in
 	  match expb with
-	    Ast_c.DeclList(xs,iis) ->
+            Ast_c.DeclList((xs, has_ender), iis) ->
 	      iif iis;
 	      (match xs with
 		(x,ii)::xs ->

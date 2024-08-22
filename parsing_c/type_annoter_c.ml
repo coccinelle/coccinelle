@@ -1333,7 +1333,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
     (* ------------------------------------------------------------ *)
     Visitor_c.kdecl = (fun (k, bigf) d ->
       (match d with
-      | (DeclList (xs, ii)) ->
+      | (DeclList ((xs, has_ender), ii)) ->
           xs +> List.iter (fun ({v_namei = var; v_type = t;
                                  v_storage = sto; v_local = local} as x
                                    , iicomma) ->
@@ -1615,7 +1615,7 @@ let annotate_test_expressions prog =
 	    While(WhileExp (e),s) -> propagate_test e
 	  | While(WhileDecl (DeclList dl),s) ->
               (match unwrap dl with
-                [x] ->
+                ([x], has_ender) ->
                   (match (unwrap2 x).v_namei with
                     Some (n,ValInit z) ->
                       (match unwrap (unwrap z ) with

@@ -348,7 +348,7 @@ let create_decls decl_spec init_decl_list ender local =
       v_endattr = endattrs;
       v_type_bis = ref None;
       v_has_ender = not (ender = None)},
-    iivirg)), ii)
+    iivirg), not (ender = None)), ii)
   
 
 (* For fake info added at the end of a conditional or iteration, to have the
@@ -1948,12 +1948,12 @@ decl2:
      { function local ->
        let (returnType,storage) = fixDeclSpecForDecl $1 in
        let iistart = Ast_c.fakeBeforeInfo() in
-       DeclList ([{v_namei = None; v_type = returnType;
+       DeclList (([{v_namei = None; v_type = returnType;
                    v_storage = unwrap storage; v_local = local;
 		   v_attr = Ast_c.noattr;
                    v_endattr = []; v_type_bis = ref None;
                    v_has_ender = true;
-                },[]],
+                },[]], true),
                 ($2::iistart::snd storage))
      }
  | decl_spec init_declarator_list TPtVirg { create_decls $1 $2 (Some $3) }
@@ -2260,7 +2260,7 @@ cpp_struct_decl2:
  | function_definition               { FunctionField $1 }
  | decl
      { match $1 Ast_c.NotLocalDecl with
-       DeclList (onedecllist,odii) ->
+       DeclList ((onedecllist,has_ender),odii) ->
 	 DeclarationField
 	   (FieldDeclList
 	      (onedecllist +>
@@ -2819,12 +2819,12 @@ cpp_other:
 	 let sto = (NoSto, false, NoAlign), [] in
 	 let iistart = Ast_c.fakeBeforeInfo() in
 	 Declaration(
-	 DeclList ([{v_namei = Some (id,NoInit); v_type = ty;
+	 DeclList (([{v_namei = Some (id,NoInit); v_type = ty;
                       v_storage = unwrap sto; v_local = NotLocalDecl;
                       v_attr = attrs; v_endattr = $5;
 		      v_type_bis = ref None;
                       v_has_ender = true;
-                    },[]],
+                    },[]], true),
                    ($6::iistart::snd sto)))
        else
 	 Declaration

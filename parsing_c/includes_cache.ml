@@ -170,7 +170,7 @@ let cache_name_visitor file =
     Visitor_c.ktoplevel = fun (k, bigf) p ->
       match p with
         Ast_c.Declaration
-          (Ast_c.DeclList (defs, _)) ->
+          (Ast_c.DeclList ((defs, has_ender), _)) ->
              let cache_name x =
                (match (Ast_c.unwrap x) with
                  {Ast_c.v_namei = Some (name, _);
@@ -210,7 +210,7 @@ let get_type_visitor file l =
     Visitor_c.ktoplevel = fun (k, bigf) p ->
       match p with
         Ast_c.Declaration
-          (Ast_c.DeclList (defs, _)) ->
+          (Ast_c.DeclList ((defs, has_ender), _)) ->
              let get_name x =
                (match (Ast_c.unwrap x) with
                  {Ast_c.v_namei = Some (n, _);

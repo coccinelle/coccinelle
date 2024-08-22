@@ -437,7 +437,7 @@ let test_attributes file =
     );
     Visitor_c.kdecl = (fun (k, bigf) decl ->
       match decl with
-      | DeclList (xs, ii) ->
+      | DeclList ((xs, has_ender), ii) ->
           xs +> List.iter (fun (onedecl, iicomma) ->
 
             let sattr  = Ast_c.s_of_attr onedecl.v_attr in

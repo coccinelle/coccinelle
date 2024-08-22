@@ -317,7 +317,7 @@ module Ast_c :
     and exec_code = exec_code_bis wrap
     and declaration =
       Ast_c.declaration =
-        DeclList of onedecl wrap2 list wrap
+        DeclList of (onedecl wrap2 list * bool) wrap
       | MacroDecl of
           (storagebis * attribute list * string *
 	     argument wrap2 list * attribute list * bool)

@@ -248,7 +248,7 @@ let type_of_function (def,ii) =
 (* pre: only a single variable *)
 let type_of_decl decl =
   match decl with
-  | Ast_c.DeclList (xs,ii1) ->
+  | Ast_c.DeclList ((xs, has_ender),ii1) ->
       (match xs with
       | [] -> raise (Impossible 128)
 
@@ -270,7 +270,7 @@ let type_of_decl decl =
 let structdef_of_decl decl =
 
   match decl with
-  | Ast_c.DeclList (xs,ii1) ->
+  | Ast_c.DeclList ((xs, has_ender),ii1) ->
       (match xs with
       | [] -> raise (Impossible 129)
 

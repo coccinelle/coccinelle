@@ -65,7 +65,7 @@ let undanger_fieldkind (fieldkind,_ii) =
 let add_danger xs =
   let decl_function (k,bigf) decl =
     match decl with
-      Ast_c.DeclList (((_::_::_) as xs), ii) ->
+      Ast_c.DeclList (((_::_::_) as xs, has_ender), ii) ->
 	Visitor_c.vk_decl (update_danger danger) decl;
 	xs +> List.iter undanger_onedecl;
 	let (max,min) =

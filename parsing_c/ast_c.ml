@@ -591,7 +591,7 @@ and statement = statementbis wrap3
  *)
 
 and declaration =
-  | DeclList of onedecl wrap2 (* , *) list wrap (* ; fakestart sto *)
+  | DeclList of (onedecl wrap2 (* , *) list  * bool) wrap (* ; fakestart sto *)
   (* cppext: *)
     (* bool is true if there is a ; at the end *)
   | MacroDecl of

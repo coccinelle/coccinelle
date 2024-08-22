@@ -602,7 +602,7 @@ let initialisation_to_affectation decl =
   match decl with
   | B.MacroDecl _ -> F.Decl decl
   | B.MacroDeclInit _ -> F.Decl decl (* not sure... *)
-  | B.DeclList (xs, iis) ->
+  | B.DeclList ((xs, has_ender), iis) ->
 
       (* todo?: should not do that if the variable is an array cos
        *  will have x[] = , mais de toute facon ca sera pas un InitExp
@@ -2500,16 +2500,16 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	  (A.AsDecl(dec,asdec)) +> A.rewrap decla),
 	 decb))))
 
-  | _, (B.DeclList ([var], iiptvirgb::iifakestart::iisto)) ->
+  | _, (B.DeclList (([var], has_ender), iiptvirgb::iifakestart::iisto)) ->
       onedecl allminus decla (var,iiptvirgb,iisto) >>=
       (fun decla (var,iiptvirgb,iisto)->
         X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
           return (
             (mckstart, allminus, decla),
-            (B.DeclList ([var], iiptvirgb::iifakestart::iisto))
+            (B.DeclList (([var], has_ender), iiptvirgb::iifakestart::iisto))
           )))
 
-  | _, (B.DeclList (xs, (iiptvirgb::iifakestart::iisto))) ->
+  | _, (B.DeclList ((xs, has_ender), (iiptvirgb::iifakestart::iisto))) ->
       let indexify l =
 	let rec loop n = function
 	    [] -> []
@@ -2533,7 +2533,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
                 return (
                 (mckstart, allminus, decla),
 		    (* adjust the variable that was chosen *)
-                (B.DeclList (repln n var 0 xs,
+                (B.DeclList ((repln n var 0 xs, has_ender),
 			     iiptvirgb::iifakestart::iisto))
                   )))) tin))
           fail in
