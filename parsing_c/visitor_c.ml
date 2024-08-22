@@ -1766,7 +1766,6 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
             v_local= local;
             v_attr = attrs;
             v_endattr = endattrs;
-            v_has_ender = has_ender;
             } =
   let iif ii = vk_ii_s bigf ii in
     {v_namei =
@@ -1784,7 +1783,6 @@ and vk_onedecl_opt_s process_type bigf {v_namei = var;
      v_local = local;
      v_attr = attrs +> List.map (vk_attribute_s bigf);
      v_endattr = endattrs +> List.map (vk_attribute_s bigf);
-     v_has_ender = has_ender;
     }
 
 and vk_onedecl_s bigf d = vk_onedecl_opt_s true bigf d

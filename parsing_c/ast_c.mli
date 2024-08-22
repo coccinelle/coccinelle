@@ -245,7 +245,6 @@ and onedecl = {
   v_local : local_decl;
   v_attr : attribute list;
   v_endattr : attribute list;
-  v_has_ender: bool;
 }
 and v_init =
     NoInit

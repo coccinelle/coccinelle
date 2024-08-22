@@ -2693,7 +2693,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      B.v_attr = []; (* no var, so attrs in type *)
      B.v_endattr = [];
      B.v_type_bis = typb0bis;
-     B.v_has_ender = has_ender;
    }, iivirg) ->
 
    (match A.unwrap tya0, typb0 with
@@ -2766,7 +2765,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 				  B.v_attr = [];
 				  B.v_endattr = [];
 				  B.v_type_bis = typb0bis;
-				  B.v_has_ender = has_ender;
 				},
 				 iivirg),iiptvirgb,iistob)
 			      ))
@@ -2799,7 +2797,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                         B.v_attr = [];
                         B.v_endattr = [];
                         B.v_type_bis = typb0bis;
-                        B.v_has_ender = has_ender;
                      },
                       iivirg),iiptvirgb,iistob)
                    )
@@ -2833,7 +2830,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-       B.v_has_ender = has_ender;
      }, iivirg) ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
        tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
@@ -2850,7 +2846,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_attr = attrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
-              B.v_has_ender = has_ender;
            },iivirg),
 	    iiptvirgb,iistob)
          ))))))
@@ -2863,7 +2858,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-       B.v_has_ender = has_ender;
      },iivirg) ->
        X.list_and_aggregate_initialization_flag (fun list_and_aggregate_initialization ->
        ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
@@ -2888,7 +2882,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_attr = attrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
-              B.v_has_ender = has_ender;
            },iivirg),
            iiptvirgb,iistob)
          )))))))))
@@ -2903,7 +2896,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs; (* should be []? *)
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-       B.v_has_ender = has_ender;
      }, iivirg) ->
        (match (va,isvaargs) with
         | (None,false) -> return (va,(isvaargs, iidotsb))
@@ -2942,7 +2934,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 		  B.v_attr = attrs;
 		  B.v_endattr = endattrs;
 		  B.v_type_bis = typbbis;
-		  B.v_has_ender = has_ender;
 		}, iivirg), iiptvirgb, iistob))))
 	      ))))))))
 
@@ -2954,7 +2945,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-       B.v_has_ender = has_ender;
      }, iivirg)  ->
 
        if stob = (B.NoSto, false, B.NoAlign)
@@ -2970,7 +2960,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
                 B.v_attr = attrs;
                 B.v_endattr = endattrs;
                 B.v_type_bis = typbbis;
-                B.v_has_ender = has_ender;
              }, iivirg), iiptvirgb, iistob)
            )))
        else fail
@@ -3017,7 +3006,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
        B.v_attr = attrs;
        B.v_endattr = endattrs;
        B.v_type_bis = typbbis;
-       B.v_has_ender = has_ender;
      },iivirg) ->
 
        fullType typa typb >>= (fun typa typb ->
@@ -3073,7 +3061,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
               B.v_attr = attrs;
               B.v_endattr = endattrs;
               B.v_type_bis = typbbis;
-              B.v_has_ender = has_ender;
            },
 	     iivirg),
             iiptvirgb, iistob)

@@ -347,7 +347,7 @@ let create_decls decl_spec init_decl_list ender local =
       v_attr = attrs; (* extra attrs as compared to the common type *)
       v_endattr = endattrs;
       v_type_bis = ref None;
-      v_has_ender = not (ender = None)},
+    },
     iivirg), not (ender = None)), ii)
   
 
@@ -1952,7 +1952,6 @@ decl2:
                    v_storage = unwrap storage; v_local = local;
 		   v_attr = Ast_c.noattr;
                    v_endattr = []; v_type_bis = ref None;
-                   v_has_ender = true;
                 },[]], true),
                 ($2::iistart::snd storage))
      }
@@ -2823,7 +2822,6 @@ cpp_other:
                       v_storage = unwrap sto; v_local = NotLocalDecl;
                       v_attr = attrs; v_endattr = $5;
 		      v_type_bis = ref None;
-                      v_has_ender = true;
                     },[]], true),
                    ($6::iistart::snd sto)))
        else
