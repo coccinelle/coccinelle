@@ -1181,13 +1181,16 @@ and pp_string_format (e,ii) =
                    v_storage = storage;
                    v_attr = attrs;
                    v_endattr = endattrs;
+                   v_has_ender = has_ender;
                   },[])::xs),
-	       iivirg::ifakestart::iisto) ->
+	       vfs) ->
 
-	pr_elem ifakestart;
-
+        let (iivirg,ifakestart,iisto) =
+          match vfs with
+            iivirg::ifakestart::iisto when has_ender -> (Some iivirg,ifakestart,iisto)
+          |         ifakestart::iisto -> (None,ifakestart,iisto)
+	  | _ -> failwith "UsingTypename: wrong number of elements" in
         (* old: iisto +> List.iter pr_elem; *)
-
 
         (* handling the first var. Special case, we print the whole type *)
 	firstvar attrs storage var returnType endattrs iisto;
@@ -1203,7 +1206,7 @@ and pp_string_format (e,ii) =
 	       assert (storage2 = storage);
 	       restvar iivirg var returnType attrs endattrs);
 
-	pr_elem iivirg;
+	do_option pr_elem iivirg;
 
     | MacroDecl
       ((sto, preattrs, s, es, attrs, true), iis::lp::rp::iiend::ifakestart::iisto) ->
