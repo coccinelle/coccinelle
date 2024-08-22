@@ -518,8 +518,8 @@ and statement old_metas table minus s =
       expression ID old_metas table minus exp;
       statement old_metas table minus branch1;
       statement old_metas table minus branch2
-  | Ast0.While(wh,lp,exp,rp,body,_) ->
-      expression ID old_metas table minus exp;
+  | Ast0.While(wh,lp,cond,rp,body,_) ->
+      whileinfo old_metas table minus cond;
       statement old_metas table minus body
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       statement old_metas table minus body;
@@ -592,6 +592,11 @@ and statement old_metas table minus s =
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)
+
+and whileinfo old_metas table minus c =
+  match c with
+    Ast0.WhileExp(e) -> expression ID old_metas table minus e
+  | Ast0.WhileDecl(d) -> declaration ID old_metas table minus d
 
 and pragmainfo old_metas table minus pi =
   match Ast0.unwrap pi with

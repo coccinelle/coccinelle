@@ -251,6 +251,9 @@ val forloop3 :
 val whileloop :
   Data.clt -> Data.clt -> Ast0_cocci.expression ->
   Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
+val whileloop2 :
+  Data.clt -> Data.clt -> Ast0_cocci.declaration ->
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val doloop :
   Data.clt -> Ast0_cocci.statement -> Data.clt -> Data.clt ->
   Ast0_cocci.expression ->

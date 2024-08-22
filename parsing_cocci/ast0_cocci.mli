@@ -247,7 +247,7 @@ and base_declaration =
     MetaDecl   of Ast_cocci.meta_name mcode * constraints * pure (* variables *)
   | AsDecl        of declaration * declaration
   | Init of alignas option * Ast_cocci.storage mcode option * typeC * ident *
-        attr list * string mcode (*=*) * initialiser * string mcode (*;*)
+        attr list * string mcode (*=*) * initialiser * string mcode option (*;*)
   | UnInit of alignas option * Ast_cocci.storage mcode option * typeC * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
@@ -391,7 +391,7 @@ and base_statement =
 	             statement * string mcode (* else *) * statement *
 	             fake_mcode (* after info *)
   | While         of string mcode (* while *) * string mcode (* ( *) *
-	             expression * string mcode (* ) *) *
+	             whileinfo * string mcode (* ) *) *
 	             statement * fake_mcode (* after info *)
   | Do            of string mcode (* do *) * statement *
                      string mcode (* while *) * string mcode (* ( *) *
@@ -472,6 +472,10 @@ and base_forinfo =
 	initialiser
 
 and forinfo = base_forinfo wrap
+
+and whileinfo =
+    WhileExp  of expression
+  | WhileDecl of declaration
 
 and fninfo =
     FStorage of Ast_cocci.storage mcode

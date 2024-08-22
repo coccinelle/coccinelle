@@ -634,7 +634,7 @@ and declaration d =
       print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       print_string " "; mcode print_string eq;
-      print_string " "; initialiser ini; mcode print_string sem
+      print_string " "; initialiser ini; print_option (mcode print_string) sem
   | Ast.UnInit(al,stg,ty,id,endattr,sem) ->
       print_option alignas al;
       print_option (mcode storage) stg;
@@ -868,10 +868,10 @@ and rule_elem arity re =
       expression exp; close_box(); mcode print_string rp; print_string " "
   | Ast.Else(els) ->
       print_string arity; mcode print_string els; print_string " "
-  | Ast.WhileHeader(whl,lp,exp,rp) ->
+  | Ast.WhileHeader(whl,lp,cond,rp) ->
       print_string arity;
       mcode print_string whl; print_string " "; mcode print_string_box lp;
-      expression exp; close_box(); mcode print_string rp; print_string " "
+      whileinfo cond; close_box(); mcode print_string rp; print_string " "
   | Ast.DoHeader(d) ->
       print_string arity; mcode print_string d; print_string " "
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
@@ -1058,6 +1058,11 @@ and statement arity s =
 	(whencode (dots force_newline (statement "")) (statement "")) whn;
       close_box(); force_newline()
   | Ast.OptStm(s) -> statement "?" s
+
+and whileinfo cond =
+  match cond with
+    Ast.WhileExp(e) -> expression e
+  | Ast.WhileDecl(d) -> declaration d
 
 and directive di =
   match Ast.unwrap di with

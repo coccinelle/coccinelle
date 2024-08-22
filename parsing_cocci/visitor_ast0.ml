@@ -677,7 +677,7 @@ let visitor mode bind option_default
 	    let (endattr_n,endattr) = map_split_bind attribute endattr in
 	    let (eq_n,eq) = string_mcode eq in
 	    let (ini_n,ini) = initialiser ini in
-	    let (sem_n,sem) = string_mcode sem in
+	    let (sem_n,sem) = get_option string_mcode sem in
 	    (multibind [al_n;stg_n;ty_ma_id_n;endattr_n;eq_n;ini_n;sem_n],
 	     Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem))
 	| Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
@@ -1063,14 +1063,14 @@ let visitor mode bind option_default
 	    let (branch2_n,branch2) = statement branch2 in
 	    (multibind [iff_n;lp_n;exp_n;rp_n;branch1_n;els_n;branch2_n],
 	     Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft))
-	| Ast0.While(whl,lp,exp,rp,body,aft) ->
+	| Ast0.While(whl,lp,cond,rp,body,aft) ->
 	    let (whl_n,whl) = string_mcode whl in
 	    let (lp_n,lp) = string_mcode lp in
-	    let (exp_n,exp) = expression exp in
+	    let (cond_n,cond) = whileinfo cond in
 	    let (rp_n,rp) = string_mcode rp in
 	    let (body_n,body) = statement body in
-	    (multibind [whl_n;lp_n;exp_n;rp_n;body_n],
-	     Ast0.While(whl,lp,exp,rp,body,aft))
+	    (multibind [whl_n;lp_n;cond_n;rp_n;body_n],
+	     Ast0.While(whl,lp,cond,rp,body,aft))
 	| Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	    let (d_n,d) = string_mcode d in
 	    let (body_n,body) = statement body in
@@ -1205,6 +1205,12 @@ let visitor mode bind option_default
 	    (bind stm_n asstm_n, Ast0.AsStmt(stm,asstm))) in
     let (n,s) = stmtfn all_functions k s in
     (n,if mode = REBUILDER then process_bef_aft s else s)
+
+  and whileinfo = function
+      Ast0.WhileExp(e) ->
+	    let (n,e) = expression e in (n,Ast0.WhileExp(e))
+    | Ast0.WhileDecl(d) ->
+	    let (n,d) = declaration d in (n,Ast0.WhileDecl(d))
 
   and forinfo fi =
     let k fi =

@@ -684,7 +684,7 @@ and declaration d =
 	let endattr = List.map attribute endattr in
 	let eq = mcode eq in
 	let ini = initialiser ini in
-	let sem = mcode sem in
+	let sem = get_option mcode sem in
 	Ast.Init(al,stg,ty,id,endattr,eq,ini,sem)
     | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
 	let allminus = check_allminus.VT0.combiner_rec_declaration d in
@@ -1025,10 +1025,10 @@ and statement s =
 	     tokenwrap els s (Ast.Else(els)),
 	     statement Ast.NotSequencible branch2,
 	     ([],[],[],convert_fake_mcode aft))
-      | Ast0.While(wh,lp,exp,rp,body,aft) ->
+      | Ast0.While(wh,lp,cond,rp,body,aft) ->
 	  Ast.While(rewrap_rule_elem s
 		      (Ast.WhileHeader
-			 (mcode wh,mcode lp,expression exp,mcode rp)),
+			 (mcode wh,mcode lp,whileinfo cond,mcode rp)),
 		    statement Ast.NotSequencible body,
 		    ([],[],[],convert_fake_mcode aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
@@ -1174,6 +1174,10 @@ and statement s =
 		  (mcode def,ident id, define_parameters params)),
 	     statement_dots Ast.NotSequencible (*not sure*) body)
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm))
+
+  and whileinfo = function
+      Ast0.WhileExp(e) -> Ast.WhileExp(expression e)
+    | Ast0.WhileDecl(d) -> Ast.WhileDecl(declaration d)
 
   and whencode notfn alwaysfn = function
       Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)

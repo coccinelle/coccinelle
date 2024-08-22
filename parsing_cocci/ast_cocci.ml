@@ -409,7 +409,7 @@ and const_vol = Const | Volatile
 
 and base_declaration =
   | Init of alignas option * storage mcode option * fullType * ident *
-        attr list * string mcode (*=*) * initialiser * string mcode (*;*)
+        attr list * string mcode (*=*) * initialiser * string mcode option (*;*)
   | UnInit of alignas option * storage mcode option * fullType * ident *
 	attr list * string mcode (* ; *)
   | FunProto of
@@ -593,7 +593,7 @@ and base_rule_elem =
 	             expression * string mcode (* ) *)
   | Else          of string mcode (* else *)
   | WhileHeader   of string mcode (* while *) * string mcode (* ( *) *
-	             expression * string mcode (* ) *)
+	             whileinfo * string mcode (* ) *)
   | DoHeader      of string mcode (* do *)
   | WhileTail     of string mcode (* while *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *) *
@@ -661,6 +661,10 @@ and forinfo =
   | ForDecl of annotated_decl * expression option * string mcode (*;*) *
         expression option
   | ForRange of annotated_decl * initialiser
+
+and whileinfo =
+    WhileExp  of expression
+  | WhileDecl of declaration
 
 and fninfo =
     FStorage of storage mcode

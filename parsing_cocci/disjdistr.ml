@@ -525,9 +525,12 @@ let rec disj_rule_elem r k re =
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.IfHeader(iff,lp,exp,rp)))
   | Ast.Else(els) -> re
-  | Ast.WhileHeader(whl,lp,exp,rp) ->
+  | Ast.WhileHeader(whl,lp,Ast.WhileExp(exp),rp) ->
       orify_rule_elem re exp
-	(function exp -> Ast.rewrap re (Ast.WhileHeader(whl,lp,exp,rp)))
+	(function cond -> Ast.rewrap re (Ast.WhileHeader(whl,lp,Ast.WhileExp(exp),rp)))
+  | Ast.WhileHeader(whl,lp,Ast.WhileDecl(decl),rp) ->
+      orify_rule_elem_decl re decl
+	(function cond -> Ast.rewrap re (Ast.WhileHeader(whl,lp,Ast.WhileDecl(decl),rp)))
   | Ast.DoHeader(d) -> re
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
       orify_rule_elem re exp

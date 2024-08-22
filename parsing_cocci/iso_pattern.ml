@@ -1345,11 +1345,11 @@ let match_maker checks_needed context_required whencode_allowed =
 		   match_expr expa expb;
 		   match_statement branch1a branch1b;
 		   match_statement branch2a branch2b]
-	  | (Ast0.While(w1,lp1,expa,rp1,bodya,_),
-	     Ast0.While(w,lp,expb,rp,bodyb,_)) ->
+	  | (Ast0.While(w1,lp1,conda,rp1,bodya,_),
+	     Ast0.While(w,lp,condb,rp,bodyb,_)) ->
 	       conjunct_many_bindings
 		 [check_mcode w1 w; check_mcode lp1 lp;
-		   check_mcode rp1 rp; match_expr expa expb;
+		   check_mcode rp1 rp; match_whileinfo conda condb;
 		   match_statement bodya bodyb]
 	  | (Ast0.Do(d1,bodya,w1,lp1,expa,rp1,_),
 	     Ast0.Do(d,bodyb,w,lp,expb,rp,_)) ->
@@ -1488,6 +1488,12 @@ let match_maker checks_needed context_required whencode_allowed =
 	  |	_ -> return false
 	else return_false (ContextRequired (Ast0.StmtTag s))
 
+  and match_whileinfo pattern c =
+    match ( pattern,c) with
+	    (Ast0.WhileExp(e1),Ast0.WhileExp(e2)) -> match_expr e1 e2
+	  | (Ast0.WhileDecl(d1),Ast0.WhileDecl(d2)) -> match_decl d1 d2
+	  |	_ -> return false
+
   (* first should provide a subset of the information in the second *)
   and match_fninfo patterninfo cinfo =
     let patterninfo = List.sort compare patterninfo in
@@ -1596,6 +1602,10 @@ let match_decl dochecks context_required whencode_allowed =
   fn
 
 let match_statement dochecks context_required whencode_allowed =
+  let (_,_,fn,_,_) = match_maker dochecks context_required whencode_allowed in
+  fn
+
+let match_whileinfo dochecks context_required whencode_allowed =
   let (_,_,fn,_,_) = match_maker dochecks context_required whencode_allowed in
   fn
 

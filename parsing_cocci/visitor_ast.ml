@@ -585,7 +585,7 @@ let combiner bind option_default mcode donothing
 	  let lendattr = multibind (List.map attribute endattr) in
 	  let leq = string_mcode eq in
 	  let lini = initialiser ini in
-	  let lsem = string_mcode sem in
+	  let lsem = get_option string_mcode sem in
           multibind [lal; lstg; lid; lendattr; leq; lini; lsem]
       | Ast.UnInit(al,stg,ty,id,endattr,sem) ->
 	  let lal = get_option alignas al in
@@ -843,12 +843,12 @@ let combiner bind option_default mcode donothing
 	  let lrp = string_mcode rp in
 	  multibind [liff; llp; lexp; lrp]
       | Ast.Else(els) -> string_mcode els
-      | Ast.WhileHeader(whl,lp,exp,rp) ->
+      | Ast.WhileHeader(whl,lp,cond,rp) ->
 	  let lwhl = string_mcode whl in
 	  let llp = string_mcode lp in
-	  let lexp = expression exp in
+	  let lcond = whileinfo cond in
 	  let lrp = string_mcode rp in
-	  multibind [lwhl; llp; lexp; lrp]
+	  multibind [lwhl; llp; lcond; lrp]
       | Ast.DoHeader(d) -> string_mcode d
       | Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	  let lwhl = string_mcode whl in
@@ -1088,6 +1088,10 @@ let combiner bind option_default mcode donothing
 	  bind ld lwhn
       | Ast.OptStm(stmt) -> statement stmt in
     stmtfn all_functions k s
+
+  and whileinfo = function
+      Ast.WhileExp(e) -> expression e
+    | Ast.WhileDecl(d) -> declaration d
 
   and fninfo = function
       Ast.FStorage(stg) -> storage_mcode stg
@@ -1785,7 +1789,7 @@ let rebuilder mcode donothing
 	    let lendattr = List.map attribute endattr in
 	    let leq = string_mcode eq in
 	    let lini = initialiser ini in
-	    let lsem = string_mcode sem in
+	    let lsem = get_option string_mcode sem in
 	    Ast.Init(lal, lstg, lty, lid, lendattr, leq, lini, lsem)
 	| Ast.UnInit(al,stg,ty,id,endattr,sem) ->
 	    let lal = get_option alignas al in
@@ -2060,12 +2064,12 @@ let rebuilder mcode donothing
 	    let lrp = string_mcode rp in
 	    Ast.IfHeader(liff, llp, lexp, lrp)
 	| Ast.Else(els) -> Ast.Else(string_mcode els)
-	| Ast.WhileHeader(whl,lp,exp,rp) ->
+	| Ast.WhileHeader(whl,lp,cond,rp) ->
 	    let lwhl = string_mcode whl in
 	    let llp = string_mcode lp in
-	    let lexp = expression exp in
+	    let lcond = whileinfo cond in
 	    let lrp = string_mcode rp in
-	    Ast.WhileHeader(lwhl, llp, lexp, lrp)
+	    Ast.WhileHeader(lwhl, llp, lcond, lrp)
 	| Ast.DoHeader(d) -> Ast.DoHeader(string_mcode d)
 	| Ast.WhileTail(whl,lp,exp,rp,sem) ->
 	    let lwhl = string_mcode whl in
@@ -2318,6 +2322,10 @@ let rebuilder mcode donothing
        statement, eg in free_vars.  equality test would require that this
        subterm not already be changed *)
     process_bef_aft s
+
+  and whileinfo = function
+      Ast.WhileExp(e) -> Ast.WhileExp(expression e)
+    | Ast.WhileDecl(d) -> Ast.WhileDecl(declaration d)
 
   and fninfo = function
       Ast.FStorage(stg) -> Ast.FStorage(storage_mcode stg)

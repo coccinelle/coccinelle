@@ -572,7 +572,11 @@ let forloop3 fr lp decl i2 rp s =
 
 let whileloop w lp e rp s =
   Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,
-		       e,clt2mcode ")" rp,s,make_fake_mcode()))
+		       Ast0.WhileExp e,clt2mcode ")" rp,s,make_fake_mcode()))
+
+let whileloop2 w lp d rp s =
+  Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,
+		       Ast0.WhileDecl d,clt2mcode ")" rp,s,make_fake_mcode()))
 
 let doloop d s w lp e rp pv =
   Ast0.wrap(Ast0.Do(clt2mcode "do" d,s,clt2mcode "while" w,

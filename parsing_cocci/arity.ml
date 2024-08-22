@@ -1056,16 +1056,16 @@ and statement tgt stm =
       let branch2 = statement arity branch2 in
       make_rule_elem stm tgt arity
 	(Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,aft))
-  | Ast0.While(wh,lp,exp,rp,body,aft) ->
+  | Ast0.While(wh,lp,cond,rp,body,aft) ->
       let arity =
 	stm_same (mcode2line wh)
 	  (List.map mcode2arity [wh;lp;rp]) in
       let wh = mcode wh in
       let lp = mcode lp in
-      let exp = expression arity exp in
+      let cond = whileinfo arity cond in
       let rp = mcode rp in
       let body = statement arity body in
-      make_rule_elem stm tgt arity (Ast0.While(wh,lp,exp,rp,body,aft))
+      make_rule_elem stm tgt arity (Ast0.While(wh,lp,cond,rp,body,aft))
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       let arity =
 	stm_same (mcode2line wh) (List.map mcode2arity [d;wh;lp;rp;sem]) in
@@ -1345,6 +1345,11 @@ and statement tgt stm =
       Ast0.rewrap stm (Ast0.CppTop(di))
   | Ast0.OptStm(_) | Ast0.AsStmt _ ->
       failwith "unexpected code"
+
+and whileinfo tgt cond =
+  match cond with
+    Ast0.WhileExp(e) -> Ast0.WhileExp(expression tgt e)
+  | Ast0.WhileDecl(d) -> Ast0.WhileDecl(declaration tgt d)
 
 and make_pragma =
   make_opt

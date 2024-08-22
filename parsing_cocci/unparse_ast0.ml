@@ -468,7 +468,7 @@ and declaration d =
           print_attribute_list endattr;
 	  print_string " ";
 	  mcode print_string eq; print_string " "; initialiser ini;
-	  mcode print_string sem
+	  print_option (mcode print_string) sem
       | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
 	  print_option alignas al;
 	  print_option (mcode U.storage) stg; print_named_type ty id;
@@ -702,10 +702,10 @@ and statement arity s =
 	  print_string arity; mcode print_string els; print_string " ";
 	  statement arity branch2;
 	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
-      | Ast0.While(whl,lp,exp,rp,body,(info,aft,adj)) ->
+      | Ast0.While(whl,lp,cond,rp,body,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string whl; print_string " "; mcode print_string_box lp;
-	  expression exp; close_box(); mcode print_string rp; print_string " ";
+	  whileinfo cond; close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
       | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
@@ -823,6 +823,10 @@ and statement arity s =
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)
+
+and whileinfo = function
+    Ast0.WhileExp(e) -> expression e
+  | Ast0.WhileDecl(d) -> declaration d
 
 and print_define_parameters params =
   match Ast0.unwrap params with

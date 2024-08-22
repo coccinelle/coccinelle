@@ -1875,6 +1875,8 @@ statement:
     { Parse_aux.forloop3 $1 $2 $3 $4 $5 $6 }
 | TWhile TOPar eexpr TCPar single_statement
     { Parse_aux.whileloop $1 $2 $3 $4 $5 }
+| TWhile TOPar one_decl_noender TCPar single_statement
+    { Parse_aux.whileloop2 $1 $2 ($3 None) $4 $5 }
 | TDo single_statement TWhile TOPar eexpr TCPar TPtVirg
     { Parse_aux.doloop $1 $2 $3 $4 $5 $6 (snd $7) }
 | iter_ident TOPar eexpr_list_option TCPar single_statement
@@ -2048,50 +2050,54 @@ no_decl_var(ender):
     t=ctype pv=ender
       { Ast0_cocci.wrap(Ast0_cocci.TyDecl(t,Parse_aux.id2mcode pv)) }
   | TMetaDecl { Parse_aux.meta_decl $1 }
-  | one_decl_noender ender { $1 $2 }
+  | one_decl_noender ender { $1 (Some $2) }
 
 %inline
 one_decl_var(ender):
   | TMetaDecl { Parse_aux.meta_decl $1 }
   | f=funproto { f }
-  | one_decl_noender ender { $1 $2 }
+  | one_decl_noender ender { $1 (Some $2) }
 
 one_decl_noender:
   | al=ioption(alignas) s=ioption(storage) t=ctype d=direct_declarator(type_ident)
       endattrs=attr_list
       { let (id,fn) = d in
-        fun (str,pv) ->
-        Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn t,id,endattrs,Parse_aux.clt2mcode str pv)) }
+        fun optpv ->
+          let (str,pv) = Option.get optpv in
+          Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn t,id,endattrs,Parse_aux.clt2mcode str pv)) }
   | al=ioption(alignas) s=ioption(storage) t=ctype d=direct_declarator(type_ident)
       endattrs=attr_list q=TEq e=initialize
       { let (id,fn) = d in
-        fun (str,pv) ->
-      Ast0_cocci.wrap
-	(Ast0_cocci.Init(al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,Parse_aux.clt2mcode str pv)) }
+        fun optpv ->
+          let opv = Common.fmap (fun (str,pv) -> Parse_aux.clt2mcode str pv) optpv in
+          Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,opv)) }
   /* type is a typedef name */
   | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type midattrs=const_vol_attr_list
       d=d_ident endattrs=attr_list
       { let cv = List.map (fun x -> Ast0.CV x) cv in
 	let (id,fn) = d in
         let idtype = Parse_aux.make_cv cv i midattrs in
-        fun (str,pv) ->
-	Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode str pv)) }
+        fun optpv ->
+          let (str,pv) = Option.get optpv in
+	  Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode str pv)) }
   | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type midattrs=const_vol_attr_list
       d=d_ident a=attr_list q=TEq e=initialize
       { let cv = List.map (fun x -> Ast0.CV x) cv in
 	let (id,fn) = d in
 	let idtype = Parse_aux.make_cv cv i midattrs in
-        fun (str,pv) ->
-	Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,
-					Parse_aux.clt2mcode str pv)) }
+        fun optpv ->
+          let opv = Common.fmap (fun (str,pv) -> Parse_aux.clt2mcode str pv) optpv in
+	  Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,pv)) }
   | s=ioption(storage) par=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       ar=attr_list
-      { fun (str,pv) ->
+      { fun optpv ->
+          let (str,pv) = Option.get optpv in
 	  Ast0_cocci.wrap(Ast0_cocci.MacroDecl(s,par,d,Parse_aux.clt2mcode "(" o,e,
 				  Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode str pv)) }
   | s=ioption(storage) par=attr_list
       d=decl_ident o=TOPar e=eexpr_list_option c=TCPar ar=attr_list q=TEq i=initialize
-      { fun (str,pv) ->
+      { fun optpv ->
+          let (str,pv) = Option.get optpv in
 	Ast0_cocci.wrap
             (Ast0_cocci.MacroDeclInit
                (s,par,d,Parse_aux.clt2mcode "(" o,e,

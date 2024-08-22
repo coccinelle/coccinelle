@@ -653,6 +653,12 @@ and unify_define_param p1 p2 =
 (* --------------------------------------------------------------------- *)
 (* Top-level code *)
 
+and unify_whileinfo c1 c2 =
+  match (c1,c2) with
+      (Ast.WhileExp(e1),Ast.WhileExp(e2)) -> unify_expression e1 e2
+    | (Ast.WhileDecl(d1),Ast.WhileDecl(d2)) -> unify_declaration d1 d2
+    | _ -> false
+
 and unify_rule_elem re1 re2 =
   match (Ast.unwrap re1,Ast.unwrap re2) with
     (Ast.FunHeader(_,_,fi1,nm1,lp1,params1,va1,rp1,attrs1),
@@ -672,8 +678,8 @@ and unify_rule_elem re1 re2 =
   | (Ast.IfHeader(if1,lp1,e1,rp1),Ast.IfHeader(if2,lp2,e2,rp2)) ->
       unify_expression e1 e2
   | (Ast.Else(e1),Ast.Else(e2)) -> true
-  | (Ast.WhileHeader(wh1,lp1,e1,rp1),Ast.WhileHeader(wh2,lp2,e2,rp2)) ->
-      unify_expression e1 e2
+  | (Ast.WhileHeader(wh1,lp1,c1,rp1),Ast.WhileHeader(wh2,lp2,c2,rp2)) ->
+      unify_whileinfo c1 c2
   | (Ast.DoHeader(d1),Ast.DoHeader(d2)) -> true
   | (Ast.WhileTail(wh1,lp1,e1,rp1,s1),Ast.WhileTail(wh2,lp2,e2,rp2,s2)) ->
       unify_expression e1 e2

@@ -1338,14 +1338,14 @@ let rec statement s =
 	  (Ast0.IfThenElse(iff,lp,exp,rp,branch1,els,branch2,
 	    (rightinfo,aft,adj)))
 	  (promote_mcode iff) right
-    | Ast0.While(wh,lp,exp,rp,body,(_,aft,adj)) ->
+    | Ast0.While(wh,lp,cond,rp,body,(_,aft,adj)) ->
 	let wh = normal_mcode wh in
 	let lp = normal_mcode lp in
-	let exp = expression exp in
+	let cond = whileinfo cond in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let (rightinfo,right,body) = promote_to_statement_end body aft in
-	mkres s (Ast0.While(wh,lp,exp,rp,body,(rightinfo,aft,adj)))
+	mkres s (Ast0.While(wh,lp,cond,rp,body,(rightinfo,aft,adj)))
 	  (promote_mcode wh) right
     | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	let d = normal_mcode d in
@@ -1616,6 +1616,10 @@ let rec statement s =
 	Ast0.AddingBetweenDots(statement s)
     | Ast0.DroppingBetweenDots s ->
 	Ast0.DroppingBetweenDots(statement s))
+
+and whileinfo = function
+      Ast0.WhileExp(e) -> Ast0.WhileExp(expression e)
+    | Ast0.WhileDecl(d) -> Ast0.WhileDecl(declaration d)
 
 and leftfninfo fninfo name bef = (* cases on what is leftmost *)
   match fninfo with
