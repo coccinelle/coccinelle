@@ -270,6 +270,8 @@ let bind c1 c2 =
 let option_default = (*Bind(Neutral,[],[],[],[],[])*)
   Recursor(Neutral,[],[],[])
 
+let get_option f = Common.default option_default f
+
 let contains_added_strings info =
   let unsafe l =
     List.exists
@@ -434,8 +436,8 @@ let classify is_minus all_marked table code =
 	   using rebuilder, which just visits the subterms, rather than
 	   reordering their components. *)
       |	Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
-	  bind (match al with Some al -> alignas r al | _ -> option_default)
-	    (bind (match stg with Some stg -> mcode stg | _ -> option_default)
+	  bind (get_option (alignas r) al)
+	    (bind (get_option mcode stg)
 	      (bind (r.VT0.combiner_rec_typeC ty)
                  (bind (r.VT0.combiner_rec_ident id)
                     (bind
@@ -444,10 +446,10 @@ let classify is_minus all_marked table code =
                           option_default)
                        (bind (mcode eq)
                           (bind (r.VT0.combiner_rec_initialiser ini)
-                             (mcode sem)))))))
+                             (get_option mcode sem)))))))
       | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
-          bind (match al with Some al -> alignas r al | _ -> option_default)
-	    (bind (match stg with Some stg -> mcode stg | _ -> option_default)
+          bind (get_option (alignas r) al)
+	    (bind (get_option mcode stg)
 	      (bind (r.VT0.combiner_rec_typeC ty)
                  (bind (r.VT0.combiner_rec_ident id)
                     (bind
@@ -855,7 +857,7 @@ let equal_declaration d1 d2 =
       equal_option stg1 stg2 &&
       (List.length endattr1) = (List.length endattr2) &&
       List.for_all2 equal_attribute endattr1 endattr2 &&
-      equal_mcode eq1 eq2 && equal_mcode sem1 sem2
+      equal_mcode eq1 eq2 && equal_option sem1 sem2
   | (Ast0.UnInit(_,stg1,_,_,endattr1,sem1),Ast0.UnInit(_,stg2,_,_,endattr2,sem2)) ->
       equal_option stg1 stg2 &&
       (List.length endattr1) = (List.length endattr2) &&

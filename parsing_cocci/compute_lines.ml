@@ -759,7 +759,7 @@ and alignas (Ast0.Align(al,lp,expr,rp)) =
       let lp = normal_mcode lp in
       let expr = expression expr in
       let rp = normal_mcode rp in
-      (Ast0.Align(al,lp,expr,rp), al)
+      Ast0.Align(al,lp,expr,rp)
 
 and declaration d =
   match Ast0.unwrap d with
@@ -768,39 +768,45 @@ and declaration d =
       let ln = promote_mcode name in
       mkres d (Ast0.MetaDecl(name,a,b)) ln ln
   | Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem) ->
+      let al = get_option alignas al in
+      let stg = get_option normal_mcode stg in
       let ty = typeC ty in
       let id = ident id in
       let endattr = List.map attribute endattr in
       let eq = normal_mcode eq in
       let exp = initialiser exp in
-      let sem = normal_mcode sem in
-      (match (al,stg) with
-	(None,None) ->
-	  mkres d (Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem)) ty (promote_mcode sem)
-      | (None,Some x)  ->
-	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem))
-	    (promote_mcode x) (promote_mcode sem)
-      | (Some al, _) ->
-          let (al,x) = alignas al in
-          mkres d (Ast0.Init(Some al,stg,ty,id,endattr,eq,exp,sem))
-	    (promote_mcode x) (promote_mcode sem))
+      let sem = get_option normal_mcode sem in
+      let re_init left right =
+	mkres d (Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem)) left right in
+      (match (al,stg,sem) with
+	(None,None,None) ->
+	  re_init ty exp
+      | (None,None,Some sem) ->
+	  re_init ty (promote_mcode sem)
+      | (None,Some stg,None) ->
+	  re_init (promote_mcode stg) exp
+      | (None,Some stg,Some sem) ->
+	  re_init (promote_mcode stg) (promote_mcode sem)
+      | (Some (Ast0.Align(al,lp,expr,rp)),_,None) ->
+	  re_init (promote_mcode al) exp
+      | (Some (Ast0.Align(al,lp,expr,rp)),_,Some sem) ->
+	  re_init (promote_mcode al) (promote_mcode sem))
   | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
+      let al = get_option alignas al in
+      let stg = get_option normal_mcode stg in
       let ty = typeC ty in
       let id = ident id in
       let endattr = List.map attribute endattr in
       let sem = normal_mcode sem in
+      let re_init left right =
+	mkres d (Ast0.UnInit(al,stg,ty,id,endattr,sem)) left right in
       (match (al,stg) with
 	(None,None) ->
-	  mkres d (Ast0.UnInit(al,stg,ty,id,endattr,sem)) ty (promote_mcode sem)
-      | (None,Some x)  ->
-	  let stg = Some (normal_mcode x) in
-	  mkres d (Ast0.UnInit(al,stg,ty,id,endattr,sem))
-	    (promote_mcode x) (promote_mcode sem)
-      | (Some al, _) ->
-          let (al,x) = alignas al in
-          mkres d (Ast0.UnInit(Some al,stg,ty,id,endattr,sem))
-	    (promote_mcode x) (promote_mcode sem))
+	  re_init ty (promote_mcode sem)
+      | (None,Some stg)  ->
+	  re_init (promote_mcode stg) (promote_mcode sem)
+      | (Some (Ast0.Align(al,lp,expr,rp)), _) ->
+	  re_init (promote_mcode al) (promote_mcode sem))
 
   | Ast0.FunProto(fninfo,name,lp1,params,va1,rp1,sem) ->
       let fninfo =

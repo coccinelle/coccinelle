@@ -112,23 +112,21 @@ let decl r k e =
     Ast.Safe -> {e with Ast.safe_for_multi_decls = Ast.Safe}
   | Ast.NoStorage -> {e with Ast.safe_for_multi_decls = Ast.NoStorage}
   | Ast.Unsafe ->
+      let check_init al stg ty endattr sem_modif e =
+	let al_modif = Common.default false alignas al in
+	let stg_modif = Common.default false (mcode ()) stg in
+	let endattr_modif = List.exists attribute endattr in
+	let ft_modif = contains_modif ty in
+	if al_modif || stg_modif || endattr_modif || ft_modif || sem_modif
+	then e
+	else {e with Ast.safe_for_multi_decls = Ast.Safe} in
       match Ast.unwrap e with
-	Ast.Init(al,stg,ty,_,endattr,_,_,sem)
+	Ast.Init(al,stg,ty,_,endattr,_,_,sem) ->
+	  let sem_modif = Common.default false (mcode ()) sem in
+	  check_init al stg ty endattr sem_modif e
       | Ast.UnInit(al,stg,ty,_,endattr,sem) ->
-	  let al_modif =
-	    match al with
-	      Some al -> alignas al
-	    | None -> false in
-	  let stg_modif =
-	    match stg with
-	      Some stg -> mcode () stg
-	    | None -> false in
-	  let endattr_modif = List.exists attribute endattr in
-	  let ft_modif = contains_modif ty in
 	  let sem_modif = mcode () sem in
-	  if not(al_modif || stg_modif || endattr_modif || ft_modif || sem_modif)
-	  then {e with Ast.safe_for_multi_decls = Ast.Safe}
-	  else e
+	  check_init al stg ty endattr sem_modif e
       | _ -> e
 
 let anndecl r k e =

@@ -634,8 +634,9 @@ and declaration tgt decl =
   | Ast0.Init(al,stg,ty,id,endattr,eq,exp,sem) ->
       let arity =
 	all_same true tgt (mcode2line eq)
-	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
-	   (List.map mcode2arity [eq;sem])) in
+	  ((List.map mcode2arity (Option.to_list stg)) @
+	   (mcode2arity eq) ::
+	   (List.map mcode2arity (Option.to_list sem))) in
       let al = get_option (alignas tgt) al in
       let stg = get_option mcode stg in
       let ty = typeC arity ty in
@@ -648,7 +649,7 @@ and declaration tgt decl =
   | Ast0.UnInit(al,stg,ty,id,endattr,sem) ->
       let arity =
 	all_same true tgt (mcode2line sem)
-	  ((match stg with None -> [] | Some x -> [mcode2arity x]) @
+	  ((List.map mcode2arity (Option.to_list stg)) @
 	   [mcode2arity sem]) in
       let al = get_option (alignas tgt) al in
       let stg = get_option mcode stg in

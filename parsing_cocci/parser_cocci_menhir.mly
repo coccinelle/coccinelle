@@ -2087,7 +2087,7 @@ one_decl_noender:
 	let idtype = Parse_aux.make_cv cv i midattrs in
         fun optpv ->
           let opv = Common.fmap (fun (str,pv) -> Parse_aux.clt2mcode str pv) optpv in
-	  Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,pv)) }
+	  Ast0_cocci.wrap(Ast0_cocci.Init(al,s,fn idtype,id,a,Parse_aux.clt2mcode "=" q,e,opv)) }
   | s=ioption(storage) par=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       ar=attr_list
       { fun optpv ->

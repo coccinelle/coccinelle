@@ -2894,7 +2894,7 @@ module Ast_cocci :
     and base_declaration =
       Ast_cocci.base_declaration =
         Init of alignas option * storage mcode option * fullType * ident *
-            attr list * string mcode * initialiser * string mcode
+            attr list * string mcode * initialiser * string mcode option
       | UnInit of alignas option * storage mcode option * fullType * ident *
             attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
@@ -3013,7 +3013,7 @@ module Ast_cocci :
       | ExprStatement of expression option * string mcode
       | IfHeader of string mcode * string mcode * expression * string mcode
       | Else of string mcode
-      | WhileHeader of string mcode * string mcode * expression *
+      | WhileHeader of string mcode * string mcode * whileinfo *
           string mcode
       | DoHeader of string mcode
       | WhileTail of string mcode * string mcode * expression *
@@ -3076,6 +3076,10 @@ module Ast_cocci :
       | ForDecl of annotated_decl * expression option * string mcode (*;*) *
             expression option
       | ForRange of annotated_decl * initialiser
+    and whileinfo =
+      Ast_cocci.whileinfo =
+	WhileExp  of expression
+      | WhileDecl of declaration
     and fninfo =
       Ast_cocci.fninfo =
         FStorage of storage mcode
@@ -3603,7 +3607,7 @@ module Ast0_cocci :
         MetaDecl of Ast_cocci.meta_name mcode * constraints * pure
       | AsDecl of declaration * declaration
       | Init of alignas option * Ast_cocci.storage mcode option * typeC * ident *
-          attr list * string mcode * initialiser * string mcode
+          attr list * string mcode * initialiser * string mcode option
       | UnInit of alignas option * Ast_cocci.storage mcode option * typeC * ident *
           attr list * string mcode
       | FunProto of fninfo list * ident * string mcode * parameter_list *
@@ -3708,7 +3712,7 @@ module Ast0_cocci :
           statement * fake_mcode
       | IfThenElse of string mcode * string mcode * expression *
           string mcode * statement * string mcode * statement * fake_mcode
-      | While of string mcode * string mcode * expression * string mcode *
+      | While of string mcode * string mcode * whileinfo * string mcode *
           statement * fake_mcode
       | Do of string mcode * statement * string mcode * string mcode *
           expression * string mcode * string mcode
@@ -3795,6 +3799,10 @@ module Ast0_cocci :
       | ForRange of (info * mcodekind) (* before the decl *) * declaration *
 	    initialiser
     and forinfo = base_forinfo wrap
+    and whileinfo =
+      Ast0_cocci.whileinfo =
+	WhileExp  of expression
+      | WhileDecl of declaration
     and fninfo =
       Ast0_cocci.fninfo =
         FStorage of Ast_cocci.storage mcode

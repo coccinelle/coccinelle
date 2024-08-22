@@ -1015,7 +1015,7 @@ let match_maker checks_needed context_required whencode_allowed =
 	       if bool_match_option mcode_equal stga stgb
 	       then
 		 conjunct_many_bindings
-		   [check_mcode eq1 eq; check_mcode sc1 sc;
+		   [check_mcode eq1 eq; match_option check_mcode sc1 sc;
 		     match_option alignas_equal ala alb;
 		     match_option check_mcode stga stgb;
 		     match_typeC tya tyb;

@@ -1048,7 +1048,7 @@ and declaration d =
       print_named_type ty (fun _ -> ident id);
       print_attribute_list endattr;
       pr_space(); mcode print_string eq;
-      pr_space(); initialiser true ini; mcode print_string sem
+      pr_space(); initialiser true ini; print_option (mcode print_string) sem
   | Ast.UnInit(al,stg,ty,id,endattr,sem) ->
       print_option alignas al;
       print_option (mcode storage) stg;
@@ -1148,6 +1148,11 @@ and pragmainfo pi =
       handle_metavar name (function
         | Ast_c.MetaPragmaInfoVal(rest) -> print_text (Ast_c.str_of_info rest)
         | _ -> error name pi "pragma info value expected")
+
+and whileinfo cond =
+  match cond with
+    Ast.WhileExp(e) -> expression e
+  | Ast.WhileDecl(d) -> declaration d
 
 and directive di =
   match Ast.unwrap di with
@@ -1386,10 +1391,10 @@ and rule_elem arity re =
   | Ast.Else(els) ->
       pr_arity arity; mcode print_string els
 
-  | Ast.WhileHeader(whl,lp,exp,rp) ->
+  | Ast.WhileHeader(whl,lp,cond,rp) ->
       pr_arity arity;
       mcode print_string whl; pr_space(); mcode print_string_box lp;
-      expression exp; close_box(); mcode print_string rp
+      whileinfo cond; close_box(); mcode print_string rp
   | Ast.DoHeader(d) ->
       pr_arity arity; mcode print_string d
   | Ast.WhileTail(whl,lp,exp,rp,sem) ->
