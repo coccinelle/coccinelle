@@ -1189,6 +1189,7 @@ and pp_string_format (e,ii) =
             iivirg::ifakestart::iisto when has_ender -> (Some iivirg,ifakestart,iisto)
           |         ifakestart::iisto -> (None,ifakestart,iisto)
 	  | _ -> failwith "UsingTypename: wrong number of elements" in
+        pr_elem ifakestart;
         (* old: iisto +> List.iter pr_elem; *)
 
         (* handling the first var. Special case, we print the whole type *)
