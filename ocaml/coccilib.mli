@@ -2112,6 +2112,7 @@ module Common :
     val cmd_to_list : string -> string list
     val cmd_to_list_and_status : string -> string list * Unix.process_status
     val opt_to_list : 'a option -> 'a list
+    val opt_get : 'a option -> 'a
     val file_to_stdout : string -> unit
     val file_to_stderr : string -> unit
     val command2 : string -> unit

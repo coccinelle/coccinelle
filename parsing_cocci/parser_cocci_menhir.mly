@@ -2063,7 +2063,7 @@ one_decl_noender:
       endattrs=attr_list
       { let (id,fn) = d in
         fun optpv ->
-          let (str,pv) = Option.get optpv in
+          let (str,pv) = Common.opt_get optpv in
           Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn t,id,endattrs,Parse_aux.clt2mcode str pv)) }
   | al=ioption(alignas) s=ioption(storage) t=ctype d=direct_declarator(type_ident)
       endattrs=attr_list q=TEq e=initialize
@@ -2078,7 +2078,7 @@ one_decl_noender:
 	let (id,fn) = d in
         let idtype = Parse_aux.make_cv cv i midattrs in
         fun optpv ->
-          let (str,pv) = Option.get optpv in
+          let (str,pv) = Common.opt_get optpv in
 	  Ast0_cocci.wrap(Ast0_cocci.UnInit(al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode str pv)) }
   | al=ioption(alignas) s=ioption(storage) cv=const_vol i=ident_or_template_type midattrs=const_vol_attr_list
       d=d_ident a=attr_list q=TEq e=initialize
@@ -2091,13 +2091,13 @@ one_decl_noender:
   | s=ioption(storage) par=attr_list d=decl_ident o=TOPar e=eexpr_list_option c=TCPar
       ar=attr_list
       { fun optpv ->
-          let (str,pv) = Option.get optpv in
+          let (str,pv) = Common.opt_get optpv in
 	  Ast0_cocci.wrap(Ast0_cocci.MacroDecl(s,par,d,Parse_aux.clt2mcode "(" o,e,
 				  Parse_aux.clt2mcode ")" c,ar,Parse_aux.clt2mcode str pv)) }
   | s=ioption(storage) par=attr_list
       d=decl_ident o=TOPar e=eexpr_list_option c=TCPar ar=attr_list q=TEq i=initialize
       { fun optpv ->
-          let (str,pv) = Option.get optpv in
+          let (str,pv) = Common.opt_get optpv in
 	Ast0_cocci.wrap
             (Ast0_cocci.MacroDeclInit
                (s,par,d,Parse_aux.clt2mcode "(" o,e,
