@@ -3090,6 +3090,9 @@ let cmd_to_list command =
 let process_output_to_list = cmd_to_list
 let cmd_to_list_and_status = process_output_to_list2
 
+let opt_to_list = function
+    None   -> []
+  | Some e -> [e]
 let file_to_stdout file =
   let i = open_in file in
   let rec loop _ =
