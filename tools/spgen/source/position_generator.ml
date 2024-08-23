@@ -626,10 +626,9 @@ let rec statement_pos s snp
       let c ~exp ~mc = Ast0.IfThenElse(mc, l, exp, r, s1, e, s2, a) in
       let alt() = mcode_wrap ~mc:ifm ~constructor:(c ~exp) snp in
       exp_wrap ~exp ~constructor:(c ~mc:ifm) ~alt snp
-  | Ast0.While (whmc, l, exp, r, s, a) ->
-      let c ~exp ~mc = Ast0.While(mc, l, exp, r, s, a) in
-      let alt() = mcode_wrap ~mc:whmc ~constructor:(c ~exp) snp in
-      exp_wrap ~exp ~constructor:(c ~mc:whmc) ~alt snp
+  | Ast0.While (whmc, l, cond, r, s, a) ->
+      let constructor ~mc = Ast0.While (mc, l, cond, r, s, a) in
+      mcode_wrap ~mc:whmc ~constructor snp
   | Ast0.Do (d, s, whmc, l, exp, r, sem) ->
       let c ~exp ~mc = Ast0.Do(mc, s, whmc, l, exp, r, sem) in
       let alt() = mcode_wrap ~mc:d ~constructor:(c ~exp) snp in
