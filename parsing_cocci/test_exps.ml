@@ -62,8 +62,19 @@ let set_test_poss =
 	Ast0.rewrap s (Ast0.IfThenElse(i,lp,process_exp e,rp,s1,e1,s2,aft))
     | Ast0.While(i,lp,Ast0.WhileExp(e),rp,s1,aft) ->
 	Ast0.rewrap s (Ast0.While(i,lp,Ast0.WhileExp(process_exp e),rp,s1,aft))
-    | Ast0.While(i,lp,Ast0.WhileDecl(d),rp,s1,aft) ->
-	Ast0.rewrap s (Ast0.While(i,lp,Ast0.WhileDecl(d),rp,s1,aft))
+    | Ast0.While(i,lp,Ast0.WhileDecl(bef,d),rp,s1,aft) ->
+	let d =
+	  match Ast0.unwrap d with
+	    Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem) ->
+	      let ini =
+		match Ast0.unwrap ini with
+		  Ast0.InitExpr(exp) ->
+		    Ast0.rewrap ini (Ast0.InitExpr(process_exp exp))
+		| _ -> (* not sure if other initialization forms are meaningful as bools *)
+		    ini in
+	      Ast0.rewrap d (Ast0.Init(al,stg,ty,id,endattr,eq,ini,sem))
+	  | _ -> d in
+	Ast0.rewrap s (Ast0.While(i,lp,Ast0.WhileDecl(bef,d),rp,s1,aft))
     | Ast0.Do(d,s1,w,lp,e,rp,sc) ->
 	Ast0.rewrap s (Ast0.Do(d,s1,w,lp,process_exp e,rp,sc))
     | Ast0.For(f,lp,first,rp,s1,aft) ->

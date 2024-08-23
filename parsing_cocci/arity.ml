@@ -1350,7 +1350,7 @@ and statement tgt stm =
 and whileinfo tgt cond =
   match cond with
     Ast0.WhileExp(e) -> Ast0.WhileExp(expression tgt e)
-  | Ast0.WhileDecl(d) -> Ast0.WhileDecl(declaration tgt d)
+  | Ast0.WhileDecl(bef,d) -> Ast0.WhileDecl(bef,declaration tgt d)
 
 and make_pragma =
   make_opt

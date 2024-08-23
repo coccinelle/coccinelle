@@ -1091,7 +1091,7 @@ let combiner bind option_default mcode donothing
 
   and whileinfo = function
       Ast.WhileExp(e) -> expression e
-    | Ast.WhileDecl(d) -> declaration d
+    | Ast.WhileDecl(d) -> annotated_decl d
 
   and fninfo = function
       Ast.FStorage(stg) -> storage_mcode stg
@@ -2325,7 +2325,9 @@ let rebuilder mcode donothing
 
   and whileinfo = function
       Ast.WhileExp(e) -> Ast.WhileExp(expression e)
-    | Ast.WhileDecl(d) -> Ast.WhileDecl(declaration d)
+    | Ast.WhileDecl(decl) ->
+	let decl = annotated_decl decl in
+	Ast.WhileDecl decl
 
   and fninfo = function
       Ast.FStorage(stg) -> Ast.FStorage(storage_mcode stg)

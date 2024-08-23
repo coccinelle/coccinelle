@@ -826,7 +826,7 @@ and statement arity s =
 
 and whileinfo = function
     Ast0.WhileExp(e) -> expression e
-  | Ast0.WhileDecl(d) -> declaration d
+  | Ast0.WhileDecl(_,d) -> declaration d
 
 and print_define_parameters params =
   match Ast0.unwrap params with

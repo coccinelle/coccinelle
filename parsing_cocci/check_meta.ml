@@ -596,7 +596,7 @@ and statement old_metas table minus s =
 and whileinfo old_metas table minus c =
   match c with
     Ast0.WhileExp(e) -> expression ID old_metas table minus e
-  | Ast0.WhileDecl(d) -> declaration ID old_metas table minus d
+  | Ast0.WhileDecl(_,d) -> declaration ID old_metas table minus d
 
 and pragmainfo old_metas table minus pi =
   match Ast0.unwrap pi with

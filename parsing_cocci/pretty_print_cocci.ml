@@ -1062,7 +1062,7 @@ and statement arity s =
 and whileinfo cond =
   match cond with
     Ast.WhileExp(e) -> expression e
-  | Ast.WhileDecl(d) -> declaration d
+  | Ast.WhileDecl(d) -> annotated_decl "" d
 
 and directive di =
   match Ast.unwrap di with

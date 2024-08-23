@@ -664,7 +664,7 @@ and forinfo =
 
 and whileinfo =
     WhileExp  of expression
-  | WhileDecl of declaration
+  | WhileDecl of annotated_decl
 
 and fninfo =
     FStorage of storage mcode
@@ -1105,6 +1105,18 @@ let make_meta_decl s d c (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
       (MetaDecl(((rule,s),no_info,d,[]),c,Unitary,false))) with
+    free_vars = fvs; fresh_vars = fresh; inherited = inh}
+
+let make_meta_id s d c (fvs,fresh,inh) =
+  let rule = "" in
+  {(make_term
+      (MetaId(((rule,s),no_info,d,[]),c,Unitary,false))) with
+    free_vars = fvs; fresh_vars = fresh; inherited = inh}
+
+let make_meta_type s d c (fvs,fresh,inh) =
+  let rule = "" in
+  {(make_term
+      (MetaType(((rule,s),no_info,d,[]),c,Unitary,false))) with
     free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])

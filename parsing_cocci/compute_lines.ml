@@ -1625,7 +1625,10 @@ let rec statement s =
 
 and whileinfo = function
       Ast0.WhileExp(e) -> Ast0.WhileExp(expression e)
-    | Ast0.WhileDecl(d) -> Ast0.WhileDecl(declaration d)
+    | Ast0.WhileDecl((_,bef),decl) ->
+	let decl = declaration decl in
+	let (leftinfo,decl) = promote_to_statement_start decl bef in
+	Ast0.WhileDecl((leftinfo,bef),decl)
 
 and leftfninfo fninfo name bef = (* cases on what is leftmost *)
   match fninfo with

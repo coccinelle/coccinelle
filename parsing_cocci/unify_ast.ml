@@ -656,7 +656,7 @@ and unify_define_param p1 p2 =
 and unify_whileinfo c1 c2 =
   match (c1,c2) with
       (Ast.WhileExp(e1),Ast.WhileExp(e2)) -> unify_expression e1 e2
-    | (Ast.WhileDecl(d1),Ast.WhileDecl(d2)) -> unify_declaration d1 d2
+    | (Ast.WhileDecl(d1),Ast.WhileDecl(d2)) -> unify_annotated_decl d1 d2
     | _ -> false
 
 and unify_rule_elem re1 re2 =

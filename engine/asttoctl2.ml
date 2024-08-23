@@ -1675,23 +1675,49 @@ and get_whencond_exps e =
 
 and make_whencond_headers e e1 label guard quantified =
   let fvs = Ast.get_fvs e in
-  let header_pred h =
+  let header_pred fvs h =
     quantify guard (get_unquantified quantified fvs)
       (make_match label guard h) in
   let if_header e1 =
-    header_pred
+    header_pred fvs
       (Ast.rewrap e
 	 (Ast.IfHeader
 	    (Ast.make_mcode "if",
 	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
-  let while_header e1 =
-    header_pred
+  let while_exp_header e1 =
+    header_pred fvs
       (Ast.rewrap e
 	 (Ast.WhileHeader
 	    (Ast.make_mcode "while",
-	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
+	     Ast.make_mcode "(",Ast.WhileExp e1,Ast.make_mcode ")"))) in
+  let while_decl_header e1 =
+    let eq = Ast.make_mcode "=" in
+    let d = Ast.get_mcodekind eq in (* dummy context value *)
+    let metaty =
+      let tynm = fresh_metavar()^"8" in
+      Ast.make_meta_type tynm d Ast.CstrTrue ([],[],[]) in
+    let metatyfv =
+      match Ast.unwrap metaty with
+	Ast.MetaType(name,cstr,_,_) -> Ast.unwrap_mcode name
+      | _ -> failwith "impossible: must be a MetaType" in
+    let ty = Ast.rewrap e (Ast.Type(false,[],metaty,[])) in
+    let id =
+      let idnm = fresh_metavar()^"9" in
+      Ast.make_meta_id idnm d Ast.CstrTrue ([],[],[]) in
+    let idfv =
+      match Ast.unwrap id with
+	Ast.MetaId(name,cstr,_,_) -> Ast.unwrap_mcode name
+      | _ -> failwith "impossible: must be a MetaType" in
+    let init = Ast.rewrap e (Ast.InitExpr e1) in
+    let decl = Ast.rewrap e (Ast.Init(None,None,ty,id,[],eq,init,None)) in
+    let ann_decl = Ast.rewrap e (Ast.DElem (d,false,decl)) in
+    header_pred (idfv :: metatyfv :: fvs)
+      (Ast.rewrap e
+	 (Ast.WhileHeader
+	    (Ast.make_mcode "while",
+	     Ast.make_mcode "(",Ast.WhileDecl ann_decl,Ast.make_mcode ")"))) in
   let for_header e1 =
-    header_pred
+    header_pred fvs
       (Ast.rewrap e
 	 (Ast.ForHeader
 	    (Ast.make_mcode "for",Ast.make_mcode "(",
@@ -1700,24 +1726,27 @@ and make_whencond_headers e e1 label guard quantified =
 	     Ast.make_mcode ")"))) in
   let if_headers =
     List.fold_left ctl_or CTL.False (List.map if_header e1) in
-  let while_headers =
-    List.fold_left ctl_or CTL.False (List.map while_header e1) in
+  let while_exp_headers =
+    List.fold_left ctl_or CTL.False (List.map while_exp_header e1) in
+  let while_decl_headers =
+    List.fold_left ctl_or CTL.False (List.map while_decl_header e1) in
   let for_headers =
     List.fold_left ctl_or CTL.False (List.map for_header e1) in
-  (if_headers, while_headers, for_headers)
+  (if_headers, while_exp_headers, while_decl_headers, for_headers)
 
 and whencond_true e label guard quantified =
   let e1 = get_whencond_exps e in
-  let (if_headers, while_headers, for_headers) =
+  let (if_headers, while_exp_headers, while_decl_headers, for_headers) =
     make_whencond_headers e e1 label guard quantified in
   ctl_or
     (ctl_and CTL.NONSTRICT (truepred label) (ctl_back_ex if_headers))
-    (ctl_and CTL.NONSTRICT
-       (inlooppred label) (ctl_back_ex (ctl_or while_headers for_headers)))
+    (ctl_and CTL.NONSTRICT (inlooppred label)
+       (ctl_back_ex
+	  (ctl_or while_exp_headers (ctl_or while_decl_headers for_headers))))
 
 and whencond_false e label guard quantified =
   let e1 = get_whencond_exps e in
-  let (if_headers, while_headers, for_headers) =
+  let (if_headers, while_exp_headers, while_decl_headers, for_headers) =
     make_whencond_headers e e1 label guard quantified in
   (* if with else *)
   ctl_or (ctl_and CTL.NONSTRICT (falsepred label) (ctl_back_ex if_headers))
@@ -1725,7 +1754,9 @@ and whencond_false e label guard quantified =
     (ctl_or (ctl_and CTL.NONSTRICT (fallpred label) (ctl_back_ex if_headers))
        (* failure of loop test *)
        (ctl_and CTL.NONSTRICT (loopfallpred label)
-	  (ctl_or (ctl_back_ex while_headers) (ctl_back_ex for_headers))))
+	  (ctl_or (ctl_back_ex while_exp_headers)
+	     (ctl_or (ctl_back_ex while_decl_headers)
+		(ctl_back_ex for_headers)))))
 
 (* --------------------------------------------------------------------- *)
 (* the main translation loop *)

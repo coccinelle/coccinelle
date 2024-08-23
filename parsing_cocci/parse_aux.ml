@@ -575,8 +575,9 @@ let whileloop w lp e rp s =
 		       Ast0.WhileExp e,clt2mcode ")" rp,s,make_fake_mcode()))
 
 let whileloop2 w lp d rp s =
+  let bef = (Ast0.default_info(),Ast0.context_befaft()) in
   Ast0.wrap(Ast0.While(clt2mcode "while" w,clt2mcode "(" lp,
-		       Ast0.WhileDecl d,clt2mcode ")" rp,s,make_fake_mcode()))
+		       Ast0.WhileDecl(bef,d),clt2mcode ")" rp,s,make_fake_mcode()))
 
 let doloop d s w lp e rp pv =
   Ast0.wrap(Ast0.Do(clt2mcode "do" d,s,clt2mcode "while" w,

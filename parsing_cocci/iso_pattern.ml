@@ -1491,7 +1491,7 @@ let match_maker checks_needed context_required whencode_allowed =
   and match_whileinfo pattern c =
     match ( pattern,c) with
 	    (Ast0.WhileExp(e1),Ast0.WhileExp(e2)) -> match_expr e1 e2
-	  | (Ast0.WhileDecl(d1),Ast0.WhileDecl(d2)) -> match_decl d1 d2
+	  | (Ast0.WhileDecl(_,d1),Ast0.WhileDecl(_,d2)) -> match_decl d1 d2
 	  |	_ -> return false
 
   (* first should provide a subset of the information in the second *)

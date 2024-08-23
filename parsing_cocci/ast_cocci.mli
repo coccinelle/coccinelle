@@ -645,7 +645,7 @@ and forinfo =
 
 and whileinfo =
     WhileExp  of expression
-  | WhileDecl of declaration
+  | WhileDecl of annotated_decl
 
 and fninfo =
     FStorage of storage mcode
@@ -936,6 +936,16 @@ val make_meta_decl :
     string -> mcodekind -> constraints ->
       (meta_name list * (meta_name * seed) list * meta_name list) ->
       declaration
+
+val make_meta_id :
+    string -> mcodekind -> constraints ->
+      (meta_name list * (meta_name * seed) list * meta_name list) ->
+      ident
+
+val make_meta_type :
+    string -> mcodekind -> constraints ->
+      (meta_name list * (meta_name * seed) list * meta_name list) ->
+      typeC
 
 val make_term : 'a -> 'a wrap
 val make_inherited_term : 'a -> meta_name list (* inherited vars *) ->

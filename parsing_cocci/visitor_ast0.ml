@@ -1208,9 +1208,11 @@ let visitor mode bind option_default
 
   and whileinfo = function
       Ast0.WhileExp(e) ->
-	    let (n,e) = expression e in (n,Ast0.WhileExp(e))
-    | Ast0.WhileDecl(d) ->
-	    let (n,d) = declaration d in (n,Ast0.WhileDecl(d))
+	let (n,e) = expression e in
+	(n,Ast0.WhileExp(e))
+    | Ast0.WhileDecl(bef,d) ->
+	let (n,d) = declaration d in
+	(n,Ast0.WhileDecl(bef,d))
 
   and forinfo fi =
     let k fi =

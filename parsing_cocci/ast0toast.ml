@@ -1177,7 +1177,9 @@ and statement s =
 
   and whileinfo = function
       Ast0.WhileExp(e) -> Ast.WhileExp(expression e)
-    | Ast0.WhileDecl(d) -> Ast.WhileDecl(declaration d)
+    | Ast0.WhileDecl((_,bef),decl) ->
+	let decl = annotated_decl (Some bef) decl in
+	Ast.WhileDecl decl
 
   and whencode notfn alwaysfn = function
       Ast0.WhenNot (_,_,a) -> Ast.WhenNot (notfn a)

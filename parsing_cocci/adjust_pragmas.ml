@@ -45,9 +45,12 @@ let rec right_decl d =
       call_right right_mcode name d
 	(function name -> Ast0.MetaDecl(name,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
-  | Ast0.Init(align,stg,ty,id,endattr,eq,ini,sem) ->
+  | Ast0.Init(align,stg,ty,id,endattr,eq,ini,Some sem) ->
       call_right right_mcode sem d
-	(function sem -> Ast0.Init(align,stg,ty,id,endattr,eq,ini,sem))
+	(function sem -> Ast0.Init(align,stg,ty,id,endattr,eq,ini,Some sem))
+  | Ast0.Init(align,stg,ty,id,endattr,eq,ini,None) ->
+      (* only in a while condition, so not reachable *)
+      failwith "The entry point is via statements, and this can't be rightmost in a statement"
   | Ast0.UnInit(align,stg,ty,id,endattr,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.UnInit(align,stg,ty,id,endattr,sem))

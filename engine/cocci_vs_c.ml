@@ -2500,16 +2500,30 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	  (A.AsDecl(dec,asdec)) +> A.rewrap decla),
 	 decb))))
 
-  | _, (B.DeclList (([var], has_ender), iiptvirgb::iifakestart::iisto)) ->
-      onedecl allminus decla (var,iiptvirgb,iisto) >>=
-      (fun decla (var,iiptvirgb,iisto)->
-        X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
-          return (
-            (mckstart, allminus, decla),
-            (B.DeclList (([var], has_ender), iiptvirgb::iifakestart::iisto))
-          )))
+  | _, (B.DeclList (([var], true), iiptvirgb::iifakestart::iisto)) ->
+      onedecl allminus decla (var,Some iiptvirgb,iisto) >>=
+      (function decla ->
+	function
+	    (var,Some iiptvirgb,iisto)->
+              X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+		return (
+		(mckstart, allminus, decla),
+		(B.DeclList (([var], true), iiptvirgb::iifakestart::iisto))))
+	  | (_,None,_) -> failwith "not possible")
+
+  | _, (B.DeclList (([var], false), iifakestart::iisto)) ->
+      onedecl allminus decla (var,None,iisto) >>=
+      (function decla ->
+	function
+	    (var,None,iisto)->
+              X.tokenf_mck mckstart iifakestart >>= (fun mckstart iifakestart ->
+		return (
+		(mckstart, allminus, decla),
+		(B.DeclList (([var], false), iifakestart::iisto))))
+	  | (_,Some _,_) -> failwith "not possible")
 
   | _, (B.DeclList ((xs, has_ender), (iiptvirgb::iifakestart::iisto))) ->
+      assert has_ender;
       let indexify l =
 	let rec loop n = function
 	    [] -> []
@@ -2523,8 +2537,9 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	(indexify xs) +> List.fold_left (fun acc (n,var) ->
 	  (* consider all possible matches *)
           acc >||> (function tin -> (
-            onedecl allminus decla (var, iiptvirgb, iisto) >>=
+            onedecl allminus decla (var, Some iiptvirgb, iisto) >>=
             (fun decla (var, iiptvirgb, iisto) ->
+	      let iiptvirgb = Option.get iiptvirgb in
 	      (* tokenf has to be after the onedecl, because ondecl
 		 detects whether there is actually a match and the
 		 tokenf should be done *)
@@ -2561,7 +2576,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
 	  xs +> List.fold_left (fun acc var ->
 	  (* consider all possible matches *)
             (function tin -> (
-              onedecl allminus contextified_decla (var, iiptvirgb, iisto) >>=
+              onedecl allminus contextified_decla (var, Some iiptvirgb, iisto) >>=
               (fun _ _ ->
 		pr2_once
 		  (Printf.sprintf "%s: %d: %s"
@@ -2677,10 +2692,8 @@ and annotated_decl decla declb =
 	  (A.DElem(mckstart, allminus, decl) +> A.rewrap decla,
 	   declb)
 
-and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
- X.all_bound (A.get_inherited decla) >&&>
+and onedecl_has_ender = fun allminus decla (declb, iiptvirgb, iistob) ->
  match A.unwrap decla, declb with
-
  (* kind of typedef iso, we must unfold, it's for the case
   * T { }; that we want to match against typedef struct { } xx_t;
   *)
@@ -2815,12 +2828,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
      ({B.v_namei= Some (nameidb, _);B.v_storage= (B.StoTypedef,_,_);}, iivirg)
      -> fail
 
-   | A.Init (align, stoa, typa, ida, endattra, eqa, inia, ptvirga),
-     ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_,_);}, iivirg)
-       -> fail
-
-
-
     (* could handle iso here but handled in standard.iso *)
    | A.UnInit (align, stoa, typa, ida, endattrsa, ptvirga),
      ({B.v_namei = Some (nameidb, B.NoInit);
@@ -2850,42 +2857,6 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 	    iiptvirgb,iistob)
          ))))))
 
-   | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
-     ({B.v_namei = Some(nameidb, B.ValInit (inib, iieqb));
-       B.v_type = typb;
-       B.v_storage = stob;
-       B.v_local = local;
-       B.v_attr = attrs;
-       B.v_endattr = endattrs;
-       B.v_type_bis = typbbis;
-     },iivirg) ->
-       X.list_and_aggregate_initialization_flag (fun list_and_aggregate_initialization ->
-       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
-       tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
-       (match iieqb with
-	 [iieqb] -> tokenf eqa iieqb >>= (fun eqa iieqb -> return (eqa, [iieqb]))
-       | _ -> (* must be [] *)
-	   if list_and_aggregate_initialization
-	   then return (eqa, iieqb)
-	   else fail) >>= (fun eqa iieqb ->
-       fullType typa typb >>= (fun typa typb ->
-       attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
-       storage_optional_allminus allminus align stoa (stob, iistob) >>=
-       (fun (align, stoa) (stob, iistob) ->
-       initialiser inia inib >>= (fun inia inib ->
-         return (
-           (A.Init (align,stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
-           (({B.v_namei = Some(nameidb, B.ValInit (inib, iieqb));
-              B.v_type = typb;
-              B.v_storage = stob;
-              B.v_local = local;
-              B.v_attr = attrs;
-              B.v_endattr = endattrs;
-              B.v_type_bis = typbbis;
-           },iivirg),
-           iiptvirgb,iistob)
-         )))))))))
-
    | A.FunProto(fninfoa,ida,lpa,paramsa,va,rpa,sema),
      ({B.v_namei = Some (idb, B.NoInit);
        B.v_type =
@@ -2903,8 +2874,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
            let (commab, dotsb) = tuple_of_list2 iidotsb in
            tokenf commaa commab >>= (fun commaa commab ->
            tokenf dotsa dotsb >>= (fun dotsa dotsb ->
-           return (Some(commaa,dotsa), (true,[commab;dotsb]))
-                                  ))
+           return (Some(commaa,dotsa), (true,[commab;dotsb]))))
         | _ -> fail
        ) >>=
         (fun va (isvaargs, iidotsb) -> let (lpb, rpb) = tuple_of_list2 ii in
@@ -3067,35 +3037,86 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
          )
        ))))
 
+   | (A.Init _|A.ConjDecl _|A.DisjDecl _|A.OptDecl _),_ ->
+       failwith "impossible: handled in onedecl"
 
    | _, ({B.v_namei = None;}, _) ->
        (* old:   failwith "no variable in this declaration, weird" *)
       fail
 
+   | _, ({B.v_namei=Some _}, _) ->
+       fail
 
+and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
+ X.all_bound (A.get_inherited decla) >&&>
+ match A.unwrap decla, declb with
+   (* cases with optional semicolon *)
+   | A.Init (align, stoa, typa, ida, endattra, eqa, inia, ptvirga),
+     ({B.v_namei=Some(nameidb, _);B.v_storage=(B.StoTypedef,_,_);}, iivirg)
+       -> fail
+
+   | A.Init (align, stoa, typa, ida, endattrsa, eqa, inia, ptvirga),
+     ({B.v_namei = Some(nameidb, B.ValInit (inib, iieqb));
+       B.v_type = typb;
+       B.v_storage = stob;
+       B.v_local = local;
+       B.v_attr = attrs;
+       B.v_endattr = endattrs;
+       B.v_type_bis = typbbis;
+     },iivirg) ->
+       X.list_and_aggregate_initialization_flag (fun list_and_aggregate_initialization ->
+       ident_cpp DontKnow ida nameidb >>= (fun ida nameidb ->
+       option tokenf ptvirga iiptvirgb >>= (fun ptvirga iiptvirgb ->
+       (match iieqb with
+	 [iieqb] -> tokenf eqa iieqb >>= (fun eqa iieqb -> return (eqa, [iieqb]))
+       | _ -> (* must be [] *)
+	   if list_and_aggregate_initialization
+	   then return (eqa, iieqb)
+	   else fail) >>= (fun eqa iieqb ->
+       fullType typa typb >>= (fun typa typb ->
+       attribute_list allminus endattrsa endattrs >>= (fun endattrsa endattrs ->
+       storage_optional_allminus allminus align stoa (stob, iistob) >>=
+       (fun (align, stoa) (stob, iistob) ->
+       initialiser inia inib >>= (fun inia inib ->
+         return (
+           (A.Init (align,stoa,typa,ida,endattrsa,eqa,inia,ptvirga)) +> A.rewrap decla,
+           (({B.v_namei = Some(nameidb, B.ValInit (inib, iieqb));
+              B.v_type = typb;
+              B.v_storage = stob;
+              B.v_local = local;
+              B.v_attr = attrs;
+              B.v_endattr = endattrs;
+              B.v_type_bis = typbbis;
+           },iivirg),
+           iiptvirgb,iistob)
+         )))))))))
+
+   | A.Init _, ({B.v_namei = None;}, _) ->
+       (* old:   failwith "no variable in this declaration, weird" *)
+      fail
+
+   | A.Init _, ({B.v_namei=Some _}, _) ->
+       fail
 
    | A.DisjDecl declas, declb -> failwith "DisjDecl should not arise"
-(*
-      declas +> List.fold_left (fun acc decla ->
-        acc >|+|>
-            (* (declaration (mckstart, allminus, decla) declb) *)
-            (onedecl allminus decla (declb,iiptvirgb, iistob))
-      ) fail
-*)
 
-  | A.ConjDecl declas, declb ->
-      let rec loop acc_decl db = function
-	  [] -> return (A.ConjDecl (List.rev acc_decl) +> A.rewrap decla, db)
-	| d::ds ->
-	    onedecl allminus d db >>= (fun decl db ->
-	      loop (decl::acc_decl) db ds) in
-      loop [] (declb, iiptvirgb, iistob) declas
+   | A.ConjDecl declas, declb ->
+       let rec loop acc_decl db = function
+	   [] -> return (A.ConjDecl (List.rev acc_decl) +> A.rewrap decla, db)
+	 | d::ds ->
+	     onedecl allminus d db >>= (fun decl db ->
+	       loop (decl::acc_decl) db ds) in
+       loop [] (declb, iiptvirgb, iistob) declas
 
    | A.OptDecl _,    _ ->
        failwith "not handling Opt Decl"
 
-   | _, ({B.v_namei=Some _}, _) ->
-       fail
+   | _ ->
+       (* cases with required semicolon *)
+       let iiptvirgb = Option.get iiptvirgb in
+       onedecl_has_ender allminus decla (declb, iiptvirgb, iistob) >>=
+       (fun decla (var,iiptvirgb,iisto) ->
+	 return (decla, (var,Some iiptvirgb,iisto)))
 
 and onefield = fun allminus decla (declb, iiptvirgb) ->
   let match_option f a b =
@@ -3536,13 +3557,6 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 	loop [] fb declas
 
    | A.DisjField declas -> failwith "DisjField should not arise"
-(*
-      declas +> List.fold_left (fun acc decla ->
-        acc >|+|>
-            (* (declaration (mckstart, allminus, decla) declb) *)
-            (onedecl allminus decla (declb,iiptvirgb, iistob))
-      ) fail
-*)
 
    | A.OptField _ ->
        failwith "not handling Opt Field"
@@ -5776,21 +5790,23 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
         return (A.Else ia, F.Else ib)
       )
 
-  | A.WhileHeader (ia1, ia2, ea, ia3), F.WhileHeader (st, (eb, ii)) ->
+  | A.WhileHeader (ia1, ia2, conda, ia3), F.WhileHeader (st, (condb, ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
-      (match (ea,eb) with
-          (ea,B.WhileExp  eb) ->
-           expression ea eb >>= (fun ea eb ->
-           return (ea, B.WhileExp eb))
-        | (ea,B.WhileDecl eb) -> fail
-      )
-      >>= (fun ea eb ->
+      (match (conda,condb) with
+        (A.WhileExp ea,B.WhileExp  eb) ->
+          expression ea eb >>= (fun ea eb ->
+            return (A.WhileExp ea, B.WhileExp eb))
+      | (A.WhileDecl da,B.WhileDecl db) ->
+          annotated_decl da db >>= (fun da db ->
+            return (A.WhileDecl da, B.WhileDecl db))
+      | _ -> fail)
+      >>= (fun conda condb ->
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia3 ib3 >>= (fun ia3 ib3 ->
         return (
-          A.WhileHeader (ia1, ia2, ea, ia3),
-          F.WhileHeader (st, (eb, [ib1;ib2;ib3]))
+          A.WhileHeader (ia1, ia2, conda, ia3),
+          F.WhileHeader (st, (condb, [ib1;ib2;ib3]))
         )))))
 
   | A.DoHeader ia, F.DoHeader (st, ib) ->

@@ -3081,7 +3081,7 @@ module Ast_cocci :
     and whileinfo =
       Ast_cocci.whileinfo =
 	WhileExp  of expression
-      | WhileDecl of declaration
+      | WhileDecl of annotated_decl
     and fninfo =
       Ast_cocci.fninfo =
         FStorage of storage mcode
@@ -3804,7 +3804,7 @@ module Ast0_cocci :
     and whileinfo =
       Ast0_cocci.whileinfo =
 	WhileExp  of expression
-      | WhileDecl of declaration
+      | WhileDecl of (info * mcodekind) (* before the decl *) * declaration
     and fninfo =
       Ast0_cocci.fninfo =
         FStorage of Ast_cocci.storage mcode

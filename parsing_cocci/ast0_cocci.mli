@@ -475,7 +475,7 @@ and forinfo = base_forinfo wrap
 
 and whileinfo =
     WhileExp  of expression
-  | WhileDecl of declaration
+  | WhileDecl of (info * mcodekind) (* before the decl *) * declaration
 
 and fninfo =
     FStorage of Ast_cocci.storage mcode
