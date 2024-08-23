@@ -2000,7 +2000,7 @@ decl_var:
       [Ast0_cocci.wrap
 	  (Ast0_cocci.Init
 	     (al,s,fn t,id,endattrs,Parse_aux.clt2mcode "=" q,e,
-	      Parse_aux.clt2mcode ";" (snd pv)))]}
+	      Some(Parse_aux.clt2mcode ";" (snd pv))))]}
   /* type is a typedef name */
   | al=ioption(alignas) s=ioption(storage) cv=const_vol
       i=ident_or_template_type
@@ -2022,7 +2022,7 @@ decl_var:
 	[Ast0_cocci.wrap
 	    (Ast0_cocci.Init
 	       (al,s,fn idtype,id,endattrs,Parse_aux.clt2mcode "=" q,e,
-		Parse_aux.clt2mcode ";" (snd pv)))] }
+		Some(Parse_aux.clt2mcode ";" (snd pv))))] }
   | s=ioption(storage) prear=attr_list d=decl_ident
       o=TOPar e=eexpr_list_option c=TCPar ar=attr_list p=TPtVirg
       { [Ast0_cocci.wrap
