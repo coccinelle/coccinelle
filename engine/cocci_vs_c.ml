@@ -2539,7 +2539,7 @@ and (declaration: (A.mcodekind * bool * A.declaration,B.declaration) matcher) =
           acc >||> (function tin -> (
             onedecl allminus decla (var, Some iiptvirgb, iisto) >>=
             (fun decla (var, iiptvirgb, iisto) ->
-	      let iiptvirgb = Option.get iiptvirgb in
+	      let iiptvirgb = Common.opt_get iiptvirgb in
 	      (* tokenf has to be after the onedecl, because ondecl
 		 detects whether there is actually a match and the
 		 tokenf should be done *)
@@ -3113,7 +3113,7 @@ and onedecl = fun allminus decla (declb, iiptvirgb, iistob) ->
 
    | _ ->
        (* cases with required semicolon *)
-       let iiptvirgb = Option.get iiptvirgb in
+       let iiptvirgb = Common.opt_get iiptvirgb in
        onedecl_has_ender allminus decla (declb, iiptvirgb, iistob) >>=
        (fun decla (var,iiptvirgb,iisto) ->
 	 return (decla, (var,Some iiptvirgb,iisto)))
