@@ -581,9 +581,9 @@ and initialiser i =
   print_context i
     (function _ ->
       match Ast0.unwrap i with
-	Ast0.MetaInit(name,_,_)-> mcode print_meta name; print_string " "
-      |	Ast0.MetaInitList(name,_,_,_)-> mcode print_meta name; print_string " "
-      |	Ast0.InitExpr(exp) -> expression exp
+	Ast0.MetaInit(name,_,_) -> mcode print_meta name; print_string " "
+      | Ast0.MetaInitList(name,_,_,_) -> mcode print_meta name; print_string " "
+      | Ast0.InitExpr(exp) -> expression exp
       | Ast0.InitList(lb,initlist,rb,ordered) ->
           (*doesn't show commas dropped in unordered case*)
 	  mcode print_string lb; open_box 0;
