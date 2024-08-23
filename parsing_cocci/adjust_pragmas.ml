@@ -45,6 +45,9 @@ let rec right_decl d =
       call_right right_mcode name d
 	(function name -> Ast0.MetaDecl(name,cstr,pure))
   | Ast0.AsDecl(decl,asdecl) -> failwith "not possible"
+  | Ast0.Init(align,stg,ty,id,endattr,eq,ini,sem) ->
+      call_right right_mcode sem d
+	(function sem -> Ast0.Init(align,stg,ty,id,endattr,eq,ini,sem))
   | Ast0.UnInit(align,stg,ty,id,endattr,sem) ->
       call_right right_mcode sem d
 	(function sem -> Ast0.UnInit(align,stg,ty,id,endattr,sem))
