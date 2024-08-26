@@ -73,6 +73,10 @@ macro_stmt_when_fn_type.cocci v20240610:preprocessor
 match_bracket_expressions_assignment_broken.cocci v20240610:language/aggregate_initialization#Syntax
 miniclass.cocci v20240610:language/class
 namespace_alias_definition.cocci v20240610:language/namespace_alias
+namespace_nested1.cocci v20240610:language/namespace
+namespace_nested2.cocci v20240610:language/namespace
+namespace_nested3.cocci v20240610:language/namespace
+namespace_nested4.cocci v20240610:language/namespace
 new2.cocci v20240610:language/new#Syntax
 new3.cocci v20240610:language/new#Syntax
 new.cocci v20240610:language/new#Syntax
