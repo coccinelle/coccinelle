@@ -2,8 +2,8 @@
 # are three "prepare" stages.
 # - prepare distribution images: build one container by distribution (for now,
 #   debian and opensuse/leap, both with OCaml 4.09)
-# - prepare environment images: build debian containers for 3.12,
-#   4.09 with parmap, 4.09 with menhir, 4.09 with pyml. It is worth noticing
+# - prepare environment images: build debian containers for 4.09 with parmap,
+# 4.09 with menhir, 4.09 with pyml, and others. It is worth noticing
 #   that all these buildings implicitly use the cached container built on the
 #   previous stage.
 # - prepare image with all dependencies: build debian container with parmap,
@@ -70,14 +70,6 @@ prepare opensuse/leap docker image with 5.0.0:
     distribution: opensuse-leap
     ocaml_version: 5.0.0
 
-prepare debian docker image with 3.12.1:
-  <<: *prepare_docker_image_def
-  stage: prepare environment images
-  variables:
-    image_name: debian-3.12.1
-    distribution: debian
-    ocaml_version: 3.12.1
-
 prepare debian docker image with 4.14.1:
   <<: *prepare_docker_image_def
   stage: prepare distribution images
@@ -139,11 +131,6 @@ prepare debian docker image with 4.09.0 and all dependencies:
   script:
     - docker build --tag coccinelle-with-$from . -f ci/Dockerfile.build
         --build-arg from=$from --build-arg configure_options=$configure_options
-
-build with debian 3.12:
-  <<: *build_coccinelle_def
-  variables:
-    from: debian-3.12.1
 
 build with debian 4.09:
   <<: *build_coccinelle_def
@@ -223,11 +210,6 @@ clone reference scores:
   artifacts:
     paths:
       - reference_scores/$from
-
-test with debian 3.12:
-  <<: *test_coccinelle_def
-  variables:
-    from: debian-3.12.1
 
 test with debian 4.09:
   <<: *test_coccinelle_def
