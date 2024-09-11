@@ -2,8 +2,8 @@
 # are three "prepare" stages.
 # - prepare distribution images: build one container by distribution (for now,
 #   debian and opensuse/leap, both with OCaml 4.09)
-# - prepare environment images: build debian containers for 4.09 with parmap,
-# 4.09 with menhir, 4.09 with pyml, and others. It is worth noticing
+# - prepare environment images: build debian containers for 4.08, 4.09 with
+# parmap, # 4.09 with menhir, 4.09 with pyml, and others. It is worth noticing
 #   that all these buildings implicitly use the cached container built on the
 #   previous stage.
 # - prepare image with all dependencies: build debian container with parmap,
@@ -37,6 +37,14 @@ stages:
         --build-arg ocaml_version=$ocaml_version
         --build-arg stdcompat=$stdcompat --build-arg pyml=$pyml
         --build-arg menhir=$menhir --build-arg parmap=$parmap
+
+prepare debian docker image with 4.08.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: debian-4.08.0
+    distribution: debian
+    ocaml_version: 4.08.0
 
 prepare debian docker image with 4.09.0:
   <<: *prepare_docker_image_def
@@ -132,6 +140,11 @@ prepare debian docker image with 4.09.0 and all dependencies:
     - docker build --tag coccinelle-with-$from . -f ci/Dockerfile.build
         --build-arg from=$from --build-arg configure_options=$configure_options
 
+build with debian 4.08:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.08.0
+
 build with debian 4.09:
   <<: *build_coccinelle_def
   variables:
@@ -210,6 +223,11 @@ clone reference scores:
   artifacts:
     paths:
       - reference_scores/$from
+
+test with debian 4.08:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.08.0
 
 test with debian 4.09:
   <<: *test_coccinelle_def
