@@ -1936,17 +1936,11 @@ let pp_define_param_list_gen ~pr_elem ~pr_space =
 let pp_type_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).ty
 
-let pp_type_with_ident_gen pr_elem pr_space =
-  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).type_with_ident
-
 let pp_string_fragment_list_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).fragment_list
 
 let pp_string_format_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).format
-
-let pp_attribute_gen ~pr_elem ~pr_space =
-  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).attribute
 
 let pp_attr_arg_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).attr_arg
@@ -1972,19 +1966,9 @@ let string_of_flow n =
     pp_flow_simple n
   )
 
-let string_of_toplevel top =
-  Common.format_to_string (fun () ->
-    pp_toplevel_simple top
-  )
-
 let string_of_fullType t =
   Common.format_to_string (fun () ->
     pp_type_simple t
-  )
-
-let string_of_name name =
-  Common.format_to_string (fun () ->
-    pp_name name
   )
 
 let (debug_info_of_node:

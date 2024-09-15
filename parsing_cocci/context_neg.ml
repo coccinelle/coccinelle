@@ -605,20 +605,6 @@ the same context children *)
 let equal_mcode (_,_,info1,_,_,_) (_,_,info2,_,_,_) =
   info1.Ast0.pos_info.Ast0.offset = info2.Ast0.pos_info.Ast0.offset
 
-let assignOp_equal_mcode op1 op2 =
-  match (Ast0.unwrap op1, Ast0.unwrap op2) with
-    Ast0.SimpleAssign op1', Ast0.SimpleAssign op2' -> equal_mcode op1' op2'
-  | Ast0.OpAssign op1', Ast0.OpAssign op2' -> equal_mcode op1' op2'
-  | Ast0.MetaAssign(mv1,_,_), Ast0.MetaAssign(mv2,_,_) -> equal_mcode mv1 mv2
-  | _ -> false
-
-let binaryOp_equal_mcode op1 op2 =
-  match (Ast0.unwrap op1, Ast0.unwrap op2) with
-    Ast0.Arith op1', Ast0.Arith op2' -> equal_mcode op1' op2'
-  | Ast0.Logical op1', Ast0.Logical op2' -> equal_mcode op1' op2'
-  | Ast0.MetaBinary(mv1,_,_), Ast0.MetaBinary(mv2,_,_) -> equal_mcode mv1 mv2
-  | _ -> false
-
 let equal_option e1 e2 =
   match (e1,e2) with
     (Some x, Some y) -> equal_mcode x y

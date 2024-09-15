@@ -691,23 +691,3 @@ let test_rule_dependencies file =
   Printf.printf "}\n";
   Printf.printf
     "// pipe to: ccomps -Cx | dot | gvpack -array_1 | neato -n2 -T pdf\n"
-
-(*****************************************************************************)
-(* to be called by ocaml toplevel, to test. *)
-(*****************************************************************************)
-
-(* no point to memoize this one *)
-let sp_of_file file iso    = Parse_cocci.process file iso false
-
-(* TODO: Remove
-*)
-
-(*
-let flows_of_ast astc =
-  astc +> Common.map_filter (fun e -> ast_to_flow_with_error_messages e)
-
-let one_flow flows =
-  List.hd flows
-
-let one_ctl ctls = List.hd (List.hd ctls)
-*)

@@ -15,13 +15,6 @@ let get_root fpath =
   ignore (Sys.command ("cd " ^ current_dir));
   root
 
-let extract_numbers line =
-  let sep = Str.split_delim (Str.regexp ",") line in
-  match sep with
-  | [l] -> (int_of_string l, int_of_string l)
-  | [f ; e] -> (int_of_string f, int_of_string e)
-  | _ -> failwith "no line numbers found, sorry"
-
 let fetch_file_name line =
   let pat_filename = Str.regexp "\\(+++ b\\)/\\(.+\\)\\.[a-z]+" in
   let s = Str.full_split pat_filename line in

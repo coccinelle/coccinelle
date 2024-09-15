@@ -20,25 +20,11 @@ let std_h   = ref (mk_macro_path ~cocci_path:!path "standard.h")
 let common_h   = ref (mk_macro_path ~cocci_path:!path "common_macros.h")
 
 
-let cmdline_flags_macrofile () =
-  [
-    "--macro-file-builtins", Arg.Set_string std_h,
-    " <file> (default=" ^ !std_h ^ ")";
-  ]
-
-
 (*****************************************************************************)
 (* used only by cpp_ast_c, not by the parser *)
 (*****************************************************************************)
 let cpp_i_opts = ref []
 let cpp_d_opts = ref []
-
-let cmdline_flags_cpp () = [
-    "-D",   Arg.String (fun s -> Common.push2 s cpp_d_opts),
-    " <x=y>";
-    "-I", Arg.String (fun s -> Common.push2 s cpp_i_opts),
-    " <dir>"
-  ]
 
 (*****************************************************************************)
 (* show *)
@@ -75,27 +61,6 @@ let pretty_print_typedef_value = ref false
 let show_flow_labels = ref true
 
 
-let cmdline_flags_verbose () =
-  [
-    "--no-verbose-parsing", Arg.Clear verbose_parsing , "  ";
-    "--no-verbose-lexing", Arg.Clear verbose_lexing , "  ";
-    "--no-verbose-annotater", Arg.Clear verbose_annotater , "  ";
-
-    "--no-parse-error-msg", Arg.Clear verbose_parsing, " ";
-    "--no-type-error-msg",  Arg.Clear verbose_type, " ";
-
-
-    "--filter-msg",      Arg.Set  filter_msg ,
-    "  filter some cpp message when the macro is a \"known\" cpp construct";
-    "--filter-msg-define-error",Arg.Set filter_msg_define_error,
-    "  filter the error msg";
-
-    "--filter-define-error",Arg.Set filter_define_error,
-    "  filter the error, which will not be added in the stat";
-    "--filter-passed-level",Arg.Set_int filter_passed_level,"  ";
-  ]
-
-
 (*****************************************************************************)
 (* debugging *)
 (*****************************************************************************)
@@ -111,28 +76,11 @@ let debug_unparsing = ref false
 
 let debug_cfg = ref false
 
-(*   "debug C parsing/unparsing", "" *)
-let cmdline_flags_debugging () =
-  [
-  "--debug-cpp",          Arg.Set  debug_cpp, " ";
-  "--debug-lexer",        Arg.Set  debug_lexer , " ";
-  "--debug-etdt",         Arg.Set  debug_etdt , "  ";
-  "--debug-typedef",      Arg.Set  debug_typedef, "  ";
-
-  "--debug-cfg",          Arg.Set debug_cfg , "  ";
-  "--debug-unparsing",      Arg.Set  debug_unparsing, "  ";
-  ]
-
 (*****************************************************************************)
 (* checks *)
 (*****************************************************************************)
 
 let check_annotater = ref true
-let cmdline_flags_checks () =
-  [
-  "--disable-check-annotater",          Arg.Clear  check_annotater, " ";
-  "--enable-check-annotater",          Arg.Set  check_annotater, " ";
-  ]
 
 (*****************************************************************************)
 (* change algorithm *)
@@ -140,11 +88,6 @@ let cmdline_flags_checks () =
 
 (* cocci specific *)
 let label_strategy_2 = ref false
-
-let cmdline_flags_algos () =
-  [
-    "--l1",                Arg.Clear label_strategy_2, " ";
-  ]
 
 (*****************************************************************************)
 (* Disable parsing feature (for CC09 and also to see if useful) *)
@@ -166,21 +109,6 @@ let add c s = c := (Str.split (Str.regexp ",") s) @ !c
 let defined = ref ([] : string list)
 let undefined = ref ([] : string list)
 
-let cmdline_flags_parsing_algos () = [
-
-    "--directive-passing",              Arg.Set cpp_directive_passing,
-    "   pass most cpp directives, especially when inside function";
-    "--ifdef-passing",              Arg.Set ifdef_directive_passing,
-    "   pass ifdef directives ";
-
-    "--noif0-passing",   Arg.Clear if0_passing,
-    " ";
-    "--noadd-typedef-root",   Arg.Clear add_typedef_root, " ";
-    "--noadd-typedef",   Arg.Set disable_add_typedef, " ";
-
-    "--disable-multi-pass", Arg.Set disable_multi_pass, " ";
-]
-
 (*****************************************************************************)
 (* other *)
 (*****************************************************************************)
@@ -192,15 +120,6 @@ let diff_lines = ref (None : string option) (* number of lines of context *)
 let use_cache = ref false
 let cache_prefix = ref (None : string option)
 let cache_limit = ref (None : int option)
-
-let cmdline_flags_other () =
-  [
-    "-U", Arg.Int (fun n -> diff_lines := Some (string_of_int n)),
-    "  set number of diff context lines";
-
-    "--use-cache", Arg.Set use_cache,
-    "   use .ast_raw pre-parsed cached C file";
-  ]
 
 (*****************************************************************************)
 (* for lexing of integer constants *)

@@ -448,7 +448,6 @@ val unwrap_expr : ('a * 'b) * 'c -> 'a
 val rewrap_expr : ('a * 'b) * 'c -> 'd -> ('d * 'b) * 'c
 val unwrap_typeC : fullType -> typeCbis
 val rewrap_typeC : fullType -> typeCbis -> fullType
-val unwrap_typeCbis : typeC -> typeCbis
 val unwrap_st : 'a * 'b -> 'a
 val mk_e : 'a -> 'b -> ('a * ('c option * test) ref) * 'b
 val mk_e_bis : 'a -> 'b -> 'c -> ('a * 'b) * 'c
@@ -457,14 +456,12 @@ val mk_tybis : 'a -> 'b -> 'a * 'b
 val mk_st : 'a -> 'b -> 'a * 'b
 val get_ii_typeC_take_care : 'a * 'b -> 'b
 val get_ii_st_take_care : 'a * 'b -> 'b
-val get_ii_expr_take_care : 'a * 'b -> 'b
 val get_st_and_ii : 'a * 'b -> 'a * 'b
 val get_ty_and_ii : 'a * attribute list * ('b * 'c) -> 'b * 'c
 val get_e_and_ii : 'a * 'b -> 'a * 'b
 val get_type_expr : ('a * 'b ref) * 'c -> 'b
 val set_type_expr : ('a * 'b ref) * 'c -> 'b -> unit
 val get_onlytype_expr : ('a * (('b * 'c) option * 'd) ref) * 'e -> 'b option
-val get_onlylocal_expr : ('a * (('b * 'c) option * 'd) ref) * 'e -> 'c option
 val rewrap_str : string -> info -> info
 val rewrap_charpos : int -> info -> info
 val rewrap_col : int -> info -> info
@@ -507,7 +504,6 @@ val split_nocomma : 'a list -> ('a, il) Common.either list
 val unsplit_nocomma : ('a, il) Common.either list -> 'a list
 val s_of_inc_file : inc_file -> string
 val s_of_inc_file_bis : inc_file -> string
-val fieldname_of_fieldkind : fieldkind -> name option
 val s_of_attr : (attributebis * info list) list -> string
 val str_of_name : name -> string
 val get_s_and_ii_of_name : name -> string * il
@@ -518,8 +514,6 @@ val get_local_ii_of_expr_inlining_ii_of_name :
   (expressionbis * 'a) * il -> il
 val get_local_ii_of_tybis_inlining_ii_of_name : typeCbis * il -> il
 val info_of_type : 'a * attribute list * (typeCbis * il) -> parse_info option
-val get_local_ii_of_st_inlining_ii_of_name :
-  statementbis * info list -> info list
 val name_of_parameter : parameterType -> string option
 val put_annot_info :
   info -> Token_annot.annot_key -> Token_annot.annot_val -> unit
@@ -527,5 +521,4 @@ val get_annot_info :
   info -> Token_annot.annot_key -> Token_annot.annot_val option
 val get_comments_before : info -> Token_c.comment_like_token list
 val get_comments_after : info -> Token_c.comment_like_token list
-val string_of_toplevel : toplevel -> string
 val string_of_inc_file : inc_file -> string

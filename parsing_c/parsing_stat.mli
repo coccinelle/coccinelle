@@ -66,4 +66,3 @@ val nMacroHint : int ref
 val nMacroExpand : int ref
 val nNotParsedCorrectly : int ref
 val assoc_stat_number : (string * int ref) list
-val print_stat_numbers : unit -> unit

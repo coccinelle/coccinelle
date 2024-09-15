@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 203, also unused: {9,161}
+(* current max is 203, also unused: {8,9,161,163,164}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -227,12 +227,6 @@ let forinfo fi =
     Ast0.ForExp(exp,sem,exp2,sem2,exp3) -> [158]
   | Ast0.ForDecl (bef,decl,exp2,sem2,exp3) -> [159]
   | Ast0.ForRange (bef,decl,ini) -> [65]
-
-and pragmainfo pi =
-  match Ast0.unwrap pi with
-    Ast0.PragmaString(s) -> [163]
-  | Ast0.PragmaDots (dots) -> [164]
-  | Ast0.MetaPragmaInfo(_,_,_) -> [8]
 
 let case_line c =
   match Ast0.unwrap c with

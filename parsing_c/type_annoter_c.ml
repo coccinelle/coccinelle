@@ -1647,7 +1647,3 @@ let annotate_program env prog =
       annotate_test_expressions prog;
       res
     )
-
-let annotate_type_and_localvar env prog =
-  Common.profile_code "TAC.annotate_type"
-    (fun () -> annotate_program2 env prog)

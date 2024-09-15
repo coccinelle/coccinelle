@@ -499,21 +499,11 @@ let redirect_stdin_opt optfile f =
   | Some infile -> redirect_stdin infile f
 
 
-(* cf end
-let with_pr2_to_string f =
-*)
-
-
 let spf = Printf.sprintf
 
 (* ---------------------------------------------------------------------- *)
 
 let _chan = ref stderr
-let start_log_file () =
-  let filename = (spf "/tmp/debugml%d:%d" (Unix.getuid()) (Unix.getpid())) in
-  pr2 (spf "now using %s for logging" filename);
-  _chan := open_out filename
-
 
 let dolog s = output_string !_chan (s ^ "\n"); flush !_chan
 
@@ -523,17 +513,11 @@ let log2 s = if !verbose_level >= 2 then dolog s
 let log3 s = if !verbose_level >= 3 then dolog s
 let log4 s = if !verbose_level >= 4 then dolog s
 
-let if_log f = if !verbose_level >= 1 then f()
-let if_log2 f = if !verbose_level >= 2 then f()
-let if_log3 f = if !verbose_level >= 3 then f()
-let if_log4 f = if !verbose_level >= 4 then f()
-
 (* ---------------------------------------------------------------------- *)
 
 let pause () = (pr2 "pause: type return"; ignore(read_line ()))
 
 (* src: from getopt from frish *)
-let bip ()  = Printf.printf "\007"; flush stdout
 let wait () = Unix.sleep 1
 
 (* was used by fix_caml *)
@@ -548,8 +532,6 @@ let (printerr_n: int -> string -> unit) = fun i s ->
   do_n i (fun () -> prerr_string s)
 
 let _debug = ref true
-let debugon  () = _debug := true
-let debugoff () = _debug := false
 let debug f = if !_debug then f () else ()
 
 
@@ -673,19 +655,6 @@ let report_if_take_time timethreshold s f =
   if (t' -. t  > float_of_int timethreshold)
   then pr2 (Printf.sprintf "Note: processing took %7.1fs: %s" (t' -. t) s);
   res
-
-let profile_code2 category f =
-  profile_code category (fun () ->
-    if !profile = PALL
-    then pr2 ("starting: " ^ category);
-    let t = Unix.gettimeofday () in
-    let res = f () in
-    let t' = Unix.gettimeofday () in
-    if !profile = PALL
-    then pr2 (spf "ending: %s, %fs" category (t' -. t));
-    res
-  )
-
 
 (*****************************************************************************)
 (* Test *)
@@ -950,10 +919,6 @@ let write_value valu filename =
    (* Marshal.to_channel chan valu [Marshal.Closures]; *)
    close_out chan)
 
-let write_back func filename =
-  write_value (func (get_value filename)) filename
-
-
 let read_value f = get_value f
 
 
@@ -991,36 +956,6 @@ type timestamp = int
 
 (* int, bool, char, float, ref ?, string *)
 
-let string_of_string s = "\"" ^ s "\""
-
-let string_of_list f xs =
-  "[" ^ (xs +> List.map f +> String.concat ";" ) ^ "]"
-
-let string_of_unit () = "()"
-
-let string_of_array f xs =
-  "[|" ^ (xs +> Array.to_list +> List.map f +> String.concat ";") ^ "|]"
-
-let string_of_option f = function
-  | None   -> "None "
-  | Some x -> "Some " ^ (f x)
-
-
-
-
-let print_bool x = print_string (if x then  "True" else "False")
-
-let print_option pr = function
-  | None   -> print_string "None"
-  | Some x -> print_string "Some ("; pr x; print_string ")"
-
-let print_list pr xs =
-  begin
-    print_string "[";
-    List.iter (fun x -> pr x; print_string ",") xs;
-    print_string "]";
-  end
-
 (* specialized
 let (string_of_list: char list -> string) =
   List.fold_left (fun acc x -> acc^(Char.escaped x)) ""
@@ -1055,25 +990,7 @@ let adjust_pp_with_indent_and_header s f =
 let pp_do_in_box f      = Format.open_box 1; f(); Format.close_box ()
 let pp_do_in_zero_box f = Format.open_box 0; f(); Format.close_box ()
 
-let pp_f_in_box f      =
-  Format.open_box 1;
-  let res = f() in
-  Format.close_box ();
-  res
-
 let pp s = Format.print_string s
-
-let mk_str_func_of_assoc_conv xs =
-  let swap (x,y) = (y,x) in
-
-  (fun s ->
-    let xs' = List.map swap xs in
-    List.assoc s xs'
-  ),
-  (fun a ->
-    List.assoc a xs
-  )
-
 
 
 (* julia: convert something printed using format to print into a string *)
@@ -1122,15 +1039,7 @@ let uncurry f (a,b) = f a b
 
 let id = fun x -> x
 
-let do_nothing () = ()
-
 let rec applyn n f o = if n = 0 then o else applyn (n-1) f (f o)
-
-let forever f =
-  while true do
-    f();
-  done
-
 
 class ['a] shared_variable_hook (x:'a) =
   object(self)
@@ -1184,19 +1093,6 @@ let save_excursion reference f =
   reference := old;
   res
 
-let save_excursion_and_disable reference f =
-  save_excursion reference (fun () ->
-    reference := false;
-    f ()
-  )
-
-let save_excursion_and_enable reference f =
-  save_excursion reference (fun () ->
-    reference := true;
-    f ()
-  )
-
-
 let memoized h k f =
   try Hashtbl.find h k
   with Not_found ->
@@ -1205,14 +1101,6 @@ let memoized h k f =
       Hashtbl.add h k v;
       v
     end
-
-let cache_in_ref myref f =
-  match !myref with
-  | Some e -> e
-  | None ->
-      let e = f () in
-      myref := Some e;
-      e
 
 let once f =
   let already = ref false in
@@ -1223,71 +1111,11 @@ let once f =
 
 (* cache_file, cf below *)
 
-let before_leaving f x =
-  f x;
-  x
-
 (* finalize, cf prelude *)
 
 
 (* cheat *)
 let rec y f = fun x -> f (y f) x
-
-(*****************************************************************************)
-(* Concurrency *)
-(*****************************************************************************)
-
-(* from http://en.wikipedia.org/wiki/File_locking
- *
- * "When using file locks, care must be taken to ensure that operations
- * are atomic. When creating the lock, the process must verify that it
- * does not exist and then create it, but without allowing another
- * process the opportunity to create it in the meantime. Various
- * schemes are used to implement this, such as taking advantage of
- * system calls designed for this purpose (but such system calls are
- * not usually available to shell scripts) or by creating the lock file
- * under a temporary name and then attempting to move it into place."
- *
- * => can't use 'if(not (file_exist xxx)) then create_file xxx' because
- * file_exist/create_file are not in atomic section (classic problem).
- *
- * from man open:
- *
- * "O_EXCL When used with O_CREAT, if the file already exists it
- * is an error and the open() will fail. In this context, a
- * symbolic link exists, regardless of where it points to.
- * O_EXCL is broken on NFS file systems; programs which
- * rely on it for performing locking tasks will contain a
- * race condition. The solution for performing atomic file
- * locking using a lockfile is to create a unique file on
- * the same file system (e.g., incorporating host- name and
- * pid), use link(2) to make a link to the lockfile. If
- * link(2) returns 0, the lock is successful. Otherwise,
- * use stat(2) on the unique file to check if its link
- * count has increased to 2, in which case the lock is also
- * successful."
-
- *)
-
-exception FileAlreadyLocked
-
-(* Racy if lock file on NFS!!! But still racy with recent Linux ? *)
-let acquire_file_lock filename =
-  pr2 ("Locking file: " ^ filename);
-  try
-    let _fd = Unix.openfile filename [Unix.O_CREAT;Unix.O_EXCL] 0o777 in
-    ()
-  with Unix.Unix_error (e, fm, argm) ->
-    pr2 (spf "exn Unix_error: %s %s %s\n" (Unix.error_message e) fm argm);
-    raise FileAlreadyLocked
-
-
-let release_file_lock filename =
-  pr2 ("Releasing file: " ^ filename);
-  Unix.unlink filename;
-  ()
-
-
 
 (*****************************************************************************)
 (* Error management *)
@@ -1306,7 +1134,6 @@ exception WrongFormat of string
 
 let internal_error s = failwith ("internal error: "^s)
 let error_cant_have x = internal_error ("can't have this case: " ^(Dumper.dump x))
-let myassert cond = if cond then () else failwith "assert error"
 
 
 
@@ -1329,9 +1156,6 @@ let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
 let exn_to_s exn =
   Printexc.to_string exn
-
-(* alias *)
-let string_of_exn exn = exn_to_s exn
 
 
 (* want or of merd, but cannot cos cannot put die ... in b (strict call) *)
@@ -1642,12 +1466,6 @@ let mk_action_2_arg f =
   | _ -> raise WrongNumberOfArguments
   )
 
-let mk_action_3_arg f =
-  (function
-  | [file1;file2;file3] -> f file1 file2 file3
-  | _ -> raise WrongNumberOfArguments
-  )
-
 let mk_action_n_arg f = f
 
 (*###########################################################################*)
@@ -1665,8 +1483,6 @@ let (==>) b1 b2 = if b1 then b2 else true (* could use too => *)
 let (<=>) a b = if a = b then 0 else if a < b then -1 else 1
 *)
 
-let xor a b = not (a = b)
-
 
 (*****************************************************************************)
 (* Char *)
@@ -1682,7 +1498,6 @@ let cbetween min max c =
   (int_of_char c) >= (int_of_char min)
 let is_upper = cbetween 'A' 'Z'
 let is_lower = cbetween 'a' 'z'
-let is_alpha c = is_upper c || is_lower c
 let is_digit = cbetween '0' '9'
 
 let string_of_chars cs = cs +> List.map (String.make 1) +> String.concat ""
@@ -1731,9 +1546,6 @@ let between i min max = i > min && i < max
 let (between_strict: int -> int -> int -> bool) = fun a b c ->
   a < b && b < c
 
-
-let bitrange x p = let v = power 2 p in between x (-v) v
-
 (* descendant *)
 let (prime1: int -> int option)  = fun x ->
   let rec prime1_aux n =
@@ -1764,7 +1576,6 @@ let decompose x =
     )
   in assert (product (decompose x) = x); decompose x
 
-let mysquare x = x * x
 let sqr a = a *. a
 
 
@@ -1774,9 +1585,6 @@ let (<==>) a b = if a = b then 0 else if a < b then -1 else 1
 
 type uint = int
 
-
-let int_of_stringchar s =
-  fold_left_with_index (fun acc e i -> acc + (Char.code e*(power 8 i))) 0 (List.rev (list_of_string s))
 
 let int_of_base s base =
   fold_left_with_index (fun acc e i ->
@@ -1794,36 +1602,11 @@ let _ = example (int_of_octal "017" = 15)
 
 (* let int_of_hex s = int_of_base s 16, NONONONO cos 'A' - '0' does not give 10 !! *)
 
-let int_of_all s =
-  if String.length s >= 2 && (String.get s 0 = '0') && is_digit (String.get s 1)
-  then int_of_octal s else int_of_string s
-
-
 let (+=) ref v = ref := !ref + v
 let (-=) ref v = ref := !ref - v
 
 let pourcent x total =
   (x * 100) / total
-let pourcent_float x total =
-  ((float_of_int x) *. 100.0) /. (float_of_int total)
-
-let pourcent_float_of_floats x total =
-  (x *. 100.0) /. total
-
-
-let pourcent_good_bad good bad =
-  (good * 100) / (good + bad)
-
-let pourcent_good_bad_float good bad =
-  (float_of_int good *. 100.0) /. (float_of_int good +. float_of_int bad)
-
-type 'a max_with_elem = int ref * 'a ref
-let update_max_with_elem (aref, aelem) ~is_better (newv, newelem) =
-  if is_better newv aref
-  then begin
-    aref := newv;
-    aelem := newelem;
-  end
 
 (*****************************************************************************)
 (* Numeric/overloading *)
@@ -1842,14 +1625,6 @@ let neg (NumDict(a, m, d, n)) = n;;
 
 let numd_int   = NumDict(( + ),( * ),( / ),( ~- ));;
 let numd_float = NumDict(( +. ),( *. ), ( /. ),( ~-. ));;
-let testd dict n =
-  let ( * ) x y = mul dict x y in
-  let ( / ) x y = div dict x y in
-  let ( + ) x y = add dict x y in
-  (* Now you can define all sorts of things in terms of *, /, + *)
-  let f num = (num * num) / (num + num) in
-  f n;;
-
 
 
 module ArithFloatInfix = struct
@@ -1881,11 +1656,6 @@ type 'a triple = 'a * 'a * 'a
 let fst3 (x,_,_) = x
 let snd3 (_,y,_) = y
 let thd3 (_,_,z) = z
-
-let sndthd (a,b,c) = (b,c)
-
-let map_fst f (x, y) = f x, y
-let map_snd f (x, y) = x, f y
 
 let pair  f (x,y) = (f x, f y)
 
@@ -1962,17 +1732,6 @@ let partition_either f l =
       | Right e -> part_either left (e :: right) l) in
   part_either [] [] l
 
-let partition_either3 f l =
-  let rec part_either left middle right = function
-  | [] -> (List.rev left, List.rev middle, List.rev right)
-  | x :: l ->
-      (match f x with
-      | Left3  e -> part_either (e :: left) middle right l
-      | Middle3  e -> part_either left (e :: middle) right l
-      | Right3 e -> part_either left middle (e :: right) l) in
-  part_either [] [] [] l
-
-
 (* pixel *)
 let rec filter_some = function
   | [] -> []
@@ -2005,12 +1764,6 @@ let map_find f xs =
     +> (function Some x -> x | None -> raise Impossible)
 *)
 
-
-let list_to_single_or_exn xs =
-  match xs with
-  | [] -> raise Not_found
-  | x::y::zs -> raise Multi_found
-  | [x] -> x
 
 (*****************************************************************************)
 (* TriBool *)
@@ -2151,27 +1904,12 @@ let _ = example (all_match "\\(@[A-Za-z]+\\)" "ca va @Et toi @Comment"
                   = ["@Et";"@Comment"])
 
 
-let global_replace_regexp re f_on_substr s =
-  let regexp = Str.regexp re in
-  Str.global_substitute regexp (fun _wholestr ->
-
-    let substr = Str.matched_string s in
-    f_on_substr substr
-  ) s
-
-
 let regexp_word_str =
   "\\([a-zA-Z_][A-Za-z_0-9]*\\)"
 let regexp_word = Str.regexp regexp_word_str
 
 let regular_words s =
   all_match regexp_word_str s
-
-let contain_regular_word s =
-  let xs = regular_words s in
-  List.length xs >= 1
-
-
 
 (*****************************************************************************)
 (* Strings *)
@@ -2204,51 +1942,13 @@ let (<!>) s i = String.get s i
 
 let quote s = "\"" ^ s ^ "\""
 
-(* easier to have this to be passed as hof, because ocaml don't have
- * haskell "section" operators
- *)
-let is_blank_string s =
-  s =~ "^\\([ \t]\\)*$"
-
-(* src: lablgtk2/examples/entrycompletion.ml *)
-let is_string_prefix s1 s2 =
-  (String.length s1 <= String.length s2) &&
-  (String.sub s2 0 (String.length s1) = s1)
-
 let plural i s =
   if i = 1
   then Printf.sprintf "%d %s" i s
   else Printf.sprintf "%d %ss" i s
 
-let showCodeHex xs = List.iter (fun i -> Printf.printf "%02x" i) xs
-
 let take_string n s =
   String.sub s 0 (n-1)
-
-let take_string_safe n s =
-  if n > String.length s
-  then s
-  else take_string n s
-
-
-
-(* used by LFS *)
-let size_mo_ko i =
-  let ko = (i / 1024) mod 1024 in
-  let mo = (i / 1024) / 1024 in
-  (if mo > 0
-  then Printf.sprintf "%dMo%dKo" mo ko
-  else Printf.sprintf "%dKo" ko
-  )
-
-let size_ko i =
-  let ko = i / 1024 in
-  Printf.sprintf "%dKo" ko
-
-
-
-
-
 
 (* done in summer 2007 for julia
  * Reference: P216 of gusfeld book
@@ -2354,10 +2054,6 @@ let adjust_ext_if_needed filename ext =
   else filename
 
 
-
-let db_of_filename file =
-  Filename.dirname file, Filename.basename file
-
 let filename_of_db (basedir, file) =
   Filename.concat basedir file
 
@@ -2381,22 +2077,6 @@ let dbe_of_filename_safe file =
   with Invalid_argument _ ->
     Right (Filename.dirname file, Filename.basename file)
 
-
-let dbe_of_filename_nodot file =
-  let (d,b,e) = dbe_of_filename file in
-  let d = if d = "." then "" else d in
-  d,b,e
-
-
-
-
-
-let replace_ext file oldext newext =
-  let (d,b,e) = dbe_of_filename file in
-  assert(e = oldext);
-  filename_of_dbe (d,b,newext)
-
-
 let normalize_path file =
   let (dir, filename) = Filename.dirname file, Filename.basename file in
   let xs = split "/" dir in
@@ -2413,38 +2093,7 @@ let normalize_path file =
   Filename.concat (String.concat "/" xs') filename
 
 
-
-(*
-let relative_to_absolute s =
-  if Filename.is_relative s
-  then
-    begin
-      let old = Sys.getcwd () in
-      Sys.chdir s;
-      let current = Sys.getcwd () in
-      Sys.chdir old;
-      s
-    end
-  else s
-*)
-
-let relative_to_absolute s =
-  if Filename.is_relative s
-  then Sys.getcwd () ^ "/" ^ s
-  else s
-
 let is_relative s = Filename.is_relative s
-let is_absolute s = not (is_relative s)
-
-
-(* @Pre: prj_path must not contain regexp symbol *)
-let filename_without_leading_path prj_path s =
-  let prj_path = chop_dirsymbol prj_path in
-  if s =~ ("^" ^ prj_path ^ "/\\(.*\\)$")
-  then matched1 s
-  else
-    failwith
-      (spf "can't find filename_without_project_path: %s  %s" prj_path s)
 
 let rec join_path dir path =
   match path with
@@ -2531,14 +2180,6 @@ type float_time = float
 let check_date_dmy (DMY (day, month, year)) =
   raise Todo
 
-let check_time_dmy (TimeDMY (day, month, year)) =
-  raise Todo
-
-let check_time_hms (HMS (x,y,a)) =
-  raise Todo
-
-
-
 (* ---------------------------------------------------------------------- *)
 
 (* older code *)
@@ -2558,20 +2199,6 @@ let int_to_month i =
   | 10 -> "Oct"
   | 11 -> "Nov"
   | 12 -> "Dec"
-(*
-  | 1 -> "January"
-  | 2 -> "February"
-  | 3 -> "March"
-  | 4 -> "April"
-  | 5 -> "May"
-  | 6 -> "June"
-  | 7 -> "July"
-  | 8 -> "August"
-  | 9 -> "September"
-  | 10 -> "October"
-  | 11 -> "November"
-  | 12 -> "December"
-*)
   | _ -> raise (Impossible 2)
 
 
@@ -2621,9 +2248,6 @@ let wday_to_fr_h =
 let month_of_string s =
   List.assoc s s_to_month_h
 
-let month_of_string_long s =
-  List.assoc s slong_to_month_h
-
 let string_of_month s =
   List.assoc s month_to_s_h
 
@@ -2651,10 +2275,6 @@ let wday_str_of_int ~langage i =
   | Francais -> string_fr_of_wday wday
   | Deutsch -> raise Todo
 
-
-
-let string_of_date_dmy (DMY (Day n, month, Year y)) =
-  (spf "%02d-%s-%d" n (string_of_month month) y)
 
 
 let string_of_unix_time ?(langage=English) tm =
@@ -2708,26 +2328,10 @@ let short_string_of_unix_time ?(langage=English) tm =
   spf "%02d/%3s/%04d (%s)" d mon y wday
 
 
-let string_of_unix_time_lfs time =
-  spf "%02d--%s--%d"
-    time.Unix.tm_mday
-    (int_to_month (time.Unix.tm_mon + 1))
-    (time.Unix.tm_year + 1900)
-
-
 (* ---------------------------------------------------------------------- *)
 let string_of_floattime ?langage i =
   let tm = Unix.localtime i in
   string_of_unix_time ?langage tm
-
-let short_string_of_floattime ?langage i =
-  let tm = Unix.localtime i in
-  short_string_of_unix_time ?langage tm
-
-let floattime_of_string s =
-  let tm = unix_time_of_string s in
-  let (sec,_tm) = Unix.mktime tm in
-  sec
 
 
 (* ---------------------------------------------------------------------- *)
@@ -2745,12 +2349,6 @@ let days_in_week_of_day day =
   enum start_d end_d +> List.map (fun mday ->
     Unix.mktime {tm with Unix.tm_mday = mday} +> fst
   )
-
-let first_day_in_week_of_day day =
-  List.hd (days_in_week_of_day day)
-
-let last_day_in_week_of_day day =
-  last (days_in_week_of_day day)
 
 
 (* ---------------------------------------------------------------------- *)
@@ -2785,14 +2383,6 @@ let min_dmy d1 d2 =
   if is_more_recent d1 d2
   then d2
   else d1
-
-
-let maximum_dmy ds =
-  foldl1 max_dmy ds
-
-let minimum_dmy ds =
-  foldl1 min_dmy ds
-
 
 
 let rough_days_between_dates d1 d2 =
@@ -2843,12 +2433,6 @@ let normalize (year,month,day,hour,minute,second) =
 *)
 
 
-let mk_date_dmy day month year =
-  let date = DMY (Day day, month_of_int month, Year year) in
-  (* check_date_dmy date *)
-  date
-
-
 (* ---------------------------------------------------------------------- *)
 (* conversion to unix.tm *)
 
@@ -2866,76 +2450,9 @@ let dmy_to_unixtime (DMY (Day n, month, Year year)) =
   } in
   Unix.mktime tm
 
-let unixtime_to_dmy tm =
-  let n = tm.Unix.tm_mday  in
-  let month = month_of_int (tm.Unix.tm_mon + 1) in
-  let year = tm.Unix.tm_year + 1900 in
-
-  DMY (Day n, month, Year year)
-
-
-let unixtime_to_floattime tm =
-  Unix.mktime tm +> fst
-
-let floattime_to_unixtime sec =
-  Unix.localtime sec
-
-
-let sec_to_days sec =
-  let minfactor = 60 in
-  let hourfactor = 60 * 60 in
-  let dayfactor = 60 * 60 * 24 in
-
-  let days  =  sec / dayfactor in
-  let hours = (sec mod dayfactor) / hourfactor in
-  let mins  = (sec mod hourfactor) / minfactor in
-  let sec = (sec mod 60) in
-  (* old:   Printf.sprintf "%d days, %d hours, %d minutes" days hours mins *)
-  (if days > 0  then plural days "day" ^ " "    else "") ^
-  (if hours > 0 then plural hours "hour" ^ " " else "") ^
-  (if mins > 0  then plural mins "min"   ^ " " else "") ^
-  (spf "%dsec" sec)
-
-let sec_to_hours sec =
-  let minfactor = 60 in
-  let hourfactor = 60 * 60 in
-
-  let hours = sec / hourfactor in
-  let mins  = (sec mod hourfactor) / minfactor in
-  let sec = (sec mod 60) in
-  (* old:   Printf.sprintf "%d days, %d hours, %d minutes" days hours mins *)
-  (if hours > 0 then plural hours "hour" ^ " " else "") ^
-  (if mins > 0  then plural mins "min"   ^ " " else "") ^
-  (spf "%dsec" sec)
-
-
-
-let test_date_1 () =
-  let date = DMY (Day 17, Sep, Year 1991) in
-  let float, tm = dmy_to_unixtime date in
-  pr2 (spf "date: %.0f" float);
-  ()
-
-
 (* src: ferre in logfun/.../date.ml *)
 
 let day_secs : float = 86400.
-
-let today     : unit -> float = fun () ->  (Unix.time () )
-let yesterday : unit -> float = fun () ->  (Unix.time () -. day_secs)
-let tomorrow  : unit -> float = fun () ->  (Unix.time () +. day_secs)
-
-let lastweek  : unit -> float = fun () ->  (Unix.time () -. (7.0 *. day_secs))
-let lastmonth  : unit -> float = fun () ->  (Unix.time () -. (30.0 *. day_secs))
-
-
-let week_before  : float_time -> float_time = fun d ->
-  (d -. (7.0 *. day_secs))
-let month_before  : float_time -> float_time = fun d ->
-  (d -. (30.0 *. day_secs))
-
-let week_after  : float_time -> float_time = fun d ->
-  (d +. (7.0 *. day_secs))
 
 let this_year() =
   let time = Unix.gmtime (Unix.time()) in
@@ -3040,40 +2557,12 @@ let cat_array file =
   (""::cat file) +> Array.of_list
 
 
-let interpolate str =
-  begin
-    command2 ("printf \"%s\\n\" " ^ str ^ ">/tmp/caml");
-    cat "/tmp/caml"
-  end
-
 (* could do a print_string but printf don't like print_string *)
 let echo s = Printf.printf "%s" s; flush stdout; s
-
-let sleep_little () =
-  (*old:  *)
-  Unix.sleep 1
-  (*ignore(Sys.command ("usleep " ^ !_sleep_time))*)
-
 
 (* now in prelude:
  * let command2 s = ignore(Sys.command s)
  *)
-
-let do_in_fork f =
-  let pid = Unix.fork () in
-  if pid = 0
-  then
-    begin
-      (* Unix.setsid(); *)
-      Sys.set_signal Sys.sigint (Sys.Signal_handle   (fun _ ->
-        pr2 "being killed";
-        Unix.kill 0 Sys.sigkill;
-        ));
-      f();
-      exit 0;
-    end
-  else pid
-
 
 let process_output_to_list2 = fun command ->
   let chan = Unix.open_process_in command in
@@ -3138,8 +2627,6 @@ let command2_y_or_no_exit_if_no cmd =
 let mkdir ?(mode=0o770) file =
   Unix.mkdir file mode
 
-let read_file_orig file = cat file +> unlines
-
 let write_file ~file s =
   let chan = open_out file in
   (output_string chan s; close_out chan)
@@ -3149,10 +2636,6 @@ let filesize file =
 
 let filemtime file =
   (Unix.stat file).Unix.st_mtime
-
-(* opti? use wc -l ? *)
-let nblines_file file =
-  cat file +> List.length
 
 let lfile_exists filename =
   try
@@ -3170,13 +2653,6 @@ let lfile_exists filename =
 
 let is_directory file =
   (Unix.stat file).Unix.st_kind = Unix.S_DIR
-
-
-(* src: from chailloux et al book *)
-let capsule_unix f args =
-  try (f args)
-  with Unix.Unix_error (e, fm, argm) ->
-    log (Printf.sprintf "exn Unix_error: %s %s %s\n" (Unix.error_message e) fm argm)
 
 
 let (readdir_to_kind_list: string -> Unix.file_kind -> string list) =
@@ -3331,59 +2807,6 @@ let files_of_dir_or_files_no_vcs ext xs =
     else [x]
   ) +> List.concat
 
-
-let files_of_dir_or_files_no_vcs_post_filter regex xs =
-  xs +> List.map (fun x ->
-    if is_directory x
-    then
-      cmd_to_list
-        ("find " ^ x  ^
-         " -noleaf -type f | grep -v /.hg/ |grep -v /CVS/ | grep -v /.git/ |grep -v /_darcs/"
-        )
-        +> List.filter (fun s -> s =~ regex)
-    else [x]
-  ) +> List.concat
-
-
-let sanity_check_files_and_adjust ext files =
-  let files = files +> List.filter (fun file ->
-    if not (file =~ (".*\\."^ext))
-    then begin
-      pr2 ("warning: seems not a ."^ext^" file");
-      false
-    end
-    else
-      if is_directory file
-      then begin
-        pr2 (spf "warning: %s is a directory" file);
-        false
-      end
-    else true
-  ) in
-  files
-
-
-
-
-(* taken from mlfuse, the predecessor of ocamlfuse *)
-type rwx = [`R|`W|`X] list
-let file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm =
- fun ~u ~g ~o ->
-  let to_oct l =
-    List.fold_left (fun acc p -> acc lor ((function `R -> 4 | `W -> 2 | `X -> 1) p)) 0 l in
-  let perm =
-    ((to_oct u) lsl 6) lor
-    ((to_oct g) lsl 3) lor
-    (to_oct o)
-  in
-  perm
-
-
-(* pixel *)
-let has_env var =
-  try
-    let _ = Sys.getenv var in true
-  with Not_found -> false
 
 (* emacs/lisp inspiration (eric cooper and yaron minsky use that too) *)
 let (with_open_outfile: filename -> (((string -> unit) * out_channel) -> 'a) -> 'a) =
@@ -3541,19 +2964,6 @@ let exn_to_real_unixexit f =
   with UnixExit x -> exit x
 
 
-
-
-let uncat xs file =
-  with_open_outfile file (fun (pr,_chan) ->
-    xs +> List.iter (fun s -> pr s; pr "\n");
-
-  )
-
-
-
-
-
-
 (*****************************************************************************)
 (* List *)
 (*****************************************************************************)
@@ -3567,9 +2977,6 @@ let rec find_map f = function
 
 (* pixel *)
 let uncons l = (List.hd l, List.tl l)
-
-(* pixel *)
-let safe_tl l = try List.tl l with _ -> []
 
 let push l v =
   l := v :: !l
@@ -3598,9 +3005,6 @@ let unzip zs =
   List.fold_right (fun e (xs, ys)    ->
     (fst e::xs), (snd e::ys)) zs ([],[])
 
-
-let map_withkeep f xs =
-  xs +> List.map (fun x -> f x, x)
 
 (* now in prelude
  * let rec take n xs =
@@ -3771,23 +3175,12 @@ let index_list xs =
   if xs=[] then [] (* enum 0 (-1) generate an exception *)
   else zip xs (enum 0 ((List.length xs) -1))
 
-let index_list_and_total xs =
-  let total = List.length xs in
-  if xs=[] then [] (* enum 0 (-1) generate an exception *)
-  else zip xs (enum 0 ((List.length xs) -1))
-    +> List.map (fun (a,b) -> (a,b,total))
-
 let index_list_1 xs =
   xs +> index_list +> List.map (fun (x,i) -> x, i+1)
 
 let or_list  = List.fold_left (||) false
 let and_list = List.fold_left (&&) true
 
-let avg_list xs =
-  let sum = sum_int xs in
-  (float_of_int sum) /. (float_of_int (List.length xs))
-
-let snoc x xs = xs @ [x]
 let cons x xs = x::xs
 
 let head_middle_tail xs =
@@ -3850,20 +3243,6 @@ let rec join_gen a = function
 
 (* todo: foldl, foldr (a more consistent foldr) *)
 
-(* start pixel *)
-let iter_index f l =
-  let rec iter_ n = function
-    | [] -> ()
-    | e::l -> f e n ; iter_ (n+1) l
-  in iter_ 0 l
-
-let map_index f l =
-  let rec map_ n = function
-    | [] -> []
-    | e::l -> f e n :: map_ (n+1) l
-  in map_ 0 l
-
-
 (* pixel *)
 let filter_index f l =
   let rec filt i = function
@@ -3892,17 +3271,6 @@ let rec collect_accu f accu = function
   | e::l -> collect_accu f (List.rev_append (f e) accu) l
 
 let collect f l = List.rev (collect_accu f [] l)
-
-(* cf also List.partition *)
-
-let fpartition p l =
-  let rec part yes no = function
-  | [] -> (List.rev yes, List.rev no)
-  | x :: l ->
-      (match p x with
-      |	None -> part yes (x :: no) l
-      |	Some v -> part (v :: yes) no l) in
-  part [] [] l
 
 (* end pixel *)
 
@@ -3980,9 +3348,6 @@ let rec all_assoc e = function
   | (e',v) :: l when e=e' -> v :: all_assoc e l
   | _ :: l -> all_assoc e l
 
-let prepare_want_all_assoc l =
-  List.map (fun n -> n, uniq (all_assoc n l)) (uniq (List.map fst l))
-
 let rotate list = List.tl list @ [(List.hd list)]
 
 let or_list  = List.fold_left (||) false
@@ -4023,24 +3388,6 @@ let min_with f = function
 	    else min_with_ min_val min_elt l
       in min_with_ (f e) e l
 
-let two_mins_with f = function
-  | e1 :: e2 :: l ->
-      let rec min_with_ min_val min_elt min_val2 min_elt2 = function
-	| [] -> min_elt, min_elt2
-	| e::l ->
-	    let val_ = f e in
-	    if val_ < min_val2
-	    then
-	      if val_ < min_val
-	      then min_with_ val_ e min_val min_elt l
-	      else min_with_ min_val min_elt val_ e l
-	    else min_with_ min_val min_elt min_val2 min_elt2 l
-      in
-      let v1 = f e1 in
-      let v2 = f e2 in
-      if v1 < v2 then min_with_ v1 e1 v2 e2 l else min_with_ v2 e2 v1 e1 l
-  | _ -> raise Not_found
-
 let grep_with_previous f = function
   | [] -> []
   | e::l ->
@@ -4056,18 +3403,6 @@ let iter_with_previous f = function
 	| [] -> ()
 	| e::l -> f previous e ; iter_with_previous_ e l
       in iter_with_previous_ e l
-
-
-let iter_with_before_after f xs =
-  let rec aux before_rev after =
-    match after with
-    | [] -> ()
-    | x::xs ->
-        f   before_rev x xs;
-        aux (x::before_rev) xs
-  in
-  aux [] xs
-
 
 
 (* kind of cartesian product of x*x  *)
@@ -4223,11 +3558,6 @@ let rec equal_list f l0 l1 =
 let sort_prof a b =
   profile_code "Common.sort_by_xxx" (fun () -> List.sort a b)
 
-let sort_by_val_highfirst xs =
-  sort_prof (fun (k1,v1) (k2,v2) -> compare v2 v1) xs
-let sort_by_val_lowfirst xs =
-  sort_prof (fun (k1,v1) (k2,v2) -> compare v1 v2) xs
-
 let sort_by_key_highfirst xs =
   sort_prof (fun (k1,v1) (k2,v2) -> compare k2 k1) xs
 let sort_by_key_lowfirst xs =
@@ -4235,12 +3565,6 @@ let sort_by_key_lowfirst xs =
 
 let _ = example (sort_by_key_lowfirst [4, (); 7,()] = [4,(); 7,()])
 let _ = example (sort_by_key_highfirst [4,(); 7,()] = [7,(); 4,()])
-
-
-let sortgen_by_key_highfirst xs =
-  sort_prof (fun (k1,v1) (k2,v2) -> compare k2 k1) xs
-let sortgen_by_key_lowfirst xs =
-  sort_prof (fun (k1,v1) (k2,v2) -> compare k1 k2) xs
 
 (*----------------------------------*)
 
@@ -4317,34 +3641,14 @@ let array_find_index f a =
   in
   try array_find_index_ 0 with _ -> raise Not_found
 
-let array_find_index_via_elem f a =
-  let rec array_find_index_ i =
-    if f a.(i) then i else array_find_index_ (i+1)
-  in
-  try array_find_index_ 0 with _ -> raise Not_found
-
-
-
 type idx = Idx of int
 let next_idx (Idx i) = (Idx (i+1))
-let int_of_idx (Idx i) = i
-
-let array_find_index_typed f a =
-  let rec array_find_index_ i =
-    if f i then i else array_find_index_ (next_idx i)
-  in
-  try array_find_index_ (Idx 0) with _ -> raise Not_found
-
-
 
 (*****************************************************************************)
 (* Matrix *)
 (*****************************************************************************)
 
 type 'a matrix = 'a array array
-
-let map_matrix f mat =
-  mat +> Array.map (fun arr -> arr +> Array.map f)
 
 let (make_matrix_init:
         nrow:int -> ncolumn:int -> (int -> int -> 'a) -> 'a matrix) =
@@ -4355,23 +3659,12 @@ let (make_matrix_init:
     )
   )
 
-let iter_matrix f m =
-  Array.iteri (fun i e ->
-    Array.iteri (fun j x ->
-      f i j x
-    ) e
-  ) m
-
 let nb_rows_matrix m =
   Array.length m
 
 let nb_columns_matrix m =
   assert(Array.length m > 0);
   Array.length m.(0)
-
-(* check all nested arrays have the same size *)
-let invariant_matrix m =
-  raise Todo
 
 let (rows_of_matrix: 'a matrix -> 'a list list) = fun m ->
   Array.to_list m +> List.map Array.to_list
@@ -4383,11 +3676,6 @@ let (columns_of_matrix: 'a matrix -> 'a list list) = fun m ->
     (enum 0 (nbrows -1)) +> List.map (fun i ->
       m.(i).(j)
     ))
-
-
-let all_elems_matrix_by_row m =
-  rows_of_matrix m +> List.flatten
-
 
 let ex_matrix1 =
   [|
@@ -4436,9 +3724,6 @@ let (insert_set: 'a -> 'a set -> 'a set) = fun x xs ->
     xs
   else x::xs
 
-let is_set xs =
-  has_no_duplicate xs
-
 let (single_set: 'a -> 'a set) = fun x -> insert_set x empty_set
 let (set: 'a list -> 'a set) = fun xs ->
   xs +> List.fold_left (flip insert_set) empty_set
@@ -4469,8 +3754,6 @@ let union_all l = List.fold_left union_set [] l
 let inter_all = function
     [] -> []
   | x::xs -> List.fold_left inter_set x xs
-
-let big_union_set f xs = xs +> map_set f +> fold_set union_set empty_set
 
 let (card_set: 'a set -> int) = List.length
 
@@ -4594,12 +3877,6 @@ let lookup = assoc
 let del_assoc key xs = xs +> List.filter (fun (k,v) -> k <> key)
 let replace_assoc (key, v) xs = insert_assoc (key, v) (del_assoc key xs)
 
-let apply_assoc key f xs =
-  let old = assoc key xs in
-  replace_assoc (key, f old) xs
-
-let big_union_assoc f xs = xs +> map_assoc f +> fold_assoc union_set empty_set
-
 (* todo: pb normally can suppr fun l -> .... l but if do that, then strange type _a
  => assoc_map is strange too => equal don't work
 *)
@@ -4660,31 +3937,13 @@ module IntIntMap = Map.Make
 	  Stdcompat.Stdlib.compare y1 y2
 end)
 
-let intintmap_to_list m = IntIntMap.fold (fun id v acc -> (id, v) :: acc) m []
-let intintmap_string_of_t f a = "<Not Yet>"
-
-
 (*****************************************************************************)
 (* Hash *)
 (*****************************************************************************)
 
-(* il parait que better  when choose a prime *)
-let hcreate () = Hashtbl.create 401
-let hadd (k,v) h = Hashtbl.add h k v
-let hmem k h = Hashtbl.mem h k
-let hfind k h = Hashtbl.find h k
-let hreplace (k,v) h = Hashtbl.replace h k v
-let hiter = Hashtbl.iter
-let hfold = Hashtbl.fold
-let hremove k h = Hashtbl.remove h k
-
-
 let hash_to_list h =
   Hashtbl.fold (fun k v acc -> (k,v)::acc) h []
   +> List.sort compare
-
-let hash_to_list_unsorted h =
-  Hashtbl.fold (fun k v acc -> (k,v)::acc) h []
 
 let hash_of_list xs =
   let h = Hashtbl.create 101 in
@@ -4707,15 +3966,6 @@ let hashadd_notest tbl k v =
     let cur = Hashtbl.find tbl k in
     Hashtbl.replace tbl k (v::cur)
   with Not_found -> Hashtbl.add tbl k [v]
-
-let hashinc tbl k v =
-  let cell =
-    try Hashtbl.find tbl k
-    with Not_found ->
-      let cell = ref 0 in
-      Hashtbl.add tbl k cell;
-      cell in
-  cell := v + !cell
 
 let _  =
   let h = Hashtbl.create 101 in
@@ -4749,20 +3999,6 @@ let hfind_option key h =
 type 'a hashset = ('a, bool) Hashtbl.t
   (* with sexp *)
 
-
-let hash_hashset_add k e h =
-  match optionise (fun () -> Hashtbl.find h k) with
-  | Some hset -> Hashtbl.replace hset e true
-  | None ->
-      let hset = Hashtbl.create 11 in
-      begin
-        Hashtbl.add h k hset;
-        Hashtbl.replace hset e true;
-      end
-
-let hashset_to_set baseset h =
- h +> hash_to_list +> List.map fst +> (fun xs -> baseset#fromlist xs)
-
 let hashset_to_list h = hash_to_list h +> List.map fst
 
 let hashset_of_list xs =
@@ -4785,48 +4021,6 @@ let group_assoc_bykey_eff2 xs =
 
 let group_assoc_bykey_eff xs =
     group_assoc_bykey_eff2 xs
-
-
-let test_group_assoc () =
-  let xs = enum 0 10000 +> List.map (fun i -> string_of_int i, i) in
-  let xs = ("0", 2)::xs in
-(*    let _ys = xs +> Common.groupBy (fun (a,resa) (b,resb) -> a = b)  *)
-  let ys = xs +> group_assoc_bykey_eff
-  in
-  pr2_gen ys
-
-
-let uniq_eff xs =
-  let h = Hashtbl.create 101 in
-  xs +> List.iter (fun k ->
-    Hashtbl.add h k true
-  );
-  hkeys h
-
-
-
-let diff_two_say_set_eff xs1 xs2 =
-  let h1 = hashset_of_list xs1 in
-  let h2 = hashset_of_list xs2 in
-
-  let hcommon = Hashtbl.create 101 in
-  let honly_in_h1 = Hashtbl.create 101 in
-  let honly_in_h2 = Hashtbl.create 101 in
-
-  h1 +> Hashtbl.iter (fun k _ ->
-    if Hashtbl.mem h2 k
-    then Hashtbl.replace hcommon k true
-    else Hashtbl.add honly_in_h1 k true
-  );
-  h2 +> Hashtbl.iter (fun k _ ->
-    if Hashtbl.mem h1 k
-    then Hashtbl.replace hcommon k true
-    else Hashtbl.add honly_in_h2 k true
-  );
-  hashset_to_list hcommon,
-  hashset_to_list honly_in_h1,
-  hashset_to_list honly_in_h2
-
 
 (*****************************************************************************)
 (* Stack *)
@@ -4927,12 +4121,6 @@ let rec (tree_iter: ('a -> unit) -> 'a tree -> unit) = fun f tree ->
 type 'a treeref =
   | NodeRef of 'a * 'a treeref list ref
 
-let treeref_children_ref tree =
-  match tree with
-  | NodeRef (n, x) -> x
-
-
-
 let rec (treeref_node_iter:
 (*   (('a * ('a, 'b) treeref list ref) -> unit) ->
    ('a, 'b) treeref -> unit
@@ -4944,19 +4132,6 @@ let rec (treeref_node_iter:
   | NodeRef (n, xs) ->
       f (n, xs);
       !xs +> List.iter (treeref_node_iter f)
-
-
-let find_treeref f tree =
-  let res = ref [] in
-
-  tree +> treeref_node_iter (fun (n, xs) ->
-    if f (n,xs)
-    then push2 (n, xs) res;
-  );
-  match !res with
-  | [n,xs] -> NodeRef (n, xs)
-  | [] -> raise Not_found
-  | x::y::zs -> raise Multi_found
 
 let (treeref_node_iter_with_parents:
  (*  (('a * ('a, 'b) treeref list ref) -> ('a list) -> unit) ->
@@ -4983,13 +4158,6 @@ type ('a, 'b) treeref2 =
   | LeafRef2 of 'b
 
 
-let treeref2_children_ref tree =
-  match tree with
-  | LeafRef2 _ -> failwith "treeref_tail: leaf"
-  | NodeRef2 (n, x) -> x
-
-
-
 let rec (treeref_node_iter2:
    (('a * ('a, 'b) treeref2 list ref) -> unit) ->
    ('a, 'b) treeref2 -> unit) =
@@ -4999,73 +4167,6 @@ let rec (treeref_node_iter2:
   | NodeRef2 (n, xs) ->
       f (n, xs);
       !xs +> List.iter (treeref_node_iter2 f)
-
-
-let find_treeref2 f tree =
-  let res = ref [] in
-
-  tree +> treeref_node_iter2 (fun (n, xs) ->
-    if f (n,xs)
-    then push2 (n, xs) res;
-  );
-  match !res with
-  | [n,xs] -> NodeRef2 (n, xs)
-  | [] -> raise Not_found
-  | x::y::zs -> raise Multi_found
-
-
-
-
-let (treeref_node_iter_with_parents2:
-  (('a * ('a, 'b) treeref2 list ref) -> ('a list) -> unit) ->
-   ('a, 'b) treeref2 -> unit) =
- fun f tree ->
-  let rec aux acc tree =
-    match tree with
-    | LeafRef2 _ -> ()
-    | NodeRef2 (n, xs) ->
-        f (n, xs) acc ;
-        !xs +> List.iter (aux (n::acc))
-  in
-  aux [] tree
-
-
-
-
-
-
-
-
-
-
-
-
-
-let find_treeref_with_parents_some f tree =
-  let res = ref [] in
-
-  tree +> treeref_node_iter_with_parents (fun (n, xs) parents ->
-    match f (n,xs) parents with
-    | Some v -> push2 v res;
-    | None -> ()
-  );
-  match !res with
-  | [v] -> v
-  | [] -> raise Not_found
-  | x::y::zs -> raise Multi_found
-
-let find_multi_treeref_with_parents_some f tree =
-  let res = ref [] in
-
-  tree +> treeref_node_iter_with_parents (fun (n, xs) parents ->
-    match f (n,xs) parents with
-    | Some v -> push2 v res;
-    | None -> ()
-  );
-  match !res with
-  | [v] -> !res
-  | [] -> raise Not_found
-  | x::y::zs -> !res
 
 
 (*****************************************************************************)
@@ -5231,7 +4332,6 @@ let iter = List.iter
 let find = List.find
 let exists = List.exists
 let forall = List.for_all
-let big_union f xs = xs +> map f +> fold union_set empty_set
 let sort = List.sort
 let length = List.length
 let head = List.hd
@@ -5294,10 +4394,6 @@ let (write_ppm: int -> int -> (pixel list) -> string -> unit) = fun
 	       ) xs;
      close_out chan
     end
-
-let test_ppm1 () = write_ppm 100 100
-    ((generate (50*100) (1,45,100)) @ (generate (50*100) (1,1,100)))
-    "img.ppm"
 
 (*****************************************************************************)
 (* Diff (lfs) *)
@@ -5472,18 +4568,6 @@ let full_charpos_to_pos2 = fun filename ->
 let full_charpos_to_pos a =
   profile_code "Common.full_charpos_to_pos" (fun () -> full_charpos_to_pos2 a)
 
-let test_charpos file =
-  full_charpos_to_pos file +> Dumper.dump +> pr2
-
-
-
-let complete_parse_info filename table x =
-  { x with
-    file = filename;
-    line   = fst (table.(x.charpos));
-    column = snd (table.(x.charpos));
-  }
-
 (*---------------------------------------------------------------------------*)
 (* Decalage is here to handle stuff such as cpp which include file and who
  * can make shift.
@@ -5644,14 +4728,6 @@ let print_total_score score =
   let (good, total) = total_scores score in
   pr2 (Printf.sprintf "good = %d/%d" good total)
 
-let print_score score =
-  score +> hash_to_list +> List.iter (fun (k, v) ->
-    pr2 (Printf.sprintf "%s --> %s" k (string_of_score_result v))
-  );
-  print_total_score score;
-  ()
-
-
 (*****************************************************************************)
 (* Scope management (cocci) *)
 (*****************************************************************************)
@@ -5671,22 +4747,8 @@ let rec lookup_env k env =
       then v
       else lookup_env k (xs::zs)
 
-let member_env_key k env =
-  match optionise (fun () -> lookup_env k env) with
-  | None -> false
-  | Some _ -> true
-
-
 let new_scope scoped_env = scoped_env := []::!scoped_env
 let del_scope scoped_env = scoped_env := List.tl !scoped_env
-
-let do_in_new_scope scoped_env f =
-  begin
-    new_scope scoped_env;
-    let res = f() in
-    del_scope scoped_env;
-    res
-  end
 
 let add_in_scope scoped_env def =
   let (current, older) = uncons !scoped_env in
@@ -5742,14 +4804,6 @@ let clean_scope_h scoped_env = (* keep only top level (last scope) *)
       [] | [_] -> ()
     | _::_ -> del_scope_h scoped_env; loop () in
   loop()
-
-let do_in_new_scope_h scoped_env f =
-  begin
-    new_scope_h scoped_env;
-    let res = f() in
-    del_scope_h scoped_env;
-    res
-  end
 
 let add_in_scope_h x (k,v) =
   begin
@@ -5820,96 +4874,6 @@ let random_list xs =
 let randomize_list xs =
   let permut = permutation xs in
   random_list permut
-
-
-
-let random_subset_of_list num xs =
-  let array = Array.of_list xs in
-  let len = Array.length array in
-
-  let h = Hashtbl.create 101 in
-  let cnt = ref num in
-  while !cnt > 0 do
-    let x = Random.int len in
-    if not (Hashtbl.mem h (array.(x))) (* bugfix2: not just x :) *)
-    then begin
-      Hashtbl.add h (array.(x)) true; (* bugfix1: not just x :) *)
-      decr cnt;
-    end
-  done;
-  let objs = hash_to_list h +> List.map fst in
-  objs
-
-
-
-(*****************************************************************************)
-(* Flags and actions *)
-(*****************************************************************************)
-
-(* I put it inside a func as it can help to give a chance to
- * change the globals before getting the options as some
- * options sometimes may want to show the default value.
- *)
-let cmdline_flags_devel () =
-  [
-    "-debugger",         Arg.Set debugger ,
-    "   option to set if launched inside ocamldebug";
-    "-profile",          Arg.Unit (fun () -> profile := PALL),
-    "   gather timing information about important functions";
-  ]
-let cmdline_flags_verbose () =
-  [
-    "-verbose_level",  Arg.Set_int verbose_level,
-    " <int> guess what";
-    "-disable_pr2_once",     Arg.Set disable_pr2_once,
-    "   to print more messages";
-    "-show_trace_profile",          Arg.Set show_trace_profile,
-    "   show trace";
-  ]
-
-let cmdline_flags_other () =
-  [
-    "-nocheck_stack",      Arg.Clear check_stack,
-    " ";
-    "-batch_mode", Arg.Set _batch_mode,
-    " no interactivity"
-  ]
-
-(* potentially other common options but not yet integrated:
-
-  "-timeout",        Arg.Set_int timeout,
-  "  <sec> interrupt LFS or buggy external plugins";
-
-  (* can't be factorized because of the $ cvs stuff, we want the date
-   * of the main.ml file, not common.ml
-   *)
-  "-version",   Arg.Unit (fun () ->
-    pr2 "version: _dollar_Date: 2008/06/14 00:54:22 _dollar_";
-    raise (Common.UnixExit 0)
-    ),
-  "   guess what";
-
-  "-shorthelp", Arg.Unit (fun () ->
-    !short_usage_func();
-    raise (Common.UnixExit 0)
-  ),
-  "    see short list of options";
-  "-longhelp", Arg.Unit (fun () ->
-    !long_usage_func();
-    raise (Common.UnixExit 0)
-    ),
-  "-help", Arg.Unit (fun () ->
-    !long_usage_func();
-    raise (Common.UnixExit 0)
-  ),
-  " ";
-  "--help", Arg.Unit (fun () ->
-    !long_usage_func();
-    raise (Common.UnixExit 0)
-  ),
-  " ";
-
-*)
 
 let cmdline_actions () =
   [
@@ -5983,11 +4947,6 @@ let md5sum_of_string s =
       s
   | _ -> failwith "md5sum_of_string wrong output"
 
-let with_pr2_to_string f =
-  let file = new_temp_file "pr2" "out" in
-  redirect_stdout_stderr file f;
-  cat file
-
 (* julia: convert something printed using format to print into a string *)
 let do_format_to_string nl f =
   let acc = ref [] in
@@ -6033,17 +4992,6 @@ class ['a] olist (ys: 'a list) =
     method fold : 'b. ('b -> 'a -> 'b) -> 'b -> 'b =
       fun f accu -> List.fold_left f accu xs
   end
-
-
-(* let _ = write_value ((new setb[])#add 1) "/tmp/test" *)
-let typing_sux_test () =
-   let x = Obj.magic [1;2;3] in
-   let f1 xs = List.iter print_int xs in
-   let f2 xs = List.iter print_string xs in
-   (f1 x; f2 x)
-
-(* let (test: 'a osetb -> 'a ocollection) = fun o -> (o :> 'a ocollection) *)
-(* let _ = test (new osetb (Setb.empty)) *)
 
 module StringSet = Set.Make (String)
 

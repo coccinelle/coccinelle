@@ -23,7 +23,6 @@ val make_info :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list ->
   (Ast_cocci.added_string * Ast0_cocci.position_info) list ->
   bool -> string -> Ast0_cocci.info
-val clt2info : Data.clt -> Ast0_cocci.info
 val drop_bef :
   'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i * 'j ->
   'a * 'b * 'c * 'd * 'e * 'f * 'k list * 'h * 'i * 'j
@@ -46,35 +45,21 @@ val id2clt : 'a * 'b -> 'b
 val id2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
 val tok2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
 val sym2mcode : 'a * Data.clt -> 'a Ast0_cocci.mcode
-val mkdots :
-  string ->
-    Data.clt *
-      (Ast0_cocci.statement Ast0_cocci.dots, Ast0_cocci.statement) Ast0_cocci.whencode list ->
-  Ast0_cocci.base_statement Ast0_cocci.wrap
 val mkedots :
   string ->
     Data.clt *
       (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.expression) option ->
   Ast0_cocci.base_expression Ast0_cocci.wrap
-val mkdpdots :
-  string -> Data.clt -> Ast0_cocci.base_define_param Ast0_cocci.wrap
 val mkidots :
   string ->
     Data.clt *
       (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.initialiser) option ->
   Ast0_cocci.base_initialiser Ast0_cocci.wrap
-val mkfdots :
-  string ->
-    Data.clt *
-      (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.field) list option ->
-  Ast0_cocci.base_field Ast0_cocci.wrap
 val mkfdots_one :
   string ->
     Data.clt *
       (string Ast0_cocci.mcode * string Ast0_cocci.mcode * Ast0_cocci.field) option ->
   Ast0_cocci.base_field Ast0_cocci.wrap
-val mkpdots :
-  string -> Data.clt -> Ast0_cocci.base_parameterTypeDef Ast0_cocci.wrap
 val mkenumdots :
   string ->
     Data.clt *
@@ -107,7 +92,6 @@ val make_cxx_attr_using:
   (string * Data.clt) -> Data.clt -> Ast0_cocci.ident ->
   Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
   (string * Data.clt) -> (string * Data.clt) -> Ast0_cocci.attr
-val top_dots : 'a -> 'a Ast0_cocci.wrap
 val pointerify :
   Ast0_cocci.typeC -> (string * Data.clt) list -> Ast0_cocci.typeC
 val ty_pointerify : Ast0_cocci.typeC -> 'a list -> Ast0_cocci.typeC
@@ -152,15 +136,6 @@ val create_fresh_metadec :
    'c -> 'd list) ->
   (('a option * 'b) * 'c) list -> 'a -> 'd list
 val create_metadec_with_constraints :
-  'a ->
-  'b ->
-  ('a ->
-   'c * 'd ->
-   'b ->
-   (Ast_cocci.metavar -> (Ast_cocci.metavar, Ast_cocci.metavar) Common.either list) ->
-   'e -> 'f list) ->
-  (('c option * 'd) * 'e) list -> 'c -> 'f list
-val create_metadec_ty :
   'a ->
   'b ->
   ('a ->

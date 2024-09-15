@@ -906,8 +906,6 @@ let is_expanded x =
   match pinfo_of_tok x with Ast_c.ExpandedTok _ -> true | _ -> false
 let is_fake x =
   match pinfo_of_tok x with Ast_c.FakeTok _ -> true | _ -> false
-let is_abstract x =
-  match pinfo_of_tok x with Ast_c.AbstractLineTok _ -> true | _ -> false
 
 (*****************************************************************************)
 (* Helpers *)

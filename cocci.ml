@@ -890,19 +890,6 @@ type file_info   = {
   fkind : kind_file;
 }
 
-let string_of_file_info fi =
-  let field name value = name ^ " = " ^ value in
-  let structure fields =
-    "{ " ^ (String.concat "; " fields  ) ^ " }" in
-  structure [
-    field "fname" fi.fname;
-    field "full_name" fi.full_fname;
-    field "was_modified_once" (string_of_bool !(fi.was_modified_once));
-    field "asts" (string_of_int (List.length fi.asts));
-    field "fpath" fi.fpath;
-    field "fkind" (string_of_kind_file fi.fkind)
-  ]
-
 let g_contain_typedmetavar = ref false
 
 
@@ -1195,15 +1182,6 @@ let rebuild_info_c_and_headers ccs isexp parse_strings =
 	isexp parse_strings }
   )
 
-(* remove ../ in the middle of an include path *)
-let fixpath s =
-  let s = Str.split_delim (Str.regexp "/") s in
-  let rec loop = function
-      x::".."::rest -> loop rest
-    | x::rest -> x :: loop rest
-    | [] -> [] in
-  String.concat "/" (loop s)
-
 (* The following function is a generic library function. *)
 (* It may be moved to a better place. *)
 
@@ -1332,7 +1310,6 @@ module MyHashtbl = Stdcompat.Hashtbl.Make(MyHashedType)
 let max_tbl = ref 1001
 let env_tbl = MyHashtbl.create !max_tbl
 let init_env _ = MyHashtbl.reset env_tbl; env_tbl
-let init_env_list _ = []
 
 let update_env (env : string list list ref MyHashtbl.t) v i =
   let cell =
@@ -1422,8 +1399,6 @@ let merge_env new_e old_e =
     (function (e,rules) ->
       let _ = update_env_all old_e e rules in ()) new_e;
   old_e
-
-let merge_env_list new_e old_e = new_e@old_e
 
 let contains_binding e = function
     (_,(r,m),_,Ast_cocci.NoMVInit) ->
@@ -1607,8 +1582,6 @@ let consistent_positions binding reqopts =
 	    desired_functions ls in
 	match inter with [] -> false | _ -> true
   with Missing_position -> false
-
-let printtime str = Printf.printf "%s: %f\n" str (Unix.gettimeofday ())
 
 let rec apply_cocci_rule r rules_that_have_ever_matched parse_strings es
     (ccs:file_info list ref) =

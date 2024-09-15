@@ -27,13 +27,11 @@ val al_define_params :
 val al_arguments :
   Ast_c.argument Ast_c.wrap2 list -> Ast_c.argument Ast_c.wrap2 list
 val al_fields : Ast_c.field list -> Ast_c.field list
-val al_name : Ast_c.name -> Ast_c.name
 val al_string_format : Ast_c.string_format -> Ast_c.string_format
 val al_attribute : Ast_c.attribute -> Ast_c.attribute
 val al_attr_arg : Ast_c.attr_arg -> Ast_c.attr_arg
 val al_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
-val al_node : Control_flow_c.node -> Control_flow_c.node
 val al_program : Ast_c.toplevel list -> Ast_c.toplevel list
 val al_info : Ast_c.info -> Ast_c.info
 val al_ii : Ast_c.info list -> Ast_c.info list
@@ -54,10 +52,8 @@ val al_inh_arguments :
 val al_inh_string_format : Ast_c.string_format -> Ast_c.string_format
 val al_inh_string_fragments :
   Ast_c.string_fragment list -> Ast_c.string_fragment list
-val al_inh_attribute : Ast_c.attribute -> Ast_c.attribute
 val al_inh_attr_arg : Ast_c.attr_arg -> Ast_c.attr_arg
 val al_inh_info : Ast_c.info -> Ast_c.info
-val al_inh_ii : Ast_c.info list -> Ast_c.info list
 val semi_strip_info_visitor : Visitor_c.visitor_c_s
 val semi_al_expr : Ast_c.expression -> Ast_c.expression
 val semi_al_assignOp : Ast_c.assignOp -> Ast_c.assignOp
@@ -94,23 +90,9 @@ val semi_al_info  : Ast_c.info -> Ast_c.info
 val semi_al_program : Ast_c.toplevel list -> Ast_c.toplevel list
 val real_strip_info_visitor : 'a -> Visitor_c.visitor_c_s
 val real_al_expr : Ast_c.expression -> Ast_c.expression
-val real_al_arguments :
-  Ast_c.argument Ast_c.wrap2 list -> Ast_c.argument Ast_c.wrap2 list
-val real_al_node : Control_flow_c.node -> Control_flow_c.node
-val real_al_type : Ast_c.fullType -> Ast_c.fullType
-val real_al_binop : Ast_c.binaryOp -> Ast_c.binaryOp
-val real_al_assignop : Ast_c.assignOp -> Ast_c.assignOp
-val real_al_decl : Ast_c.declaration -> Ast_c.declaration
-val real_al_init : Ast_c.initialiser -> Ast_c.initialiser
-val real_al_inits :
-  Ast_c.initialiser Ast_c.wrap2 list -> Ast_c.initialiser Ast_c.wrap2 list
 val real_al_statement : Ast_c.statement -> Ast_c.statement
 val real_al_statement_seq_list :
   Ast_c.statement_sequencable list -> Ast_c.statement_sequencable list
-val real_al_def : Ast_c.toplevel -> Ast_c.toplevel
-
-val real_al_decl_with_comments : Ast_c.declaration -> Ast_c.declaration
-val real_al_statement_with_comments : Ast_c.statement -> Ast_c.statement
 
 val extract_info_visitor :
   (Visitor_c.visitor_c -> 'a -> 'b) -> 'a -> Ast_c.info list
@@ -168,6 +150,5 @@ val lin_col_by_pos :
 val min_pinfo_of_node : Control_flow_c.node -> Common.parse_info
 val range_of_origin_ii : Ast_c.info list -> (int * int) option
 val names_of_parameters_in_def : Ast_c.definitionbis -> string list
-val names_of_parameters_in_macro : (('a * 'b) * 'c) list -> 'a list
 val stmt_elems_of_sequencable :
   Ast_c.statement_sequencable list -> Ast_c.statement list

@@ -226,70 +226,6 @@ let structdef_to_struct_name ty =
       )
   | _ -> raise (Impossible 127)
 
-
-(*****************************************************************************)
-(* Helpers *)
-(*****************************************************************************)
-
-
-let type_of_function (def,ii) =
-  let ftyp = def.f_type in
-
-  (* could use the info in the 'ii' ? *)
-
-  let fake = Ast_c.fakeAfterInfo() in
-  let fake_oparen = Ast_c.rewrap_str "(" fake in
-  let fake = Ast_c.fakeAfterInfo() in
-  let fake_cparen = Ast_c.rewrap_str ")" fake in
-
-  Ast_c.mk_ty (FunctionType ftyp) [fake_oparen;fake_cparen]
-
-
-(* pre: only a single variable *)
-let type_of_decl decl =
-  match decl with
-  | Ast_c.DeclList ((xs, has_ender),ii1) ->
-      (match xs with
-      | [] -> raise (Impossible 128)
-
-      (* todo? for other xs ? *)
-      | (x,ii2)::xs ->
-          let {v_namei = _var; v_type = v_type;
-               v_storage = (_storage,_inline,_align)} = x in
-
-          (* TODO normalize ? what if nested structure definition ? *)
-          v_type
-      )
-  | Ast_c.MacroDecl _ | Ast_c.MacroDeclInit _ ->
-      pr2_once "not handling MacroDecl type yet";
-      raise Todo
-
-
-
-(* pre: it is indeed a struct def decl, and only a single variable *)
-let structdef_of_decl decl =
-
-  match decl with
-  | Ast_c.DeclList ((xs, has_ender),ii1) ->
-      (match xs with
-      | [] -> raise (Impossible 129)
-
-      (* todo? for other xs ? *)
-      | (x,ii2)::xs ->
-          let {v_namei = var; v_type = v_type;
-               v_storage = (storage,inline,align)} = x in
-
-          (match Ast_c.unwrap_typeC v_type with
-          | Ast_c.StructUnion (su, _must_be_some, optfinal, base_classes, fields) ->
-              (su, fields)
-          | _ -> raise (Impossible 130)
-          )
-      )
-  | Ast_c.MacroDecl _ | Ast_c.MacroDeclInit _ -> raise (Impossible 131)
-
-
-
-
 (*****************************************************************************)
 (* Type builder  *)
 (*****************************************************************************)
@@ -524,17 +460,6 @@ let (type_field:
 (*****************************************************************************)
 (* helpers *)
 (*****************************************************************************)
-
-
-(* was in aliasing_function_c.ml before*)
-
-(* assume normalized/completed ? so no ParenType handling to do ?
-*)
-let is_function_type x =
-  match Ast_c.unwrap_typeC x with
-  | FunctionType _ -> true
-  | _ -> false
-
 
 (* assume normalized/completed ? so no ParenType handling to do ? *)
 let rec function_pointer_type_opt x =

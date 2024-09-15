@@ -63,7 +63,6 @@ val pinfo_of_tok   : Parser_c.token -> Ast_c.parse_info
 val is_origin : Parser_c.token -> bool
 val is_expanded : Parser_c.token -> bool
 val is_fake : Parser_c.token -> bool
-val is_abstract : Parser_c.token -> bool
 
 val is_same_line_or_close: int -> Parser_c.token -> bool
 

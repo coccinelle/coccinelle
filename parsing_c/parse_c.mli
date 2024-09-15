@@ -98,4 +98,3 @@ val with_program2: (Ast_c.program -> Ast_c.program) -> program2 -> program2
 (* custom error reporting function *)
 type parse_error_function = int -> Parser_c.token list -> (int * int) ->
     string array -> int -> unit
-val set_parse_error_function : parse_error_function -> unit

@@ -127,19 +127,6 @@ let trace_cpp_process depth mark inc_file =
 
 let _hcandidates = Hashtbl.create 101
 
-let init_adjust_candidate_header_files dir =
-  let ext = "[h]" in
-  let files = Common.files_of_dir_or_files ext [dir] in
-
-  files +> List.iter (fun file ->
-    let base = Filename.basename file in
-    pr2_debug file;
-    Hashtbl.add _hcandidates base file;
-  );
-  ()
-
-
-
 (* may return a list of match ? *)
 let find_header_file1 cppopts dirname inc_file =
   match inc_file with
@@ -304,10 +291,6 @@ let (cpp_expand_include2:
 let cpp_expand_include ?depth_limit ?threshold_cache_nb_files a b c =
   Common.profile_code "cpp_expand_include"
    (fun () -> cpp_expand_include2 ?depth_limit ?threshold_cache_nb_files a b c)
-
-(*
-let unparse_showing_include_content ?
-*)
 
 (*****************************************************************************)
 (* Macro *)

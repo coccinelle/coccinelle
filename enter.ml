@@ -847,10 +847,6 @@ let all_string_option_names =
 	| (nm,_,_) -> nm :: prev)
     [] all_options
 
-(* I don't want the -help and --help that are appended by Arg.align *)
-let arg_align2 xs =
-  Arg.align xs +> List.rev +> Common.drop 2 +> List.rev
-
 (*
   Ignore unknown option
 

@@ -931,11 +931,9 @@ let unwrap_mcode (x,_,_,_)  = x
 let get_mcodekind (_,_,x,_) = x
 let get_line x             = x.node_line
 let get_mcode_line (_,l,_,_) = l.line
-let get_mcode_col (_,l,_,_)  = l.column
 let get_fvs x              = x.free_vars
 let set_fvs fvs x          = {x with free_vars = fvs}
 let get_mfvs x             = x.minus_free_vars
-let set_mfvs mfvs x        = {x with minus_free_vars = mfvs}
 let get_minus_nc_fvs x     = x.minus_nc_free_vars
 let get_fresh x            = x.fresh_vars
 let get_inherited x        = x.inherited
@@ -1100,12 +1098,6 @@ let make_meta_rule_elem s d c (fvs,fresh,inh) =
   {(make_term
       (MetaRuleElem(((rule,s),no_info,d,[]),c,Unitary,false)))
   with free_vars = fvs; fresh_vars = fresh; inherited = inh}
-
-let make_meta_decl s d c (fvs,fresh,inh) =
-  let rule = "" in
-  {(make_term
-      (MetaDecl(((rule,s),no_info,d,[]),c,Unitary,false))) with
-    free_vars = fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_id s d c (fvs,fresh,inh) =
   let rule = "" in

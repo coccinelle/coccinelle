@@ -500,17 +500,6 @@ let print_param_name pr = function
     {Ast_c.p_namei = Some name} -> pr (Ast_c.str_of_name name)
   | _ -> failwith "function must have named parameters"
 
-let pp_def_gen pr defn isexp =
-  let {Ast_c.f_name = name; f_type = (_, (paramst, (b, iib))); } = defn in
-  pr (Ast_c.str_of_name name); pr "(";
-  (if b then failwith "not handling variable argument functions");
-  (match paramst with
-    [] | [{Ast_c.p_type = (_,_,(Ast_c.BaseType(Ast_c.Void),_))},_] -> ()
-  | (first,_)::rest ->
-      print_param_name pr first;
-      List.iter (function (x,_) -> pr ", "; print_param_name pr x) rest);
-  pr ")"; if not isexp then pr ";"
-
 (* ----------------------------------------------------------------------- *)
 (* Entry point *)
 

@@ -89,9 +89,6 @@ val pp_string_fragment_list_gen:
 val pp_string_format_gen:
     pr_elem:Ast_c.info printer -> pr_space:unit printer ->
       Ast_c.string_format printer
-val pp_attribute_gen:
-    pr_elem:Ast_c.info printer -> pr_space:unit printer ->
-      Ast_c.attribute printer
 val pp_attr_arg_gen:
     pr_elem:Ast_c.info printer -> pr_space:unit printer ->
       Ast_c.attr_arg printer
@@ -129,6 +126,4 @@ val string_of_expression: Ast_c.expression -> string
  *)
 val string_of_ifdef_guard: Ast_c.ifdef_guard -> string
 val string_of_flow: Control_flow_c.node -> string
-val string_of_toplevel: Ast_c.toplevel -> string
 val string_of_fullType: Ast_c.fullType -> string
-val string_of_name: Ast_c.name -> string

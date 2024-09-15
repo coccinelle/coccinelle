@@ -52,16 +52,6 @@ let get_option fn = function
 
 let anyopt l fn = List.exists (function w -> fn(Ast0.unwrap w)) l
 
-let allopt l fn =
-  let rec loop = function
-      [] -> []
-    | x::xs ->
-	match fn (Ast0.unwrap x) with
-	  Some x -> x :: (loop xs)
-	| None -> [] in
-  let res = loop l in
-  if List.length res = List.length l then Some res else None
-
 (* --------------------------------------------------------------------- *)
 (* --------------------------------------------------------------------- *)
 (* Mcode *)

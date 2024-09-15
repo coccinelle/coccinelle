@@ -25,8 +25,6 @@ val _headers_hash:
 val _hcandidates:
   (string, Common.filename) Hashtbl.t
 
-val init_adjust_candidate_header_files: Common.dirname -> unit
-
 (* ---------------------------------------------------------------------- *)
 
 (* #include *)

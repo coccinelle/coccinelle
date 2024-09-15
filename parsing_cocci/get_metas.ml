@@ -45,10 +45,6 @@ let multibind l =
 let map_split_bind f l =
   let (n,e) = List.split(List.map f l) in (multibind n,e)
 
-let get_option f = function
-    Some x -> let (n,e) = f x in (n,Some e)
-  | None -> (option_default,None)
-
 let dots fn d = rewrap d (map_split_bind fn (Ast0.unwrap d))
 
 let ident r k i =

@@ -707,7 +707,6 @@ val get_index : 'a wrap -> int
 val set_index : 'a wrap -> int -> unit
 val get_line : 'a wrap -> int
 val get_mcode_line : 'a mcode -> int
-val get_mcode_logline : 'a mcode -> int
 val get_line_end : 'a wrap -> int
 val get_mcodekind : 'a wrap -> mcodekind
 val get_mcode_mcodekind : 'a mcode -> mcodekind

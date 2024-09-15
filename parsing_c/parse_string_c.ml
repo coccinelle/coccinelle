@@ -2,8 +2,6 @@ module PC = Parser_c
 
 type position = Before | After | Middle
 
-let make_int str info = PC.TInt((str,(Ast_c.Signed,Ast_c.CInt)),info)
-let make_float str info = PC.TFloat((str,(Ast_c.CFloat)),info)
 let make_quote str isW _ info = PC.TQuote ((str,isW),info)
 let make_pct str info = PC.TPct info
 let make_format str info = PC.TFormat (str,info)

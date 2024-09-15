@@ -1731,64 +1731,6 @@ let deadcode_detection (g : Control_flow_c.cflow) =
  * just the depth.
  *)
 
-let check_control_flow (g : cflow) : unit =
-  let starti = first_node g in
-  let visited = ref KeyMap.empty in
-
-  let print_trace_error xs =  pr2 "PB with flow:";  Common.pr2_gen xs; in
-
-  let rec dfs (nodei, (* Depth depth,*) startbraces,  trace)  =
-    let trace2 = nodei::trace in
-    if KeyMap.mem nodei !visited
-    then
-      (* if loop back, just check that go back to a state where have same depth
-         number *)
-      let (*(Depth depth2)*) startbraces2 = KeyMap.find nodei !visited in
-      if  (*(depth = depth2)*) startbraces <> startbraces2
-      then
-        begin
-	  let msg =
-	    Printf.sprintf
-	      "PB with flow: the node %d has not same braces count"
-              nodei in
-          pr2 msg;
-          print_trace_error trace2
-        end
-    else
-      let children = g#successors nodei in
-      visited := KeyMap.add nodei startbraces !visited;
-      let newdepth =
-        (match unwrap (KeyMap.find nodei g#nodes),  startbraces with
-        | SeqStart (_,i,_), xs  -> i::xs
-        | SeqEnd (i,_), j::xs ->
-            if i = j
-            then xs
-            else
-              begin
-                pr2 (Printf.sprintf ("PB with flow: not corresponding match between }%d and excpeted }%d at node %d") i j nodei);
-                print_trace_error trace2;
-                xs
-              end
-        | SeqEnd (i,_), [] ->
-            pr2 (Printf.sprintf "PB with flow: too much } at }%d " i);
-            print_trace_error trace2;
-            []
-        | _, xs ->  xs
-        )
-      in
-
-
-      if KeyEdgeSet.is_empty children
-      then
-        if (* (depth = 0) *) startbraces <> []
-        then print_trace_error trace2
-      else
-        let aux (key,_) = dfs (key, newdepth, trace2) in
-        KeyEdgeSet.iter aux children
-    in
-
-  dfs (starti, (* Depth 0*) [], [])
-
 (*****************************************************************************)
 (* Error report *)
 (*****************************************************************************)

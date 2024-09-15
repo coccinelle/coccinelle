@@ -895,12 +895,10 @@ val unwrap_mcode : 'a mcode -> 'a
 val get_mcodekind : 'a mcode -> mcodekind
 val get_line : 'a wrap -> line
 val get_mcode_line : 'a mcode -> line
-val get_mcode_col : 'a mcode -> int
 val get_fvs : 'a wrap -> meta_name list
 val get_wcfvs : ('a wrap,'b wrap) whencode list -> meta_name list
 val set_fvs : meta_name list -> 'a wrap -> 'a wrap
 val get_mfvs : 'a wrap -> meta_name list
-val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
 val get_minus_nc_fvs : 'a wrap -> meta_name list
 val get_fresh : 'a wrap -> (meta_name * seed) list
 val get_inherited : 'a wrap -> meta_name list
@@ -931,11 +929,6 @@ val make_meta_rule_elem :
     string -> mcodekind -> constraints ->
       (meta_name list * (meta_name * seed) list * meta_name list) ->
       rule_elem
-
-val make_meta_decl :
-    string -> mcodekind -> constraints ->
-      (meta_name list * (meta_name * seed) list * meta_name list) ->
-      declaration
 
 val make_meta_id :
     string -> mcodekind -> constraints ->

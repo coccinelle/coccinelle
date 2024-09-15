@@ -86,14 +86,11 @@ let al_define_params x =
   Visitor_c.vk_define_params_s (strip_info_visitor()) x
 let al_arguments x = Visitor_c.vk_arguments_s (strip_info_visitor()) x
 let al_fields    x = Visitor_c.vk_struct_fields_s (strip_info_visitor()) x
-let al_name      x = Visitor_c.vk_name_s      (strip_info_visitor()) x
 let al_string_format x = Visitor_c.vk_string_format_s (strip_info_visitor()) x
 let al_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_info_visitor()) x
 let al_attribute x = Visitor_c.vk_attribute_s (strip_info_visitor()) x
 let al_attr_arg  x = Visitor_c.vk_attr_arg_s  (strip_info_visitor()) x
-
-let al_node      x = Visitor_c.vk_node_s      (strip_info_visitor()) x
 
 let al_program  x = List.map (Visitor_c.vk_toplevel_s (strip_info_visitor())) x
 let al_info  x = Visitor_c.vk_info_s (strip_info_visitor()) x
@@ -148,10 +145,8 @@ let al_inh_string_format x =
   Visitor_c.vk_string_format_s (strip_inh_info_visitor()) x
 let al_inh_string_fragments x =
   Visitor_c.vk_string_fragments_s (strip_inh_info_visitor()) x
-let al_inh_attribute x = Visitor_c.vk_attribute_s (strip_inh_info_visitor()) x
 let al_inh_attr_arg  x = Visitor_c.vk_attr_arg_s  (strip_inh_info_visitor()) x
 let al_inh_info      x = Visitor_c.vk_info_s (strip_inh_info_visitor()) x
-let al_inh_ii        x = Visitor_c.vk_ii_s (strip_inh_info_visitor()) x
 
 
 
@@ -230,19 +225,10 @@ let real_strip_info_visitor _ =
   }
 
 let real_al_expr      x = Visitor_c.vk_expr_s   (real_strip_info_visitor()) x
-let real_al_arguments x = Visitor_c.vk_arguments_s (real_strip_info_visitor()) x
-let real_al_node      x = Visitor_c.vk_node_s   (real_strip_info_visitor()) x
-let real_al_type      x = Visitor_c.vk_type_s   (real_strip_info_visitor()) x
-let real_al_binop     x = Visitor_c.vk_binaryOp_s (real_strip_info_visitor()) x
-let real_al_assignop  x = Visitor_c.vk_assignOp_s (real_strip_info_visitor()) x
-let real_al_decl      x = Visitor_c.vk_decl_s   (real_strip_info_visitor()) x
-let real_al_init      x = Visitor_c.vk_ini_s    (real_strip_info_visitor()) x
-let real_al_inits     x = Visitor_c.vk_inis_s   (real_strip_info_visitor()) x
 let real_al_statement x =
   Visitor_c.vk_statement_s (real_strip_info_visitor()) x
 let real_al_statement_seq_list x =
   Visitor_c.vk_statement_sequencable_list_s (real_strip_info_visitor()) x
-let real_al_def       x = Visitor_c.vk_toplevel_s (real_strip_info_visitor()) x
 
 
 
@@ -270,13 +256,6 @@ let real_strip_info_visitor_with_comments _ =
 *)
 
   }
-
-let real_al_decl_with_comments x =
-  Visitor_c.vk_decl_s   (real_strip_info_visitor_with_comments()) x
-let real_al_statement_with_comments x =
-  Visitor_c.vk_statement_s (real_strip_info_visitor_with_comments()) x
-
-
 
 
 
@@ -427,13 +406,6 @@ let names_of_parameters_in_def def =
       params +> Common.map_filter (fun (param,ii) ->
         Ast_c.name_of_parameter param
       )
-
-let names_of_parameters_in_macro xs =
-  xs +> List.map (fun (xx, ii) ->
-    let (s, ii2) = xx in
-    s
-  )
-
 
 
 (* only used in ast_to_flow, so move it ? *)

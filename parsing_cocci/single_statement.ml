@@ -452,11 +452,6 @@ let is_dots x =
     Ast0.Dots(_,_) | Ast0.Nest(_,_,_,_,_) -> true
   | _ -> false
 
-let all_minus s =
-  match Ast0.get_mcodekind s with
-    Ast0.MINUS(_) -> true
-  | _ -> false
-
 let unchanged_minus s =
   match Ast0.get_mcodekind s with
     Ast0.MINUS(mc) ->

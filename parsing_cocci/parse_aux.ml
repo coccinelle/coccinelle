@@ -42,10 +42,6 @@ let make_info line logical_line logical_line_end offset col strbef straft
     Ast0.strings_before = strbef; Ast0.strings_after = straft;
     Ast0.isSymbolIdent = isSymbol; }
 
-let clt2info (_,line,logical_line,logical_line_end,offset,col,
-              strbef,straft,pos,ws) =
- make_info line logical_line logical_line_end offset col strbef straft false ws
-
 let drop_bef (arity,line,lline,llineend,offset,col,strbef,straft,pos,ws) =
   (arity,line,lline,llineend,offset,col,[],straft,pos,ws)
 
@@ -103,19 +99,9 @@ let id2mcode  (name, clt) = clt2mcode name clt
 let tok2mcode (name, clt) = clt2mcode name clt
 let sym2mcode (name, clt) = clt2mcode_ext name true clt
 
-let mkdots str (dot,whencode) =
-  match str with
-    "..." -> Ast0.wrap(Ast0.Dots(clt2mcode str dot, whencode))
-  | _ -> failwith "cannot happen"
-
 let mkedots str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Edots(clt2mcode str dot, whencode))
-  | _ -> failwith "cannot happen"
-
-let mkdpdots str dot =
-  match str with
-    "..." -> Ast0.wrap(Ast0.DPdots(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
 let mkidots str (dot,whencode) =
@@ -123,20 +109,9 @@ let mkidots str (dot,whencode) =
     "..." -> Ast0.wrap(Ast0.Idots(clt2mcode str dot, whencode))
   | _ -> failwith "cannot happen"
 
-let mkfdots str (dot,whencode) =
-  match (str,whencode) with
-    ("...",None) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, None))
-  | ("...",Some [w]) -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, Some w))
-  | _ -> failwith "cannot happen"
-
 let mkfdots_one str (dot,whencode) =
   match str with
     "..." -> Ast0.wrap(Ast0.Fdots(clt2mcode str dot, whencode))
-  | _ -> failwith "cannot happen"
-
-let mkpdots str dot =
-  match str with
-    "..." -> Ast0.wrap(Ast0.Pdots(clt2mcode str dot))
   | _ -> failwith "cannot happen"
 
 let mkenumdots str (dot,whencode) =
@@ -170,8 +145,6 @@ let make_cxx_attr_using lb1 usng atnm dotdot arg rb1 rb2 =
     (Ast0.CxxAttributeUsing
        (tok2mcode lb1,clt2mcode "using" usng, atnm,
 	clt2mcode ":" dotdot, arg, tok2mcode rb1, tok2mcode rb2))
-
-let top_dots l = Ast0.wrap l
 
 (* here the offset is that of the first in the sequence of *s, not that of
 each * individually *)
@@ -460,19 +433,6 @@ let create_metadec_with_constraints ar ispure kindfn ids current_rule =
 		 ((rule,nm),
 		  function x -> check_meta x; [Common.Right x]) in
 	   kindfn ar rule ispure checker constraints)
-       ids)
-
-let create_metadec_ty ar ispure kindfn ids current_rule =
-  List.concat
-    (List.map
-       (function ((rule,nm),constraints) ->
-	 let (rule,checker) =
-	   match rule with
-	     None -> ((current_rule,nm),function x -> [Common.Left x])
-	   | Some rule ->
-	       ((rule,nm),
-		function x -> check_meta x; [Common.Right x]) in
-	 kindfn ar rule ispure checker constraints)
        ids)
 
 let create_len_metadec ar ispure kindfn lenid ids current_rule =

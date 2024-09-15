@@ -589,23 +589,11 @@ let generated_newline_space_or_min = function
   | T2 (_, Min _, _, _) -> true
   | t -> existing_or_added_newline t
 
-let ends_in_space t =
-  let s = str_of_token2 t in
-  if s = ""
-  then false
-  else String.get s (String.length s - 1) = ' '
-
 let is_fake2 = function Fake2 _ -> true | _ -> false
 let is_comma = function Comma _ -> true | _ -> false
 
 let is_whitespace x =
   is_space x || is_newline_or_comment x
-
-let is_noncomment_whitespace x =
-  is_space x || is_newline x
-
-let is_whitespace_or_fake x =
-  is_space x || is_newline_or_comment x || is_fake2 x
 
 let is_minusable_comment = function
   | (T2 (t,_b,_i,_h)) ->
@@ -665,10 +653,6 @@ let all_coccis = function
   | Unindent_cocci2 _ | EatSpace2 -> true
   | _ -> false
 
-(* previously gave up if the first character was a newline, but not clear why *)
-let is_minusable_comment_or_plus x =
-  is_minusable_comment x || all_coccis x
-
 let set_minus_comment adj = function
     (T2 (Parser_c.TComment _,Ctx,idx,hint)) as x
     when !Flag_parsing_c.keep_comments -> x
@@ -695,12 +679,6 @@ let set_minus_comment adj = function
   | T2 (t, Min adj, idx, hint) as x -> x
   | Fake2 _ as x -> x
   | _ -> raise (Impossible 138)
-
-(* don't touch ifdefs, done after *)
-let set_minus_comment_or_plus adj = function
-  | Cocci2 _ | C2 _ | Comma _ | Indent_cocci2
-  | Unindent_cocci2 _ | EatSpace2 as x -> x
-  | x -> set_minus_comment adj x
 
 let is_minus = function
   | T2 (_, Min _, _, _) -> true
@@ -1829,19 +1807,6 @@ let newlineNL = function
   | PlusNL _ -> true
   | Label -> true
   | _ -> false
-
-let print_info l =
-  List.iter
-    (function
-	(_,CtxNL _,_) -> Printf.printf "CtxNL\n"
-      |	(_,MinNL _,_) -> Printf.printf "MinNL\n"
-      |	(_,PlusNL _,_) -> Printf.printf "PlusNL\n"
-      |	(_,Other n,t) -> Printf.printf "Other %d |%s|\n" n (str_of_token2 t)
-      |	(_,Drop,_) -> Printf.printf "Drop\n"
-      |	(_,Unindent,_) -> Printf.printf "Unindent\n"
-      |	(_,Unindent1,_) -> Printf.printf "Unindent1\n"
-      |	(_,Label,_) -> Printf.printf "Label\n")
-    l
 
 (* ------------------------------------------------------------------------- *)
 (* preparsing *)

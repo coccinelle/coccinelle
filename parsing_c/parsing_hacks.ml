@@ -133,13 +133,6 @@ let msg_foreach s =
   incr Stat.nIteratorHeuristic;
   pr2_cpp ("MACRO: found foreach: " ^ s)
 
-
-(* ??
-let msg_debug_macro s =
-  pr2_cpp ("MACRO: found debug-macro: " ^ s)
-*)
-
-
 let msg_macro_noptvirg s =
   incr Stat.nMacroStmt;
   pr2_cpp ("MACRO: found macro with param noptvirg: " ^ s)
@@ -266,8 +259,6 @@ let not_annot s =
   not (s ==~ regexp_annot)
 let is_macro s =
   s ==~ regexp_macro
-let not_macro s =
-  not (is_macro s)
 
 let is_macro_paren s rest = (* likely macro call *)
   is_macro s &&

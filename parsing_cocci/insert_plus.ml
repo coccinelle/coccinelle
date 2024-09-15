@@ -21,10 +21,6 @@ module CN = Context_neg
 
 let empty_isos = ref false
 
-let get_option f = function
-    None -> []
-  | Some x -> f x
-
 (* --------------------------------------------------------------------- *)
 (* Collect root and all context nodes in a tree *)
 
@@ -567,7 +563,6 @@ let mk_logicalOp x        = Ast.LogicalOpTag x
 let mk_declaration x      = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_field x            = Ast.FieldTag (Ast0toast.field x)
 let mk_enum_decl x        = Ast.EnumDeclTag (Ast0toast.enum_decl x)
-let mk_topdeclaration x   = Ast.DeclarationTag (Ast0toast.declaration x)
 let mk_storage x          = Ast.StorageTag x
 let mk_inc_file x         = Ast.IncFileTag x
 let mk_statement x        = Ast.StatementTag (Ast0toast.statement x)

@@ -762,7 +762,6 @@ let set_index x i   = x.index := i
 let get_mcodekind x = !(x.mcodekind)
 let get_mcode_mcodekind (_,_,_,mcodekind,_,_) = mcodekind
 let get_mcode_line (_,_,info,_,_,_) = info.pos_info.line_start
-let get_mcode_logline (_,_,info,_,_,_) = info.pos_info.logical_start
 let get_mcodekind_ref x = x.mcodekind
 let set_mcodekind x mk  = x.mcodekind := mk
 let set_type x t        = x.exp_ty := t

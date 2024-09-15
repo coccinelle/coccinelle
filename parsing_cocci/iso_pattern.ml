@@ -2339,11 +2339,6 @@ let is_minus e =
 
 let context_required e = not(is_minus e) && not !Flag.sgrep_mode2
 
-let disj_fail bindings e =
-  match bindings with
-    Some x -> Printf.fprintf stderr "no disj available at this type"; e
-  | None -> e
-
 (* isomorphism code is by default CONTEXT *)
 let merge_plus model_mcode e_mcode =
   match model_mcode with

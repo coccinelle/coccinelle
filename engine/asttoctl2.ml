@@ -2957,9 +2957,3 @@ let asttoctl r used_after positions =
   | Ast.CocciRule (rule_name,b,c,_,Ast_cocci.Normal) ->
       asttoctlz (rule_name,b,c) used_after positions
   | Ast.CocciRule (a,b,c,_,Ast_cocci.Generated) -> [CODE CTL.True]
-
-let pp_cocci_predicate (pred,modif) =
-  Pretty_print_engine.pp_predicate pred
-
-let cocci_predicate_to_string (pred,modif) =
-  Pretty_print_engine.predicate_to_string pred

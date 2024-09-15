@@ -347,8 +347,3 @@ let assoc_stat_number =
 
     "nIteratorGrammar", nIteratorGrammar;
   ]
-
-let print_stat_numbers () =
-  assoc_stat_number +> List.iter (fun (k, vref) ->
-    pr2 (spf "%-30s -> %d" k !vref);
-  )

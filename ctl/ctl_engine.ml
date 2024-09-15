@@ -72,10 +72,6 @@ let satAG_calls = ref 0
 let triples = ref 0
 
 let ctr = ref 0
-let new_let _ =
-  let c = !ctr in
-  ctr := c + 1;
-  Printf.sprintf "_fresh_r_%d" c
 
 (* **********************************************************************
  *
@@ -209,15 +205,6 @@ let maybe f g opt =
     | Some x -> f x
 ;;
 
-let some_map f opts = map (maybe (fun x -> Some (f x)) None) opts
-
-let rec some_tolist (opts : 'a option list) : 'a list =
-  match opts with
-    | []             -> []
-    | (Some x)::rest -> x::(some_tolist rest)
-    | _::rest        -> some_tolist rest
-;;
-
 let rec groupBy eq l =
     match l with
       [] -> []
@@ -242,8 +229,6 @@ let rec nubBy eq ls =
 ;;
 
 let state_compare (s1,_,_) (s2,_,_) = compare s1 s2
-
-let setifyBy eq xs = nubBy eq xs;;
 
 let setify xs = Common.nub xs;;
 
@@ -861,14 +846,6 @@ let triple_negate (s,th,wits) =
   let negwits = map (fun nwit -> (s,th,nwit)) (negate_wits wits) in
   ([s], negths @ negwits) (* all different *)
 
-let print_compl_state str (n,p) =
-  Printf.printf "%s neg: " str;
-  List.iter
-    (function x -> G.print_node x; Format.print_flush(); Printf.printf " ")
-    n;
-  Printf.printf "\n";
-  print_state "pos" p
-
 let triples_complement states (trips : ('pred, 'anno) triples) =
   if trips = []
   then map (function st -> (st,top_subst,top_wit)) states
@@ -1398,6 +1375,7 @@ let strict_triples_conj_none strict states trips trips' =
     triples_union res ors
   else res
 
+(*
 let left_strict_triples_conj strict states trips trips' =
   let res = triples_conj trips trips' in
   if !Flag_ctl.partial_match && strict = A.STRICT
@@ -1405,6 +1383,7 @@ let left_strict_triples_conj strict states trips trips' =
     let fail_left = filter_conj states trips trips' in
     triples_union res fail_left
   else res
+*)
 
 let strict_A1 strict op failop dir ((_,_,states) as m) trips required_states =
   let res = op dir m trips required_states in
@@ -1622,12 +1601,6 @@ let get_reachable dir m required_states =
 		       states)
 		   rest)
 	   [] states)
-
-let ctr = ref 0
-let new_var _ =
-  let c = !ctr in
-  ctr := !ctr + 1;
-  Printf.sprintf "_c%d" c
 
 (* **************************** *)
 (* End of environment functions *)
@@ -2393,14 +2366,6 @@ let rec iter fn = function
      Hashtbl.clear memo_label;
      triples := 0;
      iter fn (n-1))
-
-let copy_to_stderr fl =
-  let i = open_in fl in
-  let rec loop _ =
-    Printf.fprintf stderr "%s\n" (input_line i);
-    loop() in
-  try loop() with _ -> ();
-  close_in i
 
 let bench_sat (_,_,states) fn =
   List.iter (function (opt,_) -> opt := false) all_options;

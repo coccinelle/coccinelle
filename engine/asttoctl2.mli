@@ -14,7 +14,3 @@ val asttoctl :
 	 Ast_cocci.meta_name list list (* fresh used after seeds *)) ->
       Ast_cocci.meta_name list list (* positions *) ->
       top_formula list
-
-val pp_cocci_predicate : cocci_predicate -> unit
-
-val cocci_predicate_to_string : cocci_predicate -> string

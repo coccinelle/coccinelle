@@ -566,7 +566,6 @@ module Ast_c :
     val rewrap_expr : ('a * 'b) * 'c -> 'd -> ('d * 'b) * 'c
     val unwrap_typeC : fullType -> typeCbis
     val rewrap_typeC : fullType -> typeCbis -> fullType
-    val unwrap_typeCbis : typeC -> typeCbis
     val unwrap_st : 'a * 'b -> 'a
     val mk_e : 'a -> 'b -> ('a * ('c option * test) ref) * 'b
     val mk_e_bis : 'a -> 'b -> 'c -> ('a * 'b) * 'c
@@ -575,7 +574,6 @@ module Ast_c :
     val mk_st : 'a -> 'b -> 'a * 'b
     val get_ii_typeC_take_care : 'a * 'b -> 'b
     val get_ii_st_take_care : 'a * 'b -> 'b
-    val get_ii_expr_take_care : 'a * 'b -> 'b
     val get_st_and_ii : 'a * 'b -> 'a * 'b
     val get_ty_and_ii : 'a * attribute list * ('b * 'c) -> 'b * 'c
     val get_e_and_ii : 'a * 'b -> 'a * 'b
@@ -583,8 +581,6 @@ module Ast_c :
     val set_type_expr : ('a * 'b ref) * 'c -> 'b -> unit
     val get_onlytype_expr :
       ('a * (('b * 'c) option * 'd) ref) * 'e -> 'b option
-    val get_onlylocal_expr :
-      ('a * (('b * 'c) option * 'd) ref) * 'e -> 'c option
     val rewrap_str : string -> info -> info
     val rewrap_charpos : int -> info -> info
     val rewrap_col : int -> info -> info
@@ -629,7 +625,6 @@ module Ast_c :
     val unsplit_nocomma : ('a, il) Common.either list -> 'a list
     val s_of_inc_file : inc_file -> string
     val s_of_inc_file_bis : inc_file -> string
-    val fieldname_of_fieldkind : fieldkind -> name option
     val s_of_attr : (attributebis * info list) list -> string
     val str_of_name : name -> string
     val get_s_and_ii_of_name : name -> string * il
@@ -640,8 +635,6 @@ module Ast_c :
       (expressionbis * 'a) * il -> il
     val get_local_ii_of_tybis_inlining_ii_of_name : typeCbis * il -> il
     val info_of_type : 'a * attribute list * (typeCbis * il) -> parse_info option
-    val get_local_ii_of_st_inlining_ii_of_name :
-      statementbis * info list -> info list
     val name_of_parameter : parameterType -> string option
     val put_annot_info :
       info -> Token_annot.annot_key -> Token_annot.annot_val -> unit
@@ -649,7 +642,6 @@ module Ast_c :
       info -> Token_annot.annot_key -> Token_annot.annot_val option
     val get_comments_before : info -> Token_c.comment_like_token list
     val get_comments_after : info -> Token_c.comment_like_token list
-    val string_of_toplevel : toplevel -> string
     val string_of_inc_file : inc_file -> string
   end
 module Parse_c :
@@ -710,7 +702,6 @@ module Parse_c :
     type parse_error_function =
         int ->
         Parser_c.token list -> int * int -> string array -> int -> unit
-    val set_parse_error_function : parse_error_function -> unit
   end
 module Parser_c :
   sig
@@ -1048,9 +1039,7 @@ module Pretty_print_c :
       Control_flow_c.G.key -> Control_flow_c.cflow -> string
     val string_of_expression : Ast_c.expression -> string
     val string_of_ifdef_guard : Ast_c.ifdef_guard -> string
-    val string_of_toplevel : Ast_c.toplevel -> string
     val string_of_fullType : Ast_c.fullType -> string
-    val string_of_name : Ast_c.name -> string
   end
 module Lib_parsing_c :
   sig
@@ -1078,11 +1067,9 @@ module Lib_parsing_c :
     val al_arguments :
       Ast_c.argument Ast_c.wrap2 list -> Ast_c.argument Ast_c.wrap2 list
     val al_fields : Ast_c.field list -> Ast_c.field list
-    val al_name : Ast_c.name -> Ast_c.name
     val al_string_format : Ast_c.string_format -> Ast_c.string_format
     val al_string_fragments :
       Ast_c.string_fragment list -> Ast_c.string_fragment list
-    val al_node : Control_flow_c.node -> Control_flow_c.node
     val al_program : Ast_c.toplevel list -> Ast_c.toplevel list
     val al_ii : Ast_c.info list -> Ast_c.info list
     val strip_inh_info_visitor : 'a -> Visitor_c.visitor_c_s
@@ -1131,21 +1118,9 @@ module Lib_parsing_c :
     val semi_al_program : Ast_c.toplevel list -> Ast_c.toplevel list
     val real_strip_info_visitor : 'a -> Visitor_c.visitor_c_s
     val real_al_expr : Ast_c.expression -> Ast_c.expression
-    val real_al_arguments :
-      Ast_c.argument Ast_c.wrap2 list -> Ast_c.argument Ast_c.wrap2 list
-    val real_al_node : Control_flow_c.node -> Control_flow_c.node
-    val real_al_type : Ast_c.fullType -> Ast_c.fullType
-    val real_al_binop : Ast_c.binaryOp -> Ast_c.binaryOp
-    val real_al_assignop : Ast_c.assignOp -> Ast_c.assignOp
-    val real_al_decl : Ast_c.declaration -> Ast_c.declaration
-    val real_al_init : Ast_c.initialiser -> Ast_c.initialiser
-    val real_al_inits :
-      Ast_c.initialiser Ast_c.wrap2 list ->
-      Ast_c.initialiser Ast_c.wrap2 list
     val real_al_statement : Ast_c.statement -> Ast_c.statement
     val real_al_statement_seq_list :
       Ast_c.statement_sequencable list -> Ast_c.statement_sequencable list
-    val real_al_def : Ast_c.toplevel -> Ast_c.toplevel
     val extract_info_visitor :
       (Visitor_c.visitor_c -> 'a -> 'b) -> 'a -> Ast_c.info list
     val ii_of_def : Ast_c.definition -> Ast_c.info list
@@ -1197,7 +1172,6 @@ module Lib_parsing_c :
     val min_pinfo_of_node : Control_flow_c.node -> Common.parse_info
     val range_of_origin_ii : Ast_c.info list -> (int * int) option
     val names_of_parameters_in_def : Ast_c.definitionbis -> string list
-    val names_of_parameters_in_macro : (('a * 'b) * 'c) list -> 'a list
     val stmt_elems_of_sequencable :
       Ast_c.statement_sequencable list -> Ast_c.statement list
   end
@@ -1519,10 +1493,8 @@ module Flag_parsing_c :
     val mk_macro_path : cocci_path:string -> string -> string
     val std_h : string ref
     val common_h : string ref
-    val cmdline_flags_macrofile : unit -> (string * Arg.spec * string) list
     val cpp_i_opts : string list ref
     val cpp_d_opts : string list ref
-    val cmdline_flags_cpp : unit -> (string * Arg.spec * string) list
     val show_parsing_error : bool ref
     val verbose_lexing : bool ref
     val verbose_parsing : bool ref
@@ -1541,7 +1513,6 @@ module Flag_parsing_c :
     val pretty_print_comment_info : bool ref
     val pretty_print_typedef_value : bool ref
     val show_flow_labels : bool ref
-    val cmdline_flags_verbose : unit -> (string * Arg.spec * string) list
     val debug_lexer : bool ref
     val debug_etdt : bool ref
     val debug_typedef : bool ref
@@ -1549,11 +1520,8 @@ module Flag_parsing_c :
     val debug_cpp_ast : bool ref
     val debug_unparsing : bool ref
     val debug_cfg : bool ref
-    val cmdline_flags_debugging : unit -> (string * Arg.spec * string) list
     val check_annotater : bool ref
-    val cmdline_flags_checks : unit -> (string * Arg.spec * string) list
     val label_strategy_2 : bool ref
-    val cmdline_flags_algos : unit -> (string * Arg.spec * string) list
     val cpp_directive_passing : bool ref
     val ifdef_directive_passing : bool ref
     val ifdef_to_if : bool ref
@@ -1565,13 +1533,10 @@ module Flag_parsing_c :
     val add : string list ref -> string -> unit
     val defined : string list ref
     val undefined : string list ref
-    val cmdline_flags_parsing_algos :
-      unit -> (string * Arg.spec * string) list
     val diff_lines : string option ref
     val use_cache : bool ref
     val cache_prefix : string option ref
     val cache_limit : int option ref
-    val cmdline_flags_other : unit -> (string * Arg.spec * string) list
     val int_thresholds :
         (int * int * string * string * string * string) option ref
     val set_int_bits : int -> unit
@@ -1602,8 +1567,6 @@ module Iteration :
       string list option * string list * (string * string) list * bool ->
       unit
     val get_pending_instance : unit -> pending_info option
-    val check_virtual_rule : string -> unit
-    val check_virtual_ident : string -> unit
   end
 module Commands :
   sig
@@ -1651,18 +1614,12 @@ module Common :
     val redirect_stdout_stderr : filename -> (unit -> unit) -> unit
     val redirect_stdin : filename -> (unit -> 'a) -> 'a
     val redirect_stdin_opt : filename option -> (unit -> 'a) -> 'a
-    val with_pr2_to_string : (unit -> unit) -> string list
     val spf : ('a, unit, string) format -> 'a
     val _chan : out_channel ref
-    val start_log_file : unit -> unit
     val log : string -> unit
     val log2 : string -> unit
     val log3 : string -> unit
     val log4 : string -> unit
-    val if_log : (unit -> unit) -> unit
-    val if_log2 : (unit -> unit) -> unit
-    val if_log3 : (unit -> unit) -> unit
-    val if_log4 : (unit -> unit) -> unit
     val pause : unit -> unit
     val _trace_var : int ref
     val add_var : unit -> unit
@@ -1671,8 +1628,6 @@ module Common :
     val print_n : int -> string -> unit
     val printerr_n : int -> string -> unit
     val _debug : bool ref
-    val debugon : unit -> unit
-    val debugoff : unit -> unit
     val debug : (unit -> unit) -> unit
     val _profile_table : (string, float ref * int ref) Hashtbl.t ref
     val profile_code : string -> (unit -> 'a) -> 'a
@@ -1681,7 +1636,6 @@ module Common :
     val profile_code_exclusif : string -> (unit -> 'a) -> 'a
     val profile_code_inside_exclusif_ok : string -> (unit -> 'a) -> 'a
     val report_if_take_time : int -> string -> (unit -> 'a) -> 'a
-    val profile_code2 : string -> (unit -> 'a) -> 'a
     val example : bool -> unit
     val example2 : string -> bool -> unit
     val assert_equal : 'a -> 'a -> unit
@@ -1697,7 +1651,6 @@ module Common :
     val regression_testing : score -> filename -> unit
     val regression_testing_vs : score -> score -> score
     val total_scores : score -> int * int
-    val print_score : score -> unit
     val print_total_score : score -> unit
     type 'a gen = unit -> 'a
     val ig : int gen
@@ -1718,7 +1671,6 @@ module Common :
     val get_value : filename -> 'a
     val read_value : filename -> 'a
     val write_value : 'a -> filename -> unit
-    val write_back : ('a -> 'b) -> filename -> unit
     val marshal__to_string : 'a -> Marshal.extern_flags list -> string
     val marshal__from_string : string -> int -> 'a
     val _counter : int ref
@@ -1728,24 +1680,13 @@ module Common :
     val counter2 : unit -> int
     val counter3 : unit -> int
     type timestamp = int
-    val string_of_string : (string -> string) -> string
-    val string_of_list : ('a -> string) -> 'a list -> string
-    val string_of_unit : unit -> string
-    val string_of_array : ('a -> string) -> 'a array -> string
-    val string_of_option : ('a -> string) -> 'a option -> string
-    val print_bool : bool -> unit
-    val print_option : ('a -> 'b) -> 'a option -> unit
-    val print_list : ('a -> 'b) -> 'a list -> unit
     val print_between : (unit -> unit) -> ('a -> unit) -> 'a list -> unit
     val pp_do_in_box : (unit -> unit) -> unit
-    val pp_f_in_box : (unit -> 'a) -> 'a
     val pp_do_in_zero_box : (unit -> unit) -> unit
     val pp : string -> unit
     val format_to_string : (unit -> unit) -> string
     val adjust_pp_with_indent : (unit -> unit) -> unit
     val adjust_pp_with_indent_and_header : string -> (unit -> unit) -> unit
-    val mk_str_func_of_assoc_conv :
-      ('a * string) list -> (string -> 'a) * ('a -> string)
     val ( +> ) : 'a -> ('a -> 'b) -> 'b
     val ( +!> ) : 'a ref -> ('a -> 'a) -> unit
     val ( $ ) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
@@ -1754,8 +1695,6 @@ module Common :
     val curry : ('a * 'b -> 'c) -> 'a -> 'b -> 'c
     val uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
     val id : 'a -> 'a
-    val do_nothing : unit -> unit
-    val forever : (unit -> unit) -> unit
     val applyn : int -> ('a -> 'a) -> 'a -> 'a
     class ['a] shared_variable_hook :
       'a ->
@@ -1776,12 +1715,9 @@ module Common :
     val run_hooks_action : 'a -> ('a -> unit) list ref -> unit
     type 'a mylazy = unit -> 'a
     val save_excursion : 'a ref -> (unit -> 'b) -> 'b
-    val save_excursion_and_disable : bool ref -> (unit -> 'a) -> 'a
-    val save_excursion_and_enable : bool ref -> (unit -> 'a) -> 'a
     val unwind_protect : (unit -> 'a) -> (exn -> 'b) -> 'a
     val finalize : (unit -> 'a) -> (unit -> 'b) -> 'a
     val memoized : ('a, 'b) Hashtbl.t -> 'a -> (unit -> 'b) -> 'b
-    val cache_in_ref : 'a option ref -> (unit -> 'a) -> 'a
     val cache_computation :
       ?verbose:bool ->
       ?use_cache:bool -> filename -> string -> (unit -> 'a) -> 'a
@@ -1793,11 +1729,7 @@ module Common :
       filename ->
       string -> filename list * 'a -> string -> (unit -> 'b) -> 'b
     val once : ('a -> unit) -> 'a -> unit
-    val before_leaving : ('a -> unit) -> 'a -> 'a
     val main_boilerplate : (unit -> unit) -> unit
-    exception FileAlreadyLocked
-    val acquire_file_lock : filename -> unit
-    val release_file_lock : filename -> unit
     exception Todo
     exception Impossible of int
     exception Here
@@ -1805,11 +1737,9 @@ module Common :
     exception Multi_found
     exception WrongFormat of string
     val internal_error : string -> 'a
-    val myassert : bool -> unit
     val warning : string -> 'a -> 'a
     val error_cant_have : 'a -> 'b
     val exn_to_s : exn -> string
-    val string_of_exn : exn -> string
     type evotype = unit
     val evoval : evotype
     val check_stack_size : int -> unit
@@ -1837,14 +1767,12 @@ module Common :
     val mk_action_0_arg : (unit -> unit) -> action_func
     val mk_action_1_arg : (string -> unit) -> action_func
     val mk_action_2_arg : (string -> string -> unit) -> action_func
-    val mk_action_3_arg : (string -> string -> string -> unit) -> action_func
     val mk_action_n_arg : (string list -> unit) -> action_func
     val options_of_actions : string ref -> cmdline_actions -> cmdline_options
     val action_list : cmdline_actions -> Arg.key list
     val do_action : Arg.key -> string list -> cmdline_actions -> unit
     val ( ||| ) : 'a -> 'a -> 'a
     val ( ==> ) : bool -> bool -> bool
-    val xor : 'a -> 'a -> bool
     val string_of_char : char -> string
     val string_of_chars : char list -> string
     val is_single : char -> bool
@@ -1852,7 +1780,6 @@ module Common :
     val is_space : char -> bool
     val is_upper : char -> bool
     val is_lower : char -> bool
-    val is_alpha : char -> bool
     val is_digit : char -> bool
     val cbetween : char -> char -> char -> bool
     val ( /! ) : int -> int -> int
@@ -1867,34 +1794,22 @@ module Common :
     val power : int -> int -> int
     val between : 'a -> 'a -> 'a -> bool
     val between_strict : int -> int -> int -> bool
-    val bitrange : int -> int -> bool
     val prime1 : int -> int option
     val prime : int -> int option
     val sum : int list -> int
     val product : int list -> int
     val decompose : int -> int list
-    val mysquare : int -> int
     val sqr : float -> float
     type compare = Common.compare = Equal | Inf | Sup
     val ( <=> ) : 'a -> 'a -> compare
     val ( <==> ) : 'a -> 'a -> int
     type uint = int
-    val int_of_stringchar : string -> int
     val int_of_base : string -> int -> int
     val int_of_stringbits : string -> int
     val int_of_octal : string -> int
-    val int_of_all : string -> int
     val ( += ) : int ref -> int -> unit
     val ( -= ) : int ref -> int -> unit
     val pourcent : int -> int -> int
-    val pourcent_float : int -> int -> float
-    val pourcent_float_of_floats : float -> float -> float
-    val pourcent_good_bad : int -> int -> int
-    val pourcent_good_bad_float : int -> int -> float
-    type 'a max_with_elem = int ref * 'a ref
-    val update_max_with_elem :
-      'a max_with_elem ->
-      is_better:(int -> int ref -> bool) -> int * 'a -> unit
     type 'a numdict =
       'a Common.numdict =
         NumDict of
@@ -1906,7 +1821,6 @@ module Common :
     val neg : 'a numdict -> 'a -> 'a
     val numd_int : int numdict
     val numd_float : float numdict
-    val testd : 'a numdict -> 'a -> 'a
     module ArithFloatInfix :
       sig
         val ( + ) : float -> float -> float
@@ -1922,15 +1836,11 @@ module Common :
     val _init_random : unit
     val random_list : 'a list -> 'a
     val randomize_list : 'a list -> 'a list
-    val random_subset_of_list : int -> 'a list -> 'a list
     type 'a pair = 'a * 'a
     type 'a triple = 'a * 'a * 'a
     val fst3 : 'a * 'b * 'c -> 'a
     val snd3 : 'a * 'b * 'c -> 'b
     val thd3 : 'a * 'b * 'c -> 'c
-    val sndthd : 'a * 'b * 'c -> 'b * 'c
-    val map_fst : ('a -> 'b) -> 'a * 'c -> 'b * 'c
-    val map_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
     val pair : ('a -> 'b) -> 'a * 'a -> 'b * 'b
     val snd : 'a * 'b -> 'b
     val fst : 'a * 'b -> 'a
@@ -1959,13 +1869,10 @@ module Common :
     val some_or : 'a option -> 'a -> 'a
     val partition_either :
       ('a -> ('b, 'c) either) -> 'a list -> 'b list * 'c list
-    val partition_either3 :
-      ('a -> ('b, 'c, 'd) either3) -> 'a list -> 'b list * 'c list * 'd list
     val filter_some : 'a option list -> 'a list
     val map_filter : ('a -> 'b option) -> 'a list -> 'b list
     val tail_map_filter : ('a -> 'b option) -> 'a list -> 'b list
     val find_some : ('a -> 'b option) -> 'a list -> 'b
-    val list_to_single_or_exn : 'a list -> 'a
     type bool3 = Common.bool3 = True3 | False3 | TrueFalsePb3 of string
     val _shareds : (string, string) Hashtbl.t
     val shared_string : string -> string
@@ -1974,14 +1881,8 @@ module Common :
     val ( <!!> ) : string -> int * int -> string
     val ( <!> ) : string -> int -> char
     val take_string : int -> string -> string
-    val take_string_safe : int -> string -> string
     val quote : string -> string
-    val is_blank_string : string -> bool
-    val is_string_prefix : string -> string -> bool
     val plural : int -> string -> string
-    val showCodeHex : int list -> unit
-    val size_mo_ko : int -> string
-    val size_ko : int -> string
     val edit_distance : string -> string -> int
     val md5sum_of_string : string -> string
     val regexp_alpha : Str.regexp
@@ -2006,26 +1907,17 @@ module Common :
     val split_list_regexp :
       string -> string list -> (string * string list) list
     val all_match : string -> string -> string list
-    val global_replace_regexp :
-      string -> (string -> string) -> string -> string
     val regular_words : string -> string list
-    val contain_regular_word : string -> bool
     val filesuffix : filename -> string
     val fileprefix : filename -> string
     val adjust_ext_if_needed : filename -> string -> filename
-    val db_of_filename : filename -> string * filename
     val filename_of_db : string * filename -> filename
     val dbe_of_filename : filename -> string * string * string
-    val dbe_of_filename_nodot : filename -> string * string * string
     val dbe_of_filename_safe :
       filename -> (string * string * string, string * string) either
     val filename_of_dbe : string * string * string -> filename
-    val replace_ext : filename -> string -> string -> filename
     val normalize_path : filename -> filename
-    val relative_to_absolute : filename -> filename
     val is_relative : filename -> bool
-    val is_absolute : filename -> bool
-    val filename_without_leading_path : string -> filename -> filename
     type langage = Common.langage = English | Francais | Deutsch
     type month =
       Common.month =
@@ -2052,47 +1944,22 @@ module Common :
     type days = Common.days = Days of int
     type time_dmy = Common.time_dmy = TimeDMY of day * month * year
     type float_time = float
-    val mk_date_dmy : int -> int -> int -> date_dmy
     val check_date_dmy : date_dmy -> unit
-    val check_time_dmy : time_dmy -> unit
-    val check_time_hms : time_hms -> unit
     val int_to_month : int -> string
     val int_of_month : month -> int
     val month_of_string : string -> month
-    val month_of_string_long : string -> month
     val string_of_month : month -> string
-    val string_of_date_dmy : date_dmy -> string
     val string_of_unix_time : ?langage:langage -> Unix.tm -> string
     val short_string_of_unix_time : ?langage:langage -> Unix.tm -> string
     val string_of_floattime : ?langage:langage -> float_time -> string
-    val short_string_of_floattime : ?langage:langage -> float_time -> string
-    val floattime_of_string : string -> float_time
     val dmy_to_unixtime : date_dmy -> float_time * Unix.tm
-    val unixtime_to_dmy : Unix.tm -> date_dmy
-    val unixtime_to_floattime : Unix.tm -> float_time
-    val floattime_to_unixtime : float_time -> Unix.tm
-    val sec_to_days : int -> string
-    val sec_to_hours : int -> string
-    val today : unit -> float_time
-    val yesterday : unit -> float_time
-    val tomorrow : unit -> float_time
-    val lastweek : unit -> float_time
-    val lastmonth : unit -> float_time
-    val week_before : float_time -> float_time
-    val month_before : float_time -> float_time
-    val week_after : float_time -> float_time
     val days_in_week_of_day : float_time -> float_time list
-    val first_day_in_week_of_day : float_time -> float_time
-    val last_day_in_week_of_day : float_time -> float_time
     val day_secs : float_time
     val rough_days_since_jesus : date_dmy -> days
     val rough_days_between_dates : date_dmy -> date_dmy -> days
-    val string_of_unix_time_lfs : Unix.tm -> string
     val is_more_recent : date_dmy -> date_dmy -> bool
     val max_dmy : date_dmy -> date_dmy -> date_dmy
     val min_dmy : date_dmy -> date_dmy -> date_dmy
-    val maximum_dmy : date_dmy list -> date_dmy
-    val minimum_dmy : date_dmy list -> date_dmy
     val this_year : unit -> int
     val list_of_string : string -> char list
     val lines : string -> string list
@@ -2105,8 +1972,6 @@ module Common :
     val cat : filename -> string list
     val cat_orig : filename -> string list
     val cat_array : filename -> string array
-    val uncat : string list -> filename -> unit
-    val interpolate : string -> string list
     val echo : string -> string
     val process_output_to_list : string -> string list
     val cmd_to_list : string -> string list
@@ -2119,15 +1984,12 @@ module Common :
     val _batch_mode : bool ref
     val command2_y_or_no : string -> bool
     val command2_y_or_no_exit_if_no : string -> unit
-    val do_in_fork : (unit -> unit) -> int
     val mkdir : ?mode:Unix.file_perm -> string -> unit
     val write_file : file:filename -> string -> unit
     val filesize : filename -> int
     val filemtime : filename -> float
-    val nblines_file : filename -> int
     val lfile_exists : filename -> bool
     val is_directory : filename -> bool
-    val capsule_unix : ('a -> unit) -> 'a -> unit
     val readdir_to_kind_list : string -> Unix.file_kind -> string list
     val readdir_to_dir_list : string -> string list
     val readdir_to_file_list : string -> string list
@@ -2136,13 +1998,6 @@ module Common :
     val glob : string -> filename list
     val files_of_dir_or_files : string -> string list -> filename list
     val files_of_dir_or_files_no_vcs : string -> string list -> filename list
-    val files_of_dir_or_files_no_vcs_post_filter :
-      string -> string list -> filename list
-    val sanity_check_files_and_adjust :
-      string -> string list -> filename list
-    type rwx = [ `R | `W | `X ] list
-    val file_perm_of : u:rwx -> g:rwx -> o:rwx -> Unix.file_perm
-    val has_env : string -> bool
     val with_open_outfile :
       filename -> ((string -> unit) * out_channel -> 'a) -> 'a
     val with_open_infile : filename -> (in_channel -> 'a) -> 'a
@@ -2157,7 +2012,6 @@ module Common :
     val temp_files : string ref
     val new_temp_file : string -> string -> filename
     val erase_temp_files : unit -> unit
-    val erase_this_temp_file : filename -> unit
     exception UnixExit of int
     val exn_to_real_unixexit : (unit -> 'a) -> 'a
     val map_eff_rev : ('a -> 'b) -> 'a list -> 'b list
@@ -2177,7 +2031,6 @@ module Common :
     val span : ('a -> bool) -> 'a list -> 'a list * 'a list
     val skip_until : ('a list -> bool) -> 'a list -> 'a list
     val skipfirst : 'a -> 'a list -> 'a list
-    val fpartition : ('a -> 'b option) -> 'a list -> 'b list * 'a list
     val groupBy : ('a -> 'a -> bool) -> 'a list -> 'a list list
     val exclude_but_keep_attached :
       ('a -> bool) -> 'a list -> ('a * 'a list) list
@@ -2197,18 +2050,13 @@ module Common :
     val generate : int -> 'a -> 'a list
     val index_list : 'a list -> ('a * int) list
     val index_list_1 : 'a list -> ('a * int) list
-    val index_list_and_total : 'a list -> ('a * int * int) list
-    val iter_index : ('a -> int -> 'b) -> 'a list -> unit
-    val map_index : ('a -> int -> 'b) -> 'a list -> 'b list
     val filter_index : (int -> 'a -> bool) -> 'a list -> 'a list
     val fold_left_with_index : ('a -> 'b -> int -> 'a) -> 'a -> 'b list -> 'a
     val nth : 'a list -> int -> 'a
     val rang : 'a -> 'a list -> int
     val last_n : int -> 'a list -> 'a list
-    val snoc : 'a -> 'a list -> 'a list
     val cons : 'a -> 'a list -> 'a list
     val uncons : 'a list -> 'a * 'a list
-    val safe_tl : 'a list -> 'a list
     val head_middle_tail : 'a list -> 'a * 'a list * 'a
     val last : 'a list -> 'a
     val list_init : 'a list -> 'a list
@@ -2227,13 +2075,11 @@ module Common :
       (('a -> 'b) -> 'c -> 'd) ->
       ('e -> 'a -> 'b * 'e) -> 'e -> 'c -> 'd * 'e
     val map_withenv : ('a -> 'b -> 'c * 'a) -> 'a -> 'b list -> 'c list * 'a
-    val map_withkeep : ('a -> 'b) -> 'a list -> ('b * 'a) list
     val collect_accu : ('a -> 'b list) -> 'b list -> 'a list -> 'b list
     val collect : ('a -> 'b list) -> 'a list -> 'b list
     val remove : 'a -> 'a list -> 'a list
     val exclude : ('a -> bool) -> 'a list -> 'a list
     val uniq : 'a list -> 'a list
-    val uniq_eff : 'a list -> 'a list
     val has_no_duplicate : 'a list -> bool
     val is_set_as_list : 'a list -> bool
     val get_duplicates : 'a list -> 'a list
@@ -2247,19 +2093,14 @@ module Common :
     val maximum : 'a list -> 'a
     val minimum : 'a list -> 'a
     val min_with : ('a -> 'b) -> 'a list -> 'a
-    val two_mins_with : ('a -> 'b) -> 'a list -> 'a * 'a
     val all_assoc : 'a -> ('a * 'b) list -> 'b list
-    val prepare_want_all_assoc : ('a * 'b) list -> ('a * 'b list) list
     val or_list : bool list -> bool
     val and_list : bool list -> bool
     val sum_float : float list -> float
     val sum_int : int list -> int
-    val avg_list : int list -> float
     val return_when : ('a -> 'b option) -> 'a list -> 'b
     val grep_with_previous : ('a -> 'a -> bool) -> 'a list -> 'a list
     val iter_with_previous : ('a -> 'a -> 'b) -> 'a list -> unit
-    val iter_with_before_after :
-      ('a list -> 'a -> 'a list -> unit) -> 'a list -> unit
     val get_pair : 'a list -> ('a * 'a) list
     val permutation : 'a list -> 'a list list
     val remove_elem_pos : int -> 'a list -> 'a list
@@ -2278,27 +2119,20 @@ module Common :
     val insereListeContenant : 'a list -> 'a -> 'a list list -> 'a list list
     val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
     val array_find_index : (int -> bool) -> 'a array -> int
-    val array_find_index_via_elem : ('a -> bool) -> 'a array -> int
     type idx = Common.idx = Idx of int
     val next_idx : idx -> idx
-    val int_of_idx : idx -> int
-    val array_find_index_typed : (idx -> bool) -> 'a array -> idx
     type 'a matrix = 'a array array
-    val map_matrix : ('a -> 'b) -> 'a matrix -> 'b matrix
     val make_matrix_init :
       nrow:int -> ncolumn:int -> (int -> int -> 'a) -> 'a matrix
-    val iter_matrix : (int -> int -> 'a -> unit) -> 'a matrix -> unit
     val nb_rows_matrix : 'a matrix -> int
     val nb_columns_matrix : 'a matrix -> int
     val rows_of_matrix : 'a matrix -> 'a list list
     val columns_of_matrix : 'a matrix -> 'a list list
-    val all_elems_matrix_by_row : 'a matrix -> 'a list
     type 'a set = 'a list
     val empty_set : 'a set
     val insert_set : 'a -> 'a set -> 'a set
     val single_set : 'a -> 'a set
     val set : 'a list -> 'a set
-    val is_set : 'a list -> bool
     val exists_set : ('a -> bool) -> 'a set -> bool
     val forall_set : ('a -> bool) -> 'a set -> bool
     val filter_set : ('a -> bool) -> 'a set -> 'a set
@@ -2314,7 +2148,6 @@ module Common :
     val minus_set : 'a set -> 'a set -> 'a set
     val union_all : 'a set list -> 'a set
     val inter_all : 'a set list -> 'a set
-    val big_union_set : ('a -> 'b set) -> 'a set -> 'b set
     val card_set : 'a set -> int
     val include_set : 'a set -> 'a set -> bool
     val equal_set : 'a set -> 'a set -> bool
@@ -2328,8 +2161,6 @@ module Common :
     val ( $=$ ) : 'a set -> 'a set -> bool
     val ( $@$ ) : 'a list -> 'a list -> 'a list
     val nub : 'a list -> 'a list
-    val diff_two_say_set_eff :
-      'a list -> 'a list -> 'a list * 'a list * 'a list
     type ('a, 'b) assoc = ('a * 'b) list
     val assoc_to_function : ('a, 'b) assoc -> 'a -> 'b
     val empty_assoc : ('a, 'b) assoc
@@ -2342,48 +2173,27 @@ module Common :
     val lookup : 'a -> ('a * 'b) list -> 'b
     val del_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
     val replace_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
-    val apply_assoc : 'a -> ('b -> 'b) -> ('a * 'b) list -> ('a * 'b) list
-    val big_union_assoc : ('a -> 'b set) -> 'a list -> 'b set
     val assoc_reverse : ('a * 'b) list -> ('b * 'a) list
     val assoc_map : ('a * 'b) list -> ('a * 'b) list -> ('a * 'a) list
     val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
     val lookup_list2 : 'a -> ('a, 'b) assoc list -> 'b * int
     val assoc_option : 'a -> ('a, 'b) assoc -> 'b option
     val assoc_with_err_msg : 'a -> ('a, 'b) assoc -> 'b
-    val sort_by_val_lowfirst : ('a, 'b) assoc -> ('a * 'b) list
-    val sort_by_val_highfirst : ('a, 'b) assoc -> ('a * 'b) list
     val sort_by_key_lowfirst : (int, 'a) assoc -> (int * 'a) list
     val sort_by_key_highfirst : (int, 'a) assoc -> (int * 'a) list
-    val sortgen_by_key_lowfirst : ('a, 'b) assoc -> ('a * 'b) list
-    val sortgen_by_key_highfirst : ('a, 'b) assoc -> ('a * 'b) list
     module IntMap : Map.S with type key = int
     val intmap_to_list : 'a IntMap.t -> (IntMap.key * 'a) list
     val intmap_string_of_t : 'a -> 'b -> string
     module IntIntMap : Map.S with type key = int * int
-    val intintmap_to_list : 'a IntIntMap.t -> (IntIntMap.key * 'a) list
-    val intintmap_string_of_t : 'a -> 'b -> string
-    val hcreate : unit -> ('a, 'b) Hashtbl.t
-    val hadd : 'a * 'b -> ('a, 'b) Hashtbl.t -> unit
-    val hmem : 'a -> ('a, 'b) Hashtbl.t -> bool
-    val hfind : 'a -> ('a, 'b) Hashtbl.t -> 'b
-    val hreplace : 'a * 'b -> ('a, 'b) Hashtbl.t -> unit
-    val hiter : ('a -> 'b -> unit) -> ('a, 'b) Hashtbl.t -> unit
-    val hfold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) Hashtbl.t -> 'c -> 'c
-    val hremove : 'a -> ('a, 'b) Hashtbl.t -> unit
     val hfind_default : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
     val hfind_option : 'a -> ('a, 'b) Hashtbl.t -> 'b option
     val hupdate_default :
       'a -> ('b -> 'b) -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> unit
     val hash_to_list : ('a, 'b) Hashtbl.t -> ('a * 'b) list
-    val hash_to_list_unsorted : ('a, 'b) Hashtbl.t -> ('a * 'b) list
     val hash_of_list : ('a * 'b) list -> ('a, 'b) Hashtbl.t
     val hashadd : ('a, 'b list ref) Hashtbl.t -> 'a -> 'b -> unit
-    val hashinc : ('a, int ref) Hashtbl.t -> 'a -> int -> unit
     val hkeys : ('a, 'b) Hashtbl.t -> 'a list
     type 'a hashset = ('a, bool) Hashtbl.t
-    val hash_hashset_add : 'a -> 'b -> ('a, 'b hashset) Hashtbl.t -> unit
-    val hashset_to_set :
-      < fromlist : 'a list -> 'b; .. > -> ('a, 'c) Hashtbl.t -> 'b
     val hashset_to_list : 'a hashset -> 'a list
     val hashset_of_list : 'a list -> 'a hashset
     type 'a stack = 'a list
@@ -2413,24 +2223,10 @@ module Common :
       ('a * 'a treeref list ref -> unit) -> 'a treeref -> unit
     val treeref_node_iter_with_parents :
       ('a * 'a treeref list ref -> 'a list -> unit) -> 'a treeref -> unit
-    val find_treeref :
-      ('a * 'a treeref list ref -> bool) -> 'a treeref -> 'a treeref
-    val treeref_children_ref : 'a treeref -> 'a treeref list ref
-    val find_treeref_with_parents_some :
-      ('a * 'a treeref list ref -> 'a list -> 'b option) -> 'a treeref -> 'b
-    val find_multi_treeref_with_parents_some :
-      ('a * 'a treeref list ref -> 'a list -> 'b option) ->
-      'a treeref -> 'b list
     type ('a, 'b) treeref2 =
       ('a, 'b) Common.treeref2 =
         NodeRef2 of 'a * ('a, 'b) treeref2 list ref
       | LeafRef2 of 'b
-    val find_treeref2 :
-      ('a * ('a, 'b) treeref2 list ref -> bool) ->
-      ('a, 'b) treeref2 -> ('a, 'b) treeref2
-    val treeref_node_iter_with_parents2 :
-      ('a * ('a, 'b) treeref2 list ref -> 'a list -> unit) ->
-      ('a, 'b) treeref2 -> unit
     val treeref_node_iter2 :
       ('a * ('a, 'b) treeref2 list ref -> unit) -> ('a, 'b) treeref2 -> unit
     type 'a graph = 'a set * ('a * 'a) set
@@ -2452,7 +2248,6 @@ module Common :
     val find : ('a -> bool) -> 'a list -> 'a
     val exists : ('a -> bool) -> 'a list -> bool
     val forall : ('a -> bool) -> 'a list -> bool
-    val big_union : ('a -> 'b set) -> 'a list -> 'b set
     val sort : ('a -> 'a -> int) -> 'a list -> 'a list
     val length : 'a list -> int
     val head : 'a list -> 'a
@@ -2472,7 +2267,6 @@ module Common :
     val sum_vector : vector list -> vector
     type pixel = int * int * int
     val write_ppm : int -> int -> pixel list -> filename -> unit
-    val test_ppm1 : unit -> unit
     type diff = Common.diff = Match | BnotinA | AnotinB
     val diff :
       (int -> int -> diff -> unit) -> string list * string list -> unit
@@ -2489,18 +2283,14 @@ module Common :
     val string_of_parse_info : parse_info -> string
     val string_of_parse_info_bis : parse_info -> string
     val full_charpos_to_pos : filename -> (int * int) array
-    val complete_parse_info :
-      filename -> (int * int) array -> parse_info -> parse_info
     val info_from_charpos : int -> filename -> int * int * string
     val error_message : filename -> string * int -> string
     val error_message_short : filename -> string * int -> string
     val error_messagebis : filename -> string * int -> int -> string
     type ('a, 'b) scoped_env = ('a, 'b) assoc list
     val lookup_env : 'a -> ('a, 'b) scoped_env -> 'b
-    val member_env_key : 'a -> ('a, 'b) scoped_env -> bool
     val new_scope : ('a, 'b) scoped_env ref -> unit
     val del_scope : ('a, 'b) scoped_env ref -> unit
-    val do_in_new_scope : ('a, 'b) scoped_env ref -> (unit -> unit) -> unit
     val add_in_scope : ('a, 'b) scoped_env ref -> 'a * 'b -> unit
     type ('a, 'b) scoped_h_env =
       ('a, 'b) Common.scoped_h_env = {
@@ -2510,19 +2300,13 @@ module Common :
     val empty_scoped_h_env : unit -> ('a, 'b) scoped_h_env
     val clone_scoped_h_env : ('a, 'b) scoped_h_env -> ('a, 'b) scoped_h_env
     val lookup_h_env : 'a -> ('a, 'b) scoped_h_env -> 'b
-    val member_h_env_key : 'a -> ('a, 'b) scoped_h_env -> bool
     val new_scope_h : ('a, 'b) scoped_h_env ref -> unit
     val del_scope_h : ('a, 'b) scoped_h_env ref -> unit
     val clean_scope_h : ('a, 'b) scoped_h_env ref -> unit
-    val do_in_new_scope_h :
-      ('a, 'b) scoped_h_env ref -> (unit -> unit) -> unit
     val add_in_scope_h : ('a, 'b) scoped_h_env ref -> 'a * 'b -> unit
     val _execute_and_show_progress_func :
       (int -> ((unit -> unit) -> unit) -> unit) ref
     val execute_and_show_progress : int -> ((unit -> unit) -> unit) -> unit
-    val cmdline_flags_devel : unit -> cmdline_options
-    val cmdline_flags_verbose : unit -> cmdline_options
-    val cmdline_flags_other : unit -> cmdline_options
     val generic_print : 'a -> string -> string
     class ['a] olist :
       'a list ->
@@ -2531,7 +2315,6 @@ module Common :
         method fold : ('b -> 'a -> 'b) -> 'b -> 'b
         method view : 'a list
       end
-    val typing_sux_test : unit -> unit
     module StringSet : Set.S with type elt = string
   end
 module Ast_cocci :
@@ -3301,12 +3084,10 @@ module Ast_cocci :
     val get_mcodekind : 'a mcode -> mcodekind
     val get_line : 'a wrap -> line
     val get_mcode_line : 'a mcode -> line
-    val get_mcode_col : 'a mcode -> int
     val get_fvs : 'a wrap -> meta_name list
     val get_wcfvs : ('a wrap, 'b wrap) whencode list -> meta_name list
     val set_fvs : meta_name list -> 'a wrap -> 'a wrap
     val get_mfvs : 'a wrap -> meta_name list
-    val set_mfvs : meta_name list -> 'a wrap -> 'a wrap
     val get_minus_nc_fvs : 'a wrap -> meta_name list
     val get_fresh : 'a wrap -> (meta_name * seed) list
     val get_inherited : 'a wrap -> meta_name list
@@ -3334,12 +3115,6 @@ module Ast_cocci :
       mcodekind ->
       constraints ->
       meta_name list * (meta_name * seed) list * meta_name list -> rule_elem
-    val make_meta_decl :
-      string ->
-      mcodekind ->
-      constraints ->
-      meta_name list * (meta_name * seed) list * meta_name list ->
-      declaration
     val make_term : 'a -> 'a wrap
     val make_inherited_term :
       'a -> meta_name list -> meta_name list -> 'a wrap
@@ -3983,7 +3758,6 @@ module Ast0_cocci :
     val set_index : 'a wrap -> int -> unit
     val get_line : 'a wrap -> int
     val get_mcode_line : 'a mcode -> int
-    val get_mcode_logline : 'a mcode -> int
     val get_line_end : 'a wrap -> int
     val get_mcodekind : 'a wrap -> mcodekind
     val get_mcode_mcodekind : 'a mcode -> mcodekind

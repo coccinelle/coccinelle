@@ -82,13 +82,3 @@ let get_pending_instance _ =
 let clear_pending_instance _ =
   pending_instances_file := [];
   pending_instances_dir := []
-
-(* ----------------------------------------------------------------------- *)
-
-let check_virtual_rule r =
-  if not (List.mem r !parsed_virtual_rules)
-  then failwith ("unknown virtual rule "^r)
-
-let check_virtual_ident i =
-  if not (List.mem i !parsed_virtual_identifiers)
-  then failwith ("unknown virtual rule "^i)

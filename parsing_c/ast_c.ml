@@ -1064,8 +1064,6 @@ let rewrap_expr ((_old_unwrap_e, typ), iie)  newe = ((newe, typ), iie)
 let unwrap_typeC (qu, attr, (typeC, ii)) = typeC
 let rewrap_typeC (qu, attr, (typeC, ii)) newtypeC  = (qu, attr, (newtypeC, ii))
 
-let unwrap_typeCbis (typeC, ii) = typeC
-
 let unwrap_st (unwrap_st, ii) = unwrap_st
 
 (* ------------------------------------------------------------------------- *)
@@ -1080,7 +1078,6 @@ let mk_st unwrap_st ii = (unwrap_st, ii)
 (* ------------------------------------------------------------------------- *)
 let get_ii_typeC_take_care (typeC, ii) = ii
 let get_ii_st_take_care (st, ii) = ii
-let get_ii_expr_take_care (e, ii) = ii
 
 let get_st_and_ii (st, ii) = st, ii
 let get_ty_and_ii (qu, attrs, (typeC, ii)) = (typeC, ii)
@@ -1096,11 +1093,6 @@ let set_type_expr ((unwrap_e, oldtyp), iie) newtyp =
 let get_onlytype_expr ((unwrap_e, typ), iie) =
   match !typ with
   | Some (ft,_local), _test -> Some ft
-  | None, _ -> None
-
-let get_onlylocal_expr ((unwrap_e, typ), iie) =
-  match !typ with
-  | Some (ft,local), _test -> Some local
   | None, _ -> None
 
 (* ------------------------------------------------------------------------- *)
@@ -1427,15 +1419,6 @@ let s_of_inc_file_bis inc_file =
   | NonLocal xs -> "<" ^ xs +> String.concat "/" ^ ">"
   | Weird s -> s
 
-let fieldname_of_fieldkind fieldkind =
-  match fieldkind with
-  | Simple (storage, attrs, sopt, ft, endattrs) ->
-      (match sopt with
-	None -> None
-      | Some(nm,v) -> Some nm)
-  | BitField (sopt, ft, info, expr) -> sopt
-
-
 let s_of_attr attr =
   let get_attr_name = function
     MacroAttr s, _ -> s
@@ -1534,17 +1517,6 @@ let info_of_type ft =
   | ii::_ -> Some ii.pinfo
   | [] -> None
 
-(* only Label and Goto have name *)
-let get_local_ii_of_st_inlining_ii_of_name st =
-  match st with
-  | Labeled (Label (name, st)), ii -> ii_of_name name @ ii
-  | Jump (Goto name), ii ->
-      let (i1, i3) = Common.tuple_of_list2 ii in
-      [i1] @ ii_of_name name @ [i3]
-  | _, ii -> ii
-
-
-
 (* ------------------------------------------------------------------------- *)
 let name_of_parameter param =
   param.p_namei +> Common.map_option (str_of_name)
@@ -1564,18 +1536,6 @@ let get_annot_info info key =
 
 let get_comments_before info = (!(info.comments_tag)).mbefore
 let get_comments_after info = (!(info.comments_tag)).mafter
-
-let string_of_toplevel = function
-  | Declaration _ -> "declaration"
-  | Definition _ -> "definition"
-  | CppTop _ -> "CppTop"
-  | IfdefTop _ -> "IfdefTop"
-  | MacroTop _ -> "MacroTop"
-  | EmptyDef _ -> "EmptyDef"
-  | NotParsedCorrectly _ -> "NotParsedCorrectly"
-  | FinalDef _ -> "FinalDef"
-  | Namespace _ -> "Namespace"
-  | TemplateDefinition _ -> "TemplateDefinition"
 
 let string_of_inc_file = function
   | Local lst -> "local://" ^ (String.concat "/" lst)

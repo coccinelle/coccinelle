@@ -60,10 +60,6 @@ let mk_info_item a b =
     (fun () -> mk_info_item2 a b)
 
 
-let info_same_line line xs =
-  xs +> List.filter (fun info -> Ast_c.line_of_info info = line)
-
-
 (* move in cpp_token_c ? *)
 let is_define_passed passed =
   let xs = passed +> List.rev +> List.filter TH.is_not_comment in
@@ -96,9 +92,6 @@ type parse_error_function = int -> Parser_c.token list -> (int * int) ->
     string array -> int -> unit
 
 let parse_error_function : parse_error_function option ref = ref None
-
-let set_parse_error_function f =
-   parse_error_function := Some f
 
 let default_parse_error_function : parse_error_function =
   fun line_error _tokens (start_line, end_line) filelines pass ->
@@ -467,15 +460,6 @@ let mk_tokens_state toks =
     passed_clean = [];
   }
 
-
-
-let clone_tokens_state tr =
-  { rest = tr.rest;
-    rest_clean = tr.rest_clean;
-    current = tr.current;
-    passed = tr.passed;
-    passed_clean = tr.passed_clean;
-  }
 let copy_tokens_state ~src ~dst =
   dst.rest <- src.rest;
   dst.rest_clean <- src.rest_clean;
