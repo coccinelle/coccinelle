@@ -510,8 +510,6 @@ let dolog s = output_string !_chan (s ^ "\n"); flush !_chan
 let verbose_level = ref 1
 let log s =  if !verbose_level >= 1 then dolog s
 let log2 s = if !verbose_level >= 2 then dolog s
-let log3 s = if !verbose_level >= 3 then dolog s
-let log4 s = if !verbose_level >= 4 then dolog s
 
 (* ---------------------------------------------------------------------- *)
 
@@ -569,10 +567,6 @@ let adjust_profile_entry category difftime =
   xtime := !xtime +. difftime;
   xcount := !xcount + 1;
   ()
-
-let profile_start category = failwith "todo"
-let profile_end category = failwith "todo"
-
 
 (* subtil: don't forget to give all arguments to f, otherwise partial app
  * and will profile nothing.
@@ -1151,13 +1145,6 @@ let error_cant_have x = internal_error ("can't have this case: " ^(Dumper.dump x
  *)
 let warning s v = (pr2 ("Warning: " ^ s ^ "; value = " ^ (Dumper.dump v)); v)
 
-
-
-
-let exn_to_s exn =
-  Printexc.to_string exn
-
-
 (* want or of merd, but cannot cos cannot put die ... in b (strict call) *)
 let (|||) a b = try a with _ -> b
 
@@ -1361,29 +1348,6 @@ let long_usage  usage_msg  ~short_opt ~long_opt  =
       pr "";
     );
   ()
-
-
-(* copy paste of Arg.parse. Don't want the default -help msg *)
-let arg_parse2 l msg short_usage_fun =
-  let args = ref [] in
-  let f = (fun file -> args := file::!args) in
-  let l = Arg.align l in
-  (try begin
-    Arg.parse_argv Sys.argv l f msg;
-    args := List.rev !args;
-    !args
-   end
-  with
-  | Arg.Bad msg -> (* eprintf "%s" msg; exit 2; *)
-      let xs = lines msg in
-      (* take only head, it's where the error msg is *)
-      pr2 (List.hd xs);
-      short_usage_fun();
-      raise (UnixExit (2))
-  | Arg.Help msg -> (* printf "%s" msg; exit 0; *)
-      raise (Impossible 1)  (* -help is specified in speclist *)
-  )
-
 
 (* ---------------------------------------------------------------------- *)
 (* kind of unit testing framework, or toplevel like functionality
@@ -1908,9 +1872,6 @@ let regexp_word_str =
   "\\([a-zA-Z_][A-Za-z_0-9]*\\)"
 let regexp_word = Str.regexp regexp_word_str
 
-let regular_words s =
-  all_match regexp_word_str s
-
 (*****************************************************************************)
 (* Strings *)
 (*****************************************************************************)
@@ -1941,14 +1902,6 @@ let (<!>) s i = String.get s i
 (* pixel *)
 
 let quote s = "\"" ^ s ^ "\""
-
-let plural i s =
-  if i = 1
-  then Printf.sprintf "%d %s" i s
-  else Printf.sprintf "%d %ss" i s
-
-let take_string n s =
-  String.sub s 0 (n-1)
 
 (* done in summer 2007 for julia
  * Reference: P216 of gusfeld book
@@ -2172,35 +2125,9 @@ type days = Days of int
 
 type time_dmy = TimeDMY of day * month * year
 
-
 type float_time = float
 
-
-
-let check_date_dmy (DMY (day, month, year)) =
-  raise Todo
-
 (* ---------------------------------------------------------------------- *)
-
-(* older code *)
-let int_to_month i =
-  assert (i <= 12 && i >= 1);
-  match i with
-
-  | 1 -> "Jan"
-  | 2 -> "Feb"
-  | 3 -> "Mar"
-  | 4 -> "Apr"
-  | 5 -> "May"
-  | 6 -> "Jun"
-  | 7 -> "Jul"
-  | 8 -> "Aug"
-  | 9 -> "Sep"
-  | 10 -> "Oct"
-  | 11 -> "Nov"
-  | 12 -> "Dec"
-  | _ -> raise (Impossible 2)
-
 
 let month_info = [
   1  , Jan, "Jan", "January", 31;
@@ -2313,44 +2240,6 @@ let unix_time_of_string s =
     }
   else failwith ("unix_time_of_string: " ^ s)
 
-
-
-let short_string_of_unix_time ?(langage=English) tm =
-  let y = tm.Unix.tm_year + 1900 in
-  let mon = string_of_month (month_of_int (tm.Unix.tm_mon + 1)) in
-  let d = tm.Unix.tm_mday in
-  let _h = tm.Unix.tm_hour in
-  let _min = tm.Unix.tm_min in
-  let _s = tm.Unix.tm_sec in
-
-  let wday = wday_str_of_int ~langage tm.Unix.tm_wday in
-
-  spf "%02d/%3s/%04d (%s)" d mon y wday
-
-
-(* ---------------------------------------------------------------------- *)
-let string_of_floattime ?langage i =
-  let tm = Unix.localtime i in
-  string_of_unix_time ?langage tm
-
-
-(* ---------------------------------------------------------------------- *)
-let days_in_week_of_day day =
-  let tm = Unix.localtime day in
-
-  let wday = tm.Unix.tm_wday in
-  let wday = if wday = 0 then 6 else wday -1 in
-
-  let mday = tm.Unix.tm_mday in
-
-  let start_d = mday - wday in
-  let end_d = mday + (6 - wday) in
-
-  enum start_d end_d +> List.map (fun mday ->
-    Unix.mktime {tm with Unix.tm_mday = mday} +> fst
-  )
-
-
 (* ---------------------------------------------------------------------- *)
 
 (* (modified) copy paste from ocamlcalendar/src/date.ml *)
@@ -2372,17 +2261,6 @@ let is_more_recent d1 d2 =
   let (Days n1) = rough_days_since_jesus d1 in
   let (Days n2) = rough_days_since_jesus d2 in
   (n1 > n2)
-
-
-let max_dmy d1 d2 =
-  if is_more_recent d1 d2
-  then d1
-  else d2
-
-let min_dmy d1 d2 =
-  if is_more_recent d1 d2
-  then d2
-  else d1
 
 
 let rough_days_between_dates d1 d2 =
@@ -2434,25 +2312,6 @@ let normalize (year,month,day,hour,minute,second) =
 
 
 (* ---------------------------------------------------------------------- *)
-(* conversion to unix.tm *)
-
-let dmy_to_unixtime (DMY (Day n, month, Year year)) =
-  let tm = {
-    Unix.tm_sec = 0;      (* Seconds 0..60 *)
-    tm_min = 0;           (* Minutes 0..59 *)
-    tm_hour = 12;           (* Hours 0..23 *)
-    tm_mday = n;              (* Day of month 1..31 *)
-    tm_mon = (int_of_month month -1);               (* Month of year 0..11 *)
-    tm_year = year - 1900;              (* Year - 1900 *)
-    tm_wday = 0;              (* Day of week (Sunday is 0) *)
-    tm_yday = 0;              (* Day of year 0..365 *)
-    tm_isdst = false;            (* Daylight time savings in effect *)
-  } in
-  Unix.mktime tm
-
-(* src: ferre in logfun/.../date.ml *)
-
-let day_secs : float = 86400.
 
 let this_year() =
   let time = Unix.gmtime (Unix.time()) in
@@ -2948,13 +2807,6 @@ let erase_temp_files () =
       remove_file s
     );
     _temp_files_created := []
-  end
-
-let erase_this_temp_file f =
-  if not !save_tmp_files then begin
-    _temp_files_created :=
-      List.filter (function x -> not (x = f)) !_temp_files_created;
-    remove_file f
   end
 
 
@@ -3641,9 +3493,6 @@ let array_find_index f a =
   in
   try array_find_index_ 0 with _ -> raise Not_found
 
-type idx = Idx of int
-let next_idx (Idx i) = (Idx (i+1))
-
 (*****************************************************************************)
 (* Matrix *)
 (*****************************************************************************)
@@ -3875,7 +3724,6 @@ let lookup = assoc
 
 (* assert unique key ?*)
 let del_assoc key xs = xs +> List.filter (fun (k,v) -> k <> key)
-let replace_assoc (key, v) xs = insert_assoc (key, v) (del_assoc key xs)
 
 (* todo: pb normally can suppr fun l -> .... l but if do that, then strange type _a
  => assoc_map is strange too => equal don't work
@@ -3923,8 +3771,6 @@ module IntMap = Map.Make
       type t = int
       let compare (x : int) (y : int) = Stdcompat.Stdlib.compare x y
     end)
-let intmap_to_list m = IntMap.fold (fun id v acc -> (id, v) :: acc) m []
-let intmap_string_of_t f a = "<Not Yet>"
 
 module IntIntMap = Map.Make
     (struct
@@ -4001,17 +3847,10 @@ type 'a hashset = ('a, bool) Hashtbl.t
 
 let hashset_to_list h = hash_to_list h +> List.map fst
 
-let hashset_of_list xs =
-  xs +> List.map (fun x -> x, true) +> hash_of_list
-
-
-
 let hkeys h =
   let hkey = Hashtbl.create 101 in
   h +> Hashtbl.iter (fun k v -> Hashtbl.replace hkey k true);
   hashset_to_list hkey
-
-
 
 let group_assoc_bykey_eff2 xs =
   let h = Hashtbl.create 101 in
@@ -4083,9 +3922,6 @@ let (undo_pop: 'a undo_stack -> 'a undo_stack) = fun (undo, redo) ->
   | [] -> failwith "empty redo, nothing to redo"
   | x::xs ->
       x::undo, xs
-
-let redo_undo x = undo_pop x
-
 
 let top_undo_option = fun (undo, redo) ->
   match undo with
@@ -4706,14 +4542,6 @@ let regression_testing newscore best_score_file =
   write_value newbestscore best_score_file;
   ()
 
-
-
-
-let string_of_score_result v =
-  match v with
-  | Ok -> "Ok"
-  | Pb s -> "Pb: " ^ s
-
 let total_scores score =
   let total = hash_to_list score +> List.length in
   let good  = hash_to_list score +> List.filter
@@ -4778,12 +4606,6 @@ let clone_scoped_h_env x =
 
 let lookup_h_env k env =
   Hashtbl.find env.scoped_h k
-
-let member_h_env_key k env =
-  match optionise (fun () -> lookup_h_env k env) with
-  | None -> false
-  | Some _ -> true
-
 
 let new_scope_h scoped_env =
   scoped_env := {!scoped_env with scoped_list = []::!scoped_env.scoped_list}

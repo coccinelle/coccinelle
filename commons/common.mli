@@ -161,8 +161,6 @@ val _chan : out_channel ref
 (* see flag: val verbose_level : int ref *)
 val log : string -> unit
 val log2 : string -> unit
-val log3 : string -> unit
-val log4 : string -> unit
 
 val pause : unit -> unit
 
@@ -409,10 +407,6 @@ val internal_error : string -> 'a
 val warning : string -> 'a -> 'a
 val error_cant_have : 'a -> 'b
 
-val exn_to_s : exn -> string
-(* alias *)
-
-
 type evotype = unit
 val evoval : evotype
 
@@ -462,13 +456,6 @@ val long_usage :
  * so need adapter of Arg module, not just wrapper.
  *)
 val arg_align2 : cmdline_options -> cmdline_options
-val arg_parse2 :
-  cmdline_options -> Arg.usage_msg -> (unit -> unit) (* short_usage func *) ->
-  string list
-
-
-
-
 
 (* The action lib. Useful to debug supart of your system. cf some of
  * my main.ml for example of use. *)
@@ -712,11 +699,7 @@ val chop_dirsymbol : string -> string
 val ( <!!> ) : string -> int * int -> string
 val ( <!> ) : string -> int -> char
 
-val take_string: int -> string -> string
-
 val quote : string -> string
-
-val plural : int -> string -> string
 
 val edit_distance: string -> string -> int
 
@@ -756,8 +739,6 @@ val split : string (* sep regexp *) -> string -> string list
 val split_list_regexp : string -> string list -> (string * string list) list
 
 val all_match : string (* regexp *) -> string -> string list
-
-val regular_words: string -> string list
 
 (*****************************************************************************)
 (* Filenames *)
@@ -835,30 +816,16 @@ type time_dmy = TimeDMY of day * month * year
 (* from Unix *)
 type float_time = float
 
-
-val check_date_dmy : date_dmy -> unit
-
-val int_to_month : int -> string
 val int_of_month : month -> int
 val month_of_string : string -> month
 val string_of_month : month -> string
 
 val string_of_unix_time : ?langage:langage -> Unix.tm -> string
-val short_string_of_unix_time : ?langage:langage -> Unix.tm -> string
-val string_of_floattime: ?langage:langage -> float_time -> string
-
-val dmy_to_unixtime: date_dmy -> float_time * Unix.tm
-
-val days_in_week_of_day : float_time -> float_time list
-
-val day_secs: float_time
 
 val rough_days_since_jesus : date_dmy -> days
 val rough_days_between_dates : date_dmy -> date_dmy -> days
 
 val is_more_recent : date_dmy -> date_dmy -> bool
-val max_dmy : date_dmy -> date_dmy -> date_dmy
-val min_dmy : date_dmy -> date_dmy -> date_dmy
 
 val this_year : unit -> int
 
@@ -1165,12 +1132,6 @@ val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
 
 val array_find_index : (int -> bool) -> 'a array -> int
 
-(* for better type checking, as sometimes when have an 'int array', can
- * easily mess up the index from the value.
- *)
-type idx = Idx of int
-val next_idx: idx -> idx
-
 (*****************************************************************************)
 (* Matrix *)
 (*****************************************************************************)
@@ -1287,7 +1248,6 @@ val keys : ('a * 'b) list -> 'a list
 val lookup : 'a -> ('a * 'b) list -> 'b
 
 val del_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
-val replace_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
 
 val assoc_reverse : ('a * 'b) list -> ('b * 'a) list
 val assoc_map : ('a * 'b) list -> ('a * 'b) list -> ('a * 'a) list
@@ -1306,8 +1266,6 @@ val sort_by_key_highfirst: (int,'b) assoc -> (int * 'b) list
 (*****************************************************************************)
 
 module IntMap : Map.S with type key = int
-val intmap_to_list : 'a IntMap.t -> (IntMap.key * 'a) list
-val intmap_string_of_t : 'a -> 'b -> string
 
 module IntIntMap : Map.S with type key = int * int
 
@@ -1343,8 +1301,6 @@ val hkeys : ('a, 'b) Hashtbl.t -> 'a list
 type 'a hashset = ('a, bool) Hashtbl.t
 
 val hashset_to_list : 'a hashset -> 'a list
-val hashset_of_list : 'a list -> 'a hashset
-
 
 (*****************************************************************************)
 (* Stack *)
@@ -1370,7 +1326,6 @@ val empty_undo_stack : 'a undo_stack
 val push_undo : 'a -> 'a undo_stack -> 'a undo_stack
 val top_undo : 'a undo_stack -> 'a
 val pop_undo : 'a undo_stack -> 'a undo_stack
-val redo_undo: 'a undo_stack -> 'a undo_stack
 val undo_pop: 'a undo_stack -> 'a undo_stack
 
 val top_undo_option: 'a undo_stack -> 'a option

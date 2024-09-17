@@ -1567,8 +1567,6 @@ module Common :
     val _chan : out_channel ref
     val log : string -> unit
     val log2 : string -> unit
-    val log3 : string -> unit
-    val log4 : string -> unit
     val pause : unit -> unit
     val _trace_var : int ref
     val add_var : unit -> unit
@@ -1688,7 +1686,6 @@ module Common :
     val internal_error : string -> 'a
     val warning : string -> 'a -> 'a
     val error_cant_have : 'a -> 'b
-    val exn_to_s : exn -> string
     type evotype = unit
     val evoval : evotype
     val check_stack_size : int -> unit
@@ -1706,8 +1703,6 @@ module Common :
       Arg.usage_msg ->
       short_opt:cmdline_options -> long_opt:cmdline_sections -> unit
     val arg_align2 : cmdline_options -> cmdline_options
-    val arg_parse2 :
-      cmdline_options -> Arg.usage_msg -> (unit -> unit) -> string list
     type flag_spec = Arg.key * Arg.spec * Arg.doc
     type action_spec = Arg.key * Arg.doc * action_func
     and action_func = string list -> unit
@@ -1829,9 +1824,7 @@ module Common :
     val chop_dirsymbol : string -> string
     val ( <!!> ) : string -> int * int -> string
     val ( <!> ) : string -> int -> char
-    val take_string : int -> string -> string
     val quote : string -> string
-    val plural : int -> string -> string
     val edit_distance : string -> string -> int
     val md5sum_of_string : string -> string
     val regexp_alpha : Str.regexp
@@ -1856,7 +1849,6 @@ module Common :
     val split_list_regexp :
       string -> string list -> (string * string list) list
     val all_match : string -> string -> string list
-    val regular_words : string -> string list
     val filesuffix : filename -> string
     val fileprefix : filename -> string
     val adjust_ext_if_needed : filename -> string -> filename
@@ -1893,22 +1885,13 @@ module Common :
     type days = Common.days = Days of int
     type time_dmy = Common.time_dmy = TimeDMY of day * month * year
     type float_time = float
-    val check_date_dmy : date_dmy -> unit
-    val int_to_month : int -> string
     val int_of_month : month -> int
     val month_of_string : string -> month
     val string_of_month : month -> string
     val string_of_unix_time : ?langage:langage -> Unix.tm -> string
-    val short_string_of_unix_time : ?langage:langage -> Unix.tm -> string
-    val string_of_floattime : ?langage:langage -> float_time -> string
-    val dmy_to_unixtime : date_dmy -> float_time * Unix.tm
-    val days_in_week_of_day : float_time -> float_time list
-    val day_secs : float_time
     val rough_days_since_jesus : date_dmy -> days
     val rough_days_between_dates : date_dmy -> date_dmy -> days
     val is_more_recent : date_dmy -> date_dmy -> bool
-    val max_dmy : date_dmy -> date_dmy -> date_dmy
-    val min_dmy : date_dmy -> date_dmy -> date_dmy
     val this_year : unit -> int
     val list_of_string : string -> char list
     val lines : string -> string list
@@ -2068,8 +2051,6 @@ module Common :
     val insereListeContenant : 'a list -> 'a -> 'a list list -> 'a list list
     val fusionneListeContenant : 'a * 'a -> 'a list list -> 'a list list
     val array_find_index : (int -> bool) -> 'a array -> int
-    type idx = Common.idx = Idx of int
-    val next_idx : idx -> idx
     type 'a matrix = 'a array array
     val make_matrix_init :
       nrow:int -> ncolumn:int -> (int -> int -> 'a) -> 'a matrix
@@ -2121,7 +2102,6 @@ module Common :
     val keys : ('a * 'b) list -> 'a list
     val lookup : 'a -> ('a * 'b) list -> 'b
     val del_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
-    val replace_assoc : 'a * 'b -> ('a * 'b) list -> ('a * 'b) list
     val assoc_reverse : ('a * 'b) list -> ('b * 'a) list
     val assoc_map : ('a * 'b) list -> ('a * 'b) list -> ('a * 'a) list
     val lookup_list : 'a -> ('a, 'b) assoc list -> 'b
@@ -2131,8 +2111,6 @@ module Common :
     val sort_by_key_lowfirst : (int, 'a) assoc -> (int * 'a) list
     val sort_by_key_highfirst : (int, 'a) assoc -> (int * 'a) list
     module IntMap : Map.S with type key = int
-    val intmap_to_list : 'a IntMap.t -> (IntMap.key * 'a) list
-    val intmap_string_of_t : 'a -> 'b -> string
     module IntIntMap : Map.S with type key = int * int
     val hfind_default : 'a -> (unit -> 'b) -> ('a, 'b) Hashtbl.t -> 'b
     val hfind_option : 'a -> ('a, 'b) Hashtbl.t -> 'b option
@@ -2144,7 +2122,6 @@ module Common :
     val hkeys : ('a, 'b) Hashtbl.t -> 'a list
     type 'a hashset = ('a, bool) Hashtbl.t
     val hashset_to_list : 'a hashset -> 'a list
-    val hashset_of_list : 'a list -> 'a hashset
     type 'a stack = 'a list
     val empty_stack : 'a stack
     val push : 'a -> 'a stack -> 'a stack
@@ -2158,7 +2135,6 @@ module Common :
     val push_undo : 'a -> 'a undo_stack -> 'a undo_stack
     val top_undo : 'a undo_stack -> 'a
     val pop_undo : 'a undo_stack -> 'a undo_stack
-    val redo_undo : 'a undo_stack -> 'a undo_stack
     val undo_pop : 'a undo_stack -> 'a undo_stack
     val top_undo_option : 'a undo_stack -> 'a option
     type 'a bintree =
