@@ -48,8 +48,8 @@ x@p = most_used_function(...)
 @script:python@
 p << e.p;
 @@
-
-print("{}: {}".format(p[0].file, p[0].line))
+import os.path
+print("{}: {}".format(os.path.basename(p[0].file), p[0].line))
 
 @finalize:ocaml@
 tbls << merge.tbl;

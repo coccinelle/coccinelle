@@ -1,1 +1,2 @@
-enum f { };
+enum f {
+};

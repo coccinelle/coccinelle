@@ -1,1 +1,4 @@
-enum f { a,d,s };
+enum f {
+       	a,
+	d,
+	s };

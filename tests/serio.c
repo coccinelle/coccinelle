@@ -1,6 +1,6 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/serio.h>
+struct serio {
+	struct semaphore drv_sem;
+};
 
 static void serio_init_port(struct serio *serio)
 {

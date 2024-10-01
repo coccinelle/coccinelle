@@ -4,11 +4,11 @@ position p;
 @@
 
 enum f { ...,
-  s,@p
+-  s@p,
   ..., };
 
 @script:python@
 p << r.p;
 @@
 
-print p
+print(p[0].line)
