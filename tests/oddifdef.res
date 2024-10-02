@@ -7,9 +7,7 @@ void one () {
     a = 5;
 
 #ifdef FOO
-  x = 0;
 #else
-  x = 0;
 #endif
 }
 
@@ -22,9 +20,7 @@ void two() {
     a = 3;
 
 #ifdef FOO
-  x = 0;
 #else
-  x = 0;
 #endif
 }
 
@@ -37,8 +33,6 @@ void three() {
 #endif
 
 #ifdef FOO
-  x = 0;
 #else
-  x = 0;
 #endif
 }
