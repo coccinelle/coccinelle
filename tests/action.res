@@ -4,5 +4,5 @@
    goto last_action;
  code();
  last_action:
- action(el);
+ action(el, 1);
  }
