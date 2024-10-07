@@ -46,6 +46,8 @@ tests/SCORE_best_of_both.sexp
 tests/SCORE_expected_orig.sexp
 tests/SCORE_expected.sexp
 tests/SCORE_expected.sexp.save
+tests/SCORE_spacing_expected.sexp
+tests/SCORE_spacing_expected.sexp.save
 
 config.log
 config.status
