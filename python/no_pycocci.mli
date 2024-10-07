@@ -46,28 +46,15 @@ module StringMap :
 exception Pycocciexception
 val errmsg : string
 val python_support : bool
-val check_return_value : 'a -> 'b
-val check_int_return_value : 'a -> 'b
 val initialised : bool ref
 val cocci_file_name : string ref
 val get_module : 'a -> 'b
-val is_module_loaded : 'a -> 'b
-val load_module : 'a -> 'b
 val pycocci_init : unit -> unit
-val split_fqn : 'a -> 'b
-val pycocci_get_class_type : 'a -> 'b
-val pycocci_instantiate_class : 'a -> 'b -> 'c
 val inc_match : bool ref
 val exited : bool ref
 val include_match : 'a -> 'b
-val sp_exit : 'a -> 'b
-val build_method : 'a * 'b * 'c -> 'd -> 'e -> 'f -> 'g
 val build_class : 'a -> 'b -> 'c -> 'd -> 'e
-val has_environment_binding : 'a -> 'b -> 'c
-val get_cocci_file : 'a -> 'b
 val build_classes : 'a -> 'b
-val build_variable : 'a -> 'b -> 'c
-val contains_binding : 'a -> 'b * ('c * 'd) * 'e -> 'f
 val construct_variables : 'a -> 'b -> 'c
 val construct_script_variables : 'a -> 'b
 val retrieve_script_variables : 'a -> 'b

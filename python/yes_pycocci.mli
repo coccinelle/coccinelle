@@ -35,7 +35,6 @@ val wrap_make_stmt_with_env : Py.Object.t -> Py.Object.t
 val wrap_make_listlen : Py.Object.t -> Py.Object.t
 val wrap_make_position : Py.Object.t -> Py.Object.t
 val pyoutputinstance : Py.Object.t ref
-val get_cocci_file : 'a -> Py.Object.t
 val _pycocci_setargs : string -> unit
 val initialize_python_path : unit -> unit
 val pycocci_init : unit -> unit
@@ -45,7 +44,6 @@ val catch_python_error : (unit -> 'a) -> 'a
 val build_classes : (string * string) list -> unit
 val build_variable : string -> Py.Object.t -> unit
 val get_variable : string -> Py.Object.t
-val contains_binding : (('a * 'b) * 'c) list -> 'd * ('a * 'b) * 'e -> bool
 val construct_variables :
   (string * ('a * 'b) * 'c * Ast_cocci.mvinit) list ->
   (('a * 'b) * Ast_c.metavar_binding_kind) list -> unit

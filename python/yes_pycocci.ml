@@ -163,8 +163,6 @@ let wrap_files args =
 
 let pyoutputinstance = ref Py.none
 
-let get_cocci_file args = Py.String.of_string !cocci_file_name
-
 (* initialisation routines *)
 let _pycocci_setargs argv0 =
   let argv =
@@ -278,12 +276,6 @@ let build_variable name value =
 let get_variable name =
   let mx = !coccinelle_module in
   Py.Module.get mx name
-
-let contains_binding e (_,(r,m),_) =
-  try
-    let _ = List.find (function ((re, rm), _) -> r = re && m = rm) e in
-    true
-  with Not_found -> false
 
 let construct_variables mv e =
   let find_binding (r,m) =

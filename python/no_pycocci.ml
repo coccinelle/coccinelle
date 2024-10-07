@@ -15,19 +15,12 @@ let errmsg = "Semantic patch uses python, but Coccinelle has been compiled witho
 
 let python_support = false
 
-let check_return_value v = failwith errmsg
-let check_int_return_value v = failwith errmsg
-
 let initialised = ref false
 
 let cocci_file_name = ref ""
 
 (* dealing with python modules loaded *)
 let get_module module_name = failwith errmsg
-
-let is_module_loaded module_name = failwith errmsg
-
-let load_module module_name = failwith errmsg
 (* end python module handling part *)
 
 (* initialisation routines *)
@@ -36,36 +29,14 @@ let pycocci_init () = initialised := true
 (*let _ = pycocci_init ()*)
 (* end initialisation routines *)
 
-(* python interaction *)
-let split_fqn fqn = failwith errmsg
-
-let pycocci_get_class_type fqn = failwith errmsg
-
-let pycocci_instantiate_class fqn args = failwith errmsg
-
-(* end python interaction *)
-
 let inc_match = ref false
 let exited = ref false
 
 let include_match v = failwith errmsg
 
-let sp_exit _ = failwith errmsg
-
-let build_method (mname, camlfunc, args) pymodule classx classdict =
-  failwith errmsg
-
 let build_class cname parent methods pymodule = failwith errmsg
 
-let has_environment_binding env name = failwith errmsg
-
-let get_cocci_file args = failwith errmsg
-
 let build_classes env = failwith errmsg
-
-let build_variable name value = failwith errmsg
-
-let contains_binding e (_,(r,m),_) = failwith errmsg
 
 let construct_variables mv e = failwith errmsg
 
