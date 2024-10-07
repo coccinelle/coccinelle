@@ -1,4 +1,4 @@
-#include "sub/incdir2.c"
+#include "incdir.h"
 
 int main () {
   foo(x);

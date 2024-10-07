@@ -1,3 +1,5 @@
+//#include <linux/serio.h>
+
 struct serio {
 	struct mutex new_lock;
 };

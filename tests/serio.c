@@ -1,3 +1,5 @@
+//#include <linux/serio.h>
+
 struct serio {
 	struct semaphore drv_sem;
 };

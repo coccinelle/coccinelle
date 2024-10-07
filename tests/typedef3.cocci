@@ -3,6 +3,8 @@ type T;
 identifier link;
 @@
 
+// TODO - this test is known to fail.
+
 T {
   ...
 - dev_link_t link;
