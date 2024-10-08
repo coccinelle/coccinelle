@@ -3,10 +3,9 @@ type T;
 //fresh identifier y;
 @@
 
-  foo(...) {
-   T
-+  y,
-   x;
-    ...
-  }
+foo(...) {
+- T x;
++ T y, x;
+...
+}
   

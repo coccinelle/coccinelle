@@ -1,15 +1,18 @@
 int foo() {
-  int y, x;
+  int y;
+  int x;
   return 0;
 }
 
 
 int foo() {
-  int *y, *x;
+  int *y;
+  int *x;
   return 0;
 }
 
 int foo() {
-  int y[45], x[45];
+  int y[45];
+  int x[45];
   return 0;
 }
