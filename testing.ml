@@ -160,7 +160,7 @@ let add_file_to_score score res correct diffxs =
       in
       let s =
 	"INCORRECT:" ^ s ^ "\n" ^
-	"    diff (result(<) vs expected_result(>)) = \n" ^
+	"    diff (result(-) vs expected_result(+)) = \n" ^
 	(diffxs +>
 	 List.map(fun s -> "    "^s^"\n") +> String.concat "")
       in
@@ -173,14 +173,14 @@ let add_file_to_score score res correct diffxs =
       Hashtbl.add score res (Common.Pb s)
 
 (* ------------------------------------------------------------------------ *)
-(* note: if you get some weird results in -testall, and not in -test,
- * it is possible that a test file work in -test but may not
- * work while used inside a -testall. If we have some bugs in our
+(* note: if you get some weird results in --testall, and not in --test,
+ * it is possible that a test file work in --test but may not
+ * work while used inside a --testall. If we have some bugs in our
  * parser that modify some global state and that those states
  * are not reset between each test file, then having run previous
  * test files may have an influence on another test file which mean
- * than a test may work in isolation (via -test) but not otherwise
- * (via -testall). Fortunately such bugs are rare.
+ * than a test may work in isolation (via --test) but not otherwise
+ * (via --testall). Fortunately such bugs are rare.
  *
  *)
 (* If extra test is provided, then all failing tests with the standard
