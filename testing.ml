@@ -141,6 +141,14 @@ let testone prefix x compare_with_expected =
   end;
   Common.erase_temp_files ()
 
+let prepare_error_message s =
+  let s = Str.global_replace
+  (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
+    in
+    (* on macos the temporary xfiles are stored elsewhere *)
+  Str.global_replace
+    (Str.regexp "\"/var/folders/.*/cocci-output.*\"")
+    "<COCCIOUTPUTFILE>" s
 
 let add_file_to_score score res correct diffxs =
   (* I don't use Compare_c.compare_result_to_string because
@@ -149,17 +157,10 @@ let add_file_to_score score res correct diffxs =
   match correct with
     Compare_c.Correct -> Hashtbl.add score res Common.Ok;
   | Compare_c.Pb s ->
-      let s = Str.global_replace
-	  (Str.regexp "\"/tmp/cocci-output.*\"") "<COCCIOUTPUTFILE>" s
-      in
-      (* on macos the temporary files are stored elsewhere *)
-      let s =
-	Str.global_replace
-	  (Str.regexp "\"/var/folders/.*/cocci-output.*\"")
-	  "<COCCIOUTPUTFILE>" s
-      in
-      let s =
-	"INCORRECT:" ^ s ^ "\n" ^
+    let s = prepare_error_message
+   s in
+    let s =
+	"INCORRECT: " ^ s ^ "\n" ^
 	"    diff (result(-) vs expected_result(+)) = \n" ^
 	(diffxs +>
 	 List.map(fun s -> "    "^s^"\n") +> String.concat "")
@@ -171,6 +172,17 @@ let add_file_to_score score res correct diffxs =
 	"was not parsable" ^ s
       in
       Hashtbl.add score res (Common.Pb s)
+  | Compare_c.PbKnown s ->
+      let s = prepare_error_message
+     s in
+      let s =
+    "KNOWN TO FAIL: " ^ s ^ "\n" ^
+    "    diff (result(-) vs expected_result(+)) = \n" ^
+    (diffxs +>
+     List.map(fun s -> "    "^s^"\n") +> String.concat "")
+        in
+        Hashtbl.add score res (Common.PbKnown s)
+
 
 (* ------------------------------------------------------------------------ *)
 (* note: if you get some weird results in --testall, and not in --test,
@@ -290,6 +302,7 @@ let testall_bis testdir setup extra_test expected_score_file update_score_file =
         match v with
         | Common.Ok ->  "CORRECT\n"
         | Common.Pb s -> s
+        | Common.PbKnown s -> s (* no preceding text?*)
       )
     );
     flush stdout; flush stderr;
@@ -327,8 +340,8 @@ let testall_bis testdir setup extra_test expected_score_file update_score_file =
 
     Common.print_total_score score;
 
-    let (good, total)                   = Common.total_scores score in
-    let (expected_good, expected_total) = Common.total_scores expected_score in
+    let (good, total, _)                   = Common.total_scores score in
+    let (expected_good, expected_total, _) = Common.total_scores expected_score in
 
     if good = expected_good
     then begin

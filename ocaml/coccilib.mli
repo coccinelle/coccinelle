@@ -1589,7 +1589,7 @@ module Common :
     val _list_bool : (string * bool) list ref
     val example3 : string -> bool -> unit
     val test_all : unit -> unit
-    type score_result = Common.score_result = Ok | Pb of string
+    type score_result = Common.score_result = Ok | Pb of string | PbKnown of string
     type score = (string, score_result) Hashtbl.t
     type score_list = (string * score_result) list
     val empty_score : unit -> score
@@ -1597,7 +1597,7 @@ module Common :
     val save_score : score -> string -> unit
     val regression_testing : score -> filename -> unit
     val regression_testing_vs : score -> score -> score
-    val total_scores : score -> int * int
+    val total_scores : score -> int * int * int
     val print_total_score : score -> unit
     type 'a gen = unit -> 'a
     val ig : int gen

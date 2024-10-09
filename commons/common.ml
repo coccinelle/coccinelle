@@ -4445,8 +4445,8 @@ let error_message_short = fun filename (lexeme, lexstart) ->
 (* Regression testing bis (cocci) *)
 (*****************************************************************************)
 
-(* todo: keep also size of file, compute md5sum ? cos maybe the file
- * has changed!.
+(* todo: keep also size of file, compute md5sum? cos maybe the file
+ * has changed!
  *
  * todo: could also compute the date, or some version info of the program,
  * can record the first date when was found a OK, the last date where
@@ -4457,7 +4457,7 @@ let error_message_short = fun filename (lexeme, lexstart) ->
  * todo? maybe use plain text file instead of marshalling.
  *)
 
-type score_result = Ok | Pb of string
+type score_result = Ok | Pb of string | PbKnown of string
  (* with sexp *)
 type score = (string (* usually a filename *), score_result) Hashtbl.t
  (* with sexp *)
@@ -4506,15 +4506,15 @@ let regression_testing_vs newscore bestscore =
           (match newone, bestone with
           | Ok, Ok ->
               Hashtbl.add newbestscore res Ok
-          | Pb x, Ok ->
+          | Pb x, Ok | PbKnown x, Ok ->
               Printf.printf
 		"PBBBBBBBB: a test file does not work anymore!!! : %s\n" res;
               Printf.printf "Error : %s\n" x;
               Hashtbl.add newbestscore res Ok
-          | Ok, Pb x ->
+          | Ok, Pb x | Ok, PbKnown x ->
               Printf.printf "Great: a test file now works: %s\n" res;
               Hashtbl.add newbestscore res Ok
-          | Pb x, Pb y ->
+          | Pb x, Pb y | PbKnown x, PbKnown y ->
               Hashtbl.add newbestscore res (Pb x);
               if not (close_enough x y)
               then begin
@@ -4523,6 +4523,17 @@ let regression_testing_vs newscore bestscore =
                 Printf.printf "%s\n" (chop ("Old error: " ^ y));
                 Printf.printf "New error: %s\n" x;
               end
+          | Pb x, PbKnown y ->
+              (* as long as known failures keep being defined by filenames,
+              this can't happen *)
+              Printf.printf "a test failure is no longer marked as known: %s\n" res;
+              Printf.printf "New error: %s\n" x;
+              Hashtbl.add newbestscore res (Pb x);
+          | PbKnown x, Pb y ->
+              (* same caveat as previous case *)
+              Printf.printf "a test failure is now marked as known: %s\n" res;
+              Printf.printf "New error: %s\n" x;
+              Hashtbl.add newbestscore res (Pb x);
           )
     );
     flush stdout; flush stderr;
@@ -4543,18 +4554,23 @@ let regression_testing newscore best_score_file =
   ()
 
 let total_scores score =
-  let total = hash_to_list score +> List.length in
+  let apparent_total = hash_to_list score +> List.length in
+  let known_failures = hash_to_list score +> List.filter
+    (fun (s, v) -> match v with
+      PbKnown _ -> true
+      | _ -> false
+    ) +> List.length in
   let good  = hash_to_list score +> List.filter
     (fun (s, v) -> v = Ok) +> List.length in
-  good, total
+  good, apparent_total - known_failures, known_failures
 
 
 let print_total_score score =
   pr2 "--------------------------------";
   pr2 "total score";
   pr2 "--------------------------------";
-  let (good, total) = total_scores score in
-  pr2 (Printf.sprintf "good = %d/%d" good total)
+  let (good, total, known_failures) = total_scores score in
+  pr2 (Printf.sprintf "good = %d/%d + %d known failures" good total known_failures)
 
 (*****************************************************************************)
 (* Scope management (cocci) *)

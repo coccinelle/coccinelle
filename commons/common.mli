@@ -212,7 +212,7 @@ val test_all : unit -> unit
 
 
 (* regression testing *)
-type score_result = Ok | Pb of string
+type score_result = Ok | Pb of string | PbKnown of string
 type score =      (string (* usually a filename *), score_result) Hashtbl.t
 type score_list = (string (* usually a filename *) * score_result) list
 val empty_score : unit -> score
@@ -221,7 +221,7 @@ val save_score : score -> string -> unit
 val regression_testing :
   score -> filename (* old score file on disk (usually in /tmp) *) -> unit
 val regression_testing_vs: score -> score -> score
-val total_scores : score -> int (* good *) * int (* total *)
+val total_scores : score -> int (* good *) * int (* total *) * int (* known failures *)
 val print_total_score: score -> unit
 
 

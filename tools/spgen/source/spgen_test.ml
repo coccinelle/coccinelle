@@ -153,8 +153,8 @@ let print_update_regression test_dir score =
   Common.save_score new_bestscore best_of_both_file;
   Common.print_total_score score;
 
-  let (good, total) = Common.total_scores score in
-  let (expected_good, expected_total) = Common.total_scores expected_score in
+  let (good, total, _) = Common.total_scores score in
+  let (expected_good, expected_total, _) = Common.total_scores expected_score in
 
   if good = expected_good then begin
 

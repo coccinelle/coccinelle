@@ -21,6 +21,7 @@ type compare_result =
   | Correct
   | Pb of string
   | PbOnlyInNotParsedCorrectly of string
+  | PbKnown of string
 
 
 (*****************************************************************************)
@@ -229,6 +230,10 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
   let c2 = do_parse filename2 filename1 in
 
   let res =
+    let r = Str.regexp ".*_failure\\.c" in
+    if (Str.string_match r filename1 0)
+    then PbKnown "known issues"
+    else
     if List.length c1 <> List.length c2
     then Pb "not same number of entities (func, decl, ...)"
     else
@@ -293,6 +298,11 @@ let compare_result_to_string (correct, diffxs) =
         ("explanation:" ^ s) ^ "\n" ^
         "diff (result(-) vs expected_result(+)) = " ^ "\n" ^
         (diffxs +> String.concat "\n") ^ "\n"
+  | PbKnown s ->
+      ("seems incorrect, which was expected: " ^ s) ^ "\n" ^
+        "diff (result(-) vs expected_result(+)) = " ^ "\n" ^
+        (diffxs +> String.concat "\n") ^ "\n"
+
 
 
 let compare_result_to_bool correct =
