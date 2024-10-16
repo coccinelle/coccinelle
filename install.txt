@@ -8,7 +8,7 @@
 
  ** Compilation **
 
-You must first install a recent version of OCaml (at least 3.12.1).
+You must first install OCaml. Versions 4.08.0.-5.1.1 are supported.
 See http://caml.inria.fr/download.en.html
 
 On Debian/Ubuntu, install the following packages
