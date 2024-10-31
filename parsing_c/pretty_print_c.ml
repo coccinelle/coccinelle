@@ -1494,8 +1494,7 @@ and pp_init (init, iinit) =
     | Pragma((name,rest), ii) ->
 	let (ipragma,ieol) = Common.tuple_of_list2 ii in
 	pr_elem ipragma; pr_space();
-	pp_name name; pr_space();
-	List.iter (List.iter pr_elem) (List.map snd rest); pr_elem ieol
+	pp_name name; pr_space(); pr_elem rest; pr_elem ieol
 
     | OtherDirective (ii) ->
 	List.iter pr_elem ii

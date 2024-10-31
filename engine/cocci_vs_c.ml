@@ -5199,7 +5199,7 @@ and directive = fun dira dirb ->
               }
 	)))
   | A.Pragma(prga,ida,pragmainfoa),
-    B.Pragma ((idb, [(restb,[rest_iidb])]), ii) ->
+    B.Pragma ((idb, rest_iidb), ii) ->
       let (prgb, ieol) = tuple_of_list2 ii in
       ident_cpp DontKnow ida idb >>= (fun ida idb ->
       tokenf prga prgb >>= (fun prga prgb ->
@@ -5235,14 +5235,10 @@ and directive = fun dira dirb ->
       ) >>= (fun pragmainfoa rest_iidb ->
         return (
 	  A.Pragma(prga,ida,pragmainfoa),
-	  B.Pragma((idb, [(restb,[rest_iidb])]), [prgb;ieol])
+	  B.Pragma((idb, rest_iidb), [prgb;ieol])
         ))
       ))
 
-  | A.Pragma(prga,ida,pragmainfoa),
-    B.Pragma ((idb, [(restb,rest_iib)]), ii) ->
-      (* matches against multiline pragmas not supported *)
-      fail
   | A.UsingNamespace (usnga, nmspca, namea, sema),
     B.UsingNamespace (nameb, ii) ->
       assert ( (List.length ii) = 3);

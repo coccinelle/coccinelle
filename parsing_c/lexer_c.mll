@@ -529,7 +529,12 @@ rule token = parse
 	Ast_c.rewrap_charpos (Ast_c.opos_of_info pinfo + offset)
 	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
 	     (Ast_c.rewrap_str wss2 (tokinfo lexbuf))) in
-      let rest = pragmabody lexbuf in
+      let rest =
+	match pragmabody lexbuf with
+	  (_,ii)::rest ->
+	    let rest_str = String.concat "" (List.map fst rest) in
+	    tok_add_s rest_str ii
+	| _ -> failwith "pragma body should not be empty" in
       TPrePragma(pinfo,s1info,ident,iinfo,s2info,rest) }
 
   (* ---------------------- *)

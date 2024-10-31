@@ -699,7 +699,7 @@ and base_class = base_class_bis wrap
 and cpp_directive =
   | Define of define
   | Include of includ
-  | Pragma of (name * string wrap list) wrap
+  | Pragma of (name * info) wrap
   | OtherDirective of il
 (*| Ifdef ? no, ifdefs are handled differently, cf ifdef_directive below *)
   (* C++ *)

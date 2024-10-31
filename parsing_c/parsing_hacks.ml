@@ -449,7 +449,6 @@ let rec define_line_1 acc = function
         define_line_2 (token::acc) line ii tokens
       | TPrePragma(_,_,_,_,_,ii) ->
           (* need final ii for PrePragma, to match end of line *)
-	  let (str,ii) = List.hd(List.rev ii) in
           let line = Ast_c.line_of_info ii in
           define_line_2 (token::acc) line ii tokens
       | TCppEscapedNewline ii ->
@@ -549,25 +548,19 @@ let rec define_ident acc = function
             define_ident acc xs
       )
     | TPrePragma(prag,wss1,ident,iinfo,wss2,rest) ->
-	let acc = (TPragma prag) :: acc in
-	let acc = (TCommentSpace wss1) :: acc in
-	let acc = (TIdent(ident,iinfo)) :: acc in
-	let acc =
-	  if Ast_c.str_of_info wss2 = ""
-	  then acc
-	  else (TCommentSpace wss2) :: acc in
-	let acc =
-	  List.fold_left
-	    (fun acc (rest,rinfo) ->
-	      (TPragmaString(rest,rinfo)) :: acc)
-	    acc rest in
-	define_ident acc tokens
+       let acc = (TPragma prag) :: acc in
+       let acc = (TCommentSpace wss1) :: acc in
+       let acc = (TIdent(ident,iinfo)) :: acc in
+       let acc =
+         if Ast_c.str_of_info wss2 = ""
+         then acc
+         else (TCommentSpace wss2) :: acc in
+       let acc = (TPragmaString(rest) :: acc) in
+       define_ident acc tokens
     | _ ->
 	let acc = token::acc in
 	define_ident acc tokens
     )
-
-
 
 let fix_tokens_define2 xs =
   define_ident [] (define_line_1 [] xs)

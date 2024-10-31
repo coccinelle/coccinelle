@@ -960,7 +960,7 @@ and vk_cpp_directive bigf directive =
         vk_define_val bigf defval
     | Pragma ((id,rest),ii) ->
 	vk_name bigf id;
-	rest +> List.iter (fun (str,ii) -> iif ii);
+	vk_info bigf rest;
 	iif ii
     | OtherDirective (ii) ->
         iif ii
@@ -2068,9 +2068,7 @@ and vk_cpp_directive_s = fun bigf top ->
         Define ((s, iif ii),
                (vk_define_kind_s bigf defkind, vk_define_val_s bigf defval))
     | Pragma((id,rest),ii) ->
-	Pragma((vk_name_s bigf id,
-		rest +> List.map (fun (str,ii) -> (str,iif ii))),
-	       iif ii)
+	Pragma((vk_name_s bigf id, vk_info_s bigf rest),iif ii)
     | OtherDirective (ii) -> OtherDirective (iif ii)
     | UsingTypename((name,def),ii) ->
 	UsingTypename((vk_name_s bigf name,vk_type_s bigf def),iif ii)

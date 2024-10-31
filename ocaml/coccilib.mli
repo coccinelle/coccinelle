@@ -404,7 +404,7 @@ module Ast_c :
       Ast_c.cpp_directive =
         Define of define
       | Include of includ
-      | Pragma of (name * string wrap list) wrap
+      | Pragma of (name * info) wrap
       | OtherDirective of il
       | UsingTypename of (name * fullType) wrap
       | UsingNamespace of name wrap
@@ -864,9 +864,9 @@ module Parser_c :
       | TUendif of Ast_c.info
       | TUndef of Ast_c.info
       | TPrePragma of (Ast_c.info*Ast_c.info*string*Ast_c.info*
-			 Ast_c.info*(string*Ast_c.info)list)
+			 Ast_c.info*Ast_c.info)
       | TPragma of (Ast_c.info)
-      | TPragmaString of (string*Ast_c.info)
+      | TPragmaString of (Ast_c.info)
       | TCppDirectiveOther of Ast_c.info
       | TMacroAttr of (string * Ast_c.info)
       | TMacroAttrArgs of (string * Ast_c.info)

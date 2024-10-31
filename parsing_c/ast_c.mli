@@ -302,7 +302,7 @@ and base_class = base_class_bis wrap
 and cpp_directive =
     Define of define
   | Include of includ
-  | Pragma of (name * string wrap list) wrap
+  | Pragma of (name * info) wrap
   | OtherDirective of il
   | UsingTypename of (name * fullType) wrap
   | UsingNamespace of name wrap

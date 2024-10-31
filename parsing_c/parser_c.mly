@@ -683,9 +683,9 @@ let args_to_params l pb =
 /*(*---------------*)*/
 
 %token <Ast_c.info> TUndef
-%token <Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*(string*Ast_c.info)list> TPrePragma
+%token <Ast_c.info*Ast_c.info*string*Ast_c.info*Ast_c.info*Ast_c.info> TPrePragma
 %token <Ast_c.info> TPragma
-%token <string * Ast_c.info> TPragmaString
+%token <Ast_c.info> TPragmaString
 
 %token <Ast_c.info> TCppDirectiveOther
 
@@ -2652,8 +2652,7 @@ cpp_directive:
      { UsingNamespace ($3, [$1;$2;$4]) }
 
 pragma_strings:
-   TPragmaString { [(fst $1, [snd $1])] }
- | TPragmaString pragma_strings { (fst $1, [snd $1])::$2 }
+   TPragmaString { $1 }
 
 /*(* perhaps better to use assign_expr ? but in that case need
    * do a assign_expr_of_string in parse_c
