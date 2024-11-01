@@ -584,8 +584,6 @@ let rec lexer_function ~pass tr = fun lexbuf ->
             v
           end
 
-      | Parser_c.TPragma(prag) -> check_for_drop v Stat.nPragmaPassing "CPP-PRAGMA"
-
       | _ ->
 
           (* typedef_fix1 *)
