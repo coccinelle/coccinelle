@@ -2,6 +2,7 @@ int main()
 {
 	for(;;)
 	{
+		xxx();
 #pragma bee
 		return 0;
 	}

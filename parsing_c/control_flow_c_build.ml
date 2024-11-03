@@ -1295,7 +1295,15 @@ and aux_statement_list starti (xi, newxi) statxs children =
     | Ast_c.CppDirectiveStmt s ->
 	let elem = CppTop s in
 	let str = "CppTop" in
-	let ei =   !g +> add_node elem    lbl_0 str nochildren in
+	if not !Flag_parsing_c.label_strategy_2
+	then incr counter_for_labels;
+
+	let lbl =
+	  if !Flag_parsing_c.label_strategy_2
+	  then newxi'.labels
+	  else newxi'.labels @ [!counter_for_labels]
+	in
+	let ei =   !g +> add_node elem lbl str nochildren in
 
 	!g +> add_arc_opt (starti, ei);
 	Some ei
