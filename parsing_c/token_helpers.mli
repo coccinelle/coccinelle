@@ -9,20 +9,13 @@ val is_comment             : Parser_c.token -> bool
 val is_not_comment         : Parser_c.token -> bool
 
 val is_real_comment        : Parser_c.token -> bool
-val is_fake_comment        : Parser_c.token -> bool
 val is_not_in_ast          : Parser_c.token -> bool
 
-
 val is_cpp_instruction     : Parser_c.token -> bool
-val is_cpp_endif           : Parser_c.token -> bool
-val is_gcc_token           : Parser_c.token -> bool
-val is_escaped_newline     : Parser_c.token -> bool
 
 val is_eof                 : Parser_c.token -> bool
 val is_eom                 : Parser_c.token -> bool
 
-val is_else                : Parser_c.token -> bool
-val is_if_or_else          : Parser_c.token -> bool
 val is_statement           : Parser_c.token -> bool
 val is_start_of_something  : Parser_c.token -> bool
 val is_binary_operator     : Parser_c.token -> bool
@@ -30,8 +23,6 @@ val is_stuff_taking_parenthized : Parser_c.token -> bool
 
 val is_opar : Parser_c.token -> bool
 val is_cpar : Parser_c.token -> bool
-val is_obrace : Parser_c.token -> bool
-val is_cbrace : Parser_c.token -> bool
 
 val is_ident_like: Parser_c.token -> bool
 

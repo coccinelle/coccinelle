@@ -194,7 +194,7 @@ let test_parse_gen xs ext =
   end;
   ()
 
-
+(* parse and handle some regression information when called with dirmode *)
 let test_parse_c xs =
   test_parse_gen xs "c"
 let test_parse_h xs =

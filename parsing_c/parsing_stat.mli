@@ -8,8 +8,6 @@ type parsing_stat = {
 }
 val default_stat : Common.filename -> parsing_stat
 val print_parsing_stat_list : ?verbose:bool -> parsing_stat list -> unit
-val lines_around_error_line :
-  context:int -> Common.filename * int -> string list
 val print_recurring_problematic_tokens : parsing_stat list -> unit
 val nTypedefInfer : int ref
 val nIncludeGrammar : int ref
@@ -65,4 +63,3 @@ val nDirectiveInitializer : int ref
 val nMacroHint : int ref
 val nMacroExpand : int ref
 val nNotParsedCorrectly : int ref
-val assoc_stat_number : (string * int ref) list

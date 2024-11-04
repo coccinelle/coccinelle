@@ -36,9 +36,6 @@
 
 val regexp_macro: Str.regexp
 val regexp_annot: Str.regexp
-val regexp_declare: Str.regexp
-val regexp_foreach: Str.regexp
-val regexp_typedef: Str.regexp
 
 (* can reset this global *)
 val ifdef_paren_cnt: int ref

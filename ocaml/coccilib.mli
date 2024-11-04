@@ -17,7 +17,6 @@ module Token_c :
       | TComment
       | TCommentCpp of cppcommentkind
     type comment_like_token = token
-    val info_of_token : 'a * 'b -> 'b
     val str_of_token : 'a * Common.parse_info -> string
   end
 module Ast_c :
@@ -545,7 +544,6 @@ module Ast_c :
     val nQ : typeQualifierbis * 'a list
     val defaultInt : typeCbis
     val noType : unit -> ('a option * test) ref
-    val noInstr : statementbis * 'a list
     val noTypedefDef : unit -> 'a option
     val emptyMetavarsBinding : metavars_binding
     val emptyAnnotCocci : Ast_cocci.mcodekind * metavars_binding list
@@ -585,11 +583,9 @@ module Ast_c :
     val rewrap_charpos : int -> info -> info
     val rewrap_col : int -> info -> info
     val rewrap_pinfo : parse_info -> info -> info
-    val get_pi : parse_info -> Common.parse_info
     val get_opi : parse_info -> Common.parse_info
     val str_of_info : info -> string
     val get_info : (Common.parse_info -> 'a) -> info -> 'a
-    val get_orig_info : (Common.parse_info -> 'a) -> info -> 'a
     val make_expanded : info -> info
     val pos_of_info : info -> int
     val opos_of_info : info -> int
@@ -613,9 +609,7 @@ module Ast_c :
     val is_test : expression -> bool
     val al_info : int -> info -> info
     val semi_al_info : info -> info
-    val magic_real_number : int
     val real_al_info : info -> info
-    val al_comments : bool -> comments_around -> comments_around
     val al_info_cpp : int -> info -> info
     val semi_al_info_cpp : info -> info
     val real_al_info_cpp : bool -> info -> info
@@ -627,13 +621,8 @@ module Ast_c :
     val s_of_inc_file_bis : inc_file -> string
     val s_of_attr : (attributebis * info list) list -> string
     val str_of_name : name -> string
-    val get_s_and_ii_of_name : name -> string * il
     val get_s_and_info_of_name : name -> string * info
     val info_of_name : name -> info
-    val ii_of_name : name -> il
-    val get_local_ii_of_expr_inlining_ii_of_name :
-      (expressionbis * 'a) * il -> il
-    val get_local_ii_of_tybis_inlining_ii_of_name : typeCbis * il -> il
     val info_of_type : 'a * attribute list * (typeCbis * il) -> parse_info option
     val name_of_parameter : parameterType -> string option
     val put_annot_info :
@@ -642,7 +631,6 @@ module Ast_c :
       info -> Token_annot.annot_key -> Token_annot.annot_val option
     val get_comments_before : info -> Token_c.comment_like_token list
     val get_comments_after : info -> Token_c.comment_like_token list
-    val string_of_inc_file : inc_file -> string
   end
 module Parse_c :
   sig
@@ -686,19 +674,12 @@ module Parse_c :
     val tokens_of_string :
 	string -> Lexing.position option -> Parser_c.token list
     val parse : Common.filename -> Ast_c.program
-    val parse_gen :
-      cpp:bool ->
-      tos:bool ->
-      ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a) ->
-      Lexing.position option -> string -> 'a
     val type_of_string : string -> Ast_c.fullType
     val statement_of_string : string -> Ast_c.statement
     val cstatement_of_string : string -> Ast_c.statement
     val cexpression_of_string : string -> Ast_c.expression
     val print_commentized : Parser_c.token list -> unit
     val program_of_program2 : program2 -> Ast_c.program
-    val with_program2 :
-      (Ast_c.program -> Ast_c.program) -> program2 -> program2
     type parse_error_function =
         int ->
         Parser_c.token list -> int * int -> string array -> int -> unit
@@ -899,27 +880,10 @@ module Lexer_c :
     val pr2_once : string -> unit
     exception Lexical of string
     val tok : Lexing.lexbuf -> string
-    val eoltok : Lexing.lexbuf -> string
-    val tokinfo : Lexing.lexbuf -> Ast_c.info
-    val eoltokinfo : Lexing.lexbuf -> Ast_c.info
-    val eoftokinfo : Lexing.lexbuf -> Parser_c.token
-    val no_ifdef_mark : unit -> (int * int) option ref
-    val tok_add_s : string -> Ast_c.info -> Ast_c.info
-    val function_cpp_eat_until_nl :
-      ('a -> string) ->
-      ('a -> string) -> ('a -> string) -> string -> 'a -> string
-    val keyword_table : (string, Ast_c.info -> Parser_c.token) Hashtbl.t
-    val cpp_keyword_table : (string, Ast_c.info -> Parser_c.token) Hashtbl.t
-    val ibm_keyword_table : (string, Ast_c.info -> Parser_c.token) Hashtbl.t
-    val error_radix : string -> string
     val token : Lexing.lexbuf -> Parser_c.token
     val char : Lexing.lexbuf -> string
-    val restchars : Lexing.lexbuf -> string
     val string : Lexing.lexbuf -> string
     val comment : Lexing.lexbuf -> string
-    val parse_newline : Lexing.lexbuf -> string
-    val cpp_in_comment_eat_until_nl : Lexing.lexbuf -> string
-    val cpp_eat_until_nl : Lexing.lexbuf -> string
   end
 module Pretty_print_c :
   sig
@@ -1038,14 +1002,12 @@ module Pretty_print_c :
     val debug_info_of_node :
       Control_flow_c.G.key -> Control_flow_c.cflow -> string
     val string_of_expression : Ast_c.expression -> string
-    val string_of_ifdef_guard : Ast_c.ifdef_guard -> string
     val string_of_fullType : Ast_c.fullType -> string
   end
 module Lib_parsing_c :
   sig
     val pr2 : string -> unit
     val pr2_once : string -> unit
-    val strip_info_visitor : 'a -> Visitor_c.visitor_c_s
     val al_expr : Ast_c.expression -> Ast_c.expression
     val al_declaration : Ast_c.declaration -> Ast_c.declaration
     val al_field : Ast_c.field -> Ast_c.field
@@ -1070,9 +1032,7 @@ module Lib_parsing_c :
     val al_string_format : Ast_c.string_format -> Ast_c.string_format
     val al_string_fragments :
       Ast_c.string_fragment list -> Ast_c.string_fragment list
-    val al_program : Ast_c.toplevel list -> Ast_c.toplevel list
     val al_ii : Ast_c.info list -> Ast_c.info list
-    val strip_inh_info_visitor : 'a -> Visitor_c.visitor_c_s
     val al_inh_expr : Ast_c.expression -> Ast_c.expression
     val al_inh_declaration : Ast_c.declaration -> Ast_c.declaration
     val al_inh_field : Ast_c.field -> Ast_c.field
@@ -1090,7 +1050,6 @@ module Lib_parsing_c :
     val al_inh_string_format : Ast_c.string_format -> Ast_c.string_format
     val al_inh_string_fragments :
       Ast_c.string_fragment list -> Ast_c.string_fragment list
-    val semi_strip_info_visitor : Visitor_c.visitor_c_s
     val semi_al_expr : Ast_c.expression -> Ast_c.expression
     val semi_al_declaration : Ast_c.declaration -> Ast_c.declaration
     val semi_al_field : Ast_c.field -> Ast_c.field
@@ -1115,14 +1074,10 @@ module Lib_parsing_c :
     val semi_al_string_format : Ast_c.string_format -> Ast_c.string_format
     val semi_al_string_fragments :
       Ast_c.string_fragment list -> Ast_c.string_fragment list
-    val semi_al_program : Ast_c.toplevel list -> Ast_c.toplevel list
-    val real_strip_info_visitor : 'a -> Visitor_c.visitor_c_s
     val real_al_expr : Ast_c.expression -> Ast_c.expression
     val real_al_statement : Ast_c.statement -> Ast_c.statement
     val real_al_statement_seq_list :
       Ast_c.statement_sequencable list -> Ast_c.statement_sequencable list
-    val extract_info_visitor :
-      (Visitor_c.visitor_c -> 'a -> 'b) -> 'a -> Ast_c.info list
     val ii_of_def : Ast_c.definition -> Ast_c.info list
     val ii_of_decl : Ast_c.declaration -> Ast_c.info list
     val ii_of_field : Ast_c.field -> Ast_c.info list
@@ -1146,8 +1101,6 @@ module Lib_parsing_c :
     val ii_of_enum_fields :
       (Ast_c.oneEnumType, Ast_c.il) Common.either list -> Ast_c.info list
     val ii_of_struct_fields : Ast_c.field list -> Ast_c.info list
-    val ii_of_struct_fieldkinds :
-      Ast_c.fieldkind Ast_c.wrap list -> Ast_c.info list
     val ii_of_cst :
       (Ast_c.constant, string) Common.either Ast_c.wrap -> Ast_c.info list
     val ii_of_fragments :
@@ -1170,8 +1123,6 @@ module Lib_parsing_c :
       Ast_c.info list ->
       Common.filename * string * Ast_c.posl * Ast_c.posl
     val min_pinfo_of_node : Control_flow_c.node -> Common.parse_info
-    val range_of_origin_ii : Ast_c.info list -> (int * int) option
-    val names_of_parameters_in_def : Ast_c.definitionbis -> string list
     val stmt_elems_of_sequencable :
       Ast_c.statement_sequencable list -> Ast_c.statement list
   end
@@ -1489,8 +1440,6 @@ module Flag :
 module Flag_parsing_c :
   sig
     val path : string ref
-    val macro_dir : string
-    val mk_macro_path : cocci_path:string -> string -> string
     val std_h : string ref
     val common_h : string ref
     val cpp_i_opts : string list ref
@@ -3108,7 +3057,6 @@ module Ast_cocci :
     val set_pos_var : meta_pos list -> 'a mcode -> 'a mcode
     val drop_pos : 'a mcode -> 'a mcode
     val get_meta_name : metavar -> meta_name
-    val tag2c : anything -> string
     val no_info : info
     val make_meta_rule_elem :
       string ->
@@ -3128,7 +3076,6 @@ module Ast_cocci :
     val string_of_baseType : baseType -> string
     val string_of_const_vol : const_vol -> string
     val string_of_structUnion : structUnion -> string
-    val string_of_typeC : typeC -> string
     val string_of_fullType : fullType -> string
     val typeC_of_fullType_opt : fullType -> typeC option
     val ident_of_expression_opt : expression -> ident option
@@ -3178,9 +3125,6 @@ module Ast_cocci :
       'a generic_constraints -> 'b generic_constraints
     val cstr_meta_names : 'a generic_constraints -> meta_name list
     val cstr_pos_meta_names : 'a generic_constraints -> meta_name list
-    val filter_merge_variables :
-      (script_meta_name * meta_name * metavar * mvinit) list ->
-      (string * string) list
     val prepare_merge_variables :
       ('a ->
        ('b * (script_meta_name * meta_name * metavar * mvinit) list) option) ->
@@ -3740,7 +3684,6 @@ module Ast0_cocci :
     val string_fragment : string_fragment -> anything
     val top : top_level -> anything
     val default_info : unit -> info
-    val default_befaft : unit -> mcodekind
     val context_befaft : unit -> mcodekind
     val wrap : 'a -> 'a wrap
     val context_wrap : 'a -> 'a wrap

@@ -1,6 +1,4 @@
 val path : string ref
-val macro_dir : string
-val mk_macro_path : cocci_path:string -> string -> string
 val std_h : string ref
 val common_h : string ref
 val cpp_i_opts : string list ref

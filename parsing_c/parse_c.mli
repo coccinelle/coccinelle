@@ -70,9 +70,6 @@ val tokens:      ?profile:bool -> Common.filename -> Parser_c.token list
 val tokens_of_string: string -> Lexing.position option -> Parser_c.token list
 
 val parse:                        Common.filename -> Ast_c.program
-val parse_gen: cpp:bool -> tos:bool
-    -> ((Lexing.lexbuf -> Parser_c.token) -> Lexing.lexbuf -> 'a)
-    -> Lexing.position option -> string -> 'a
 
 (* ---------------------------------------------------------------------- *)
 (* Easy way to build complex Ast elements from simple strings.
@@ -91,8 +88,6 @@ val cexpression_of_string : string -> Ast_c.expression
 val print_commentized       : Parser_c.token list -> unit
 
 val program_of_program2 : program2 -> Ast_c.program
-val with_program2: (Ast_c.program -> Ast_c.program) -> program2 -> program2
-
 
 (* ---------------------------------------------------------------------- *)
 (* custom error reporting function *)

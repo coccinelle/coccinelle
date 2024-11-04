@@ -689,7 +689,6 @@ val top : top_level -> anything
 (* Avoid cluttering the parser.  Calculated in compute_lines.ml. *)
 
 val default_info : unit -> info
-val default_befaft : unit -> mcodekind
 val context_befaft : unit -> mcodekind
 val wrap : 'a -> 'a wrap
 val context_wrap : 'a -> 'a wrap

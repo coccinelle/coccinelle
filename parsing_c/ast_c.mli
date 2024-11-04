@@ -423,7 +423,6 @@ val nullQualif : typeQualifierbis * 'a list
 val nQ : typeQualifierbis * 'a list
 val defaultInt : typeCbis
 val noType : unit -> ('a option * test) ref
-val noInstr : statementbis * 'a list
 val noTypedefDef : unit -> 'a option
 val emptyMetavarsBinding : metavars_binding
 val emptyAnnotCocci : Ast_cocci.mcodekind * metavars_binding list
@@ -466,11 +465,9 @@ val rewrap_str : string -> info -> info
 val rewrap_charpos : int -> info -> info
 val rewrap_col : int -> info -> info
 val rewrap_pinfo : parse_info -> info -> info
-val get_pi : parse_info -> Common.parse_info
 val get_opi : parse_info -> Common.parse_info
 val str_of_info : info -> string
 val get_info : (Common.parse_info -> 'a) -> info -> 'a
-val get_orig_info : (Common.parse_info -> 'a) -> info -> 'a
 val make_expanded : info -> info
 val pos_of_info : info -> int
 val opos_of_info : info -> int
@@ -492,9 +489,7 @@ val is_test : expression -> bool
 val al_info_of_string : int -> string -> info
 val al_info : int -> info -> info
 val semi_al_info : info -> info
-val magic_real_number : int
 val real_al_info : info -> info
-val al_comments : bool -> comments_around -> comments_around
 val al_info_cpp : int -> info -> info
 val semi_al_info_cpp : info -> info
 val real_al_info_cpp : bool -> info -> info
@@ -506,13 +501,8 @@ val s_of_inc_file : inc_file -> string
 val s_of_inc_file_bis : inc_file -> string
 val s_of_attr : (attributebis * info list) list -> string
 val str_of_name : name -> string
-val get_s_and_ii_of_name : name -> string * il
 val get_s_and_info_of_name : name -> string * info
 val info_of_name : name -> info
-val ii_of_name : name -> il
-val get_local_ii_of_expr_inlining_ii_of_name :
-  (expressionbis * 'a) * il -> il
-val get_local_ii_of_tybis_inlining_ii_of_name : typeCbis * il -> il
 val info_of_type : 'a * attribute list * (typeCbis * il) -> parse_info option
 val name_of_parameter : parameterType -> string option
 val put_annot_info :
@@ -521,4 +511,3 @@ val get_annot_info :
   info -> Token_annot.annot_key -> Token_annot.annot_val option
 val get_comments_before : info -> Token_c.comment_like_token list
 val get_comments_after : info -> Token_c.comment_like_token list
-val string_of_inc_file : inc_file -> string

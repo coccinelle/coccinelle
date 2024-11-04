@@ -921,8 +921,6 @@ val drop_pos : 'a mcode -> 'a mcode
 
 val get_meta_name : metavar -> meta_name
 
-val tag2c : anything -> string
-
 val no_info : info
 
 val make_meta_rule_elem :
@@ -956,7 +954,6 @@ val string_of_sign : sign -> string
 val string_of_baseType : baseType -> string
 val string_of_const_vol : const_vol -> string
 val string_of_structUnion : structUnion -> string
-val string_of_typeC : typeC -> string
 val string_of_fullType : fullType -> string
 
 val typeC_of_fullType_opt : fullType -> typeC option
@@ -1060,10 +1057,6 @@ val cstr_push_not:
 val cstr_meta_names: 'expression generic_constraints -> meta_name list
 
 val cstr_pos_meta_names: 'expression generic_constraints -> meta_name list
-
-val filter_merge_variables:
-    (script_meta_name * meta_name * metavar * mvinit) list ->
-      (string * string) list
 
 val prepare_merge_variables:
     ('a -> ('b * (script_meta_name * meta_name * metavar * mvinit) list) option)

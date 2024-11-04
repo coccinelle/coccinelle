@@ -21,5 +21,3 @@ type error =
 exception Error of error
 
 val report_error : error -> unit
-
-val realstring : bool ref

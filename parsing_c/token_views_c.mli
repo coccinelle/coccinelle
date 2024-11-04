@@ -39,12 +39,6 @@ val mk_braceised : token_extended list -> brace_grouped list
 val mk_ifdef : token_extended list -> ifdef_grouped list
 val mk_line_parenthised :
   paren_grouped list -> paren_grouped line_grouped list
-val mk_body_function_grouped :
-  token_extended list -> body_function_grouped list
-
-val line_of_paren : paren_grouped -> int
-val span_line_paren :
-  int -> paren_grouped list -> paren_grouped list * paren_grouped list
 
 (* ---------------------------------------------------------------------- *)
 val iter_token_paren : (token_extended -> unit) -> paren_grouped list -> unit

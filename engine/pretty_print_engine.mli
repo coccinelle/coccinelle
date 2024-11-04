@@ -18,8 +18,6 @@ val pp_binding2_ctlsubst :
     Ast_ctl.generic_substitution ->
     unit
 val pp_predicate : Lib_engine.predicate -> unit
-val predicate_to_string : Lib_engine.predicate -> string
-
 
 val pp_ctlcocci :
   bool (* show_plus *) -> bool (* inline_let *) -> Lib_engine.ctlcocci -> unit

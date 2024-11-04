@@ -37,7 +37,6 @@ val set_aft :
 val drop_pos :
   'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'i * 'j ->
   'a * 'b * 'c * 'd * 'e * 'f * 'g * 'h * 'k list * 'j
-val clt2mcode_ext : 'a -> bool -> Data.clt -> 'a Ast0_cocci.mcode
 val clt2mcode : 'a -> Data.clt -> 'a Ast0_cocci.mcode
 val id3name : 'a * 'b * 'c -> 'a
 val id2name : 'a * 'b -> 'a
@@ -108,8 +107,6 @@ val iso_adjust :
   ('a -> 'b) ->
   ('c -> 'b) -> 'a -> ('c, 'c) Common.either list -> 'b list list
 val lookup : string -> string -> Ast_cocci.metavar
-val meta_lookup : string -> string -> Ast_cocci.metavar -> Ast_cocci.metavar
-val check_meta_tyopt : bool -> Ast_cocci.metavar -> unit
 val check_meta : Ast_cocci.metavar -> unit
 val check_inherited_constraint_without_type : 'a option * 'b -> 'a * 'b
 val check_inherited_constraint :
@@ -192,7 +189,6 @@ val exp_stm :
   (Ast_cocci.added_string * Ast0_cocci.position_info) list *
   (Ast_cocci.added_string * Ast0_cocci.position_info) list * Ast0_cocci.anything list *
   string -> Ast0_cocci.base_statement Ast0_cocci.wrap
-val make_fake_mcode : 'a -> Ast0_cocci.info * Ast0_cocci.mcodekind * Ast_cocci.adj
 val ifthen :
   Data.clt -> Data.clt ->
   Ast0_cocci.expression ->
@@ -257,9 +253,7 @@ val goto :
 val seq :
   (string * Data.clt) -> Ast0_cocci.statement Ast0_cocci.dots ->
   (string * Data.clt) -> Ast0_cocci.base_statement Ast0_cocci.wrap
-val check_rule_name : (string * 'a) option -> string option
 val make_iso_rule_name_result : string -> Ast_cocci.rulename
-val fix_dependencies : Ast0_cocci.dependency -> Ast_cocci.dependency
 val make_cocci_rule_name_result :
   (string * 'a) option ->
   Ast0_cocci.dependency ->
@@ -282,24 +276,6 @@ val drop_dot_commas :
 type metavars =
     MFrag of (string Ast0_cocci.mcode -> Ast0_cocci.string_fragment)
   | MFmt of Ast0_cocci.string_format
-val string_metavariables :
-  string ->
-  Data.clt -> metavars
-val pct_split : string -> string list
-val parse_middle :
-  string ->
-  Data.clt -> Ast0_cocci.base_string_fragment Ast0_cocci.wrap list
-val check_no_duplicates : Ast0_cocci.base_string_fragment Ast0_cocci.wrap list -> unit
-val update_line :
-  'a * int * int * int * int * int * 'b * 'c * 'd * 'e ->
-  int -> 'a * int * int * int * int * int * 'b * 'c * 'd * 'e
-val drop_minus_plus :
-  string ->
-  Data.clt -> int * Ast0_cocci.base_string_fragment Ast0_cocci.wrap list
-val not_format_string :
-  string ->
-  Data.clt -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
-val nometas : string -> bool
 val parse_string :
   string ->
   Data.clt -> Ast_cocci.isWchar -> Ast0_cocci.base_expression Ast0_cocci.wrap
