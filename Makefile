@@ -275,6 +275,10 @@ exposed-modules : $(COMPILED_EXPOSED_MODULES) ocaml/parmap.cmi
 check : spatch$(TOOLS_SUFFIX)
 	./spatch$(TOOLS_SUFFIX) --testall
 
+.PHONY : check-cpp
+check-cpp:
+	cd cpptests && ../scripts/cpptests.sh
+
 .PHONY : clean
 clean :
 	$(SHOW_CLEAN) ".depend"
