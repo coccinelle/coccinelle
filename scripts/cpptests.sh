@@ -6,6 +6,8 @@
 set -e
 #set -x
 
+which txt2html
+
 spatch=../spatch.opt
 declare -A FAILED_RUN
 declare -A FAILED_PP
@@ -181,72 +183,167 @@ for cf in *.cocci; do
 	rm -f $cmpfile
 	set -e
 done
-echo -n 'TEST CASE BROKEN (spatch ... exits non-zero): '
-for tn in ${!TEST_CASE_BROKEN[*]}; do
-	if test ${TEST_CASE_BROKEN[$tn]} != 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'TEST FAILS (patches differ): '
-for tn in ${!TEST_CASE_FAILS[*]}; do
-	if test ${TEST_CASE_FAILS[$tn]} != 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'PASSED SPATCH PARSE: '
-for tn in ${!FAILED_PP[*]}; do
-	if test ${FAILED_PP[$tn]} = 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'FAILED SPATCH PARSE: '
-for tn in ${!FAILED_PP[*]}; do
-	if test ${FAILED_PP[$tn]} != 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'PASSED SOURCE PARSE: '
-for tn in ${!FAILED_CP[*]}; do
-	if test ${FAILED_CP[$tn]} = 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'FAILED SOURCE PARSE: '
-for tn in ${!FAILED_CP[*]}; do
-	if test ${FAILED_CP[$tn]} != 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'PASSED TEST RUNS: '
-for tn in ${!FAILED_RUN[*]}; do
-	if test ${FAILED_RUN[$tn]} = 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
-echo -n 'FAILED TEST RUNS: '
-for tn in ${!FAILED_RUN[*]}; do
-	if test ${FAILED_RUN[$tn]} != 0; then
-		echo "$tn "
-	fi
-done | sort | tr -d '\n'
-echo
 
-echo 'REFERENCE TO TEST: '
+function header() {
+	local PRE='' POST=''
+	if test -n "$WANT_HTML"; then
+		PRE+="<H2>";
+		POST+="<H2>";
+		if test "$1" = '-n'; then shift; else POST+="<br>"; fi
+	else
+		if test "$1" = '-n'; then PRE+='-n'; fi
+	fi
+	echo "$PRE" "$@" "$POST"
+}
+
+function to_href() {
+	if test $# = 0 ; then cat ; else echo "${1}"; fi | \
+		sed 's/^\(.\+\)$/\<A HREF="\1"\>\1\<\/A\>/g'
+}
+
+function to_href2() {
+	echo -n '<A HREF="'$1'">'$2'</A>'
+}
+
+function maybe_to_href() {
+	if test -n "$WANT_HTML"; then to_href $@; else echo $@; fi
+}
+
+function maybe_to_anchor_href() {
+	if test -n "$WANT_HTML"; then
+		while read -d ' ' td; do
+			#if test -z "$tn" ; then continue; fi
+			tn=${td//\*/}
+			#echo -n "bu:$tn"
+			to_href2 "#${tn}" "${td}"; echo -n ' '
+		done | sed 's/$/<BR>/g'
+	else
+		cat
+	fi
+}
+
+function cat_all_as_pre() {
+	for f in $1.cpp $1.cocci $1.res; do
+		echo "<BR>"
+		echo "$f:"
+		echo "<BR>"
+		echo "<PRE>"
+		! txt2html --prebegin 0 --extract "$f" # TODO: new2.res
+		echo "</PRE>"
+		echo "<BR>"
+	done
+}
+
+function test_reference() {
+	if test -n "$WANT_HTML"; then
+		tr -d ' ' | \
+		while read tn; do \
+			echo "<BR>"
+			echo "<A ID=\"$tn\">$tn</A>";
+			echo "<BR>"
+			# { echo "$tn.cpp"; echo "$tn.cocci"; echo "$tn.res"; } | to_href
+			cat_all_as_pre $tn
+		done
+#		| sed 's/^\(.\+\)$/\1.cpp\n\1.cocci\1.res\n/g' \
+#		| sed 's/^\(.\+\)$/\<a href="\1"\>\1\<\/a\>/g'
+	else
+		tr -d '\n' | cat
+	fi
+}
+
+print_results() {
+if test -n "$WANT_HTML"; then
+	echo '<!DOCTYPE HTML><HTML><HEAD><TITLE>C++ Tests</TITLE></HEAD><BODY>';
+fi
+echo
+header -n 'REFERENCE TO TESTS: '
 for rn in ${!REFTOTEST[*]}; do
 	if test "${REFTOTEST[$rn]}" != ''; then
-		echo -n "	$rn -> "
+		echo -n "	`maybe_to_href $rn` -> "
 		for tn in ${REFTOTEST[$rn]}; do
 			echo -n ${tn};
 			if test "${FAILED_PP[$tn]}" != 0 -o "${TEST_CASE_FAILS[$tn]}" != 0 -o "${FAILED_RUN[$tn]}" != 0; then echo -n '* '; else echo -n ' '; fi
-		done
+		done | maybe_to_anchor_href
 		echo
 	fi
 done | sort
 echo
+header -n 'ALL EXAMPLES: '
+for tn in ${!REFTAGS[*]}; do
+	echo "$tn "
+done | sort | test_reference
+echo
+header -n 'TEST CASE BROKEN (spatch ... exits non-zero): '
+for tn in ${!TEST_CASE_BROKEN[*]}; do
+	if test ${TEST_CASE_BROKEN[$tn]} != 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'TEST FAILS (patches differ): '
+for tn in ${!TEST_CASE_FAILS[*]}; do
+	if test ${TEST_CASE_FAILS[$tn]} != 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'PASSED SPATCH PARSE: '
+for tn in ${!FAILED_PP[*]}; do
+	if test ${FAILED_PP[$tn]} = 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'FAILED SPATCH PARSE: '
+for tn in ${!FAILED_PP[*]}; do
+	if test ${FAILED_PP[$tn]} != 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'PASSED SOURCE PARSE: '
+for tn in ${!FAILED_CP[*]}; do
+	if test ${FAILED_CP[$tn]} = 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'FAILED SOURCE PARSE: '
+for tn in ${!FAILED_CP[*]}; do
+	if test ${FAILED_CP[$tn]} != 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'PASSED TEST RUNS: '
+for tn in ${!FAILED_RUN[*]}; do
+	if test ${FAILED_RUN[$tn]} = 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+header -n 'FAILED TEST RUNS: '
+for tn in ${!FAILED_RUN[*]}; do
+	if test ${FAILED_RUN[$tn]} != 0; then
+		echo "$tn "
+	fi
+done | sort | test_reference
+echo
+if test -n "$WANT_HTML"; then echo '<BODY><HTML>';fi
+}
+
+while getopts "o:" NAME; do
+	case $NAME in
+		o) WANT_HTML=$OPTARG;;
+		# TODO: add -h
+		*) false;;
+	esac
+done
+shift $((OPTIND-1))
+
+if test -n "$WANT_HTML"; then
+	# TODO: Or MD?
+	print_results > "$WANT_HTML"
+else
+	print_results
+fi
