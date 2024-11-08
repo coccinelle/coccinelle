@@ -279,6 +279,10 @@ check : spatch$(TOOLS_SUFFIX)
 check-cpp:
 	cd cpptests && ../scripts/cpptests.sh
 
+.PHONY : check-cpp-html
+check-cpp-html:
+	cd cpptests && ../scripts/cpptests.sh -o cpptests.html
+
 .PHONY : clean
 clean :
 	$(SHOW_CLEAN) ".depend"
