@@ -19,6 +19,7 @@ On Debian/Ubuntu, install the following packages
  - libpcre-ocaml-dev (optional, bundled)
  - libparmap-ocaml-dev (optional, bundled)
  - texlive-fonts-extra (for the documentation)
+ - hevea (for the documentation)
 
 On Fedora, install the following packages
  - pkgconfig (optional, but strongly recommended)
