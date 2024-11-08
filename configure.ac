@@ -3,7 +3,7 @@ dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
-AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@systeme.lip6.fr], [], [http://coccinelle.lip6.fr/])
+AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@inria.fr], [], [https://coccinelle.gitlabpages.inria.fr/website/])
 
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])
@@ -63,7 +63,11 @@ AS_IF([test "`$ECHO --version`" =  "--version"],
   AC_SUBST([ECHO],["$COCCI_SRCDIR/setup/echo.sh"])
 ])
  
-dnl  patchelf is an optional dependency and in principle not used for building coccinelle
+dnl  hevea is necessary to make docs
+AC_PATH_PROG([HEVEA],[hevea])
+AS_IF([test -z "$ac_cv_path_HEVEA"], [AC_MSG_WARN([hevea not detected -- you will be able to rebuild the documentation])])
+
+dnl  patchelf is an optional dependency and in principle not used for building Coccinelle
 AC_PATH_PROG([PATCHELF],[patchelf])
 
 dnl  pkg config is required, but we have an alternative script for it
@@ -86,6 +90,8 @@ AC_CHECK_OCAMLVERSION([OCAMLATLEAST312],[3.12])
 AS_IF([test "x$OCAMLATLEAST312" = xno],[AC_MSG_ERROR([OCaml >= 3.12 is required to compile Coccinelle])])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4020],[4.02])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST4030],[4.03])
+AC_CHECK_OCAMLVERSION([OCAMLATLEAST4080],[4.08])
+AS_IF([test "x$OCAMLATLEAST4080" = xno],[AC_MSG_ERROR([OCaml >= 4.08 is required to compile Coccinelle])])
 AC_CHECK_OCAMLVERSION([OCAMLATLEAST50],[5.0])
 AC_SUBST([OCAMLCORIG],["$OCAMLC"])
 
@@ -634,7 +640,7 @@ Then, to test coccinelle, run for example:
   \$ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 
 Or when coccinelle is not installed yet:
-  \$ COCCINELLE_HOME=$(pwd) ./scripts/spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
+  \$ COCCINELLE_HOME=$(pwd) \${SHELL} ./scripts/spatch.sh -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 EOF
 
 if test "x$enable_python" != "xno"; then

@@ -639,7 +639,7 @@ Julia Lawall <julia.lawall@lip6.fr>, Nicolas Palix <nicolas.palix@imag.fr>
 and Peter Senna Tschudin <peter.senna@gmail.com>.
 
 .SH REPORTING BUGS
-Send a mail to <cocci@systeme.lip6.fr>
+Send a mail to <cocci@inria.fr>
 
 .SH COPYRIGHT
 Copyright 2012, 2015, INRIA and University of Grenoble-Alpes LIG.
