@@ -169,7 +169,7 @@ for cf in *.cocci; do
 	( $spatch --c++ --parse-c $tn.cpp && $spatch --c++ --parse-c $tn.cpp | grep -q '100.*good.or.passed' );
 	FAILED_CP[$tn]=$?;
 	set -e
-	if test ${FAILED_RUN[$tn]} = 0; then
+	if test ${FAILED_RUN[$tn]} = 0 || true; then # notice we always step in the conditional, even if we expect TEST_CASE_BROKEN and TEST_CASE_FAILS to fail (and FAILED_RUN be now same as TEST_CASE_BROKEN; this is less strict but more clear
 		cmpfile=$tn.cmp
 		set +e
 		$spatch --sp-file $tn.cocci $tn.cpp -o $cmpfile
@@ -249,14 +249,12 @@ function test_reference() {
 			echo -n "<A ID=\"$tn\">"'</A>';
 			echo '<H3>Test: '
 			to_href2 "#$tn" "${tn}";
-			if test ${FAILED_RUN[$tn]}${FAILED_PP[$tn]}${FAILED_CP[$tn]} == 000 ; then
-			#if test ${TEST_CASE_BROKEN[$tn]}${TEST_CASE_FAILS[$tn]}${FAILED_RUN[$tn]}${FAILED_PP[$tn]}${FAILED_CP[$tn]} == 00000 ; then
+			if test ${TEST_CASE_BROKEN[$tn]}${TEST_CASE_FAILS[$tn]}${FAILED_RUN[$tn]}${FAILED_PP[$tn]}${FAILED_CP[$tn]} == 00000 ; then
 				echo ' (<SPAN CLASS="TESTPASS">PASS</SPAN>)'
 			else
 				echo -n ' (<SPAN CLASS="TESTFAIL">FAIL:'
-				# TODO: cannot activate the following two yet, as they don't span all test names
-				#if test ${TEST_CASE_BROKEN[$tn]} != 0; then echo -n ' /*exits nonzero*/'; fi
-				#if test ${TEST_CASE_FAILS[$tn]} != 0; then echo -n ' /*patch differs*/'; fi
+				if test ${TEST_CASE_BROKEN[$tn]} != 0; then echo -n ' /*exits nonzero*/'; fi
+				if test ${TEST_CASE_FAILS[$tn]} != 0; then echo -n ' /*patch differs*/'; fi
 				if test ${FAILED_RUN[$tn]} != 0; then echo -n ' --test'; fi
 				if test ${FAILED_PP[$tn]} != 0; then echo -n ' --parse-cocci'; fi
 				if test ${FAILED_CP[$tn]} != 0; then echo -n ' --parse-c'; fi
