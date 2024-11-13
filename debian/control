@@ -23,7 +23,7 @@ Build-Depends:
  texlive-fonts-recommended,
  texlive-fonts-extra
 Standards-Version: 3.9.2
-Homepage: http://coccinelle.lip6.fr
+Homepage: https://coccinelle.gitlabpages.inria.fr/website/
 Vcs-Git: git://git.debian.org/git/pkg-ocaml-maint/packages/coccinelle.git
 Vcs-Browser: http://git.debian.org/?p=pkg-ocaml-maint/packages/coccinelle.git
 

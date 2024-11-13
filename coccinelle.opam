@@ -2,7 +2,7 @@ opam-version: "2.0"
 authors: "Julia Lawall et. al."
 maintainer: "Thierry.Martinez@inria.fr"
 bug-reports: "cocci@inria.fr"
-homepage: "http://coccinelle.lip6.fr/"
+homepage: "https://coccinelle.gitlabpages.inria.fr/website//"
 dev-repo: "git://github.com/coccinelle/coccinelle"
 license: "GPL"
 build: [

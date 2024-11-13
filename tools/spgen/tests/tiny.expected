@@ -5,7 +5,7 @@
 // Confidence: Low
 // Copyright: (C) 2000 Karl Koder, DIKU. Some license.
 // Copyright: (C) 2000 Hanne Hacker, DIKU. Some license.
-// URL: http://coccinelle.lip6.fr/
+// URL: https://coccinelle.gitlabpages.inria.fr/website//
 // Comments: Further comments.
 // Options: --option-1, --option-2, --option-3.
 // Keywords: tiny, negative, assignment.

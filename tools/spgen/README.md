@@ -23,7 +23,7 @@ and metadata about the script through the commandline in interactive mode or a c
 	limitations = If a matched function has a prototype declaration, the script will not match the prototype.
 	confidence = High
 	options = --recursive-includes
-	url = http://coccinelle.lip6.fr
+	url = https://coccinelle.gitlabpages.inria.fr/website/
 	1:addvoid =
 	  org:"WARNING: Zero-argument function \"%s\" should have void declaration." % (f)
 
@@ -34,7 +34,7 @@ the program outputs a hardened semantic patch with virtual rules patch, context,
 	//# match the prototype.
 	///
 	// Confidence: High
-	// URL: http://coccinelle.lip6.fr
+	// URL: https://coccinelle.gitlabpages.inria.fr/website/
 	// Options: --recursive-includes
 
 	virtual patch

@@ -1,7 +1,7 @@
 (*
  * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
- * The Coccinelle source code can be obtained at http://coccinelle.lip6.fr
+ * The Coccinelle source code can be obtained at https://coccinelle.gitlabpages.inria.fr/website/
  *)
 
 open Common
@@ -299,7 +299,7 @@ let (control_flow_for_ctl: F.cflow -> 'a F.G.ograph_mutable) =
  *
  * update: also erase the fake nodes (and adjust the edges accordingly),
  * so that AX in CTL can now work.
- * Indeed, à la fin de la branche then (et else), on devrait aller directement
+ * Indeed, ï¿½ la fin de la branche then (et else), on devrait aller directement
  * au suivant du endif, sinon si ecrit if(1) { foo(); }; bar();
  * sans '...' entre le if et bar(), alors ca matchera pas car le CTL
  * generera un AX bar()  qui il tombera d'abord sur le [endif] :(
