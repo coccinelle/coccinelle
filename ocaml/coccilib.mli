@@ -2278,11 +2278,11 @@ module Ast_cocci :
       safe_for_multi_decls : Ast_cocci.safety;
       iso_info : (string * anything) list;
     }
-    and 'a befaft =
-      'a Ast_cocci.befaft =
-        BEFORE of 'a list list * count
-      | AFTER of 'a list list * count
-      | BEFOREAFTER of 'a list list * 'a list list * count
+    and befaft =
+      Ast_cocci.befaft =
+        BEFORE of Ast_cocci.anything list list * count
+      | AFTER of Ast_cocci.anything list list * count
+      | BEFOREAFTER of Ast_cocci.anything list list * Ast_cocci.anything list list * count
       | NOTHING
     and 'a replacement =
       'a Ast_cocci.replacement =
@@ -2294,7 +2294,7 @@ module Ast_cocci :
     and mcodekind =
       Ast_cocci.mcodekind =
         MINUS of pos * int list * adjacency * anything replacement
-      | CONTEXT of pos * anything befaft
+      | CONTEXT of pos * befaft
       | PLUS of count
     and count = Ast_cocci.count = ONE | MANY
     and fixpos = Ast_cocci.fixpos = Real of int | Virt of int * int
@@ -3122,9 +3122,9 @@ module Ast0_cocci :
         MINUS of (Ast_cocci.anything Ast_cocci.replacement * token_info) ref
       | PLUS of Ast_cocci.count
       | CONTEXT of
-          (Ast_cocci.anything Ast_cocci.befaft * token_info * token_info) ref
+          (Ast_cocci.befaft * token_info * token_info) ref
       | MIXED of
-          (Ast_cocci.anything Ast_cocci.befaft * token_info * token_info) ref
+          (Ast_cocci.befaft * token_info * token_info) ref
     type position_info =
       Ast0_cocci.position_info = {
       line_start : int;

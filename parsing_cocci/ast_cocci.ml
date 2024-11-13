@@ -39,10 +39,10 @@ type 'a wrap =
       (* isos relevant to the term; ultimately only used for rule_elems *)
       iso_info : (string*anything) list }
 
-and 'a befaft =
-    BEFORE      of 'a list list * count
-  | AFTER       of 'a list list * count
-  | BEFOREAFTER of 'a list list * 'a list list * count
+and befaft =
+    BEFORE      of anything list list * count
+  | AFTER       of anything list list * count
+  | BEFOREAFTER of anything list list * anything list list * count
   | NOTHING
 
 and 'a replacement = REPLACEMENT of 'a list list * count | NOREPLACEMENT
@@ -65,7 +65,7 @@ and adj = { counter : int; mutable ender : bool; }
 and adjacency = ALLMINUS | ADJ of adj
 and mcodekind =
     MINUS       of pos * int list * adjacency * anything replacement
-  | CONTEXT     of pos * anything befaft
+  | CONTEXT     of pos * befaft
   | PLUS        of count
 and count = ONE (* + *) | MANY (* ++ *)
 and fixpos =

@@ -36,7 +36,7 @@ val typeC : Ast_cocci.typeC -> unit
 val inc_file : Ast_cocci.inc_file -> unit
 
 val print_around :
-    ('a -> unit) -> 'a -> Ast_cocci.anything Ast_cocci.befaft -> unit
+    ('a -> unit) -> 'a -> Ast_cocci.befaft -> unit
 val print_anything : string -> Ast_cocci.anything list list -> unit
 val pp_print_anything : Ast_cocci.anything -> unit
 

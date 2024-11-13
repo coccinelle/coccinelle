@@ -125,7 +125,7 @@ let inline_mcodes =
 		  |	_ -> failwith "unexpected annotation")
 		mcl
 	  | _ ->
-	      Printf.printf "before %s\n" (Dumper.dump bef);
+				Pretty_print_cocci.print_anything "before " bef;
 	      failwith
 		"context tree should not have bad code before" in
 	let attach_aft aft afterinfo aftit = function
