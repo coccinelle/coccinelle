@@ -249,6 +249,19 @@ function test_reference() {
 			echo -n "<A ID=\"$tn\">"'</A>';
 			echo '<H3>Test: '
 			to_href2 "#$tn" "${tn}";
+			if test ${FAILED_RUN[$tn]}${FAILED_PP[$tn]}${FAILED_CP[$tn]} == 000 ; then
+			#if test ${TEST_CASE_BROKEN[$tn]}${TEST_CASE_FAILS[$tn]}${FAILED_RUN[$tn]}${FAILED_PP[$tn]}${FAILED_CP[$tn]} == 00000 ; then
+				echo ' (<SPAN CLASS="TESTPASS">PASS</SPAN>)'
+			else
+				echo -n ' (<SPAN CLASS="TESTFAIL">FAIL:'
+				# TODO: cannot activate the following two yet, as they don't span all test names
+				#if test ${TEST_CASE_BROKEN[$tn]} != 0; then echo -n ' /*exits nonzero*/'; fi
+				#if test ${TEST_CASE_FAILS[$tn]} != 0; then echo -n ' /*patch differs*/'; fi
+				if test ${FAILED_RUN[$tn]} != 0; then echo -n ' --test'; fi
+				if test ${FAILED_PP[$tn]} != 0; then echo -n ' --parse-cocci'; fi
+				if test ${FAILED_CP[$tn]} != 0; then echo -n ' --parse-c'; fi
+				echo '</SPAN>)'
+			fi
 			echo '</H3>'
 			#echo "<BR>"
 			cat_all_as_pre $tn
@@ -257,6 +270,9 @@ function test_reference() {
 		tr -d '\n' | cat
 	fi
 }
+
+function zeros_in_array ()  { eval 'echo ${'$1'[*]}'  | tr ' ' '\n' | grep '^0$' |wc -w  ; };
+function nonzeros_in_array ()  { eval 'echo ${'$1'[*]}'  | tr ' ' '\n' | grep '^[1-9]' |wc -w  ; };
 
 print_results() {
 if test -n "$WANT_HTML"; then
@@ -268,6 +284,8 @@ H1 { BACKGROUND: SILVER; COLOR: BLACK; }
 H2 { BACKGROUND: SILVER; COLOR: BLACK; }
 H3 { BACKGROUND: LIGHTGRAY; COLOR: BLACK; }
 H4 { BACKGROUND: LIGHTGRAY; COLOR: BLACK; }
+SPAN.TESTFAIL { BACKGROUND: LIGHTGRAY; COLOR: CRIMSON; FONT-FAMILY: MONOSPACE; }
+SPAN.TESTPASS { BACKGROUND: LIGHTGRAY; COLOR: DARKCYAN; FONT-FAMILY: MONOSPACE; }
 CODE.H4 { BACKGROUND: LIGHTGRAY; COLOR: BLACK; }
 </STYLE>
 </HEAD>
@@ -287,64 +305,65 @@ for rn in ${!REFTOTEST[*]}; do
 		echo
 	fi
 done | sort
+
 echo
-header -n 'TEST CASE BROKEN (spatch ... exits non-zero): '
+header -n 'TEST CASE BROKEN (spatch ... exits non-zero): '"`nonzeros_in_array TEST_CASE_BROKEN`/${#REFTAGS[*]}"
 for tn in ${!TEST_CASE_BROKEN[*]}; do
 	if test ${TEST_CASE_BROKEN[$tn]} != 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'TEST FAILS (patches differ): '
+header -n 'TEST FAILS (patches differ): '"`nonzeros_in_array TEST_CASE_FAILS`/${#REFTAGS[*]}"
 for tn in ${!TEST_CASE_FAILS[*]}; do
 	if test ${TEST_CASE_FAILS[$tn]} != 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'PASSED SPATCH PARSE: '
+header -n 'PASSED SPATCH PARSE: '"`zeros_in_array FAILED_PP`/${#REFTAGS[*]}"
 for tn in ${!FAILED_PP[*]}; do
 	if test ${FAILED_PP[$tn]} = 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'FAILED SPATCH PARSE: '
+header -n 'FAILED SPATCH PARSE: '"`nonzeros_in_array FAILED_PP`/${#REFTAGS[*]}"
 for tn in ${!FAILED_PP[*]}; do
 	if test ${FAILED_PP[$tn]} != 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'PASSED SOURCE PARSE: '
+header -n 'PASSED SOURCE PARSE: '"`zeros_in_array FAILED_CP`/${#REFTAGS[*]}"
 for tn in ${!FAILED_CP[*]}; do
 	if test ${FAILED_CP[$tn]} = 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'FAILED SOURCE PARSE: '
+header -n 'FAILED SOURCE PARSE: '"`nonzeros_in_array FAILED_CP`/${#REFTAGS[*]}"
 for tn in ${!FAILED_CP[*]}; do
 	if test ${FAILED_CP[$tn]} != 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'PASSED TEST RUNS: '
+header -n 'PASSED TEST RUNS: '"`zeros_in_array FAILED_RUN`/${#REFTAGS[*]}"
 for tn in ${!FAILED_RUN[*]}; do
 	if test ${FAILED_RUN[$tn]} = 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'FAILED TEST RUNS: '
+header -n 'FAILED TEST RUNS: '"`nonzeros_in_array FAILED_RUN`/${#REFTAGS[*]}"
 for tn in ${!FAILED_RUN[*]}; do
 	if test ${FAILED_RUN[$tn]} != 0; then
 		echo "$tn "
 	fi
 done | sort | maybe_to_anchor_href
 echo
-header -n 'SOURCES FOR ALL TESTS:'
+header -n 'SOURCES FOR ALL TESTS: '"${#REFTAGS[*]}"
 for tn in ${!REFTAGS[*]}; do
 	echo "$tn "
 done | sort | test_reference
