@@ -65,6 +65,7 @@ inh1.cocci v20240610:language/derived_class
 init3tst.cocci v20240610:language/aggregate_initialization#Syntax
 instfour.cocci v20240610:language/template_parameters#Template_arguments
 instruct.cocci v20240610:language/using_declaration v20240610:preprocessor/impl
+lambda_simple.cocci v20240610:language/lambda
 list_and_aggregate_initialization_isomorphism_off.cocci v20240610:language/aggregate_initialization#Syntax
 list_and_aggregate_initialization_isomorphism_on.cocci v20240610:language/aggregate_initialization#Syntax
 list_initialization.cocci v20240610:language/aggregate_initialization#Syntax
