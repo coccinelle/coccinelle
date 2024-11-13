@@ -88,7 +88,7 @@ opeq.cocci v20240610:language/operators
 protocpp.cocci v20240610:language/reference#Rvalue_references
 qualclass.cocci v20240610:language/derived_class v20240610:language/qualified_lookup
 qual.cocci v20240610:language/qualified_lookup
-sizet.cocci v20240610:cpp/types/size_t
+sizet.cocci v20240610:types/size_t
 snip_field.cocci v20240610:language/class
 tempinstfour.cocci v20240610:language/template_parameters#Template_arguments
 templates1.cocci v20240610:language/template_parameters#Template_arguments
@@ -128,7 +128,12 @@ populate_ref_to_test_array() {
 	for tn in ${!REFTAGS[*]}; do
 	for tag in ${REFTAGS[$tn]}; do
 		if [[ $tag =~ v20240610: ]] ; then
-			url='https://en.cppreference.com/w/cpp/'${tag/v20240610:/};
+			url=${CPPREFERENCE_BASE_URL:-https://en.cppreference.com/w/cpp/}${tag/v20240610:/};
+			if [[ $url =~ '#' ]] then
+				url=${url%%#*}${CPPREFERENCE_PAGE_EXT}'#'${url##*#}
+			else
+				url=${url}${CPPREFERENCE_PAGE_EXT}
+			fi
 			REFTOTEST[$url]+=" $tn"
 		fi
 	done
@@ -167,7 +172,7 @@ for cf in *.cocci; do
 	FAILED_PP[$tn]=$?
 	set -e
 	set +e
-	( $spatch --c++ --parse-c $tn.cpp && $spatch --c++ --parse-c $tn.cpp | grep -q '100.*good.or.passed' );
+	( $spatch --c++ --parse-c++ $tn.cpp && $spatch --c++ --parse-c++ $tn.cpp | grep -q '100.*good.or.passed' );
 	FAILED_CP[$tn]=$?;
 	set -e
 	if test ${FAILED_RUN[$tn]} = 0 || true; then # notice we always step in the conditional, even if we expect TEST_CASE_BROKEN and TEST_CASE_FAILS to fail (and FAILED_RUN be now same as TEST_CASE_BROKEN; this is less strict but more clear
@@ -258,7 +263,7 @@ function test_reference() {
 				if test ${TEST_CASE_FAILS[$tn]} != 0; then echo -n ' /*patch differs*/'; fi
 				if test ${FAILED_RUN[$tn]} != 0; then echo -n ' --test'; fi
 				if test ${FAILED_PP[$tn]} != 0; then echo -n ' --parse-cocci'; fi
-				if test ${FAILED_CP[$tn]} != 0; then echo -n ' --parse-c'; fi
+				if test ${FAILED_CP[$tn]} != 0; then echo -n ' --parse-c++'; fi
 				echo '</SPAN>)'
 			fi
 			echo '</H3>'
@@ -375,7 +380,7 @@ while getopts "o:" NAME; do
 		o) WANT_HTML=$OPTARG;
 			which txt2html
 		;;
-		# TODO: add -h
+		# TODO: add -h (e.g. mention CPPREFERENCE_BASE_URL...)
 		*) false;;
 	esac
 done
