@@ -41,7 +41,7 @@ and befaft =
   | BEFOREAFTER of anything list list * anything list list * count
   | NOTHING
 
-and 'a replacement = REPLACEMENT of 'a list list * count | NOREPLACEMENT
+and replacement = REPLACEMENT of anything list list * count | NOREPLACEMENT
 
 and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
  (* pos is an offset indicating where in the C code the mcodekind has an
@@ -49,7 +49,7 @@ and 'a mcode = 'a * info * mcodekind * meta_pos list (* pos variables *)
 and adj = { counter : int; mutable ender : bool; }
 and adjacency = ALLMINUS | ADJ of adj
  and mcodekind =
-    MINUS       of pos * int list * adjacency * anything replacement
+    MINUS       of pos * int list * adjacency * replacement
   | CONTEXT     of pos * befaft
   | PLUS        of count
  and count = ONE (* + *) | MANY (* ++ *)

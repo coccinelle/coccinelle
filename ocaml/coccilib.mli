@@ -2284,16 +2284,16 @@ module Ast_cocci :
       | AFTER of Ast_cocci.anything list list * count
       | BEFOREAFTER of Ast_cocci.anything list list * Ast_cocci.anything list list * count
       | NOTHING
-    and 'a replacement =
-      'a Ast_cocci.replacement =
-        REPLACEMENT of 'a list list * count
+    and replacement =
+      Ast_cocci.replacement =
+        REPLACEMENT of Ast_cocci.anything list list * count
       | NOREPLACEMENT
     and 'a mcode = 'a * info * mcodekind * meta_pos list
     and adj = Ast_cocci.adj = { counter : int; mutable ender : bool; }
     and adjacency = Ast_cocci.adjacency = ALLMINUS | ADJ of adj
     and mcodekind =
       Ast_cocci.mcodekind =
-        MINUS of pos * int list * adjacency * anything replacement
+        MINUS of pos * int list * adjacency * replacement
       | CONTEXT of pos * befaft
       | PLUS of count
     and count = Ast_cocci.count = ONE | MANY
@@ -3119,7 +3119,7 @@ module Ast0_cocci :
     val default_token_info : token_info
     type mcodekind =
       Ast0_cocci.mcodekind =
-        MINUS of (Ast_cocci.anything Ast_cocci.replacement * token_info) ref
+        MINUS of (Ast_cocci.replacement * token_info) ref
       | PLUS of Ast_cocci.count
       | CONTEXT of
           (Ast_cocci.befaft * token_info * token_info) ref

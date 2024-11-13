@@ -15,7 +15,7 @@ type token_info =
 val default_token_info : token_info
 
 type mcodekind =
-    MINUS       of (Ast_cocci.anything Ast_cocci.replacement * token_info) ref
+    MINUS       of (Ast_cocci.replacement * token_info) ref
   | PLUS        of Ast_cocci.count
   | CONTEXT     of (Ast_cocci.befaft *
 		      token_info * token_info) ref

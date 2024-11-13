@@ -21,7 +21,7 @@ let default_token_info =
 CONTEXT - see insert_plus.ml *)
 
 type mcodekind =
-    MINUS       of (Ast.anything Ast.replacement * token_info) ref
+    MINUS       of (Ast.replacement * token_info) ref
   | PLUS        of Ast.count
   | CONTEXT     of (Ast.befaft * token_info * token_info) ref
   | MIXED       of (Ast.befaft * token_info * token_info) ref
