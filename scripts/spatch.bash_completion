@@ -18,7 +18,7 @@
 # The authors reserve the right to distribute this or future versions of
 # Coccinelle under other licenses.
 #
-# https://coccinelle.gitlabpages.inria.fr/website//
+# https://coccinelle.gitlabpages.inria.fr/website/
 
 
 # From bash completion of git: __gitcomp_1

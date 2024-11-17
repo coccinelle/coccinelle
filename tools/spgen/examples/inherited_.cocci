@@ -10,7 +10,7 @@
 // Copyright: (C) 2015 Author1, affiliation. License1
 // Copyright: (C) 2015 Author2, affiliation. License2
 // Copyright: (C) 2015 Author3.
-// URL: https://coccinelle.gitlabpages.inria.fr/website//
+// URL: https://coccinelle.gitlabpages.inria.fr/website/
 // Comments: Additional comments.
 // Options: --a-flag, --another-flag, --a-third-flag.
 // Keywords: inheritance, test.

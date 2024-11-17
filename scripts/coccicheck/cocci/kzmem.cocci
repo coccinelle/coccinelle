@@ -3,7 +3,7 @@
 //
 // Confidence:
 // Copyright: (C) Gilles Muller, Julia Lawall, EMN, DIKU.  GPLv2.
-// URL: https://coccinelle.gitlabpages.inria.fr/website//
+// URL: https://coccinelle.gitlabpages.inria.fr/website/
 // Options:
 
 virtual org,patch,diff
