@@ -546,6 +546,25 @@ AS_IF([test "x$with_bash_completion" = "xyes"],
     [dnl
      AC_SUBST([BASH_COMPLETION_DIR], [$with_bash_completion])])
 
+dnl metainfo directory
+dnl --with-metainfo enables AppStream metadata installation
+dnl   (this is the default), and allows the user to give a path.
+dnl   By default, $datarootdir/metainfo is used.
+dnl --without-metainfo disables metainfo installation.
+
+AC_ARG_WITH([metainfo],
+    AS_HELP_STRING([--with-metainfo[=PATH]],
+        [Install the bash auto-completion script in this directory.\
+         @<:@default=yes@:>@]),
+    [],
+    [AC_SUBST([with_metainfo], [yes])])
+
+AS_IF([test "x$with_metainfo" = "xyes"],
+    [dnl
+      AC_SUBST([METAINFO_DIR], [$datarootdir/metainfo])],
+    [dnl
+     AC_SUBST([METAINFO_DIR], [$with_metainfo])])
+
 AS_IF([test "$MAKE_stdcompat"],
   AC_CONFIG_SUBDIRS(bundles/stdcompat/stdcompat-current))
 
@@ -621,6 +640,9 @@ optimized spatch: $enable_opt	(overridable with --disable-opt)
 
 bash-completion:  $BASH_COMPLETION_DIR
                   (overridable with --with-bash-completion)
+
+metainfo:         $METAINFO_DIR
+                  (overridable with --with-metainfo)
 
 ------------------------------------------------------------------------------
 Coccinelle can now be compiled and installed.

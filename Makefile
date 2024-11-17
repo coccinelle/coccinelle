@@ -300,7 +300,8 @@ opt-only opt : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool).opt)
 byt-only byte-only byte : $(foreach tool,$(TOOLS),$(PREFIX_$(tool))$(tool))
 
 .PHONY: install
-install: install-spatch install-spgen install-python install-bash install-man
+install: install-spatch install-spgen install-python install-bash install-man \
+	install-metainfo
 
 .PHONY: install-bash
 install-bash:
@@ -339,6 +340,14 @@ install-man :
 	$(INSTALL_DATA) docs/spgen.1 $(DESTDIR)$(MANDIR)/man1/
 	$(INSTALL_DATA) docs/Coccilib.3cocci $(DESTDIR)$(MANDIR)/man3/
 
+.PHONY: install-metainfo
+install-metainfo:
+	if test "x$(METAINFO_DIR)" != "xno"; then \
+		$(MKDIR_P) $(DESTDIR)$(METAINFO_DIR); \
+		$(INSTALL_DATA) extra/fr.inria.Coccinelle.metainfo.xml \
+			$(DESTDIR)$(METAINFO_DIR)/fr.inria.Coccinelle.metainfo.xml; \
+	fi
+
 .PHONY : install-spgen
 install-spgen : tools/spgen/source/spgen$(TOOLS_SUFFIX)
 	$(INSTALL_PROGRAM) tools/spgen/source/spgen$(TOOLS_SUFFIX) \
@@ -351,7 +360,7 @@ install-python:
 		$(DESTDIR)$(LIBDIR)/python/coccilib
 
 .PHONY : uninstall
-uninstall : uninstall-bash
+uninstall : uninstall-bash uninstall-metainfo
 	rm -f $(DESTDIR)$(BINDIR)/spatch
 	rm -f $(DESTDIR)$(BINDIR)/spatch.opt
 	rm -f $(DESTDIR)$(BINDIR)/spatch.byte
@@ -361,6 +370,12 @@ uninstall-bash :
 	rm -f $(DESTDIR)$(BASH_COMPLETION_DIR)/spatch
 	rmdir --ignore-fail-on-non-empty -p \
 		$(DESTDIR)$(BASH_COMPLETION_DIR)
+
+.PHONY : uninstall-metainfo
+uninstall-metainfo :
+	rm -f $(DESTDIR)$(METAINFO_DIR)/fr.inria.Coccinelle.metainfo.xml
+	rmdir --ignore-fail-on-non-empty -p \
+		$(DESTDIR)$(METAINFO_DIR)
 
 ml_files_but_parsers := \
 	$(filter %.ml,$(SOURCEFILES)) \
