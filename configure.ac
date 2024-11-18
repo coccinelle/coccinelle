@@ -3,7 +3,7 @@ dnl  run 'automake -acf' to update setup/{install-sh,missing}
 
 dnl  standard initialization (we only use autoconf not automake)
 AC_PREREQ([2.68])
-AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@inria.fr], [], [https://coccinelle.gitlabpages.inria.fr/website/])
+AC_INIT([coccinelle], m4_esyscmd([./version.sh]), [cocci@inria.fr], [], [https://coccinelle.gitlabpages.inria.fr/website])
 
 AC_CONFIG_MACRO_DIR([setup])
 AC_CONFIG_AUX_DIR([setup])

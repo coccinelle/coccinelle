@@ -11,7 +11,7 @@
 ;; Author: Padioleau Yoann <yoann.padioleau@gmail.com>,
 ;; Version: 0.2
 ;; Keywords: coccinelle patch refactoring program transformation
-;; URL: https://coccinelle.gitlabpages.inria.fr/website/
+;; URL: https://coccinelle.gitlabpages.inria.fr/website
 
 
 ;;; Usage

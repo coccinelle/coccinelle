@@ -48,7 +48,7 @@ transform multiple files at any number of code sites.
 
 .PP
 Further information about spatch is available at
-\fBhttps://coccinelle.gitlabpages.inria.fr/website/\fP.
+\fBhttps://coccinelle.gitlabpages.inria.fr/website\fP.
 
 Semantic patch examples can be found at \fBhttp://coccinellery.org/\fP,
 and at the \fBscripts/coccinelle\fP directory of the Linux Kernel source

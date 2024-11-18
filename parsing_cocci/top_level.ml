@@ -1,7 +1,7 @@
 (*
  * This file is part of Coccinelle, licensed under the terms of the GPL v2.
  * See copyright.txt in the Coccinelle source code for more information.
- * The Coccinelle source code can be obtained at https://coccinelle.gitlabpages.inria.fr/website/
+ * The Coccinelle source code can be obtained at https://coccinelle.gitlabpages.inria.fr/website
  *)
 
 (* Reorganize the top level of a rule to be a list of either top-level
