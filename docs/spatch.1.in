@@ -625,7 +625,7 @@ Julien Brunel, Damien Doligez, René Rydhof Hansen, Julia L. Lawall, Gilles Mull
 , Savannah, GA, USA, January 21-23, 2009, pp. 114-126.
 
 .SH AUTHOR
-\fBspatch\fP was written by Julia Lawall <julia.lawall@lip6.fr>, Yoann Padioleau
+\fBspatch\fP was written by Julia Lawall <julia.lawall@inria.fr>, Yoann Padioleau
 <yoann.padioleau@gmail.com>, Rene Rydhof Hansen <rrh@cs.aau.dk>,
 Henrik Stuart <henrik@hstuart.dk>, Nicolas Palix <nicolas.palix@imag.fr>,
 Peter Senna Tschudin <peter.senna@gmail.com>,
@@ -635,7 +635,7 @@ Matthieu Caneill <matthieu.caneill42@gmail.com>.
 
 .PP
 This manual page was written by Yoann Padioleau <yoann.padioleau@gmail.com>,
-Julia Lawall <julia.lawall@lip6.fr>, Nicolas Palix <nicolas.palix@imag.fr>
+Julia Lawall <julia.lawall@inria.fr>, Nicolas Palix <nicolas.palix@imag.fr>
 and Peter Senna Tschudin <peter.senna@gmail.com>.
 
 .SH REPORTING BUGS

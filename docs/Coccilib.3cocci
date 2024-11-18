@@ -310,7 +310,7 @@ Y. Padioleau, J.L. Lawall, R.R Hansen, G. Muller
 .I EuroSys 2008,
 Glasgow, Scotland (April 2008) pp. 247-260.
 .SH AUTHOR
-This manual page was written by Julia Lawall <Julia.Lawall@lip6.fr>.
+This manual page was written by Julia Lawall <Julia.Lawall@inria.fr>.
 .SH REPORTING BUGS
 Send a mail to <cocci@inria.fr>
 .SH COPYRIGHT
