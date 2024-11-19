@@ -6,7 +6,7 @@
 // After each gather or scatter, the source arrays considered not to be valid anymore, and they are invalidated.
 // The invalidate functions are meant mostly as a debug measure.
 @@
-identifier SFI =~ "\(sort\|SORT\)";
+identifier SFI =~ "(sort|SORT)";
 symbol P;
 @@
 +/* FIXME: this is a transitory gather-sort-scatter hook solution */
