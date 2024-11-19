@@ -11,6 +11,13 @@
 You must first install OCaml. Versions 4.08.0.-5.1.1 are supported.
 See http://caml.inria.fr/download.en.html
 
+If your OCaml compiler has been configurated with --enable-flambda,
+compiling the SmPL parser may take a very long time (34 minutes has been
+reported).  This does not cause any problem for running the compiled code.
+Flambda is known to be enabled with the version of OCaml distributed with
+Fedora.  More information about flambda is available at
+https://ocaml.org/manual/5.1/flambda.html
+
 On Debian/Ubuntu, install the following packages
  - pkg-config (optional, but strongly recommended)
  - ocaml-native-compilers (or alternatively ocaml)
@@ -31,14 +38,12 @@ On Fedora, install the following packages
  - ocaml-menhir (optional, bundled)
  - ocaml-pcre-devel (optional, bundled)
 
-If your OCaml compiler has been configurated with --enable-flambda,
-compiling the SmPL parser may take a very long time (34 minutes has been
-reported).  This does not cause any problem for running the compiled code.
-Flambda is known to be enabled with the version of OCaml distributed with
-Fedora.  More information about flambda is available at
-https://ocaml.org/manual/5.1/flambda.html
+ You may run into conflicts if you use opam to switch to a different version of
+ OCaml - the library packages assume you're using the OCaml packaged by your
+ distribution.
 
-It may be necessary to install libpython2.7-dev
+It may be necessary to install libpython2.7-dev or libpython3-dev for
+scripting.
 
 You can try to use the package manager of your distribution to install
 the build dependencies. This is not guaranteed to work, as the
@@ -48,6 +53,7 @@ examples:
 $ apt-get build-dep coccinelle
 $ dnf builddep coccinelle
 $ yum builddep coccinelle
+
 
 Then simply type
  ./autogen
