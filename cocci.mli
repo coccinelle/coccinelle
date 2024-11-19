@@ -15,7 +15,7 @@ open Common
  * post_engine runs any finally scripts
  *
  * This function uses memoisation internally, which is useful when
- * using -dir to not redo twice the same work. So take care!
+ * using --dir to not redo twice the same work. So take care!
  *)
 type cocci_info
 type constant_info =

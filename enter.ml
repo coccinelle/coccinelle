@@ -484,7 +484,7 @@ let other_options = [
 
     "--cocci-file", Arg.Set_string cocci_file,
     "   <file> the semantic patch file";
-(*     "-c", Arg.Set_string cocci_file,     " short option of -sp_file"; *)
+(*     "-c", Arg.Set_string cocci_file,     " short option of --sp-file"; *)
   ];
 
   "most useful show options",

@@ -1,6 +1,6 @@
-#CFLAGS=-sp_file test.cocci -no_show_diff
-CFLAGS=-sp_file test.cocci
-#CFLAGS=-sp_file testpy.cocci
+#CFLAGS=--sp-file test.cocci -no_show_diff
+CFLAGS=--sp-file test.cocci
+#CFLAGS=--sp-file testpy.cocci
 CC=../../tools/spp
 LD=cat
 

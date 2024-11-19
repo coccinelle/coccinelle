@@ -91,7 +91,7 @@ let adjust_extension extension =
  * is to have one base.cocci and a base.c and some optional
  * base_vernn.[c,res].
  *
- * If want to test without iso, use -iso_file empty.iso option.
+ * If want to test without iso, use --iso-file empty.iso option.
  *)
 let testone prefix x compare_with_expected =
   let x    = if x =~ "\\(.*\\)_ver0$" then matched1 x else x in

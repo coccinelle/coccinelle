@@ -3,7 +3,7 @@
 // Confidence: High
 // Copyright: (C) Gilles Muller, Julia Lawall, EMN, DIKU.  GPLv2.
 // URL: http://www.emn.fr/x-info/coccinelle/get_slot.html
-// options: -no_includes -include_headers
+// options: --no-includes --include-headers
 
 @@
 expression E;

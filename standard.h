@@ -1,5 +1,5 @@
 // ****************************************************************************
-// Prelude, this file is used with -macro_file_builtins option of the C parser
+// Prelude, this file is used with --macro-file-builtins option of the C parser
 // ****************************************************************************
 
 /* This file contains:

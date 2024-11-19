@@ -1,4 +1,4 @@
-// spatch -test align --macro-file-builtins macros.h
+// spatch --test align --macro-file-builtins macros.h
 
 @@
 field list fs;

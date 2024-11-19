@@ -3,7 +3,7 @@
 // Confidence: High
 // Copyright: (C) Gilles Muller, Julia Lawall, EMN, INRIA, DIKU.  GPLv2.
 // URL: https://coccinelle.gitlabpages.inria.fr/websiterules/array.html
-// Options: -I ... -all_includes can give more complete results
+// Options: -I ... --all-includes can give more complete results
 virtual org
 virtual patch
 

@@ -637,10 +637,10 @@ To install coccinelle, run:
   \$ make install
 
 Then, to test coccinelle, run for example:
-  \$ spatch -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
+  \$ spatch --sp-file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 
 Or when coccinelle is not installed yet:
-  \$ COCCINELLE_HOME=$(pwd) \${SHELL} ./scripts/spatch.sh -sp_file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
+  \$ COCCINELLE_HOME=$(pwd) \${SHELL} ./scripts/spatch.sh --sp-file demos/simple.cocci demos/simple.c -o /tmp/new_simple.c
 EOF
 
 if test "x$enable_python" != "xno"; then
