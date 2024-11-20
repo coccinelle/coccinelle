@@ -85,6 +85,7 @@ newsimple.cocci v20240610:language/new#Syntax
 noexcept.cocci v20240610:language/noexcept_spec
 notpp.cocci v20240610:keyword/not
 opeq.cocci v20240610:language/operators
+preprocessor_elifdef_add.cocci v20240610:language/preprocessor
 protocpp.cocci v20240610:language/reference#Rvalue_references
 qualclass.cocci v20240610:language/derived_class v20240610:language/qualified_lookup
 qual.cocci v20240610:language/qualified_lookup
