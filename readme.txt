@@ -9,6 +9,9 @@ To install Coccinelle from its source, see the instructions in install.txt.
 Once you have installed coccinelle, there is a script 'spatch' in /usr/bin
 or /usr/local/bin that invokes the Coccinelle program.
 
+You can download pre-compiled versions of spatch and check which distributions
+package it here: https://coccinelle.gitlabpages.inria.fr/website/download.html
+
 If you want to run Coccinelle without installing it, you can run the
 Coccinelle program directly from the download/build directory. You may then
 have to setup a few environment variables so that the Coccinelle program

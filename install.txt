@@ -18,7 +18,7 @@ Flambda is known to be enabled with the version of OCaml distributed with
 Fedora.  More information about flambda is available at
 https://ocaml.org/manual/5.1/flambda.html
 
-On Debian/Ubuntu, install the following packages
+On Debian/Ubuntu, install the following packages:
  - pkg-config (optional, but strongly recommended)
  - ocaml-native-compilers (or alternatively ocaml)
  - ocaml-findlib
@@ -28,7 +28,7 @@ On Debian/Ubuntu, install the following packages
  - texlive-fonts-extra (for the documentation)
  - hevea (for the documentation)
 
-On Fedora, install the following packages
+On Fedora, install the following packages:
  - pkgconfig (optional, but strongly recommended)
  - chrpath
  - ocaml
@@ -38,12 +38,18 @@ On Fedora, install the following packages
  - ocaml-menhir (optional, bundled)
  - ocaml-pcre-devel (optional, bundled)
 
- You may run into conflicts if you use opam to switch to a different version of
- OCaml - the library packages assume you're using the OCaml packaged by your
- distribution.
+You may run into conflicts if you use opam to switch to a different version of
+OCaml - the library packages assume you're using the OCaml packaged by your
+distribution.
 
 It may be necessary to install libpython2.7-dev or libpython3-dev for
 scripting.
+
+On Arch, install the following packages:
+$ pacman -Syu pkg-config ocaml ocaml-findlib autoconf automake pcre make
+as well as the C compiler of your choice.
+As Arch is a bleeding-edge distribution and Coccinelle is not always compatible
+with the latest version of OCaml, you may need to use opam.
 
 You can try to use the package manager of your distribution to install
 the build dependencies. This is not guaranteed to work, as the
