@@ -19,6 +19,9 @@ Fedora.  More information about flambda is available at
 https://ocaml.org/manual/5.1/flambda.html
 
 On Debian/Ubuntu, install the following packages:
+ - automake
+ - make
+ - gcc (or any other C compiler)
  - pkg-config (optional, but strongly recommended)
  - ocaml-native-compilers (or alternatively ocaml)
  - ocaml-findlib
@@ -43,7 +46,7 @@ OCaml - the library packages assume you're using the OCaml packaged by your
 distribution.
 
 It may be necessary to install libpython2.7-dev or libpython3-dev for
-scripting.
+Python scripting (error: "Cannot find Python library")
 
 On Arch, install the following packages:
 $ pacman -Syu pkg-config ocaml ocaml-findlib autoconf automake pcre make
