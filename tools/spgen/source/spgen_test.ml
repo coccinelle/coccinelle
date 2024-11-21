@@ -127,6 +127,7 @@ let print_update_regression test_dir score =
       match result with
       | Common.Ok ->  "CORRECT\n"
       | Common.Pb s -> s
+      | Common.PbKnown s -> s
     ) in
 
   (* hash_to_list also sorts the entries by filename *)

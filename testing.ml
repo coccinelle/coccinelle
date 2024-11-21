@@ -302,7 +302,7 @@ let testall_bis testdir setup extra_test expected_score_file update_score_file =
         match v with
         | Common.Ok ->  "CORRECT\n"
         | Common.Pb s -> s
-        | Common.PbKnown s -> s (* no preceding text?*)
+        | Common.PbKnown s -> s
       )
     );
     flush stdout; flush stderr;
