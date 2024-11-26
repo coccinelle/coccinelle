@@ -5,8 +5,11 @@
 // The scatter functions move data from AoS into SoA.
 // After each gather or scatter, the source arrays considered not to be valid anymore, and they are invalidated.
 // The invalidate functions are meant mostly as a debug measure.
+
+# spatch --ocaml-regexps
+
 @@
-identifier SFI =~ "(sort|SORT)";
+identifier SFI =~ "\(sort\|SORT\)";
 symbol P;
 @@
 +/* FIXME: this is a transitory gather-sort-scatter hook solution */
