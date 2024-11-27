@@ -6,6 +6,17 @@
 set -e
 #set -x
 
+while getopts "o:" NAME; do
+	case $NAME in
+		o) WANT_HTML=$OPTARG;
+			which txt2html || { echo "Utility txt2html not found -- please install it to use this option!"; false; }
+		;;
+		# TODO: add -h (e.g. mention CPPREFERENCE_BASE_URL...)
+		*) false;;
+	esac
+done
+shift $((OPTIND-1))
+
 spatch=../spatch.opt
 declare -A FAILED_RUN
 declare -A FAILED_PP
@@ -375,17 +386,6 @@ done | sort | test_reference
 echo
 if test -n "$WANT_HTML"; then echo '<BODY><HTML>';fi
 }
-
-while getopts "o:" NAME; do
-	case $NAME in
-		o) WANT_HTML=$OPTARG;
-			which txt2html
-		;;
-		# TODO: add -h (e.g. mention CPPREFERENCE_BASE_URL...)
-		*) false;;
-	esac
-done
-shift $((OPTIND-1))
 
 if test -n "$WANT_HTML"; then
 	# TODO: Or MD?
