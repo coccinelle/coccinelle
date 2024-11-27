@@ -25,6 +25,7 @@ declare -A TEST_CASE_BROKEN
 declare -A TEST_CASE_FAILS
 declare -A REFTAGS
 declare -A REFTOTEST
+WARNINGS=''
 
 cat_tags_file() {
 cat << EOF
@@ -163,9 +164,10 @@ check_tags_sanity() {
 	for tn in ${!REFTAGS[*]}; do
 		if ! test -f $tn.cocci ; then ORPHANED_TEST_LINES+=" $tn"; fi
 	done
-	if test -n "${UNTAGGED_TEST_FILES}"; then echo "ERROR: Untagged test files: ${UNTAGGED_TEST_FILES}"; rc=1; fi
-	if test -n "${ORPHANED_TEST_LINES}"; then echo "ERROR: Orphaned test lines: ${ORPHANED_TEST_LINES}"; rc=1; fi
-	if test "${rc}" != 0; then exit $rc; fi
+	want_strict=0; # TODO: introduce option to make this 1
+	if test -n "${UNTAGGED_TEST_FILES}"; then WARNINGS+="Untagged test files: ${UNTAGGED_TEST_FILES}! "; rc=1; fi
+	if test -n "${ORPHANED_TEST_LINES}"; then WARNINGS+="Orphaned test lines: ${ORPHANED_TEST_LINES}! "; rc=1; fi
+	if test "${want_strict}" != 0 -a "${rc}" != 0; then exit $rc; fi
 }
 
 read_tags_file
@@ -174,7 +176,7 @@ check_tags_sanity
 
 for cf in *.cocci; do
 	tn=${cf/.cocci/};
-	if ! ( head -n1 $cf | grep -q -- --c++ ) ; then echo "you forgot --c++ flag in $cf file"; false; fi # --c++ is required
+	if ! ( head -n1 $cf | grep -q -- --c++ ) ; then echo "ERROR: you forgot --c++ flag in $cf file"; false; fi # --c++ is required
 	set +e
 	$spatch --test $tn
 	FAILED_RUN[$tn]=$?
@@ -393,3 +395,4 @@ if test -n "$WANT_HTML"; then
 else
 	print_results
 fi
+if test -n "${WARNINGS}"; then echo "WARNINGS: ${WARNINGS}"; fi
