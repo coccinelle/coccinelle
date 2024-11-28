@@ -323,6 +323,7 @@ let testall_bis testdir setup extra_test =
     else
       if good < total
       then begin
+        pr2 "";
         pr2 "You have test failures :(";
         raise (UnixExit 1);
       end
