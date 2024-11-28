@@ -45,14 +45,6 @@ scripts/spatch
 scripts/spatch.byte
 scripts/spatch.opt
 
-tests/SCORE_actual.sexp
-tests/SCORE_best_of_both.sexp
-tests/SCORE_expected_orig.sexp
-tests/SCORE_expected.sexp
-tests/SCORE_expected.sexp.save
-tests/SCORE_spacing_expected.sexp
-tests/SCORE_spacing_expected.sexp.save
-
 config.log
 config.status
 autom4te.cache

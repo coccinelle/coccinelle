@@ -311,78 +311,25 @@ let testall_bis testdir setup extra_test expected_score_file update_score_file =
     pr2 "regression testing  information";
     pr2 "--------------------------------";
 
-    let expected_score_file_orig = testdir ^ "/SCORE_expected_orig.sexp" in
-    let best_of_both_file = testdir ^ "/SCORE_best_of_both.sexp" in
-    let actual_score_file = testdir ^ "/SCORE_actual.sexp" in
-
-    pr2 ("regression file: "^ expected_score_file);
-    let (expected_score : score) =
-      if Sys.file_exists expected_score_file
-      then
-        Common.load_score expected_score_file ()
-      else
-        if Sys.file_exists expected_score_file_orig
-        then begin
-          pr2 (spf "use expected orig file (%s)" expected_score_file_orig);
-          Common.command2 (spf "cp %s %s" expected_score_file_orig
-                                          expected_score_file);
-	  Common.load_score expected_score_file ()
-        end
-       else
-          empty_score()
-    in
-
-    let new_bestscore = Common.regression_testing_vs score expected_score in
-
-    Common.save_score score actual_score_file;
-
-    Common.save_score new_bestscore best_of_both_file;
-
     Common.print_total_score score;
 
-    let (good, total, _)                   = Common.total_scores score in
-    let (expected_good, expected_total, _) = Common.total_scores expected_score in
+    let (good, total, _) = Common.total_scores score in
 
-    if good = expected_good
-    then begin
-      pr2 "Current score is equal to expected score; everything is fine";
-      raise (UnixExit 0);
-    end
-    else
-      if good < expected_good
+    if good = total
       then begin
-        pr2 "Current score is lower than expected :(";
-        pr2 (spf "(was expecting %d but got %d)" expected_good good);
-        pr2 "";
-        pr2 "If you think it's normal, then maybe you need to update the";
-        pr2 (spf "score file %s, copying info from %s."
-                expected_score_file actual_score_file);
+        pr2 "All tests have passed; everything is fine";
+        raise (UnixExit 0);
+      end
+    else
+      if good < total
+      then begin
+        pr2 "You have test failures :(";
         raise (UnixExit 1);
       end
       else begin
-        pr2 "Current score is greater than expected :)";
-        pr2 (spf "(was expecting %d but got %d)" expected_good good);
-        if update_score_file then
-        begin
-          pr2 "Generating new expected score file and saving old one";
-          Common.command2_y_or_no_exit_if_no
-            (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));
-          Common.command2_y_or_no_exit_if_no
-            (spf "mv %s %s" best_of_both_file expected_score_file);
-        end;
-
-        (* when there are sufficient number of tests, abort if a substantial
-         * amount of tests fail, which would indicate a broken build.
-         *)
-        if total > 100 && good < (total * 3) / 4
-        then begin
-	  pr2 "Still, less 75% the tests passed. Returning a nonzero exit status.";
-          raise (UnixExit 1);
-        end;
-
-        raise (UnixExit 0);
+        pr2 "The number of passing tests is higher than the number of tests?";
+        raise (UnixExit 1);
       end
-
   end
 
 let testall setup = testall_bis "tests" setup None
