@@ -298,25 +298,20 @@ is a concern, then do not use this option.
 \developer{-{}-testall}{A shortcut for running Coccinelle on all files in a
   subdirectory {\tt tests} such that there are all of a {\tt .cocci} file,
   a {\tt .c} file, and a {\tt .res} file, where the {\tt .res} contains the
-  expected result.  If the argument -{}-expected-score-file is provided,
-  then that file is used for the result.  Otherwise, the result goes in
-  ``tests/SCORE\_expected.sexp''. Tests whose name ends in "_failure" are
-  known to fail and will not affect the total score.}
+  expected result. Tests whose name ends in "_failure" are
+  known to fail and will not affect the total score. This command must be
+  run in the root coccinelle folder as it expects a folder named "tests"
+  to exist.}
 
 \developer{-{}-cpptestall}{A shortcut for running Coccinelle on all files
   in a subdirectory {\tt cpptests} (C++ tests) such that there are all of a
   {\tt .cocci} file, a {\tt .cpp} file, and a {\tt .res} file, where the
-  {\tt .res} contains the expected result.  If the argument
-  -{}-expected-score-file is provided, then that file is used for the
-  result.  Otherwise, the result goes in
-  ``tests/SCORE\_expected.sexp''. {\bf Warning:} It is intended that not
-  all of the test cases provided with Coccinelle actually pass.}
+  {\tt .res} contains the expected result.  This command must be
+  run in the root coccinelle folder as it expects a folder named "cpptests"
+  to exist.}
 
 \rare{-{}-test-spacing}{Like -{}-testall, but ensures that the spacing is
-  the same as in the .res file.  If the argument
-  -{}-expected-spacing-score-file is provided, then that file is used for
-  the result.  Otherwise, the result goes in
-  ``tests/SCORE\_spacing\_expected.sexp''.}
+  the same as in the .res file.}
 
 \developer{-{}-test-okfailed, -{}-test-regression-okfailed}{Other options for
 keeping track of tests that have succeeded and failed.}
@@ -329,9 +324,6 @@ keeping track of tests that have succeeded and failed.}
   containing the expected result when testing with {\tt
     -{}-compare-with-expected}.  The leading dot is optional. This
   implicitly sets the {\tt -{}-compare-with-expected} flag.}
-
-\developer{-{}-expected-score-file $\langle$file$\rangle$}{
-which score file to compare with in the testall run}
 
 \subsection{Parsing C files}
 

@@ -43,9 +43,6 @@ let cpp_test_all = ref false
 let test_spacing = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
-let expected_score_file = ref ""
-let expected_spacing_score_file = ref ""
-let allow_update_score_file = ref true
 
 (* action mode *)
 let action = ref ""
@@ -807,13 +804,6 @@ let other_options = [
     "--expected-extension",
     Arg.String (fun x -> compare_with_expected := Some x),
     "   extension for --compare-with-expected; implicitly sets --compare-with-expected";
-    "--expected-score-file", Arg.Set_string expected_score_file,
-    "   which score file to compare with in --testall or --cpptestall";
-    "--expected-spacing-score-file",
-    Arg.Set_string expected_spacing_score_file,
-    "   which score file to compare with in --test-spacing";
-    "--no-update-score-file", Arg.Clear allow_update_score_file,
-    "   do not update the score file when --testall or --cpptestall succeeds";
     "--relax-include-path", Arg.Set Inc.relax_include_path,
     " ";
     "--batch_mode", Arg.Set _batch_mode,
@@ -1713,44 +1703,32 @@ let main arglist =
     | []  when !test_all ->
         (if !Inc.include_path = []
          then Inc.include_path := ["tests/include"]);
-        let score_file = if !expected_score_file <> ""
-                         then !expected_score_file
-                         else "tests/SCORE_expected.sexp" in
         Testing.testall
 	  (fun file ->
 	    run_profile testing_profile;
 	    let cocci_args =
 	      Cocci_args.read_args [file] +> normalize_args in
 	    arg_parse cocci_args "in the cocci file")
-	  score_file !allow_update_score_file
 
     | []  when !cpp_test_all ->
         (if !Inc.include_path = []
          then Inc.include_path := ["cpptests/include"]);
-        let score_file = if !expected_score_file <> ""
-                         then !expected_score_file
-                         else "cpptests/SCORE_expected.sexp" in
         Testing.cpptestall
 	  (fun file ->
 	    run_profile testing_profile;
 	    let cocci_args =
 	      Cocci_args.read_args [file] +> normalize_args in
 	    arg_parse cocci_args "in the cocci file")
-	  score_file !allow_update_score_file
 
     | []  when !test_spacing ->
         (if !Inc.include_path = []
          then Inc.include_path := ["tests/include"]);
-        let score_file = if !expected_spacing_score_file <> ""
-                         then !expected_spacing_score_file
-                         else "tests/SCORE_spacing_expected.sexp" in
         Testing.test_spacing
 	  (fun file ->
 	    run_profile testing_profile;
 	    let cocci_args =
 	      Cocci_args.read_args [file] +> normalize_args in
 	    arg_parse cocci_args "in the cocci file")
-	   score_file !allow_update_score_file
 
     | [] when !test_regression_okfailed ->
         Testing.test_regression_okfailed ()
@@ -1844,9 +1822,6 @@ let __init_test_all = !test_all
 let __init_test_spacing = !test_spacing
 let __init_test_okfailed = !test_okfailed
 let __init_test_regression_okfailed = !test_regression_okfailed
-let __init_expected_score_file = !expected_score_file
-let __init_expected_spacing_score_file = !expected_spacing_score_file
-let __init_allow_update_score_file = !allow_update_score_file
 let __init_action = !action
 let __init_compare_with_expected = !compare_with_expected
 let __init_distrib_index = !distrib_index
@@ -1878,9 +1853,6 @@ let reinitialize _ = (* clean start for invocation from OCaml *)
   test_spacing := __init_test_spacing;
   test_okfailed := __init_test_okfailed;
   test_regression_okfailed := __init_test_regression_okfailed;
-  expected_score_file := __init_expected_score_file;
-  expected_spacing_score_file := __init_expected_spacing_score_file;
-  allow_update_score_file := __init_allow_update_score_file;
   action := __init_action;
   compare_with_expected := __init_compare_with_expected;
   distrib_index := __init_distrib_index;

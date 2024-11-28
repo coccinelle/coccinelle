@@ -198,7 +198,7 @@ let add_file_to_score score res correct diffxs =
 (* If extra test is provided, then all failing tests with the standard
    comparison are considered ok, and only the correct result are subjected to
    the extra test *)
-let testall_bis testdir setup extra_test expected_score_file update_score_file =
+let testall_bis testdir setup extra_test =
 
   let score  = empty_score () in
 
