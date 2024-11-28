@@ -317,7 +317,7 @@ let testall_bis testdir setup extra_test =
 
     if good = total
       then begin
-        pr2 "All tests have passed; everything is fine";
+        pr2 "All tests have passed, everything is fine :)";
         raise (UnixExit 0);
       end
     else
