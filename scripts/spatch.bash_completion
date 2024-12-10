@@ -34,7 +34,6 @@ __spatchcomp_1 ()
         done
 }
 
-have spatch &&
 _spatch()
 {
     local cur prev xspec
