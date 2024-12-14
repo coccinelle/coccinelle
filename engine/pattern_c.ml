@@ -213,7 +213,8 @@ module XMATCH = struct
         Visitor_c.ktype = (fun (k, bigf) expb ->
 	  match expf expa expb tin with
 	  | [] -> (* failed *) k expb
-	  | xs -> globals := xs @ !globals);
+	  | xs -> globals := xs @ !globals;
+            if not !Flag_engine.disallow_nested_types then k expb);
 	Visitor_c.kdecl = (fun (k, bigf) expb ->
 	  let iif ii = List.iter (Visitor_c.vk_info bigf) ii in
 	  match expb with

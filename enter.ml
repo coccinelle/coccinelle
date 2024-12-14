@@ -679,6 +679,8 @@ let other_options = [
 
     "--disallow-nested-exps", Arg.Set Flag_matcher.disallow_nested_exps,
        " disallow an expression pattern from matching a term and its subterm";
+    "--disallow-nested-types", Arg.Set Flag_matcher.disallow_nested_types,
+       " disallow an type pattern from matching a term and its subterm";
     "--disable-worth-trying-opt", Arg.Clear Flag.worth_trying_opt,
     "   run the semantic patch even if the C file contains no relevant tokens";
     "--selected-only", Arg.Set FC.selected_only, "  only show selected files";

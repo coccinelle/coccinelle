@@ -12,6 +12,7 @@ let verbose_matcher = ref true
 let useEU = ref true
 
 let disallow_nested_exps = ref false
+let disallow_nested_types = ref false
 
 (* if this flag is not set, then break and continue are also error exits *)
 let only_return_is_error_exit = ref false
