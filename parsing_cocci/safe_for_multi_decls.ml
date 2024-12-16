@@ -127,6 +127,11 @@ let decl r k e =
       | Ast.UnInit(al,stg,ty,_,endattr,sem) ->
 	  let sem_modif = mcode () sem in
 	  check_init al stg ty endattr sem_modif e
+      | Ast.Typedef(stg,ty,id,sem) ->
+	  let sem_modif = mcode () sem in
+	  if sem_modif || contains_modif ty
+	  then e
+	  else {e with Ast.safe_for_multi_decls = Ast.Safe}
       | _ -> e
 
 let anndecl r k e =
