@@ -126,8 +126,7 @@ all                     default target: alias for either byte or opt
 all.opt                 compiles the optimized version + frontends
 check                   run tests (note: not all tests are expected to succeed)
 
-Note: The test target is intended for developers. In particular, you
-      should not expect that every test will pass.
+Note: The test target is intended for developers.
 
 In order to use the OCaml scripting feature in SmPL, an extra file,
 coccilib.cmi, is produced and installed in /usr/local/lib/coccinelle/ocaml
