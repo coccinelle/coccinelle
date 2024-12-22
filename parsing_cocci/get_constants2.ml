@@ -411,6 +411,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
       | _ -> Common.id in
     let structUnionName _ ident res =
       Common.default res (fun ident' -> add_ident ident' res) ident in
+    let typeName _ ident res = add_ident ident res in
     let enumName _ _ ident res =
       Common.default res (fun ident' -> add_ident ident' res) ident in
     let pieces ty res =
@@ -419,10 +420,11 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	  Ast.decimal = Some (fun _ _ _ _ _ _ -> add (keywords "decimal"));
 	  metaType =
 	  Some (fun tyname _ _ _ -> add (inherited (Ast.unwrap_mcode tyname)));
-	  typeName =
+	  namedType =
 	  Some(fun tyname -> add (constants (Ast.unwrap_mcode tyname)));
 	  enumName = Some enumName;
-	  structUnionName = Some structUnionName
+	  structUnionName = Some structUnionName;
+	  typeName = Some typeName
 	} ty res in
     let rec loop ty =
       match Ast.unwrap ty with

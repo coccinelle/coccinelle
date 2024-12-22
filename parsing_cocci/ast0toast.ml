@@ -593,7 +593,7 @@ and typeC allminus t =
     | Ast0.ParenType(_,_,_) | Ast0.FunctionType(_,_,_,_)
     | Ast0.Array(_,_,_,_) | Ast0.Decimal(_,_,_,_,_,_)
     | Ast0.TemplateType(_,_,_,_)
-    | Ast0.EnumName(_,_,_) | Ast0.StructUnionName(_,_)
+    | Ast0.EnumName(_,_,_) | Ast0.StructUnionName(_,_) | Ast0.TypeName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
     | Ast0.NamedType(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) | Ast0.QualifiedType(_,_,_) ->
@@ -636,6 +636,8 @@ and base_typeC allminus t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       Ast.StructUnionDef(typeC allminus ty,mcode lb,
 			 field_dots decls, mcode rb)
+  | Ast0.TypeName(typename,name) ->
+      Ast.TypeName(mcode typename,ident name)
   | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
       Ast.TypeOfExpr(mcode tf,mcode lp,expression exp,mcode rp)
   | Ast0.TypeOfType(tf,lp,ty,rp) ->

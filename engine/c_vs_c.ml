@@ -116,6 +116,11 @@ and typeC tya tyb =
       (sua = sub && sa = sb) >&&>
         return (StructUnionName (sua, sa), iix)
 
+  | TypeName (namea), TypeName (nameb) ->
+      let sa = Ast_c.str_of_name namea in
+      let sb = Ast_c.str_of_name nameb in
+      sa = sb >&&> return (TypeName (namea), iix)
+
   | NamedType (namea, opta), NamedType (nameb, optb) ->
       let sa = Ast_c.str_of_name namea in
       let sb = Ast_c.str_of_name nameb in
@@ -321,6 +326,7 @@ and typeC tya tyb =
   | (StructUnion _, _) | (_, StructUnion _)
   | (EnumName _, _) | (_, EnumName _)
   | (StructUnionName _, _) | (_, StructUnionName _)
+  | (TypeName _, _) | (_, TypeName _)
   | (NamedType _, _) | (_, NamedType _)
   | (QualifiedType _, _)
   | (FieldType _, _) | (_, FieldType _)

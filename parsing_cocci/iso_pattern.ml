@@ -966,6 +966,10 @@ let match_maker checks_needed context_required whencode_allowed =
 		 [check_mcode lb1 lb; check_mcode rb1 rb;
 		   match_typeC tya tyb;
 		   match_dots match_field no_list do_nolist_match declsa declsb]
+	  | (Ast0.TypeName(typenamea,namea),
+	     Ast0.TypeName(typenameb,nameb)) ->
+	       conjunct_bindings (check_mcode typenamea typenameb)
+		 (match_ident namea nameb)
 	  | (Ast0.TypeOfExpr(tf1,lp1,expa,rp1),
 	     Ast0.TypeOfExpr(tf,lp,expb,rp)) ->
 	       conjunct_many_bindings
@@ -2024,6 +2028,7 @@ let instantiate bindings mv_bindings model =
                       | Ast0.Decimal(_, _, _, _, _, _)
                       | Ast0.EnumName(_, _, _)
                       | Ast0.StructUnionName (_, _)
+                      | Ast0.TypeName (_, _)
                       | Ast0.TemplateType _
                       | Ast0.TypeOfExpr(_, _, _, _)
                       | Ast0.NamedType _

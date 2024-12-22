@@ -67,6 +67,7 @@ module Ast_c :
 	    base_class wrap2 list (* C++ *) * structType (* new scope *)
       | EnumName of structUnion option * string option
       | StructUnionName of structUnion * string
+      | TypeName of name
       | NamedType of name * fullType option
       | QualifiedType of fullType option * name
       | FieldType of fullType * name * constExpression option
@@ -2565,6 +2566,7 @@ module Ast_cocci :
       | StructUnionName of structUnion mcode * ident option
       | StructUnionDef of fullType * string mcode * annotated_field dots *
           string mcode
+      | TypeName        of string mcode (* typename - C++ *) * ident (* name *)
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
       | TypeOfType of string mcode * string mcode * fullType * string mcode
       | NamedType of string mcode
@@ -3066,7 +3068,8 @@ module Ast_cocci :
         option;
       enumName : (string mcode -> structUnion mcode option -> ident option -> 'a) option;
       structUnionName : (structUnion mcode -> ident option -> 'a) option;
-      typeName : (string mcode -> 'a) option;
+      typeName : (string mcode -> ident -> 'a) option;
+      namedType : (string mcode -> 'a) option;
       metaType :
         (meta_name mcode -> constraints -> keep_binding -> inherited -> 'a)
         option;
@@ -3283,6 +3286,7 @@ module Ast0_cocci :
       | EnumDef of typeC * enum_base option * string mcode * enum_decl dots * string mcode
       | StructUnionName of Ast_cocci.structUnion mcode * ident option
       | StructUnionDef of typeC * string mcode * field dots * string mcode
+      | TypeName        of string mcode (* typename - C++ *) * ident (* name *)
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
       | TypeOfType of string mcode * string mcode * typeC * string mcode
       | NamedType of string mcode

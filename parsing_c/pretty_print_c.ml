@@ -742,6 +742,10 @@ and pp_string_format (e,ii) =
       | (EnumName  (key, s), iis) ->
           print_sto_qu (fun _ -> print_order_ty iis)
   
+      | (TypeName (name), iis) ->
+          assert (List.length iis = 2);
+          print_sto_qu (fun _ -> print_order_ty iis)
+
       | (Decimal(l,p), [dec;lp;cm;rp]) ->
           print_sto_qu (fun _ -> print_order_ty [dec]);
 	  pr_elem lp; pp_expression l; pr_elem cm;
@@ -799,11 +803,7 @@ and pp_string_format (e,ii) =
 	  pp_arg_list es;
           pr_elem i2
 
-      | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ | Decimal _
-            (* | StructUnion _ | Enum _ | BaseType _ *)
-            (* | StructUnionName _ | EnumName _ | NamedType _ | *)
-            (* | TypeOfExpr _ | TypeOfType _ *)
-         ), _ -> raise (Impossible 107)
+      | (Pointer _ | Array _ | FunctionType _ | Decimal _), _ -> raise (Impossible 107)
 
   and pp_field_list fields = fields +>  Common.print_between pr_nl pp_field
   (* common to fields and top-level variables *)
@@ -974,6 +974,7 @@ and pp_string_format (e,ii) =
       | (StructUnion (_, sopt, optfinal, base_classes, fields),iis) -> print_ident ident
       | (StructUnionName (s, structunion), iis) -> print_ident ident
       | (EnumName  (key, s), iis)               -> print_ident ident
+      | (TypeName (name), iis)                   -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
       | (QualifiedType(_typ,_name), iis)        -> print_ident ident 
       | (NamedType (_name,_typ), iis)            -> print_ident ident
@@ -1101,6 +1102,7 @@ and pp_string_format (e,ii) =
       | (StructUnion (_, sopt, _, _, fields),iis)  -> ()
       | (StructUnionName (s, structunion), iis) -> ()
       | (EnumName  (key, s), iis) -> ()
+      | (TypeName (name), iis) -> ()
       | (Decimal(l,p), iis) -> ()
       | (NamedType (_name,_typ), iis) -> ()
       | (QualifiedType(_typ,_name), iis) -> ()
@@ -1153,6 +1155,7 @@ and pp_string_format (e,ii) =
     | (StructUnion (_, sopt, _, _, fields),iis)-> ()
     | (StructUnionName (s, structunion), iis) -> ()
     | (EnumName  (key, s), iis) -> ()
+    | (TypeName (name), iis) -> ()
     | (Decimal(l,p), iis) -> ()
     | (NamedType (name,_typ), iis) -> ()
     | (QualifiedType(_typ,name), iis) -> ()

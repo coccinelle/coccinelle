@@ -104,6 +104,9 @@ and disjtypeC bty =
       List.map
 	(function name -> Ast.rewrap bty (Ast.StructUnionName(su,name)))
 	name
+  | Ast.TypeName(typename,name) ->
+      let name = disjident name in
+      List.map (function name -> Ast.rewrap bty (Ast.TypeName(typename,name))) name
   | Ast.EnumDef(ty,base,lb,ids,rb) ->
       disjmult3 (disjty ty)
 	(disjoption

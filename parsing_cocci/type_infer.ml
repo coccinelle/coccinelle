@@ -278,9 +278,9 @@ let rec propagate_types env =
               Common.map_option Ast0.unwrap (strip_cv (Ast0.get_type exp))
              with
 		 None -> None
-	       | Some (Ast0.StructUnionName(_,_)) -> None
-	       | Some (Ast0.NamedType(s)) ->
-			  None
+	       | Some (Ast0.StructUnionName(_,_))
+	       | Some (Ast0.NamedType(_))
+	       | Some (Ast0.TypeName(_,_)) (* could be a structure? *)
 	       | Some (Ast0.MetaType(_,_,_)) -> None
 	       | Some x ->
                    err exp (Ast0.wrap x) "non-structure type in field ref")
@@ -296,6 +296,7 @@ let rec propagate_types env =
 		      | Some (Ast0.BaseType(Ast.Unknown, _))
 		      | Some (Ast0.MetaType(_, _, _))
 		      | Some (Ast0.NamedType(_))
+		      | Some (Ast0.TypeName(_,_)) (* could be a structure? *)
 		      | Some (Ast0.StructUnionName(_, _)) -> None
 		      | Some x ->
                           let ty =

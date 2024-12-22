@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 203, also unused: {8,9,161,163,164}
+(* current max is 203, also unused: {8,9,163,164}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -108,6 +108,7 @@ let typeC t =
   | Ast0.EnumDef(ty,base,lb,decls,rb) -> [150]
   | Ast0.StructUnionName(kind,name) -> [51]
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
+  | Ast0.TypeName(typename,name) -> [161]
   | Ast0.TypeOfExpr(tf,lp,exp,rp) -> [135]
   | Ast0.TypeOfType(tf,lp,ty,rp) -> [136]
   | Ast0.NamedType(name) -> [52]

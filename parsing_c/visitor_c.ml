@@ -541,6 +541,7 @@ and vk_type = fun bigf t ->
 
     | StructUnionName (s, structunion) -> ()
     | EnumName  (s,structUnion) -> ()
+    | TypeName  (name) -> vk_name bigf name
 
     (* don't go in _typ *)
     | NamedType (name,_typ) ->
@@ -1674,6 +1675,7 @@ and vk_type_s = fun bigf t ->
 
       | StructUnionName (s, structunion) -> StructUnionName (s, structunion)
       | EnumName  (s, key) -> EnumName  (s, key)
+      | TypeName name -> TypeName (vk_name_s bigf name)
       | NamedType (name, typ) -> NamedType (vk_name_s bigf name, typ)
       | QualifiedType(typ,name) ->
           QualifiedType (map_option(vk_type_s bigf) typ,

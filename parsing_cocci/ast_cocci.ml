@@ -1239,6 +1239,8 @@ let rec string_of_typeC ty =
       Printf.sprintf "%s %s"
 	(string_of_structUnion (unwrap_mcode kind))
 	(Common.default "?" string_of_ident name)
+  | TypeName (typename, name) ->
+      Printf.sprintf "typename %s" (string_of_ident name)
   | EnumDef (ty', _ , _, _, _)
   | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
   | TypeOfExpr(_,_,e,_) -> "typeof("^string_of_expression e^")"
@@ -1288,7 +1290,8 @@ type 'a transformer = {
       string mcode option -> expression option -> string mcode -> 'a) option;
     enumName: (string mcode -> structUnion mcode option -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
-    typeName: (string mcode -> 'a) option;
+    typeName: (string mcode -> ident -> 'a) option;
+    namedType: (string mcode -> 'a) option;
     metaType: (meta_name mcode -> constraints -> keep_binding ->
       inherited -> 'a) option
   }
@@ -1299,6 +1302,7 @@ let empty_transformer = {
   enumName = None;
   structUnionName = None;
   typeName = None;
+  namedType = None;
   metaType = None
 }
 
@@ -1339,12 +1343,18 @@ and typeC_map tr ty =
           None -> ty
         | Some f -> rewrap ty (f su ident)
       end
+  | TypeName (typename, ident) ->
+      begin
+        match tr.typeName with
+          None -> ty
+        | Some f -> rewrap ty (f typename ident)
+      end
   | TypeOfExpr(_,_,_,_) -> ty
   | TypeOfType(tf,lp,t,rp) ->
       rewrap ty (TypeOfType(tf,lp,fullType_map tr t,rp))
   | NamedType name ->
       begin
-        match tr.typeName with
+        match tr.namedType with
           None -> ty
         | Some f -> rewrap ty (f name)
       end
@@ -1399,10 +1409,12 @@ and typeC_fold tr ty v =
   | EnumName (s0, key, ident) -> Common.default v (fun f -> f s0 key ident v) tr.enumName (* Not sure about this *)
   | StructUnionName (su, ident) ->
       Common.default v (fun f -> f su ident v) tr.structUnionName
+  | TypeName (typename, ident) ->
+      Common.default v (fun f -> f typename ident v) tr.typeName
   | TypeOfExpr(_,_,e,_) -> v
   | TypeOfType(_,_,t,_) -> fullType_fold tr t v
   | TemplateType (_,_,_,_) -> v
-  | NamedType name -> Common.default v (fun f -> f name v) tr.typeName
+  | NamedType name -> Common.default v (fun f -> f name v) tr.namedType
   | QualifiedType(ty',_,ident) -> v
   | AutoType _ -> v
   | MetaType (name, cstr, keep, inherited) ->
@@ -1415,7 +1427,9 @@ let fullType_iter tr ty =
     enumName = Common.map_option (fun f s0 key ident () -> f s0 key ident) tr.enumName;
     structUnionName = Common.map_option
       (fun f su ident () -> f su ident) tr.structUnionName;
-    typeName = Common.map_option (fun f name () -> f name) tr.typeName;
+    typeName = Common.map_option
+      (fun f typename ident () -> f typename ident) tr.typeName;
+    namedType = Common.map_option (fun f name () -> f name) tr.namedType;
     metaType = Common.map_option
       (fun f name cstr keep inherited () -> f name cstr keep inherited)
     tr.metaType
@@ -1439,6 +1453,7 @@ let expression_fold_ident f e v = f (Common.just (ident_of_expression_opt e)) v
 let fullType_fold_meta_names f ty v =
   let structUnionName _ ident v =
     Common.default v (fun ident' -> ident_fold_meta_names f ident' v) ident in
+  let typeName _ ident v = ident_fold_meta_names f ident v in
   let enumName _ _ ident v =
     Common.default v (fun ident' -> ident_fold_meta_names f ident' v) ident in
   fullType_fold { empty_transformer with
@@ -1448,6 +1463,7 @@ let fullType_fold_meta_names f ty v =
 	(fun e -> expression_fold_ident (ident_fold_meta_names f) e v) e2);
     enumName = Some enumName;
     structUnionName = Some structUnionName;
+    typeName = Some typeName;
     metaType = Some (fun tyname _ _ _ v -> f (unwrap_mcode tyname) v)
   } ty v
 

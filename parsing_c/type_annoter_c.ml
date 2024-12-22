@@ -430,6 +430,8 @@ let rec type_unfold_one_step ty env =
          ty
       )
 
+  | TypeName name    -> ty
+
   | NamedType (name, _typ) ->
       let s = Ast_c.str_of_name name in
       (try
@@ -521,6 +523,9 @@ let rec typedef_fix ty env =
 
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
     | StructUnionName (su, s) ->
+	ty
+
+    | TypeName (name) ->
 	ty
 
   (* keep the typename but complete with more information *)

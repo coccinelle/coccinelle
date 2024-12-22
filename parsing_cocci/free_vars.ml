@@ -735,6 +735,9 @@ let classify_variables metavar_decls minirules used_after =
       structUnionName = Some (fun su ident ->
         let ident' = Common.map_option classify_ident ident in
         Ast.StructUnionName (su, ident'));
+      typeName = Some (fun typename ident ->
+        let ident' = classify_ident ident in
+        Ast.TypeName (typename, ident'));
       metaType = Some (fun name cstr _ _ ->
         let (unitary,inherited) = classify (Ast.unwrap_mcode name,(),(),[]) in
         Ast.MetaType (name,cstr,unitary,inherited))

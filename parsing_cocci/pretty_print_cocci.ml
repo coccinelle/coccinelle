@@ -556,6 +556,9 @@ and typeC ty =
       fullType ty; mcode print_string lb;
       dots force_newline (annotated_field "") decls;
       mcode print_string rb
+  | Ast.TypeName(typename,name) ->
+      mcode print_string typename;
+      ident name; print_string " "
   | Ast.TypeOfExpr(typeof,lp,exp,rp) ->
       mcode print_string typeof;
       mcode print_string_box lp;  expression exp; close_box();

@@ -193,6 +193,9 @@ let rec left_ty t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       call_right left_ty ty t
 	(function ty -> Ast0.StructUnionDef(ty,lb,decls,rb))
+  | Ast0.TypeName(typename,name) ->
+      call_right left_mcode typename t
+	(function typename -> Ast0.TypeName(typename,name))
   | Ast0.TypeOfExpr(tf,lb,e,rb) ->
       call_right left_mcode tf t (function tf -> Ast0.TypeOfExpr(tf,lb,e,rb))
   | Ast0.TypeOfType(tf,lb,ty,rb) ->

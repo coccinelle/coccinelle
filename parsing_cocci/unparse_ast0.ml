@@ -402,6 +402,9 @@ and typeC t =
 	  typeC ty; mcode print_string lb;
 	  dots force_newline field decls;
 	  mcode print_string rb
+      | Ast0.TypeName(typename,name) ->
+	  mcode print_string typename;
+	  ident name; print_string " "
       | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
           mcode print_string tf;
 	  mcode print_string_box lp; expression exp; close_box();

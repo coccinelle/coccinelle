@@ -208,6 +208,7 @@ and left_typeC t =
   | Ast0.EnumDef(ty,base,lb,ids,rb) -> left_typeC ty
   | Ast0.StructUnionName(kind,name) -> modif_before_mcode kind
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> left_typeC ty
+  | Ast0.TypeName(typename,name) -> modif_before_mcode typename
   | Ast0.TypeOfExpr(tf,_,_,_) -> modif_before_mcode tf
   | Ast0.TypeOfType(tf,_,_,_) -> modif_before_mcode tf
   | Ast0.QualifiedType(Some ty,coloncolon,name) -> left_typeC ty

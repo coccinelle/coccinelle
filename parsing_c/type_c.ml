@@ -127,6 +127,8 @@ let rec is_completed_and_simplified ty =
   (* we prefer StructUnionName to StructUnion when it comes to typed metavar *)
   | StructUnionName (su, s) -> true
 
+  | TypeName name -> true
+
   (* should have completed with more information *)
   | NamedType (_name, typ) ->
       (match typ with

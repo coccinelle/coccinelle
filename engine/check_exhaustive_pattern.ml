@@ -164,6 +164,7 @@ let dumb_astcocci_type = function
  | A.EnumDef(ty, base, lb, ids, rb) -> ()
  | A.StructUnionName(sa, sua) -> ()
  | A.StructUnionDef(ty, lb, decls, rb) -> ()
+ | A.TypeName(tyn, name) -> ()
  | A.TypeOfExpr(tf, lp, exp, rp) -> ()
  | A.TypeOfType(tf, lp, ty, rp) -> ()
  | A.NamedType sa -> ()

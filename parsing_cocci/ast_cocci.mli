@@ -976,7 +976,8 @@ type 'a transformer = {
       string mcode option -> expression option -> string mcode -> 'a) option;
     enumName: (string mcode -> structUnion mcode option -> ident option -> 'a) option;
     structUnionName: (structUnion mcode -> ident option -> 'a) option;
-    typeName: (string mcode -> 'a) option;
+    typeName: (string mcode -> ident -> 'a) option;
+    namedType: (string mcode -> 'a) option;
     metaType: (meta_name mcode -> constraints -> keep_binding ->
       inherited -> 'a) option
   }

@@ -422,6 +422,10 @@ let visitor mode bind option_default
 	    let (rb_n,rb) = string_mcode rb in
 	    (multibind [ty_n;lb_n;decls_n;rb_n],
 	     Ast0.StructUnionDef(ty,lb,decls,rb))
+	| Ast0.TypeName(typename,name) ->
+	    let (typename_n,typename) = string_mcode typename in
+	    let (name_n,name) = ident name in
+	    (bind typename_n name_n, Ast0.TypeName(typename,name))
 	| Ast0.TypeOfExpr(tf,lp,exp,rp) ->
 	    let (tf_n,tf) = string_mcode tf in
 	    let (lp_n,lp) = string_mcode lp in

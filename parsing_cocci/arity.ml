@@ -522,8 +522,7 @@ and top_typeC tgt opt_allowed typ =
       make_typeC typ tgt arity (Ast0.EnumDef(ty,base,lb,ids,rb))
   | Ast0.StructUnionName(kind,name) ->
       let arity =
-	all_same opt_allowed tgt (mcode2line kind)
-	  [mcode2arity kind] in
+	all_same opt_allowed tgt (mcode2line kind) [mcode2arity kind] in
       let kind = mcode kind in
       let name = get_option (ident false arity) name in
       make_typeC typ tgt arity (Ast0.StructUnionName(kind,name))
@@ -536,6 +535,12 @@ and top_typeC tgt opt_allowed typ =
       let decls = dots (field tgt) decls in
       let rb = mcode rb in
       make_typeC typ tgt arity (Ast0.StructUnionDef(ty,lb,decls,rb))
+  | Ast0.TypeName(typename,name) ->
+      let arity =
+	all_same opt_allowed tgt (mcode2line typename) [mcode2arity typename] in
+      let typename = mcode typename in
+      let name = ident false arity name in
+      make_typeC typ tgt arity (Ast0.TypeName(typename,name))
   | Ast0.TypeOfExpr(tf,lp,exp,rp) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line tf)

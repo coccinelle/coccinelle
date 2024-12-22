@@ -4295,6 +4295,14 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
                 (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb),ii_sub_sb@[lbb;rbb])
               )))))
 
+    | A.TypeName(sua, sa), (B.TypeName (sb), ii) ->
+        let ib1 = tuple_of_list1 ii in
+        ident_cpp DontKnow sa sb >>= (fun sa sb ->
+        tokenf sua ib1 >>= (fun sua ib1 ->
+          return (
+          (A.TypeName (sua, sa)) +> A.rewrap ta,
+          (B.TypeName (sb), [ib1])
+          )))
 
   | A.TypeOfExpr (ia1, ia2, ea, ia3), (B.TypeOfExpr eb,ii) ->
       let (ib1,ib2,ib3) = tuple_of_list3 ii in
@@ -4454,8 +4462,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           ))
 
     | _,
-     ((B.AutoType | B.TemplateType _ | B.NamedType _ | B.QualifiedType (_, _) | B.StructUnionName (_, _) |
-      B.EnumName _ | B.StructUnion (_, _, _, _, _) |
+     ((B.AutoType | B.TemplateType _ | B.NamedType _ | B.QualifiedType (_, _) |
+      B.StructUnionName (_, _) | B.EnumName _ | B.TypeName _ | B.StructUnion (_, _, _, _, _) |
       B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
       B.Pointer _ | B.BaseType _),
      _)
@@ -4947,6 +4955,14 @@ and compatible_typeC a (b,local) =
 	      structure_type_name name sb ii
 	    else
 	      fail
+    | A.TypeName (_tyn,sa), (qub, attrb, (B.TypeName (namesb),noii)) ->
+	(match A.unwrap sa with
+	  A.Id sa ->
+            let sb = Ast_c.str_of_name namesb in
+	    if A.unwrap_mcode sa = sb
+	    then ok
+	    else fail
+	| _ -> (* not supporting anything else *) fail)
     | A.NamedType sa, (qub, attrb, (B.NamedType (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
 	if A.unwrap_mcode sa = sb
@@ -4981,7 +4997,7 @@ and compatible_typeC a (b,local) =
        B.AutoType| B.TemplateType _|
        B.TypeOfType _|B.TypeOfExpr _|
        B.EnumName (_, _ )|B.StructUnion (_, _, _, _, _)|B.EnumDef (_, _, _)|
-       B.StructUnionName (_, _)|
+       B.StructUnionName (_, _)| B.TypeName (_)|
        B.FunctionType _|
        B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.NamedType _| B.QualifiedType(_, _) |
        B.BaseType _

@@ -843,6 +843,7 @@ let rec meta_names_of_typeC ty =
   | Array (ty, _, _, _) -> meta_names_of_typeC ty
   | EnumName (_, _, Some ident)
   | StructUnionName(_, Some ident) -> meta_names_of_ident ident
+  | TypeName(_, ident) -> meta_names_of_ident ident
   | MetaType (tyname, _, _) -> [unwrap_mcode tyname]
   | Decimal (_, _, e1, _, e2, _) ->
       let mn1 = meta_names_of_expression e1 in

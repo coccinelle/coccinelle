@@ -382,6 +382,8 @@ and unify_typeC t1 t2 =
      Ast.StructUnionDef(ty2,lb2,decls2,rb2)) ->
       unify_fullType ty1 ty2 &&
       unify_dots unify_annotated_field fdots decls1 decls2
+  | (Ast.TypeName(typename1,name1),Ast.TypeName(typename2,name2)) ->
+      if unify_mcode typename1 typename2 then unify_ident name1 name2 else false
   | (Ast.TypeOfExpr(szf1,lp1,e1,rp1),Ast.TypeOfExpr(szf2,lp2,e2,rp2)) ->
       unify_expression e1 e2
   | (Ast.TypeOfType(szf1,lp1,ty1,rp1),Ast.TypeOfType(szf2,lp2,ty2,rp2)) ->

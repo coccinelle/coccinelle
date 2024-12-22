@@ -312,6 +312,7 @@ and typeC old_metas table minus t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) ->
       typeC old_metas table minus ty;
       dots (field GLOBAL old_metas table minus) decls
+  | Ast0.TypeName(typename,id) -> ident GLOBAL old_metas table minus id
   | Ast0.OptType(ty) ->
       failwith "unexpected code"
   | _ -> () (* no metavariable subterms *)

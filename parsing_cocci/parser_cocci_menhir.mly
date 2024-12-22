@@ -1096,7 +1096,7 @@ non_signable_types_no_ident_without_braces:
 | s=struct_or_union i=type_ident // allow typedef name
     { Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, Some i)) }
 | s=Ttypename i=type_ident // allow typedef name
-    { Ast0_cocci.wrap(Ast0_cocci.TypeName(s, i)) }
+    { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.clt2mcode "typename" s, i)) }
 | Tdecimal TOPar enum_val TComma enum_val TCPar
     { Ast0_cocci.wrap(Ast0_cocci.Decimal(Parse_aux.clt2mcode "decimal" $1,
 			     Parse_aux.clt2mcode "(" $2,$3,

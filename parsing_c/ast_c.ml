@@ -199,6 +199,7 @@ and fullType = typeQualifier * attribute list * typeC
 
   | EnumName        of structUnion option * string option
   | StructUnionName of structUnion * string
+  | TypeName        of name
 
   | NamedType   of name * fullType option (* semantic: filled later *)
 
