@@ -1095,6 +1095,8 @@ non_signable_types_no_ident_without_braces:
     { Ast0_cocci.wrap(Ast0_cocci.EnumName(Parse_aux.clt2mcode "enum" s, key, Some i)) }
 | s=struct_or_union i=type_ident // allow typedef name
     { Ast0_cocci.wrap(Ast0_cocci.StructUnionName(s, Some i)) }
+| s=Ttypename i=type_ident // allow typedef name
+    { Ast0_cocci.wrap(Ast0_cocci.TypeName(s, i)) }
 | Tdecimal TOPar enum_val TComma enum_val TCPar
     { Ast0_cocci.wrap(Ast0_cocci.Decimal(Parse_aux.clt2mcode "decimal" $1,
 			     Parse_aux.clt2mcode "(" $2,$3,
@@ -1279,6 +1281,7 @@ typedef_ctype_only_signed:
 struct_or_union:
        s=Tstruct { Parse_aux.clt2mcode Ast_cocci.Struct s }
      | u=Tunion  { Parse_aux.clt2mcode Ast_cocci.Union u }
+     | c=Tclass  { Parse_aux.clt2mcode Ast_cocci.Class c }
 
 struct_decl:
       TNothing        { [] }
@@ -1562,13 +1565,6 @@ directive:
       Ast0_cocci.wrap
         (Ast0_cocci.UsingNamespace (Parse_aux.clt2mcode "using" $1, Parse_aux.clt2mcode "namespace" $2, $3, Parse_aux.clt2mcode ";" (snd $4)))
     }
-| TUsing ident TEq Ttypename ctype TPtVirg
-    {
-      Ast0_cocci.wrap
-        (Ast0_cocci.UsingTypename (Parse_aux.clt2mcode "using" $1, $2,
-         Parse_aux.clt2mcode "=" $3, Some (Parse_aux.clt2mcode "typename" $4),
-         $5, Parse_aux.clt2mcode ";" (snd $6)))
-    }
 | TUsing ident TEq ctype TPtVirg
     {
       Ast0_cocci.wrap
@@ -1672,22 +1668,13 @@ template_argorellipsis(arg):
 | y=TEllipsis { Ellipsis (y) }
 
 one_template_arg:
-    typename_or_class type_ident
-    { Ast0_cocci.wrap(Ast0_cocci.TypenameOrClassParam($1, $2, None)) }
-  | typename_or_class type_ident q=TEq t=ctype
-    { let q = Parse_aux.clt2mcode "=" q in
-      Ast0_cocci.wrap(Ast0_cocci.TypenameOrClassParam($1, $2, Some(q,t))) }
-  | t=ctype d=direct_declarator(type_ident)
+    t=ctype d=direct_declarator(type_ident)
     { let (i,fn) = d in
     Ast0_cocci.wrap(Ast0_cocci.VarNameParam(fn t, i, None)) }
   | t=ctype d=direct_declarator(type_ident) q=TEq e=initialize_arg
     { let (i,fn) = d in
       let q = Parse_aux.clt2mcode "=" q in
       Ast0_cocci.wrap(Ast0_cocci.VarNameParam(fn t, i, Some(q,e))) }
-
-typename_or_class:
-    Ttypename { Parse_aux.clt2mcode "typename" $1 }
-  | Tclass    { Parse_aux.clt2mcode "class" $1 }
 
 %inline separated_llist(separator, X):
   xs = reverse_separated_llist(separator, X)

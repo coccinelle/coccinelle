@@ -225,6 +225,7 @@ and base_typeC =
   | StructUnionName of Ast.structUnion mcode * ident option (* name *)
   | StructUnionDef  of typeC (* either StructUnionName or metavar *) *
 	string mcode (* { *) * field dots * string mcode (* } *)
+  | TypeName        of string mcode (* typename - C++ *) * ident (* name *)
   | TypeOfExpr      of string mcode (* typeof *) * string mcode (* ( *) *
                        expression * string mcode (* ) *)
   | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *

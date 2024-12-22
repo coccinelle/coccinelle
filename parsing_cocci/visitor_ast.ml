@@ -521,6 +521,10 @@ let combiner bind option_default mcode donothing
 	  let ldecls = annotated_field_dots decls in
 	  let lrb = string_mcode rb in
 	  multibind [lty; llb; ldecls; lrb]
+      | Ast.TypeName(typename,name) ->
+	  let ltypename = string_mcode typename in
+	  let lname = ident name in
+	  bind ltypename lname
       | Ast.TypeOfExpr(tf,lp,e,rp) ->
 	  let ltf = string_mcode tf in
 	  let llp = string_mcode lp in
@@ -1739,6 +1743,10 @@ let rebuilder mcode donothing
 	    let ldecls = annotated_field_dots decls in
 	    let lrb = string_mcode rb in
 	    Ast.StructUnionDef (lty, llb, ldecls, lrb)
+	| Ast.TypeName(typename,name) ->
+	    let ltypename = string_mcode typename in
+	    let lname = ident name in
+	    Ast.TypeName (ltypename, lname)
 	| Ast.TypeOfExpr(tf,lp,e,rp) ->
 	    let ltf = string_mcode tf in
 	    let llp = string_mcode lp in
