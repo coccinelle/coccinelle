@@ -67,7 +67,7 @@ module Ast_c :
 	    base_class wrap2 list (* C++ *) * structType (* new scope *)
       | EnumName of structUnion option * string option
       | StructUnionName of structUnion * string
-      | TypeName of name * fullType option
+      | NamedType of name * fullType option
       | QualifiedType of fullType option * name
       | FieldType of fullType * name * constExpression option
       | ParenType of fullType
@@ -2567,7 +2567,7 @@ module Ast_cocci :
           string mcode
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
       | TypeOfType of string mcode * string mcode * fullType * string mcode
-      | TypeName of string mcode
+      | NamedType of string mcode
       | QualifiedType of fullType option * string mcode * ident
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
       | TemplateType of fullType (* name *) * string mcode (* < *) *
@@ -3285,7 +3285,7 @@ module Ast0_cocci :
       | StructUnionDef of typeC * string mcode * field dots * string mcode
       | TypeOfExpr of string mcode * string mcode * expression * string mcode
       | TypeOfType of string mcode * string mcode * typeC * string mcode
-      | TypeName of string mcode
+      | NamedType of string mcode
       | QualifiedType of typeC option * string mcode * ident
       | AutoType of string mcode (* auto *) (* c++ >= 11 *)
       | TemplateType of typeC (* name *) * string mcode (* < *) *

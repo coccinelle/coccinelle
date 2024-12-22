@@ -828,7 +828,7 @@ and typeC endattrs ty =
   | Ast.QualifiedType(ty,coloncolon,name) ->
       print_option fullType ty; mcode print_string coloncolon;
       ident name 
-  | Ast.TypeName(name)-> mcode print_string name
+  | Ast.NamedType(name)-> mcode print_string name
   | Ast.TemplateType(tn,lp,args,rp) ->
       fullType tn; mcode (print_string_with_hint StartBox) lp;
       dots (function _ -> ()) arg_expression args;

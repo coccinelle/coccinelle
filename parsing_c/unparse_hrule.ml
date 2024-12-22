@@ -145,7 +145,7 @@ let get_function_name rule env =
 (* Print metavariable declarations *)
 
 let rec print_typedef pr = function
-    (Ast_c.TypeName(name,_),_) ->
+    (Ast_c.NamedType(name,_),_) ->
       let s = Ast_c.str_of_name name in
       let typedefs =
 	try List.assoc !current_outfile !typedefs
@@ -225,7 +225,7 @@ let print_extra_typedefs pr env =
     { Visitor_c.default_visitor_c with
       Visitor_c.ktype = (fun (k, bigf) ty ->
 	match ty with
-	  (_,_,((Ast_c.TypeName(_,_),_) as ty)) -> print_typedef pr ty
+	  (_,_,((Ast_c.NamedType(_,_),_) as ty)) -> print_typedef pr ty
 	| _ -> k ty) } in
   List.iter
     (function (_,vl) ->

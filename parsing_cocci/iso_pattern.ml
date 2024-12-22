@@ -981,7 +981,7 @@ let match_maker checks_needed context_required whencode_allowed =
                conjunct_many_bindings
                  [check_mcode coloncolon1 coloncolon;
                    match_typeC tya tyb; match_ident namea nameb]
-	  | (Ast0.TypeName(namea),Ast0.TypeName(nameb)) ->
+	  | (Ast0.NamedType(namea),Ast0.NamedType(nameb)) ->
 	      if mcode_equal namea nameb
 	      then check_mcode namea nameb
 	      else return false
@@ -2026,7 +2026,7 @@ let instantiate bindings mv_bindings model =
                       | Ast0.StructUnionName (_, _)
                       | Ast0.TemplateType _
                       | Ast0.TypeOfExpr(_, _, _, _)
-                      | Ast0.TypeName _
+                      | Ast0.NamedType _
                       | Ast0.QualifiedType(_,_,_)
                       | Ast0.AutoType _ -> ty
                           in

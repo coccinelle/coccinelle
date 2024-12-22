@@ -596,7 +596,7 @@ and typeC allminus t =
     | Ast0.EnumName(_,_,_) | Ast0.StructUnionName(_,_)
     | Ast0.StructUnionDef(_,_,_,_) | Ast0.EnumDef(_,_,_,_,_)
     | Ast0.TypeOfExpr(_,_,_,_) | Ast0.TypeOfType(_,_,_,_)
-    | Ast0.TypeName(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) | Ast0.QualifiedType(_,_,_) ->
+    | Ast0.NamedType(_) | Ast0.AutoType(_) | Ast0.MetaType(_,_,_) | Ast0.QualifiedType(_,_,_) ->
         Ast.Type(allminus,[],rewrap t no_isos (base_typeC allminus t),[])
     | Ast0.DisjType(_,types,_,_) ->
 	Ast.DisjType(List.map (typeC allminus) types)
@@ -643,7 +643,7 @@ and base_typeC allminus t =
       Ast.TypeOfType(mcode tf, mcode lp,typeC allminus ty,mcode rp)
   | Ast0.QualifiedType(ty,coloncolon,name) ->
       Ast.QualifiedType(get_option (typeC allminus) ty,mcode coloncolon,ident name)
-  | Ast0.TypeName(name) -> Ast.TypeName(mcode name)
+  | Ast0.NamedType(name) -> Ast.NamedType(mcode name)
   | Ast0.AutoType(auto) -> Ast.AutoType(mcode auto)
   | Ast0.MetaType(name,cstr,_) ->
       let cstr' = constraints cstr in

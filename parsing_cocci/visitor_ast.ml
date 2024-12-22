@@ -533,7 +533,7 @@ let combiner bind option_default mcode donothing
 	  let lty = fullType ty in
 	  let lrp = string_mcode rp in
 	  multibind [ltf; llp; lty; lrp]
-      | Ast.TypeName(name) -> string_mcode name
+      | Ast.NamedType(name) -> string_mcode name
       | Ast.QualifiedType(ty,coloncolon,name) ->
       let lty = get_option fullType ty in
       let lcoloncolon = string_mcode coloncolon in
@@ -1756,7 +1756,7 @@ let rebuilder mcode donothing
             let lcoloncolon = string_mcode coloncolon in
             let lname = ident name in
             Ast.QualifiedType(lty,lcoloncolon,lname)
-	| Ast.TypeName(name) -> Ast.TypeName(string_mcode name)
+	| Ast.NamedType(name) -> Ast.NamedType(string_mcode name)
 	| Ast.AutoType(auto) -> Ast.AutoType(string_mcode auto)
 	| Ast.TemplateType(name,lab,args,rab) ->
 	    Ast.TemplateType(fullType name,string_mcode lab,expression_dots args,string_mcode rab)

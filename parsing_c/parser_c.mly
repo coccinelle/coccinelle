@@ -989,7 +989,7 @@ cpp_type:
 cpp_type_noparen:
  | simple_type { fixSimpleTypeForCPPType $1 }
  | identifier_cpp
-     { let st = (Right3 (TypeName ($1, Ast_c.noTypedefDef())),[]) in
+     { let st = (Right3 (NamedType ($1, Ast_c.noTypedefDef())),[]) in
        fixSimpleTypeForCPPType st }
 
 arith_expr:
@@ -1524,14 +1524,14 @@ simple_type:
  | Ttypeof TOPar type_name   TCPar { Right3 (TypeOfType $3), [$1;$2;$4] }
  | TypedefIdent
      { let name = RegularName (mk_string_wrap $1) in
-       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] }
+       Right3 (NamedType (name, Ast_c.noTypedefDef())),[] }
  | TQualType qual_type { fst $2 () }
 
 qual_type:
  | ident
      { let tyval _ =
        let name = RegularName (mk_string_wrap $1) in
-       Right3 (TypeName (name, Ast_c.noTypedefDef())),[] in
+       Right3 (NamedType (name, Ast_c.noTypedefDef())),[] in
      let expval _ = mk_e(Ident  (RegularName (mk_string_wrap $1))) [] in
      (tyval,expval) }
  | qual_type TColonColon ident

@@ -2736,7 +2736,7 @@ and onedecl_has_ender = fun allminus decla (declb, iiptvirgb, iistob) ->
            (Ast_c.nQ, [], (B.StructUnion (sub, sbopt, optfinal, base_classes, declsb), ii))
        in
        let fake_typeb =
-         Ast_c.nQ,[],((B.TypeName (nameidb, Some
+         Ast_c.nQ,[],((B.NamedType (nameidb, Some
            (Lib_parsing_c.al_type structnameb))), [])
        in
 
@@ -2762,7 +2762,7 @@ and onedecl_has_ender = fun allminus decla (declb, iiptvirgb, iistob) ->
 		 let typb0 = ((qu, il), attrb, typb1) in
 
 		 match fake_typeb with
-		 | _nQ, [], ((B.TypeName (nameidb, typ)),[]) ->
+		 | _nQ, [], ((B.NamedType (nameidb, typ)),[]) ->
 		     begin
 		       match typ with
 			 Some typ' ->
@@ -2991,16 +2991,16 @@ and onedecl_has_ender = fun allminus decla (declb, iiptvirgb, iistob) ->
        | A.MetaType(_,_,_,_) ->
 
            let fake_typeb =
-             Ast_c.nQ, [], ((B.TypeName (nameidb, Ast_c.noTypedefDef())), [])
+             Ast_c.nQ, [], ((B.NamedType (nameidb, Ast_c.noTypedefDef())), [])
            in
            fullTypebis ida fake_typeb >>= (fun ida fake_typeb ->
              match fake_typeb with
-             | _nQ, [], ((B.TypeName (nameidb, _typ)), []) ->
+             | _nQ, [], ((B.NamedType (nameidb, _typ)), []) ->
                  return (ida, nameidb)
              | _ -> raise (Impossible 32)
            )
 
-       | A.TypeName sa ->
+       | A.NamedType sa ->
            (match nameidb with
            | B.RegularName (sb, iidb) ->
                let iidb1 = tuple_of_list1 iidb in
@@ -3009,7 +3009,7 @@ and onedecl_has_ender = fun allminus decla (declb, iiptvirgb, iistob) ->
                then
                  tokenf sa iidb1 >>= (fun sa iidb1 ->
                    return (
-                     (A.TypeName sa) +> A.rewrap ida,
+                     (A.NamedType sa) +> A.rewrap ida,
                      B.RegularName (sb, [iidb1])
                    ))
                else fail
@@ -3873,7 +3873,7 @@ and (fullTypebis: (A.typeC, Ast_c.fullType) matcher) =
 	    let (tyq, attr, (ty, tyii)) = typb in
 	    let tyii =
 	      match ty with
-		B.TypeName(name,typ) ->
+		B.NamedType(name,typ) ->
 		  (* promoted typedef has ii information in the type name *)
 		  let (_s, iis) = B.get_s_and_info_of_name name in
 		  [iis]
@@ -4326,7 +4326,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     * uint in the C code. But some CEs consists in renaming some types,
     * so we don't want apply isomorphisms every time.
     *)
-    | A.TypeName sa,  (B.TypeName (nameb, typb), noii) ->
+    | A.NamedType sa,  (B.NamedType (nameb, typb), noii) ->
         assert (noii = []);
 
         (match nameb with
@@ -4337,8 +4337,8 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
             then
               tokenf sa iidb1 >>= (fun sa iidb1 ->
                 return (
-                  (A.TypeName sa) +> A.rewrap ta,
-                  (B.TypeName (B.RegularName (sb, [iidb1]), typb), noii)
+                  (A.NamedType sa) +> A.rewrap ta,
+                  (B.NamedType (B.RegularName (sb, [iidb1]), typb), noii)
                    ))
                else fail
 	   | B.QualName _ | B.Operator _ -> failwith "unexpected type name"
@@ -4454,7 +4454,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
           ))
 
     | _,
-     ((B.AutoType | B.TemplateType _ | B.TypeName _ | B.QualifiedType (_, _) | B.StructUnionName (_, _) |
+     ((B.AutoType | B.TemplateType _ | B.NamedType _ | B.QualifiedType (_, _) | B.StructUnionName (_, _) |
       B.EnumName _ | B.StructUnion (_, _, _, _, _) |
       B.FunctionType _ | B.Array (_, _) | B.Decimal(_, _) |
       B.Pointer _ | B.BaseType _),
@@ -4947,7 +4947,7 @@ and compatible_typeC a (b,local) =
 	      structure_type_name name sb ii
 	    else
 	      fail
-    | A.TypeName sa, (qub, attrb, (B.TypeName (namesb, _typb),noii)) ->
+    | A.NamedType sa, (qub, attrb, (B.NamedType (namesb, _typb),noii)) ->
         let sb = Ast_c.str_of_name namesb in
 	if A.unwrap_mcode sa = sb
 	then ok
@@ -4969,7 +4969,7 @@ and compatible_typeC a (b,local) =
 	loop tya typb
 
   (* subtil: must be after the MetaType case *)
-    | a, (qub, attrb, (B.TypeName (_namesb, Some b), noii)) ->
+    | a, (qub, attrb, (B.NamedType (_namesb, Some b), noii)) ->
       (* kind of typedef iso *)
 	loop tya b
 
@@ -4983,7 +4983,7 @@ and compatible_typeC a (b,local) =
        B.EnumName (_, _ )|B.StructUnion (_, _, _, _, _)|B.EnumDef (_, _, _)|
        B.StructUnionName (_, _)|
        B.FunctionType _|
-       B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.TypeName _| B.QualifiedType(_, _) |
+       B.Array (_, _)|B.Decimal (_, _)|B.Pointer _|B.NamedType _| B.QualifiedType(_, _) |
        B.BaseType _
       ),
       _))) -> fail

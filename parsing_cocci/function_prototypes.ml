@@ -272,7 +272,7 @@ let rec attach_right strings ty =
 	Ast0.TypeOfExpr(tf,lp,exp,right_attach_mcode strings rp)
     | Ast0.TypeOfType(tf,lp,ty,rp) ->
 	Ast0.TypeOfType(tf,lp,ty,right_attach_mcode strings rp)
-    | Ast0.TypeName(nm) -> Ast0.TypeName(right_attach_mcode strings nm)
+    | Ast0.NamedType(nm) -> Ast0.NamedType(right_attach_mcode strings nm)
     | Ast0.AutoType(auto) -> Ast0.AutoType(right_attach_mcode strings auto)
     | Ast0.MetaType(nm,cstr,pure) ->
 	Ast0.MetaType(right_attach_mcode strings nm,cstr,pure)

@@ -360,7 +360,7 @@ and base_typeC =
                        expression * string mcode (* ) *)
   | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *
                        fullType * string mcode (* ) *)
-  | TypeName        of string mcode
+  | NamedType        of string mcode
   | QualifiedType   of fullType option * string mcode (* :: *) * ident
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
   | TemplateType    of fullType (* name *) * string mcode (* < *) *

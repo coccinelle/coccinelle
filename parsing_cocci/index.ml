@@ -110,7 +110,7 @@ let typeC t =
   | Ast0.StructUnionDef(ty,lb,decls,rb) -> [117]
   | Ast0.TypeOfExpr(tf,lp,exp,rp) -> [135]
   | Ast0.TypeOfType(tf,lp,ty,rp) -> [136]
-  | Ast0.TypeName(name) -> [52]
+  | Ast0.NamedType(name) -> [52]
   | Ast0.QualifiedType(ty,coloncolon,name) -> [118]
   | Ast0.TemplateType(_,_,_,_) -> [195]
   | Ast0.AutoType _ -> [192]

@@ -377,7 +377,7 @@ and base_typeC =
                        expression * string mcode (* ) *)
   | TypeOfType      of string mcode (* sizeof *) * string mcode (* ( *) *
                        fullType * string mcode (* ) *)
-  | TypeName        of string mcode (* pad: should be 'of ident' ? *)
+  | NamedType        of string mcode (* pad: should be 'of ident' ? *)
   | QualifiedType   of fullType option * string mcode (* :: *) * ident
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
   | TemplateType    of fullType (* name *) * string mcode (* < *) *
@@ -427,7 +427,7 @@ and base_declaration =
         expression dots * string mcode (* ) *) * attr list * string mcode (*=*) *
         initialiser * string mcode (* ; *)
   | Typedef of string mcode (*typedef*) * fullType *
-               typeC (* either TypeName or metavar *) * string mcode (*;*)
+               typeC (* either NamedType or metavar *) * string mcode (*;*)
   | DisjDecl of declaration list
   | ConjDecl of declaration list
   | MetaDecl of meta_name mcode * constraints * keep_binding * inherited
@@ -1242,7 +1242,7 @@ let rec string_of_typeC ty =
   | StructUnionDef (ty', _, _, _) -> string_of_fullType ty'
   | TypeOfExpr(_,_,e,_) -> "typeof("^string_of_expression e^")"
   | TypeOfType(_,_,t,_) -> "typeof("^string_of_fullType t^")"
-  | TypeName (name) -> unwrap_mcode name ^ " "
+  | NamedType (name) -> unwrap_mcode name ^ " "
   | TemplateType (name, _, args, _) ->
       let args =
 	String.concat ", "
@@ -1341,7 +1341,7 @@ and typeC_map tr ty =
   | TypeOfExpr(_,_,_,_) -> ty
   | TypeOfType(tf,lp,t,rp) ->
       rewrap ty (TypeOfType(tf,lp,fullType_map tr t,rp))
-  | TypeName name ->
+  | NamedType name ->
       begin
         match tr.typeName with
           None -> ty
@@ -1401,7 +1401,7 @@ and typeC_fold tr ty v =
   | TypeOfExpr(_,_,e,_) -> v
   | TypeOfType(_,_,t,_) -> fullType_fold tr t v
   | TemplateType (_,_,_,_) -> v
-  | TypeName name -> Common.default v (fun f -> f name v) tr.typeName
+  | NamedType name -> Common.default v (fun f -> f name v) tr.typeName
   | QualifiedType(ty',_,ident) -> v
   | AutoType _ -> v
   | MetaType (name, cstr, keep, inherited) ->

@@ -390,7 +390,7 @@ and unify_typeC t1 t2 =
       unify_fullType ty1 ty2 && unify_ident fld1 fld2
   | (Ast.QualifiedType(None,coloncolon,fld1),Ast.QualifiedType(None,coloncolon2,fld2)) ->
       unify_ident fld1 fld2
-  | (Ast.TypeName(t1),Ast.TypeName(t2)) -> unify_mcode t1 t2
+  | (Ast.NamedType(t1),Ast.NamedType(t2)) -> unify_mcode t1 t2
   | (Ast.AutoType(auto1), Ast.AutoType(auto2)) -> unify_mcode auto1 auto2
 
   | (Ast.MetaType(_,_,_,_),_)

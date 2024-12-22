@@ -133,7 +133,7 @@ and disjtypeC bty =
   | Ast.QualifiedType(ty,coloncolon,name) ->
       disjmult2 (disjoption disjty ty) (disjident name)
       (function ty -> function name -> Ast.rewrap bty (Ast.QualifiedType(ty,coloncolon,name)))
-  | Ast.TypeName(_) | Ast.AutoType(_) | Ast.MetaType(_,_,_,_) -> [bty]
+  | Ast.NamedType(_) | Ast.AutoType(_) | Ast.MetaType(_,_,_,_) -> [bty]
 
 and anndisjdecl d =
   match Ast.unwrap d with

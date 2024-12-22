@@ -752,7 +752,7 @@ and pp_string_format (e,ii) =
       | (QualifiedType (typ,name), _) ->
          Common.do_option  pp_type typ; pp_name name
 
-      | (TypeName (name,typ), noii) ->
+      | (NamedType (name,typ), noii) ->
           assert (noii = []);
           let (_s, iis) = get_s_and_info_of_name name in
           print_sto_qu
@@ -801,7 +801,7 @@ and pp_string_format (e,ii) =
 
       | (Pointer _ | (*ParenType _ |*) Array _ | FunctionType _ | Decimal _
             (* | StructUnion _ | Enum _ | BaseType _ *)
-            (* | StructUnionName _ | EnumName _ | TypeName _ | *)
+            (* | StructUnionName _ | EnumName _ | NamedType _ | *)
             (* | TypeOfExpr _ | TypeOfType _ *)
          ), _ -> raise (Impossible 107)
 
@@ -976,7 +976,7 @@ and pp_string_format (e,ii) =
       | (EnumName  (key, s), iis)               -> print_ident ident
       | (Decimal _, iis)                        -> print_ident ident
       | (QualifiedType(_typ,_name), iis)        -> print_ident ident 
-      | (TypeName (_name,_typ), iis)            -> print_ident ident
+      | (NamedType (_name,_typ), iis)            -> print_ident ident
       | (FieldType (_typ,_,_), iis)             -> print_ident ident
       | (TypeOfExpr (e), iis)                   -> print_ident ident
       | (TypeOfType (e), iis)                   -> print_ident ident
@@ -1102,7 +1102,7 @@ and pp_string_format (e,ii) =
       | (StructUnionName (s, structunion), iis) -> ()
       | (EnumName  (key, s), iis) -> ()
       | (Decimal(l,p), iis) -> ()
-      | (TypeName (_name,_typ), iis) -> ()
+      | (NamedType (_name,_typ), iis) -> ()
       | (QualifiedType(_typ,_name), iis) -> ()
       | FieldType (_, _, _), _ -> ()
       | TypeOfType _, _ -> ()
@@ -1154,7 +1154,7 @@ and pp_string_format (e,ii) =
     | (StructUnionName (s, structunion), iis) -> ()
     | (EnumName  (key, s), iis) -> ()
     | (Decimal(l,p), iis) -> ()
-    | (TypeName (name,_typ), iis) -> ()
+    | (NamedType (name,_typ), iis) -> ()
     | (QualifiedType(_typ,name), iis) -> ()
     | (FieldType (_, _, _), _) -> ()
 

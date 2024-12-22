@@ -166,7 +166,7 @@ let dumb_astcocci_type = function
  | A.StructUnionDef(ty, lb, decls, rb) -> ()
  | A.TypeOfExpr(tf, lp, exp, rp) -> ()
  | A.TypeOfType(tf, lp, ty, rp) -> ()
- | A.TypeName sa -> ()
+ | A.NamedType sa -> ()
  | A.QualifiedType(ty,_,ida) -> ()
  | A.AutoType _ -> ()
  | A.TemplateType _ -> ()

@@ -1320,7 +1320,7 @@ struct_decl_one:
 	 bf=struct_bitfield?
 	 pv=TPtVirg
 	 { let (id,fn,endar) = d in
-	 let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.TypeName(Parse_aux.id2mcode i))) [] in
+	 let idtype = Parse_aux.make_cv cv (Ast0_cocci.wrap (Ast0_cocci.NamedType(Parse_aux.id2mcode i))) [] in
 	 Ast0_cocci.wrap(Ast0_cocci.Field(fn idtype,id,bf,endar,Parse_aux.clt2mcode ";" (snd pv))) }
 
 struct_bitfield:
@@ -1824,7 +1824,7 @@ decl: t=ctype d=direct_declarator(type_ident) endar=attr_list
 	{ let (i,fn) = d in
 	Ast0_cocci.wrap(Ast0_cocci.Param(fn t, Some i, endar)) }
     | t=pure_ident cv2=const_vol_attr_list m=list(mul) d=direct_declarator(type_ident) endar=attr_list
-	{ let ty = Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode t)) in
+	{ let ty = Ast0_cocci.wrap(Ast0_cocci.NamedType(Parse_aux.id2mcode t)) in
 	let ty = Parse_aux.make_ctype_and_ptr ([],ty,cv2,m) in
         let (i,fn) = d in
 	!Data.add_type_name (fst t);
@@ -3020,7 +3020,7 @@ ctype_or_ident:
 	    match ty with
 	      Common.Left ty -> ty
 	    | Common.Right (None, p) ->
-		Ast0_cocci.wrap(Ast0_cocci.TypeName(Ast0_cocci.make_mcode p))
+		Ast0_cocci.wrap(Ast0_cocci.NamedType(Ast0_cocci.make_mcode p))
 	    | Common.Right (Some r, p) ->
 		let nm = (r, p) in
 		let _ = Parse_aux.check_meta(Ast_cocci.MetaTypeDecl(Ast_cocci.NONE,nm)) in
@@ -3130,9 +3130,9 @@ type_ident: disj_ident { $1 }
 
 type_ident_or_template:
      | p=TTypeId
-	 { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+	 { Ast0_cocci.wrap(Ast0_cocci.NamedType(Parse_aux.id2mcode p)) }
      | p=TTypeId TTemplateStart eexpr_list TTemplateEnd
-	 { let nm = Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) in
+	 { let nm = Ast0_cocci.wrap(Ast0_cocci.NamedType(Parse_aux.id2mcode p)) in
 	   Ast0_cocci.wrap
 	   (Ast0_cocci.TemplateType
 	      (nm,Parse_aux.clt2mcode "<" $2,$3,Parse_aux.clt2mcode ">" $4)) }
@@ -3140,7 +3140,7 @@ type_ident_or_template:
 ident_or_template_type:
      | p=pure_ident_or_symbol
 	 { !Data.add_type_name (Parse_aux.id2name p);
-	   Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode p)) }
+	   Ast0_cocci.wrap(Ast0_cocci.NamedType(Parse_aux.id2mcode p)) }
 
 decl_ident:
        TDeclarerId
@@ -3159,7 +3159,7 @@ iter_ident:
 
 typedef_ident:
        pure_ident_or_symbol
-         { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode $1)) }
+         { Ast0_cocci.wrap(Ast0_cocci.NamedType(Parse_aux.id2mcode $1)) }
      | TMeta { tmeta_to_type $1 }
      | TMetaType
          { let (nm,cstr,pure,clt) = $1 in
@@ -3167,7 +3167,7 @@ typedef_ident:
 
 qual_ident:
        TQualId
-         { Ast0_cocci.wrap(Ast0_cocci.TypeName(Parse_aux.id2mcode $1)) }
+         { Ast0_cocci.wrap(Ast0_cocci.NamedType(Parse_aux.id2mcode $1)) }
      | TMetaQual
          { let (nm,cstr,pure,clt) = $1 in
 	 Ast0_cocci.wrap(Ast0_cocci.MetaType(Parse_aux.clt2mcode nm clt,cstr,pure)) }

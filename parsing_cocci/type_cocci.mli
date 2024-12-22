@@ -21,7 +21,7 @@ type typeC =
   | Decimal         of name * name
   | EnumName        of name
   | StructUnionName of structUnion * name
-  | TypeName        of string
+  | NamedType        of string
   | QualifiedType   of typeC option * string * name
   | AutoType
   | MetaType        of meta_name * keep_binding * inherited

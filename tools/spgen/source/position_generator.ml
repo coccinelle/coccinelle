@@ -231,8 +231,8 @@ let rec type_pos t snp
       let _ = type_pos typec snp in (* sanity check for disj *)
       let constructor ~mc = Ast0.TypeOfType(mc, lp, typec, rp) in
       mcode_wrap ~mc:sizeofmc ~constructor snp
-  | Ast0.TypeName(nm) ->
-      let constructor ~mc = Ast0.TypeName(mc) in
+  | Ast0.NamedType(nm) ->
+      let constructor ~mc = Ast0.NamedType(mc) in
       mcode_wrap ~mc:nm ~constructor snp
   | Ast0.QualifiedType(Some typec,coloncolon,name) ->
       let _ = type_pos typec snp in

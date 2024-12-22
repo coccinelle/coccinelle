@@ -72,8 +72,8 @@ let lub_type t1 t2 =
 	| (Ast0.Pointer(_, _),_) -> ty1
 	| (Ast0.Array(ty1, s0, e0, s1),Ast0.Array(ty2, _, _, _)) ->
             Ast0.rewrap ty1 (Ast0.Array(loop ty1 ty2, s0, e0, s1))
-	| (Ast0.TypeName(_),_) -> ty2
-	| (_,Ast0.TypeName(_)) -> ty1
+	| (Ast0.NamedType(_),_) -> ty2
+	| (_,Ast0.NamedType(_)) -> ty1
         | (Ast0.AutoType(_), _) -> ty2
         | (_, Ast0.AutoType(_)) -> ty1
 	| _ -> ty1 in (* arbitrarily pick the first, assume type correct *)
@@ -112,7 +112,7 @@ let rec is_int_type_unwrap = function
   | Ast0.BaseType (Ast.SizeType, _)
   | Ast0.MetaType(_,_,_)
   | Ast0.TypeOfExpr _
-  | Ast0.TypeName _
+  | Ast0.NamedType _
   | Ast0.EnumName _
   | Ast0.Signed(_,None) -> true
   | Ast0.Signed(_,Some ty) | Ast0.TypeOfType(_,_,ty,_) -> is_int_type ty
@@ -279,7 +279,7 @@ let rec propagate_types env =
              with
 		 None -> None
 	       | Some (Ast0.StructUnionName(_,_)) -> None
-	       | Some (Ast0.TypeName(s)) ->
+	       | Some (Ast0.NamedType(s)) ->
 			  None
 	       | Some (Ast0.MetaType(_,_,_)) -> None
 	       | Some x ->
@@ -295,7 +295,7 @@ let rec propagate_types env =
                    with
 		      | Some (Ast0.BaseType(Ast.Unknown, _))
 		      | Some (Ast0.MetaType(_, _, _))
-		      | Some (Ast0.TypeName(_))
+		      | Some (Ast0.NamedType(_))
 		      | Some (Ast0.StructUnionName(_, _)) -> None
 		      | Some x ->
                           let ty =
@@ -304,7 +304,7 @@ let rec propagate_types env =
 			    "non-structure pointer type in field ref"
 		      |	_ -> failwith "not possible")
                | Some (Ast0.MetaType(_, _, _))
-               | Some (Ast0.TypeName(_)) -> None
+               | Some (Ast0.NamedType(_)) -> None
                | Some x ->
                    let ty = Ast0.wrap x in
                    err exp ty "non-structure pointer type in field ref")

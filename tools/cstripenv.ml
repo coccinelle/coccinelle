@@ -44,7 +44,7 @@ let hide_visitor =
       begin match t with
         Ast_c.NoType     -> Common.pr2 "no type"
       | Ast_c.BaseType _ -> Common.pr2 "base type"
-      | Ast_c.TypeName (nm, optTp) -> begin
+      | Ast_c.NamedType (nm, optTp) -> begin
           match optTp with
 	    None -> Common.pr2 ("type name " ^ (Ast_c.str_of_name nm) ^ " without fullType")
 	  | Some _ -> Common.pr2 ("type name " ^ (Ast_c.str_of_name nm) ^ " with fullType")

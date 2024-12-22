@@ -58,8 +58,8 @@ let strip_info_visitor _ =
     Visitor_c.ktype_s = (fun (k,_) ft ->
       let ft' = k ft in
       match Ast_c.unwrap_typeC ft' with
-      | Ast_c.TypeName (s,_typ) ->
-          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | Ast_c.NamedType (s,_typ) ->
+          Ast_c.NamedType (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
       | _ -> ft'
 
     );
@@ -120,8 +120,8 @@ let strip_inh_info_visitor _ =  (* for inherited metavariables *)
     Visitor_c.ktype_s = (fun (k,_) ft ->
       let ft' = k ft in
       match Ast_c.unwrap_typeC ft' with
-      | Ast_c.TypeName (s,_typ) ->
-          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | Ast_c.NamedType (s,_typ) ->
+          Ast_c.NamedType (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
       | _ -> ft'
 
     );
@@ -215,8 +215,8 @@ let real_strip_info_visitor _ =
     Visitor_c.ktype_s = (fun (k,_) ft ->
       let ft' = k ft in
       match Ast_c.unwrap_typeC ft' with
-      | Ast_c.TypeName (s,_typ) ->
-          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | Ast_c.NamedType (s,_typ) ->
+          Ast_c.NamedType (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
       | _ -> ft'
 
     );
@@ -248,8 +248,8 @@ let real_strip_info_visitor_with_comments _ =
     Visitor_c.ktype_s = (fun (k,_) ft ->
       let ft' = k ft in
       match Ast_c.unwrap_typeC ft' with
-      | Ast_c.TypeName (s,_typ) ->
-          Ast_c.TypeName (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
+      | Ast_c.NamedType (s,_typ) ->
+          Ast_c.NamedType (s, Ast_c.noTypedefDef()) +> Ast_c.rewrap_typeC ft'
       | _ -> ft'
 
     );

@@ -560,11 +560,11 @@ and top_typeC tgt opt_allowed typ =
       let coloncolon = mcode coloncolon in
       let name = ident false arity name in
       make_typeC typ tgt arity (Ast0.QualifiedType(ty,coloncolon,name))
-  | Ast0.TypeName(name) ->
+  | Ast0.NamedType(name) ->
       let arity =
 	all_same opt_allowed tgt (mcode2line name) [mcode2arity name] in
       let name = mcode name in
-      make_typeC typ tgt arity (Ast0.TypeName(name))
+      make_typeC typ tgt arity (Ast0.NamedType(name))
   | Ast0.TemplateType(tn,lb,args,rb) ->
       let arity =  all_same false tgt (mcode2line lb) [mcode2arity lb;mcode2arity rb] in
       let tn = typeC arity tn in

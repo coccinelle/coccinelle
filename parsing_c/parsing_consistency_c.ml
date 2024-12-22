@@ -68,7 +68,7 @@ type class_token =
 *)
 
 let ident_to_typename ident : Ast_c.fullType =
-  Ast_c.mk_ty (Ast_c.TypeName  (ident, Ast_c.noTypedefDef())) Ast_c.noii
+  Ast_c.mk_ty (Ast_c.NamedType  (ident, Ast_c.noTypedefDef())) Ast_c.noii
 
 
 (* parse_typedef_fix4 *)
@@ -95,7 +95,7 @@ let consistency_checking2 xs =
     );
     Visitor_c.ktype = (fun (k,bigf) t ->
       match Ast_c.unwrap_typeC t with
-      | Ast_c.TypeName (name,_typ) ->
+      | Ast_c.NamedType (name,_typ) ->
           let s = Ast_c.str_of_name name in
           stat +>
             Common.hfind_default s v1 +> Common.hfind_default CTypedef v2 +>

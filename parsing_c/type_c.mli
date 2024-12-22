@@ -1,7 +1,7 @@
 
 type finalType = Ast_c.fullType
 
-(* completed TypeName, removed ParenType, use StructUnionName when can *)
+(* completed NamedType, removed ParenType, use StructUnionName when can *)
 type completed_and_simplified = Ast_c.fullType
 
 type completed_typedef = Ast_c.fullType

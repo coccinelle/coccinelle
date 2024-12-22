@@ -81,7 +81,7 @@ let get_minus_constants bind orbind =
     match Ast.unwrap e with
      Ast.TypeOfExpr(tf,_,_,_) | Ast.TypeOfType(tf,_,_,_) ->
 	bind (k e) [Ast.unwrap_mcode tf]
-    | Ast.TypeName(ty) ->
+    | Ast.NamedType(ty) ->
 	if !Flag.sgrep_mode2
 	then
 	  match ty with

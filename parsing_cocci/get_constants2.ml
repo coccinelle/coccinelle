@@ -545,7 +545,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
       Ast.BaseType(ty1,strings) -> bind (k ty) (baseType ty1)
     | Ast.TypeOfExpr(sizeof,lp,e,rp) -> bind (keywords "typeof") (k ty)
     | Ast.TypeOfType(sizeof,lp,t,rp) -> bind (keywords "typeof") (k ty)
-    | Ast.TypeName(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
+    | Ast.NamedType(name) -> bind (k ty) (constants (Ast.unwrap_mcode name))
     | Ast.MetaType(name,_,_,_) -> bind (minherited name) (k ty)
     | _ -> k ty in
 

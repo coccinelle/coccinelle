@@ -220,7 +220,7 @@ and base_typeC =
                        expression * string mcode (* ) *)
   | TypeOfType      of string mcode (* typeof *) * string mcode (* ( *) *
                        typeC * string mcode (* ) *)
-  | TypeName        of string mcode
+  | NamedType        of string mcode
   | QualifiedType   of typeC option * string mcode (* :: *) * ident (* name *)
   | AutoType        of string mcode (* auto *) (* c++ >= 11 *)
   | TemplateType    of typeC (* name *) * string mcode (* < *) *

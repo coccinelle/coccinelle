@@ -719,10 +719,10 @@ and typeC t =
       let coloncolon = normal_mcode coloncolon in
       let name = ident name in
       mkres t (Ast0.QualifiedType(None,coloncolon,name)) (promote_mcode coloncolon) name
-  | Ast0.TypeName(name) ->
+  | Ast0.NamedType(name) ->
       let name = normal_mcode name in
       let ln = promote_mcode name in
-      mkres t (Ast0.TypeName(name)) ln ln
+      mkres t (Ast0.NamedType(name)) ln ln
   | Ast0.TemplateType(tn,lp,args,rp) ->
       let tn = typeC tn in
       let lp = normal_mcode lp in

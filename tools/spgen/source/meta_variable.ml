@@ -260,7 +260,7 @@ let types ~rn = function
             let mn' = Ast_cocci.unwrap_mcode mn in
             let metavar = make_mv "type " (name_tup ~rn mn') (bin b) in
             MVSet.add metavar acc
-        | Ast.TypeName s ->
+        | Ast.NamedType s ->
             let metavar = ("typedef ", str_tup (Ast.unwrap_mcode s), "") in
             MVSet.add metavar acc
         | Ast.Decimal(_, _, nm1, _, nm2, _) ->
@@ -497,7 +497,7 @@ let metavar_combiner rn =
     (* this clause generates unparsable scripts for who knows what reason ...
      * TODO: need to find out if it should be included or not. For now, ignore.
      *)
-    | Ast0.TypeName mc ->
+    | Ast0.NamedType mc ->
         let _ = str_mc_format ~mc ~typ:"typedef " in
         fn v
     | _ -> fn v in

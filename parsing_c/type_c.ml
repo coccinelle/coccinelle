@@ -128,7 +128,7 @@ let rec is_completed_and_simplified ty =
   | StructUnionName (su, s) -> true
 
   (* should have completed with more information *)
-  | TypeName (_name, typ) ->
+  | NamedType (_name, typ) ->
       (match typ with
       | None -> false
       | Some t ->
@@ -469,7 +469,7 @@ let rec function_pointer_type_opt x =
       | FunctionType ft -> Some ft
 
       (* fix *)
-      | TypeName (_name, Some ft2) ->
+      | NamedType (_name, Some ft2) ->
           (match Ast_c.unwrap_typeC ft2 with
           | FunctionType ft -> Some ft
           | _ -> None
@@ -480,7 +480,7 @@ let rec function_pointer_type_opt x =
   (* bugfix: for many fields in structure, the field is a typename
    * like irq_handler_t to a function pointer
    *)
-  | TypeName (_name, Some ft) ->
+  | NamedType (_name, Some ft) ->
       function_pointer_type_opt ft
   (* bugfix: in field, usually it has some ParenType *)
 

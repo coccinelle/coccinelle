@@ -116,7 +116,7 @@ and typeC tya tyb =
       (sua = sub && sa = sb) >&&>
         return (StructUnionName (sua, sa), iix)
 
-  | TypeName (namea, opta), TypeName (nameb, optb) ->
+  | NamedType (namea, opta), NamedType (nameb, optb) ->
       let sa = Ast_c.str_of_name namea in
       let sb = Ast_c.str_of_name nameb in
 
@@ -133,7 +133,7 @@ and typeC tya tyb =
              -> Some x
          )
        in
-       return (TypeName (namea, opt), iix)
+       return (NamedType (namea, opt), iix)
 
 
   | Array (ea, a), Array (eb,b) ->
@@ -302,14 +302,14 @@ and typeC tya tyb =
    * must put iib and not iix, because we want the token corresponding
    * to the typedef.
    *)
-  | TypeName (name, Some a), _ ->
+  | NamedType (name, Some a), _ ->
       fullType a (Ast_c.nQ, [], tyb) >>= (fun x ->
-        return (TypeName (name, Some x), iia)
+        return (NamedType (name, Some x), iia)
       )
 
-  | _, TypeName (name, Some b) ->
+  | _, NamedType (name, Some b) ->
       fullType b (Ast_c.nQ, [], tya) >>= (fun x ->
-        return (TypeName (name, Some x), iib) (* subtil: *)
+        return (NamedType (name, Some x), iib) (* subtil: *)
       )
 
   | (BaseType _, _) | (_, BaseType _)
@@ -321,7 +321,7 @@ and typeC tya tyb =
   | (StructUnion _, _) | (_, StructUnion _)
   | (EnumName _, _) | (_, EnumName _)
   | (StructUnionName _, _) | (_, StructUnionName _)
-  | (TypeName _, _) | (_, TypeName _)
+  | (NamedType _, _) | (_, NamedType _)
   | (QualifiedType _, _)
   | (FieldType _, _) | (_, FieldType _)
   | (ParenType _, _) | (_, ParenType _)

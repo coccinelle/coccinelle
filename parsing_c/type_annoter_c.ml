@@ -383,7 +383,7 @@ let rec find_final_type ty env =
          ty
       )
 
-  | TypeName s ->
+  | NamedType s ->
       (try
           let (t', env') = lookup_typedef s env in
           find_final_type t' env'
@@ -430,7 +430,7 @@ let rec type_unfold_one_step ty env =
          ty
       )
 
-  | TypeName (name, _typ) ->
+  | NamedType (name, _typ) ->
       let s = Ast_c.str_of_name name in
       (try
           if !typedef_debug then pr2 "type_unfold_one_step: lookup_typedef";
@@ -444,7 +444,7 @@ let rec type_unfold_one_step ty env =
             f s [IC.CacheTypedef]
             (fun () ->
               let (t', env') = lookup_typedef s !_scoped_env in
-              TypeName (name, Some t') +>
+              NamedType (name, Some t') +>
               Ast_c.rewrap_typeC ty)
             (fun () -> ty)
       )
@@ -524,7 +524,7 @@ let rec typedef_fix ty env =
 	ty
 
   (* keep the typename but complete with more information *)
-    | TypeName (name, typ) ->
+    | NamedType (name, typ) ->
 	let s = Ast_c.str_of_name name in
 	(match typ with
 	| Some _ ->
@@ -544,7 +544,7 @@ let rec typedef_fix ty env =
 		if List.mem s seen
 		then loop (s::seen) t' env
 		else typedef_fix t' env' in
-	      TypeName (name, Some fixed) +>
+	      NamedType (name, Some fixed) +>
 	      Ast_c.rewrap_typeC ty
             with Not_found ->
               let f = Ast_c.file_of_info (Ast_c.info_of_name name) in
@@ -552,7 +552,7 @@ let rec typedef_fix ty env =
                 f s [IC.CacheTypedef]
                 (fun () ->
                    let (t', env') = lookup_typedef s !_scoped_env in
-                   TypeName (name, Some t') +>
+                   NamedType (name, Some t') +>
                    Ast_c.rewrap_typeC ty)
                 (fun () -> ty)
               ))
@@ -1429,7 +1429,7 @@ let rec visit_toplevel ~just_add_in_env ~depth elem =
           );
 
 
-      (* TODO: if have a TypeName, then maybe can fill the option
+      (* TODO: if have a NamedType, then maybe can fill the option
        * information.
        *)
       | _ ->

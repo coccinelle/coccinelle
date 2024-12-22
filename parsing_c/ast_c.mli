@@ -39,7 +39,7 @@ and typeCbis =
 	base_class wrap2 list (* C++ *) * structType (* new scope *)
   | EnumName of structUnion option * string option
   | StructUnionName of structUnion * string
-  | TypeName of name * fullType option
+  | NamedType of name * fullType option
   | QualifiedType of fullType option * name
   | FieldType of fullType * name * constExpression option
   | ParenType of fullType

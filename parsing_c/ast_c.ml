@@ -200,7 +200,7 @@ and fullType = typeQualifier * attribute list * typeC
   | EnumName        of structUnion option * string option
   | StructUnionName of structUnion * string
 
-  | TypeName   of name * fullType option (* semantic: filled later *)
+  | NamedType   of name * fullType option (* semantic: filled later *)
 
   | QualifiedType of fullType option * name 
 
@@ -1505,7 +1505,7 @@ let get_local_ii_of_expr_inlining_ii_of_name e =
 
 let get_local_ii_of_tybis_inlining_ii_of_name ty =
   match ty with
-  | TypeName (name, _typ), [] -> ii_of_name name
+  | NamedType (name, _typ), [] -> ii_of_name name
   | _, ii -> ii
 
 (* the following is used to obtain the argument to LocalVar *)
