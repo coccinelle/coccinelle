@@ -2585,6 +2585,9 @@ let parse file =
 		  | D.Virt l -> (include_files,iso_files,l@virt))
 	      ([],[],[]) include_and_iso_files in
 
+	  let include_files = List.rev include_files in
+	  let iso_files = List.rev iso_files in
+
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
 	    virt;
 
