@@ -82,14 +82,16 @@ Simply run:
  make
  sudo make install
 
+Using Flatpak will side-step any dependency issues mentioned above.
 If you prefer using Flatpak, you can build it and install it using:
 
-flatpak run org.flatpak.Builder --force-clean --install \
+$ sudo flatpak-builder --force-clean --install \
   --install-deps-from=flathub --ccache --repo=_flatpak-repo/ \
   _flatpak-build/ extra/flatpak/fr.inria.Coccinelle.yaml
 
-It will install the `spatch` program as `fr.inria.Coccinelle`.
+It will install the `spatch` program as `fr.inria.Coccinelle`. Use it with:
 
+$ flatpak run fr.inria.Coccinelle --help
 
 Configuration flags of interest (for the ./configure step):
 --prefix                default: /usr/local
