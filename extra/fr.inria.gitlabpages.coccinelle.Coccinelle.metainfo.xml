@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Copyright 2024 INRIA, University of Copenhagen DIKU -->
 <component type="console-application">
-  <id>fr.inria.Coccinelle</id>
+  <id>fr.inria.gitlabpages.coccinelle.Coccinelle</id>
   <name>Coccinelle</name>
   <summary>Match and transform C code using semantic patches</summary>
   <developer id="fr.inria.paris.who.lawall.julia">

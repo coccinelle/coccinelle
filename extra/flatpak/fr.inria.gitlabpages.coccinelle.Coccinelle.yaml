@@ -1,0 +1,43 @@
+app-id: fr.inria.gitlabpages.coccinelle.Coccinelle
+runtime: org.freedesktop.Sdk
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.ocaml
+command: spatch
+
+finish-args:
+  # spatch is a CLI programs that expects file/directory paths as arguments,
+  # some of which it will need to write to.
+  - '--filesystem=host'
+  # For use with `mktemp -d`.
+  - '--filesystem=/tmp'
+
+build-options:
+  append-path: /usr/lib/sdk/ocaml/bin:/app/share/runtime/ocaml
+  env:
+    CAML_LD_LIBRARY_PATH: /app/share/runtime/ocaml/lib:/usr/lib/sdk/ocaml/lib/ocaml:/usr/lib/sdk/ocaml/lib/ocaml/stublibs
+    OCAMLFIND_CONF: /app/share/runtime/ocaml/findlib.conf
+  no-debuginfo: true
+
+modules:
+
+  - name: ocamlfind
+    buildsystem: simple
+    sources:
+      - type: git
+        url: https://github.com/ocaml/ocamlfind
+        branch: master
+    build-commands:
+      - mkdir -p ${FLATPAK_DEST}/share/runtime/ocaml
+      - ./configure -bindir ${FLATPAK_DEST}/share/runtime/ocaml -config ${FLATPAK_DEST}/share/runtime/ocaml -no-topfind -sitelib ${FLATPAK_DEST}/share/runtime/ocaml/lib
+      - make all
+      - make install
+    post-install:
+      - ocamlfind printconf
+
+  - name: coccinelle
+    buildsystem: autotools
+    sources:
+      - type: dir
+        path: '../..'

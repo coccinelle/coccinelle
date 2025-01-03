@@ -87,9 +87,9 @@ If you prefer using Flatpak, you can build it and install it using:
 
 $ sudo flatpak-builder --force-clean --install \
   --install-deps-from=flathub --ccache --repo=_flatpak-repo/ \
-  _flatpak-build/ extra/flatpak/fr.inria.Coccinelle.yaml
+  _flatpak-build/ extra/flatpak/fr.inria.gitlabpages.coccinelle.Coccinelle.yaml
 
-It will install the `spatch` program as `fr.inria.Coccinelle`. Use it with:
+It will install the `spatch` program as `fr.inria.gitlabpages.coccinelle.Coccinelle`. Use it with:
 
 $ flatpak run fr.inria.Coccinelle --help
 

@@ -344,8 +344,8 @@ install-man :
 install-metainfo:
 	if test "x$(METAINFO_DIR)" != "xno"; then \
 		$(MKDIR_P) $(DESTDIR)$(METAINFO_DIR); \
-		$(INSTALL_DATA) extra/fr.inria.Coccinelle.metainfo.xml \
-			$(DESTDIR)$(METAINFO_DIR)/fr.inria.Coccinelle.metainfo.xml; \
+		$(INSTALL_DATA) extra/fr.inria.gitlabpages.coccinelle.Coccinelle.metainfo.xml \
+			$(DESTDIR)$(METAINFO_DIR)/fr.inria.gitlabpages.coccinelle.Coccinelle.metainfo.xml; \
 	fi
 
 .PHONY : install-spgen
@@ -373,7 +373,7 @@ uninstall-bash :
 
 .PHONY : uninstall-metainfo
 uninstall-metainfo :
-	rm -f $(DESTDIR)$(METAINFO_DIR)/fr.inria.Coccinelle.metainfo.xml
+	rm -f $(DESTDIR)$(METAINFO_DIR)/fr.inria.gitlabpages.coccinelle.Coccinelle.metainfo.xml
 	rmdir --ignore-fail-on-non-empty -p \
 		$(DESTDIR)$(METAINFO_DIR)
 
