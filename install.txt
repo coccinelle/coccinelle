@@ -87,11 +87,11 @@ If you prefer using Flatpak, you can build it and install it using:
 
 $ sudo flatpak-builder --force-clean --install \
   --install-deps-from=flathub --ccache --repo=_flatpak-repo/ \
-  _flatpak-build/ extra/flatpak/fr.inria.gitlabpages.coccinelle.Coccinelle.yaml
+  _flatpak-build/ extra/flatpak/io.github.coccinelle.coccinelle.yaml
 
-It will install the `spatch` program as `fr.inria.gitlabpages.coccinelle.Coccinelle`. Use it with:
+It will install the `spatch` program as `io.github.coccinelle.coccinelle`. Use it with:
 
-$ flatpak run fr.inria.Coccinelle --help
+$ flatpak run io.github.coccinelle.coccinelle --help
 
 Configuration flags of interest (for the ./configure step):
 --prefix                default: /usr/local
