@@ -14,28 +14,9 @@ finish-args:
   - '--filesystem=/tmp'
 
 build-options:
-  append-path: /usr/lib/sdk/ocaml/bin:/app/share/runtime/ocaml
-  env:
-    CAML_LD_LIBRARY_PATH: /app/share/runtime/ocaml/lib:/usr/lib/sdk/ocaml/lib/ocaml:/usr/lib/sdk/ocaml/lib/ocaml/stublibs
-    OCAMLFIND_CONF: /app/share/runtime/ocaml/findlib.conf
-  no-debuginfo: true
+  append-path: /usr/lib/sdk/ocaml/bin
 
 modules:
-
-  - name: ocamlfind
-    buildsystem: simple
-    sources:
-      - type: git
-        url: https://github.com/ocaml/ocamlfind
-        branch: master
-    build-commands:
-      - mkdir -p ${FLATPAK_DEST}/share/runtime/ocaml
-      - ./configure -bindir ${FLATPAK_DEST}/share/runtime/ocaml -config ${FLATPAK_DEST}/share/runtime/ocaml -no-topfind -sitelib ${FLATPAK_DEST}/share/runtime/ocaml/lib
-      - make all
-      - make install
-    post-install:
-      - ocamlfind printconf
-
   - name: coccinelle
     buildsystem: autotools
     sources:
