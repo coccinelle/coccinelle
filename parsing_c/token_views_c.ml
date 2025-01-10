@@ -444,7 +444,7 @@ let tokens_of_paren_ordered xs =
         xs +> List.iter aux_tokens_ordered;
         push2 comma g;
         aux_args (ys::xxs, commas)
-    | _ -> raise (Impossible 125)
+    | _ -> () (* case may occur with unmatched parentheses in #define *)
 
   in
 
