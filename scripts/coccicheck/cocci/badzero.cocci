@@ -2,7 +2,7 @@
 //
 // Confidence: High
 // Copyright: (C) Gilles Muller, Julia Lawall, EMN, DIKU.  GPLv2.
-// URL: https://coccinelle.gitlabpages.inria.fr/websiterules/badzero.html
+// URL: https://coccinelle.gitlabpages.inria.fr/website/rules/badzero.html
 // Options:
 
 virtual org,diff
