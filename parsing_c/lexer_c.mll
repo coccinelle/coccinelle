@@ -1283,6 +1283,10 @@ and cpp_in_comment_eat_until_nl = parse
     | _ ->
 	let s2 = parse_newline lexbuf in
 	s^s2^(cpp_in_comment_eat_until_nl lexbuf) (* still in comment *) }
+| _ as c
+{ let s = tok lexbuf in
+	let s2 = parse_newline lexbuf in
+	s^s2^(cpp_in_comment_eat_until_nl lexbuf) (* still in comment *) }
 
 and cpp_eat_until_nl = parse
   [^ '\n']+
