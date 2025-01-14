@@ -1976,12 +1976,16 @@ end
 
 
 let (filesuffix: filename -> string) = fun s ->
-  (try regexp_match s ".+\\.\\([a-zA-Z0-9_]+\\)$" with _ ->  "NOEXT")
+  (try regexp_match s "^[^\\.]+\\.\\([\\.a-zA-Z0-9_]+\\)$" with _ ->  "NOEXT")
+  (* considers double extensions such as in.h or h.in to be the suffix *)
 let (fileprefix: filename -> string) = fun s ->
   (try regexp_match s "\\(.+\\)\\.\\([a-zA-Z0-9_]+\\)?$" with _ ->  s)
+  (* does not consider double extensions to be the suffix *)
 
 let _ = example (filesuffix "toto.c" = "c")
+let _ = example (filesuffix "toto.in.h" = "in.h")
 let _ = example (fileprefix "toto.c" = "toto")
+let _ = example (fileprefix "toto.in.h" = "toto.in")
 
 (*
 assert (s = fileprefix s ^ filesuffix s)
