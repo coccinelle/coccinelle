@@ -35,7 +35,7 @@ let get_files path =
       (if !Flag.include_headers
       then
         "find "^ path ^" -type f -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
-        ^"-o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
+        ^"-o . -name \"*.h\" -not -name \"*.in.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
       else
         "find "^ path ^" -type f -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
   else
@@ -45,11 +45,11 @@ let get_files path =
 	  (* FIXME : Could we remove xs ?
 	     -use_glimpse requires a singleton.
 	     This is checked some lines before.
-	     then ("find "^(join " " (x::xs))^" -type f -name \"*.[ch]\"")
-	     else ("find "^(join " " (x::xs))^" -type f -name \"*.c\"")
+	     then ("find "^(join " " (x::xs))^" -type f -name \"*.[ch]\" -not -name \"*.in.[ch]\"")
+	     else ("find "^(join " " (x::xs))^" -type f -name \"*.c\" -not -name \"*.in.c\"")
 	  *)
-      then ("find "^ path ^" -type f -name \"*.[ch]\"")
-      else ("find "^ path ^" -type f -name \"*.c\""))
+      then ("find "^ path ^" -type f -name \"*.[ch]\" -not -name \"*.in.[ch]\"")
+      else ("find "^ path ^" -type f -name \"*.c\" -not -name \"*.in.c\""))
 
 let new_test_parse_gen xs =
 
