@@ -2095,7 +2095,7 @@ let pre_engine2 (coccifile, isofile) =
     end
     else Some isofile in
 
-  (* useful opti when use -dir *)
+  (* useful opti when use --dir *)
   let (metavars,astcocci,scripts,
        free_var_lists,negated_pos_lists,used_after_lists,
        positions_lists,((toks,_,_,_) as constants),parse_strings,
