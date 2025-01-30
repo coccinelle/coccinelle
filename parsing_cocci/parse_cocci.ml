@@ -2586,6 +2586,11 @@ let parse file =
 	      ([],[],[]) include_and_iso_files in
 
 	  let include_files = List.rev include_files in
+    let include_files = List.map (fun include_file ->
+      if Sys.file_exists include_file
+      then include_file
+      else Filename.dirname file ^ Filename.dir_sep ^ include_file ) include_files in
+
 	  let iso_files = List.rev iso_files in
 
 	  List.iter (function x -> Hashtbl.add Lexer_cocci.rule_names x ())
