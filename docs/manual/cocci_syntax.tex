@@ -122,6 +122,15 @@ section.
   \CASE{\NT{elem} \ANY{, \NT{elem}}}
 \end{grammar}
 
+A rulekind is used to distinguish between expressions and identifiers when
+there is an ambiguity.  It is only useful when the semantic patch replaces
+a single identifier by another single identifier.  If the rulekind
+\KW{identifier} is not used, this will only replace identifiers that occur
+as expressions.  If the rulekind \KW{identifier} is used, this will also
+replace other uses of identifiers such as function names or the declared
+variable in a variable declaration.  The rulekind \KW{expression} exists
+only for emphasis, as this case is the default.
+
 The keyword \KW{disable} is normally used with the names of
 isomorphisms defined in standard.iso or whatever isomorphism file has been
 included.  There are, however, some other isomorphisms that are built into
