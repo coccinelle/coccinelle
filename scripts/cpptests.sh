@@ -6,8 +6,10 @@
 set -e
 #set -x
 
-while getopts "o:" NAME; do
+WANT_DEBUG=''
+while getopts "do:" NAME; do
 	case $NAME in
+		d)	WANT_DEBUG=1;;
 		o) WANT_HTML=$OPTARG;
 			which txt2html || { echo "Utility txt2html not found -- please install it to use this option!"; false; }
 		;;
@@ -25,6 +27,7 @@ declare -A TEST_CASE_BROKEN
 declare -A TEST_CASE_FAILS
 declare -A REFTAGS
 declare -A REFTOTEST
+declare    WANT_DEBUG
 WARNINGS=''
 
 cat_tags_file() {
@@ -196,6 +199,9 @@ for cf in *.cocci; do
 		TEST_CASE_BROKEN[$tn]=$?
 		cmp $tn.res $cmpfile
 		TEST_CASE_FAILS[$tn]=$?
+		if test -n "$WANT_DEBUG" && ! cmp $tn.res $cmpfile ; then
+			diff $tn.res $cmpfile ; read;
+		fi
 		set -e
 	fi
 	rm -f $cmpfile
