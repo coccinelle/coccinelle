@@ -288,7 +288,10 @@ let testall_bis testdir setup extra_test =
 	Flag.defined_virtual_rules := [];
 	Flag.defined_virtual_env := [];
 	Iteration.clear_pending_instance();
-        Hashtbl.add score res (Common.Pb s)
+  let r = Str.regexp ".*_failure\\.c" in
+  if (Str.string_match r cfile 0)
+      then Hashtbl.add score res (Common.PbKnown s)
+      else Hashtbl.add score res (Common.Pb s)
     );
 
 
