@@ -8,4 +8,4 @@ f(E);
 E << r.E;
 @@
 
-print E
+print(E)

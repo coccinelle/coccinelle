@@ -54,7 +54,7 @@ e << r.e;
 p << r.p;
 @@
 
-print "py: all matched: %s %s %s %s" % (f,e,p[0].file,p[0].line)
+print("py: all matched: %s %s %s %s" % (f,e,p[0].file,p[0].line))
 
 @script:python@
 f << r.f = "no function";
@@ -63,9 +63,9 @@ p << r.p = [];
 @@
 
 if not p:
-  print "py: no pos: %s %s" % (f,e)
+  print("py: no pos: %s %s" % (f,e))
 else:
-  print "py: all matched: %s %s %s %s" % (f,e,p[0].file,p[0].line)
+  print("py: all matched: %s %s %s %s" % (f,e,p[0].file,p[0].line))
 
 @script:python@
 f << r.f;
@@ -74,6 +74,6 @@ p << r.p = [];
 @@
 
 if not p:
-  print "py: fun required: no pos: %s %s" % (f,e)
+  print("py: fun required: no pos: %s %s" % (f,e))
 else:
-  print "py: fun required: all matched: %s %s %s %s" % (f,e,p[0].file,p[0].line)
+  print("py: fun required: all matched: %s %s %s %s" % (f,e,p[0].file,p[0].line))

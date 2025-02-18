@@ -8,7 +8,7 @@ int x;
 x << r.x;
 @@
 
-print x
+print(x)
 
 @rr@
 identifier x;
@@ -20,4 +20,4 @@ struct x { ... int x; ... };
 x << rr.x;
 @@
 
-print "name",x
+print("name",x)

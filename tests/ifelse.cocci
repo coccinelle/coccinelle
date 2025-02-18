@@ -16,8 +16,8 @@ else
 script:python @ expr_1_ie << if_else_1.E_1_ie;
                 loc_1_ie << if_else_1.p_1_ie;
               @@
-print "--- ifelse"
-print loc_1_ie[0].line, " ", loc_1_ie[0].column, " ", expr_1_ie
+print("--- ifelse")
+print(loc_1_ie[0].line, " ", loc_1_ie[0].column, " ", expr_1_ie)
 
 
 @ if_else_if_else
@@ -41,9 +41,9 @@ script:python @ expr_1 << if_else_if_else.E_1;
                 loc_2 << if_else_if_else.p_2;
                 loc_3 << if_else_if_else.p_3;
               @@
-print "--- ifelseifelse"
-print loc_1[0].line, " ", loc_1[0].column, " ", expr_1
-print loc_2[0].line, " ", loc_2[0].column, " ", expr_2
+print("--- ifelseifelse")
+print(loc_1[0].line, " ", loc_1[0].column, " ", expr_1)
+print(loc_2[0].line, " ", loc_2[0].column, " ", expr_2)
 cocci.include_match(False)
 
 @
@@ -52,7 +52,7 @@ script:python @ expr_1 << if_else_if_else.E_1;
                 loc_1 << if_else_if_else.p_1;
                 loc_2 << if_else_if_else.p_2;
               @@
-print "--- ifelseif"
-print loc_1[0].line, " ", loc_1[0].column, " ", expr_1
-print loc_2[0].line, " ", loc_2[0].column, " ", expr_2
+print("--- ifelseif")
+print(loc_1[0].line, " ", loc_1[0].column, " ", expr_1)
+print(loc_2[0].line, " ", loc_2[0].column, " ", expr_2)
 

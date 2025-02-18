@@ -10,4 +10,4 @@ f(es@p)
 p << r.p;
 @@
 
-print p
+print(p)

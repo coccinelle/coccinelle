@@ -36,6 +36,6 @@ fld << check_unprotected.fld; // identifier
 @@
 
 c = cocci.combine(fld,p1)
-print "   call to FN on line %s column %s" % (c.location.line,c.location.column)
+print("   call to FN on line %s column %s" % (c.location.line,c.location.column))
 c1 = cocci.combine(fld,p)
-print "   ref to field %s on line %s column %s" % (fld,c1.location.line,c1.location.column)
+print("   ref to field %s on line %s column %s" % (fld,c1.location.line,c1.location.column))

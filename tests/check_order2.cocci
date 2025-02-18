@@ -14,4 +14,4 @@ f(E,E1);
 E1 << r.E1;
 @@
 
-print E1
+print(E1)
