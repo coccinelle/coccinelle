@@ -5,6 +5,6 @@ T I[C];
 +I[E]
 ...>
 @ script:python @ @@
-print "Hello"
+print("Hello")
 @ rule2 @ constant rule1.C; @@
 - C

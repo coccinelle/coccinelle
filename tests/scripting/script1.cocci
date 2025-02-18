@@ -4,4 +4,4 @@ T I[C];
 -I[E] 
 ...>
 @ script:python @ @@
-print "Hello"
+print("Hello")

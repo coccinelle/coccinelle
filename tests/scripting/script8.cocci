@@ -7,4 +7,4 @@ position p1;
 x << rule1.C;
 xloc << rule1.p1;
 @@
-print "%s[%s]" % (x,xloc)
+print("%s[%s]" % (x,xloc))

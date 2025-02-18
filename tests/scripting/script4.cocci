@@ -10,5 +10,5 @@ I[E@p4]
 x << rule1.p3;
 y << rule1.p4;
 @@
-print "%s:%s:%s:%s" % (x.location.file, x.location.line, x.location.column, x)
-print "%s[%s]" % (x,y)
+print("%s:%s:%s:%s" % (x.location.file, x.location.line, x.location.column, x))
+print("%s[%s]" % (x,y))
