@@ -958,7 +958,7 @@ module Pretty_print_c :
       pr_space:unit printer -> Ast_c.statement printer
     val pp_statement_seq_list_gen :
       pr_elem:Ast_c.info printer ->
-      pr_space:unit printer -> Ast_c.statement_sequencable list printer
+      pr_space:unit printer -> pr_nl:unit printer -> Ast_c.statement_sequencable list printer
     val pp_param_gen :
       pr_elem:Ast_c.info printer ->
       pr_space:unit printer -> Ast_c.parameterType printer

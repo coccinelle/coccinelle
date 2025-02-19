@@ -1884,6 +1884,11 @@ let pp_elem_sp ~pr_elem ~pr_space =
     ~pr_elem ~pr_space
     ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
 
+let pp_elem_sp_nl ~pr_elem ~pr_space ~pr_nl =
+  mk_pretty_printers
+    ~pr_elem ~pr_space
+    ~pr_nl ~pr_outdent ~pr_indent ~pr_unindent
+
 let pp_expression_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).expression
 
@@ -1902,8 +1907,8 @@ let pp_arg_gen ~pr_elem ~pr_space =
 let pp_statement_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).statement
 
-let pp_statement_seq_list_gen ~pr_elem ~pr_space =
-  (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).statement_seq_list
+let pp_statement_seq_list_gen ~pr_elem ~pr_space ~pr_nl =
+  (pp_elem_sp_nl ~pr_elem:pr_elem ~pr_space:pr_space ~pr_nl:pr_nl).statement_seq_list
 
 let pp_decl_gen ~pr_elem ~pr_space =
   (pp_elem_sp ~pr_elem:pr_elem ~pr_space:pr_space).decl

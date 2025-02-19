@@ -14,8 +14,17 @@ let caller s f a =
   f ~pr_elem ~pr_space:pr_sp a;
   String.concat s (List.rev !str)
 
+let callernl s f a =
+  let str = ref ([] : string list) in
+  let pr_elem info = str := (Ast_c.str_of_info info) :: !str in
+  let pr_nl _ = str := "\n" :: !str in
+  let pr_sp _ = () in
+  f ~pr_elem ~pr_space:pr_sp ~pr_nl a;
+  String.concat s (List.rev !str)
+
 let call_pretty f a = caller " " f a
 let call_pretty0 f a = caller "" f a
+let call_pretty_nl f a = callernl " " f a
 
 let exprrep = call_pretty Pretty_print_c.pp_expression_gen
 
@@ -68,7 +77,7 @@ let stringrep = function
 | Ast_c.MetaStmtVal      (_,statement,_) ->
     call_pretty Pretty_print_c.pp_statement_gen statement
 | Ast_c.MetaStmtListVal  (_,statxs,_) ->
-    call_pretty Pretty_print_c.pp_statement_seq_list_gen statxs
+    call_pretty_nl Pretty_print_c.pp_statement_seq_list_gen statxs
 | Ast_c.MetaParamVal     (_,param) ->
     call_pretty Pretty_print_c.pp_param_gen param
 | Ast_c.MetaParamListVal (_,params) ->
