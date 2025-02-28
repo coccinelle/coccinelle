@@ -4,3 +4,4 @@ COPY --chown=ci:users . /home/ci/coccinelle/
 ARG configure_options
 RUN cd /home/ci/coccinelle && ./autogen && ./configure $configure_options && make
 RUN cd /home/ci/coccinelle && make coccinelle.cmxa
+RUN if [ -f "/etc/debian_version" ]; then cd /home/ci/coccinelle/docs/manual && make; fi
