@@ -11,7 +11,7 @@ open Common
 (*****************************************************************************)
 val testone : string (*prefix*) -> string (*test*) ->
   string option (*compare_expected*) -> unit
-val testall : (string -> unit) -> unit
+val ctestall : (string -> unit) -> unit
 val cpptestall : (string -> unit) -> unit
 val test_spacing : (string -> unit) -> unit
 

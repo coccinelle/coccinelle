@@ -8,7 +8,7 @@ pipeline {
         }
         stage('Tests') {
             steps {
-                sh 'yes | ./spatch.opt --testall'
+                sh 'yes | ./spatch.opt --ctestall'
             }
         }
     }

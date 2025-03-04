@@ -38,7 +38,7 @@ let macro_file = ref ""
 
 (* test mode *)
 let test_mode = ref false
-let test_all = ref false
+let c_test_all = ref false
 let cpp_test_all = ref false
 let test_spacing = ref false
 let test_okfailed = ref false
@@ -787,7 +787,7 @@ let other_options = [
   [
     "--test",    Arg.Set test_mode,
     "   <file> launch spatch on tests/file.[c,cocci]";
-    "--testall", Arg.Set test_all,
+    "--ctestall", Arg.Set c_test_all,
     "   launch spatch on all files in tests/ having a .res";
     "--cpptestall", Arg.Set cpp_test_all,
     "   launch spatch on all files in cpptests/ (C++) having a .res";
@@ -1556,7 +1556,7 @@ let main arglist =
         && not (List.mem "--parse-cocci" arglist)
 	&& not (List.mem "--rule-dependencies" arglist) in
     if (Common.inter_set arglist
-	            ["--cocci-file";"--sp-file";"--sp";"--test";"--testall";"--cpptestall";
+	            ["--cocci-file";"--sp-file";"--sp";"--test";"--ctestall";"--cpptestall";
                       "--test-okfailed";"--test-regression-okfailed"]) <> []
          || contains_cocci
     then run_profile quiet_profile;
@@ -1700,10 +1700,10 @@ let main arglist =
 		  "ERROR: File %s does not exist\n" testfile
 	end
 
-    | []  when !test_all ->
+    | []  when !c_test_all ->
         (if !Inc.include_path = []
          then Inc.include_path := ["tests/include"]);
-        Testing.testall
+        Testing.ctestall
 	  (fun file ->
 	    run_profile testing_profile;
 	    let cocci_args =
@@ -1818,7 +1818,7 @@ let __init_file_groups = !file_groups
 let __init_kbuild_info = !kbuild_info
 let __init_macro_file = !macro_file
 let __init_test_mode = !test_mode
-let __init_test_all = !test_all
+let __init_test_all = !c_test_all
 let __init_test_spacing = !test_spacing
 let __init_test_okfailed = !test_okfailed
 let __init_test_regression_okfailed = !test_regression_okfailed
@@ -1849,7 +1849,7 @@ let reinitialize _ = (* clean start for invocation from OCaml *)
   kbuild_info := __init_kbuild_info;
   macro_file := __init_macro_file;
   test_mode := __init_test_mode;
-  test_all := __init_test_all;
+  c_test_all := __init_test_all;
   test_spacing := __init_test_spacing;
   test_okfailed := __init_test_okfailed;
   test_regression_okfailed := __init_test_regression_okfailed;

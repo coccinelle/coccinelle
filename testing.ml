@@ -185,14 +185,14 @@ let add_file_to_score score res correct diffxs =
 
 
 (* ------------------------------------------------------------------------ *)
-(* note: if you get some weird results in --testall, and not in --test,
+(* note: if you get some weird results in --ctestall, and not in --test,
  * it is possible that a test file work in --test but may not
- * work while used inside a --testall. If we have some bugs in our
+ * work while used inside a --ctestall. If we have some bugs in our
  * parser that modify some global state and that those states
  * are not reset between each test file, then having run previous
  * test files may have an influence on another test file which mean
  * than a test may work in isolation (via --test) but not otherwise
- * (via --testall). Fortunately such bugs are rare.
+ * (via --ctestall). Fortunately such bugs are rare.
  *
  *)
 (* If extra test is provided, then all failing tests with the standard
@@ -336,7 +336,7 @@ let testall_bis testdir setup extra_test =
       end
   end
 
-let testall setup = testall_bis "tests" setup None
+let ctestall setup = testall_bis "tests" setup None
 let cpptestall setup = testall_bis "cpptests" setup None
 let test_spacing setup = testall_bis "tests" setup (Some Compare_c.exact_compare)
 

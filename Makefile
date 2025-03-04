@@ -273,7 +273,7 @@ exposed-modules : $(COMPILED_EXPOSED_MODULES) ocaml/parmap.cmi
 
 .PHONY : check
 check : spatch$(TOOLS_SUFFIX)
-	./spatch$(TOOLS_SUFFIX) --testall
+	./spatch$(TOOLS_SUFFIX) --ctestall
 
 .PHONY : check-cpp
 check-cpp:

@@ -295,7 +295,7 @@ on the semantic patch ``file{\tt{.cocci}}'' and the C file
 is a concern, then do not use this option.
 }
 
-\developer{-{}-testall}{A shortcut for running Coccinelle on all files in a
+\developer{-{}-ctestall}{A shortcut for running Coccinelle on all files in a
   subdirectory {\tt tests} such that there are all of a {\tt .cocci} file,
   a {\tt .c} file, and a {\tt .res} file, where the {\tt .res} contains the
   expected result. Tests whose name ends in "\_failure" are known to fail and
@@ -310,7 +310,7 @@ is a concern, then do not use this option.
   run in the root coccinelle folder as it expects a folder named "cpptests"
   to exist.}
 
-\rare{-{}-test-spacing}{Like -{}-testall, but ensures that the spacing is
+\rare{-{}-test-spacing}{Like -{}-ctestall, but ensures that the spacing is
   the same as in the .res file.}
 
 \developer{-{}-test-okfailed, -{}-test-regression-okfailed}{Other options for
@@ -483,7 +483,7 @@ other \#ifdef.}
   causes the search for local
   include files to consider the current directory, even if the include
   patch specifies a subdirectory.  This is really only useful for testing,
-  eg with the option {\bf -{}-testall}}
+  eg with the option {\bf -{}-ctestall}}
 
 \rare{-{}-c++}{Make an extremely minimal effort to parse C++ code.  Currently,
   this is limited to allowing identifiers to contain ``::'', tilde, {\tt auto} and

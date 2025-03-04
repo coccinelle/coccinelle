@@ -494,10 +494,10 @@ process the .{ok,failed,spatch_ok} files in current dir
 use also file.res
 .TP
 \fB\-\-expected\-score\-file\fR
-which score file to compare with in \fB\-\-testall\fR or \fB\-\-cpptestall\fR
+which score file to compare with in \fB\-\-ctestall\fR or \fB\-\-cpptestall\fR
 .TP
 \fB\-\-no\-update\-score\-file\fR
-do not update the score file when \fB\-\-testall\fR or \fB\-\-cpptestall\fR succeeds
+do not update the score file when \fB\-\-ctestall\fR or \fB\-\-cpptestall\fR succeeds
 .HP
 \fB\-\-relax\-include\-path\fR
 .PP
