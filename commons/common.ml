@@ -4570,9 +4570,7 @@ let total_scores score =
 
 
 let print_total_score score =
-  pr2 "--------------------------------";
   pr2 "total score";
-  pr2 "--------------------------------";
   let (good, total, known_failures) = total_scores score in
   pr2 (Printf.sprintf "good = %d/%d + %d known failures" good total known_failures)
 

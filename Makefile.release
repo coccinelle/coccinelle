@@ -273,9 +273,9 @@ ocamlversion:
 # locally. It is only for testing purpose.
 #
 
-EXCL_SYNC=--exclude ".git"          \
+EXCL_SYNC=--exclude ".git"      \
 	--exclude ".gitignore"      \
-	--exclude "tests/ctests"           \
+	--exclude "tests/ctests"    \
 	--exclude "TODO"            \
 	--cvs-exclude
 

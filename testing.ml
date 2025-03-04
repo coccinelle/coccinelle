@@ -183,6 +183,31 @@ let add_file_to_score score res correct diffxs =
         in
         Hashtbl.add score res (Common.PbKnown s)
 
+let print_regression_information score =
+  pr2 "--------------------------------";
+  pr2 "regression testing  information";
+  pr2 "--------------------------------";
+
+  Common.print_total_score score;
+
+  let (good, total, _) = Common.total_scores score in
+
+  if good = total
+    then begin
+      pr2 "All tests have passed, everything is fine :)";
+      0
+    end
+  else
+    if good < total
+    then begin
+      pr2 "";
+      pr2 "You have test failures :(";
+      1
+    end
+    else begin
+      pr2 "The number of passing tests is higher than the number of tests?";
+      1
+    end
 
 (* ------------------------------------------------------------------------ *)
 (* note: if you get some weird results in --ctestall, and not in --test,
@@ -198,7 +223,7 @@ let add_file_to_score score res correct diffxs =
 (* If extra test is provided, then all failing tests with the standard
    comparison are considered ok, and only the correct result are subjected to
    the extra test *)
-let testall_bis testdir setup extra_test =
+let testall_bis_helper testdir setup extra_test =
 
   let score  = empty_score () in
 
@@ -310,35 +335,28 @@ let testall_bis testdir setup extra_test =
     );
     flush stdout; flush stderr;
 
-    pr2 "--------------------------------";
-    pr2 "regression testing  information";
-    pr2 "--------------------------------";
-
-    Common.print_total_score score;
-
-    let (good, total, _) = Common.total_scores score in
-
-    if good = total
-      then begin
-        pr2 "All tests have passed, everything is fine :)";
-        raise (UnixExit 0);
-      end
-    else
-      if good < total
-      then begin
-        pr2 "";
-        pr2 "You have test failures :(";
-        raise (UnixExit 1);
-      end
-      else begin
-        pr2 "The number of passing tests is higher than the number of tests?";
-        raise (UnixExit 1);
-      end
+    score
   end
 
-let ctestall setup = testall_bis "tests/ctests" setup None
-let cpptestall setup = testall_bis "tests/cpptests" setup None
-let test_spacing setup = testall_bis "tests/ctests" setup (Some Compare_c.exact_compare)
+let testall_bis_with_score testdir setup extra_test =
+  let score = testall_bis_helper testdir setup extra_test in
+  let exit_code = print_regression_information score in
+  raise (UnixExit exit_code)
+
+let ctestall setup = testall_bis_with_score "tests/ctests" setup None
+let cpptestall setup = testall_bis_with_score "tests/cpptests" setup None
+let test_spacing setup = testall_bis_with_score "tests/ctests" setup (Some Compare_c.exact_compare)
+
+let testall setup = 
+  let c_score = testall_bis_helper "tests/ctests" setup None in
+  let cpp_score = testall_bis_helper "tests/cpptests" setup None in
+  pr2 "--------------------------------";
+  pr2 "C test results (ctests/ folder):";
+  let c_exit_code = print_regression_information c_score in
+  pr2 "--------------------------------";
+  pr2 "C++ test results (cpptests/ folder):";
+  let cpp_exit_code = print_regression_information cpp_score in
+  raise (UnixExit (c_exit_code + cpp_exit_code));
 
 (* ------------------------------------------------------------------------ *)
 

@@ -40,6 +40,7 @@ let macro_file = ref ""
 let test_mode = ref false
 let c_test_all = ref false
 let cpp_test_all = ref false
+let test_all = ref false
 let test_spacing = ref false
 let test_okfailed = ref false
 let test_regression_okfailed = ref false
@@ -791,6 +792,8 @@ let other_options = [
     "   launch spatch on all files in tests/ctests/ having a .res";
     "--cpptestall", Arg.Set cpp_test_all,
     "   launch spatch on all files in tests/cpptests/ (C++) having a .res";
+    "--testall", Arg.Set test_all,
+    "   launch spatch on all files in tests/ having a .res";
     "--test-spacing", Arg.Set test_spacing,
     "    check that the result matches the .res file exactly";
     "--test-okfailed", Arg.Set test_okfailed,
@@ -1556,8 +1559,9 @@ let main arglist =
         && not (List.mem "--parse-cocci" arglist)
 	&& not (List.mem "--rule-dependencies" arglist) in
     if (Common.inter_set arglist
-	            ["--cocci-file";"--sp-file";"--sp";"--test";"--ctestall";"--cpptestall";
-                      "--test-okfailed";"--test-regression-okfailed"]) <> []
+	            ["--cocci-file";"--sp-file";"--sp";"--test";"--ctestall";
+                      "--cpptestall";"--testall";"--test-okfailed";
+                      "--test-regression-okfailed"]) <> []
          || contains_cocci
     then run_profile quiet_profile;
 
@@ -1722,7 +1726,7 @@ let main arglist =
 
     | []  when !test_all ->
         (if !Inc.include_path = []
-         then Inc.include_path := ["tests/cpptests/include", "tests/ctests/include"]);
+         then Inc.include_path := ["tests/ctests/include"; "tests/cpptests/include"]);
         Testing.testall
 	  (fun file ->
 	    run_profile testing_profile;
