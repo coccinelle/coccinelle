@@ -104,14 +104,14 @@ prerelease:
 	@echo "\t* changes to files other than ./version will not be committed automatically."
 
 fix-expected:
-	@echo "going to generate: tests/SCORE_expected_orig.sexp"
+	@echo "going to generate: tests/ctests/SCORE_expected_orig.sexp"
 	$(MAKE) distclean
 	./autogen
 	./configure --disable-python $(extra_configure_flags)
 	$(MAKE) opt-only
 	yes | ./spatch.opt -ctestall --iso-file ./standard.iso --macro-file-builtins ./standard.h
 	yes | ./spatch.opt -cpptestall --iso-file ./standard.iso --macro-file-builtins ./standard.h
-	cp tests/SCORE_actual.sexp tests/SCORE_expected_orig.sexp
+	cp tests/c/tests/SCORE_actual.sexp tests/ctests/SCORE_expected_orig.sexp
 	@echo "generated: test/SCORE_expected_orig.sexp"
 
 release:
@@ -275,7 +275,7 @@ ocamlversion:
 
 EXCL_SYNC=--exclude ".git"          \
 	--exclude ".gitignore"      \
-	--exclude "tests"           \
+	--exclude "tests/ctests"           \
 	--exclude "TODO"            \
 	--cvs-exclude
 

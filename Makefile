@@ -277,11 +277,11 @@ check : spatch$(TOOLS_SUFFIX)
 
 .PHONY : check-cpp
 check-cpp:
-	cd cpptests && ../scripts/cpptests.sh
+	cd tests/cpptests && ../scripts/cpptests.sh
 
 .PHONY : check-cpp-html
 check-cpp-html:
-	cd cpptests && ../scripts/cpptests.sh -o cpptests.html
+	cd tests/cpptests && ../scripts/cpptests.sh -o cpptests.html
 
 .PHONY : clean
 clean :

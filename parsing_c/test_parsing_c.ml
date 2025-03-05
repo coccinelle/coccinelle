@@ -413,11 +413,11 @@ let test_compare_c file1 file2 =
 
 let test_compare_c_hardcoded () =
   Compare_c.compare_default
-    "tests/compare1.c"
-    "tests/compare2.c"
+    "tests/ctests/compare1.c"
+    "tests/ctests/compare2.c"
     (*
-      "tests/equal_modulo1.c"
-      "tests/equal_modulo2.c"
+      "tests/ctests/equal_modulo1.c"
+      "tests/ctests/equal_modulo2.c"
     *)
   +> Compare_c.compare_result_to_string
   +> pr2

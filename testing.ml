@@ -336,9 +336,9 @@ let testall_bis testdir setup extra_test =
       end
   end
 
-let ctestall setup = testall_bis "tests" setup None
-let cpptestall setup = testall_bis "cpptests" setup None
-let test_spacing setup = testall_bis "tests" setup (Some Compare_c.exact_compare)
+let ctestall setup = testall_bis "tests/ctests" setup None
+let cpptestall setup = testall_bis "tests/cpptests" setup None
+let test_spacing setup = testall_bis "tests/ctests" setup (Some Compare_c.exact_compare)
 
 (* ------------------------------------------------------------------------ *)
 

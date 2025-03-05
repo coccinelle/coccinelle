@@ -1,6 +1,6 @@
 // author: Michele Martone
 // description: memory handling functions for allocate.c
-#include "tests/gadget_match.cocci"
+#include "tests/ctests/gadget_match.cocci"
 
 @insert_per_type_soa_functions_prototypes@
 identifier new_prtcl_str_id.id1;

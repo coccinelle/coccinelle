@@ -479,10 +479,10 @@ The test options don't work with the \fB\-\-sp\-file\fR and so on.
 <file> launch spatch on tests/file.[c,cocci]
 .TP
 \fB\-\-testall\fR
-launch spatch on all files in tests/ having a .res
+launch spatch on all files in tests/ctests/ having a .res
 .TP
 \fB\-\-cpptestall\fR
-launch spatch on all files in cpptests/ (C++ code) having a .res
+launch spatch on all files in tests/cpptests/ (C++ code) having a .res
 .TP
 \fB\-\-test\-okfailed\fR
 generates .{ok,failed,spatch_ok} files using .res files

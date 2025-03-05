@@ -2,7 +2,7 @@
 // description: gather/scatter
 
 // Part 1: applies only to allocate.c
-#include "tests/gadget_match.cocci"
+#include "tests/ctests/gadget_match.cocci"
 @gather_per_type_soa_functions@
 identifier new_prtcl_str_id.id1;
 identifier prtcl_str.id;

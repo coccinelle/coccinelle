@@ -1504,7 +1504,7 @@ let dots_au is_strict toend label s wrapcode n x seq_after y quantifier =
 				(ctl_or matchgoto matchbreak)
 				((*if is_paren
                                 (* an optim that failed see defn is_paren
-                                   and tests/makes_a_loop *)
+                                   and ctests/makes_a_loop *)
 				then CTL.True
 				else*)
 				  (ctl_ag s

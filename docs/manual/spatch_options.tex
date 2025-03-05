@@ -296,7 +296,7 @@ is a concern, then do not use this option.
 }
 
 \developer{-{}-ctestall}{A shortcut for running Coccinelle on all files in a
-  subdirectory {\tt tests} such that there are all of a {\tt .cocci} file,
+  subdirectory {\tt ctests} such that there are all of a {\tt .cocci} file,
   a {\tt .c} file, and a {\tt .res} file, where the {\tt .res} contains the
   expected result. Tests whose name ends in "\_failure" are known to fail and
   will not affect the total score. This command must be run in the root
@@ -307,8 +307,13 @@ is a concern, then do not use this option.
   {\tt .cocci} file, a {\tt .cpp} file, and a {\tt .res} file, where the
   {\tt .res} contains the expected result. Tests whose name ends in "\_failure"
   are known to fail and will not affect the total score. This command must be
-  run in the root coccinelle folder as it expects a folder named "cpptests"
+  run in the root coccinelle folder as it expects a folder named "tests"
   to exist.}
+
+\developer{-{}-testall}{A shortcut for running Coccinelle on all files
+  in subdirectories {\tt ctests} and {\tt cpptests}. Mostly equivalent to
+  running {\tt -{}-ctestall} and {\tt -{}-cpptestall}. This command must be
+  run in the root coccinelle folder.}
 
 \rare{-{}-test-spacing}{Like -{}-ctestall, but ensures that the spacing is
   the same as in the .res file.}

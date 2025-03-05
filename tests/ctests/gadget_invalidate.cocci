@@ -1,6 +1,6 @@
 // author: Michele Martone
 // description: invalidate_soa/invalidate_aos
-#include "tests/gadget_match.cocci"
+#include "tests/ctests/gadget_match.cocci"
 
 // usable prtcl_str_mmbrs_scalars rule from make_ptr, but slow :-(
 @prtcl_str_mmbrs_scalars@

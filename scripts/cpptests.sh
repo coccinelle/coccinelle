@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run this script in cpptests/ to get a report on the tests.
+# Run this script in tests/cpptests/ to get a report on the tests.
 
 # shellcheck disable=SC2086
 set -e
