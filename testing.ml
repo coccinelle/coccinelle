@@ -17,6 +17,8 @@ type redirected_output = {
     show_diff_backup: bool;
   }
 
+type regression_information = {score : score; failed_tests : string list}
+
 let out_suffix = ".stdout"
 
 let flush_scripts_output () =
@@ -183,14 +185,18 @@ let add_file_to_score score res correct diffxs =
         in
         Hashtbl.add score res (Common.PbKnown s)
 
-let print_regression_information score =
+let print_test_name test_path =
+  let test_name = Option.get (List.nth_opt (Str.split (Str.regexp "/") test_path ) 1 ) in
+  Printf.printf "%s " test_name
+
+let print_regression_information regression_information =
   pr2 "--------------------------------";
   pr2 "regression testing  information";
   pr2 "--------------------------------";
 
-  Common.print_total_score score;
+  Common.print_total_score regression_information.score;
 
-  let (good, total, _) = Common.total_scores score in
+  let (good, total, _) = Common.total_scores regression_information.score in
 
   if good = total
     then begin
@@ -202,6 +208,9 @@ let print_regression_information score =
     then begin
       pr2 "";
       pr2 "You have test failures :(";
+      pr2 "The following tests have failed:";
+      let () = List.iter print_test_name regression_information.failed_tests in
+      let () = Printf.printf "\n%!" in
       1
     end
     else begin
@@ -211,7 +220,7 @@ let print_regression_information score =
 
 (* ------------------------------------------------------------------------ *)
 (* note: if you get some weird results in --ctestall, and not in --test,
- * it is possible that a test file work in --test but may not
+ * it is possible that a test file works in --test but may not
  * work while used inside a --ctestall. If we have some bugs in our
  * parser that modify some global state and that those states
  * are not reset between each test file, then having run previous
@@ -226,6 +235,7 @@ let print_regression_information score =
 let testall_bis_helper testdir setup extra_test =
 
   let score  = empty_score () in
+  let failed_tests = ref [] in
 
   let expected_result_files =
     Common.glob (testdir^"/*.res")
@@ -315,8 +325,8 @@ let testall_bis_helper testdir setup extra_test =
 	Iteration.clear_pending_instance();
   let r = Str.regexp ".*_failure\\.c" in
   if (Str.string_match r cfile 0)
-      then Hashtbl.add score res (Common.PbKnown s)
-      else Hashtbl.add score res (Common.Pb s)
+    then Hashtbl.add score res (Common.PbKnown s)
+  else (failed_tests := (cfile :: !failed_tests) ; Hashtbl.add score res (Common.Pb s))
     );
 
 
@@ -335,12 +345,12 @@ let testall_bis_helper testdir setup extra_test =
     );
     flush stdout; flush stderr;
 
-    score
+    {score = score; failed_tests = !failed_tests}
   end
 
 let testall_bis_with_score testdir setup extra_test =
-  let score = testall_bis_helper testdir setup extra_test in
-  let exit_code = print_regression_information score in
+  let regression_information = testall_bis_helper testdir setup extra_test in
+  let exit_code = print_regression_information regression_information in
   raise (UnixExit exit_code)
 
 let ctestall setup = testall_bis_with_score "tests" setup None
@@ -348,14 +358,14 @@ let cpptestall setup = testall_bis_with_score "cpptests" setup None
 let test_spacing setup = testall_bis_with_score "tests" setup (Some Compare_c.exact_compare)
 
 let testall setup =
-  let c_score = testall_bis_helper "tests" setup None in
-  let cpp_score = testall_bis_helper "cpptests" setup None in
+  let c_regression_information = testall_bis_helper "tests" setup None in
+  let cpp_regression_information = testall_bis_helper "cpptests" setup None in
   pr2 "--------------------------------";
   pr2 "C test results (tests/ folder):";
-  let c_exit_code = print_regression_information c_score in
+  let c_exit_code = print_regression_information c_regression_information in
   pr2 "--------------------------------";
   pr2 "C++ test results (cpptests/ folder):";
-  let cpp_exit_code = print_regression_information cpp_score in
+  let cpp_exit_code = print_regression_information cpp_regression_information in
   raise (UnixExit (c_exit_code + cpp_exit_code));
 
 (* ------------------------------------------------------------------------ *)
