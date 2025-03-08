@@ -1098,19 +1098,19 @@ let make_meta_rule_elem s d c (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
       (MetaRuleElem(((rule,s),no_info,d,[]),c,Unitary,false)))
-  with free_vars = fvs; fresh_vars = fresh; inherited = inh}
+  with free_vars = (rule,s)::fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_id s d c (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
       (MetaId(((rule,s),no_info,d,[]),c,Unitary,false))) with
-    free_vars = fvs; fresh_vars = fresh; inherited = inh}
+    free_vars = (rule,s)::fvs; fresh_vars = fresh; inherited = inh}
 
 let make_meta_type s d c (fvs,fresh,inh) =
   let rule = "" in
   {(make_term
       (MetaType(((rule,s),no_info,d,[]),c,Unitary,false))) with
-    free_vars = fvs; fresh_vars = fresh; inherited = inh}
+    free_vars = (rule,s)::fvs; fresh_vars = fresh; inherited = inh}
 
 let make_mcode x = (x,no_info,CONTEXT(NoPos,NOTHING),[])
 

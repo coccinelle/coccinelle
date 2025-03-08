@@ -392,13 +392,6 @@ let fresh_pos _ = string2var "_pos" (* must be a constant *)
 
 let fresh_metavar _ = "_S"
 
-(* fvinfo is going to end up being from the whole associated statement.
-   it would be better if it were just the free variables in d, but free_vars.ml
-   doesn't keep track of free variables on + code *)
-let make_meta_rule_elem n d cstr fvinfo =
-  let nm = fresh_metavar() in
-  Ast.make_meta_rule_elem (nm^n) d cstr fvinfo
-
 let get_unquantified quantified vars =
   List.filter (function x -> not (List.mem x quantified)) vars
 
@@ -564,6 +557,17 @@ let non_saved_quantify fvs rest =
 
 let intersectll lst nested_list =
   List.filter (function x -> List.exists (List.mem x) nested_list) lst
+
+(* --------------------------------------------------------------------- *)
+(* Fresh variables *)
+
+(* fvinfo is going to end up being from the whole associated statement.
+   it would be better if it were just the free variables in d, but free_vars.ml
+   doesn't keep track of free variables on + code *)
+let make_meta_rule_elem matcher guard n d cstr fvinfo =
+  let nm = fresh_metavar() in
+  let re = Ast.make_meta_rule_elem (nm^n) d cstr fvinfo in
+  quantify guard (Ast.get_fvs re) (matcher re)
 
 (* --------------------------------------------------------------------- *)
 (* Count depth of braces.  The translation of a closed brace appears deeply
@@ -1004,8 +1008,8 @@ let end_control_structure fvs header body after_pred
 	(false,make_seq_after2 guard after_pred after)
     | _ ->
 	let match_endif =
-	  make_match label guard
-	    (make_meta_rule_elem "1" aft Ast.CstrTrue (afvs,afresh,ainh)) in
+	  let make_match = make_match label guard in
+	  make_meta_rule_elem make_match guard "1" aft Ast.CstrTrue (afvs,afresh,ainh) in
 	(true,
 	 make_seq_after_ex guard after_pred
 	   (After(make_seq_after guard match_endif after))) in
@@ -1296,7 +1300,8 @@ let svar_context_with_add_after stmt s label quantified d ast
   (*let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in*)
   let matcher d =
-    make_match None guard (make_meta_rule_elem "2" d Ast.CstrTrue fvinfo) in
+    let make_match = make_match None guard in
+    make_meta_rule_elem make_match guard "2" d Ast.CstrTrue fvinfo in
   let full_metamatch = matcher d in
   let first_metamatch =
     matcher
@@ -1371,7 +1376,8 @@ let svar_minus_or_no_add_after stmt s label quantified d ast
   let prelabel_pred =
     CTL.Pred (Lib_engine.PrefixLabel(label_var),CTL.Control) in
   let matcher d =
-    make_match None guard (make_meta_rule_elem "3" d Ast.CstrTrue fvinfo) in
+    let make_match = make_match None guard in
+    make_meta_rule_elem make_match guard "3" d Ast.CstrTrue fvinfo in
   let ender =
     match (d,after) with
       (Ast.PLUS _, _) -> failwith "asttoctl2: not possible 15"
@@ -2207,8 +2213,7 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
 	    (* drops minuses on pattern, because d will have the minus effect*)
-	    (Some
-	       (make_match (make_meta_rule_elem "4" d Ast.CstrTrue ([],[],[]))),
+	    (Some(make_meta_rule_elem make_match guard "4" d Ast.CstrTrue ([],[],[])),
 	     drop_minuses stmt_dots)
 	| _ -> (None,stmt_dots) in
 
@@ -2238,7 +2243,7 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	  Ast.MINUS(_,_,_,_) ->
             (* no need for the fresh metavar, but ... is a bit weird as a
 	       variable name *)
-	    Some(make_match (make_meta_rule_elem "5" d Ast.CstrTrue ([],[],[])))
+	    Some(make_meta_rule_elem make_match guard "5" d Ast.CstrTrue ([],[],[]))
 	| _ -> None in
       dots_and_nests false None whencodes bef aft dot_code after label
 	(process_bef_aft pos quantified minus_quantified None llabel slabel true)
@@ -2608,9 +2613,7 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 			   braces - not just function body, could check
 			   label to keep braces *)
 		      let pattern = (* see optim1 *)
-			make_match
-			  (make_meta_rule_elem "6" d Ast.CstrTrue
-			     ([],[],[])) in
+			make_meta_rule_elem make_match guard "6" d Ast.CstrTrue ([],[],[]) in
 		      let v = get_let_ctr() in
 		      let complete_pattern =
 			CTL.Let(v,pattern,
@@ -2643,9 +2646,7 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	| _ ->
 	    let match_ender =
 	      quantify guard aafvs (* vars needed only for ender *)
-		(make_match
-		   (make_meta_rule_elem "7" aft Ast.CstrExit
-		      (afvs,afresh,ainh))) in
+		(make_meta_rule_elem make_match guard "7" aft Ast.CstrExit (afvs,afresh,ainh)) in
 	    CTL.AndAny(CTL.FORWARD,CTL.NONSTRICT,function_header,
 		       ctl_or (ctl_not (preendpred label)) match_ender) in
       quantify guard ahfvs
