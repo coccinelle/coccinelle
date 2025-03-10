@@ -22,7 +22,7 @@ _log
 *.toc
 *.fdb_latexmk
 
-tests/ctests/SCORE_actual.score
-tests/ctests/SCORE_best_of_both.score
-tests/ctests/SCORE_expected.score
-tests/ctests/SCORE_expected.score.save
+tests/SCORE_actual.score
+tests/SCORE_best_of_both.score
+tests/SCORE_expected.score
+tests/SCORE_expected.score.save

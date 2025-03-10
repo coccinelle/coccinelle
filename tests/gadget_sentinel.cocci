@@ -1,7 +1,7 @@
 // author: Michele Martone
 // description: (still incomplete) debug / sentinel code patch
 
-#include "tests/ctests/gadget_match.cocci"
+#include "tests/gadget_match.cocci"
 
 // usable prtcl_str_mmbrs_scalars rule from make_ptr, but slow :-(
 @prtcl_str_mmbrs_scalars@

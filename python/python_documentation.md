@@ -9,7 +9,7 @@ File name of the cocci file currently processed.
 Sets "exited" flag, that will stop the transformation of the current
 file at the end of the execution of the Python script.
 
-Example: ctests/exitp.cocci
+Example: tests/exitp.cocci
 
 ## cocci.include_match(state)
 
@@ -17,7 +17,7 @@ If a python rule is running, it has matched. If the match should be
 removed from consideration, this can be called with `state` set to
 `False`.
 
-Example: ctests/incpos.cocci
+Example: tests/incpos.cocci
 
 ## cocci.has_env_binding(rule, name)
 
@@ -33,28 +33,28 @@ Internal function for the method iteration.register().
 Converts the string `id` to a C identifier.
 (Equivalent to Coccilib.make_ident in OCaml.)
 
-Example: ctests/python_mdecl.cocci
+Example: tests/python_mdecl.cocci
 
 ## cocci.make_expr(expr)
 
 Converts the thing `expr` to a C expression.
 (Equivalent to Coccilib.make_expr in OCaml.)
 
-Example: ctests/python_mdecl.cocci
+Example: tests/python_mdecl.cocci
 
 ## cocci.make_stmt(phrase)
 
 Parses the string `phrase` as a C statement and returns the statement.
 (Equivalent to Coccilib.make_stmt in OCaml.)
 
-Example: ctests/python_mdecl.cocci
+Example: tests/python_mdecl.cocci
 
 ## cocci.make_stmt_with_env(env, phrase)
 
 Parses the string `env` as a C declaration and parses the string `phrase`
 as a C statement in this environment and returns the statement.
 
-Example: ctests/python_mdecl.cocci
+Example: tests/python_mdecl.cocci
 
 ## cocci.make_type(type)
 
@@ -77,11 +77,11 @@ starting at line `startl`, column `startc` (integers), and
 ending at line `endl`, column `endc` (integers).
 (Equivalent to Coccilib.make_position in OCaml.)
 
-Example: ctests/python_mdeclp.cocci
+Example: tests/python_mdeclp.cocci
 
 ## cocci.files()
 
 Returns the list of current file names (as strings).
 (Equivalent to Coccilib.files in OCaml.)
 
-Example: ctests/scope_id_1_python.cocci
+Example: tests/scope_id_1_python.cocci

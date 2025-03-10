@@ -16,10 +16,10 @@
 ;; `cocci-isofile-path', and `cocci-spatch-args' according to your setup.
 
 ;; Once it is installed you use it by loading a .cocci file (called the
-;; SP), e.g., 'coccinelle/tests/ctests/rule17.cocci'. From the buffer
-;; containing the SP you then press `C-cd' (or `M-x cocci-directory') and
-;; specify the directory where your target C files are located, e.g.,
-;; 'coccinelle/tests/ctests/rule17/', pick one of the listed C files (place the
+;; SP), e.g., 'coccinelle/tests/rule17.cocci'. From the buffer containing
+;; the SP you then press `C-cd' (or `M-x cocci-directory') and specify
+;; the directory where your target C files are located, e.g.,
+;; 'coccinelle/tests/rule17/', pick one of the listed C files (place the
 ;; cursor on it) and press `E' (or `M-x cocci-ediff-merge'). This will
 ;; then run spatch and apply the SP to the chosen C file; when spatch
 ;; finishes Ediff will start in a merge session, displaying the original

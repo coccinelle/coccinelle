@@ -343,15 +343,15 @@ let testall_bis_with_score testdir setup extra_test =
   let exit_code = print_regression_information score in
   raise (UnixExit exit_code)
 
-let ctestall setup = testall_bis_with_score "tests/ctests" setup None
-let cpptestall setup = testall_bis_with_score "tests/cpptests" setup None
-let test_spacing setup = testall_bis_with_score "tests/ctests" setup (Some Compare_c.exact_compare)
+let ctestall setup = testall_bis_with_score "tests" setup None
+let cpptestall setup = testall_bis_with_score "cpptests" setup None
+let test_spacing setup = testall_bis_with_score "tests" setup (Some Compare_c.exact_compare)
 
-let testall setup = 
-  let c_score = testall_bis_helper "tests/ctests" setup None in
-  let cpp_score = testall_bis_helper "tests/cpptests" setup None in
+let testall setup =
+  let c_score = testall_bis_helper "tests" setup None in
+  let cpp_score = testall_bis_helper "cpptests" setup None in
   pr2 "--------------------------------";
-  pr2 "C test results (ctests/ folder):";
+  pr2 "C test results (tests/ folder):";
   let c_exit_code = print_regression_information c_score in
   pr2 "--------------------------------";
   pr2 "C++ test results (cpptests/ folder):";

@@ -12,7 +12,7 @@ let py2cocci_pos p =
 p;
 @@
 
-coccinelle.p = "tests/ctests/mdeclp2.c,one,1,4,1,7"
+coccinelle.p = "tests/mdeclp2.c,one,1,4,1,7"
 
 @script:ocaml r@
 inp << a.p;

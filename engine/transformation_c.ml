@@ -403,7 +403,7 @@ module XTRANS = struct
     | (Ast_cocci.MINUS(old_pos,old_inst,old_adj,Ast_cocci.NOREPLACEMENT),
        Ast_cocci.MINUS(new_pos,new_inst,new_adj,Ast_cocci.NOREPLACEMENT))
 	(* Now put no constraints on double remove.  This is needed for
-	   ctests/multidecl2: - T i; with int *i, i[12], k; (for symbol i)
+	   tests/multidecl2: - T i; with int *i, i[12], k; (for symbol i)
 	   The positions of the two matches are different because the types
 	   end in different places (on * and then on ]) *)
       (*when old_pos = new_pos*)

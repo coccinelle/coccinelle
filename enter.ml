@@ -787,11 +787,11 @@ let other_options = [
   "The test options don't work with the --sp-file and so on.",
   [
     "--test",    Arg.Set test_mode,
-    "   <file> launch spatch on file.[c,cocci]";
+    "   <file> launch spatch on tests/file.[c,cocci]";
     "--ctestall", Arg.Set c_test_all,
-    "   launch spatch on all files in tests/ctests/ having a .res";
+    "   launch spatch on all files in tests/ having a .res";
     "--cpptestall", Arg.Set cpp_test_all,
-    "   launch spatch on all files in tests/cpptests/ (C++) having a .res";
+    "   launch spatch on all files in cpptests/ (C++) having a .res";
     "--testall", Arg.Set test_all,
     "   launch spatch on all files in tests/ having a .res";
     "--test-spacing", Arg.Set test_spacing,
@@ -1684,7 +1684,7 @@ let main arglist =
     (* --------------------------------------------------------- *)
     | [x] when !test_mode    ->
 	begin
-	  let prefix = "tests/ctests" in
+	  let prefix = "tests/" in
 	  let testfile = x ^ ".cocci" in
 	    if Sys.file_exists (prefix ^ testfile) then
 	      begin
@@ -1706,7 +1706,7 @@ let main arglist =
 
     | []  when !c_test_all ->
         (if !Inc.include_path = []
-         then Inc.include_path := ["tests/ctests/include"]);
+         then Inc.include_path := ["tests/include"]);
         Testing.ctestall
 	  (fun file ->
 	    run_profile testing_profile;
@@ -1716,7 +1716,7 @@ let main arglist =
 
     | []  when !cpp_test_all ->
         (if !Inc.include_path = []
-         then Inc.include_path := ["tests/cpptests/include"]);
+         then Inc.include_path := ["cpptests/include"]);
         Testing.cpptestall
 	  (fun file ->
 	    run_profile testing_profile;
@@ -1726,7 +1726,7 @@ let main arglist =
 
     | []  when !test_all ->
         (if !Inc.include_path = []
-         then Inc.include_path := ["tests/ctests/include"; "tests/cpptests/include"]);
+         then Inc.include_path := ["tests/include"; "cpptests/include"]);
         Testing.testall
 	  (fun file ->
 	    run_profile testing_profile;
@@ -1736,7 +1736,7 @@ let main arglist =
 
     | []  when !test_spacing ->
         (if !Inc.include_path = []
-         then Inc.include_path := ["tests/ctests/include"]);
+         then Inc.include_path := ["tests/include"]);
         Testing.test_spacing
 	  (fun file ->
 	    run_profile testing_profile;

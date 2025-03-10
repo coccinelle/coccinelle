@@ -11,7 +11,7 @@ let get_cocci_files arglist =
         cocci_files := filename :: !cocci_files;
         find_cocci_files args
     | "--test"::testname::args ->
-        let filename = "tests/ctests/" ^ testname ^ ".cocci" in
+        let filename = "tests/" ^ testname ^ ".cocci" in
         if Sys.file_exists filename then
           cocci_files := filename :: !cocci_files
         else

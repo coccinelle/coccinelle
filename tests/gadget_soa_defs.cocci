@@ -1,6 +1,6 @@
 // author: Michele Martone
 // description: patches allvars.h header
-#include "tests/ctests/gadget_match.cocci"
+#include "tests/gadget_match.cocci"
 
 // Note: requires absence of ALIGN(32) occurrences!
 
