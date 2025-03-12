@@ -33,11 +33,16 @@ let get_files path =
     (* only C++ files, but contains .h files as that extension is ambiguous *)
     cmd_to_list
       (if !Flag.include_headers
+      (* NOTE: Remember to add spaces when breaking the line *)
       then
-        "find "^ path ^" -type f -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
-        ^"-o . -name \"*.h\" -not -name \"*.in.h\" -o -name \"*.hpp\" -o -name \"*.hxx\""
+        "find "^ path ^" -type f"
+        ^" \\( -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\""
+        ^" -o -name \"*.h\" -o -name \"*.hpp\" -o -name \"*.hxx\" \\)"
+        ^" -not -name \"*.in.*\""
       else
-        "find "^ path ^" -type f -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\"")
+        "find "^ path ^" -type f"
+        ^" \\( -name \"*.cpp\" -o -name \"*.cxx\" -o -name \"*.cc\" \\)"
+        ^" -not -name \"*.in.*\"")
   else
     (* only .c files and .h files *)
     cmd_to_list (* same as "true, "", _" case *)
