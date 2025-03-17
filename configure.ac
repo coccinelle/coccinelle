@@ -554,7 +554,7 @@ dnl --without-metainfo disables metainfo installation.
 
 AC_ARG_WITH([metainfo],
     AS_HELP_STRING([--with-metainfo[=PATH]],
-        [Install the bash auto-completion script in this directory.\
+        [Install metainfo into this directory.\
          @<:@default=yes@:>@]),
     [],
     [AC_SUBST([with_metainfo], [yes])])
