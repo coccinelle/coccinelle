@@ -65,7 +65,7 @@ AS_IF([test "`$ECHO --version`" =  "--version"],
  
 dnl  hevea is necessary to make docs
 AC_PATH_PROG([HEVEA],[hevea])
-AS_IF([test -z "$ac_cv_path_HEVEA"], [AC_MSG_WARN([hevea not detected -- you will be able to rebuild the documentation])])
+AS_IF([test -z "$ac_cv_path_HEVEA"], [AC_MSG_WARN([hevea not detected -- you will not be able to rebuild the documentation])])
 
 dnl  patchelf is an optional dependency and in principle not used for building Coccinelle
 AC_PATH_PROG([PATCHELF],[patchelf])
