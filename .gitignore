@@ -20,7 +20,6 @@ scripts/spatch.byte
 *.swo
 *.swp
 .depend
-version.ml
 
 .flatpak-builder/
 _flatpak-build/

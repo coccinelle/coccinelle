@@ -205,40 +205,6 @@ AC_DEFUN([AC_COCCI_PYVER],
 ])
 
 
-dnl  determine version date (RTC format)
-AC_DEFUN([AC_COCCI_CONFVERSION],
-[dnl
-  AC_SUBST([CONFVERSION])
-  AC_MSG_NOTICE([determining version suffix])
-
-  AS_IF([test -z "$CONFVERSION" -a -d "./.git"],
-  [dnl  git administration found
-    AC_MSG_NOTICE([building a version from a git repository])
-    AC_PATH_TOOL([GIT],[git])
-    AS_IF([test -n "$GIT"],
-    [dnl  ask git
-      CONFVERSION=`$GIT log -1 --date-order --date=rfc --pretty="format:%cd"`
-    ])
-  ])
-
-  AS_IF([test -z "$CONFVERSION"],
-  [dnl  otherwise, take the current date
-    AC_PATH_TOOL([DATE],[date])
-    AS_IF([test -n "$DATE"],
-    [dnl
-      CONFVERSION=`$DATE "+%a, %d %b %Y %H:%M:%S %z"`
-    ])
-  ])
-
-  AS_IF([test -z "$CONFVERSION"],
-  [dnl  fallback
-    CONFVERSION=unknown
-  ])
-
-  AC_MSG_NOTICE([version suffix set to $CONFVERSION])
-])
-
-
 dnl  find a tool, with specialized macros for certain cases
 dnl  $1: name of the variable
 dnl  $2: name of the tool
