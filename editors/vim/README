@@ -3,8 +3,7 @@ README for cocci-syntax
 
 Syntax highlighting for Coccinelle's cocci files for vim.
 
-Releases are available from http://dev.exherbo.org/~ahf/pub/software/releases/cocci-syntax/
-and a Git repository is available at git://github.com/ahf/cocci-syntax.git
+Releases are available from https://github.com/ahf/cocci-syntax
 
 Feel free to submit patches :)
 
