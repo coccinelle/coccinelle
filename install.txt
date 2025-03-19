@@ -5,7 +5,7 @@
 
  ** Dependencies **
 
-You must first install OCaml. Versions 4.08.0.-5.1.1 are supported.
+You must first install OCaml. Versions 4.08.0-5.1.1 are supported.
 See http://caml.inria.fr/download.en.html
 
 If your OCaml compiler has been configurated with --enable-flambda,
