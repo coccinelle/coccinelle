@@ -29,14 +29,16 @@ On Debian/Ubuntu, install the following packages:
  - libparmap-ocaml-dev (optional, bundled)
     If you do not install libparmap-ocaml-dev, then you will automatically use
     the bundle instead. However, if you used opam to switch to a different
-    version of OCaml, you must uninstall libparmap-ocaml-dev.
+    version of OCaml, you must uninstall libparmap-ocaml-dev / libparmap-ocaml.
  - libpcre-ocaml-dev (optional, for PCRE support, bundled)
-    If you do not install libpcre-ocaml-dev, then you will automatically use the
-    bundle instead. However, in order for the bundle to work, you also need:
+    If you do not install libpcre-ocaml-dev, then you will automatically use
+    the bundle instead. However, in order for the bundle to work, you also
+    need:
   - libpcre3-dev (optional, not bundled)
-     Additionally, if you used opam to switch to a different version of OCaml and
-     want PCRE support, then make sure you have libpcre-ocaml-dev uninstalled and
-     libpcre3-dev installed, otherwise Coccinelle will not compile.
+     Additionally, if you used opam to switch to a different version of OCaml
+     and want PCRE support, then make sure you have libpcre-ocaml-dev /
+     libpcre-ocaml uninstalled and libpcre3-dev installed, otherwise Coccinelle
+     will not compile.
 
 On Fedora, install the following packages:
  - automake
