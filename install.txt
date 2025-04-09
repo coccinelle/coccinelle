@@ -63,6 +63,31 @@ as well as the C compiler of your choice.
 Note: if you used opam to switch to a different version of OCaml, OCaml
 scripting will be impossible.
 
+On Gentoo, install the following packages to get all features (with no need for
+bundles):
+  dev-build/autoconf
+  dev-build/automake
+  dev-build/libtool
+  dev-lang/ocaml
+  dev-lang/python
+  dev-libs/libpcre
+  dev-ml/camlp4
+  dev-ml/findlib
+  dev-ml/menhir
+  dev-ml/parmap
+  dev-ml/pcre-ocaml
+  dev-ml/stdcompat
+You may also need:
+  dev-ml/sexplib
+  sys-devel/gnuconfig
+  virtual/pkgconfig
+And for documentation:
+  dev-tex/hevea
+  dev-texlive/texlive-fontsextra
+  dev-texlive/texlive-latexextra
+  virtual/latex-base
+See also: https://packages.gentoo.org/packages/dev-util/coccinelle/dependencies
+
 As Fedora and Arch usually upgrade packages to the latest available version,
 and because Coccinelle is not always compatible with the latest version of
 OCaml, you may have no choice but to use opam to switch to an earlier version.
@@ -104,7 +129,6 @@ Configuration flags of interest (for the ./configure step):
 --disable-pcre-syntax   no pcre regexp syntax
                         version of spatch
 See ./configure --help for more options
-
 
 
 
@@ -156,7 +180,6 @@ commands that are executed. Compilation can be turned verbose with
 
  You can manually copy that file elsewhere if you have a different
  bash_completion directory.
-
 
 
  ** Runtime dependencies **
