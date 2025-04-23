@@ -157,6 +157,7 @@ type node = node1 * string
   | DoHeader of fullstatement * info
   | DoWhileTail of expression wrap
   | ForHeader of fullstatement * declOrExpr wrap
+  | ScopedGuardHeader  of fullstatement * expression wrap
   | SwitchHeader of fullstatement * expression wrap
   | MacroIterHeader of fullstatement * (string * argument wrap2 list) wrap
 
@@ -405,6 +406,7 @@ let extract_fullstatement node =
   | WhileHeader (st, _)
   | DoHeader (st, _)
   | ForHeader (st, _)
+  | ScopedGuardHeader (st, _)
   | SwitchHeader (st, _)
   | Return     (st, _)
   | ReturnExpr (st, _)

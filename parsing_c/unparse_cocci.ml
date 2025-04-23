@@ -1413,7 +1413,10 @@ and rule_elem arity re =
       ident nm; pr_space(); mcode print_string_box lp;
       dots (function _ -> ()) arg_expression args; close_box();
       mcode print_string rp
-
+  | Ast.ScopedGuardHeader(sg,lp,exp,rp) ->
+      pr_arity arity;
+      mcode print_string sg; pr_space(); mcode print_string_box lp;
+      expression exp; close_box(); mcode print_string rp
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
       pr_arity arity;
       mcode print_string switch; pr_space(); mcode print_string_box lp;

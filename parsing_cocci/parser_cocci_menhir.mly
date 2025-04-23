@@ -256,7 +256,7 @@ let inline_id aft = function
 %token<string * Data.clt> Tattr TAttrArg
 
 %token <Data.clt> TVAEllipsis
-%token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn
+%token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TReturn TScopedguard
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl TFunProto TNew Tdelete
 %token <string * Data.clt> TTypeof
 %token <Data.clt> Tdecimal Texec
@@ -3849,6 +3849,7 @@ anything: /* used for script code */
  | TWhile { "while" }
  | TFor { "for" }
  | TDo { "do" }
+ | TScopedguard { "scoped_guard" }
  | TSwitch { "switch" }
  | TCase { "case" }
  | TDefault { "default" }

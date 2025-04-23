@@ -5797,6 +5797,17 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.IfHeader (st, (eb,[ib1;ib2;ib3]))
         )))))
 
+  | A.ScopedGuardHeader (ia1,ia2, ea, ia3), F.ScopedGuardHeader (st, (eb,ii)) ->
+      let (ib1, ib2, ib3) = tuple_of_list3 ii in
+      expression ea eb >>= (fun ea eb ->
+      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+      tokenf ia3 ib3 >>= (fun ia3 ib3 ->
+        return (
+          A.ScopedGuardHeader (ia1, ia2, ea, ia3),
+          F.ScopedGuardHeader (st, (eb,[ib1;ib2;ib3]))
+        )))))
+
   | A.Else ia, F.Else ib ->
       tokenf ia ib >>= (fun ia ib ->
         return (A.Else ia, F.Else ib)
@@ -5851,7 +5862,6 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
          A.IteratorHeader (ia1, ia2, eas, ia3),
          F.MacroIterHeader (st, ((s,ebs), [ib1;ib2;ib3]))
        )))))
-
 
 
   | A.ForHeader (ia1, ia2, firsta, ia5),
@@ -6122,7 +6132,7 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
     F.ReturnExpr (_, _)|F.Return (_, _)|
     F.MacroIterHeader (_, _)|
     F.SwitchHeader (_, _)|F.ForHeader (_, _)|F.DoWhileTail _|F.DoHeader (_, _)|
-    F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|
+    F.WhileHeader (_, _)|F.Else _|F.IfHeader (_, _)|F.ScopedGuardHeader (_, _)|
     F.TryHeader _|F.CatchHeader _|
     F.SeqEnd (_, _)|F.SeqStart (_, _, _)|
     F.Decl _|F.FunHeader _)

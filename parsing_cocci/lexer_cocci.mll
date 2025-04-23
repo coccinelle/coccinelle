@@ -342,6 +342,7 @@ let id_tokens lexbuf =
   | "switch" ->     TSwitch   linetype
   | "case" ->       TCase     linetype
   | "default" ->    TDefault  linetype
+  | "scoped_guard" -> TScopedguard linetype
   | "return" ->     TReturn   linetype
   | "break" ->      TBreak    linetype
   | "continue" ->   TContinue linetype

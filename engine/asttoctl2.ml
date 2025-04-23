@@ -1690,6 +1690,12 @@ and make_whencond_headers e e1 label guard quantified =
 	 (Ast.IfHeader
 	    (Ast.make_mcode "if",
 	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
+	let scoped_guard_header e1 =
+		header_pred fvs
+      (Ast.rewrap e
+	 (Ast.ScopedGuardHeader
+	    (Ast.make_mcode "scoped_guard",
+	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
   let while_exp_header e1 =
     header_pred fvs
       (Ast.rewrap e

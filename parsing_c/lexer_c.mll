@@ -198,6 +198,7 @@ let keyword_table =
   "while",   (fun ii -> Twhile ii);
   "return",  (fun ii -> Treturn ii);
   "goto",    (fun ii -> Tgoto ii);
+  "scoped_guard", (fun ii -> Tscopedguard ii);
 
   "sizeof", (fun ii -> Tsizeof ii);
 
@@ -1111,9 +1112,9 @@ and char = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
+          | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
-	  | _ ->
+          | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
 	  );
           x ^ restchars lexbuf
@@ -1140,9 +1141,9 @@ and restchars = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
+          | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
           | 'e' -> () (* linuxext: ? *)
-	  | _ ->
+          | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
 	  );
           x ^ restchars lexbuf
@@ -1166,7 +1167,7 @@ and string  = parse
          (match v with (* Machine specific ? *)
          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
          | 'f' -> () | 'a' -> ()
-	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
+         | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
          | 'e' -> () (* linuxext: ? *)
 
          (* old: "x" -> 10 gccext ? todo ugly, I put a fake value *)

@@ -152,7 +152,7 @@ let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _
   | Ttry _ | Tcatch _
   | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
-  | Tgoto _
+  | Tgoto _ | Tscopedguard _
   | TPtVirg _
   | TMacroIterator _
       -> true
@@ -200,6 +200,7 @@ let is_stuff_taking_parenthized = function
   | Tif _
   | Twhile _
   | Tswitch _
+  | Tscopedguard _
   | Ttypeof _
   | TMacroIterator _
   | TMacroAttrArgs _
@@ -459,6 +460,7 @@ let info_of_tok = function
   | Twhile               (i) -> i
   | Treturn              (i) -> i
   | Tgoto                (i) -> i
+  | Tscopedguard         (i) -> i
   | Tdefault             (i) -> i
   | Tsizeof              (i) -> i
   | Tasm                 (i) -> i
@@ -666,6 +668,7 @@ let visitor_info_of_tok f = function
   | Twhile               (i) -> Twhile               (f i)
   | Treturn              (i) -> Treturn              (f i)
   | Tgoto                (i) -> Tgoto                (f i)
+  | Tscopedguard         (i) -> Tscopedguard         (f i)
   | Tdefault             (i) -> Tdefault             (f i)
   | Tsizeof              (i) -> Tsizeof              (f i)
   | Tasm                 (i) -> Tasm                 (f i)
@@ -816,6 +819,7 @@ let string_of_token = function
   | Twhile _ -> "Twhile"
   | Treturn _ -> "Treturn"
   | Tgoto _ -> "Tgoto"
+  | Tscopedguard _ -> "Tscopedguard"
   | Tdefault _ -> "Tdefault"
   | Tsizeof _ -> "Tsizeof"
   | Tnew _ -> "Tnew"

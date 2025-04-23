@@ -596,7 +596,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Ttry Tif Twhile
        Tcatch Treturn
-       Tgoto Tdefault
+       Tgoto Tscopedguard Tdefault
        Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
        TTemplateStart TTemplateEnd TTemplateEndSup TTemplateEndTemplateEnd
@@ -903,6 +903,7 @@ ident_or_kwd:
  | Tfloat { mk_info_string $1 }
  | Tfor { mk_info_string $1 }
  | Tgoto { mk_info_string $1 }
+ | Tscopedguard { mk_info_string $1 }
  | Tif { mk_info_string $1 }
  | Tinline { mk_info_string $1 }
  | Tint { mk_info_string $1 }
@@ -1322,6 +1323,8 @@ iteration:
      { While (WhileDecl (create_decls $3 $4 None Ast_c.LocalDecl),$6), [$1;$2;$5] }
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
+ | Tscopedguard TOPar expr TCPar statement
+     { ScopedGuard ($3,$5),     [$1;$2;$4] }
  | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement
      { For (ForExp ($3,$4,(None, [])),$6),    [$1;$2;$5]}
  | Tfor TOPar expr_statement expr_statement expr TCPar cpp_ifdef_statement

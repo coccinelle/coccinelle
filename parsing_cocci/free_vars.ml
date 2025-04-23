@@ -992,6 +992,7 @@ let astfvs metavars bound =
     | Ast.WhileTail _ -> "WhileTail"
     | Ast.ForHeader _ -> "ForHeader"
     | Ast.IteratorHeader _ -> "IteratorHeader"
+    | Ast.ScopedGuardHeader _ -> "ScopedGuardHeader"
     | Ast.SwitchHeader _ -> "SwitchHeader"
     | Ast.Break _ -> "Break"
     | Ast.Continue _ -> "Continue"

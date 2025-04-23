@@ -295,6 +295,7 @@ module Ast_c :
       | DoWhile of statement * expression
       | For of declOrExpr * statement
       | MacroIteration of string * argument wrap2 list * statement
+      | ScopedGuard of expression * statement
     and jump =
       Ast_c.jump =
         Goto of name
@@ -794,6 +795,7 @@ module Parser_c :
       | Tcatch of Ast_c.info
       | Treturn of Ast_c.info
       | Tgoto of Ast_c.info
+      | Tscopedguard of Ast_c.info
       | Tdefault of Ast_c.info
       | Tsizeof of Ast_c.info
       | Tnew of Ast_c.info
@@ -2731,6 +2733,7 @@ module Ast_cocci :
       | WhileTail of string mcode * string mcode * expression *
           string mcode * string mcode
       | ForHeader of string mcode * string mcode * forinfo * string mcode
+      | ScopedGuardHeader of string mcode * string mcode * expression * string mcode
       | IteratorHeader of ident * string mcode * expression dots *
           string mcode
       | SwitchHeader of string mcode * string mcode * expression *

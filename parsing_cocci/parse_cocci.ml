@@ -171,6 +171,7 @@ let token2c (tok,_) add_clt =
   | PC.TWhile(clt) -> add_clt "while" clt
   | PC.TFor(clt) -> add_clt "for" clt
   | PC.TDo(clt) -> add_clt "do" clt
+  | PC.TScopedguard(clt)  -> add_clt "scoped_guard" clt
   | PC.TSwitch(clt) -> add_clt "switch" clt
   | PC.TCase(clt) -> add_clt "case" clt
   | PC.TDefault(clt) -> add_clt "default" clt
@@ -375,7 +376,7 @@ let plus_attachable only_plus (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
-  | PC.TSymId(_,clt) | PC.TQualId(_,clt)
+  | PC.TScopedguard(clt) | PC.TSymId(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
@@ -470,7 +471,7 @@ let get_clt (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
-  | PC.TQualId(_,clt) | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
+  | PC.TScopedguard(clt) | PC.TQualId(_,clt) | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
 
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
@@ -675,6 +676,7 @@ let update_clt (tok,x) clt =
   | PC.TBreak(_) -> (PC.TBreak(clt),x)
   | PC.TContinue(_) -> (PC.TContinue(clt),x)
   | PC.TGoto(_) -> (PC.TGoto(clt),x)
+  | PC.TScopedguard(_) -> (PC.TScopedguard(clt),x)
   | PC.TIdent(s,_) -> (PC.TIdent(s,clt),x)
   | PC.TQualId(s,_) -> (PC.TQualId(s,clt),x)
   | PC.TTypeId(s,_) -> (PC.TTypeId(s,clt),x)
@@ -996,7 +998,7 @@ let split_token ((tok,_) as t) =
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
-  | PC.TIdent(_,clt) | PC.TQualId(_,clt)
+  | PC.TScopedguard(clt) | PC.TIdent(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
   | PC.TMeta(_,_,_,clt) | PC.TMetaConst(_,_,_,_,clt)
@@ -1453,7 +1455,7 @@ let token2line (tok,_) =
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt)
   | PC.TSizeof (clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
   | PC.TReturn(clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
-  | PC.TIdent(_,clt) | PC.TQualId(_,clt)
+  | PC.TScopedguard(clt) | PC.TIdent(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
 

@@ -582,6 +582,8 @@ and base_rule_elem =
                      string mcode (* ; *)
   | ForHeader     of string mcode (* for *) * string mcode (* ( *) *
                      forinfo * string mcode (* ) *)
+  | ScopedGuardHeader     of string mcode (* scoped_guard *) * string mcode (* ( *) *
+                     expression * string mcode (* ) *)
   | IteratorHeader of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *)
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
