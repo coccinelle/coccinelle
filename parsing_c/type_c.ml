@@ -224,7 +224,9 @@ let structdef_to_struct_name ty =
           qu, attr, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
       | None, _ ->
           ty
-      | x -> raise (Impossible 126)
+      (* Handle the case of combined struct definition with variable declaration *)
+      | Some s, _ ->
+          qu, attr, Ast_c.mk_tybis (StructUnionName (su, s)) (Common.take 2 iis)
       )
   | _ -> raise (Impossible 127)
 
