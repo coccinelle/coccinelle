@@ -222,6 +222,8 @@ let structdef_to_struct_name ty =
       (* todo? but what if correspond to a nested struct def ? *)
       | Some s , [i1;i2;i3;i4] ->
           qu, attr, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
+      | Some s , [i1;i2;i3;i4;i5] -> (* the case with : *)
+          qu, attr, Ast_c.mk_tybis (StructUnionName (su, s)) [i1;i2]
       | None, _ ->
           ty
       | x -> raise (Impossible 126)
