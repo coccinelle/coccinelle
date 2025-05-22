@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 203, also unused: {8,9,163,164}
+(* current max is 204, also unused: {8,9,163,164}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -202,6 +202,7 @@ let statement s =
   | Ast0.Break(br,sem) -> [100]
   | Ast0.Continue(cont,sem) -> [101]
   | Ast0.Label(l,dd) -> [144]
+  | Ast0.ScopedGuard(sg,lp,exp,rp,body,_) -> [204]
   | Ast0.Goto(goto,l,sem) -> [145]
   | Ast0.Return(ret,sem) -> [77]
   | Ast0.ReturnExpr(ret,exp,sem) -> [78]

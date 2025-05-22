@@ -67,6 +67,11 @@ let compute_adjacency p =
 	  let adj = { Ast.counter = !counter; Ast.ender = false } in
 	  prev := adj;
 	  Ast0.For(fr,lp,first,rp,body,(info,mc,get_adj()))
+      | Ast0.ScopedGuard(sg,lp,exp,rp,body,(info,mc,_)) ->
+	  let body = redo rp body in
+	  let adj = { Ast.counter = !counter; Ast.ender = false } in
+	  prev := adj;
+	  Ast0.ScopedGuard(sg,lp,exp,rp,body,(info,mc,get_adj()))
       | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,_)) ->
 	  let body = redo rp body in
 	  let adj = { Ast.counter = !counter; Ast.ender = false } in

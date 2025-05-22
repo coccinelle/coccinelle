@@ -2733,11 +2733,11 @@ module Ast_cocci :
       | WhileTail of string mcode * string mcode * expression *
           string mcode * string mcode
       | ForHeader of string mcode * string mcode * forinfo * string mcode
-      | ScopedGuardHeader of string mcode * string mcode * expression * string mcode
       | IteratorHeader of ident * string mcode * expression dots *
           string mcode
       | SwitchHeader of string mcode * string mcode * expression *
           string mcode
+      | ScopedGuardHeader of string mcode * string mcode * expression * string mcode
       | Break of string mcode * string mcode
       | Continue of string mcode * string mcode
       | Label of ident * string mcode
@@ -2839,6 +2839,7 @@ module Ast_cocci :
       | Iterator of rule_elem * statement * end_info
       | Switch of rule_elem * rule_elem * statement dots * case_line list *
           rule_elem
+      | ScopedGuard of rule_elem * statement * end_info
       | Atomic of rule_elem
       | Disj of statement dots list
       | Conj of statement dots list
@@ -3427,6 +3428,9 @@ module Ast0_cocci :
           statement * fake_mcode
       | Switch of string mcode * string mcode * expression * string mcode *
           string mcode * statement dots * case_line dots * string mcode
+      | ScopedGuard of string mcode (* scoped_guard *) * string mcode (* ( *) *
+          expression * string mcode (* ) *) * statement *
+          fake_mcode (* after info *)
       | Break of string mcode * string mcode
       | Continue of string mcode * string mcode
       | Label of ident * string mcode

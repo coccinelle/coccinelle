@@ -1006,6 +1006,9 @@ and statement arity s =
   | Ast.For(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])
+  | Ast.ScopedGuard(header,body,(_,_,_,aft)) ->
+      rule_elem arity header; statement arity body;
+      mcode (function _ -> ()) ((),Ast.no_info,aft,[])
   | Ast.Iterator(header,body,(_,_,_,aft)) ->
       rule_elem arity header; statement arity body;
       mcode (function _ -> ()) ((),Ast.no_info,aft,[])

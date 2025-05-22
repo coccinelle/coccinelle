@@ -582,12 +582,12 @@ and base_rule_elem =
                      string mcode (* ; *)
   | ForHeader     of string mcode (* for *) * string mcode (* ( *) *
                      forinfo * string mcode (* ) *)
-  | ScopedGuardHeader     of string mcode (* scoped_guard *) * string mcode (* ( *) *
-                     expression * string mcode (* ) *)
   | IteratorHeader of ident (* name *) * string mcode (* ( *) *
 	             expression dots * string mcode (* ) *)
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
+  | ScopedGuardHeader     of string mcode (* scoped_guard *) * string mcode (* ( *) *
+                     expression * string mcode (* ) *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
   | Label         of ident * string mcode (* : *)
@@ -697,6 +697,7 @@ and base_statement =
   | Iterator      of rule_elem (* header *) * statement * end_info (*enditer*)
   | Switch        of rule_elem (* header *) * rule_elem (* { *) *
 	             statement (*decl*) dots * case_line list * rule_elem(*}*)
+  | ScopedGuard   of rule_elem (* header *) * statement * end_info
   | Atomic        of rule_elem
   | Disj          of statement dots list
   | Conj          of statement dots list

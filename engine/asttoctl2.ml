@@ -856,6 +856,9 @@ and get_after_e s a =
   | Ast.Iterator(header,body,aft) ->
       let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
+  | Ast.ScopedGuard(header,body,aft) ->
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
+      (Ast.rewrap s (Ast.ScopedGuard(header,bd,aft)),[Ast.Other s])
   | Ast.Switch(header,lb,decls,cases,rb) ->
       let index = count_nested_braces s in
       let cases =

@@ -1063,6 +1063,10 @@ let combiner bind option_default mcode donothing
 	  let lcases = multibind (List.map case_line cases) in
 	  let lrb = rule_elem rb in
 	  multibind [lheader; llb; ldecls; lcases; lrb]
+      | Ast.ScopedGuard(header,body,_) ->
+	  let lheader = rule_elem header in
+	  let lbody = statement body in
+	  bind lheader lbody
       | Ast.Atomic(re) ->rule_elem re
       | Ast.Disj(stmt_dots_list) | Ast.Conj(stmt_dots_list) ->
 	  multibind (List.map statement_dots stmt_dots_list)
@@ -2303,6 +2307,10 @@ let rebuilder mcode donothing
 	    let lcases = List.map case_line cases in
 	    let lrb = rule_elem rb in
 	    Ast.Switch(lheader, llb, ldecls, lcases, lrb)
+	| Ast.ScopedGuard(header,body,aft) ->
+	    let lheader = rule_elem header in
+	    let lbody = statement body in
+	    Ast.ScopedGuard(lheader, lbody, aft)
 	| Ast.Atomic(re) -> Ast.Atomic(rule_elem re)
 	| Ast.Disj(stmt_dots_list) ->
 	    Ast.Disj (List.map statement_dots stmt_dots_list)

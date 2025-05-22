@@ -1088,6 +1088,9 @@ let astfvs metavars bound =
       | Ast.Iterator(header,body,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.Iterator(header,body,(unbound,fresh,inherited,aft))
+      | Ast.ScopedGuard(header,body,(_,_,_,aft)) ->
+	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
+	  Ast.ScopedGuard(header,body,(unbound,fresh,inherited,aft))
       |	Ast.FunDecl(header,lbrace,body,rbrace,(_,_,_,aft)) ->
 	  let (unbound,_,fresh,inherited) = classify (cip_plus aft) [] in
 	  Ast.FunDecl(header,lbrace,body,rbrace,(unbound,fresh,inherited,aft))

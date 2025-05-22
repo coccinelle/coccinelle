@@ -542,6 +542,10 @@ let rec statement dots_before dots_after s =
 			Ast0.rewrap cases
 			  (List.map case_line (Ast0.unwrap cases)),
 			rb)))
+  | Ast0.ScopedGuard(sg,lp,exp,rp,body,x) ->
+      do_one
+	(Ast0.rewrap s
+	   (Ast0.ScopedGuard(sg,lp,exp,rp,statement false false body,x)))
   | Ast0.Break(br,sem) -> do_one s
   | Ast0.Continue(cont,sem) -> do_one s
   | Ast0.Label(l,dd) -> do_one s

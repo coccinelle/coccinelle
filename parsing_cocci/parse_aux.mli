@@ -236,6 +236,9 @@ val switch :
   Data.clt -> Data.clt -> Ast0_cocci.expression -> Data.clt -> (string * Data.clt) ->
   Ast0_cocci.declaration list -> Ast0_cocci.case_line list ->
   (string * Data.clt) -> Ast0_cocci.base_statement Ast0_cocci.wrap
+val scopedguard :
+  Data.clt -> Data.clt -> Ast0_cocci.expression ->
+  Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ret_exp :
   Data.clt -> Ast0_cocci.expression ->
   Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap

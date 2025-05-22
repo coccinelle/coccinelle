@@ -1584,6 +1584,9 @@ let rec statement arity s =
       rule_elem arity header;
       indent_if_needed body (function _ -> statement arity body);
       mcode (fun _ _ _ -> ()) ((),Ast.no_info,aft,[])
+  | Ast.ScopedGuard(header,body,_) ->
+      rule_elem arity header;
+      indent_if_needed body (function _ -> statement arity body)
 
   | Ast.Switch(header,lb,decls,cases,rb) ->
       rule_elem arity header; pr_space(); rule_elem arity lb;

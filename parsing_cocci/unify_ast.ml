@@ -673,6 +673,8 @@ and unify_rule_elem re1 re2 =
       unify_option unify_expression e1 e2
   | (Ast.IfHeader(if1,lp1,e1,rp1),Ast.IfHeader(if2,lp2,e2,rp2)) ->
       unify_expression e1 e2
+  | (Ast.ScopedGuardHeader(sg1,lp1,e1,rp1),Ast.ScopedGuardHeader(sg2,lp2,e2,rp2)) ->
+      unify_expression e1 e2
   | (Ast.Else(e1),Ast.Else(e2)) -> true
   | (Ast.WhileHeader(wh1,lp1,c1,rp1),Ast.WhileHeader(wh2,lp2,c2,rp2)) ->
       unify_whileinfo c1 c2

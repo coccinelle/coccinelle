@@ -558,6 +558,10 @@ let switch s lp e rp lb d c rb =
 			clt2mcode ")" rp,tok2mcode lb,
 			Ast0.wrap d,Ast0.wrap c,tok2mcode rb))
 
+let scopedguard sg lp e rp s =
+  Ast0.wrap(Ast0.ScopedGuard(clt2mcode "scoped_guard" sg,
+    clt2mcode "(" lp,e,clt2mcode ")" rp,s,make_fake_mcode()))
+
 let ret_exp r e pv =
   Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" r,e,clt2mcode ";" pv))
 

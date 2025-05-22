@@ -1075,6 +1075,14 @@ let visitor mode bind option_default
 	    let (body_n,body) = statement body in
 	    (multibind [whl_n;lp_n;cond_n;rp_n;body_n],
 	     Ast0.While(whl,lp,cond,rp,body,aft))
+	| Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
+			let (sg_n,sg) = string_mcode sg in
+	    let (lp_n,lp) = string_mcode lp in
+	    let (exp_n,exp) = expression exp in
+			let (rp_n,rp) = string_mcode rp in
+	    let (body_n,body) = statement body in
+	    (multibind [sg_n;lp_n;exp_n;rp_n;body_n],
+			 Ast0.ScopedGuard(sg,lp,exp,rp,body,aft))
 	| Ast0.Do(d,body,whl,lp,exp,rp,sem) ->
 	    let (d_n,d) = string_mcode d in
 	    let (body_n,body) = statement body in

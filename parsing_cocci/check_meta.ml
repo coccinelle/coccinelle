@@ -525,6 +525,9 @@ and statement old_metas table minus s =
   | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
       statement old_metas table minus body;
       expression ID old_metas table minus exp
+  | Ast0.ScopedGuard(sg,lp,exp,rp,body,_) ->
+      expression ID old_metas table minus exp;
+      statement old_metas table minus body
   | Ast0.For(fr,lp,first,rp,body,_) ->
       (match Ast0.unwrap first with
 	Ast0.ForExp(exp1,sem1,exp2,sem2,exp3) ->

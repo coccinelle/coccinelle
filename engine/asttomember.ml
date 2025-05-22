@@ -259,6 +259,7 @@ and statement testfn mcode tail stmt : 'a list list =
   | Ast.IfThen(header,branch,(_,_,_,aft))
   | Ast.While(header,branch,(_,_,_,aft))
   | Ast.For(header,branch,(_,_,_,aft))
+  | Ast.ScopedGuard(header,branch,(_,_,_,aft))
   | Ast.Iterator(header,branch,(_,_,_,aft)) ->
       if testfn header || mcode () ((),(),aft,[])
       then conj (rule_elem header) (statement testfn mcode tail branch)

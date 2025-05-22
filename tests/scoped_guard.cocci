@@ -1,5 +1,4 @@
 @@
-statement S;
 @@
 
 foo(...) {

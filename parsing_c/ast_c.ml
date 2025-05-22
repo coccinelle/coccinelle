@@ -45,7 +45,7 @@ open Common
  *
  * Sometimes we want to add something at the beginning or at the end
  * of a construct. For 'function' and 'decl' we want to add something
- * to their left and for 'if' 'while' et 'for' and so on at their right.
+ * to their left and for 'if' 'while' and 'for' and so on at their right.
  * We want some kinds of "virtual placeholders" that represent the start or
  * end of a construct. We use fakeInfo for that purpose.
  * To identify those cases I have added a fakestart/fakeend comment.
