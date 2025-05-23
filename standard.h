@@ -108,6 +108,7 @@
 #define  __pminit MACROANNOTATION
 #define  __pminitdata MACROANNOTATION
 #define  __irq_entry MACROANNOTATION
+#define  __free MACROANNOTATION
 
 #define  __cacheline_aligned MACROANNOTATION
 #define  ____cacheline_aligned MACROANNOTATION
