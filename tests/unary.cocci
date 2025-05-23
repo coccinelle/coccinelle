@@ -1,0 +1,5 @@
+@deletion@
+expression x;
+@@
+- -
+ x
