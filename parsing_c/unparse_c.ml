@@ -728,7 +728,7 @@ let remove_minus_and_between_and_expanded_and_fake1 xs =
   let xs = xs +> exclude is_fake2 in
 
   let rec line_end_removed = function
-      x::rest when is_newline x ->
+      x::rest when is_newline x && not(is_minus x) ->
 	let onlyspaces x =
 	  is_whitespace x && not (is_newline x) && not (is_minus x) in
 	(* skip spaces *)
