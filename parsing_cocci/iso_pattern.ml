@@ -2508,13 +2508,13 @@ let extra_copy_stmt_plus model e =
 	| _ ->  merge_plus_before bef (Ast0.get_mcodekind e))
     | Ast0.IfThen(_,_,_,_,_,(_,aft,_))
     | Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft,_))
-    | Ast0.While(_,_,_,_,_,(_,aft,_))
+    | Ast0.While(_,_,_,_,_,(_,aft,_)) (* TODO add scoped guard case? *)
     | Ast0.For(_,_,_,_,_,(_,aft,_))
     | Ast0.Iterator(_,_,_,_,_,(_,aft,_)) ->
 	(match Ast0.unwrap e with
 	  Ast0.IfThen(_,_,_,_,_,(_,aft1,_))
 	| Ast0.IfThenElse(_,_,_,_,_,_,_,(_,aft1,_))
-	| Ast0.While(_,_,_,_,_,(_,aft1,_))
+	| Ast0.While(_,_,_,_,_,(_,aft1,_)) (* TODO add scoped guard case? *)
 	| Ast0.For(_,_,_,_,_,(_,aft1,_))
 	| Ast0.Iterator(_,_,_,_,_,(_,aft1,_)) ->
 	    merge_plus_after aft aft1

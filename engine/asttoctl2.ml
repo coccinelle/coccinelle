@@ -703,7 +703,7 @@ and get_before_e s a =
       let (br1,_) = get_before_e branch1 [] in
       let (br2,_) = get_before_e branch2 [] in
       (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
-  | Ast.While(header,body,aft) ->
+  | Ast.While(header,body,aft) -> (* TODO add scoped guard case, using PragmaStmt's "useful model for a header followed by a statement" *)
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
   | Ast.For(header,body,aft) ->
@@ -2265,7 +2265,7 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	guard quantified
 	(function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
-  | Ast.Switch(header,lb,decls,cases,rb) ->
+  | Ast.Switch(header,lb,decls,cases,rb) -> (* TODO add scoped guard case, using PragmaStmt's "useful model for a header followed by a statement" *)
       let rec intersect_all = function
 	  [] -> []
 	| [x] -> x

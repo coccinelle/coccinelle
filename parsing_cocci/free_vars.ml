@@ -623,7 +623,7 @@ let collect_in_plus_term =
   let astfvstatement recursor k s =
     match Ast.unwrap s with
       Ast.IfThen(_,_,(_,_,_,aft)) | Ast.IfThenElse(_,_,_,_,(_,_,_,aft))
-    | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft))
+    | Ast.While(_,_,(_,_,_,aft)) | Ast.For(_,_,(_,_,_,aft)) (* TODO add scoped guard case?*)
     | Ast.Iterator(_,_,(_,_,_,aft)) | Ast.FunDecl(_,_,_,_,(_,_,_,aft)) ->
 	bind (k s) (cip_mcodekind recursor aft)
     | _ -> k s in

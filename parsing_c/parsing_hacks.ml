@@ -337,7 +337,7 @@ let is_really_foreach xs =
        *)
     | TCPar _::TIdent _::xs -> true, xs
     | TCPar _::Tif _::xs -> true, xs
-    | TCPar _::Twhile _::xs -> true, xs
+    | TCPar _::Twhile _::xs -> true, xs  (* TODO add scoped guard case? *)
     | TCPar _::Tfor _::xs -> true, xs
     | TCPar _::Tswitch _::xs -> true, xs
     | TCPar _::Treturn _::xs -> true, xs

@@ -61,7 +61,7 @@ let set_test_poss =
     | Ast0.IfThenElse(i,lp,e,rp,s1,e1,s2,aft) ->
 	Ast0.rewrap s (Ast0.IfThenElse(i,lp,process_exp e,rp,s1,e1,s2,aft))
     | Ast0.While(i,lp,Ast0.WhileExp(e),rp,s1,aft) ->
-	Ast0.rewrap s (Ast0.While(i,lp,Ast0.WhileExp(process_exp e),rp,s1,aft))
+	Ast0.rewrap s (Ast0.While(i,lp,Ast0.WhileExp(process_exp e),rp,s1,aft)) (* TODO add scoped guard case? *)
     | Ast0.While(i,lp,Ast0.WhileDecl(bef,d),rp,s1,aft) ->
 	let d =
 	  match Ast0.unwrap d with

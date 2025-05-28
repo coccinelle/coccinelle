@@ -634,7 +634,7 @@ let rec statement_pos s snp
       mcode_wrap ~mc:whmc ~constructor snp
   | Ast0.ScopedGuard (sg, l, exp, r, s, a) ->
       let constructor ~mc = Ast0.ScopedGuard (mc, l, exp, r, s, a) in
-      mcode_wrap ~mc:sg ~constructor snp
+      mcode_wrap ~mc:sg ~constructor snp (* TODO verify implementation is correct *)
   | Ast0.Do (d, s, whmc, l, exp, r, sem) ->
       let c ~exp ~mc = Ast0.Do(mc, s, whmc, l, exp, r, sem) in
       let alt() = mcode_wrap ~mc:d ~constructor:(c ~exp) snp in

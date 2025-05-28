@@ -739,7 +739,7 @@ let all_context =
   let statement r k e =
     match Ast.unwrap e with
       Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
-    | Ast.While(_,_,ei)  | Ast.For(_,_,ei)
+    | Ast.While(_,_,ei)  | Ast.For(_,_,ei) (* TODO add scoped guard case? *)
     | Ast.Iterator(_,_,ei) | Ast.FunDecl(_,_,_,_,ei) ->
 	bind (k e) (end_info ei)
     | _ -> k e in

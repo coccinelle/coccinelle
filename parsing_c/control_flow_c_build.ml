@@ -507,7 +507,7 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
   | Selection (Ast_c.If _) -> snd (mk_If starti lbl xi_lbl stmt children)
 
    (* ------------------------- *)
-  | Iteration (Ast_c.ScopedGuard (e, st)) ->
+  | Iteration (Ast_c.ScopedGuard (e, st)) -> (* TODO verify implementation is correct *)
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
       let ei =   !g +> add_node (ScopedGuardHeader (stmt,(e,ii))) lbl_0 "scoped_guard" nochildren in
