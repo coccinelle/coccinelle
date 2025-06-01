@@ -510,9 +510,25 @@ let rec aux_statement : (nodei option * xinfo) -> statement -> nodei list -> nod
   | Iteration (Ast_c.ScopedGuard (es, st)) -> (* TODO verify implementation is correct *)
       let (i1,i2,i3, iifakeend) = tuple_of_list4 ii in
       let ii = [i1;i2;i3] in
-      let ei =   !g +> add_node (ScopedGuardHeader (stmt,(es,ii))) lbl_0 "scoped_guard" nochildren in
-      !g +> add_arc_opt (starti, ei);
-      aux_statement (Some ei, xi_lbl) st children
+
+      let newi = !g +> add_node (ScopedGuardHeader (stmt, (es,ii))) lbl "scoped_guard" children in
+      !g +> add_arc_opt (starti, newi);
+      let afteri = !g +>
+        add_node (AfterNode NormalAfterNode) lbl "[after]" nochildren in
+      let lasti  = !g +>
+        add_node (EndStatement (Some iifakeend)) lbl "[endsg]" nochildren in
+
+      let newxi = { xi_lbl with
+         ctx = LoopInfo (newi, lasti,  xi_lbl.braces, lbl);
+         ctx_stack = xi_lbl.ctx::xi_lbl.ctx_stack
+        }
+      in
+
+      !g#add_arc ((afteri, lasti), Direct);
+      !g#add_arc ((newi, afteri), Direct);
+      let finalthen = aux_statement (Some newi, newxi) st children in
+      !g +> add_arc_opt (finalthen, lasti);
+      Some lasti
 
    (* ------------------------- *)
   | Selection  (Ast_c.Switch (e, st)) ->
