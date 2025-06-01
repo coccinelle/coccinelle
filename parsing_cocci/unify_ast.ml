@@ -829,6 +829,8 @@ let rec unify_statement s1 s2 =
       unify_statement els1 els2
   | (Ast.While(h1,s1,_),Ast.While(h2,s2,_)) ->
       unify_rule_elem h1 h2 && unify_statement s1 s2
+  | (Ast.ScopedGuard(h1,s1,_),Ast.ScopedGuard(h2,s2,_)) ->
+      unify_rule_elem h1 h2 && unify_statement s1 s2
   | (Ast.Do(h1,s1,t1),Ast.Do(h2,s2,t2)) ->
       unify_rule_elem h1 h2 &&
       unify_statement s1 s2 &&

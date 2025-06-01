@@ -183,7 +183,8 @@ let collect_plus_lines top =
       | Ast0.IfThen(_,_,_,_,_,(info,aft,adj))
       | Ast0.IfThenElse(_,_,_,_,_,_,_,(info,aft,adj))
       | Ast0.Iterator(_,_,_,_,_,(info,aft,adj))
-      | Ast0.While(_,_,_,_,_,(info,aft,adj)) (* TODO add scoped guard case? *)
+      | Ast0.While(_,_,_,_,_,(info,aft,adj))
+      | Ast0.ScopedGuard(_,_,_,_,_,(info,aft,adj))
       | Ast0.For(_,_,_,_,_,(info,aft,adj)) ->
 	  bind (k s) (mcode info aft)
       |	_ -> k s in
@@ -568,7 +569,8 @@ let classify is_minus all_marked table code =
       | Ast0.IfThen(start,_,_,_,_,(info,aft,adj))
       | Ast0.IfThenElse(start,_,_,_,_,_,_,(info,aft,adj))
       | Ast0.Iterator(_,start,_,_,_,(info,aft,adj))
-      | Ast0.While(start,_,_,_,_,(info,aft,adj)) (* TODO add scoped guard case? *)
+      | Ast0.While(start,_,_,_,_,(info,aft,adj))
+      | Ast0.ScopedGuard(start,_,_,_,_,(info,aft,adj))
       | Ast0.For(start,_,_,_,_,(info,aft,adj)) ->
 	  let mcode_info (_,_,info,_,_,_) = info in
 	  bind (k s) (nc_mcode ((),(),mcode_info start,aft,(),adj))

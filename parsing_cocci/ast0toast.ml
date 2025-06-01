@@ -1033,7 +1033,12 @@ and statement s =
 			 (mcode wh,mcode lp,whileinfo cond,mcode rp)),
 		    statement Ast.NotSequencible body,
 		    ([],[],[],convert_fake_mcode aft))
-				(* TODO add scoped guard case *)
+      | Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
+	  Ast.ScopedGuard(rewrap_rule_elem s
+			    (Ast.ScopedGuardHeader
+			       (mcode sg,mcode lp,expression exp,mcode rp)),
+			  statement Ast.NotSequencible body,
+			  ([],[],[],convert_fake_mcode aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	  let wh = mcode wh in
 	  Ast.Do(rewrap_rule_elem s (Ast.DoHeader(mcode d)),

@@ -1851,7 +1851,7 @@ in
 	    let space_needed_after = function
 		Ast.Token(t,_)
 		when List.mem t ["(";".";"->"] -> (*never needed*) false
-	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do"] -> (* TODO add scoped guard case? *)
+	      |	Ast.Token(t,_) when List.mem t ["if";"for";"while";"do";"scoped_guard"] ->
 		  (* space always needed *)
 		  pr_space(); false
 	      |	Ast.UnaryOpTag(x) -> false

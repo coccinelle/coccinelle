@@ -703,9 +703,12 @@ and get_before_e s a =
       let (br1,_) = get_before_e branch1 [] in
       let (br2,_) = get_before_e branch2 [] in
       (Ast.rewrap s (Ast.IfThenElse(ifheader,br1,els,br2,aft)),[Ast.Other s])
-  | Ast.While(header,body,aft) -> (* TODO add scoped guard case, using PragmaStmt's "useful model for a header followed by a statement" *)
+  | Ast.While(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
+  | Ast.ScopedGuard(header,body,aft) ->
+      let (bd,_) = get_before_e body [] in
+      (Ast.rewrap s (Ast.ScopedGuard(header,bd,aft)),[Ast.Other s])
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_before_e body [] in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
@@ -847,6 +850,9 @@ and get_after_e s a =
   | Ast.While(header,body,aft) ->
       let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.While(header,bd,aft)),[Ast.Other s])
+  | Ast.ScopedGuard(header,body,aft) ->
+      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
+      (Ast.rewrap s (Ast.ScopedGuard(header,bd,aft)),[Ast.Other s])
   | Ast.For(header,body,aft) ->
       let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.For(header,bd,aft)),[Ast.Other s])
@@ -856,9 +862,6 @@ and get_after_e s a =
   | Ast.Iterator(header,body,aft) ->
       let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
       (Ast.rewrap s (Ast.Iterator(header,bd,aft)),[Ast.Other s])
-  | Ast.ScopedGuard(header,body,aft) ->
-      let (bd,_) = get_after_e body ((Ast.Other s) :: a) in
-      (Ast.rewrap s (Ast.ScopedGuard(header,bd,aft)),[Ast.Other s])
   | Ast.Switch(header,lb,decls,cases,rb) ->
       let index = count_nested_braces s in
       let cases =
@@ -1693,8 +1696,8 @@ and make_whencond_headers e e1 label guard quantified =
 	 (Ast.IfHeader
 	    (Ast.make_mcode "if",
 	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
-	let scoped_guard_header e1 =
-		header_pred fvs
+  let scoped_guard_header e1 =
+    header_pred fvs
       (Ast.rewrap e
 	 (Ast.ScopedGuardHeader
 	    (Ast.make_mcode "scoped_guard",
@@ -2265,7 +2268,9 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	guard quantified
 	(function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
 
-  | Ast.Switch(header,lb,decls,cases,rb) -> (* TODO add scoped guard case, using PragmaStmt's "useful model for a header followed by a statement" *)
+  | Ast.ScopedGuard(header,stmt,aft) -> failwith "TODO!!!"
+
+  | Ast.Switch(header,lb,decls,cases,rb) ->
       let rec intersect_all = function
 	  [] -> []
 	| [x] -> x

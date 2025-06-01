@@ -2211,7 +2211,7 @@ and vk_node_s = fun bigf node ->
     | F.SwitchHeader (st, (e,ii)) ->
         F.SwitchHeader(st, (vk_expr_s bigf e, iif ii))
     | F.ScopedGuardHeader (st, (e,ii))     ->
-      F.ScopedGuardHeader    (st, (vk_expr_s bigf e, iif ii))
+      F.ScopedGuardHeader (st, (vk_expr_s bigf e, iif ii))
     | F.TryHeader (st,info) ->
         F.TryHeader (st, infof info)
     | F.CatchHeader (param,ii) ->

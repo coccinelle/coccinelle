@@ -1112,9 +1112,9 @@ and char = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-          | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
-          | 'e' -> () (* linuxext: ? *)
-          | _ ->
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
+	  | 'e' -> () (* linuxext: ? *)
+	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
 	  );
           x ^ restchars lexbuf
@@ -1141,9 +1141,9 @@ and restchars = parse
           (match v with (* Machine specific ? *)
           | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
           | 'f' -> () | 'a' -> ()
-          | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
-          | 'e' -> () (* linuxext: ? *)
-          | _ ->
+	  | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
+	  | 'e' -> () (* linuxext: ? *)
+	  | _ ->
               pr2 ("LEXER: unrecognised symbol in char:"^tok lexbuf);
 	  );
           x ^ restchars lexbuf
@@ -1167,8 +1167,8 @@ and string  = parse
          (match v with (* Machine specific ? *)
          | 'n' -> ()  | 't' -> ()   | 'v' -> ()  | 'b' -> () | 'r' -> ()
          | 'f' -> () | 'a' -> ()
-         | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
-         | 'e' -> () (* linuxext: ? *)
+	 | '\\' -> () | '?'  -> () | '\'' -> ()  | '\"' -> ()
+	 | 'e' -> () (* linuxext: ? *)
 
          (* old: "x" -> 10 gccext ? todo ugly, I put a fake value *)
 
