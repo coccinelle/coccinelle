@@ -1147,9 +1147,7 @@ and statement tgt stm =
       let dd = mcode dd in
       make_rule_elem stm tgt arity (Ast0.Label(l,dd))
   | Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
-      let arity =
-	stm_same (mcode2line sg)
-	  (List.map mcode2arity [sg;lp;rp]) in
+      let arity = stm_same (mcode2line sg) (List.map mcode2arity [sg;lp;rp]) in
       let sg = mcode sg in
       let lp = mcode lp in
       let exp = expression arity exp in

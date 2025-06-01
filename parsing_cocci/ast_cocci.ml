@@ -605,7 +605,7 @@ and base_rule_elem =
 	             expression dots * string mcode (* ) *)
   | SwitchHeader  of string mcode (* switch *) * string mcode (* ( *) *
 	             expression * string mcode (* ) *)
-  | ScopedGuardHeader     of string mcode (* scoped_guard *) * string mcode (* ( *) *
+  | ScopedGuardHeader of string mcode (* scoped_guard *) * string mcode (* ( *) *
                      expression * string mcode (* ) *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)
