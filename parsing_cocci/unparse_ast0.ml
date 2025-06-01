@@ -711,10 +711,11 @@ and statement arity s =
 	  whileinfo cond; close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
-      | Ast0.ScopedGuard(sg,lp,exp,rp,body,(info,aft,adj)) ->
+      | Ast0.ScopedGuard(sg,lp,exps,rp,body,(info,aft,adj)) ->
 	  print_string arity;
 	  mcode print_string sg; print_string " "; mcode print_string_box lp;
-	  expression exp; close_box(); mcode print_string rp; print_string " ";
+	  let _ = dots (function _ -> ()) expression exps in
+	  close_box(); mcode print_string rp; print_string " ";
 	  statement arity body;
 	  mcode (function _ -> ()) ((),(),info,aft,ref [],adj)
       | Ast0.Do(d,body,whl,lp,exp,rp,sem) ->

@@ -29,7 +29,7 @@ type node = node1 * string (* For debugging. Used by print_graph *)
   | DoWhileTail   of expression wrap
   | ForHeader     of statement * declOrExpr wrap
   | SwitchHeader  of statement * expression wrap
-  | ScopedGuardHeader of statement * expression wrap
+  | ScopedGuardHeader of statement * argument wrap2 list wrap
   | MacroIterHeader of statement * (string * argument wrap2 list) wrap
 
   | EndStatement  of info option

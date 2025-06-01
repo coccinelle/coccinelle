@@ -5797,15 +5797,16 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           F.IfHeader (st, (eb,[ib1;ib2;ib3]))
         )))))
 
-  | A.ScopedGuardHeader (ia1,ia2, ea, ia3), F.ScopedGuardHeader (st, (eb,ii)) ->
+  | A.ScopedGuardHeader (ia1,ia2, eas, ia3), F.ScopedGuardHeader (st, (ebs,ii)) ->
       let (ib1, ib2, ib3) = tuple_of_list3 ii in
-      expression ea eb >>= (fun ea eb ->
+      arguments (seqstyle eas) (A.unwrap eas) ebs >>= (fun easunwrap ebs ->
+      let eas = A.rewrap eas easunwrap in
       tokenf ia1 ib1 >>= (fun ia1 ib1 ->
       tokenf ia2 ib2 >>= (fun ia2 ib2 ->
       tokenf ia3 ib3 >>= (fun ia3 ib3 ->
         return (
-          A.ScopedGuardHeader (ia1, ia2, ea, ia3),
-          F.ScopedGuardHeader (st, (eb,[ib1;ib2;ib3]))
+          A.ScopedGuardHeader (ia1, ia2, eas, ia3),
+          F.ScopedGuardHeader (st, (ebs,[ib1;ib2;ib3]))
         )))))
 
   | A.Else ia, F.Else ib ->

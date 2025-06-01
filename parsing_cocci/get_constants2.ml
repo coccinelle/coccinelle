@@ -629,7 +629,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
 	bind (keywords "for") (k re)
     | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	bind (keywords "switch") (k re)
-    | Ast.ScopedGuardHeader(sg,lp,exp,rp) ->
+    | Ast.ScopedGuardHeader(sg,lp,exps,rp) ->
 	bind (keywords "scoped_guard") (k re)
     | Ast.Break(br,sem) ->
 	bind (keywords "break") (k re)

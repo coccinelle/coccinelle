@@ -659,7 +659,7 @@ let collect_plus_nodes root =
 	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.While(whl,lp,exp,rp,body,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
-    | Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
+    | Ast0.ScopedGuard(sg,lp,exps,rp,body,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
     | Ast0.For(fr,lp,first,rp,body,aft) ->
 	do_nothing_extra [] (info aft) mk_statement r k e
@@ -1250,7 +1250,7 @@ let reevaluate_contextness =
 	 donothing_extra (info aft) r k e
      | Ast0.While(whl,lp,exp,rp,body,aft) ->
 	 donothing_extra (info aft) r k e
-     | Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
+     | Ast0.ScopedGuard(sg,lp,exps,rp,body,aft) ->
 	 donothing_extra (info aft) r k e
      | Ast0.For(fr,lp,first,rp,body,aft) ->
 	 donothing_extra (info aft) r k e

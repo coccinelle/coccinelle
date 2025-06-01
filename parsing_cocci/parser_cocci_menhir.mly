@@ -1870,7 +1870,7 @@ statement:
     { Parse_aux.iterator $1 $2 $3 $4 $5 }
 | TSwitch TOPar eexpr TCPar TOBrace list(decl_var) list(case_line) TCBrace
     { Parse_aux.switch $1 $2 $3 $4 $5 (List.concat $6) $7 $8 }
-| TScopedguard TOPar eexpr TCPar single_statement
+| TScopedguard TOPar eexpr_list TCPar single_statement
     { Parse_aux.scopedguard $1 $2 $3 $4 $5 }
 | TReturn eexpr TPtVirg { Parse_aux.ret_exp $1 $2 (snd $3) }
 | TReturn initialize_metalist_or_list(TOBrace) TPtVirg

@@ -431,8 +431,8 @@ and vk_statement = fun bigf (st: Ast_c.statement) ->
         cal +> List.iter (fun ((param,st),ii) -> vk_param bigf param; statf st; iif ii)
     | Selection  (Switch (e, st)) ->
         vk_expr bigf e; statf st;
-    | Iteration  (ScopedGuard (e, st)) ->
-        vk_expr bigf e; statf st;
+    | Iteration  (ScopedGuard (es, st)) ->
+        vk_argument_list bigf es; statf st;
     | Iteration  (While (first, st)) ->
 	(match first with
 	  WhileExp(e) ->
@@ -1075,11 +1075,13 @@ and vk_node = fun bigf node ->
 
     | F.IfHeader (_, (e,ii))
     | F.SwitchHeader (_, (e,ii))
-    | F.ScopedGuardHeader (_, (e,ii))
     | F.WhileHeader (_, (WhileExp (e), ii))
     | F.DoWhileTail (e,ii) ->
         iif ii;
         vk_expr bigf e
+    | F.ScopedGuardHeader (_, (es,ii)) ->
+        iif ii;
+	vk_argument_list bigf es
     | F.WhileHeader (_, (WhileDecl (d), ii)) ->
         iif ii;
         d +> (vk_decl bigf);
@@ -1515,8 +1517,11 @@ and vk_statement_s = fun bigf st ->
                   ((vk_param_s bigf param, statf st), vk_ii_s bigf ii))))
       | Selection (Switch (e, st))   ->
           Selection  (Switch ((vk_expr_s bigf) e, statf st))
-      | Iteration (ScopedGuard (e, st)) ->
-        Iteration  (ScopedGuard ((vk_expr_s bigf) e, statf st))
+      | Iteration (ScopedGuard (es, st)) ->
+	  let es =
+	    es +>
+	    List.map (fun (e,ii) -> vk_argument_s bigf e, vk_ii_s bigf ii) in
+          Iteration  (ScopedGuard (es, statf st))
       | Iteration (While (first, st))    ->
 	(match first with
 	  WhileExp(e) ->
@@ -2210,8 +2215,11 @@ and vk_node_s = fun bigf node ->
         F.IfHeader    (st, (vk_expr_s bigf e, iif ii))
     | F.SwitchHeader (st, (e,ii)) ->
         F.SwitchHeader(st, (vk_expr_s bigf e, iif ii))
-    | F.ScopedGuardHeader (st, (e,ii))     ->
-      F.ScopedGuardHeader (st, (vk_expr_s bigf e, iif ii))
+    | F.ScopedGuardHeader (st, (es,ii)) ->
+	let es =
+	  es +>
+	  List.map (fun (e,ii) -> vk_argument_s bigf e, iif ii) in
+	F.ScopedGuardHeader (st, (es, iif ii))
     | F.TryHeader (st,info) ->
         F.TryHeader (st, infof info)
     | F.CatchHeader (param,ii) ->

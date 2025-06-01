@@ -216,7 +216,7 @@ and iteration =
   | DoWhile of statement * expression
   | For of declOrExpr * statement
   | MacroIteration of string * argument wrap2 list * statement
-  | ScopedGuard of expression * statement
+  | ScopedGuard of argument wrap2 (* , *) list * statement
 and jump =
     Goto of name
   | Continue

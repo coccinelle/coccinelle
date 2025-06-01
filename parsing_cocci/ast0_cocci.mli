@@ -409,7 +409,7 @@ and base_statement =
 	             statement (*decl*) dots *
 	             case_line dots * string mcode (* } *)
   | ScopedGuard   of string mcode (* scoped_guard *) * string mcode (* ( *) *
-	             expression * string mcode (* ) *) * statement *
+	             expression dots * string mcode (* ) *) * statement *
 	             fake_mcode (* after info *)
   | Break         of string mcode (* break *) * string mcode (* ; *)
   | Continue      of string mcode (* continue *) * string mcode (* ; *)

@@ -295,7 +295,7 @@ module Ast_c :
       | DoWhile of statement * expression
       | For of declOrExpr * statement
       | MacroIteration of string * argument wrap2 list * statement
-      | ScopedGuard of expression * statement
+      | ScopedGuard of argument wrap2 (* , *) list * statement
     and jump =
       Ast_c.jump =
         Goto of name
@@ -2737,7 +2737,7 @@ module Ast_cocci :
           string mcode
       | SwitchHeader of string mcode * string mcode * expression *
           string mcode
-      | ScopedGuardHeader of string mcode * string mcode * expression * string mcode
+      | ScopedGuardHeader of string mcode * string mcode * expression dots * string mcode
       | Break of string mcode * string mcode
       | Continue of string mcode * string mcode
       | Label of ident * string mcode
@@ -3429,7 +3429,7 @@ module Ast0_cocci :
       | Switch of string mcode * string mcode * expression * string mcode *
           string mcode * statement dots * case_line dots * string mcode
       | ScopedGuard of string mcode (* scoped_guard *) * string mcode (* ( *) *
-          expression * string mcode (* ) *) * statement *
+          expression dots * string mcode (* ) *) * statement *
           fake_mcode (* after info *)
       | Break of string mcode * string mcode
       | Continue of string mcode * string mcode

@@ -1323,7 +1323,7 @@ iteration:
      { While (WhileDecl (create_decls $3 $4 None Ast_c.LocalDecl),$6), [$1;$2;$5] }
  | Tdo statement Twhile TOPar expr TCPar TPtVirg
      { DoWhile ($2,$5),              [$1;$3;$4;$6;$7] }
- | Tscopedguard TOPar expr TCPar statement
+ | Tscopedguard TOPar argument_list_ne TCPar statement
      { ScopedGuard ($3,$5),     [$1;$2;$4] }
  | Tfor TOPar expr_statement expr_statement TCPar cpp_ifdef_statement
      { For (ForExp ($3,$4,(None, [])),$6),    [$1;$2;$5]}

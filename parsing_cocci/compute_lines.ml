@@ -1357,14 +1357,14 @@ let rec statement s =
 	let (rightinfo,right,body) = promote_to_statement_end body aft in
 	mkres s (Ast0.While(wh,lp,cond,rp,body,(rightinfo,aft,adj)))
 	  (promote_mcode wh) right
-    | Ast0.ScopedGuard(sg,lp,exp,rp,body,(_,aft,adj)) ->
+    | Ast0.ScopedGuard(sg,lp,exps,rp,body,(_,aft,adj)) ->
 	let sg = normal_mcode sg in
 	let lp = normal_mcode lp in
-	let exp = expression exp in
+	let exps = dots is_exp_dots (Some(promote_mcode lp)) expression exps in
 	let rp = normal_mcode rp in
 	let body = statement body in
 	let (rightinfo,right,body) = promote_to_statement_end body aft in
-	mkres s (Ast0.ScopedGuard(sg,lp,exp,rp,body,(rightinfo,aft,adj)))
+	mkres s (Ast0.ScopedGuard(sg,lp,exps,rp,body,(rightinfo,aft,adj)))
 	  (promote_mcode sg) right
     | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->
 	let d = normal_mcode d in

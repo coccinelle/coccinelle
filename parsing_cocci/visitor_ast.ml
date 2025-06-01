@@ -867,12 +867,12 @@ let combiner bind option_default mcode donothing
 	  let lfirst = forinfo first in
 	  let lrp = string_mcode rp in
 	  multibind [lfr; llp; lfirst; lrp]
-      | Ast.ScopedGuardHeader(sg,lp,exp,rp) ->
+      | Ast.ScopedGuardHeader(sg,lp,exps,rp) ->
 	  let lsg = string_mcode sg in
 	  let llp = string_mcode lp in
-	  let lexp = expression exp in
+	  let lexps = expression_dots exps in
 	  let lrp = string_mcode rp in
-	  multibind [lsg; llp; lexp; lrp]
+	  multibind [lsg; llp; lexps; lrp]
       | Ast.IteratorHeader(nm,lp,args,rp) ->
 	  let lnm = ident nm in
 	  let llp = string_mcode lp in
@@ -2102,12 +2102,12 @@ let rebuilder mcode donothing
 	    let lfirst = forinfo first in
 	    let lrp = string_mcode rp in
 	    Ast.ForHeader(lfr, llp, lfirst, lrp)
-	| Ast.ScopedGuardHeader(sg,lp,exp,rp) ->
+	| Ast.ScopedGuardHeader(sg,lp,exps,rp) ->
 	    let lsg = string_mcode sg in
 	    let llp = string_mcode lp in
-	    let lexp = expression exp in
+	    let lexps = expression_dots exps in
 	    let lrp = string_mcode rp in
-	    Ast.ScopedGuardHeader(lsg, llp, lexp, lrp)
+	    Ast.ScopedGuardHeader(lsg, llp, lexps, lrp)
 	| Ast.IteratorHeader(whl,lp,args,rp) ->
 	    let lnm = ident whl in
 	    let llp = string_mcode lp in

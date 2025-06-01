@@ -1033,10 +1033,10 @@ and statement s =
 			 (mcode wh,mcode lp,whileinfo cond,mcode rp)),
 		    statement Ast.NotSequencible body,
 		    ([],[],[],convert_fake_mcode aft))
-      | Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
+      | Ast0.ScopedGuard(sg,lp,exps,rp,body,aft) ->
 	  Ast.ScopedGuard(rewrap_rule_elem s
 			    (Ast.ScopedGuardHeader
-			       (mcode sg,mcode lp,expression exp,mcode rp)),
+			       (mcode sg,mcode lp,dots expression exps,mcode rp)),
 			  statement Ast.NotSequencible body,
 			  ([],[],[],convert_fake_mcode aft))
       | Ast0.Do(d,body,wh,lp,exp,rp,sem) ->

@@ -1146,14 +1146,14 @@ and statement tgt stm =
       let l = ident false tgt l in
       let dd = mcode dd in
       make_rule_elem stm tgt arity (Ast0.Label(l,dd))
-  | Ast0.ScopedGuard(sg,lp,exp,rp,body,aft) ->
+  | Ast0.ScopedGuard(sg,lp,exps,rp,body,aft) ->
       let arity = stm_same (mcode2line sg) (List.map mcode2arity [sg;lp;rp]) in
       let sg = mcode sg in
       let lp = mcode lp in
-      let exp = expression arity exp in
+      let exps = dots (expression arity) exps in
       let rp = mcode rp in
       let body = statement arity body in
-      make_rule_elem stm tgt arity (Ast0.ScopedGuard(sg,lp,exp,rp,body,aft))
+      make_rule_elem stm tgt arity (Ast0.ScopedGuard(sg,lp,exps,rp,body,aft))
   | Ast0.Goto(goto,l,sem) ->
       let arity =
 	stm_same (mcode2line goto) (List.map mcode2arity [goto;sem]) in

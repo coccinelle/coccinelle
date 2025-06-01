@@ -555,7 +555,7 @@ and statement = statementbis wrap3
     | For     of declOrExpr * statement
     (* cppext: *)
     | MacroIteration of string * argument wrap2 list * statement
-    | ScopedGuard of expression * statement
+    | ScopedGuard of argument wrap2 (* , *) list * statement
 
   and jump  = Goto of name
             | Continue | Break

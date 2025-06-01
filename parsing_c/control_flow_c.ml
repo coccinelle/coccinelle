@@ -158,7 +158,7 @@ type node = node1 * string
   | DoWhileTail of expression wrap
   | ForHeader of fullstatement * declOrExpr wrap
   | SwitchHeader of fullstatement * expression wrap
-  | ScopedGuardHeader  of fullstatement * expression wrap
+  | ScopedGuardHeader  of fullstatement * argument wrap2 list wrap
   | MacroIterHeader of fullstatement * (string * argument wrap2 list) wrap
 
   (* Used to mark the end of if, while, dowhile, for, switch. Later we

@@ -1355,11 +1355,12 @@ let match_maker checks_needed context_required whencode_allowed =
 		 [check_mcode w1 w; check_mcode lp1 lp;
 		   check_mcode rp1 rp; match_whileinfo conda condb;
 		   match_statement bodya bodyb]
-	  | (Ast0.ScopedGuard(sg1,lp1,expa,rp1,bodya,_),
-	     Ast0.ScopedGuard(sg2,lp2,expb,rp2,bodyb,_)) ->
+	  | (Ast0.ScopedGuard(sg1,lp1,expsa,rp1,bodya,_),
+	     Ast0.ScopedGuard(sg2,lp2,expsb,rp2,bodyb,_)) ->
 	       conjunct_many_bindings
 		 [check_mcode sg1 sg2; check_mcode lp1 lp2;
-		   check_mcode rp1 rp2; match_expr expa expb;
+		   check_mcode rp1 rp2;
+		   match_dots match_expr is_elist_matcher do_elist_match expsa expsb;
 		   match_statement bodya bodyb]
 	  | (Ast0.Do(d1,bodya,w1,lp1,expa,rp1,_),
 	     Ast0.Do(d,bodyb,w,lp,expb,rp,_)) ->
@@ -1817,8 +1818,8 @@ let rebuild_mcode start_line =
 	       Ast0.While(whl,lp,exp,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.For(fr,lp,first,rp,body,(info,mc,adj)) ->
 	       Ast0.For(fr,lp,first,rp,body,(info,copy_mcodekind mc,adj))
-	   | Ast0.ScopedGuard(sg,lp,exp,rp,body,(info,mc,adj)) ->
-	       Ast0.ScopedGuard(sg,lp,exp,rp,body,(info,copy_mcodekind mc,adj))
+	   | Ast0.ScopedGuard(sg,lp,exps,rp,body,(info,mc,adj)) ->
+	       Ast0.ScopedGuard(sg,lp,exps,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.Iterator(nm,lp,args,rp,body,(info,mc,adj)) ->
 	       Ast0.Iterator(nm,lp,args,rp,body,(info,copy_mcodekind mc,adj))
 	   | Ast0.FunDecl

@@ -401,8 +401,8 @@ and pp_string_format (e,ii) =
     | Iteration  (While (WhileDecl (d), st)), [i1;i2;i3;iifakend] ->
 	pr_elem i1; pr_space(); pr_elem i2; pp_decl d; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
-    | Iteration  (ScopedGuard (e, st)), [i1;i2;i3;iifakend] ->
-	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3;
+    | Iteration  (ScopedGuard (es, st)), [i1;i2;i3;iifakend] ->
+	pr_elem i1; pr_space(); pr_elem i2; pp_arg_list es; pr_elem i3;
 	indent_if_needed st (function _-> pp_statement st); pr_elem iifakend
     | Iteration  (DoWhile (st, e)), [i1;i2;i3;i4;i5;iifakend] ->
 	pr_elem i1;
@@ -1632,9 +1632,9 @@ and pp_init (init, iinit) =
 	let (i1,i2,i3,i4) = tuple_of_list4 ii in
 	pr_elem i1; pr_elem i2; pp_expression e;
 	pr_elem i3; pr_elem i4
-    | F.ScopedGuardHeader (_, (e,ii)) ->
+    | F.ScopedGuardHeader (_, (es,ii)) ->
 	let (i1,i2,i3) = tuple_of_list3 ii in
-	pr_elem i1; pr_space(); pr_elem i2; pp_expression e; pr_elem i3
+	pr_elem i1; pr_space(); pr_elem i2; pp_arg_list es; pr_elem i3
 
     | F.ForHeader (_st, ((first), ii)) ->
 	let (i1,i2,i3) = tuple_of_list3 ii in

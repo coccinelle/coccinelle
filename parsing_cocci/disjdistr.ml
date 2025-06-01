@@ -522,9 +522,9 @@ let rec disj_rule_elem r k re =
   | Ast.IfHeader(iff,lp,exp,rp) ->
       orify_rule_elem re exp
 	(function exp -> Ast.rewrap re (Ast.IfHeader(iff,lp,exp,rp)))
-  | Ast.ScopedGuardHeader(sg,lp,exp,rp) ->
-      orify_rule_elem re exp
-	(function exp -> Ast.rewrap re (Ast.ScopedGuardHeader(sg,lp,exp,rp)))
+  | Ast.ScopedGuardHeader(sg,lp,exps,rp) ->
+      generic_orify_rule_elem (disjdots disjexp) re exps
+	(function exp -> Ast.rewrap re (Ast.ScopedGuardHeader(sg,lp,exps,rp)))
   | Ast.Else(els) -> re
   | Ast.WhileHeader(whl,lp,Ast.WhileExp(exp),rp) ->
       orify_rule_elem re exp
