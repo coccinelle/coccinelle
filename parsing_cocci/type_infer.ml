@@ -467,11 +467,11 @@ let rec propagate_types env =
 	let fenv = List.concat (List.map get_binding (Ast0.unwrap params)) in
 	(propagate_types (fenv@env)).VT0.combiner_rec_statement_dots body
     | Ast0.IfThen(_,_,exp,_,_,_) | Ast0.IfThenElse(_,_,exp,_,_,_,_,_)
-    | Ast0.While(_,_,Ast0.WhileExp(exp),_,_,_) | Ast0.Do(_,_,_,_,exp,_,_) -> (* TODO add scoped guard case? *)
+    | Ast0.While(_,_,Ast0.WhileExp(exp),_,_,_) | Ast0.Do(_,_,_,_,exp,_,_) ->
 	let _ = k s in
         post_bool exp;
         None
-    | Ast0.While(_,_,Ast0.WhileDecl(_,decl),_,s,_) -> (* TODO add scoped guard case? *)
+    | Ast0.While(_,_,Ast0.WhileDecl(_,decl),_,s,_) ->
 	let newenv = (process_decl env decl)@env in
         (propagate_types newenv).VT0.combiner_rec_statement s
     | Ast0.For(a,b,first,e,f,g) ->
