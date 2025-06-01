@@ -1617,7 +1617,7 @@ let annotate_test_expressions prog =
 	  k st;
       |	Iteration(i) ->
 	  (match i with
-	    While(WhileExp (e),s) -> propagate_test e (* TODO add scoped guard case? *)
+	    While(WhileExp (e),s) -> propagate_test e
 	  | While(WhileDecl (DeclList dl),s) ->
               (match unwrap dl with
                 ([x], has_ender) ->
