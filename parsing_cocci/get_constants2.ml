@@ -630,7 +630,7 @@ let do_get_constants constants keywords env (neg_pos,_) =
     | Ast.SwitchHeader(switch,lp,exp,rp) ->
 	bind (keywords "switch") (k re)
     | Ast.ScopedGuardHeader(sg,lp,exp,rp) ->
-  bind (keywords "scoped_guard") (k re)
+	bind (keywords "scoped_guard") (k re)
     | Ast.Break(br,sem) ->
 	bind (keywords "break") (k re)
     | Ast.Continue(cont,sem) ->
@@ -739,7 +739,7 @@ let all_context =
   let statement r k e =
     match Ast.unwrap e with
       Ast.IfThen(_,_,ei) | Ast.IfThenElse(_,_,_,_,ei)
-    | Ast.While(_,_,ei)  | Ast.For(_,_,ei) (* TODO add scoped guard case? *)
+    | Ast.While(_,_,ei)  | Ast.For(_,_,ei) | Ast.ScopedGuard(_,_,ei)
     | Ast.Iterator(_,_,ei) | Ast.FunDecl(_,_,_,_,ei) ->
 	bind (k e) (end_info ei)
     | _ -> k e in
