@@ -1170,7 +1170,7 @@ let ifthenelse ifheader branch1 els branch2 ((afvs,_,_,_) as aft) after
       (Some(ctl_ex (falsepred None)))
       aft after label guard)
 
-let forwhile header body ((afvs,_,_,_) as aft) after
+let forwhile inloop header body ((afvs,_,_,_) as aft) after
     quantified minus_quantified label recurse make_match guard =
   let process _ =
     (* the translation in this case is similar to that of an if with no else *)
@@ -1192,11 +1192,13 @@ let forwhile header body ((afvs,_,_,_) as aft) after
     let lv = get_label_ctr() in
     let used = ref false in
     let body =
-      make_seq guard
-	[inlooppred None;
-	  recurse body NotTop Tail new_quantified new_mquantified
-	    (Some (lv,used)) (Some (lv,used)) None guard] in
-    let after_pred = loopfallpred None in
+      let dobody =
+	recurse body NotTop Tail new_quantified new_mquantified
+	    (Some (lv,used)) (Some (lv,used)) None guard in
+      if inloop
+      then make_seq guard [inlooppred None; dobody]
+      else dobody in
+    let after_pred = (if inloop then loopfallpred else aftpred) None in
     let or_cases after_branch =
       Common.Left [body; after_branch] in
     let (header,wrapper) =
@@ -1696,12 +1698,6 @@ and make_whencond_headers e e1 label guard quantified =
 	 (Ast.IfHeader
 	    (Ast.make_mcode "if",
 	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
-  let scoped_guard_header e1 =
-    header_pred fvs
-      (Ast.rewrap e
-	 (Ast.ScopedGuardHeader
-	    (Ast.make_mcode "scoped_guard",
-	     Ast.make_mcode "(",e1,Ast.make_mcode ")"))) in
   let while_exp_header e1 =
     header_pred fvs
       (Ast.rewrap e
@@ -2162,7 +2158,11 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 
   | Ast.While(header,body,aft) | Ast.For(header,body,aft)
   | Ast.Iterator(header,body,aft) ->
-      forwhile header body aft after quantified minus_quantified
+      forwhile true header body aft after quantified minus_quantified
+	label (statement pos) make_match guard
+
+  | Ast.ScopedGuard(header,body,aft) ->
+      forwhile false header body aft after quantified minus_quantified
 	label (statement pos) make_match guard
 
   | Ast.Do(doheader,body,whiletail) ->
@@ -2267,8 +2267,6 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	    None llabel slabel true)
 	guard quantified
 	(function x -> Ast.set_fvs [] (Ast.rewrap stmt x))
-
-  | Ast.ScopedGuard(header,stmt,aft) -> failwith "TODO!!!"
 
   | Ast.Switch(header,lb,decls,cases,rb) ->
       let rec intersect_all = function
