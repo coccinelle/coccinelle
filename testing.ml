@@ -177,8 +177,7 @@ let add_file_to_score score res correct diffxs =
   | Compare_c.PbKnown s ->
       let s = prepare_error_message
      s in
-      let s =
-    "KNOWN TO FAIL: " ^ s ^ "\n" ^
+      let s = s ^ "\n" ^
     "    diff (result(-) vs expected_result(+)) = \n" ^
     (diffxs +>
      List.map(fun s -> "    "^s^"\n") +> String.concat "")
@@ -318,7 +317,7 @@ let testall_bis_helper testdir setup extra_test =
         Common.reset_pr_indent();
 	Iteration.reset();
 	Flag.reset_virt();
-        let s = "PROBLEM\n" ^ ("   exn = " ^ Printexc.to_string exn ^ "\n") in
+        let s = ("   exn = " ^ Printexc.to_string exn ^ "\n") in
 	(* clean up state *)
 	Flag.defined_virtual_rules := [];
 	Flag.defined_virtual_env := [];
@@ -339,8 +338,8 @@ let testall_bis_helper testdir setup extra_test =
       pr_no_nl (
         match v with
         | Common.Ok ->  "CORRECT\n"
-        | Common.Pb s -> s
-        | Common.PbKnown s -> s
+        | Common.Pb s -> "PROBLEM\n " ^ s
+        | Common.PbKnown s -> "KNOWN TO FAIL\n" ^ s
       )
     );
     flush stdout; flush stderr;
@@ -487,7 +486,7 @@ let test_okfailed cocci_file cfiles =
 	Str.global_replace (Str.regexp "\\\\n") "\n"
 	  (Str.global_replace (Str.regexp ("\\\\\"")) "\""
 	     (Str.global_replace (Str.regexp "\\\\t") "\t" s)) in
-      let s = "PROBLEM\n"^("   exn = " ^ clean(Printexc.to_string exn) ^ "\n")
+      let s = ("   exn = " ^ clean(Printexc.to_string exn) ^ "\n")
       in
       let time_str = time_per_file_str ()
       in
