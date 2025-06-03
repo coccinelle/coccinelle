@@ -300,6 +300,14 @@ let testall_bis_helper testdir setup extra_test =
 		       things that fail on the first test *)
 		    (Compare_c.Correct,[])) in
 
+	  begin
+	    match correct with
+	      Compare_c.Pb s
+	    | Compare_c.PbOnlyInNotParsedCorrectly s ->
+	    failed_tests := (cfile :: !failed_tests);
+	    | _ -> ()
+	  end;
+
 	  add_file_to_score score res correct diffxs;
 
 	  begin
@@ -325,7 +333,9 @@ let testall_bis_helper testdir setup extra_test =
   let r = Str.regexp ".*_failure\\.c" in
   if (Str.string_match r cfile 0)
     then Hashtbl.add score res (Common.PbKnown s)
-  else (failed_tests := (cfile :: !failed_tests) ; Hashtbl.add score res (Common.Pb s))
+  else
+    (failed_tests := (cfile :: !failed_tests);
+    Hashtbl.add score res (Common.Pb s))
     );
 
 
