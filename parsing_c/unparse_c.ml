@@ -550,7 +550,10 @@ let is_added_space = function
   | _ -> false
 
 let is_added_whitespace =
-  function C2 (" ",_) | C2 ("\n",_) | Cocci2("\n",_,_,_,_) -> true | _ -> false
+  function
+      C2 (s,_) | Cocci2(s,_,_,_,_)
+      when s = "" || (List.mem (String.get s 0) [' ';'\n']) -> true
+    | _ -> false
 
 let is_newline_or_comment = function
   | T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
@@ -1393,6 +1396,9 @@ let rec add_space xs =
     x::C2 (String.make (lny-lnx) '\n', None)::
     C2 (String.make (lcoly-1) ' ', None):: (* -1 is for the + *)
     add_space (y::xs)
+  | ((T2(_,Ctx,_,_)) as x)::(((Cocci2 _) | C2 _) as y)::xs
+    when str_of_token2 x = "," && not(is_added_whitespace y) ->
+      x::C2(" ",None)::(add_space (y::xs))
   | ((T2(_,Ctx,_,_)) as x)::(((Cocci2 _) | C2 _) as y)::xs
   | (((Cocci2 _) | C2 _) as x)::((T2(_,Ctx,_,_)) as y)::xs ->
     (* add space on boundary *)
