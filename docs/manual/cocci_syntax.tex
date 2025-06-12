@@ -709,7 +709,7 @@ is not run (and essentially does not exist) if some of the required virtual
 metavariables are not bound.  In OCaml, a warning is printed in this case.
 An example is found in {\tt demos/initvirt.cocci}.
 
-A script metavariable that does not specify an origin, using \texttt{<<},
+A script metavariable that does not specify an origin, using \texttt{<{<}},
 is newly declared by the script.  This metavariable should be assigned to a
 string and can be inherited by subsequent rules as an identifier.  In
 Python, the assignment of such a metavariable $x$ should refer to the
