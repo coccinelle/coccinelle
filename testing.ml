@@ -244,99 +244,105 @@ let testall_bis_helper testdir setup extra_test =
   in
 
   begin
-    expected_result_files +> List.iter (fun res ->
-      let x =
-        if res =~ "\\(.*\\).res"
-	then matched1 res
-	else raise (Impossible 164) in
-      let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
-      let cocci_file = testdir ^ "/" ^ base ^ ".cocci" in
-      setup cocci_file;
-      let cfile      = testdir ^ "/" ^ x ^ ".c" in
-      let cfile      =
-        let cppfile = testdir ^ "/" ^ x ^ ".cpp" in
-        if not (Sys.file_exists cfile) && Sys.file_exists cppfile
-        then
-          begin
-            Flag.c_plus_plus := Flag.On None;
-            cppfile
-          end
-        else
-          begin
-            Flag.c_plus_plus := Flag.Off;
-            cfile
-          end in
-      let expected = testdir ^ "/" ^ res in
-      let out = base ^ out_suffix in
-      let expected_out = testdir ^ "/" ^ out in
+    let deferred = ref [] in
+    let runall run_deferred files =
+      files +> List.iter (fun res ->
+	let x =
+          if res =~ "\\(.*\\).res"
+	  then matched1 res
+	  else raise (Impossible 164) in
+	let base = if x =~ "\\(.*\\)_ver[0-9]+" then matched1 x else x in
+	let cocci_file = testdir ^ "/" ^ base ^ ".cocci" in
+	if not run_deferred && cmd_to_list ("grep \"#spatch\" "^cocci_file) <> []
+	then deferred := res :: !deferred
+	else
+	  begin
+	    setup cocci_file;
+	    let cfile      = testdir ^ "/" ^ x ^ ".c" in
+	    let cfile      =
+              let cppfile = testdir ^ "/" ^ x ^ ".cpp" in
+              if not (Sys.file_exists cfile) && Sys.file_exists cppfile
+              then
+		begin
+		  Flag.c_plus_plus := Flag.On None;
+		  cppfile
+		end
+              else
+		begin
+		  Flag.c_plus_plus := Flag.Off;
+		  cfile
+		end in
+	    let expected = testdir ^ "/" ^ res in
+	    let out = base ^ out_suffix in
+	    let expected_out = testdir ^ "/" ^ out in
 
-      let timeout_testall = 60 in
+	    let timeout_testall = 60 in
 
-      try (
-        Common.timeout_function "testing" timeout_testall  (fun () ->
-	  pr2 res;
+	    try (
+              Common.timeout_function "testing" timeout_testall  (fun () ->
+		pr2 res;
 
-	  let (xs, current_out) =
-	    test_with_output_redirected cocci_file [(cfile,None)]
-	      expected_out in
+		let (xs, current_out) =
+		  test_with_output_redirected cocci_file [(cfile,None)]
+		    expected_out in
 
-          let generated =
-            match List.assoc cfile xs with
-            | Some generated -> generated
-            | None -> cfile
-          in
+		let generated =
+		  match List.assoc cfile xs with
+		  | Some generated -> generated
+		  | None -> cfile
+		in
 
-          let (correct, diffxs) =
-	    Compare_c.compare_default generated expected in
+		let (correct, diffxs) =
+		  Compare_c.compare_default generated expected in
 
-	  let (correct, diffxs) =
-	    match extra_test with
-	      None -> (correct, diffxs)
-	    | Some extra_test ->
-		(match correct with
-		  Compare_c.Correct -> extra_test generated expected
-		| _ ->
+		let (correct, diffxs) =
+		  match extra_test with
+		    None -> (correct, diffxs)
+		  | Some extra_test ->
+		      (match correct with
+			Compare_c.Correct -> extra_test generated expected
+		      | _ ->
 		    (* if there is an extra test, we don't care about the
 		       things that fail on the first test *)
-		    (Compare_c.Correct,[])) in
+			  (Compare_c.Correct,[])) in
 
-	  begin
-	    match correct with
-	      Compare_c.Pb s
-	    | Compare_c.PbOnlyInNotParsedCorrectly s ->
-	    failed_tests := (cfile :: !failed_tests);
-	    | _ -> ()
-	  end;
+		begin
+		  match correct with
+		    Compare_c.Pb s
+		  | Compare_c.PbOnlyInNotParsedCorrectly s ->
+		      failed_tests := (cfile :: !failed_tests);
+		  | _ -> ()
+		end;
 
-	  add_file_to_score score res correct diffxs;
+		add_file_to_score score res correct diffxs;
 
-	  begin
-	    match current_out with
-	      None -> ()
-	    | Some current_out' ->
-		let (correct, diffxs) =
-		  Compare_c.exact_compare current_out' expected_out in
-		add_file_to_score score out correct diffxs
-	  end;
-	  Common.erase_temp_files ();
-        )
-      )
-      with exn ->
-        Common.reset_pr_indent();
-	Iteration.reset();
-	Flag.reset_virt();
-        let s = ("   exn = " ^ Printexc.to_string exn ^ "\n") in
+		begin
+		  match current_out with
+		    None -> ()
+		  | Some current_out' ->
+		      let (correct, diffxs) =
+			Compare_c.exact_compare current_out' expected_out in
+		      add_file_to_score score out correct diffxs
+		end;
+		Common.erase_temp_files ()))
+	    with exn ->
+              Common.reset_pr_indent();
+	      Iteration.reset();
+	      Flag.reset_virt();
+              let s = ("   exn = " ^ Printexc.to_string exn ^ "\n") in
 	(* clean up state *)
-	Flag.defined_virtual_rules := [];
-	Flag.defined_virtual_env := [];
-	Iteration.clear_pending_instance();
-  let r = Str.regexp ".*_failure\\.c" in
-  if (Str.string_match r cfile 0)
-    then Hashtbl.add score res (Common.PbKnown s)
-  else
-    (failed_tests := (cfile :: !failed_tests);
-    Hashtbl.add score res (Common.Pb s))
-    );
+	      Flag.defined_virtual_rules := [];
+	      Flag.defined_virtual_env := [];
+	      Iteration.clear_pending_instance();
+	      let r = Str.regexp ".*_failure\\.c" in
+	      if (Str.string_match r cfile 0)
+	      then Hashtbl.add score res (Common.PbKnown s)
+	      else
+		(failed_tests := (cfile :: !failed_tests);
+		 Hashtbl.add score res (Common.Pb s))
+	  end) in
+    runall false expected_result_files;
+    runall true (List.rev !deferred);
 
 
     pr2 "--------------------------------";
