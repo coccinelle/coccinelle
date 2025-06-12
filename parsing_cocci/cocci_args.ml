@@ -121,6 +121,7 @@ let read_cocci_args filename =
         loop acc
     with End_of_file -> List.rev acc in
   let args = loop [] in
+  close_in file;
   List.flatten args
 
 let read_args arglist =
