@@ -198,21 +198,23 @@ let print_regression_information regression_information =
   let (good, total, _) = Common.total_scores regression_information.score in
 
   if good = total
-    then begin
+  then
+    begin
       pr2 "All tests have passed, everything is fine :)";
       0
     end
-  else
-    if good < total
-    then begin
+  else if good < total
+  then
+    begin
       pr2 "";
       pr2 "You have test failures :(";
       pr2 "The following tests have failed:";
-      let () = List.iter print_test_name regression_information.failed_tests in
-      let () = Printf.printf "\n%!" in
+      List.iter print_test_name regression_information.failed_tests;
+      Printf.printf "\n%!";
       1
     end
-    else begin
+  else
+    begin
       pr2 "The number of passing tests is higher than the number of tests?";
       1
     end
@@ -360,7 +362,7 @@ let testall_bis_helper testdir setup extra_test =
     );
     flush stdout; flush stderr;
 
-    {score = score; failed_tests = !failed_tests}
+    {score = score; failed_tests = List.rev !failed_tests}
   end
 
 let testall_bis_with_score testdir setup extra_test =
