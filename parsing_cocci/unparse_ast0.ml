@@ -325,7 +325,7 @@ and print_parentype (lp,ty,rp) fn =
           Ast0.FunctionType(ty3,lp3,params,rp3) ->
             typeC ty3;
             mcode print_string lp;
-            mcode print_string star;
+            mcode U.unaryOp star;
             let _ =
               match array_decs with
                 Some(lb1,size,rb1) ->
@@ -361,7 +361,7 @@ and typeC t =
 	  List.iter (function s -> mcode print_string s; print_string " ")
 	    strings
       |	Ast0.Signed(sgn,ty) -> mcode U.sign sgn; print_option typeC ty
-      | Ast0.Pointer(ty,star) -> typeC ty; mcode print_string star
+      | Ast0.Pointer(ty,star) -> typeC ty; mcode U.unaryOp star
       | Ast0.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> ())
       | Ast0.FunctionType(ty,lp,params,rp) ->

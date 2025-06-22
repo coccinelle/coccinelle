@@ -379,7 +379,7 @@ let visitor mode bind option_default
 	    (bind sign_n ty_n, Ast0.Signed(sign,ty))
 	| Ast0.Pointer(ty,star) ->
 	    let (ty_n,ty) = typeC ty in
-	    let (star_n,star) = string_mcode star in
+	    let (star_n,star) = unary_mcode star in
 	    (bind ty_n star_n, Ast0.Pointer(ty,star))
         | Ast0.ParenType(lp,ty,rp) ->
 	    let (t,id) =
@@ -494,7 +494,7 @@ let visitor mode bind option_default
             Ast0.FunctionType(ty3,lp3,params,rp3) ->
               let (ty_n,typ) = typeC ty3 in
               let (lp_n,lp) = string_mcode lp in
-              let (star_n,star) = string_mcode star in
+              let (star_n,star) = unary_mcode star in
               let (idl,idu) =
                 match id with
                   Some a -> let (b,c) = ident a in ([b],Some c)
@@ -587,7 +587,7 @@ let visitor mode bind option_default
             Ast0.FunctionType(ty3,lp3,params,rp3) ->
               let (ty_n,typ) = typeC ty3 in
               let (lp_n,lp) = string_mcode lp in
-              let (star_n,star) = string_mcode star in
+              let (star_n,star) = unary_mcode star in
               let (idl,idu) =
                 match id with
                   Some a -> let (b,c) = typeC a in ([b],Some c)

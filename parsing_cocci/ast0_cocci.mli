@@ -200,7 +200,7 @@ and base_typeC =
     ConstVol        of cvattr list * typeC * cvattr list
   | BaseType        of Ast_cocci.baseType * string mcode list
   | Signed          of Ast_cocci.sign mcode * typeC option
-  | Pointer         of typeC * string mcode (* * *)
+  | Pointer         of typeC * Ast_cocci.unaryOp mcode (* * *)
   | ParenType       of string mcode (* ( *) * typeC * string mcode (* ) *)
   | FunctionType    of typeC *
                   string mcode (* ( *) * parameter_list * string mcode (* ) *)

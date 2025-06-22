@@ -209,7 +209,7 @@ and base_typeC =
     ConstVol        of cvattr list * typeC * cvattr list
   | BaseType        of Ast.baseType * string mcode list
   | Signed          of Ast.sign mcode * typeC option
-  | Pointer         of typeC * string mcode (* * *)
+  | Pointer         of typeC * Ast.unaryOp mcode (* * *)
   | ParenType       of string mcode (* ( *) * typeC * string mcode (* ) *)
   | FunctionType    of typeC *
                   string mcode (* ( *) * parameter_list * string mcode (* ) *)

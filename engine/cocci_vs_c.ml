@@ -11,6 +11,7 @@ module B = Ast_c
 
 module F = Control_flow_c
 module V = Visitor_ast
+module PP = Pretty_print_cocci
 
 module FlagM = Flag_matcher
 
@@ -4129,7 +4130,7 @@ and (typeC: (A.typeC, Ast_c.typeC) matcher) =
     (* todo? iso with array *)
     | A.Pointer (typa, iamult),            (B.Pointer typb, ii) ->
         let (ibmult) = tuple_of_list1 ii in
-        if (A.unwrap_mcode iamult = B.str_of_info ibmult)
+        if (PP.unaryOp2c(A.unwrap_mcode iamult) = B.str_of_info ibmult)
         then
           fullType typa typb >>= (fun typa typb ->
           tokenf iamult ibmult >>= (fun iamult ibmult ->
@@ -4912,7 +4913,7 @@ and compatible_typeC a (b,local) =
 
     | A.Pointer (a, astar), (qub, attra, (B.Pointer b, ii)) ->
 	let star = tuple_of_list1 ii in
-	if A.unwrap_mcode astar = B.str_of_info star
+	if PP.unaryOp2c(A.unwrap_mcode astar) = B.str_of_info star
 	then compatible_type a (b, local)
 	else fail
     | A.ParenType (_, a, _), (qub, attra, (B.ParenType b, ii)) ->

@@ -1201,14 +1201,14 @@ ctype_without_braces:
 	(Ast0_cocci.ConjType(Parse_aux.id2mcode lp,code,mids, Parse_aux.id2mcode rp)) }
 
 ctype_and_ptr(ty):
-cv1=const_vol t=ty cv2=const_vol_attr_list m=list(mul)
-   { let cv1 = List.map (fun x -> Ast0.CV x) cv1 in
-     (cv1,t,cv2,m) }
+ cv1=const_vol t=ty cv2=const_vol_attr_list m=list(mul)
+   { let cv1 = List.map (fun x -> Ast0.CV x) cv1 in (cv1,t,cv2, m) }
 
 full_ctype_and_ptr(ty):
-  cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul) { (cv1, t, cv2,  m ) }
-| cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=TAnd      { (cv1, t, cv2, [(m,[])]) }
-| cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=TAndLog   { (cv1, t, cv2, [(m,[])]) }
+  cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=list(mul)
+    { (cv1, t, cv2, m ) }
+| cv1=const_vol_attr_list t=ty cv2=const_vol_attr_list m=unary_ty_and
+    { (cv1, t, cv2, [(m,[])]) }
 
 ctype:
   full_ctype_and_ptr(all_basic_types)
@@ -1256,7 +1256,7 @@ const_vol_attr_list:
 | attr const_vol_attr_list
   { Ast0.Attr $1 :: $2 }
 
-mul: a=TMul b=const_vol_attr_list { (a,b) }
+mul: a=unary_ty b=const_vol_attr_list { (a,b) }
 
 mctype:
 | TMeta { tmeta_to_type $1 }
@@ -1264,7 +1264,7 @@ mctype:
 
 /* signed, unsigned alone not allowed */
 typedef_ctype:
-  cv1=const_vol ty=all_basic_types cv2=const_vol_attr_list m=list(TMul)
+  cv1=const_vol ty=all_basic_types cv2=const_vol_attr_list m=list(unary_ty)
     { let cv1 = List.map (fun x -> Ast0.CV x) cv1 in
       Parse_aux.pointerify (Parse_aux.make_cv cv1 ty cv2) m }
 | lp=TOPar0 t=midzero_list(mctype,mctype) rp=TCPar0
@@ -2097,7 +2097,7 @@ one_decl_noender:
 direct_declarator(ident_type):
     ident_type
       { ($1, function x -> x) }
-  | o=TOPar m=list(TMul) d=direct_declarator(ident_type) c=TCPar
+  | o=TOPar m=list(unary_ty) d=direct_declarator(ident_type) c=TCPar
       { let (id,fn) = d in
         (id,
          function t ->
@@ -2625,6 +2625,12 @@ unary_op: TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef (snd $1) }
 	| TMinus  { Parse_aux.clt2mcode Ast_cocci.UnMinus $1 }
 	| TTilde  { Parse_aux.clt2mcode (Ast_cocci.Tilde (fst $1)) (snd $1) }
 	| TBang   { Parse_aux.clt2mcode (Ast_cocci.Not (fst $1)) (snd $1) }
+
+unary_ty: TMul    { Parse_aux.clt2mcode Ast_cocci.DeRef (snd $1) }
+
+unary_ty_and:
+	| TAnd    { Parse_aux.clt2mcode Ast_cocci.GetRef (snd $1) }
+	| TAndLog { Parse_aux.clt2mcode Ast_cocci.GetRefLabel (snd $1) }
 
 postfix_expr(r,pe):
    qual_expr(r,pe)                            { $1 }

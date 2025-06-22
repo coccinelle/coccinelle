@@ -22,6 +22,7 @@ val assignOp : Ast_cocci.assignOp -> unit
 val simpleAssignOp : Ast_cocci.simpleAssignOp -> unit
 val opAssignOp : Ast_cocci.arithOp -> unit
 val fixOp : Ast_cocci.fixOp -> unit
+val unaryOp2c : Ast_cocci.unaryOp -> string
 val unaryOp : Ast_cocci.unaryOp -> unit
 val binaryOp : Ast_cocci.binaryOp -> unit
 val arithOp : Ast_cocci.arithOp -> unit

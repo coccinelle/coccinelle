@@ -120,7 +120,8 @@ let rec is_int_type_unwrap = function
 and is_int_type ty = is_int_type_unwrap (Ast0.unwrap ty)
 
 let dummy = Ast0.make_mcode ""
-let dummy_star = Ast0.make_mcode "*"
+let dummy_star = Ast0.make_mcode Ast.DeRef
+let dummy_and = Ast0.make_mcode Ast.GetRef
 
 let num s = Ast0.Constant (Ast0.make_mcode (Ast.Int s))
 
@@ -403,7 +404,7 @@ let rec propagate_types env =
 	(match Ast0.unwrap exp with
 	  Ast0.Paren(lpp,exp,rpp) ->
 	    (match Ast0.get_type exp with
-	      Some t -> Ast0.rewrap ty (Ast0.Pointer(t, Ast0.make_mcode "&"))
+	      Some t -> Ast0.rewrap ty (Ast0.Pointer(t, dummy_and))
 	    | None -> ty)
 	| _ -> ty)
     | _ -> ty

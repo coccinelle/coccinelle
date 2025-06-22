@@ -435,7 +435,7 @@ let combiner bind option_default mcode donothing
                 Ast.FunctionType(ty3,lp3,params,rp3) ->
                  let ltyp = fullType ty3 in
                  let llp = string_mcode lp in
-                 let lstar = string_mcode star in
+                 let lstar = unary_mcode star in
                  let lid =
                    match id with
                      Some idd -> [ident idd]
@@ -480,7 +480,7 @@ let combiner bind option_default mcode donothing
 	  bind lsgn lty
       | Ast.Pointer(ty,star) ->
 	  let lty = fullType ty in
-	  let lstar = string_mcode star in
+	  let lstar = unary_mcode star in
 	  bind lty lstar
       | Ast.ParenType(lp,ty,rp) ->
           parentype_type (lp,ty,None,rp)
@@ -1704,7 +1704,7 @@ let rebuilder mcode donothing
 	    Ast.SignedT(lsgn, lty)
 	| Ast.Pointer(ty,star) ->
 	    let lty = fullType ty in
-	    let lstar = string_mcode star in
+	    let lstar = unaryOp_mcode star in
 	    Ast.Pointer (lty, lstar)
         | Ast.ParenType(lp,ty,rp) ->
             let llp = string_mcode lp in

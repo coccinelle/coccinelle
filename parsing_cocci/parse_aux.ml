@@ -152,12 +152,12 @@ let pointerify ty m =
   List.fold_left
     (function inner ->
       function cur ->
-	Ast0.wrap(Ast0.Pointer(inner, clt2mcode (fst cur) (snd cur) )))
+	Ast0.wrap(Ast0.Pointer(inner, cur )))
     ty m
 
 let ty_pointerify ty m =
   List.fold_left
-    (fun inner cur -> Ast0.wrap (Ast0.Pointer (inner, Ast0.make_mcode "*")))
+    (fun inner cur -> Ast0.wrap (Ast0.Pointer (inner, Ast0.make_mcode Ast.DeRef)))
     ty m
 
 let make_cv cvbefore ty cvafter =

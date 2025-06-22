@@ -781,7 +781,7 @@ and typeC endattrs ty =
       print_between pr_space (mcode print_string) strings
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option_prespace (typeC endattrs) ty
   | Ast.Pointer(ty,star) ->
-      fullType ty; ft_space ty; mcode print_string star;
+      fullType ty; ft_space ty; mcode unaryOp star;
       if not endattrs then eatspace()
   | Ast.ParenType(lp,ty,rp) ->
       print_parentype (lp,ty,rp) (function _ -> ())
@@ -887,7 +887,7 @@ and print_parentype (lp,ty,rp) fn =
               Ast.FunctionType(ty3,lp3,params,rp3) ->
                fullType ty3;
                mcode print_string lp;
-               mcode print_string star;
+               mcode unaryOp star;
                fn();
                let _ =
                  match array_dec with

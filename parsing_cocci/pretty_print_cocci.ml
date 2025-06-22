@@ -331,14 +331,16 @@ and string_format e =
     Ast.ConstantFormat(str) -> mcode print_string str
   | Ast.MetaFormat(name,_,_,_) -> mcode print_meta name
 
-and unaryOp = function
-    Ast.GetRef -> print_string "&"
-  | Ast.GetRefLabel -> print_string "&&"
-  | Ast.DeRef -> print_string "*"
-  | Ast.UnPlus -> print_string "+"
-  | Ast.UnMinus -> print_string "-"
-  | Ast.Tilde s -> print_string s
-  | Ast.Not s -> print_string s
+and unaryOp2c = function
+    Ast.GetRef -> "&"
+  | Ast.GetRefLabel -> "&&"
+  | Ast.DeRef -> "*"
+  | Ast.UnPlus -> "+"
+  | Ast.UnMinus -> "-"
+  | Ast.Tilde s -> s
+  | Ast.Not s -> s
+
+and unaryOp op = print_string(unaryOp2c op)
 
 and assignOp op =
   match Ast.unwrap op with
@@ -443,7 +445,7 @@ and print_parentype (lp,ty,rp) fn =
                fullType ty3;
                print_space();
                mcode print_string lp;
-               mcode print_string star;
+               mcode unaryOp star;
                fn();
                let _ =
                  match array_dec with
@@ -520,7 +522,7 @@ and typeC ty =
     Ast.BaseType(ty,strings) ->
       print_between print_space (mcode print_string) strings
   | Ast.SignedT(sgn,ty) -> mcode sign sgn; print_option typeC ty
-  | Ast.Pointer(ty,star) -> fullType ty; print_space(); mcode print_string star
+  | Ast.Pointer(ty,star) -> fullType ty; print_space(); mcode unaryOp star
   | Ast.ParenType(lp,ty,rp) ->
       print_parentype (lp,ty,rp) (function _ -> ())
   | Ast.FunctionType(ty,lp,params,rp) ->
