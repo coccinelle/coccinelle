@@ -160,6 +160,7 @@
 #define  __nongprelbss MACROANNOTATION
 #define  __nongpreldata MACROANNOTATION
 #define  __noreturn MACROANNOTATION
+#define  __nocast MACROANNOTATION
 
 #define  __section_jiffies MACROANNOTATION
 #define  __vsyscall_fn MACROANNOTATION
