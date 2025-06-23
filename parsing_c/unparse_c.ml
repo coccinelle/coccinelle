@@ -148,7 +148,7 @@ let print_token2 = function
       | Ast_c.Danger -> ":D:"
       | Ast_c.NoDanger -> ":ND:" in*)
     b_str(*^d_str*)^"fake"
-  | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d%s" lc rc s
+  | Cocci2 (s,_,lc,rc,_) -> Printf.sprintf "Cocci2:%d:%d:%s" lc rc s
   | C2 (s,_) -> "C2:"^s
   | Comma s -> "Comma:"^s
   | Indent_cocci2 -> "Indent"
