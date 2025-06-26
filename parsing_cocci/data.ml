@@ -220,6 +220,8 @@ let add_special_name nm ty =
 let get_special_name nm =
   Hashtbl.find special_names nm
 
+let remove_special_name nm = Hashtbl.remove special_names nm
+
 let clear_special_names _ = Hashtbl.clear special_names
 
 let set_define_params names = define_params := names

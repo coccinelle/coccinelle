@@ -150,6 +150,7 @@ val fresh_id_scripts:
 type nametypes = Type | Attr | AttrArgs | Declarer | Iterator | CommaInit | Ambiguous
 val add_special_name : string -> nametypes -> unit
 val get_special_name : string -> nametypes
+val remove_special_name : string -> unit
 val clear_special_names : unit -> unit
 val set_define_params : string list -> unit
 val clear_define_params : unit -> unit

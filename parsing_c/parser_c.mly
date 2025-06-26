@@ -2625,7 +2625,8 @@ cpp_directive:
      }
 
  | TUndef TIdentDefine TDefEOL
-     { Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
+     { Data.remove_special_name (fst $2);
+       Define((fst $2, [$1; snd $2; $3]), (Undef,DefineEmpty)) }
 
  | TPragma TIdent pragma_strings TDefEOL
      { Pragma((RegularName (mk_string_wrap $2),$3),[$1;$4]) }
