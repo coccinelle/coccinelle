@@ -1397,7 +1397,8 @@ let rec add_space xs =
     C2 (String.make (lcoly-1) ' ', None):: (* -1 is for the + *)
     add_space (y::xs)
   | ((T2(_,Ctx,_,_)) as x)::(((Cocci2 _) | C2 _) as y)::xs
-    when str_of_token2 x = "," && not(is_added_whitespace y) ->
+    when str_of_token2 x = "," && not(is_added_whitespace y) &&
+      space_after_cocci xs ->
       x::C2(" ",None)::(add_space (y::xs))
   | ((T2(_,Ctx,_,_)) as x)::(((Cocci2 _) | C2 _) as y)::xs
   | (((Cocci2 _) | C2 _) as x)::((T2(_,Ctx,_,_)) as y)::xs ->
@@ -1416,6 +1417,11 @@ let rec add_space xs =
     if is_ident_like sx && is_ident_like sy
     then x::C2(" ",None)::(add_space (y::xs))
     else x::(add_space (y::xs))
+
+and space_after_cocci = function
+    (T2(Parser_c.TCommentSpace _,Ctx,_,_)) :: xs -> true
+  | (C2 _ | Cocci2 _) :: xs -> space_after_cocci xs
+  | _ -> false
 
 (* A fake comma is added at the end of an unordered initlist or a enum
 decl, if the initlist or enum doesn't already end in a comma.  This is only
