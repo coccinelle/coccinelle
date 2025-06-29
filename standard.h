@@ -827,3 +827,4 @@ do {									\
 
 // found in task_struct
 #define randomized_struct_fields_start
+#define randomized_struct_fields_end
