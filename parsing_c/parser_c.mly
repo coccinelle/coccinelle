@@ -2268,21 +2268,31 @@ cpp_struct_decl2:
 	      (onedecllist +>
 	       (List.map
 		  (fun (dec,comma) ->
-		    (Simple(dec.v_storage, dec.v_attr,dec.v_namei, dec.v_type, dec.v_endattr),comma))),
+		    (Simple(dec.v_storage, dec.v_attr, dec.v_namei,
+			    dec.v_type, dec.v_endattr),
+		     comma))),
 	       odii))
-     | MacroDecl ((NoSto, [], s, es, attrs, true), ([iis;lp;rp;iiend;ifakestart] as ii)) ->
+     | MacroDecl ((NoSto, [], s, es, attrs, true),
+		  ([iis;lp;rp;iiend;ifakestart] as ii)) ->
 	 MacroDeclField ((s, es, attrs), ii)
-     | MacroDecl ((sto, preattrs, s, es, attrs, true), ii (*iis::lp::rp::iiend::ifakestart::iisto*)) ->
+     | MacroDecl ((sto, preattrs, s, es, attrs, true),
+		  ii (*iis::lp::rp::iiend::ifakestart::iisto*)) ->
 	 let iis = List.hd ii in
-	 raise (Semantic ("storage or preattrs unexpected in field",Ast_c.parse_info_of_info iis))
-     | MacroDecl ((sto, preattrs, s, es, attrs, false), ii (*iis::lp::rp::ifakestart::iisto*)) ->
+	 raise (Semantic ("storage or preattrs unexpected in field",
+			  Ast_c.parse_info_of_info iis))
+     | MacroDecl ((sto, preattrs, s, es, attrs, false),
+		  ii (*iis::lp::rp::ifakestart::iisto*)) ->
 	 let iis = List.hd ii in
-	 raise (Semantic ("no semicolon case not supported",Ast_c.parse_info_of_info iis))
-     | MacroDeclInit ((NoSto, [], s, es, attrs, ini), ([iis;lp;rp;eq;iiend;ifakestart] as ii)) ->
+	 raise (Semantic ("no semicolon case not supported",
+			  Ast_c.parse_info_of_info iis))
+     | MacroDeclInit ((NoSto, [], s, es, attrs, ini),
+		      ([iis;lp;rp;eq;iiend;ifakestart] as ii)) ->
 	 MacroDeclFieldInit ((s, es, attrs, ini), ii)
-     | MacroDeclInit ((sto, preattrs, s, es, attrs, ini), ii(*iis::lp::rp::eq::iiend::ifakestart::iisto*)) ->
+     | MacroDeclInit ((sto, preattrs, s, es, attrs, ini),
+		      ii(*iis::lp::rp::eq::iiend::ifakestart::iisto*)) ->
 	 let iis = List.hd ii in
-	 raise (Semantic ("storage unexpected in field",Ast_c.parse_info_of_info iis))
+	 raise (Semantic ("storage unexpected in field",
+			  Ast_c.parse_info_of_info iis))
      }
  | TPtVirg { EmptyField $1  }
 
