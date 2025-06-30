@@ -2249,6 +2249,9 @@ struct_decl2:
  | TMacroDecl TOPar macro_argument_list TCPar attributes_opt TPtVirg
      { MacroDeclField ((fst $1, $3, $5), [snd $1;$2;$4;$6;fakeBeforeInfo()]) }
 
+ | TMacroDecl
+     { MacroDeclFieldMarker (fst $1, [snd $1]) }
+
  /*(* cppext: *)*/
  | cpp_directive
      { CppDirectiveStruct $1 }

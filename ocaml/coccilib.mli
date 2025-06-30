@@ -103,6 +103,7 @@ module Ast_c :
       | ConstructDestructField of c_plus_plus_constructor
       | MacroDeclField of (string * argument wrap2 list * attribute list) wrap
       | MacroDeclFieldInit of (string * argument wrap2 list * attribute list * initialiser) wrap
+      | MacroDeclFieldMarker of string wrap
       | CppDirectiveStruct of cpp_directive
       | IfdefStruct of ifdef_directive
     and field_declaration =

@@ -826,5 +826,5 @@ do {									\
 #define g_autofree
 
 // found in task_struct
-#define randomized_struct_fields_start
-#define randomized_struct_fields_end
+#define randomized_struct_fields_start YACFE_DECLARATOR
+#define randomized_struct_fields_end YACFE_DECLARATOR

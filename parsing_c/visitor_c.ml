@@ -716,6 +716,8 @@ and vk_struct_field = fun bigf field ->
         attrs +> List.iter (vk_attribute bigf);
 	vk_ini bigf ini
 
+    | MacroDeclFieldMarker (s,ii) -> iif ii
+
     | CppDirectiveStruct directive ->
         vk_cpp_directive bigf directive
     | IfdefStruct ifdef ->
@@ -1893,6 +1895,8 @@ and vk_struct_field_s = fun bigf field ->
           attrs +> List.map (vk_attribute_s bigf),
 	  vk_ini_s bigf ini),
          iif ii)
+
+  | MacroDeclFieldMarker (s,ii) -> MacroDeclFieldMarker(s, iif ii)
 
   | CppDirectiveStruct directive ->
       CppDirectiveStruct (vk_cpp_directive_s bigf directive)

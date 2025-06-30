@@ -927,7 +927,9 @@ and pp_string_format (e,ii) =
 	pp_init ini;
 	pr_elem iiend;
 
-
+    | MacroDeclFieldMarker (s, ii) ->
+        let iis = Common.tuple_of_list1 ii in
+	pr_elem iis
 
     | EmptyField iipttvirg_when_emptyfield ->
         pr_elem iipttvirg_when_emptyfield

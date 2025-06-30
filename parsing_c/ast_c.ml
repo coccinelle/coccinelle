@@ -269,6 +269,8 @@ and fullType = typeQualifier * attribute list * typeC
                                wrap (* optional ';'*)
            | MacroDeclFieldInit of (string * argument wrap2 list * attribute list * initialiser)
                                wrap (* optional ';'*)
+	   (* no argument, no ;, used for marking regions in a structure *)
+	   | MacroDeclFieldMarker of string wrap
 
             (* cppext: *)
            | CppDirectiveStruct of cpp_directive

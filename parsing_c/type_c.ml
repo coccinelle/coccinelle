@@ -445,6 +445,7 @@ let (type_field:
       | ConstructDestructField _ -> pr2_once "ConstructorDestructorTodo"; ()
       | MacroDeclField _ -> pr2_once "MacroDeclField Todo"; ()
       | MacroDeclFieldInit _ -> pr2_once "MacroDeclFieldInit Todo"; ()
+      | MacroDeclFieldMarker _ -> ()
 
       | CppDirectiveStruct _
       | IfdefStruct _ -> pr2_once "StructCpp";

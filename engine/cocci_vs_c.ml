@@ -3531,6 +3531,7 @@ and (struct_fields: (A.annotated_field list, B.field list) matcher) =
 	   | Ast_c.EmptyField info -> true
 	   | Ast_c.MacroDeclField decl -> true
 	   | Ast_c.MacroDeclFieldInit decl -> true
+	   | Ast_c.MacroDeclFieldMarker decl -> true
 	   | Ast_c.CppDirectiveStruct cpp -> false
 	   | Ast_c.IfdefStruct ifdef -> false
 	   (* C++ stuff; not supported in SmPL *)
@@ -3675,6 +3676,10 @@ and (struct_field: (A.annotated_field, B.field) matcher) =
 		   ))))))))
 
 	| _, B.MacroDeclFieldInit ((sb,ebs,attrsb,init),ii) ->
+	      (* not supported yet in SmPL *)
+	      fail
+
+	| _, B.MacroDeclFieldMarker (sb,ii) ->
 	      (* not supported yet in SmPL *)
 	      fail
 
