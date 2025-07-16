@@ -1142,8 +1142,8 @@ The grammar for the minus or plus slice of a transformation is as follows:
   \CASE{when != \NT{when\_code}}
   \CASE{when = \NT{rule\_elem\_stmt}}
   \CASE{when \NT{COMMA\_LIST}\mth{(}\NT{any\_strict}\mth{)}}
-  \CASE{when true != \NT{expr}}
-  \CASE{when false != \NT{expr}}
+  \CASE{when != true \NT{expr}}
+  \CASE{when != false \NT{expr}}
 
   \RULE{\rt{when\_code}}
   \CASE{\NT{OPTDOTSEQ}\mth{(}\some{\NT{decl\_stmt}}, \NT{when}\mth{)}}
