@@ -15,7 +15,7 @@ call, you may use the following semantic patch.
 
 However, if for some reason your code looks like \verb|bar = *(foo)|,
 you will end up with \verb|bar = readb((foo))| as the extra
-parentheses around \texttt{foo} are capture by the metavariable
+parentheses around \texttt{foo} are captured by the metavariable
 \texttt{b}.
 
 In order to generate better output code, you can use the following
