@@ -308,6 +308,7 @@ let testall_bis_helper testdir setup extra_test =
 		       things that fail on the first test *)
 			  (Compare_c.Correct,[])) in
 
+    (* add regular failures to list *)
 		begin
 		  match correct with
 		    Compare_c.Pb s
@@ -315,17 +316,26 @@ let testall_bis_helper testdir setup extra_test =
 		      failed_tests := (cfile :: !failed_tests);
 		  | _ -> ()
 		end;
-
 		add_file_to_score score res correct diffxs;
 
+    (* run .stdout comparison *)
 		begin
 		  match current_out with
 		    None -> ()
 		  | Some current_out' ->
 		      let (correct, diffxs) =
 			Compare_c.exact_compare current_out' expected_out in
+        (* add .stdout failures to list *)
+        begin
+          match correct with
+            Compare_c.Pb s
+          | Compare_c.PbOnlyInNotParsedCorrectly s ->
+              failed_tests := (cfile :: !failed_tests);
+          | _ -> ()
+        end;
 		      add_file_to_score score out correct diffxs
 		end;
+
 		Common.erase_temp_files ()))
 	    with exn ->
               Common.reset_pr_indent();
