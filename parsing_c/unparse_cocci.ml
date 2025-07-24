@@ -786,7 +786,7 @@ and typeC endattrs ty =
   | Ast.ParenType(lp,ty,rp) ->
       print_parentype (lp,ty,rp) (function _ -> ())
   | Ast.FunctionType(ty,lp,params,rp) ->
-      fullType ty;
+      fullType ty; ft_space ty;
       mcode print_string lp;
       parameter_list params;
       mcode print_string rp
@@ -885,7 +885,7 @@ and print_parentype (lp,ty,rp) fn =
            Ast.Type(_,_,fty3,_) ->
             (match Ast.unwrap fty3 with
               Ast.FunctionType(ty3,lp3,params,rp3) ->
-               fullType ty3;
+               fullType ty3; ft_space ty3;
                mcode print_string lp;
                mcode unaryOp star;
                fn();
@@ -980,7 +980,7 @@ and print_named_type ty id =
       | Ast.ParenType(lp,ty,rp) ->
           print_parentype (lp,ty,rp) (function _ -> id())
       | Ast.FunctionType(ty,lp,params,rp) ->
-          fullType ty;
+          fullType ty; ft_space ty;
           id();
           mcode print_string lp;
           parameter_list params;
