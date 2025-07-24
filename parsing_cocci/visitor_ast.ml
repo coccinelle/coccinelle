@@ -608,8 +608,9 @@ let combiner bind option_default mcode donothing
             | Some (comma,ellipsis) ->
 		([string_mcode comma],[string_mcode ellipsis]) in
 	  let lrp1 = string_mcode rp1 in
+	  let lsem = string_mcode sem in
 	  multibind
-            (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1])
+            (lfi @ [lname; llp1; lparams] @ lcomma @ lellipsis @ [lrp1;lsem])
       | Ast.MacroDecl(stg,preattr,name,lp,args,rp,attr,sem) ->
 	  let lstg = get_option storage_mcode stg in
 	  let lpreattr = multibind (List.map attribute preattr) in
