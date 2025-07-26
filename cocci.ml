@@ -1810,16 +1810,18 @@ and reassociate_positions free_vars special_pos_vars envs =
        List.iter
 	 (function non_pos ->
 	   let others =
-	     List.filter
-	       (function (other_non_pos,other_pos) ->
+	     List.fold_left
+	       (fun prev (other_non_pos,other_pos) ->
                  (* do we want equal? or just somehow compatible? eg non_pos
 		    binds only E, but other_non_pos binds both E and E1 *)
-		 Ctlcocci_integration.same_env non_pos other_non_pos)
-	       splitted_relevant in
+		 if Ctlcocci_integration.same_env non_pos other_non_pos
+		 then other_pos :: prev
+		 else prev)
+	       [] splitted_relevant in
 	   Hashtbl.add extended_relevant non_pos
 	     (List.sort compare
 		(non_pos @
-		 (combine_pos special_pos_vars (List.map snd others)))))
+		 (combine_pos special_pos_vars (Common.nub others)))))
 	 non_poss;
        List.combine envs
 	 (List.map
