@@ -34,15 +34,15 @@ cat_tags_file() {
 cat << EOF
 access_specifiers_0.cocci v20240610:language/access
 access_specifiers_1.cocci v20240610:language/access
-access_specifiers_1_class.cocci v20240610:language/access v20240610:language/class
+access_specifiers_1_class_failure.cocci v20240610:language/access v20240610:language/class
 access_specifiers_2.cocci v20240610:language/access
 access_specifiers_3.cocci v20240610:language/access
 access_specifiers_4.cocci v20240610:language/access
-addremvec.cocci v20240610:language/template_parameters#Template_arguments
-aggregate_initialization.cocci v20240610:language/aggregate_initialization#Syntax
+addremvec_failure.cocci v20240610:language/template_parameters#Template_arguments
+aggregate_initialization_failure.cocci v20240610:language/aggregate_initialization#Syntax
 attributeu.cocci v20240610:language/attributes
-auto.cocci v20240610:language/auto
-autoloop.cocci v20240610:language/range-for
+auto_failure.cocci v20240610:language/auto
+autoloop_failure.cocci v20240610:language/range-for
 bool1.cocci v20240610:language/function
 bracket.cocci v20240610:language/aggregate_initialization#Syntax
 bracketed_expression_assignment.cocci v20240610:language/aggregate_initialization#Syntax
@@ -53,7 +53,7 @@ braced_init_list_arg.cocci v20240610:language/initialization#Initializer v202406
 cdstr.cocci v20240610:language/constructor
 snip_field_bad.cocci v20240610:language/class
 snip_field_and_keep_access_specifier.cocci v20240610:language/class v20240610:language/access
-classfinal.cocci v20240610:language/final
+classfinal_failure.cocci v20240610:language/final
 complexcpp.cocci v20240610:numeric/complex v20240610:header/complex
 cuda1.cocci v20240610:language/operator_other#Built-in_function_call_operator
 cuda.cocci v20240610:language/function#Function_definition
@@ -65,22 +65,22 @@ decltype.cocci v20240610:language/decltype
 decltype_matches_type.cocci v20240610:language/decltype
 delete_array.cocci v20240610:language/delete#Syntax
 delete.cocci v20240610:language/delete#Syntax
-destructor_constructor_parse v20240610:language/access v20240610:language/class v20240610:language/destructor
-destructor_constructor_parse_smpl v20240610:language/access v20240610:language/class v20240610:language/destructor
-emptytmp.cocci v20240610:language/template_parameters#Template_arguments
+destructor_constructor_parse_failure v20240610:language/access v20240610:language/class v20240610:language/destructor
+destructor_constructor_parse_smpl_failure v20240610:language/access v20240610:language/class v20240610:language/destructor
+emptytmp_failure.cocci v20240610:language/template_parameters#Template_arguments
 endcolon.cocci v20240610:language/qualified_lookup
 endline.cocci v20240610:language/template_parameters#Template_arguments v20240610:language/qualified_lookup
 enumcpp.cocci v20240610:language/enum
-fieldtmp.cocci v20240610:language/operator_member_access
+fieldtmp_failure.cocci v20240610:language/operator_member_access
 finalclass.cocci v20240610:language/final#Syntax
 forc.cocci v20240610:language/template_parameters#Template_arguments
 forrange2.cocci v20240610:language/range-for
-forrange.cocci v20240610:language/range-for
+forrange_failure.cocci v20240610:language/range-for
 inh1.cocci v20240610:language/derived_class
 init3tst.cocci v20240610:language/aggregate_initialization#Syntax
-instfour.cocci v20240610:language/template_parameters#Template_arguments
+instfour_failure.cocci v20240610:language/template_parameters#Template_arguments
 instruct.cocci v20240610:language/using_declaration v20240610:preprocessor/impl
-lambda_simple.cocci v20240610:language/lambda
+lambda_simple_failure.cocci v20240610:language/lambda
 list_and_aggregate_initialization_isomorphism_off.cocci v20240610:language/aggregate_initialization#Syntax
 list_and_aggregate_initialization_isomorphism_on.cocci v20240610:language/aggregate_initialization#Syntax
 list_initialization.cocci v20240610:language/aggregate_initialization#Syntax
@@ -88,18 +88,19 @@ local_macro_fn_def_and_call.cocci v20240610:preprocessor
 macro_stmt_when_fn_type.cocci v20240610:preprocessor
 match_bracket_expressions_assignment_broken.cocci v20240610:language/aggregate_initialization#Syntax
 miniclass.cocci v20240610:language/class
-namespace_alias_definition.cocci v20240610:language/namespace_alias
-namespace_nested1.cocci v20240610:language/namespace
-namespace_nested2.cocci v20240610:language/namespace
-namespace_nested3.cocci v20240610:language/namespace
-namespace_nested4.cocci v20240610:language/namespace
+namespace_alias_definition_failure.cocci v20240610:language/namespace_alias
+namespace_nested1_failure.cocci v20240610:language/namespace
+namespace_nested2_failure.cocci v20240610:language/namespace
+namespace_nested3_failure.cocci v20240610:language/namespace
+namespace_nested4_failure.cocci v20240610:language/namespace
 new2.cocci v20240610:language/new#Syntax
 new3.cocci v20240610:language/new#Syntax
-new.cocci v20240610:language/new#Syntax
+new_failure.cocci v20240610:language/new#Syntax
 newsimple.cocci v20240610:language/new#Syntax
-noexcept.cocci v20240610:language/noexcept_spec
+nm.cocci v20240610:language/constructor
+noexcept_failure.cocci v20240610:language/noexcept_spec
 notpp.cocci v20240610:keyword/not
-opeq.cocci v20240610:language/operators
+opeq_failure.cocci v20240610:language/operators
 preprocessor_elifdef_add.cocci v20240610:language/preprocessor
 protocpp.cocci v20240610:language/reference#Rvalue_references
 qualclass.cocci v20240610:language/derived_class v20240610:language/qualified_lookup
@@ -108,23 +109,23 @@ sizet.cocci v20240610:types/size_t
 snip_field.cocci v20240610:language/class
 tempinstfour.cocci v20240610:language/template_parameters#Template_arguments
 templates1.cocci v20240610:language/template_parameters#Template_arguments
-template_test.cocci v20240610:language/template_parameters#Template_arguments
-templates_partial_specialization v20240610:language/template_parameters#Template_arguments v20240610:language/partial_specialization
+template_test_failure.cocci v20240610:language/template_parameters#Template_arguments
+templates_partial_specialization_failure v20240610:language/template_parameters#Template_arguments v20240610:language/partial_specialization
 tmpinit.cocci v20240610:language/template_parameters#Template_arguments
-tmpinst2.cocci v20240610:language/template_parameters#Template_arguments
-tmpinst4.cocci v20240610:language/template_parameters#Template_arguments
-tmpinst5.cocci v20240610:language/template_parameters#Template_arguments
+tmpinst2_failure.cocci v20240610:language/template_parameters#Template_arguments
+tmpinst4_failure.cocci v20240610:language/template_parameters#Template_arguments
+tmpinst5_failure.cocci v20240610:language/template_parameters#Template_arguments
 try_catch1.cocci v20240610:language/try v20240610:language/catch
 try_catch2.cocci v20240610:language/try v20240610:language/catch
 try_catch.cocci v20240610:language/try v20240610:language/catch
 using1.cocci v20240610:language/using_declaration
-using2.cocci v20240610:language/using_declaration
+using2_failure.cocci v20240610:language/using_declaration
 using3.cocci v20240610:language/using_declaration
-using4.cocci v20240610:language/using_declaration
-usingtest.cocci v20240610:language/using_declaration
+using4_failure.cocci v20240610:language/using_declaration
+usingtest_failure.cocci v20240610:language/using_declaration
 usingtype.cocci v20240610:language/using_declaration
-vconstr.cocci v20240610:language/virtual v20240610:language/destructor
-virtual_constructor.cocci v20240610:language/virtual v20240610:language/destructor
+vconstr_failure.cocci v20240610:language/virtual v20240610:language/destructor
+virtual_constructor_failure.cocci v20240610:language/virtual v20240610:language/destructor
 while_init_condition.cocci v20240610:language/while
 while_init_condition_smpl.cocci v20240610:language/while
 EOF
