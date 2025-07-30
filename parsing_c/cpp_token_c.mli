@@ -44,6 +44,7 @@ val apply_macro_defs:
   msg_apply_known_macro_hint:(string -> unit) ->
   ?evaluate_concatop:bool ->
   ?inplace_when_single:bool ->
+  bool ->
   (string, define_def) Hashtbl.t -> (int (*line*) * int (*col*)) list ->
   Token_views_c.paren_grouped list -> unit
 

@@ -794,7 +794,7 @@ let find_optional_macro_to_expand2 ~defs pos toks =
   ) in
 
   let tokens = toks in
-  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs pos tokens
+  Parsing_hacks.fix_tokens_cpp ~macro_defs:defs false pos tokens
 
   (* just calling apply_macro_defs and having a specialized version
    * of the code in fix_tokens_cpp is not enough as some work such
@@ -1099,7 +1099,7 @@ and _parse_print_error_heuristic2bis saved_typedefs saved_macros
                 else toks
     in
   let toks =
-    Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins [] toks in
+    Parsing_hacks.fix_tokens_cpp ~macro_defs:!_defs_builtins true [] toks in
   let toks =
     if parse_strings
     then Parsing_hacks.fix_tokens_strings toks

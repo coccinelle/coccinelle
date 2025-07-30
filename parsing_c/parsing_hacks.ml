@@ -1772,7 +1772,7 @@ let insert_virtual_positions l =
 
 (* ------------------------------------------------------------------------- *)
 
-let fix_tokens_cpp2 ~macro_defs err_pos tokens =
+let fix_tokens_cpp2 ~macro_defs is_init err_pos tokens =
   let tokens2 = ref (tokens +> Common.acc_map TV.mk_token_extended) in
 
   begin
@@ -1816,7 +1816,7 @@ let fix_tokens_cpp2 ~macro_defs err_pos tokens =
     Cpp_token_c.apply_macro_defs
       ~msg_apply_known_macro
       ~msg_apply_known_macro_hint
-      macro_defs err_pos paren_grouped;
+      is_init macro_defs err_pos paren_grouped;
     (* because the before field is used by apply_macro_defs *)
     tokens2 := TV.rebuild_tokens_extented !tokens2;
 
@@ -1852,9 +1852,9 @@ let fix_tokens_cpp2 ~macro_defs err_pos tokens =
 let time_hack1 ~macro_defs a =
   Common.profile_code_exclusif "HACK" (fun () -> fix_tokens_cpp2 ~macro_defs a)
 
-let fix_tokens_cpp ~macro_defs err_pos a =
+let fix_tokens_cpp ~macro_defs is_init err_pos a =
   Common.profile_code "C parsing.fix_cpp"
-    (fun () -> time_hack1 ~macro_defs err_pos a)
+    (fun () -> time_hack1 ~macro_defs is_init err_pos a)
 
 
 

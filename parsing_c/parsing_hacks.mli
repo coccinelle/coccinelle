@@ -55,6 +55,7 @@ val fix_tokens_strings : Parser_c.token list -> Parser_c.token list
  * expand some macros *)
 val fix_tokens_cpp :
   macro_defs:(string, Cpp_token_c.define_def) Hashtbl.t ->
+  bool (* true if macro file builtins *) ->
   (int (*line*) * int (*col*)) list ->
   Parser_c.token list -> Parser_c.token list
 

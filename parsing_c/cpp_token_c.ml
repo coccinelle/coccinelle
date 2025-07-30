@@ -336,7 +336,7 @@ let apply_macro_defs
  ~msg_apply_known_macro_hint
  ?evaluate_concatop
  ?(inplace_when_single=true)
- defs pos xs =
+ initcase defs pos xs =
 
  let rec apply_macro_defs dynamic_macs pos xs =
   match xs with
@@ -522,6 +522,10 @@ let apply_macro_defs
 	+> iter_token_paren (set_as_comment Token_c.CppMacro);
       let dynamic_macs =
 	if List.mem s dynamic_macs then dynamic_macs else s::dynamic_macs in
+      apply_macro_defs dynamic_macs pos xs
+
+  | PToken ({tok = Tattribute (i1)})::(Parenthised (xxs,info_parens))::xs when initcase ->
+      (* skip args, as attributes live in a different space *)
       apply_macro_defs dynamic_macs pos xs
 
   | ((PToken ({tok = TDefine i} as t1)) as start)::xs

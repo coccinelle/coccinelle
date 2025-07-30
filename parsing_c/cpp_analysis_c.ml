@@ -244,7 +244,7 @@ let (macro_expand:
          * so can not use fix_tokens_cpp in the same we use it
          * to parse C code.
         let xs' =
-          Parsing_hacks.fix_tokens_cpp ~macro_defs:current_def xs
+          Parsing_hacks.fix_tokens_cpp ~macro_defs:current_def false xs
         in
          *)
         let tokens = xs in
@@ -258,7 +258,7 @@ let (macro_expand:
             pr2 "hint")
           ~evaluate_concatop:false
           ~inplace_when_single:false
-          current_def [] paren_grouped;
+          false current_def [] paren_grouped;
         (* because the before field is used by apply_macro_defs *)
         tokens2 := TV.rebuild_tokens_extented !tokens2;
 
