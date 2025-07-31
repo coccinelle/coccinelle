@@ -113,10 +113,6 @@ let print_update_regression test_dir score =
 
   if Hashtbl.length score <= 0 then failwith "There are no tests results ...";
 
-  let expected_score_file = dbe2nm (test_dir, "SCORE_expected", score_ext) in
-  let best_of_both_file = dbe2nm (test_dir, "SCORE_best_of_both", score_ext) in
-  let actual_score_file = dbe2nm (test_dir, "SCORE_actual", score_ext) in
-
   perr_nl "--------------------------------";
   perr_nl "statistics";
   perr_nl "--------------------------------";
@@ -136,50 +132,24 @@ let print_update_regression test_dir score =
   perr_nl "--------------------------------";
   perr_nl "regression testing  information";
   perr_nl "--------------------------------";
-  perr_nl ("regression file: "^ expected_score_file);
 
-  let expected_score =
-    if Sys.file_exists expected_score_file then
-      Common.load_score expected_score_file()
-    else
-      let s = Common.empty_score() in
-      let _ = Common.save_score s expected_score_file in
-      s
-  in
-
-  (* find and print changes in test results since last time *)
-  let new_bestscore = Common.regression_testing_vs score expected_score in
-
-  Common.save_score score actual_score_file;
-  Common.save_score new_bestscore best_of_both_file;
   Common.print_total_score score;
 
   let (good, total, _) = Common.total_scores score in
-  let (expected_good, expected_total, _) = Common.total_scores expected_score in
 
-  if good = expected_good then begin
+  if good = total then begin
 
-    perr_nl "Current score is equal to expected score; everything is fine"
-
-  end else
-  if good < expected_good then begin
-
-    perr_nl "Current score is lower than expected :(";
-    perr_nl (spf "(was expecting %d but got %d)\n" expected_good good);
-    perr_nl "If you think it's normal, then maybe you need to update the";
-    perr_nl (spf "score file %s, copying info from %s."
-             expected_score_file actual_score_file)
+    perr_nl "All tests have passed; everything is fine"
 
   end else
-  (* if good > expected_good then *) begin
+  if good < total then begin
 
-    perr_nl "Current score is greater than expected :)";
-    perr_nl (spf "(was expecting %d but got %d)" expected_good good);
-    perr_nl "Generating new expected score file and saving old one";
-    Common.command2_y_or_no_exit_if_no
-      (spf "mv %s %s" expected_score_file (expected_score_file ^ ".save"));
-    Common.command2_y_or_no_exit_if_no
-      (spf "mv %s %s" best_of_both_file expected_score_file)
+    perr_nl "You have test failures  :(";
+
+  end else
+  (* if good > total then *) begin
+
+    perr_nl "The number of passing tests is higher than the number of tests?";
 
   end
 
