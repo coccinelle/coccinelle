@@ -476,28 +476,22 @@ maximum number of cached ASTs, sets \fB\-\-use\-cache\fR
 The test options don't work with the \fB\-\-sp\-file\fR and so on.
 .TP
 \fB\-\-test\fR
-<file> launch spatch on tests/file.[c,cocci]
+<file> launch spatch on file.[c,cocci]
 .TP
-\fB\-\-testall\fR
+\fB\-\-ctestall\fR
 launch spatch on all files in tests/ having a .res
 .TP
 \fB\-\-cpptestall\fR
-launch spatch on all files in cpptests/ (C++ code) having a .res
+launch spatch on all files in cpptests/ (C++) having a .res
+.TP
+\fB\-\-testall\fR
+launch spatch on all files in tests/ and cpptests/ having a .res
 .TP
 \fB\-\-test\-okfailed\fR
 generates .{ok,failed,spatch_ok} files using .res files
 .TP
 \fB\-\-test\-regression\-okfailed\fR
 process the .{ok,failed,spatch_ok} files in current dir
-.TP
-\fB\-\-compare\-with\-expected\fR
-use also file.res
-.TP
-\fB\-\-expected\-score\-file\fR
-which score file to compare with in \fB\-\-ctestall\fR or \fB\-\-cpptestall\fR
-.TP
-\fB\-\-no\-update\-score\-file\fR
-do not update the score file when \fB\-\-ctestall\fR or \fB\-\-cpptestall\fR succeeds
 .HP
 \fB\-\-relax\-include\-path\fR
 .PP

@@ -787,13 +787,13 @@ let other_options = [
   "The test options don't work with the --sp-file and so on.",
   [
     "--test",    Arg.Set test_mode,
-    "   <file> launch spatch on tests/file.[c,cocci]";
+    "   <file> launch spatch on file.[c,cocci]";
     "--ctestall", Arg.Set c_test_all,
     "   launch spatch on all files in tests/ having a .res";
     "--cpptestall", Arg.Set cpp_test_all,
     "   launch spatch on all files in cpptests/ (C++) having a .res";
     "--testall", Arg.Set test_all,
-    "   launch spatch on all files in tests/ having a .res";
+    "   launch spatch on all files in tests/ and cpptests/ having a .res";
     "--test-spacing", Arg.Set test_spacing,
     "    check that the result matches the .res file exactly";
     "--test-okfailed", Arg.Set test_okfailed,
