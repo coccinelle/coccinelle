@@ -102,23 +102,6 @@ let new_test_parse_gen xs =
     else Hashtbl.add newscore file (Common.Pb s)
   );
 
-(* uses an explicit path; to fix
-  dirname_opt +> Common.do_option (fun dirname ->
-    pr2_xxxxxxxxxxxxxxxxx();
-    pr2 "regression testing  information";
-    pr2_xxxxxxxxxxxxxxxxx();
-    let str = Str.global_replace (Str.regexp "/") "__" dirname in
-    let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext = "c" then "" else ext in
-    let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
-    if Sys.file_exists filename
-    then
-      Common.regression_testing newscore
-	(Filename.concat score_path
-	   ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
-  );
-*)
-
   if !stat_list <> []
   then begin
     Parsing_stat.print_recurring_problematic_tokens !stat_list;
@@ -174,23 +157,6 @@ let test_parse_gen xs ext =
     then Hashtbl.add newscore file (Common.Ok)
     else Hashtbl.add newscore file (Common.Pb s)
   );
-
-(* uses an explicit path; to fix
-  dirname_opt +> Common.do_option (fun dirname ->
-    pr2_xxxxxxxxxxxxxxxxx();
-    pr2 "regression testing  information";
-    pr2_xxxxxxxxxxxxxxxxx();
-    let str = Str.global_replace (Str.regexp "/") "__" dirname in
-    let def = if !Flag_parsing_c.filter_define_error then "_def_" else "" in
-    let ext = if ext = "c" then "" else ext in
-    let filename = "score_parsing__" ^str ^ def ^ ext ^ ".marshalled" in
-    if Sys.file_exists filename
-    then
-      Common.regression_testing newscore
-	(Filename.concat score_path
-	   ("score_parsing__" ^str ^ def ^ ext ^ ".marshalled"))
-  );
-*)
 
   if !stat_list <> []
   then begin

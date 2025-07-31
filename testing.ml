@@ -190,7 +190,7 @@ let print_test_name test_path =
 
 let print_regression_information regression_information =
   pr2 "--------------------------------";
-  pr2 "regression testing  information";
+  pr2 "regression testing information";
   pr2 "--------------------------------";
 
   Common.print_total_score regression_information.score;
@@ -569,7 +569,7 @@ let test_regression_okfailed () =
       Hashtbl.add newscore (chop_ext s) (Common.Pb "fail")
     );
     pr2 "--------------------------------";
-    pr2 "regression testing  information";
+    pr2 "regression testing information";
     pr2 "--------------------------------";
     Common.regression_testing newscore ("score_failed.marshalled")
   end

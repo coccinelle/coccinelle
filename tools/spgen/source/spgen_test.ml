@@ -130,7 +130,7 @@ let print_update_regression test_dir score =
   List.iter print_result (Common.hash_to_list score);
 
   perr_nl "--------------------------------";
-  perr_nl "regression testing  information";
+  perr_nl "regression testing information";
   perr_nl "--------------------------------";
 
   Common.print_total_score score;
