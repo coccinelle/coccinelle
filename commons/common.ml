@@ -4470,12 +4470,6 @@ type score_list = (string (* usually a filename *) * score_result) list
 
 let empty_score () = (Hashtbl.create 101 : score)
 
-let save_score score path =
-  write_value score path
-
-let load_score path () =
-  read_value path
-
 (* be insensitive to newlines, to allow improvements in the error message
 formatting *)
 let close_enough s1 s2 =

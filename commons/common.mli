@@ -216,8 +216,6 @@ type score_result = Ok | Pb of string | PbKnown of string
 type score =      (string (* usually a filename *), score_result) Hashtbl.t
 type score_list = (string (* usually a filename *) * score_result) list
 val empty_score : unit -> score
-val load_score : string -> unit -> score
-val save_score : score -> string -> unit
 val regression_testing :
   score -> filename (* old score file on disk (usually in /tmp) *) -> unit
 val regression_testing_vs: score -> score -> score

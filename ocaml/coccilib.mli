@@ -1597,8 +1597,6 @@ module Common :
     type score = (string, score_result) Hashtbl.t
     type score_list = (string * score_result) list
     val empty_score : unit -> score
-    val load_score : string -> unit -> score
-    val save_score : score -> string -> unit
     val regression_testing : score -> filename -> unit
     val regression_testing_vs : score -> score -> score
     val total_scores : score -> int * int * int
