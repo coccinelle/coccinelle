@@ -17,7 +17,7 @@ type redirected_output = {
     show_diff_backup: bool;
   }
 
-type regression_information = {score : score; failed_tests : string list}
+type regression_information = {score : score; failed_tests : string list; unfailed_tests : string list}
 
 let out_suffix = ".stdout"
 
@@ -197,6 +197,15 @@ let print_regression_information regression_information =
 
   let (good, total, _) = Common.total_scores regression_information.score in
 
+  if regression_information.unfailed_tests != []
+  then
+    begin
+      Printf.printf "\n%!";
+      pr2 "WARNING: The following tests are marked as failures, but did not fail:";
+      List.iter print_test_name regression_information.unfailed_tests;
+      Printf.printf "\n\n%!";
+    end;
+
   if good = total
   then
     begin
@@ -237,6 +246,7 @@ let testall_bis_helper testdir setup extra_test =
 
   let score  = empty_score () in
   let failed_tests = ref [] in
+  let unfailed_tests = ref [] in (* _failure tests that pass *)
 
   let expected_result_files =
     Common.glob (testdir^"/*.res")
@@ -276,7 +286,8 @@ let testall_bis_helper testdir setup extra_test =
 	    let expected = testdir ^ "/" ^ res in
 	    let out = base ^ out_suffix in
 	    let expected_out = testdir ^ "/" ^ out in
-
+	    let r = Str.regexp ".*_failure\\.c" in
+	    let is_known_failure = Str.string_match r cfile 0 in
 	    let timeout_testall = 60 in
 
 	    try (
@@ -313,6 +324,8 @@ let testall_bis_helper testdir setup extra_test =
 		    Compare_c.Pb s
 		  | Compare_c.PbOnlyInNotParsedCorrectly s ->
 		      failed_tests := (cfile :: !failed_tests);
+      | Compare_c.Correct when is_known_failure ->
+		      unfailed_tests := (cfile :: !unfailed_tests);
 		  | _ -> ()
 		end;
 		add_file_to_score score res correct diffxs;
@@ -345,12 +358,11 @@ let testall_bis_helper testdir setup extra_test =
 	      Flag.defined_virtual_rules := [];
 	      Flag.defined_virtual_env := [];
 	      Iteration.clear_pending_instance();
-	      let r = Str.regexp ".*_failure\\.c" in
-	      if (Str.string_match r cfile 0)
+	      if (is_known_failure)
 	      then Hashtbl.add score res (Common.PbKnown s)
 	      else
-		(failed_tests := (cfile :: !failed_tests);
-		 Hashtbl.add score res (Common.Pb s))
+	      (failed_tests := (cfile :: !failed_tests);
+	      Hashtbl.add score res (Common.Pb s))
 	  end) in
     runall false expected_result_files;
     runall true (List.rev !deferred);
@@ -371,7 +383,7 @@ let testall_bis_helper testdir setup extra_test =
     );
     flush stdout; flush stderr;
 
-    {score = score; failed_tests = List.rev !failed_tests}
+    {score = score; failed_tests = List.rev !failed_tests; unfailed_tests = List.rev !unfailed_tests}
   end
 
 let testall_bis_with_score testdir setup extra_test =

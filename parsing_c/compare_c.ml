@@ -231,10 +231,8 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   let res =
     let r = Str.regexp ".*_failure\\.c" in
-    if (Str.string_match r filename1 0)
-    then PbKnown "known issues"
-    else
-    if List.length c1 <> List.length c2
+    let is_known_failure = (Str.string_match r filename1 0) in
+    if List.length c1 <> List.length c2 && not is_known_failure
     then Pb "not same number of entities (func, decl, ...)"
     else
         zip c1 c2 +> Common.fold_k (fun acc ((a,infoa),(b,infob)) k ->
@@ -242,17 +240,23 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
           | NotParsedCorrectly a, NotParsedCorrectly b ->
               (match final_loop (snd infoa) (snd infob) with
               | None -> k acc
-              | Some s -> PbOnlyInNotParsedCorrectly s
+              | Some s when not is_known_failure -> PbOnlyInNotParsedCorrectly s
+              | Some s -> PbKnown s
               )
 
-          | NotParsedCorrectly a, _ ->
+          | NotParsedCorrectly a, _ when not is_known_failure ->
               Pb "PB parsing only in generated-file"
-          | _, NotParsedCorrectly b ->
+          | NotParsedCorrectly a, _ when is_known_failure ->
+              PbKnown "PB parsing only in generated-file"
+          | _, NotParsedCorrectly b when not is_known_failure ->
               PbOnlyInNotParsedCorrectly "PB parsing only in expected-file"
+          | _, NotParsedCorrectly b when is_known_failure ->
+              PbKnown "PB parsing only in expected-file"
           | _, _ ->
               (match final_loop (snd infoa) (snd infob) with
               | None  -> k acc
-              | Some s -> Pb s
+              | Some s when not is_known_failure -> Pb s
+              | Some s -> PbKnown s
               )
         ) (fun acc -> acc)
           (Correct)
