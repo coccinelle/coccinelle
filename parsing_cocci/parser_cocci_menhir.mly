@@ -2868,7 +2868,7 @@ pure_ident_or_meta_ident_with_seed:
           let script = Parse_aux.mk_script nm pos lang params c "seed" in
           let nm' =
             match nm with
-              None, n -> "", n
+              None, n -> !(Ast0.rule_name), n
             | Some r, n -> r, n in
           Data.fresh_id_scripts :=
             (nm', script) :: !Data.fresh_id_scripts;

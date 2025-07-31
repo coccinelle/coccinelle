@@ -67,7 +67,6 @@ let string_rep_binding ctr = function
     (Some nm,Ast.MetaPosDecl _) -> print_match ctr nm "Pos"
   | (Some nm,Ast.MetaComDecl _) -> print_match ctr nm "Com"
   | (Some nm,Ast.MetaListlenDecl _) -> print_match ctr nm "Int"
-  | (Some nm,Ast.MetaFreshIdDecl _) -> ""
   | (Some nm,_) (* strings for everything else *) ->
       print_match ctr nm "Str"
   | (None,_) -> ""
@@ -246,11 +245,19 @@ let prepare_constraint (name, params, body) =
       params in
   prepare_generic_rule (name, params, [], body) "" "bool_fcts"
 
-let prepare_fresh_id (name, params, body) =
+let prepare_fresh_id (containing_rule, name, params, body) =
   let params = (* like params of a normal script rule *)
-    List.map
-      (function (((r,n) as nm),mv) -> ((Some n,None), nm, mv, Ast.NoMVInit))
-      params in
+    List.rev
+      (List.fold_left
+	 (fun prev (((r,n) as nm),mv) ->
+	   match mv with
+	     Ast.MetaFreshIdDecl _ when r = containing_rule ->
+	       failwith
+		 (Printf.sprintf
+		    "rule %s: cannot use fresh identifier %s in a fresh identifier script"
+		    containing_rule n)
+	   | _ -> ((Some n,None), nm, mv, Ast.NoMVInit) :: prev)
+	 [] params) in
   prepare_generic_rule (name, params, [], body) "" "string_fcts"
 
 let prepare coccifile code =
@@ -309,9 +316,9 @@ let prepare coccifile code =
   let constraint_rules =
     List.fold_left add_constraint_rules [] !Data.constraint_scripts in
   let add_fresh_id_rules prev
-      (self, (script_name, lang, params, pos, body)) =
+      ((containing_rule,_), (script_name, lang, params, pos, body)) =
     if lang = "ocaml"
-    then (script_name, params, body) :: prev
+    then (containing_rule, script_name, params, body) :: prev
     else prev in
   let fresh_id_rules =
     List.fold_left add_fresh_id_rules [] !Data.fresh_id_scripts in
