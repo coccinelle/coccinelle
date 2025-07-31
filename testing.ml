@@ -240,7 +240,6 @@ let testall_bis_helper testdir setup extra_test =
 
   let expected_result_files =
     Common.glob (testdir^"/*.res")
-    +> List.filter (fun f -> Common.filesize f > 0)
     +> List.map Filename.basename
     +> List.sort compare
   in
