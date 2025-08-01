@@ -19,7 +19,7 @@ while getopts "do:" NAME; do
 done
 shift $((OPTIND-1))
 
-spatch=../spatch.opt
+spatch=../spatch${TOOLS_SUFFIX}
 declare -A FAILED_RUN
 declare -A FAILED_PP
 declare -A FAILED_CP
