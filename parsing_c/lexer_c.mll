@@ -271,7 +271,7 @@ let cpp_keyword_table = Common.hash_of_list [
   "try",       (fun ii -> Ttry ii);
   "catch",     (fun ii -> Tcatch ii);
   "typeof_unequal", (fun ii -> Ttypeof ii);
-  "co_return", (fun ii -> Treturn ii)]
+  "co_return", (fun ii -> if !Flag.c_plus_plus = Flag.Off then Treturn ii else TIdent ("co_return", ii))]
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
