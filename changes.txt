@@ -19,6 +19,7 @@
 - restored support for with-python in configure and support for --python option
   in the command line to use a specific python interpreter
 - Added 'make check-cpp' to run C++-specific tests and get a summary report
+- Support for co_return (matched by 'return' and 'co_return' in SmPL)
 
 ** Bugfix:
 - Add more information in documentation, man pages and wiki

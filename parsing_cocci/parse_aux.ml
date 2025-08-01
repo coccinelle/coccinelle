@@ -563,10 +563,10 @@ let scopedguard sg lp e rp s =
     clt2mcode "(" lp,e,clt2mcode ")" rp,s,make_fake_mcode()))
 
 let ret_exp r e pv =
-  Ast0.wrap(Ast0.ReturnExpr(clt2mcode "return" r,e,clt2mcode ";" pv))
+  Ast0.wrap(Ast0.ReturnExpr(clt2mcode (fst r) (snd r),e,clt2mcode ";" pv))
 
 let ret r pv =
-  Ast0.wrap(Ast0.Return(clt2mcode "return" r,clt2mcode ";" pv))
+  Ast0.wrap(Ast0.Return(clt2mcode (fst r) (snd r),clt2mcode ";" pv))
 
 let break b pv =
   Ast0.wrap(Ast0.Break(clt2mcode "break" b,clt2mcode ";" pv))

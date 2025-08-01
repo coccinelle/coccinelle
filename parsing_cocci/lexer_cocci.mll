@@ -343,7 +343,9 @@ let id_tokens lexbuf =
   | "case" ->       TCase     linetype
   | "default" ->    TDefault  linetype
   | "scoped_guard" -> TScopedguard linetype
-  | "return" ->     TReturn   linetype
+  | "return" ->     TReturn   ("return", linetype)
+  | "co_return" when !Flag.c_plus_plus <> Flag.Off ->
+      TReturn   ("co_return", linetype)
   | "break" ->      TBreak    linetype
   | "continue" ->   TContinue linetype
   | "goto" ->       TGoto     linetype

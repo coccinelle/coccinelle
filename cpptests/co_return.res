@@ -3,3 +3,18 @@ int f()
 {
 	return 1;
 }
+
+int g()
+{
+	return 0;
+}
+
+int h()
+{
+	return 1;
+}
+
+int l()
+{
+	co_return 1;
+}

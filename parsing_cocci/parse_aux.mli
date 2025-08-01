@@ -240,10 +240,10 @@ val scopedguard :
   Data.clt -> Data.clt -> Ast0_cocci.expression Ast0_cocci.dots ->
   Data.clt -> Ast0_cocci.statement -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ret_exp :
-  Data.clt -> Ast0_cocci.expression ->
+  (string * Data.clt) -> Ast0_cocci.expression ->
   Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val ret :
-  Data.clt -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
+  (string * Data.clt) -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val break :
   Data.clt -> Data.clt -> Ast0_cocci.base_statement Ast0_cocci.wrap
 val cont :

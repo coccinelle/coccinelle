@@ -5966,22 +5966,28 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
 
   | A.Return (ia1, ia2), F.Return (st, ((),ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in
-      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-        return (
-          A.Return (ia1, ia2),
-          F.Return (st, ((),[ib1;ib2]))
-        )))
+      if ((A.unwrap_mcode ia1 = "co_return") && (B.str_of_info ib1) <> "co_return")
+      then fail
+      else
+        tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+          return (
+            A.Return (ia1, ia2),
+            F.Return (st, ((),[ib1;ib2]))
+          )))
 
   | A.ReturnExpr (ia1, ea, ia2), F.ReturnExpr (st, (eb, ii)) ->
       let (ib1, ib2) = tuple_of_list2 ii in
-      tokenf ia1 ib1 >>= (fun ia1 ib1 ->
-      tokenf ia2 ib2 >>= (fun ia2 ib2 ->
-      expression ea eb >>= (fun ea eb ->
-        return (
-          A.ReturnExpr (ia1, ea, ia2),
-          F.ReturnExpr (st, (eb, [ib1;ib2]))
-        ))))
+      if ((A.unwrap_mcode ia1 = "co_return") && (B.str_of_info ib1) <> "co_return")
+      then fail
+      else
+        tokenf ia1 ib1 >>= (fun ia1 ib1 ->
+        tokenf ia2 ib2 >>= (fun ia2 ib2 ->
+        expression ea eb >>= (fun ea eb ->
+          return (
+            A.ReturnExpr (ia1, ea, ia2),
+            F.ReturnExpr (st, (eb, [ib1;ib2]))
+          ))))
 
   | A.Undef(undefa,ida), F.DefineHeader ((idb, ii), B.Undef) ->
       let (defineb, iidb, ieol) = tuple_of_list3 ii in
