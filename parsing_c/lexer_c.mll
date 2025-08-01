@@ -270,7 +270,8 @@ let cpp_keyword_table = Common.hash_of_list [
   "decltype",  (fun ii -> Ttypeof ii);
   "try",       (fun ii -> Ttry ii);
   "catch",     (fun ii -> Tcatch ii);
-  "typeof_unequal", (fun ii -> Ttypeof ii)]
+  "typeof_unequal", (fun ii -> Ttypeof ii);
+  "co_return", (fun ii -> Treturn ii)]
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
