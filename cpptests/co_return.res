@@ -18,3 +18,26 @@ int l()
 {
 	co_return 1;
 }
+
+int m()
+{
+	1;
+	return;
+}
+
+int n()
+{
+	return;
+}
+
+int o()
+{
+	1;
+	return;
+}
+
+int p()
+{
+	1;
+	co_return;
+}

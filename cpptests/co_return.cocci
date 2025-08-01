@@ -32,3 +32,39 @@
 + co_return 1;
   }
 
+@@
+@@
+  int m()
+  {
+- return;
++ 1;
++ return;
+  }
+
+@@
+@@
+  int n()
+  {
+- co_return;
++ 1;
++ co_return;
+  }
+
+@@
+@@
+  int o()
+  {
+- return;
++ 1;
++ return;
+  }
+
+@@
+@@
+  int p()
+  {
+- co_return;
++ 1;
++ co_return;
+  }
+
