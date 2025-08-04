@@ -114,9 +114,20 @@ let rec print_tuple_list l =
   | [] -> ()
   | (a,b) :: tl -> printf "\n%d, %d" a b; print_tuple_list tl
 
-let getdiff dir = final_info dir
+let keepc l =
+  List.filter
+    (function info ->
+      let file = info.file_name in
+      let ext =
+	if !Flag.c_plus_plus <> Flag.Off
+	then [".cpp";".cxx";".cc";".h"]
+	else [".c";".h"] in
+      List.mem (Filename.extension file) ext)
+    l
 
-let getpatchdiff dir startid endid = final_patch_info dir startid endid
+let getdiff dir = keepc(final_info dir)
+
+let getpatchdiff dir startid endid = keepc(final_patch_info dir startid endid)
 
 let split s =
   match Str.split (Str.regexp_string "..") s with
