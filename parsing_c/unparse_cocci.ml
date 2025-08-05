@@ -519,9 +519,9 @@ let rec expression e =
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
   | Ast.Delete(dlt,exp) ->
-    mcode print_string dlt; expression exp
+    mcode print_string dlt; expression exp; pr_space()
   | Ast.DeleteArr(dlt,lb,rb,exp) ->
-      mcode print_string dlt; mcode print_string lb; mcode print_string rb; expression exp
+      mcode print_string dlt; pr_space(); mcode print_string lb; mcode print_string rb; pr_space(); expression exp; pr_space(); pr_space()
   | Ast.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
       mcode print_string nw;
       print_option print_args pp_opt;
