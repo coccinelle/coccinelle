@@ -443,6 +443,7 @@ and expression e =
     | Ast0.SizeOfType(szf,lp,ty,rp) ->
 	let allminus = check_allminus.VT0.combiner_rec_expression e in
 	Ast.SizeOfType(mcode szf, mcode lp,typeC allminus ty,mcode rp)
+    | Ast0.CoYield(yld,exp) -> Ast.CoYield(mcode yld,expression exp)
     | Ast0.Delete(dlt,exp) ->
 	Ast.Delete(mcode dlt,expression exp)
     | Ast0.DeleteArr(dlt,lb,rb,exp) ->

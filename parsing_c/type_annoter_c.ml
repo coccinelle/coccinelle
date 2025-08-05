@@ -1198,6 +1198,9 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	pr2_once "Type annotater:not handling New";
 	Type_c.noTypeHere (* TODO *)
 
+    | CoYield (e) ->
+	make_info_def (type_of_s "void")
+
     | Delete (box,e) ->
 	k expr;
 	pr2_once "Type annotater:not handling Delete";

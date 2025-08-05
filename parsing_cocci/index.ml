@@ -5,7 +5,7 @@
  *)
 
 (* create an index for each constructor *)
-(* current max is 204, also unused: {8,9,163,164}
+(* current max is 204, also unused: {9,163, 164}
 *)
 
 (* doesn't really work - requires that identical terms with no token
@@ -66,6 +66,7 @@ let expression e =
   | Ast0.Cast(lp,ty,rp,exp) -> [30]
   | Ast0.SizeOfExpr(szf,exp) -> [98] (* added after *)
   | Ast0.SizeOfType(szf,lp,ty,rp) -> [99] (* added after *)
+  | Ast0.CoYield(ret,exp) -> [8]
   | Ast0.Delete(dlt,exp) -> [85]
   | Ast0.DeleteArr(dlt,lb,rb,exp) -> [86]
   | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args) -> [57]

@@ -173,6 +173,7 @@ module Ast_c :
       | StatementExpr of compound wrap
       | Constructor of fullType * initialiser
       | ParenExpr of expression
+      | CoYield of expression
       | New of argument wrap2 list option * fullType * argument wrap2 list option
       | Delete of bool * expression
       | TemplateInst of expression * argument wrap2 list
@@ -795,6 +796,7 @@ module Parser_c :
       | Twhile of Ast_c.info
       | Tcatch of Ast_c.info
       | Treturn of Ast_c.info
+      | Tco_yield of Ast_c.info
       | Tgoto of Ast_c.info
       | Tscopedguard of Ast_c.info
       | Tdefault of Ast_c.info
@@ -2407,6 +2409,7 @@ module Ast_cocci :
       | Cast of string mcode * fullType * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * fullType * string mcode
+      | CoYield of string mcode * expression
       | Delete of string mcode * expression
       | DeleteArr of string mcode * string mcode * string mcode * expression
       | New of string mcode * arguments option * string mcode option * fullType * string mcode option *
@@ -3213,6 +3216,7 @@ module Ast0_cocci :
       | Cast of string mcode * typeC * string mcode * expression
       | SizeOfExpr of string mcode * expression
       | SizeOfType of string mcode * string mcode * typeC * string mcode
+      | CoYield of string mcode * expression
       | Delete of string mcode * expression
       | DeleteArr of string mcode * string mcode * string mcode * expression
       | New of string mcode * arguments option * string mcode option * typeC * string mcode option *

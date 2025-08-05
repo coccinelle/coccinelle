@@ -461,6 +461,7 @@ let rec expression e =
     | Ast_c.Constructor (t, init) -> unary
     | Ast_c.ParenExpr (e) -> primary
     | Ast_c.New (_, t, _) -> unary
+    | Ast_c.CoYield (t) -> unary
     | Ast_c.Delete(_,t) -> unary
     | Ast_c.TemplateInst(tn,args) -> unary
     | Ast_c.TupleExpr(args) -> unary
@@ -518,6 +519,8 @@ let rec expression e =
       mcode print_string sizeof;
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
+  | Ast.CoYield(yld,exp) ->
+    mcode print_string yld; expression exp
   | Ast.Delete(dlt,exp) ->
     mcode print_string dlt; expression exp; pr_space()
   | Ast.DeleteArr(dlt,lb,rb,exp) ->

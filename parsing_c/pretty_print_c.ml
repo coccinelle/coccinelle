@@ -181,6 +181,8 @@ let mk_pretty_printers
 
     | ParenExpr (e), [i1;i2] -> pr_elem i1; pp_expression e; pr_elem i2;
 
+    (* C++ *)
+    | CoYield (t), [i1] -> pr_elem i1; pr_space(); pp_expression t
     | New   (pp, t, init),    i1::rest ->
 	pr_elem i1; pr_space();
 	let rest =
@@ -231,6 +233,7 @@ let mk_pretty_printers
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
     | ParenExpr (_) | New (_) | Delete (_,_) | TemplateInst(_,_) | TupleExpr(_)
+    | CoYield (_)
     | Defined (_)),_ -> raise (Impossible 95)
     );
 
@@ -1800,7 +1803,6 @@ and pp_init (init, iinit) =
     | F.TrueNode _ -> pr2 "TrueNode"
     | F.InLoopNode -> pr2 "InLoopNode"
     | F.Fake -> pr2 "Fake" in
-
 
   { expression = pp_expression;
     assignOp   = pr_assignOp;

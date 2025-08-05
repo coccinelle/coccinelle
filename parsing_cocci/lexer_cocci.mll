@@ -309,6 +309,10 @@ let id_tokens lexbuf =
   | "decimal" when !Flag.ibm -> Tdecimal linetype
   | "EXEC" when !Flag.ibm -> Texec linetype
 
+  | "co_yield"  ->
+	if !Flag.c_plus_plus = Flag.Off
+	then check_var s linetype
+	else TCoYield linetype
   | "delete"  ->
 	if !Flag.c_plus_plus = Flag.Off
 	then check_var s linetype

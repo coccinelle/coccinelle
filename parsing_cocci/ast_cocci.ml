@@ -203,6 +203,7 @@ and base_expression =
   | SizeOfExpr     of string mcode (* sizeof *) * expression
   | SizeOfType     of string mcode (* sizeof *) * string mcode (* ( *) *
                       fullType * string mcode (* ) *)
+  | CoYield        of string mcode (* co_yield *) * expression
   | Delete         of string mcode (* delete *) * expression
   | DeleteArr      of string mcode (* delete *) * string mcode (* [ *) * string mcode (* ] *) *
 	              expression

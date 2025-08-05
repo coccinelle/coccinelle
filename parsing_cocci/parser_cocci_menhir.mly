@@ -258,6 +258,7 @@ let inline_id aft = function
 %token <Data.clt> TVAEllipsis
 %token <Data.clt> TIf TElse TWhile TFor TDo TSwitch TCase TDefault TScopedguard
 %token <string * Data.clt> TReturn
+%token <Data.clt> TCoYield
 %token <Data.clt> TBreak TContinue TGoto TSizeof TFunDecl TFunProto TNew Tdelete
 %token <string * Data.clt> TTypeof
 %token <Data.clt> Tdecimal Texec
@@ -2532,6 +2533,10 @@ unary_expr(r,pe):
   | s=Tdelete lb=TOCro rb=TCCro exp=unary_expr_bis
       { Ast0_cocci.wrap(Ast0_cocci.DeleteArr  (Parse_aux.clt2mcode "delete" s,
 					       Parse_aux.tok2mcode lb, Parse_aux.tok2mcode rb, exp)) }
+  | TCoYield unary_expr_bis
+      { Ast0_cocci.wrap(Ast0_cocci.CoYield     (Parse_aux.clt2mcode "co_yield" $1, $2)) }
+  | s=TCoYield lb=TOCro rb=TCCro exp=unary_expr_bis
+      { Ast0_cocci.wrap(Ast0_cocci.CoYield     (Parse_aux.clt2mcode "co_yield" s, exp)) }
 cppnew:
   (* There are a total of 8 variations of New, because of three independant binary possibilities,
    that is, new (placement params)|None (type)|type initilizer|None *)
@@ -3867,6 +3872,7 @@ anything: /* used for script code */
  | TContinue { "continue" }
  | TGoto { "goto" }
  | TSizeof { "sizeof" }
+ | TCoYield { "co_yield" }
  | Tdelete {"delete"}
  | TNew { "new" }
  | Tdecimal { "decimal" }

@@ -126,6 +126,7 @@ let rec left_expression e =
   | Ast0.Cast(lp,ty,rp,exp) -> modif_before_mcode lp
   | Ast0.SizeOfExpr(szf,exp) -> modif_before_mcode szf
   | Ast0.SizeOfType(szf,lp,ty,rp) -> modif_before_mcode szf
+  | Ast0.CoYield(yld,exp) -> modif_before_mcode yld
   | Ast0.Delete(dlt,exp) -> modif_before_mcode dlt
   | Ast0.DeleteArr(dlt,lb,rb,exp) -> modif_before_mcode dlt
   | Ast0.TemplateInst(name,lab,args,rab) -> left_expression name

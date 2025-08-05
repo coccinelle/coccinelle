@@ -291,6 +291,10 @@ let combiner bind option_default mcode donothing
 	  let lty = fullType ty in
 	  let lrp = string_mcode rp in
 	  multibind [lszf; llp; lty; lrp]
+      | Ast.CoYield(yld,exp) ->
+	    let lyld = string_mcode yld in
+	    let lexp =  expression exp in
+            bind lyld lexp
       | Ast.Delete(dlt,exp) ->
 	  let ldlt = string_mcode dlt in
 	  let lexp = expression exp in
@@ -1558,6 +1562,10 @@ let rebuilder mcode donothing
 	    let lty = fullType ty in
 	    let lrp = string_mcode rp in
 	    Ast.SizeOfType(lszf, llp, lty, lrp)
+        | Ast.CoYield(yld,exp) ->
+	    let lyld = string_mcode yld in
+	    let lexp =  expression exp in
+	    Ast.CoYield(lyld, lexp)
 	| Ast.Delete(dlt,exp) ->
 	    let ldlt = string_mcode dlt in
 	    let lexp = expression exp in

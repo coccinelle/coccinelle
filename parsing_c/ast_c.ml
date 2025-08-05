@@ -381,6 +381,7 @@ and expression = (expressionbis * exp_info ref (* semantic: *)) wrap3
   | ParenExpr of expression
 
   (* for C++: *)
+  | CoYield of expression
   | New of (argument wrap2 (* , *) list) option * fullType * (argument wrap2 (* , *) list) option
   | Delete of bool (* true if [] *) * expression
   | TemplateInst of expression * argument wrap2 list

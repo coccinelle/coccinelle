@@ -263,6 +263,9 @@ and disjexp e =
       let ty = disjty ty in
       List.map
 	(function ty -> Ast.rewrap e (Ast.SizeOfType(szf,lp,ty,rp))) ty
+  | Ast.CoYield(yld,exp) ->
+      let exp = disjexp exp in
+      List.map (function exp -> Ast.rewrap e (Ast.CoYield(yld, exp))) exp
   | Ast.Delete(dlt, exp) ->
       let exp = disjexp exp in
       List.map (function exp -> Ast.rewrap e (Ast.Delete(dlt, exp))) exp

@@ -176,6 +176,7 @@ let token2c (tok,_) add_clt =
   | PC.TCase(clt) -> add_clt "case" clt
   | PC.TDefault(clt) -> add_clt "default" clt
   | PC.TReturn(s,clt) -> add_clt s clt
+  | PC.TCoYield(clt) -> add_clt "co_yield" clt
   | PC.TBreak(clt) -> add_clt "break" clt
   | PC.TContinue(clt) -> add_clt "continue" clt
   | PC.TGoto(clt) -> add_clt "goto" clt
@@ -375,6 +376,7 @@ let plus_attachable only_plus (tok,_) =
 
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(_,clt)
+  | PC.TCoYield(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TScopedguard(clt) | PC.TSymId(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
@@ -470,6 +472,7 @@ let get_clt (tok,_) =
 
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt) | PC.TReturn(_,clt)
+  | PC.TCoYield(clt)
   | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt) | PC.TIdent(_,clt)
   | PC.TScopedguard(clt) | PC.TQualId(_,clt) | PC.TTypeId(_,clt) | PC.TSymId(_,clt)
   | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
@@ -673,6 +676,7 @@ let update_clt (tok,x) clt =
   | PC.TCase(_) -> (PC.TCase(clt),x)
   | PC.TDefault(_) -> (PC.TDefault(clt),x)
   | PC.TReturn(s,_) -> (PC.TReturn(s,clt),x)
+  | PC.TCoYield(_) -> (PC.TCoYield(clt),x)
   | PC.TBreak(_) -> (PC.TBreak(clt),x)
   | PC.TContinue(_) -> (PC.TContinue(clt),x)
   | PC.TGoto(_) -> (PC.TGoto(clt),x)
@@ -997,7 +1001,9 @@ let split_token ((tok,_) as t) =
   | PC.TIf(clt) | PC.TElse(clt)  | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch(clt) | PC.TCase(clt) | PC.TDefault(clt)
   | PC.TSizeof(clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
-  | PC.TReturn(_,clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
+  | PC.TReturn(_,clt)
+  | PC.TCoYield(clt)
+  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TScopedguard(clt) | PC.TIdent(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TSymId(_,clt)
@@ -1186,6 +1192,7 @@ let find_function_names l =
     | (PC.TDirective(_),_)::_
     | (PC.TElse(_),_)::_
     | (PC.TReturn(_,_),_)::_
+    | (PC.TCoYield(_),_)::_
     | (PC.TMetaStm(_),_)::_
     | (PC.TMetaExp(_),_)::_
     | (PC.TMetaId(_),_)::_
@@ -1454,7 +1461,9 @@ let token2line (tok,_) =
   | PC.TIf(clt) | PC.TElse(clt) | PC.TWhile(clt) | PC.TFor(clt) | PC.TDo(clt)
   | PC.TSwitch (clt) | PC.TCase (clt) | PC.TDefault (clt)
   | PC.TSizeof (clt) | PC.TNew(clt) | PC.Tdelete(clt) | PC.TTypeof(_,clt)
-  | PC.TReturn(_,clt) | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
+  | PC.TReturn(_,clt)
+  | PC.TCoYield(clt)
+  | PC.TBreak(clt) | PC.TContinue(clt) | PC.TGoto(clt)
   | PC.TScopedguard(clt) | PC.TIdent(_,clt) | PC.TQualId(_,clt)
   | PC.TTypeId(_,clt) | PC.TDeclarerId(_,clt) | PC.TIteratorId(_,clt)
   | PC.TMetaDeclarer(_,_,_,clt) | PC.TMetaIterator(_,_,_,clt)
