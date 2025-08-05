@@ -66,6 +66,7 @@ decltype.cocci v20240610:language/decltype
 decltype_matches_type.cocci v20240610:language/decltype
 delete_array.cocci v20240610:language/delete#Syntax
 delete.cocci v20240610:language/delete#Syntax
+delete_replace_failure.cocci v20240610:language/delete#Syntax
 destructor_constructor_parse_failure v20240610:language/access v20240610:language/class v20240610:language/destructor
 destructor_constructor_parse_smpl_failure v20240610:language/access v20240610:language/class v20240610:language/destructor
 emptytmp_failure.cocci v20240610:language/template_parameters#Template_arguments
