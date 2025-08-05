@@ -451,10 +451,10 @@ let rec expression e =
       let rp = normal_mcode rp in
       mkres e (Ast0.SizeOfType(szf,lp,typeC ty,rp))
         (promote_mcode szf)  (promote_mcode rp)
-  | Ast0.CoYield(yld,exp) ->
+  | Ast0.CoAwaitYield(yld,exp) ->
       let yld = normal_mcode yld in
       let exp = expression exp in
-      mkres e (Ast0.CoYield(yld,exp)) (promote_mcode yld) exp
+      mkres e (Ast0.CoAwaitYield(yld,exp)) (promote_mcode yld) exp
   | Ast0.Delete(dlt,exp) ->
       let dlt = normal_mcode dlt in
       let exp = expression exp in

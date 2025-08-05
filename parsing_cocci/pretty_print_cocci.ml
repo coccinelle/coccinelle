@@ -262,7 +262,7 @@ let rec expression e =
       mcode print_string sizeof;
       mcode print_string_box lp; fullType ty; close_box();
       mcode print_string rp
-  | Ast.CoYield(yld,exp) ->
+  | Ast.CoAwaitYield(yld,exp) ->
       mcode print_string yld; print_string " "; expression exp
   | Ast.Delete(dlt,exp) ->
       mcode print_string dlt; print_string " "; expression exp

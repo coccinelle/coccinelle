@@ -266,11 +266,11 @@ let rec top_expression opt_allowed tgt expr =
       let ty = typeC arity ty in
       let rp = mcode rp in
       make_exp expr tgt arity (Ast0.SizeOfType(szf,lp,ty,rp))
-  | Ast0.CoYield(yld,exp) ->
+  | Ast0.CoAwaitYield(yld,exp) ->
       let arity = exp_same (mcode2line yld) [mcode2arity yld] in
       let yld = mcode yld in
       let exp = expression arity exp in
-      make_exp expr tgt arity (Ast0.CoYield(yld,exp))
+      make_exp expr tgt arity (Ast0.CoAwaitYield(yld,exp))
   | Ast0.Delete(dlt,exp) ->
       let arity = exp_same (mcode2line dlt) [mcode2arity dlt] in
       let dlt = mcode dlt in

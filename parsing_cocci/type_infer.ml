@@ -315,7 +315,7 @@ let rec propagate_types env =
 	| Ast0.Cast(lp,ty,rp,exp) -> Some ty
 	| Ast0.SizeOfExpr(szf,exp) -> Some (Ast0.wrap int_type)
 	| Ast0.SizeOfType(szf,lp,ty,rp) -> Some (Ast0.wrap int_type)
-	| Ast0.CoYield(yld,exp) -> Some (Ast0.wrap void_type)
+	| Ast0.CoAwaitYield(yld,exp) -> Some (Ast0.wrap void_type)
 	| Ast0.Delete(dlt,exp) -> Some (Ast0.wrap void_type)
 	| Ast0.DeleteArr(dlr,lb,rb,exp) -> Some (Ast0.wrap void_type)
 	| Ast0.New(nw,pp,lp_opt,ty,rp_opt,args) -> Some ty

@@ -56,6 +56,8 @@ cdstr.cocci v20240610:language/constructor
 co_return.cocci v20240610:language/coroutines
 co_yield_kw0.cocci v20240610:language/coroutines
 co_yield_kw1.cocci v20240610:language/coroutines
+co_await_kw0.cocci v20240610:language/coroutines
+co_await_kw1.cocci v20240610:language/coroutines
 constinit_parse_ok.cocci v20240610:language/constinit
 constinit_modify_failure.cocci v20240610:language/constinit
 snip_field_bad.cocci v20240610:language/class

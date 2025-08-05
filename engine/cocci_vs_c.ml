@@ -1705,13 +1705,13 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
                               )))))))
 		
 
-  | A.CoYield (ylda,expa), ((B.CoYield (expb),typ),ii) ->
+  | A.CoAwaitYield (ylda,expa), ((B.CoAwaitYield (expb),typ),ii) ->
       let yldb = tuple_of_list1 ii in
       tokenf ylda yldb >>= (fun ylda yldb ->
       expression expa expb >>= (fun expa expb ->
         return (
-          (A.CoYield (ylda, expa)) +> wa,
-          ((B.CoYield (expb),typ),[yldb])
+          (A.CoAwaitYield (ylda, expa)) +> wa,
+          ((B.CoAwaitYield (expb),typ),[yldb])
       )))
 
   | A.Delete (dlta,expa), ((B.Delete (false,expb),typ),ii) ->
@@ -1839,7 +1839,7 @@ let rec (expression: (A.expression, Ast_c.expression) matcher) =
   | _, ((B.Sequence _,_),_)
   | _, ((B.StatementExpr _,_),_)
   | _, ((B.New _,_),_)
-  | _, ((B.CoYield _,_),_)
+  | _, ((B.CoAwaitYield _,_),_)
   | _, ((B.Delete _,_),_)
   | _, ((B.Defined _,_),_)
     -> fail

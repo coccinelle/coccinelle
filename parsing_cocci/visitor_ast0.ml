@@ -206,10 +206,10 @@ let visitor mode bind option_default
 	    let (ty_n,ty) = typeC ty in
             let (rp_n,rp) = string_mcode rp in
 	    (multibind [szf_n;lp_n;ty_n;rp_n], Ast0.SizeOfType(szf,lp,ty,rp))
-	| Ast0.CoYield(ret,exp) ->
+	| Ast0.CoAwaitYield(ret,exp) ->
 	    let (ret_n,ret) = string_mcode ret in
 	    let (exp_n,exp) = expression exp in
-	    (multibind [ret_n;exp_n], Ast0.CoYield(ret,exp))
+	    (multibind [ret_n;exp_n], Ast0.CoAwaitYield(ret,exp))
 	| Ast0.Delete(dlt, exp) ->
 	    let (dlt_n,dlt) = string_mcode dlt in
 	    let (exp_n,exp) = expression exp in

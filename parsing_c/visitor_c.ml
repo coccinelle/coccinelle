@@ -344,7 +344,7 @@ let rec vk_expr = fun bigf expr ->
         do_option (vk_argument_list bigf) pp;
 	vk_type bigf t;
 	do_option (vk_argument_list bigf) init
-    | CoYield (e) -> vk_expr bigf e
+    | CoAwaitYield (e) -> vk_expr bigf e
     | Delete (_,e) -> vk_expr bigf e
     | TemplateInst(nm,args) ->
 	exprf nm;
@@ -1426,7 +1426,7 @@ let rec vk_expr_s = fun bigf expr ->
 	    vk_type_s bigf t,
 	    fmap (function init -> init +> List.map (fun (e,ii) ->
               vk_argument_s bigf e, iif ii)) init)
-      | CoYield (e) -> CoYield (vk_expr_s bigf e)
+      | CoAwaitYield (e) -> CoAwaitYield (vk_expr_s bigf e)
       | Delete (box,e) -> Delete (box,vk_expr_s bigf e)
     | TemplateInst(nm,args) ->
       TemplateInst(exprf nm,

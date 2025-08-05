@@ -394,8 +394,8 @@ let rec expression_pos exp snp
   | Ast0.New(nw,pp_opt,lp_opt,ty,rp_opt,args_opt) ->
       let constructor ~mc = Ast0.New(mc,pp_opt,lp_opt,ty,rp_opt,args_opt) in
       mcode_wrap ~mc:nw ~constructor snp
-  | Ast0.CoYield (yldmc, exp) ->
-      let constructor ~mc = Ast0.CoYield(mc, exp) in
+  | Ast0.CoAwaitYield (yldmc, exp) ->
+      let constructor ~mc = Ast0.CoAwaitYield(mc, exp) in
       mcode_wrap ~mc:yldmc ~constructor snp
   | Ast0.Delete(deletemc, exp) ->
       let constructor ~mc = Ast0.Delete(mc, exp) in

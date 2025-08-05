@@ -233,7 +233,7 @@ let rec expression e =
           mcode print_string szf;
 	  mcode print_string_box lp; typeC ty; close_box();
 	  mcode print_string rp
-      | Ast0.CoYield(yld,exp) ->
+      | Ast0.CoAwaitYield(yld,exp) ->
 	  mcode print_string yld; print_string " "; expression exp
       | Ast0.Delete(dlt,exp) ->
 	  mcode print_string dlt; print_string " "; expression exp

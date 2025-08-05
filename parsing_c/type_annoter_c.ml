@@ -1198,8 +1198,14 @@ let annotater_expr_visitor_subpart = (fun (k,bigf) expr ->
 	pr2_once "Type annotater:not handling New";
 	Type_c.noTypeHere (* TODO *)
 
-    | CoYield (e) ->
-	make_info_def (type_of_s "void")
+    | CoAwaitYield (_, ii) ->
+        let i = tuple_of_list1 ii in
+        if ( str_of_info i = "co_yield" )
+	then
+          make_info_def (type_of_s "void")
+	else (
+	  pr2_once "Type annotater:not handling co_await";
+          Type_c.noTypeHere )
 
     | Delete (box,e) ->
 	k expr;
