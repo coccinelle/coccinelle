@@ -34,7 +34,7 @@ cat_tags_file() {
 cat << EOF
 access_specifiers_0.cocci v20240610:language/access
 access_specifiers_1.cocci v20240610:language/access
-access_specifiers_1_class_failure.cocci v20240610:language/access v20240610:language/class
+access_specifiers_1_class.cocci v20240610:language/access v20240610:language/class
 access_specifiers_2.cocci v20240610:language/access
 access_specifiers_3.cocci v20240610:language/access
 access_specifiers_4.cocci v20240610:language/access
