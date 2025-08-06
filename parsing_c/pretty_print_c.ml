@@ -1009,13 +1009,20 @@ and pp_string_format (e,ii) =
           | (Pointer t2, [ipointer]) ->
               (match t2 with
               | (q2, attrs, (FunctionType t, ii3)) ->
-
-		  pp_type_left (q2, attrs, mk_tybis (FunctionType t) ii3);
-		  pr_elem i1;
-		  pr_elem ipointer;
-		  print_ident ident;
-		  pr_elem i2;
-		  pp_type_right (q2, attrs, mk_tybis (FunctionType t) ii3);
+                pp_type_left (q2, attrs, mk_tybis (FunctionType t) ii3);
+                pr_elem i1;
+                pr_elem ipointer;
+                print_ident ident;
+                pr_elem i2;
+                pp_type_right (q2, attrs, mk_tybis (FunctionType t) ii3);
+              | q2, attrs, (Array (t1, t2), ii3) ->
+                  (* distinguishes pointer array and pointer to array *)
+                  pp_type_left (q2, attrs, mk_tybis (Array (t1, t2)) ii3);
+                  pr_elem i1;
+                  pr_elem ipointer;
+                  print_ident ident;
+                  pr_elem i2;
+                  pp_type_right (q2, attrs, mk_tybis (Array (t1, t2)) ii3)
               | _ ->
                   pr2 "PB PARENTYPE ZARB, I forget about the ()";
                   pp_type_with_ident_rest ident ttop Ast_c.noattr Ast_c.noattr;
