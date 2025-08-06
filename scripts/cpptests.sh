@@ -109,6 +109,8 @@ qualclass.cocci v20240610:language/derived_class v20240610:language/qualified_lo
 qual.cocci v20240610:language/qualified_lookup
 sizet.cocci v20240610:types/size_t
 snip_field.cocci v20240610:language/class
+structured_bindings_parse_failure.cocci v20240610:language/structured_binding
+structured_bindings_modify_failure.cocci v20240610:language/structured_binding
 tempinstfour.cocci v20240610:language/template_parameters#Template_arguments
 templates1.cocci v20240610:language/template_parameters#Template_arguments
 template_test_failure.cocci v20240610:language/template_parameters#Template_arguments
