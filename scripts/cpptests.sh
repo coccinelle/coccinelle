@@ -38,6 +38,8 @@ access_specifiers_1_class.cocci v20240610:language/access v20240610:language/cla
 access_specifiers_2.cocci v20240610:language/access
 access_specifiers_3.cocci v20240610:language/access
 access_specifiers_4.cocci v20240610:language/access
+case_attribute_modify_failure v20240610:language/attributes
+case_attribute_parse_failure v20240610:language/attributes
 addremvec_failure.cocci v20240610:language/template_parameters#Template_arguments
 aggregate_initialization_failure.cocci v20240610:language/aggregate_initialization#Syntax
 attributeu.cocci v20240610:language/attributes
