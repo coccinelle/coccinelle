@@ -233,7 +233,7 @@ let mk_pretty_printers
     | SizeOfExpr (_) | SizeOfType (_) | Cast (_,_)
     | StatementExpr (_) | Constructor _
     | ParenExpr (_) | New (_) | Delete (_,_) | TemplateInst(_,_) | TupleExpr(_)
-    | CoAwaitYield (_,_)
+    | CoAwaitYield (_)
     | Defined (_)),_ -> raise (Impossible 95)
     );
 
