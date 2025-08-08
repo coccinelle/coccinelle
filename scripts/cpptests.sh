@@ -110,7 +110,7 @@ noexcept_failure.cocci v20240610:language/noexcept_spec
 notpp.cocci v20240610:keyword/not
 opeq_failure.cocci v20240610:language/operators
 override_modify_failure.cocci v20240610:language/override
-override_parse_ok.cocci v20240610:language/override
+override_parse_failure.cocci v20240610:language/override
 preprocessor_elifdef_add.cocci v20240610:language/preprocessor
 protocpp.cocci v20240610:language/reference#Rvalue_references
 qualclass.cocci v20240610:language/derived_class v20240610:language/qualified_lookup
