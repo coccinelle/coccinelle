@@ -483,10 +483,17 @@ rule token = parse
 
   | "#" spopt "ident"   sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "line"    sp  [^'\n' '\r']* ('\n' | "\r\n")
-  | "#" spopt "error"   sp  [^'\n' '\r']* ('\n' | "\r\n")
-  | "#" spopt "warning" sp  [^'\n' '\r']* ('\n' | "\r\n")
   | "#" spopt "abort"   sp  [^'\n' '\r']* ('\n' | "\r\n")
       { TCppDirectiveOther (eoltokinfo lexbuf) }
+  | "#" spopt "error"   sp
+  | "#" spopt "warning" sp
+      { let rest =
+	match tokens_to_ii lexbuf with
+	  (_,ii)::rest ->
+	    let rest_str = String.concat "" (List.map fst rest) in
+	    tok_add_s rest_str ii
+	| _ -> failwith "token sequence should not be empty" in
+      TCppDirectiveOther rest }
 
   | "#" [' ' '\t']* ('\n' | "\r\n")
       { TCppDirectiveOther (eoltokinfo lexbuf) }
@@ -532,7 +539,7 @@ rule token = parse
 	  (Ast_c.rewrap_col (Ast_c.col_of_info pinfo + offset)
 	     (Ast_c.rewrap_str wss2 (tokinfo lexbuf))) in
       let rest =
-	match pragmabody lexbuf with
+	match tokens_to_ii lexbuf with
 	  (_,ii)::rest ->
 	    let rest_str = String.concat "" (List.map fst rest) in
 	    tok_add_s rest_str ii
@@ -1210,7 +1217,7 @@ and comment = parse
         s ^ comment lexbuf
       }
 
-and pragmabody = parse
+and tokens_to_ii = parse
   | [^ '\r' '\n']* '\\' [' ' '\t']* ('\n' | "\r\n")
       { let l = String.length (Lexing.lexeme lexbuf) in
         let s = tok lexbuf in
@@ -1221,7 +1228,7 @@ and pragmabody = parse
           Lexing.pos_lnum = lcp.Lexing.pos_lnum + 1;
           Lexing.pos_bol = lcp.Lexing.pos_cnum - (l-1)
         };
-        (s,info) :: pragmabody lexbuf }
+        (s,info) :: tokens_to_ii lexbuf }
   | [^ '\r' '\n']*
       { let s = tok lexbuf in
         let info = Ast_c.rewrap_str s (tokinfo lexbuf) in
