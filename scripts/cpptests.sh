@@ -92,6 +92,8 @@ local_macro_fn_def_and_call.cocci v20240610:preprocessor
 macro_stmt_when_fn_type.cocci v20240610:preprocessor
 match_bracket_expressions_assignment_broken.cocci v20240610:language/aggregate_initialization#Syntax
 miniclass.cocci v20240610:language/class
+mutable_modify_failure.cocci v20240610:language/cv
+mutable_parse_failure.cocci v20240610:language/cv
 namespace_alias_definition_failure.cocci v20240610:language/namespace_alias
 namespace_nested1_failure.cocci v20240610:language/namespace
 namespace_nested2_failure.cocci v20240610:language/namespace
