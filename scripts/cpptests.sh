@@ -133,6 +133,7 @@ using4_failure.cocci v20240610:language/using_declaration
 usingtest_failure.cocci v20240610:language/using_declaration
 usingtype.cocci v20240610:language/using_declaration
 vconstr_failure.cocci v20240610:language/virtual v20240610:language/destructor
+virtual_parse_failure.cocci v20240610:language/virtual
 virtual_constructor_failure.cocci v20240610:language/virtual v20240610:language/destructor
 while_init_condition.cocci v20240610:language/while
 while_init_condition_smpl.cocci v20240610:language/while
