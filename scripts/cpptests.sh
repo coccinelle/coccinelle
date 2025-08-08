@@ -54,6 +54,8 @@ braced_init_list_assign.cocci v20240610:language/initialization#Initializer
 braced_init_list_arg.cocci v20240610:language/initialization#Initializer v20240610:language/function
 cdstr.cocci v20240610:language/constructor
 co_return.cocci v20240610:language/coroutines
+constinit_parse_ok.cocci v20240610:language/constinit
+constinit_modify_failure.cocci v20240610:language/constinit
 snip_field_bad.cocci v20240610:language/class
 snip_field_and_keep_access_specifier.cocci v20240610:language/class v20240610:language/access
 classfinal_failure.cocci v20240610:language/final
