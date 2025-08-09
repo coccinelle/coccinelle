@@ -150,8 +150,7 @@ let is_if_or_else = function
 
 let is_statement = function
   | Tfor _ | Tdo _ | Tif _ | Twhile _ | Treturn _
-  | Tco_await _
-  | Tco_yield _
+  | TCoAwaitYield _
   | Ttry _ | Tcatch _
   | Tbreak _ | Telse _ | Tswitch _ | Tcase _ | Tcontinue _
   | Tgoto _ | Tscopedguard _
@@ -461,8 +460,7 @@ let info_of_tok = function
   | Tif                  (i) -> i
   | Twhile               (i) -> i
   | Treturn              (i) -> i
-  | Tco_await            (i) -> i
-  | Tco_yield            (i) -> i
+  | TCoAwaitYield        (i) -> i
   | Tgoto                (i) -> i
   | Tscopedguard         (i) -> i
   | Tdefault             (i) -> i
@@ -671,8 +669,7 @@ let visitor_info_of_tok f = function
   | Tif                  (i) -> Tif                  (f i)
   | Twhile               (i) -> Twhile               (f i)
   | Treturn              (i) -> Treturn              (f i)
-  | Tco_await            (i) -> Tco_await            (f i)
-  | Tco_yield            (i) -> Tco_yield            (f i)
+  | TCoAwaitYield        (i) -> TCoAwaitYield        (f i)
   | Tgoto                (i) -> Tgoto                (f i)
   | Tscopedguard         (i) -> Tscopedguard         (f i)
   | Tdefault             (i) -> Tdefault             (f i)
@@ -824,8 +821,7 @@ let string_of_token = function
   | Tif _ -> "Tif"
   | Twhile _ -> "Twhile"
   | Treturn _ -> "Treturn"
-  | Tco_await _ -> "Tco_await"
-  | Tco_yield _ -> "Tco_yield"
+  | TCoAwaitYield _ -> "TCoAwaitYield"
   | Tgoto _ -> "Tgoto"
   | Tscopedguard _ -> "Tscopedguard"
   | Tdefault _ -> "Tdefault"

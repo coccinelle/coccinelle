@@ -796,8 +796,7 @@ module Parser_c :
       | Twhile of Ast_c.info
       | Tcatch of Ast_c.info
       | Treturn of Ast_c.info
-      | Tco_await of Ast_c.info
-      | Tco_yield of Ast_c.info
+      | TCoAwaitYield of Ast_c.info
       | Tgoto of Ast_c.info
       | Tscopedguard of Ast_c.info
       | Tdefault of Ast_c.info

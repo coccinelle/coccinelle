@@ -596,8 +596,7 @@ let args_to_params l pb =
        Tstruct Tunion Tenum Tdecimal Texec Ttemplate
        Tbreak Telse Tswitch Tcase Tcontinue Tfor Tdo Ttry Tif Twhile
        Tcatch Treturn
-       Tco_await
-       Tco_yield
+       TCoAwaitYield
        Tgoto Tscopedguard Tdefault
        Tsizeof Tnew Tdelete Tusing Tdefined TOParCplusplusInit Tnamespace
        Tcpp_struct Tcpp_union Tclass Tprivate Tpublic Tprotected Toperator
@@ -1059,8 +1058,7 @@ unary_expr:
  | Tsizeof unary_expr              { mk_e(SizeOfExpr ($2))    [$1] }
  | Tsizeof topar2 type_name tcpar2
      { mk_e (SizeOfType $3) [$1;$2;$4] }
- | Tco_await unary_expr            { mk_e(CoAwaitYield($2))   [$1] }
- | Tco_yield unary_expr            { mk_e(CoAwaitYield($2))   [$1] }
+ | TCoAwaitYield unary_expr        { mk_e(CoAwaitYield($2))   [$1] }
  | Tdelete cast_expr               { mk_e(Delete(false, $2))  [$1] }
  | Tdelete TOCro TCCro cast_expr   { mk_e(Delete(true, $4))   [$1;$2;$3] }
  | Tdefined identifier_cpp         { mk_e(Defined $2)         [$1] }
