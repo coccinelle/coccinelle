@@ -2695,7 +2695,7 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	| _ -> failwith "asttoctl2: not possible 31" in
       let define_header = quantify guard hfvs (make_match header) in
       let body_code =
-	statement_list body NotTop after
+	statement_list body NotTop (After(endpred None))
 	  (Common.union_set bfvs quantified)
 	  (Common.union_set mbfvs minus_quantified)
 	  None llabel slabel true guard pos in

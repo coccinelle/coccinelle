@@ -1,0 +1,5 @@
+@@
+identifier i;
+@@
+
+- #define i
