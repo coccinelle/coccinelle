@@ -2143,7 +2143,7 @@ let parse_indentation xs =
 
 exception NoInfo
 
-let get_tabbing_unit shorter longer =
+let get_tabbing_unit shorter longer mindiff old_tabbing_unit =
   let old_tab = list_of_string shorter in
   let new_tab = list_of_string longer in
   let rec get_diff n l1 l2 =
@@ -2151,7 +2151,16 @@ let get_tabbing_unit shorter longer =
       ([],xs) -> String.sub longer n ((String.length longer)-n)
     | (x::xs,y::ys) -> if x = y then get_diff (n+1) xs ys else raise NoInfo
     | _ -> failwith "not possible" in
-  try Some (get_diff 0 old_tab new_tab)
+  try
+    let newtu = get_diff 0 old_tab new_tab in
+    let len = String.length newtu in
+    (match old_tabbing_unit with
+      None -> Some (String.sub newtu 0 (len / mindiff))
+    | Some oldtu ->
+	(* account for jumping back multiple levels *)
+	if String.length oldtu * mindiff = len
+	then old_tabbing_unit
+	else Some (String.sub newtu 0 (len / mindiff)))
   with NoInfo -> None
 
 let update_indent tok indent =
@@ -2176,11 +2185,23 @@ let update_map_min n spaces tabbing_unit past_minus_map depthmin dmin
     if retab
     then
       try
-	let (_,oldspaces) = List.assoc (dmin,inparens) past_minus_map in
 	if depthmin < dmin (* we have outdented *)
-	then get_tabbing_unit spaces oldspaces
+	then
+	  let rec loop ctr =
+	    if ctr = dmin
+	    then (* dmin should exist *)
+	      let (_,oldspaces) = List.assoc (dmin,inparens) past_minus_map in
+	      get_tabbing_unit spaces oldspaces (dmin - depthmin) tabbing_unit
+	    else
+	      try
+		let (_,oldspaces) = List.assoc (ctr,inparens) past_minus_map in
+		get_tabbing_unit spaces oldspaces (ctr - depthmin) tabbing_unit
+	      with Not_found -> loop (ctr + 1) in
+	  loop (depthmin+1)
 	else if depthmin = dmin + 1 (* we have indented *)
-	then get_tabbing_unit oldspaces spaces
+	then
+	  let (_,oldspaces) = List.assoc (dmin,inparens) past_minus_map in
+	  get_tabbing_unit oldspaces spaces 1 tabbing_unit
 	else tabbing_unit
       with _ -> None
     else None in

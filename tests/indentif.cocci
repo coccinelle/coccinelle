@@ -1,0 +1,9 @@
+@@
+statement S;
+@@
+
+- start();
++ {
+  ...
+- finish();
++ }
