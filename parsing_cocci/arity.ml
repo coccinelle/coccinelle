@@ -1347,7 +1347,10 @@ and statement tgt stm =
       let def = mcode def in
       let id = ident false arity id in
       let params = define_parameters arity params in
-      let body = dots (statement arity) body in
+      let body =
+	match body with
+	  Ast0.DefineStms body -> Ast0.DefineStms(dots (statement arity) body)
+	| Ast0.DefineAttr attr -> Ast0.DefineAttr(attribute arity attr) in
       make_rule_elem stm tgt arity (Ast0.Define(def,id,params,body))
   | Ast0.CppTop(di) ->
       let di = directive tgt di in

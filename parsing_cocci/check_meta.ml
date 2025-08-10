@@ -592,7 +592,9 @@ and statement old_metas table minus s =
   | Ast0.Define(def,id,params,body) ->
       ident GLOBAL old_metas table minus id;
       define_parameters old_metas table minus params;
-      dots (statement old_metas table minus) body
+      (match body with
+	Ast0.DefineStms body -> dots (statement old_metas table minus) body
+      | Ast0.DefineAttr attr -> attribute old_metas table minus attr)
   | Ast0.Label(i,_) -> ident ID old_metas table minus i
   | Ast0.Goto(_,i,_) -> ident ID old_metas table minus i
   | _ -> () (* no metavariable subterms *)

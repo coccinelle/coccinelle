@@ -2758,6 +2758,7 @@ module Ast_cocci :
       | Ty of fullType
       | TopId of ident
       | TopInit of initialiser
+      | TopAttr of attr
       | CppTop of directive
       | Undef of string mcode * ident
       | DefineHeader of string mcode * ident * define_parameters
@@ -2823,6 +2824,10 @@ module Ast_cocci :
       | MetaAttr of meta_name mcode * constraints * keep_binding *
           inherited
     and attr_arg = base_attr_arg wrap
+    and define_val =
+	Ast_cocci.define_val =
+	DefineStms of statement dots
+      | DefineAttr of rule_elem
     and metaStmtInfo =
       Ast_cocci.metaStmtInfo =
         NotSequencible
@@ -2851,7 +2856,7 @@ module Ast_cocci :
       | FunDecl of rule_elem * rule_elem * statement dots * rule_elem *
           end_info
       | TemplateDefinition of rule_elem * statement
-      | Define of rule_elem * statement dots
+      | Define of rule_elem * define_val
       | AsStmt of statement * statement
       | Dots of string mcode * (statement dots, statement) whencode list *
           dots_whencode list * dots_whencode list
@@ -3467,7 +3472,7 @@ module Ast0_cocci :
             template_parameter_list * string mcode (* > *) *
             statement
       | Undef of string mcode * ident
-      | Define of string mcode * ident * define_parameters * statement dots
+      | Define of string mcode * ident * define_parameters * define_val
       | OptStm of statement
     and base_templateParameterTypeDef =
       Ast0_cocci.base_templateParameterTypeDef =
@@ -3539,6 +3544,10 @@ module Ast0_cocci :
       | MacroAttrArgs of string mcode * string mcode * expression dots * string mcode
       | MetaAttr of Ast_cocci.meta_name mcode * constraints * pure
     and attr_arg = base_attr_arg wrap
+    and define_val =
+	Ast0_cocci.define_val =
+	DefineStms of statement dots
+      | DefineAttr of attr
     and ('a, 'b) whencode =
       ('a, 'b) Ast0_cocci.whencode =
         WhenNot of string mcode * string mcode * 'a

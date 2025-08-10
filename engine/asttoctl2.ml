@@ -690,7 +690,12 @@ and get_before_e s a =
       let (bd,_) = get_before body [Ast.WParen(lbrace,index)] in
       (Ast.rewrap s (Ast.Seq(lbrace,bd,rbrace)),[Ast.WParen(rbrace,index)])
   | Ast.Define(header,body) ->
-      let (body,_) = get_before body [] in
+      let body =
+	match body with
+	  Ast.DefineStms body ->
+	    let (body,_) = get_before body a in
+	    Ast.DefineStms body
+	| Ast.DefineAttr _attr -> body in
       (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
   | Ast.AsStmt(stmt,asstmt) ->
       let (stmt,_) = get_before_e stmt [] in
@@ -834,7 +839,12 @@ and get_after_e s a =
       (Ast.rewrap s (Ast.Seq(lbrace,bd,rbrace)),
        [Ast.WParen(lbrace,index)])
   | Ast.Define(header,body) ->
-      let (body,_) = get_after body a in
+      let body =
+	match body with
+	  Ast.DefineStms body ->
+	    let (body,_) = get_after body a in
+	    Ast.DefineStms body
+	| Ast.DefineAttr _attr -> body in
       (Ast.rewrap s (Ast.Define(header,body)), [Ast.Other s])
   | Ast.AsStmt(stmt,asstmt) ->
       let (stmt,_) = get_after_e stmt [] in
@@ -2683,22 +2693,33 @@ and statement (pos : Ast.meta_name list) stmt top after quantified minus_quantif
 	  None llabel slabel guard in
       quantify guard bfvs (make_seq [define_header; body_code])
   | Ast.Define(header,body) ->
+      let bodyfvs =
+	match body with
+	  Ast.DefineStms body -> Ast.get_fvs body
+	| Ast.DefineAttr attr -> Ast.get_fvs attr in
       let (hfvs,bfvs,bodyfvs) =
-	match seq_fvs quantified [Ast.get_fvs header;Ast.get_fvs body]
+	match seq_fvs quantified [Ast.get_fvs header; bodyfvs]
 	with
 	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
 	| _ -> failwith "asttoctl2: not possible 30" in
+      let bodymfvs =
+	match body with
+	  Ast.DefineStms body -> Ast.get_mfvs body
+	| Ast.DefineAttr attr -> Ast.get_mfvs attr in
       let (mhfvs,mbfvs,mbodyfvs) =
-	match seq_fvs minus_quantified [Ast.get_mfvs header;Ast.get_mfvs body]
+	match seq_fvs minus_quantified [Ast.get_mfvs header; bodymfvs]
 	with
 	  [(hfvs,b1fvs);(bodyfvs,_)] -> (hfvs,b1fvs,bodyfvs)
 	| _ -> failwith "asttoctl2: not possible 31" in
       let define_header = quantify guard hfvs (make_match header) in
       let body_code =
-	statement_list body NotTop (After(endpred None))
-	  (Common.union_set bfvs quantified)
-	  (Common.union_set mbfvs minus_quantified)
-	  None llabel slabel true guard pos in
+	match body with
+	  Ast.DefineStms body ->
+	    statement_list body NotTop (After(endpred None))
+	      (Common.union_set bfvs quantified)
+	      (Common.union_set mbfvs minus_quantified)
+	      None llabel slabel true guard pos
+	| Ast.DefineAttr attr -> make_seq_after (make_match attr) (After(endpred None)) in
       quantify guard bfvs (make_seq [define_header; body_code])
   | Ast.AsStmt(stmt,asstmt) ->
       ctl_and

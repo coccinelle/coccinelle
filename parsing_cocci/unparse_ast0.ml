@@ -831,7 +831,9 @@ and statement arity s =
 	  mcode print_string def; print_string " "; ident id;
 	  print_define_parameters params;
 	  print_string " ";
-	  dots force_newline (statement arity) body
+	  (match body with
+	    Ast0.DefineStms body -> dots force_newline (statement arity) body
+	  | Ast0.DefineAttr attr -> print_attribute attr)
       | Ast0.OptStm(re) -> statement "?" re
       | Ast0.AsStmt(stm,asstm) -> statement arity stm; print_string "@";
 	  statement arity asstm)

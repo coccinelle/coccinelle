@@ -1010,6 +1010,7 @@ let astfvs metavars bound =
     | Ast.Ty _ -> "Ty"
     | Ast.TopId _ -> "TopId"
     | Ast.TopInit _ -> "TopInit"
+    | Ast.TopAttr _ -> "TopAttr"
     | Ast.CppTop _ -> "CppTop"
     | Ast.Undef _ -> "Undef"
     | Ast.DefineHeader _ -> "DefineHeader"

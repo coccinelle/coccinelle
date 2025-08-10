@@ -735,6 +735,7 @@ and unify_rule_elem re1 re2 =
 
   | (Ast.TopExp(e1),Ast.TopExp(e2)) -> unify_expression e1 e2
   | (Ast.TopInit(i1),Ast.TopInit(i2)) -> unify_initialiser i1 i2
+  | (Ast.TopAttr(a1),Ast.TopAttr(a2)) -> unify_attribute a1 a2
 
     (* can match a rule_elem in different parts *)
   | (Ast.Ty(t1),Ast.Ty(t2)) -> true
@@ -871,7 +872,12 @@ let rec unify_statement s1 s2 =
       unify_rule_elem rb1 rb2
   | (Ast.Define(h1,s1),Ast.Define(h2,s2)) ->
       unify_rule_elem h1 h2 &&
-      unify_dots unify_statement sdots s1 s2
+      (match s1, s2 with
+	(Ast.DefineStms s1, Ast.DefineStms s2) ->
+	  unify_dots unify_statement sdots s1 s2
+      | (Ast.DefineAttr a1, Ast.DefineAttr a2) ->
+	  unify_rule_elem a1 a2
+      | _ -> false)
   (* dots can match against anything.  true to be safe. *)
   | (Ast.Dots(_,_,_,_),_) | (_,Ast.Dots(_,_,_,_)) -> true
   | (Ast.OptStm(_),_)

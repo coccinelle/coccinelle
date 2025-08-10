@@ -1210,7 +1210,14 @@ let visitor mode bind option_default
 	    let (def_n,def) = string_mcode def in
 	    let (id_n,id) = ident id in
 	    let (params_n,params) = define_parameters params in
-	    let (body_n,body) = statement_dots body in
+	    let (body_n,body) =
+	      match body with
+		Ast0.DefineStms body ->
+		  let (body_n,body) = statement_dots body in
+		  (body_n, Ast0.DefineStms body)
+	      | Ast0.DefineAttr attr ->
+		  let (attr_n,attr) = attribute attr in
+		  (attr_n, Ast0.DefineAttr attr) in
 	    (multibind [def_n;id_n;params_n;body_n],
 	     Ast0.Define(def,id,params,body))
 	| Ast0.OptStm(re) ->

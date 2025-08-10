@@ -1181,7 +1181,11 @@ and statement s =
 	    (rewrap_rule_elem s
 	       (Ast.DefineHeader
 		  (mcode def,ident id, define_parameters params)),
-	     statement_dots Ast.NotSequencible (*not sure*) body)
+	     match body with
+	       Ast0.DefineStms body ->
+		 Ast.DefineStms(statement_dots Ast.NotSequencible (*not sure*) body)
+	     | Ast0.DefineAttr attr ->
+		 Ast.DefineAttr (rewrap attr [] (Ast.TopAttr (attribute attr))))
       | Ast0.OptStm(stm) -> Ast.OptStm(statement seqible stm))
 
   and whileinfo = function

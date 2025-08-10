@@ -1481,10 +1481,10 @@ includes:
 		(Semantic_cocci.Semantic
 		   "unexpected name for a #define")))) }
 | d=defineop TLineEnd
-    { d (Ast0_cocci.wrap []) }
+    { d (Ast0_cocci.DefineStms(Ast0_cocci.wrap [])) }
 | d=defineop t=ctype TLineEnd
     { let ty = Ast0_cocci.wrap(Ast0_cocci.TopExp(Ast0_cocci.wrap(Ast0_cocci.TypeExp(t)))) in
-      d (Ast0_cocci.wrap [ty]) }
+      d (Ast0_cocci.DefineStms(Ast0_cocci.wrap [ty])) }
 | defineop b=toplevel_seq_start(toplevel_after_dots) TLineEnd
     { let body =
 	match b with
@@ -1494,7 +1494,9 @@ includes:
 		[Ast0_cocci.rewrap e (Ast0_cocci.TopExp(Ast0_cocci.set_arg_exp (e1)))]
 	    | _ -> b)
 	| _ -> b in
-      $1 (Ast0_cocci.wrap body) }
+      $1 (Ast0_cocci.DefineStms(Ast0_cocci.wrap body)) }
+| d=defineop a=attr TLineEnd
+    { d (Ast0_cocci.DefineAttr a) }
 | directive { Ast0_cocci.wrap(Ast0_cocci.CppTop $1) }
 
 directive:

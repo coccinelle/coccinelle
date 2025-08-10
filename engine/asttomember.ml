@@ -322,7 +322,12 @@ and statement testfn mcode tail stmt : 'a list list =
       else body_info      
 
   | Ast.Define(header,body) ->
-      conj_one testfn header (statement_list testfn mcode tail body)
+      let body =
+	match body with
+	  Ast.DefineStms body ->
+	    statement_list testfn mcode tail body
+	| Ast.DefineAttr attr -> rule_elem attr in
+      conj_one testfn header body
 
   | Ast.AsStmt(stm,asstm) ->
       conj

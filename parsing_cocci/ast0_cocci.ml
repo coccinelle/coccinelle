@@ -470,7 +470,7 @@ and base_statement =
 
   | Undef of string mcode (* #define *) * ident (* name *)
   | Define of string mcode (* #define *) * ident (* name *) *
-	define_parameters (*params*) * statement dots
+	define_parameters (*params*) * define_val
   | OptStm   of statement
 
 and base_templateParameterTypeDef =
@@ -529,6 +529,10 @@ and base_attr_arg =
   | MetaAttr of Ast.meta_name mcode * constraints * pure
 
 and attr_arg = base_attr_arg wrap
+
+and define_val =
+    DefineStms of statement dots
+  | DefineAttr of attr
 
 and ('a,'b) whencode =
     WhenNot of string mcode (* when *) * string mcode (* != *) * 'a

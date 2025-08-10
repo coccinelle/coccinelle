@@ -930,6 +930,7 @@ let combiner bind option_default mcode donothing
       | Ast.Ty(ty) -> fullType ty
       | Ast.TopId(ty) -> ident ty
       | Ast.TopInit(init) -> initialiser init
+      | Ast.TopAttr(attr) -> attribute attr
       |	Ast.Undef(def,id) ->
 	  let ldef = string_mcode def in
 	  let lid = ident id in
@@ -1094,7 +1095,10 @@ let combiner bind option_default mcode donothing
           bind lheader lstmt
       | Ast.Define(header,body) ->
 	  let lheader = rule_elem header in
-	  let lbody = statement_dots body in
+	  let lbody =
+	    match body with
+	      Ast.DefineStms body -> statement_dots body
+	    | Ast.DefineAttr attr -> rule_elem attr in
 	  bind lheader lbody
       |	Ast.AsStmt(stm,asstm) ->
 	  let lstm = statement stm in
@@ -2173,6 +2177,7 @@ let rebuilder mcode donothing
 	| Ast.Ty(ty) -> Ast.Ty(fullType ty)
 	| Ast.TopId(id) -> Ast.TopId(ident id)
 	| Ast.TopInit(init) -> Ast.TopInit(initialiser init)
+	| Ast.TopAttr(attr) -> Ast.TopAttr(attribute attr)
 	| Ast.Undef(def,id) ->
 	    let ldef = string_mcode def in
 	    let lid = ident id in
@@ -2339,7 +2344,10 @@ let rebuilder mcode donothing
 	    Ast.FunDecl(lheader, lbraces, lbody, lrbrace, aft)
 	| Ast.Define(header,body) ->
 	    let lheader = rule_elem header in
-	    let lbody = statement_dots body in
+	    let lbody =
+	      match body with
+		Ast.DefineStms body -> Ast.DefineStms(statement_dots body)
+	      | Ast.DefineAttr attr -> Ast.DefineAttr(rule_elem attr) in
 	    Ast.Define(lheader, lbody)
 	| Ast.AsStmt(stm,asstm) ->
 	    let lstm = statement stm in

@@ -1453,7 +1453,7 @@ let token2line (tok,_) =
   | PC.Tunsigned(clt) | PC.Tsigned(clt) | PC.TautoType(clt)
   | PC.Talignas(clt) | PC.Tstatic(clt) | PC.Tauto(clt) | PC.Tregister(clt)
   | PC.Textern(clt)
-  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.Tconst(clt)
+  | PC.Tinline(clt) | PC.Ttypedef(clt) | PC.Tattr(_,clt) | PC.TAttr_(clt) | PC.Tconst(clt)
   | PC.Tvolatile(clt) | PC.TAttrArg(_,clt) | PC.TVAEllipsis(clt)
 
   | PC.TInc(clt) | PC.TDec(clt)
@@ -1505,6 +1505,15 @@ let token2line (tok,_) =
   | PC.TWhy(clt) | PC.TDotDot(_,clt) | PC.TBang(_,clt) | PC.TOPar(clt)
   | PC.TOPar0(_,clt) | PC.TMid0(_,clt) | PC.TCPar(clt)
   | PC.TCPar0(_,clt)
+
+  | PC.TInf3(clt) | PC.TSup3(clt) | PC.TUsing(clt)
+  | PC.TTemplateStart(clt) | PC.Ttemplate(clt) | PC.TTemplateEnd(clt)
+  | PC.TTemplateEndTemplateEnd(clt) | PC.TTemplateEndTemplateEndTemplateEnd(clt)
+  | PC.TTemplateEndSup(clt)
+
+  | PC.TPublic(clt) | PC.TPrivate(clt) | PC.TProtected(clt) | PC.TNamespace(clt)
+
+  | PC.TColonColon(clt)
 
   | PC.TOBrace(_,clt) | PC.TCBrace(_,clt) | PC.TOCro(_,clt) | PC.TCCro(_,clt)
   | PC.TOCroCro(_,clt) | PC.TOInit(_,clt)

@@ -1448,6 +1448,7 @@ and rule_elem arity re =
   | Ast.Ty(ty) -> pr_arity arity; fullType ty
   | Ast.TopId(id) -> pr_arity arity; ident id
   | Ast.TopInit(init) -> initialiser false init
+  | Ast.TopAttr attr -> print_attribute attr
   | Ast.CppTop(di) -> directive di
   | Ast.Undef(def,id) ->
       mcode print_string def; pr_space(); ident id
@@ -1609,7 +1610,10 @@ let rec statement arity s =
       statement arity stmt
   | Ast.Define(header,body) ->
       rule_elem arity header; pr_space();
-      dots force_newline (statement arity) body
+      (match body with
+	Ast.DefineStms body ->
+	  dots force_newline (statement arity) body
+      | Ast.DefineAttr attr -> rule_elem arity attr)
 
   | Ast.AsStmt(stmt,asstmt) -> statement arity stmt
 

@@ -218,7 +218,7 @@ let statement s =
   | Ast0.Ty(ty) -> [124]
   | Ast0.TopId(ty) -> [186]
   | Ast0.TopInit(init) -> [146]
-  | Ast0.CppTop(di) -> [194]
+    | Ast0.CppTop(di) -> [194]
   | Ast0.Dots(d,whencode) -> [84]
   | Ast0.Undef(def,id) -> [151]
   | Ast0.Define(def,id,params,body) -> [119]

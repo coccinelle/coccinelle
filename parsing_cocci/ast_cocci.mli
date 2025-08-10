@@ -610,6 +610,7 @@ and base_rule_elem =
   | Ty            of fullType (* only at top level *)
   | TopId         of ident (* only at top level *)
   | TopInit       of initialiser (* only at top level *)
+  | TopAttr       of attr (* only in macros *)
   | CppTop        of directive
   | Undef         of string mcode (* #define *) * ident (* name *)
   | DefineHeader  of string mcode (* #define *) * ident (* name *) *
@@ -681,6 +682,10 @@ and base_attr_arg =
 
 and attr_arg = base_attr_arg wrap
 
+and define_val =
+    DefineStms of statement dots
+  | DefineAttr of rule_elem
+
 and metaStmtInfo =
     NotSequencible | SequencibleAfterDots of dots_whencode list | Sequencible
 
@@ -709,7 +714,7 @@ and base_statement =
   | FunDecl       of rule_elem (* header *) * rule_elem (* { *) *
      	             statement dots * rule_elem (* } *) * end_info (*exit*)
   | TemplateDefinition of rule_elem * statement
-  | Define        of rule_elem (* header *) * statement dots
+  | Define        of rule_elem (* header *) * define_val
   | AsStmt        of statement * statement (* as statement, always metavar *)
   | Dots          of string mcode (* ... *) *
 	             (statement dots,statement) whencode list *

@@ -143,8 +143,11 @@ let rec right_statement s =
 	 here anyway *)
       None
   | Ast0.Define(def,id,params,body) ->
-      call_right right_statement_dots body s
-	(function body -> Ast0.Define(def,id,params,body))
+      (match body with
+	Ast0.DefineStms body ->
+	  call_right right_statement_dots body s
+	    (function body -> Ast0.Define(def,id,params,Ast0.DefineStms body))
+      | Ast0.DefineAttr attr -> None) (* can there be pragmas here? *)
   | Ast0.OptStm(re) ->
       call_right right_statement re s (function re -> Ast0.OptStm(re))
 

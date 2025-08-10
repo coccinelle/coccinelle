@@ -1626,8 +1626,13 @@ let rec statement s =
 	  None -> failwith "no disj id for #define"
 	| Some right ->
 	    let (params,prev) = define_parameters params right in
-	    let body = dots is_stm_dots (Some prev) statement body in
-	    mkres s (Ast0.Define(def,id,params,body)) (promote_mcode def) body)
+	    match body with
+	      Ast0.DefineStms body ->
+		let body = dots is_stm_dots (Some prev) statement body in
+		mkres s (Ast0.Define(def,id,params,Ast0.DefineStms body)) (promote_mcode def) body
+	    | Ast0.DefineAttr attr ->
+		let attr = attribute attr in
+		mkres s (Ast0.Define(def,id,params,Ast0.DefineAttr attr)) (promote_mcode def) attr)
     | Ast0.OptStm(stm) ->
 	let stm = statement stm in mkres s (Ast0.OptStm(stm)) stm stm
     | Ast0.AsStmt(stm,asstm) ->

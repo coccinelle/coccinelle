@@ -5598,6 +5598,12 @@ let rec (rule_elem_node: (A.rule_elem, F.node) matcher) =
           A.TopInit ea,
           F.DefineInit eb
         ))
+  | A.TopAttr ea, F.DefineAttr [eb]  -> (* SmPL only allows one attribute *)
+      attribute false ea eb >>= (fun ea eb ->
+        return (
+          A.TopAttr ea,
+          F.DefineAttr [eb]
+        ))
 
 
   (* It is important to put this case before the one that fails because

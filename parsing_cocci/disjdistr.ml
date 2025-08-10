@@ -601,6 +601,7 @@ let rec disj_rule_elem r k re =
   | Ast.TopInit(init) ->
       orify_rule_elem_ini re init
 	(function init -> Ast.rewrap init (Ast.TopInit(init)))
+  | Ast.TopAttr(attr) -> re
   | Ast.CppTop di ->
       generic_orify_rule_elem disjdirective re di
 	(fun di -> Ast.rewrap re (Ast.CppTop di))
