@@ -81,6 +81,7 @@ emptytmp_failure.cocci v20240610:language/template_parameters#Template_arguments
 endcolon.cocci v20240610:language/qualified_lookup
 endline.cocci v20240610:language/template_parameters#Template_arguments v20240610:language/qualified_lookup
 enumcpp.cocci v20240610:language/enum
+explicit_kw_parse_failure.cocci v20240610:language/explicit
 fieldtmp_failure.cocci v20240610:language/operator_member_access
 finalclass.cocci v20240610:language/final#Syntax
 forc.cocci v20240610:language/template_parameters#Template_arguments
