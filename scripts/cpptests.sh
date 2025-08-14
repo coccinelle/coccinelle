@@ -87,6 +87,8 @@ finalclass.cocci v20240610:language/final#Syntax
 forc.cocci v20240610:language/template_parameters#Template_arguments
 forrange2.cocci v20240610:language/range-for
 forrange_failure.cocci v20240610:language/range-for
+friend_modify_failure v20240610:language/friend
+friend_parse_failure v20240610:language/friend
 inh1.cocci v20240610:language/derived_class
 init3tst.cocci v20240610:language/aggregate_initialization#Syntax
 instfour_failure.cocci v20240610:language/template_parameters#Template_arguments
