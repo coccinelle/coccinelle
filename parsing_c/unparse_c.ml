@@ -2113,11 +2113,16 @@ let parse_indentation xs =
 	(* Drop unindent at the very beginning; no need for prior nl *)
 	xs
     | _ -> xs in
+  let is_noncomment x =
+    is_space x ||
+    (match x with
+      T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+    | _ -> false) in
   let rec loop n state = function
       [] -> []
     | (x::xs) as l ->
 	let (front,x,xs) =
-	  let (newlines,rest) = span is_whitespace l in
+	  let (newlines,rest) = span is_noncomment l in
 	  match List.rev newlines with
 	    nl::whitespace -> (List.rev whitespace, nl, rest)
 	  | [] -> ([],x,xs) in
