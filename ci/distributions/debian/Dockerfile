@@ -1,4 +1,4 @@
-FROM debian:stable
+FROM debian:bookworm
 RUN apt-get update && apt-get install --yes autoconf automake unzip aspcud \
   rsync git mercurial darcs build-essential sudo vim curl python3 \
   libpython3-dev hevea texlive-fonts-extra
