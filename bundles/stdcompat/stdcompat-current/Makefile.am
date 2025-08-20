@@ -18,13 +18,13 @@ EXTRA_DIST= stdcompat.opam dune stdcompat.ml stdcompat__native.ml_byte \
 	stdcompat__moreLabels.mli stdcompat__lexing.mli \
 	stdcompat__option.mli stdcompat__printexc.mli \
 	stdcompat__random.mli \
-	stdcompat__result.mli stdcompat__bool.mli \
+	stdcompat__result.mli stdcompat__bool.mli stdcompat__domain.mli \
 	stdcompat__fun.mli stdcompat__format.mli stdcompat__printf.mli stdcompat__stdlib.mli \
 	stdcompat__seq.mli stdcompat__printexc.mli \
         stdcompat__either.mli stdcompat__atomic.mli \
 	stdcompat__unit.mli \
-	stdcompat__in_channel.mli stdcompat__out_channel.mli Makefile.bootstrap VERSION \
-	dune-project dune
+	stdcompat__in_channel.mli stdcompat__out_channel.mli autogen VERSION \
+	stdcompat__dynarray.mli dune-project dune
 
 MODULES = stdcompat__init.ml stdcompat__root.ml \
 	stdcompat__either_s.ml stdcompat__either.ml \
@@ -45,13 +45,15 @@ MODULES = stdcompat__init.ml stdcompat__root.ml \
 	stdcompat__int_s.ml \
 	stdcompat__int64_s.ml stdcompat__int32_s.ml stdcompat__filename_s.ml \
 	stdcompat__array_s.ml stdcompat__arrayLabels_s.ml \
+	stdcompat__dynarray_s.ml stdcompat__dynarray.ml \
 	stdcompat__float_s.ml stdcompat__queue_s.ml \
 	stdcompat__hashtbl.ml \
 	stdcompat__ephemeron_s.ml \
 	stdcompat__moreLabels_s.ml stdcompat__lexing_s.ml \
 	stdcompat__pervasives.ml \
 	stdcompat__option_s.ml stdcompat__result_s.ml stdcompat__bool_s.ml \
-	stdcompat__fun_s.ml stdcompat__printf_s.ml \
+	stdcompat__fun_s.ml stdcompat__printf_s.ml stdcompat__domain_s.ml \
+	stdcompat__domain.ml \
 	stdcompat__printexc_s.ml stdcompat__format_s.ml stdcompat__atomic_s.ml \
 	stdcompat__in_channel_s.ml stdcompat__out_channel_s.ml \
 	stdcompat__random_s.ml \
@@ -80,10 +82,19 @@ MODULES = stdcompat__init.ml stdcompat__root.ml \
 	stdcompat__unit.ml \
 	stdcompat__stdlib.ml stdcompat.ml
 
+OBJEXT := @OBJEXT@
+
+# From https://github.com/fdopen/opam-repository-mingw/commit/3b4c52e17cfae96cfbf5120b60b8c2bbf5aad252
+# We prefer DLLEXT to conform with EXEEXT and OBJEXT
+DLLEXT := $(shell ocamlc -config | awk -F '[\t\r ]+' '/^ext_dll:/ {print $$2}')
+
+# Fix install on Windows (https://github.com/ocamllibs/pyml/issues/88)
+LIBEXT := $(shell ocamlc -config | awk -F '[\t\r ]+' '/^ext_lib:/ {print $$2}')
+
 MODULES_native = stdcompat__native.ml $(MODULES)
 
 mypkg_SCRIPTS = META $(MODULES_native) $(MODULES_native:.ml=.cmi) \
-	libstdcompat__stubs.a stdcompat.h
+	libstdcompat__stubs$(LIBEXT)
 
 if OCAML_SUPPORTS_BYTECODE
 mypkg_SCRIPTS += stdcompat.cma
@@ -91,15 +102,14 @@ BEST_SUFFIX := .cmo
 endif
 
 if OCAML_SUPPORTS_NATIVE
-mypkg_SCRIPTS += stdcompat.cmxa stdcompat.a $(MODULES_native:.ml=.cmx)
+mypkg_SCRIPTS += stdcompat.cmxa stdcompat$(LIBEXT) $(MODULES_native:.ml=.cmx)
 BEST_SUFFIX := .cmx
-endif
-
 if OCAML_SUPPORTS_SHARED
 mypkg_SCRIPTS += stdcompat.cmxs
 endif
+endif
 
-PACKAGES = $(RESULT_PKG) $(SEQ_PKG) $(UCHAR_PKG)
+PACKAGES =
 OCAMLFLAGS = $(PACKAGES:%=-package %)
 OCAMLCFLAGS = $(OCAMLFLAGS) -nolabels -I @srcdir@
 OCAMLLDFLAGS = $(OCAMLFLAGS)
@@ -138,21 +148,21 @@ $(BEST_SUFFIX).cmt : ;
 stdcompat__stubs.$(OBJEXT) : stdcompat__stubs.c
 	$(OCAMLC) -c $<
 
-libstdcompat__stubs.a : stdcompat__stubs.$(OBJEXT)
+libstdcompat__stubs$(LIBEXT) : stdcompat__stubs.$(OBJEXT)
 	$(OCAMLMKLIB) -o stdcompat__stubs $<
 
-dllstdcompat__stubs.so : libstdcompat__stubs.a
+dllstdcompat__stubs$(DLLEXT) : libstdcompat__stubs$(LIBEXT)
 
-stdcompat.cma : $(MODULES_native:.ml=.cmo) libstdcompat__stubs.a
+stdcompat.cma : $(MODULES_native:.ml=.cmo) libstdcompat__stubs$(LIBEXT)
 	$(OCAMLC) $(OCAMLLDFLAGS) -a $(MODULES_native:.ml=.cmo) \
 	  $(OCAMLLIBFLAGS) -dllib -lstdcompat__stubs -o $@
 
-stdcompat.cmxa : $(MODULES_native:.ml=.cmx) libstdcompat__stubs.a
+stdcompat.cmxa : $(MODULES_native:.ml=.cmx) libstdcompat__stubs$(LIBEXT)
 	$(OCAMLOPT) $(OCAMLLDFLAGS) -a $(MODULES_native:.ml=.cmx) $(OCAMLLIBFLAGS) -o $@
 
-stdcompat.a : stdcompat.cmxa
+stdcompat$(LIBEXT) : stdcompat.cmxa
 
-stdcompat.cmxs : $(MODULES_native:.ml=.cmx) libstdcompat__stubs.a
+stdcompat.cmxs : $(MODULES_native:.ml=.cmx) libstdcompat__stubs$(LIBEXT)
 	$(OCAMLOPT) $(OCAMLLDFLAGS) -shared $(MODULES_native:.ml=.cmx) $(OCAMLLIBFLAGS) -o $@
 
 # Fake dependency to rebuild stdcompat__native.cmi on compiler change
@@ -180,11 +190,11 @@ $(STDCOMPAT_TESTS_EXE): stdcompat.$(CMAX) stdcompat_tests.ml
 
 @INCLUDE_DEPEND@
 
-CLEANFILES = *.cmi *.cmo *.cmx *.cmt *.cmti *.o *.a stdcompat.cma \
-	stdcompat.cmxa stdcompat__native.ml dllstdcompat__stubs.so \
+CLEANFILES = *.cmi *.cmo *.cmx *.cmt *.cmti *.$(OBJEXT) *$(LIBEXT) stdcompat.cma \
+	stdcompat.cmxa stdcompat__native.ml dllstdcompat__stubs$(DLLEXT) \
 	stdcompat.cmxs $(STDCOMPAT_TESTS_EXE) $(bin_SCRIPTS) .depend
 
 install-exec-hook :
 	$(MKDIR_P) $(DESTDIR)$(libdir)/stublibs
-	$(INSTALL_PROGRAM) dllstdcompat__stubs.so $(DESTDIR)$(libdir)/stublibs
-	echo stdcompat >$(DESTDIR)$(libdir)/stublibs/dllstdcompat__stubs.so.owner
+	$(INSTALL_PROGRAM) dllstdcompat__stubs$(DLLEXT) $(DESTDIR)$(libdir)/stublibs
+	echo stdcompat >$(DESTDIR)$(libdir)/stublibs/dllstdcompat__stubs$(DLLEXT).owner

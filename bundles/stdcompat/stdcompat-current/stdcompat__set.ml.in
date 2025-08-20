@@ -1,144 +1,53 @@
 module type OrderedType = Set.OrderedType
 
-module type S  =
-  sig
-    type elt
-    type t
-    val empty : t
-    val is_empty : t -> bool
-    val mem : elt -> t -> bool
-    val add : elt -> t -> t
-    val singleton : elt -> t
-    val remove : elt -> t -> t
-    val union : t -> t -> t
-    val inter : t -> t -> t
-    val disjoint : t -> t -> bool
-    val diff : t -> t -> t
-    val compare : t -> t -> int
-    val equal : t -> t -> bool
-    val subset : t -> t -> bool
-    val iter : (elt -> unit) -> t -> unit
-    val map : (elt -> elt) -> t -> t
-    val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-    val for_all : (elt -> bool) -> t -> bool
-    val exists : (elt -> bool) -> t -> bool
-    val filter : (elt -> bool) -> t -> t
-    val filter_map : (elt -> elt option) -> t -> t
-    val partition : (elt -> bool) -> t -> (t * t)
-    val cardinal : t -> int
-    val elements : t -> elt list
-    val min_elt : t -> elt
-    val min_elt_opt : t -> elt option
-    val max_elt : t -> elt
-    val max_elt_opt : t -> elt option
-    val choose : t -> elt
-    val choose_opt : t -> elt option
-    val split : elt -> t -> (t * bool * t)
-    val find : elt -> t -> elt
-    val find_opt : elt -> t -> elt option
-    val find_first : (elt -> bool) -> t -> elt
-    val find_first_opt : (elt -> bool) -> t -> elt option
-    val find_last : (elt -> bool) -> t -> elt
-    val find_last_opt : (elt -> bool) -> t -> elt option
-    val of_list : elt list -> t
-    val to_seq_from : elt -> t -> elt Stdcompat__seq.t
-    val to_seq : t -> elt Stdcompat__seq.t
-    val to_rev_seq : t -> elt Stdcompat__seq.t
-    val add_seq : elt Stdcompat__seq.t -> t -> t
-    val of_seq : elt Stdcompat__seq.t -> t
-  end
+module type S  = sig type elt type t val empty : t val add : elt -> t -> t
+val singleton : elt -> t val remove : elt -> t -> t val union : t -> t -> t
+val inter : t -> t -> t val disjoint : t -> t -> bool val diff : t -> t -> t
+val cardinal : t -> int val elements : t -> elt list val min_elt : t -> elt
+val min_elt_opt : t -> elt option val max_elt : t -> elt
+val max_elt_opt : t -> elt option val choose : t -> elt
+val choose_opt : t -> elt option val find : elt -> t -> elt
+val find_opt : elt -> t -> elt option
+val find_first : (elt -> bool) -> t -> elt
+val find_first_opt : (elt -> bool) -> t -> elt option
+val find_last : (elt -> bool) -> t -> elt
+val find_last_opt : (elt -> bool) -> t -> elt option
+val iter : (elt -> unit) -> t -> unit
+val fold : (elt -> 'acc -> 'acc) -> t -> 'acc -> 'acc
+val map : (elt -> elt) -> t -> t val filter : (elt -> bool) -> t -> t
+val filter_map : (elt -> elt option) -> t -> t
+val partition : (elt -> bool) -> t -> (t * t)
+val split : elt -> t -> (t * bool * t) val is_empty : t -> bool
+val mem : elt -> t -> bool val equal : t -> t -> bool
+val compare : t -> t -> int val subset : t -> t -> bool
+val for_all : (elt -> bool) -> t -> bool
+val exists : (elt -> bool) -> t -> bool val to_list : t -> elt list
+val of_list : elt list -> t val to_seq_from : elt -> t -> elt Seq.t
+val to_seq : t -> elt Seq.t val to_rev_seq : t -> elt Seq.t
+val add_seq : elt Seq.t -> t -> t val of_seq : elt Seq.t -> t end
 
-@BEGIN_FROM_4_12_0@
+@BEGIN_FROM_5_1_0@
 module Make = Set.Make
-@END_FROM_4_12_0@
-@BEGIN_BEFORE_4_12_0@
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
 module Make (Ord : OrderedType) = struct
   include Set.Make (Ord)
 
   @BEGIN_WITH_MAGIC@
+    @BEGIN_BEFORE_4_12_0@
     type internal = Empty | Node of internal * elt * internal * int
+      @BEGIN_FROM_4_02_0@
+      [@@ocaml.warning "-37"]
+      @END_FROM_4_02_0@
+    @END_BEFORE_4_12_0@
 
+    @BEGIN_BEFORE_4_11_0@
     external t_of_internal : internal -> t = "%identity"
+    @END_BEFORE_4_11_0@
 
+    @BEGIN_BEFORE_4_12_0@
     external internal_of_t : t -> internal = "%identity"
-
-    let height = function
-      | Empty -> 0
-      | Node (_, _, _, h) -> h
-
-    let create l v r =
-      let hl = height l in
-      let hr = height r in
-      Node (l, v, r, (if hl >= hr then hl + 1 else hr + 1))
-
-    let bal l v r =
-      let hl = match l with Empty -> 0 | Node (_, _, _, h) -> h in
-      let hr = match r with Empty -> 0 | Node (_, _, _, h) -> h in
-      if hl > hr + 2 then begin
-        match l with
-          Empty -> invalid_arg "Set.bal"
-        | Node (ll, lv, lr, _) ->
-            if height ll >= height lr then
-              create ll lv (create lr v r)
-            else begin
-              match lr with
-                Empty -> invalid_arg "Set.bal"
-              | Node (lrl, lrv, lrr, _) ->
-                  create (create ll lv lrl) lrv (create lrr v r)
-            end
-      end else if hr > hl + 2 then begin
-        match r with
-          Empty -> invalid_arg "Set.bal"
-        | Node (rl, rv, rr, _) ->
-            if height rr >= height rl then
-              create (create l v rl) rv rr
-            else begin
-              match rl with
-                Empty -> invalid_arg "Set.bal"
-              | Node (rll, rlv, rlr, _) ->
-                  create (create l v rll) rlv (create rlr rv rr)
-            end
-      end else
-        Node (l, v, r, (if hl >= hr then hl + 1 else hr + 1))
-
-
-    let rec add_min_element x = function
-      | Empty -> internal_of_t (singleton x)
-      | Node (l, v, r, _) ->
-        bal (add_min_element x l) v r
-
-    let rec add_max_element x = function
-      | Empty -> internal_of_t (singleton x)
-      | Node (l, v, r, _) ->
-        bal l v (add_max_element x r)
-
-    let rec join l v r =
-      match (l, r) with
-        (Empty, _) -> add_min_element v r
-      | (_, Empty) -> add_max_element v l
-      | (Node (ll, lv, lr, lh), Node (rl, rv, rr, rh)) ->
-          if lh > rh + 2 then bal ll lv (join lr v r) else
-          if rh > lh + 2 then bal (join l v rl) rv rr else
-          create l v r
-
-    let try_join l v r =
-      if (l = Empty || Ord.compare (max_elt (t_of_internal l)) v < 0)
-          && (r = Empty || Ord.compare v (min_elt (t_of_internal r)) < 0)
-      then join l v r
-      else internal_of_t (union (t_of_internal l) (add v (t_of_internal r)))
-
-    let rec remove_min_elt = function
-      | Empty -> invalid_arg "Set.remove_min_elt"
-      | Node (Empty, _, r, _) -> r
-      | Node (l, v, r, _) -> bal (remove_min_elt l) v r
-
-    let try_concat t1 t2 =
-      match (t1, t2) with
-      | (Empty, t) -> t
-      | (t, Empty) -> t
-      | (_, _) ->
-          try_join t1 (min_elt (t_of_internal t2))
-            (remove_min_elt t2)
+    @END_BEFORE_4_12_0@
   @END_WITH_MAGIC@
 
   @BEGIN_BEFORE_4_12_0@
@@ -156,7 +65,7 @@ module Make (Ord : OrderedType) = struct
             Stdcompat__seq.Cons (x, rev_seq_of_enum_ (snoc_enum t rest))
 
       let to_rev_seq (s : t) =
-        let s : internal = Obj.magic s in
+        let s = internal_of_t s in
         rev_seq_of_enum_ (snoc_enum s End)
     @END_WITH_MAGIC@
     @BEGIN_WITHOUT_MAGIC@
@@ -203,6 +112,83 @@ module Make (Ord : OrderedType) = struct
 
   @BEGIN_BEFORE_4_11_0@
     @BEGIN_WITH_MAGIC@
+    let height = function
+      | Empty -> 0
+      | Node (_, _, _, h) -> h
+
+    let create l v r =
+      let hl = height l in
+      let hr = height r in
+      Node (l, v, r, (if hl >= hr then hl + 1 else hr + 1))
+
+    let bal l v r =
+      let hl = match l with Empty -> 0 | Node (_, _, _, h) -> h in
+      let hr = match r with Empty -> 0 | Node (_, _, _, h) -> h in
+      if hl > hr + 2 then begin
+        match l with
+          Empty -> invalid_arg "Set.bal"
+        | Node (ll, lv, lr, _) ->
+            if height ll >= height lr then
+              create ll lv (create lr v r)
+            else begin
+              match lr with
+                Empty -> invalid_arg "Set.bal"
+              | Node (lrl, lrv, lrr, _) ->
+                  create (create ll lv lrl) lrv (create lrr v r)
+            end
+      end else if hr > hl + 2 then begin
+        match r with
+          Empty -> invalid_arg "Set.bal"
+        | Node (rl, rv, rr, _) ->
+            if height rr >= height rl then
+              create (create l v rl) rv rr
+            else begin
+              match rl with
+                Empty -> invalid_arg "Set.bal"
+              | Node (rll, rlv, rlr, _) ->
+                  create (create l v rll) rlv (create rlr rv rr)
+            end
+      end else
+        Node (l, v, r, (if hl >= hr then hl + 1 else hr + 1))
+
+    let rec add_min_element x = function
+      | Empty -> internal_of_t (singleton x)
+      | Node (l, v, r, _) ->
+        bal (add_min_element x l) v r
+
+    let rec add_max_element x = function
+      | Empty -> internal_of_t (singleton x)
+      | Node (l, v, r, _) ->
+        bal l v (add_max_element x r)
+
+    let rec join l v r =
+      match (l, r) with
+        (Empty, _) -> add_min_element v r
+      | (_, Empty) -> add_max_element v l
+      | (Node (ll, lv, lr, lh), Node (rl, rv, rr, rh)) ->
+          if lh > rh + 2 then bal ll lv (join lr v r) else
+          if rh > lh + 2 then bal (join l v rl) rv rr else
+          create l v r
+
+      let try_join l v r =
+        if (l = Empty || Ord.compare (max_elt (t_of_internal l)) v < 0)
+            && (r = Empty || Ord.compare v (min_elt (t_of_internal r)) < 0)
+        then join l v r
+        else internal_of_t (union (t_of_internal l) (add v (t_of_internal r)))
+
+      let rec remove_min_elt = function
+        | Empty -> invalid_arg "Set.remove_min_elt"
+        | Node (Empty, _, r, _) -> r
+        | Node (l, v, r, _) -> bal (remove_min_elt l) v r
+
+      let try_concat t1 t2 =
+        match (t1, t2) with
+        | (Empty, t) -> t
+        | (t, Empty) -> t
+        | (_, _) ->
+            try_join t1 (min_elt (t_of_internal t2))
+              (remove_min_elt t2)
+
       let rec filter_map f = function
         | Empty -> Empty
         | Node (l, v, r, _) as t ->
@@ -300,11 +286,11 @@ module Make (Ord : OrderedType) = struct
         Stdcompat__seq.Cons (x, seq_of_enum_ (cons_enum t rest))
 
   let to_seq (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     seq_of_enum_ (cons_enum s End)
 
   let to_seq_from low s =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     let rec aux low s c = match s with
       | Empty -> c
       | Node (l, v, r, _h) ->
@@ -348,7 +334,7 @@ module Make (Ord : OrderedType) = struct
         else find_internal x (if c < 0 then l else r)
 
   let find x (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     find_internal x s
 @END_WITH_MAGIC@
 @BEGIN_WITHOUT_MAGIC@
@@ -392,7 +378,7 @@ module Make (Ord : OrderedType) = struct
           find_first_internal f r
 
   let find_first f (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     find_first_internal f s
 
   let rec find_first_opt_aux v0 f = function
@@ -414,7 +400,7 @@ module Make (Ord : OrderedType) = struct
           find_first_opt_internal f r
 
   let find_first_opt f (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     find_first_opt_internal f s
 
   let rec find_last_aux v0 f = function
@@ -436,7 +422,7 @@ module Make (Ord : OrderedType) = struct
           find_last_internal f l
 
   let find_last f (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     find_last_internal f s
 
   let rec find_last_opt_aux v0 f = function
@@ -458,7 +444,7 @@ module Make (Ord : OrderedType) = struct
           find_last_opt_internal f l
 
   let find_last_opt f (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     find_last_opt_internal f s
 
   let rec find_opt_internal x = function
@@ -469,7 +455,7 @@ module Make (Ord : OrderedType) = struct
         else find_opt_internal x (if c < 0 then l else r)
 
   let find_opt f (s : t) =
-    let s : internal = Obj.magic s in
+    let s : internal = internal_of_t s in
     find_opt_internal f s
 @END_WITH_MAGIC@
 @BEGIN_WITHOUT_MAGIC@
@@ -531,7 +517,7 @@ module Make (Ord : OrderedType) = struct
        else try_join l' v' r'
 
   let map f s =
-    (Obj.magic (map f (Obj.magic s : internal)) : t)
+    (t_of_internal (map f (internal_of_t s : internal)) : t)
 @END_WITH_MAGIC@
 @BEGIN_WITHOUT_MAGIC@
   let map f s =
@@ -562,5 +548,10 @@ module Make (Ord : OrderedType) = struct
          else (true, (l, true, r)) in
      snd (fold add s (false, (empty, false, empty)))
 @END_BEFORE_3_08_0@
+
+@BEGIN_BEFORE_5_1_0@
+  let to_list s =
+    elements s
+@END_BEFORE_5_1_0@
 end
-@END_BEFORE_4_12_0@
+@END_BEFORE_5_1_0@

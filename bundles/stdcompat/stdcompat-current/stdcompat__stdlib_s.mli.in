@@ -57,6 +57,8 @@ module type S = sig
 
   module Digest : Stdcompat__digest_s.S
 
+  module Domain : Stdcompat__domain_s.S
+
   module Either : Stdcompat__either_s.S
 
   module Ephemeron : Stdcompat__ephemeron_s.S

@@ -8,6 +8,15 @@ type t = Stdcompat__init.bytes
 (** @since 4.02.0: type t = bytes
  *)
 
+@BEGIN_FROM_5_0_0@
+val unsafe_escape : bytes -> bytes
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
+val unsafe_escape : Stdcompat__init.bytes -> Stdcompat__init.bytes
+@END_BEFORE_5_0_0@
+(** @since 5.0.0: val unsafe_escape : bytes -> bytes
+ *)
+
 @BEGIN_FROM_4_14_0@
 val get_utf_8_uchar : t -> int -> Uchar.utf_decode
 @END_FROM_4_14_0@
@@ -71,22 +80,40 @@ val set_utf_16le_uchar : t -> int -> Stdcompat__uchar.t -> int
 val is_valid_utf_16le : t -> bool
 (** @since 4.14.0: val is_valid_utf_16le : t -> bool *)
 
+@BEGIN_FROM_5_1_0@
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> bytes -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
 @BEGIN_FROM_4_13_0@
 val fold_left : ('a -> char -> 'a) -> 'a -> bytes -> 'a
 @END_FROM_4_13_0@
 @BEGIN_BEFORE_4_13_0@
-val fold_left : ('a -> char -> 'a) -> 'a -> Stdcompat__init.bytes -> 'a
+val fold_left :
+  ('acc -> char -> 'acc) -> 'acc -> Stdcompat__init.bytes -> 'acc
 @END_BEFORE_4_13_0@
-(** @since 4.13.0: val fold_left : ('a -> char -> 'a) -> 'a -> bytes -> 'a
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_left : ('acc -> char -> 'acc) -> 'acc -> bytes -> 'acc
+@since 4.13.0: val fold_left : ('a -> char -> 'a) -> 'a -> bytes -> 'a
  *)
 
+@BEGIN_FROM_5_1_0@
+val fold_right : (char -> 'acc -> 'acc) -> bytes -> 'acc -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
 @BEGIN_FROM_4_13_0@
 val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
 @END_FROM_4_13_0@
 @BEGIN_BEFORE_4_13_0@
-val fold_right : (char -> 'a -> 'a) -> Stdcompat__init.bytes -> 'a -> 'a
+val fold_right :
+  (char -> 'acc -> 'acc) -> Stdcompat__init.bytes -> 'acc -> 'acc
 @END_BEFORE_4_13_0@
-(** @since 4.13.0: val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_right : (char -> 'acc -> 'acc) -> bytes -> 'acc -> 'acc
+@since 4.13.0: val fold_right : (char -> 'a -> 'a) -> bytes -> 'a -> 'a
  *)
 
 @BEGIN_FROM_4_13_0@

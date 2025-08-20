@@ -1,9 +1,15 @@
-@BEGIN_FROM_4_08_0@
+@BEGIN_FROM_5_2_0@
  include Float
-@END_FROM_4_08_0@
-@BEGIN_BEFORE_4_08_0@
+@END_FROM_5_2_0@
+@BEGIN_BEFORE_5_2_0@
 
 module Array = struct
+  @BEGIN_FROM_4_08_0@
+  include Float.Array
+  @END_FROM_4_08_0@
+
+  @BEGIN_BEFORE_4_08_0@
+
   type t = Stdcompat__init.floatarray
 
   include Stdcompat__array.Floatarray
@@ -170,7 +176,7 @@ module Array = struct
   let mem_ieee x a =
     exists (( = ) x) a
 
-  let sort p a =
+  let sort _p _a =
     failwith "unimplemented"
 
   let stable_sort = sort
@@ -215,12 +221,158 @@ module Array = struct
 
   let map_from_array f a =
     init (Array.length a) (fun i -> f (Array.unsafe_get a i))
+
+@END_BEFORE_4_08_0@
+
+  @BEGIN_BEFORE_5_1_0@
+  let map_inplace f array =
+    for i = 0 to length array - 1 do
+      unsafe_set array i (f (unsafe_get array i))
+    done
+
+  let mapi_inplace f array =
+    for i = 0 to length array - 1 do
+      unsafe_set array i (f i (unsafe_get array i))
+    done
+
+  let rec find_opt_from index f array =
+    if index < length array then
+      let v = unsafe_get array index in
+      if f v then
+        Some v
+      else
+        find_opt_from (succ index) f array
+    else
+      None
+
+  let find_opt f array =
+    find_opt_from 0 f array
+
+  let rec find_index_from index p array =
+    if index < length array then
+      if p (unsafe_get array index) then
+        Some index
+      else
+        find_index_from (succ index) p array
+    else
+      None
+
+  let find_index p array =
+    find_index_from 0 p array
+
+  let rec find_map_from index f array =
+    if index < length array then
+      match f (unsafe_get array index) with
+      | None -> find_map_from (succ index) f array
+      | some -> some
+    else
+      None
+
+  let find_map f array =
+    find_map_from 0 f array
+
+  let rec find_mapi_from index f array =
+    if index < length array then
+      match f index (unsafe_get array index) with
+      | None -> find_mapi_from (succ index) f array
+      | some -> some
+    else
+      None
+
+  let find_mapi f array =
+    find_mapi_from 0 f array
+  @END_BEFORE_5_1_0@
+
+  let make_matrix m n x =
+    Array.init m (fun _ -> make n x)
+
+  let init_matrix m n f =
+    Array.init m (fun i -> init n (fun j -> f i j))
+  
+  let shuffle ~rand array =
+    for i = length array - 1 downto 0 do
+      let j = rand (i + 1) in
+      let tmp = unsafe_get array i in
+      unsafe_set array i (get array j);
+      unsafe_set array j tmp
+    done
+end
+
+module ArrayLabels = struct
+  @BEGIN_FROM_4_08_0@
+  include Float.ArrayLabels
+  @END_FROM_4_08_0@
+  @BEGIN_BEFORE_4_08_0@
+  include Float.Array
+
+  let init i ~f = init i f
+
+  let sub a ~pos ~len = sub a pos len
+
+  let fill a ~pos ~len v = fill a pos len v
+
+  let blit ~src ~src_pos ~dst ~dst_pos ~len = blit src src_pos dst dst_pos len
+
+  let iter ~f a = iter f a
+
+  let iteri ~f a = iteri f a
+
+  let map ~f a = map f a
+
+  let mapi ~f a = mapi f a
+
+  let fold_left ~f ~init a = fold_left f init a
+
+  let fold_right ~f a ~init = fold_right f a init
+
+  let iter2 ~f a = iter2 f a
+
+  let map2 ~f a = map2 f a
+
+  let for_all ~f a = for_all f a
+
+  let exists ~f a = exists f a
+
+  let mem v ~set = mem v set
+
+  let mem_ieee v ~set = mem_ieee v set
+
+  let sort ~cmp a = sort cmp a
+
+  let stable_sort ~cmp a = stable_sort cmp a
+
+  let fast_sort ~cmp a = fast_sort cmp a
+
+  let map_to_array ~f a = map_to_array f a
+
+  let map_from_array ~f a = map_from_array f a
+  @END_BEFORE_4_08_0@
+
+  @BEGIN_BEFORE_5_1_0@
+  let map_inplace ~f a = Array.map_inplace f a
+
+  let mapi_inplace ~f a = Array.mapi_inplace f a
+
+  let find_opt ~f a = Array.find_opt f a
+
+  let find_index ~f a = Array.find_index f a
+
+  let find_map ~f a = Array.find_map f a
+
+  let find_mapi ~f a = Array.find_mapi f a
+  @END_BEFORE_5_1_0@
+
+  let make_matrix ~dimx ~dimy v = Array.make_matrix dimx dimy v
+
+  let init_matrix ~dimx ~dimy ~f = Array.init_matrix dimx dimy f
+
+  let shuffle ~rand a = Array.shuffle rand a
 end
 
 @BEGIN_FROM_4_07_0@
- include (Float : module type of Float with module Array := Array)
+ include (Float : module type of Float with module Array := Array and module ArrayLabels := ArrayLabels)
 @END_FROM_4_07_0@
-@END_BEFORE_4_08_0@
+@END_BEFORE_5_2_0@
 @BEGIN_BEFORE_4_07_0@
 type fpclass = Pervasives.fpclass =
   | FP_normal 
@@ -237,49 +389,36 @@ type fpclass = Pervasives.fpclass =
       | FP_nan 
  *)
 type t = float
-(** @since 4.07.0: type t = float
- *)
+
 let infinity = Pervasives.infinity
-(** @since 4.07.0: val infinity : float
- *)
+
 let neg_infinity = Pervasives.neg_infinity
-(** @since 4.07.0: val neg_infinity : float
- *)
+
 let nan = Pervasives.nan
-(** @since 4.07.0: val nan : float
- *)
+
 @BEGIN_FROM_4_03_0@
 let pi = 0x1.921fb54442d18p+1
 @END_FROM_4_03_0@
 @BEGIN_BEFORE_4_03_0@
 let pi = 4. *. atan 1.
 @END_BEFORE_4_03_0@
-(** @since 4.07.0: val pi : float
- *)
+
 let max_float = Pervasives.max_float
-(** @since 4.07.0: val max_float : float
- *)
+
 let min_float = Pervasives.min_float
-(** @since 4.07.0: val min_float : float
- *)
+
 let epsilon = Pervasives.epsilon_float
-(** @since 4.07.0: val epsilon : float
- *)
+
 let of_string_opt = Stdcompat__pervasives.float_of_string_opt
-(** @since 4.07.0: val of_string_opt : string -> float option
- *)
+
 let to_string = Pervasives.string_of_float
-(** @since 4.07.0: val to_string : float -> string
- *)
+
 external compare : float -> float -> int = "%compare"
-(** @since 4.07.0: val compare : t -> t -> int
- *)
+
 let equal x y = compare x y = 0
-(** @since 4.07.0: val equal : t -> t -> bool
- *)
+
 let hash = Hashtbl.hash
-(** @since 4.07.0: val hash : t -> int
- *)
+
 @BEGIN_FROM_4_03_0@
 external hypot : float -> float -> float = "caml_hypot_float" "caml_hypot"
 [@@unboxed ][@@noalloc ]
@@ -294,14 +433,7 @@ let hypot = Stdcompat__pervasives.hypot
 @END_BEFORE_4_00_0@
 
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external hypot :
-      float -> float -> float = "caml_hypot_float" "caml_hypot"[@@unboxed ]
-    [@@noalloc ]
-@since 4.00.0:
-external hypot :
-  float -> float -> float = "caml_hypot_float" "caml_hypot" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1"[@@unboxed ]
 [@@noalloc ]
@@ -315,12 +447,7 @@ let expm1 = Stdcompat__pervasives.expm1
 @END_BEFORE_3_12_0@
 
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external expm1 : float -> float = "caml_expm1_float" "caml_expm1"
-    [@@unboxed ][@@noalloc ]
-@since 3.12.0:
-external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external log1p : float -> float = "caml_log1p_float" "caml_log1p"[@@unboxed ]
 [@@noalloc ]
@@ -334,22 +461,17 @@ let log1p = Stdcompat__pervasives.log1p
 @END_BEFORE_3_12_0@
 
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external log1p : float -> float = "caml_log1p_float" "caml_log1p"
-    [@@unboxed ][@@noalloc ]
-@since 3.12.0:
-external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
- *)
+
 external neg : float -> float = "%negfloat"
-(** Alias for {!Float.neg} *)
+
 external add : float -> float -> float = "%addfloat"
-(** Alias for {!Float.add} *)
+
 external sub : float -> float -> float = "%subfloat"
-(** Alias for {!Float.sub} *)
+
 external mul : float -> float -> float = "%mulfloat"
-(** Alias for {!Float.mul} *)
+
 external div : float -> float -> float = "%divfloat"
-(** Alias for {!Float.div} *)
+
 @BEGIN_FROM_4_03_0@
 external rem : float -> float -> float = "caml_fmod_float" "fmod"[@@unboxed ]
 [@@noalloc ]
@@ -362,25 +484,20 @@ external rem : float -> float -> float = "caml_fmod_float" "fmod" "float"
 external rem : float -> float -> float = "fmod_float" "fmod" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external rem : float -> float -> float = "caml_fmod_float" "fmod"
-    [@@unboxed ][@@noalloc ]
-@since 3.11.0:
-external rem : float -> float -> float = "caml_fmod_float" "fmod" "float"
- *)
+
 external abs : float -> float = "%absfloat"
-(** Alias for {!Float.abs} *)
+
 external of_int : int -> float = "%floatofint"
-(** Alias for {!Float.of_int} *)
+
 external to_int : float -> int = "%intoffloat"
-(** Alias for {!Float.to_int} *)
+
 @BEGIN_FROM_3_08_0@
 external of_string : string -> float = "caml_float_of_string"
 @END_FROM_3_08_0@
 @BEGIN_BEFORE_3_08_0@
 external of_string : string -> float = "float_of_string"
 @END_BEFORE_3_08_0@
-(** Alias for {!Float.of_string} *)
+
 @BEGIN_FROM_4_03_0@
 external classify_float :
   ((float)[@unboxed ]) -> fpclass = "caml_classify_float"
@@ -394,13 +511,7 @@ external classify_float : float -> fpclass = "caml_classify_float"
 external classify_float : float -> fpclass = "classify_float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external classify_float :
-      ((float)[@unboxed ]) -> fpclass = "caml_classify_float"
-        "caml_classify_float_unboxed"[@@noalloc ]
-@since 3.11.0:
-external classify_float : float -> fpclass = "caml_classify_float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external pow : float -> float -> float = "caml_power_float" "pow"[@@unboxed ]
 [@@noalloc ]
@@ -413,12 +524,7 @@ external pow : float -> float -> float = "caml_power_float" "pow" "float"
 external pow : float -> float -> float = "power_float" "pow" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external pow : float -> float -> float = "caml_power_float" "pow"
-    [@@unboxed ][@@noalloc ]
-@since 3.11.0:
-external pow : float -> float -> float = "caml_power_float" "pow" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external sqrt : float -> float = "caml_sqrt_float" "sqrt"[@@unboxed ]
 [@@noalloc ]
@@ -431,12 +537,7 @@ external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
 external sqrt : float -> float = "sqrt_float" "sqrt" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external sqrt : float -> float = "caml_sqrt_float" "sqrt"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external exp : float -> float = "caml_exp_float" "exp"[@@unboxed ][@@noalloc
                                                                     ]
@@ -449,11 +550,7 @@ external exp : float -> float = "caml_exp_float" "exp" "float"
 external exp : float -> float = "exp_float" "exp" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external exp : float -> float = "caml_exp_float" "exp"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0: external exp : float -> float = "caml_exp_float" "exp" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external log : float -> float = "caml_log_float" "log"[@@unboxed ][@@noalloc
                                                                     ]
@@ -466,11 +563,7 @@ external log : float -> float = "caml_log_float" "log" "float"
 external log : float -> float = "log_float" "log" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external log : float -> float = "caml_log_float" "log"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0: external log : float -> float = "caml_log_float" "log" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external log10 : float -> float = "caml_log10_float" "log10"[@@unboxed ]
 [@@noalloc ]
@@ -483,12 +576,7 @@ external log10 : float -> float = "caml_log10_float" "log10" "float"
 external log10 : float -> float = "log10_float" "log10" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external log10 : float -> float = "caml_log10_float" "log10"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external log10 : float -> float = "caml_log10_float" "log10" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external cos : float -> float = "caml_cos_float" "cos"[@@unboxed ][@@noalloc
                                                                     ]
@@ -501,11 +589,7 @@ external cos : float -> float = "caml_cos_float" "cos" "float"
 external cos : float -> float = "cos_float" "cos" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external cos : float -> float = "caml_cos_float" "cos"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0: external cos : float -> float = "caml_cos_float" "cos" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external sin : float -> float = "caml_sin_float" "sin"[@@unboxed ][@@noalloc
                                                                     ]
@@ -518,11 +602,7 @@ external sin : float -> float = "caml_sin_float" "sin" "float"
 external sin : float -> float = "sin_float" "sin" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external sin : float -> float = "caml_sin_float" "sin"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0: external sin : float -> float = "caml_sin_float" "sin" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external tan : float -> float = "caml_tan_float" "tan"[@@unboxed ][@@noalloc
                                                                     ]
@@ -535,11 +615,7 @@ external tan : float -> float = "caml_tan_float" "tan" "float"
 external tan : float -> float = "tan_float" "tan" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external tan : float -> float = "caml_tan_float" "tan"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0: external tan : float -> float = "caml_tan_float" "tan" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external acos : float -> float = "caml_acos_float" "acos"[@@unboxed ]
 [@@noalloc ]
@@ -552,12 +628,7 @@ external acos : float -> float = "caml_acos_float" "acos" "float"
 external acos : float -> float = "acos_float" "acos" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external acos : float -> float = "caml_acos_float" "acos"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external acos : float -> float = "caml_acos_float" "acos" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external asin : float -> float = "caml_asin_float" "asin"[@@unboxed ]
 [@@noalloc ]
@@ -570,12 +641,7 @@ external asin : float -> float = "caml_asin_float" "asin" "float"
 external asin : float -> float = "asin_float" "asin" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external asin : float -> float = "caml_asin_float" "asin"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external asin : float -> float = "caml_asin_float" "asin" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external atan : float -> float = "caml_atan_float" "atan"[@@unboxed ]
 [@@noalloc ]
@@ -588,12 +654,7 @@ external atan : float -> float = "caml_atan_float" "atan" "float"
 external atan : float -> float = "atan_float" "atan" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external atan : float -> float = "caml_atan_float" "atan"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external atan : float -> float = "caml_atan_float" "atan" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
 [@@unboxed ][@@noalloc ]
@@ -606,12 +667,7 @@ external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
 external atan2 : float -> float -> float = "atan2_float" "atan2" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external atan2 : float -> float -> float = "caml_atan2_float" "atan2"
-    [@@unboxed ][@@noalloc ]
-@since 3.11.0:
-external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external cosh : float -> float = "caml_cosh_float" "cosh"[@@unboxed ]
 [@@noalloc ]
@@ -624,12 +680,7 @@ external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 external cosh : float -> float = "cosh_float" "cosh" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external cosh : float -> float = "caml_cosh_float" "cosh"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external cosh : float -> float = "caml_cosh_float" "cosh" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external sinh : float -> float = "caml_sinh_float" "sinh"[@@unboxed ]
 [@@noalloc ]
@@ -642,12 +693,7 @@ external sinh : float -> float = "caml_sinh_float" "sinh" "float"
 external sinh : float -> float = "sinh_float" "sinh" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external sinh : float -> float = "caml_sinh_float" "sinh"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external sinh : float -> float = "caml_sinh_float" "sinh" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external tanh : float -> float = "caml_tanh_float" "tanh"[@@unboxed ]
 [@@noalloc ]
@@ -660,12 +706,7 @@ external tanh : float -> float = "caml_tanh_float" "tanh" "float"
 external tanh : float -> float = "tanh_float" "tanh" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external tanh : float -> float = "caml_tanh_float" "tanh"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external tanh : float -> float = "caml_tanh_float" "tanh" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external ceil : float -> float = "caml_ceil_float" "ceil"[@@unboxed ]
 [@@noalloc ]
@@ -678,12 +719,7 @@ external ceil : float -> float = "caml_ceil_float" "ceil" "float"
 external ceil : float -> float = "ceil_float" "ceil" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external ceil : float -> float = "caml_ceil_float" "ceil"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external ceil : float -> float = "caml_ceil_float" "ceil" "float"
- *)
+
 @BEGIN_FROM_4_03_0@
 external floor : float -> float = "caml_floor_float" "floor"[@@unboxed ]
 [@@noalloc ]
@@ -696,19 +732,14 @@ external floor : float -> float = "caml_floor_float" "floor" "float"
 external floor : float -> float = "floor_float" "floor" "float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external floor : float -> float = "caml_floor_float" "floor"[@@unboxed ]
-    [@@noalloc ]
-@since 3.11.0:
-external floor : float -> float = "caml_floor_float" "floor" "float"
- *)
+
 @BEGIN_FROM_3_08_0@
 external frexp : float -> (float * int) = "caml_frexp_float"
 @END_FROM_3_08_0@
 @BEGIN_BEFORE_3_08_0@
 external frexp : float -> (float * int) = "frexp_float"
 @END_BEFORE_3_08_0@
-(** Alias for {!Float.frexp} *)
+
 @BEGIN_FROM_4_03_0@
 external ldexp :
   ((float)[@unboxed ]) -> ((int)[@untagged ]) -> ((float)[@unboxed ]) =
@@ -722,19 +753,14 @@ external ldexp : float -> int -> float = "caml_ldexp_float"
 external ldexp : float -> int -> float = "ldexp_float"
 @END_BEFORE_3_08_0@
 @END_BEFORE_4_03_0@
-(** @since 4.03.0:
-    external ldexp :
-      ((float)[@unboxed ]) -> ((int)[@untagged ]) -> ((float)[@unboxed ]) =
-        "caml_ldexp_float" "caml_ldexp_float_unboxed"[@@noalloc ]
-@since 3.11.0: external ldexp : float -> int -> float = "caml_ldexp_float"
- *)
+
 @BEGIN_FROM_3_08_0@
 external modf : float -> (float * float) = "caml_modf_float"
 @END_FROM_3_08_0@
 @BEGIN_BEFORE_3_08_0@
 external modf : float -> (float * float) = "modf_float"
 @END_BEFORE_3_08_0@
-(** Alias for {!Float.modf} *)
+
 @END_BEFORE_4_07_0@
 
 @BEGIN_BEFORE_4_08_0@
@@ -892,51 +918,6 @@ let one = 1.
 
 let zero = 0.
 
-module ArrayLabels = struct
-  include Array
-
-  let init i ~f = init i f
-
-  let sub a ~pos ~len = sub a pos len
-
-  let fill a ~pos ~len v = fill a pos len v
-
-  let blit ~src ~src_pos ~dst ~dst_pos ~len = blit src src_pos dst dst_pos len
-
-  let iter ~f a = iter f a
-
-  let iteri ~f a = iteri f a
-
-  let map ~f a = map f a
-
-  let mapi ~f a = mapi f a
-
-  let fold_left ~f ~init a = fold_left f init a
-
-  let fold_right ~f a ~init = fold_right f a init
-
-  let iter2 ~f a = iter2 f a
-
-  let map2 ~f a = map2 f a
-
-  let for_all ~f a = for_all f a
-
-  let exists ~f a = exists f a
-
-  let mem v ~set = mem v set
-
-  let mem_ieee v ~set = mem_ieee v set
-
-  let sort ~cmp a = sort cmp a
-
-  let stable_sort ~cmp a = stable_sort cmp a
-
-  let fast_sort ~cmp a = fast_sort cmp a
-
-  let map_to_array ~f a = map_to_array f a
-
-  let map_from_array ~f a = map_from_array f a
-end
 @END_BEFORE_4_08_0@
 
 @BEGIN_BEFORE_4_13_0@
@@ -980,3 +961,11 @@ let erf x =
 let erfc x =
   1. -. erf x
 @END_BEFORE_4_13_0@
+
+@BEGIN_BEFORE_5_1_0@
+let signaling_nan = nan
+
+let quiet_nan = nan
+
+let seeded_hash = Stdcompat__hashtbl.seeded_hash
+@END_BEFORE_5_1_0@

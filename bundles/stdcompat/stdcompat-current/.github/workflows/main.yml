@@ -1,0 +1,90 @@
+name: main
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  build-ubuntu:
+    strategy:
+      fail-fast: false
+      matrix:
+        builder:
+          - dune
+          - make
+          - make-no-magic
+        ocaml-compiler:
+          - 4.11.x
+          - 4.12.x
+          - 4.13.x
+          - 4.14.x
+          - 5.0.x
+          - 5.1.x
+          - 5.2.x
+          - 5.3.x
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: Make stdcompat
+        run: |
+          opam exec -- sh -xc ".github/scripts/build-${{ matrix.builder }}.sh"
+
+  build-macos-and-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+        builder:
+          - dune
+          - make
+          - make-no-magic
+        ocaml-compiler:
+          - 4.14.x
+          - 5.0.x
+          - 5.1.x
+          - 5.2.x
+          - 5.3.x
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: Make stdcompat
+        run: |
+          opam exec -- sh -xc ".github/scripts/build-${{ matrix.builder }}.sh"
+
+#  build-ubuntu-ocaml-5-beta:
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        builder:
+#          - dune
+#          - make
+#          - make-no-magic
+#    runs-on: ubuntu-latest
+#    container:
+#      image: ghcr.io/thierry-martinez/stdcompat-ocaml-5-beta
+#      credentials:
+#        username: ${{ github.actor }}
+#        password: ${{ secrets.packages_actions_read }}
+#    steps:
+#      - name: Checkout
+#        uses: actions/checkout@v3
+#      - name: Make stdcompat
+#        run: |
+#          chown -R ci $PWD && \
+#          su ci -c "sh -xc \".github/scripts/build-in-docker.sh \
+#            5.0.0~alpha1 \
+#            \\\"${{ matrix.builder }}\\\"\""

@@ -1,5 +1,4 @@
 #include <string.h>
-#include "stdcompat.h"
 
 @C_BEGIN_FROM_5_0_0@
 void stdcompat_dummy_symbol()

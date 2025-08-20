@@ -37,10 +37,8 @@ type stag
 (** @since 4.08.0: type stag = ..
  *)
 
-(*
 type tag = string
 (** Alias for {!Format.tag} *)
-*)
 
 @BEGIN_FROM_4_06_0@
 type formatter_out_functions = Format.formatter_out_functions =
@@ -129,15 +127,55 @@ type symbolic_output_buffer
 (** @since 4.06.0: type symbolic_output_buffer
  *)
 
-(*
-type formatter_tag_functions = Format.formatter_tag_functions =
-  {
-  mark_open_tag: tag -> string ;
-  mark_close_tag: tag -> string ;
-  print_open_tag: tag -> unit ;
-  print_close_tag: tag -> unit }
-(** Alias for {!Format.formatter_tag_functions} *)
-*)
+val pp_print_nothing : formatter -> unit -> unit
+(** @since 5.2.0: val pp_print_nothing : formatter -> unit -> unit *)
+
+val pp_infinity : int
+(** @since 5.2.0: val pp_infinity : int *)
+
+val pp_print_iter :
+  ?pp_sep:(formatter -> unit -> unit) ->
+    (('a -> unit) -> 'b -> unit) ->
+      (formatter -> 'a -> unit) -> formatter -> 'b -> unit
+(** @since 5.1.0:
+    val pp_print_iter :
+      ?pp_sep:(formatter -> unit -> unit) ->
+        (('a -> unit) -> 'b -> unit) ->
+          (formatter -> 'a -> unit) -> formatter -> 'b -> unit *)
+
+val pp_print_array :
+  ?pp_sep:(formatter -> unit -> unit) ->
+    (formatter -> 'a -> unit) -> formatter -> 'a array -> unit
+(** @since 5.1.0:
+    val pp_print_array :
+      ?pp_sep:(formatter -> unit -> unit) ->
+        (formatter -> 'a -> unit) -> formatter -> 'a array -> unit *)
+
+val synchronized_formatter_of_out_channel :
+  out_channel -> formatter Stdcompat__domain.DLS.key
+(** @since 5.0.0:
+    val synchronized_formatter_of_out_channel :
+      out_channel -> formatter Stdcompat__domain.DLS.key *)
+
+val get_std_formatter : unit -> formatter
+(** @since 5.0.0: val get_std_formatter : unit -> formatter *)
+
+val get_err_formatter : unit -> formatter
+(** @since 5.0.0: val get_err_formatter : unit -> formatter *)
+
+val get_stdbuf : unit -> Buffer.t
+(** @since 5.0.0: val get_stdbuf : unit -> Buffer.t *)
+
+val get_str_formatter : unit -> formatter
+(** @since 5.0.0: val get_str_formatter : unit -> formatter *)
+
+val make_synchronized_formatter :
+  (string -> int -> int -> unit) ->
+    (unit -> unit) -> formatter Stdcompat__domain.DLS.key
+(** @since 5.0.0:
+    val make_synchronized_formatter :
+      (string -> int -> int -> unit) ->
+        (unit -> unit) -> formatter Stdcompat__domain.DLS.key *)
 
 @BEGIN_FROM_4_13_0@
 val pp_print_bytes : formatter -> bytes -> unit
@@ -300,11 +338,6 @@ val kdprintf :
     val kdprintf :
       ((formatter -> unit) -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b *)
 
-(*
-val pp_open_tag : formatter -> tag -> unit
-(** @since 4.08.0: val pp_open_tag : formatter -> tag -> unit *)
-*)
-
 val formatter_of_out_functions : formatter_out_functions -> formatter
 (** @since 4.06.0:
     val formatter_of_out_functions : formatter_out_functions -> formatter *)
@@ -438,6 +471,12 @@ val open_hovbox : int -> unit
 
 val pp_print_string : formatter -> string -> unit
 (** Alias for {!Format.pp_print_string} *)
+
+val pp_print_substring : pos:int -> len:int -> formatter -> string -> unit
+val print_substring : pos:int -> len:int -> string -> unit
+val pp_print_substring_as :
+  pos:int -> len:int -> formatter -> int -> string -> unit
+val print_substring_as : pos:int -> len:int -> int -> string -> unit
 
 val print_string : string -> unit
 (** Alias for {!Format.print_string} *)
@@ -856,31 +895,5 @@ val eprintf : ('a, formatter, unit) format -> 'a
 
 val sprintf : ('a, unit, string) format -> 'a
 (** Alias for {!Format.sprintf} *)
-
-(*
-val open_tag : tag -> unit
-(** Alias for {!Format.open_tag} *)
-
-val pp_close_tag : formatter -> unit -> unit
-(** Alias for {!Format.pp_close_tag} *)
-
-val close_tag : unit -> unit
-(** Alias for {!Format.close_tag} *)
-*)
-(*
-val pp_set_formatter_tag_functions :
-  formatter -> formatter_tag_functions -> unit
-(** Alias for {!Format.pp_set_formatter_tag_functions} *)
-
-val set_formatter_tag_functions : formatter_tag_functions -> unit
-(** Alias for {!Format.set_formatter_tag_functions} *)
-
-val pp_get_formatter_tag_functions :
-  formatter -> unit -> formatter_tag_functions
-(** Alias for {!Format.pp_get_formatter_tag_functions} *)
-
-val get_formatter_tag_functions : unit -> formatter_tag_functions
-(** Alias for {!Format.get_formatter_tag_functions} *)
-*)
 
 end

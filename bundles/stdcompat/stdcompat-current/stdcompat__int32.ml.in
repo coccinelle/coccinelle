@@ -90,3 +90,9 @@ let bits_of_float f =
   else
     unsigned
 @END_BEFORE_3_08_0@
+
+@BEGIN_BEFORE_5_1_0@
+let hash = Hashtbl.hash
+
+let seeded_hash = Stdcompat__hashtbl.seeded_hash
+@END_BEFORE_5_1_0@

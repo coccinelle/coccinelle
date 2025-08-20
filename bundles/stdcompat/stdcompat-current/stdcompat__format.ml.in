@@ -1,6 +1,11 @@
 @BEGIN_FROM_4_06_0@
 include Format
 @END_FROM_4_06_0@
+@BEGIN_BEFORE_5_2_0@
+let pp_print_nothing _fmt () = ()
+
+let pp_infinity = 1000000010
+@END_BEFORE_5_2_0@
 @BEGIN_BEFORE_4_06_0@
 @BEGIN_FROM_4_01_0@
 include (Format : module type of struct include Format end
@@ -17,9 +22,6 @@ type formatter_out_functions =
   out_newline: unit -> unit ;
   out_spaces: int -> unit ;
   out_indent: int -> unit }
-
-let formatter_of_out_functions functions =
-  failwith "Not implemented."
 
 @BEGIN_FROM_4_01_0@
 let downgrade_formatter_out_functions functions =
@@ -146,9 +148,6 @@ let pp_safe_set_geometry _ ~max_indent:_ ~margin:_ =
   failwith "Not implemented."
 
 let check_geometry _ =
-  failwith "Not implemented."
-
-let pp_safe_set_geometry _ =
   failwith "Not implemented."
 
 let pp_print_custom_break _ =
@@ -285,3 +284,58 @@ let pp_print_bytes fmt bytes =
 let print_bytes bytes =
   pp_print_bytes std_formatter bytes
 @END_BEFORE_4_13_0@
+
+@BEGIN_BEFORE_5_1_0@
+let pp_print_iter ?pp_sep iter pp_item fmt arg =
+  let first = ref true in
+  iter (fun v -> if !first then first := false else begin match pp_sep with Some pp_sep -> pp_sep fmt () | None -> () end; pp_item fmt v) arg
+
+let pp_print_array ?pp_sep pp_item fmt array =
+  pp_print_iter ?pp_sep Array.iter pp_item fmt array
+@END_BEFORE_5_1_0@
+
+@BEGIN_BEFORE_5_0_0@
+let synchronized_formatter_of_out_channel _ =
+  failwith "not implemented"
+
+let get_std_formatter () =
+  std_formatter
+
+let get_err_formatter () =
+  err_formatter
+
+let get_stdbuf () =
+  stdbuf
+
+let get_str_formatter () =
+  str_formatter
+
+let make_synchronized_formatter _ _ =
+  failwith "not implemented"
+@END_BEFORE_5_0_0@
+
+@BEGIN_BEFORE_5_3_0@
+let pp_print_substring_as ~pos ~len _state _size _s =
+  let _pos = pos in
+  let _len = len in
+  failwith "Not implemented."
+
+let pp_print_substring ~pos ~len state s =
+  pp_print_substring_as ~pos ~len state len s
+
+let print_substring ~pos ~len _v =
+  let _pos = pos in
+  let _len = len in
+  failwith "Not implemented."
+(*
+  pp_print_substring  ~pos ~len (DLS.get std_formatter_key) v
+*)
+
+let print_substring_as ~pos ~len _as_len _v =
+  let _pos = pos in
+  let _len = len in
+  failwith "Not implemented."
+(*
+  pp_print_substring_as ~pos ~len (DLS.get std_formatter_key) as_len v
+*)
+@END_BEFORE_5_3_0@

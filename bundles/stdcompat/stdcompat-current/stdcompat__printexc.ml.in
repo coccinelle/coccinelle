@@ -44,22 +44,17 @@ type backtrace_slot = Printexc.backtrace_slot
 type backtrace_slot
 @END_BEFORE_4_02_0@
 
-@BEGIN_FROM_4_02_0@
-type location = Printexc.location =
-  {
-  filename: string ;
-  line_number: int ;
-  start_char: int ;
-  end_char: int }
-@END_FROM_4_02_0@
-@BEGIN_BEFORE_4_02_0@
 type location =
+@BEGIN_FROM_5_2_0@
+Printexc.location =
+@END_FROM_5_2_0@
   {
   filename: string ;
   line_number: int ;
   start_char: int ;
-  end_char: int }
-@END_BEFORE_4_02_0@
+  end_char: int ;
+  end_line: int ;
+  end_col: int }
 
 let to_string = Printexc.to_string
 
@@ -234,3 +229,8 @@ let default_uncaught_exception_handler exn raw_backtrace =
   print_raw_backtrace stderr raw_backtrace;
   flush stderr
 @END_BEFORE_4_11_0@
+
+@BEGIN_BEFORE_5_0_0@
+let string_of_extension_constructor _ =
+  failwith "not implemented"
+@END_BEFORE_5_0_0@

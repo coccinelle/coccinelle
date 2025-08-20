@@ -49,26 +49,29 @@ let set_temp_dir_name dir =
   current_temp_dir_name := dir
 @END_BEFORE_4_00_0@
 
-@BEGIN_BEFORE_4_03_0@
+@BEGIN_BEFORE_5_1_0@
 let prng = lazy (Random.State.make_self_init ())
 
 let temp_file_name temp_dir prefix suffix =
   let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
   concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 
+let rec try_name temp_dir prefix suffix counter f =
+  let name = temp_file_name temp_dir prefix suffix in
+  try
+    name, f name
+  with Sys_error _ as e ->
+    if counter >= 1000 then
+      raise e
+    else
+      try_name temp_dir prefix suffix (succ counter) f
+@END_BEFORE_5_1_0@
+
+@BEGIN_BEFORE_4_03_0@
 let open_temp_file ?(mode = [Open_text]) ?(perms = 0o600)
     ?(temp_dir = get_temp_dir_name ()) prefix suffix =
-  let rec try_name counter =
-    let name = temp_file_name temp_dir prefix suffix in
-    try
-      name,
-      open_out_gen (Open_wronly :: Open_creat :: Open_excl :: mode) perms name
-    with Sys_error _ as e ->
-      if counter >= 1000 then
-        raise e
-      else
-        try_name (succ counter) in
-  try_name 0
+  try_name temp_dir prefix suffix 0 (fun name -> 
+    open_out_gen (Open_wronly :: Open_creat :: Open_excl :: mode) perms name)
 @END_BEFORE_4_03_0@
 
 @BEGIN_BEFORE_4_00_0@
@@ -82,6 +85,14 @@ let temp_file ?(temp_dir = !current_temp_dir_name) prefix suffix =
   name
 @END_BEFORE_3_11_0@
 @END_BEFORE_4_00_0@
+
+@BEGIN_BEFORE_5_1_0@
+let temp_dir
+    ?(temp_dir = get_temp_dir_name ()) ?(perms = 0o600) prefix suffix =
+  let name, () =
+    try_name temp_dir prefix suffix 0 (fun name -> Stdcompat__sys.mkdir name perms) in
+  name
+@END_BEFORE_5_1_0@
 
 @BEGIN_BEFORE_3_11_0@
 let dir_sep =
@@ -245,3 +256,6 @@ let quote_command (command : string) ?(stdin : string option)
   Buffer.contents buffer
 @END_WITHOUT_WIN32@
 @END_BEFORE_4_10_0@
+
+@BEGIN_BEFORE_5_1_0@
+@END_BEFORE_5_1_0@

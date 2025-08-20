@@ -23,11 +23,48 @@ val unsafe_set : Stdcompat__init.floatarray -> int -> float -> unit end
 (** @since 4.06.0: module Floatarray = Array.Floatarray
  *)
 
+val init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array
+(** @since 5.2.0:
+    val init_matrix : int -> int -> (int -> int -> 'a) -> 'a array array *)
+
+val shuffle : rand:(int -> int) -> 'a array -> unit
+(** @since 5.2.0: val shuffle : rand:(int -> int) -> 'a array -> unit *)
+
+val map_inplace : ('a -> 'a) -> 'a array -> unit
+(** @since 5.1.0: val map_inplace : ('a -> 'a) -> 'a array -> unit *)
+
+val mapi_inplace : (int -> 'a -> 'a) -> 'a array -> unit
+(** @since 5.1.0: val mapi_inplace : (int -> 'a -> 'a) -> 'a array -> unit *)
+
+val find_index : ('a -> bool) -> 'a array -> int option
+(** @since 5.1.0: val find_index : ('a -> bool) -> 'a array -> int option *)
+
+val find_mapi : (int -> 'a -> 'b option) -> 'a array -> 'b option
+(** @since 5.1.0:
+    val find_mapi : (int -> 'a -> 'b option) -> 'a array -> 'b option *)
+
+@BEGIN_FROM_5_1_0@
+val fold_left_map :
+  ('acc -> 'a -> ('acc * 'b)) -> 'acc -> 'a array -> ('acc * 'b array)
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_13_0@
 val fold_left_map :
   ('a -> 'b -> ('a * 'c)) -> 'a -> 'b array -> ('a * 'c array)
-(** @since 4.13.0:
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val fold_left_map :
+  ('acc -> 'a -> ('acc * 'b)) -> 'acc -> 'a array -> ('acc * 'b array)
+@END_BEFORE_4_13_0@
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
     val fold_left_map :
-      ('a -> 'b -> ('a * 'c)) -> 'a -> 'b array -> ('a * 'c array) *)
+      ('acc -> 'a -> ('acc * 'b)) -> 'acc -> 'a array -> ('acc * 'b array)
+@since 4.13.0:
+val fold_left_map :
+  ('a -> 'b -> ('a * 'c)) -> 'a -> 'b array -> ('a * 'c array)
+ *)
 
 val find_opt : ('a -> bool) -> 'a array -> 'a option
 (** @since 4.13.0: val find_opt : ('a -> bool) -> 'a array -> 'a option *)
@@ -77,7 +114,12 @@ val of_seq : 'a Stdcompat__seq.t -> 'a array
  *)
 
 @BEGIN_FROM_4_03_0@
+@BEGIN_BEFORE_5_3_0@
 external create_float : int -> float array = "caml_make_float_vect"
+@END_BEFORE_5_3_0@
+@BEGIN_FROM_5_3_0@
+external create_float: int -> float array = "caml_array_create_float"
+@END_FROM_5_3_0@
 @END_FROM_4_03_0@
 @BEGIN_BEFORE_4_03_0@
 val create_float : int -> float array
@@ -116,7 +158,12 @@ external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
 (** Alias for {!Array.set} *)
 
 @BEGIN_FROM_3_08_0@
+@BEGIN_BEFORE_5_3_0@
 external make : int -> 'a -> 'a array = "caml_make_vect"
+@END_BEFORE_5_3_0@
+@BEGIN_FROM_5_3_0@
+external make : int -> 'a -> 'a array = "caml_array_make"
+@END_FROM_5_3_0@
 @END_FROM_3_08_0@
 @BEGIN_BEFORE_3_08_0@
 external make : int -> 'a -> 'a array = "make_vect"
@@ -167,16 +214,32 @@ val map : ('a -> 'b) -> 'a array -> 'b array
 val mapi : (int -> 'a -> 'b) -> 'a array -> 'b array
 (** Alias for {!Array.mapi} *)
 
+@BEGIN_FROM_5_1_0@
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a array -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
-(** Alias for {!Array.fold_left} *)
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a array -> 'acc
+@since 3.07.0: val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
+ *)
 
+@BEGIN_FROM_5_1_0@
+val fold_right : ('a -> 'acc -> 'acc) -> 'a array -> 'acc -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
 @BEGIN_FROM_4_00_0@
 val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 @END_FROM_4_00_0@
 @BEGIN_BEFORE_4_00_0@
 val fold_right : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 @END_BEFORE_4_00_0@
-(** @since 4.00.0: val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_right : ('a -> 'acc -> 'acc) -> 'a array -> 'acc -> 'acc
+@since 4.00.0: val fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
 @since 3.07.0: val fold_right : ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
  *)
 

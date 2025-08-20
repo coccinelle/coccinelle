@@ -1,7 +1,8 @@
 AC_INIT([[stdcompat]], m4_esyscmd([tr -d '\n' <VERSION]),
-  [[Thierry.Martinez@inria.fr]], [[stdcompat]],
-  [[https://github.com/thierry.martinez/stdcompat/]])
+  [[https://github.com/ocamllibs/stdcompat/issues]], [[stdcompat]],
+  [[https://github.com/ocamllibs/stdcompat/]])
 AM_INIT_AUTOMAKE([foreign])
+AM_MAINTAINER_MODE
 
 AC_DEFUN([AC_OCAMLFIND_PKG],
   [AC_MSG_CHECKING([for ocamlfind package $2])
@@ -73,18 +74,12 @@ AS_IF([test "x$OCAMLFIND" = "x"],
      [AC_CHECK_TOOL([OCAMLDEP], [ocamldep], [])])
    AC_CHECK_TOOL([OCAMLMKLIB], [ocamlmklib.opt], [])
    AS_IF([test "x$OCAMLMKLIB" = "x"],
-     [AC_CHECK_TOOL([OCAMLMKLIB], [ocamlmklib], [])])
-   AC_SUBST([RESULT_PKG], [])
-   AC_SUBST([SEQ_PKG], [])
-   AC_SUBST([UCHAR_PKG], [])],
+     [AC_CHECK_TOOL([OCAMLMKLIB], [ocamlmklib], [])])],
   [AC_SUBST([OCAMLC], [["$OCAMLFIND ocamlc"]])
    AC_SUBST([OCAMLOPT], [["$OCAMLFIND ocamlopt"]])
    AC_SUBST([OCAMLDOC], [["$OCAMLFIND ocamldoc"]])
    AC_SUBST([OCAMLDEP], [["$OCAMLFIND ocamldep"]])
-   AC_SUBST([OCAMLMKLIB], [["$OCAMLFIND ocamlmklib"]])
-   AC_OCAMLFIND_PKG([RESULT_PKG], [result], [Result])
-   AC_OCAMLFIND_PKG([SEQ_PKG], [seq], [Seq])
-   AC_OCAMLFIND_PKG([UCHAR_PKG], [uchar], [Uchar])])
+   AC_SUBST([OCAMLMKLIB], [["$OCAMLFIND ocamlmklib"]])])
 
 AS_IF([test "x$OCAMLOPT" = "x"],
   [AS_IF([test "x$OCAMLC" = "x"],
@@ -94,14 +89,12 @@ AS_IF([test "x$OCAMLOPT" = "x"],
   [AC_SUBST([OCAMLBEST], [["$OCAMLOPT"]])
    AC_SUBST([CMAX], [["cmxa"]])])
 
+AC_MSG_NOTICE([the best OCaml compiler is $OCAMLBEST])
+
 AS_IF([test "x$OCAMLDEP" = "x"],
   [AC_MSG_ERROR([[No ocamldep available]])])
 
-AC_CONFIG_HEADERS([config.h])
-AC_C_BIGENDIAN(
-  [AC_SUBST([BIG_ENDIAN], [[true]])],
-  [AC_SUBST([BIG_ENDIAN], [[false]])],
-  [AC_MSG_ERROR([[Unknown endianness]])])
+AC_SUBST([OBJEXT], [[`$OCAMLBEST -config-var ext_obj | sed 's/^[.]//g'`]])
 
 AC_MSG_CHECKING([OCaml target OS type])
 
@@ -166,10 +159,6 @@ AS_IF([test "x$enable_magic" = "xno"],
   [AC_WITHOUT_BLOCK([MAGIC])],
   [AC_WITH_BLOCK([MAGIC])])
 
-AC_WITH_BLOCK_PKG([RESULT])
-AC_WITH_BLOCK_PKG([SEQ])
-AC_WITH_BLOCK_PKG([UCHAR])
-
 AC_WITH_OCAML_VERSION([3_07_0], [3.07])
 AC_WITH_OCAML_VERSION([3_08_0], [3.08.0])
 AC_WITH_OCAML_VERSION([3_09_0], [3.09.0])
@@ -193,6 +182,9 @@ AC_WITH_OCAML_VERSION([4_12_0], [4.12.0])
 AC_WITH_OCAML_VERSION([4_13_0], [4.13.0])
 AC_WITH_OCAML_VERSION([4_14_0], [4.14.0])
 AC_WITH_OCAML_VERSION([5_0_0], [5.0.0])
+AC_WITH_OCAML_VERSION([5_1_0], [5.1.0])
+AC_WITH_OCAML_VERSION([5_2_0], [5.2.0])
+AC_WITH_OCAML_VERSION([5_3_0], [5.3.0])
 
 AS_IF([test "x$target_os_type" = "xWin32"],
   [AC_WITH_BLOCK([WIN32])],
@@ -247,10 +239,7 @@ AC_CONFIG_FILES([stdcompat__root.mli])
 AC_CONFIG_FILES([stdcompat__root.ml])
 AC_CONFIG_FILES([stdcompat__tools.mli])
 AC_CONFIG_FILES([stdcompat__tools.ml])
-AC_CONFIG_FILES([stdcompat__native.ml_byte])
-AC_CONFIG_FILES([stdcompat__native.ml_native])
 AC_CONFIG_FILES([stdcompat_tests.ml])
-AC_CONFIG_FILES([stdcompat.h])
 AC_CONFIG_FILES([stdcompat__stubs.c])
 AC_CONFIG_FILES([stdcompat__pervasives_s.mli])
 AC_CONFIG_FILES([stdcompat__arg_s.mli])
@@ -263,6 +252,8 @@ AC_CONFIG_FILES([stdcompat__bytes_s.mli])
 AC_CONFIG_FILES([stdcompat__bytesLabels_s.mli])
 AC_CONFIG_FILES([stdcompat__char_s.mli])
 AC_CONFIG_FILES([stdcompat__digest_s.mli])
+AC_CONFIG_FILES([stdcompat__domain_s.mli])
+AC_CONFIG_FILES([stdcompat__dynarray_s.mli])
 AC_CONFIG_FILES([stdcompat__either_s.mli])
 AC_CONFIG_FILES([stdcompat__ephemeron_s.mli])
 AC_CONFIG_FILES([stdcompat__filename_s.mli])
@@ -309,6 +300,8 @@ AC_CONFIG_FILES([stdcompat__bytes_s.ml:stdcompat__bytes_s.mli.in])
 AC_CONFIG_FILES([stdcompat__bytesLabels_s.ml:stdcompat__bytesLabels_s.mli.in])
 AC_CONFIG_FILES([stdcompat__char_s.ml:stdcompat__char_s.mli.in])
 AC_CONFIG_FILES([stdcompat__digest_s.ml:stdcompat__digest_s.mli.in])
+AC_CONFIG_FILES([stdcompat__domain_s.ml:stdcompat__domain_s.mli.in])
+AC_CONFIG_FILES([stdcompat__dynarray_s.ml:stdcompat__dynarray_s.mli.in])
 AC_CONFIG_FILES([stdcompat__either_s.ml:stdcompat__either_s.mli.in])
 AC_CONFIG_FILES([stdcompat__ephemeron_s.ml:stdcompat__ephemeron_s.mli.in])
 AC_CONFIG_FILES([stdcompat__filename_s.ml:stdcompat__filename_s.mli.in])
@@ -355,6 +348,8 @@ AC_CONFIG_FILES([stdcompat__bytes.ml])
 AC_CONFIG_FILES([stdcompat__bytesLabels.ml])
 AC_CONFIG_FILES([stdcompat__char.ml])
 AC_CONFIG_FILES([stdcompat__digest.ml])
+AC_CONFIG_FILES([stdcompat__domain.ml])
+AC_CONFIG_FILES([stdcompat__dynarray.ml])
 AC_CONFIG_FILES([stdcompat__either.ml])
 AC_CONFIG_FILES([stdcompat__ephemeron.ml])
 AC_CONFIG_FILES([stdcompat__filename.ml])
@@ -401,6 +396,8 @@ AC_CONFIG_FILES([stdcompat__bytes.mli])
 AC_CONFIG_FILES([stdcompat__bytesLabels.mli])
 AC_CONFIG_FILES([stdcompat__char.mli])
 AC_CONFIG_FILES([stdcompat__digest.mli])
+AC_CONFIG_FILES([stdcompat__domain.mli])
+AC_CONFIG_FILES([stdcompat__dynarray.mli])
 AC_CONFIG_FILES([stdcompat__either.mli])
 AC_CONFIG_FILES([stdcompat__ephemeron.mli])
 AC_CONFIG_FILES([stdcompat__filename.mli])

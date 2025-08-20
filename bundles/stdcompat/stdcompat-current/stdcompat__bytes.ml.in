@@ -751,3 +751,8 @@ let is_valid_utf_16le b =
   in
   loop (length b - 1) b 0
 @END_BEFORE_4_14_0@
+
+@BEGIN_BEFORE_5_0_0@
+let unsafe_escape b =
+  escaped b
+@END_BEFORE_5_0_0@

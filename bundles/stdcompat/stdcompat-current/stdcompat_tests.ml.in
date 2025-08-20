@@ -269,12 +269,6 @@ let test_seq_iteri () =
   Stdcompat.Seq.iteri add (Stdcompat.Seq.once (Stdcompat.Seq.init 6 Stdcompat.Fun.id));
   assert (List.rev !accu = Stdcompat.List.init 6 (fun i -> (i, i)))
 
-let test_seq_fold_lefti () =
-  let add accu i j = (i, j) :: accu in
-  let accu = Stdcompat.Seq.fold_lefti add []
-    (Stdcompat.Seq.once (Stdcompat.Seq.init 6 Stdcompat.Fun.id)) in
-  assert (List.rev accu = Stdcompat.List.init 6 (fun i -> (i, i)))
-
 let test_seq_forall () =
   assert (Stdcompat.Seq.for_all (fun _ -> raise Exit) Stdcompat.Seq.empty);
   let accu = ref [] in

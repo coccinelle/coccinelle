@@ -1,4 +1,9 @@
 module type S = sig
+val temp_dir : ?temp_dir:string -> ?perms:int -> string -> string -> string
+(** @since 5.1.0:
+    val temp_dir :
+      ?temp_dir:string -> ?perms:int -> string -> string -> string *)
+
 val null : string
 (** @since 4.10.0: val null : string *)
 

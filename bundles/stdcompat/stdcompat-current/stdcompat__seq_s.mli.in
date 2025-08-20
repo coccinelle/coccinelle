@@ -21,6 +21,30 @@ and 'a node = 'a Stdcompat__init.seq_node =
 exception Forced_twice 
 (** Alias for {!Seq.Forced_twice} *)
 
+val find_index : ('a -> bool) -> 'a t -> int option
+(** @since 5.1.0: val find_index : ('a -> bool) -> 'a t -> int option *)
+
+val find_mapi : (int -> 'a -> 'b option) -> 'a t -> 'b option
+(** @since 5.1.0:
+    val find_mapi : (int -> 'a -> 'b option) -> 'a t -> 'b option *)
+
+@BEGIN_FROM_5_1_0@
+val fold_lefti : ('acc -> int -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_5_0_0@
+val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
+val fold_lefti : ('acc -> int -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+@END_BEFORE_5_0_0@
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_lefti : ('acc -> int -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+@since 5.0.0: val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
+ *)
+
 val is_empty : 'a t -> bool
 (** @since 4.14.0: val is_empty : 'a t -> bool *)
 
@@ -32,10 +56,6 @@ val length : 'a t -> int
 
 val iteri : (int -> 'a -> unit) -> 'a t -> unit
 (** @since 4.14.0: val iteri : (int -> 'a -> unit) -> 'a t -> unit *)
-
-val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
-(** @since 4.14.0:
-    val fold_lefti : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b *)
 
 val for_all : ('a -> bool) -> 'a t -> bool
 (** @since 4.14.0: val for_all : ('a -> bool) -> 'a t -> bool *)
@@ -52,9 +72,24 @@ val find_map : ('a -> 'b option) -> 'a t -> 'b option
 val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit
 (** @since 4.14.0: val iter2 : ('a -> 'b -> unit) -> 'a t -> 'b t -> unit *)
 
+@BEGIN_FROM_5_1_0@
+val fold_left2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_14_0@
 val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
-(** @since 4.14.0:
-    val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a *)
+@END_FROM_4_14_0@
+@BEGIN_BEFORE_4_14_0@
+val fold_left2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
+@END_BEFORE_4_14_0@
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_left2 :
+      ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
+@since 4.14.0:
+val fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b t -> 'c t -> 'a
+ *)
 
 val for_all2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool
 (** @since 4.14.0: val for_all2 : ('a -> 'b -> bool) -> 'a t -> 'b t -> bool *)
@@ -179,8 +214,22 @@ val append : 'a t -> 'a t -> 'a t
 val iter : ('a -> unit) -> 'a t -> unit
 (** @since 4.07.0: val iter : ('a -> unit) -> 'a t -> unit *)
 
+@BEGIN_FROM_5_1_0@
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_07_0@
 val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
-(** @since 4.07.0: val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a *)
+@END_FROM_4_07_0@
+@BEGIN_BEFORE_4_07_0@
+val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+@END_BEFORE_4_07_0@
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc
+@since 4.07.0: val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+ *)
 
 val empty : 'a t
 (** @since 4.07.0: val empty : 'a t *)

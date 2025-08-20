@@ -45,3 +45,9 @@ let equal : t -> t -> bool = ( = )
 let of_string_opt s =
   Stdcompat__tools.option_fail of_string s
 @END_BEFORE_4_05_0@
+
+@BEGIN_BEFORE_5_1_0@
+let hash = Hashtbl.hash
+
+let seeded_hash = Stdcompat__hashtbl.seeded_hash
+@END_BEFORE_5_1_0@

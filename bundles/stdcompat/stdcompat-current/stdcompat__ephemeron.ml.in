@@ -61,7 +61,7 @@ module type SeededS  =
   end
 
 let not_implemented () =
-  failwith "Stdcompat.Ephemeron is not implemented yet. Please fill an issue: https://github.com/thierry-martinez/stdcompat/issues ."
+  failwith "Stdcompat.Ephemeron is not implemented yet. Please fill an issue: https://github.com/ocamllibs/stdcompat/issues ."
 
 module K1 = struct
   type ('k, 'd) t

@@ -1,0 +1,53 @@
+#!/bin/sh
+
+rules_file=dune-rules.inc
+generated_files=_generated-files
+
+write_dune_rule()
+{
+  src=$1
+  dst=$2
+  echo $dst >> $generated_files
+  case $src in
+    *.c.in|*.h.in) source_type=c;;
+    *) source_type=ocaml    
+  esac
+  # echo Writing Dune rule to generate $dst from $src, source_type=$source_type
+  cat >> $rules_file << EOF
+(rule
+  (targets $dst)
+  (deps
+    (:gen tools/stdcompatpp.exe) $src)
+    (action
+      (with-stdin-from $src
+        (with-stdout-to $dst
+          (run %{gen} --source-type $source_type)))))
+EOF
+}
+
+genrule1()
+{
+  input=$1
+  # echo One file: $input
+  write_dune_rule $input.in $input
+}
+
+genrule2()
+{
+  input=$1
+  src=${input##*:}
+  dst=${input%%:*}
+  # echo Two files: src=$src dst=$dst
+  write_dune_rule $src $dst
+}
+
+rm -f $rules_file $generated_files
+
+grep CONFIG_FILES configure.ac | grep -v META | sed 's/AC_CONFIG_FILES([[]\([^]]\+\)[]])/\1/g' | \
+(while read input; do
+  case "$input" in
+    *:*) genrule2 $input;;
+    *) genrule1 $input;;
+  esac;
+done)
+    

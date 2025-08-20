@@ -81,7 +81,7 @@ let int_size =
    else
      assert false
 
-let big_endian = @BIG_ENDIAN@
+let big_endian = Sys.big_endian
 
 let runtime_variant () = ""
 
@@ -132,3 +132,12 @@ let ocaml_release = {
   extra = @OCAML_RELEASE_EXTRA@
 }
 @END_BEFORE_4_14_0@
+
+@BEGIN_BEFORE_5_1_0@
+let is_regular_file _path =
+  failwith "not implemented"
+@END_BEFORE_5_1_0@
+
+@BEGIN_BEFORE_5_3_0@
+let poll_actions () = failwith "not implemented"
+@END_BEFORE_5_3_0@

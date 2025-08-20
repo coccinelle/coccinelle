@@ -1,10 +1,34 @@
-@BEGIN_FROM_4_14_0@
+@BEGIN_FROM_5_2_0@
 include Random
-@END_FROM_4_14_0@
-@BEGIN_BEFORE_4_14_0@
+@END_FROM_5_2_0@
+@BEGIN_BEFORE_5_2_0@
 module State = struct
   include Random.State
 
+  let int_in_range state ~min ~max =
+    if min > max then
+      raise (Invalid_argument "int_in_range");
+    min + int state (max - min + 1)
+
+  let int32_in_range state ~min ~max =
+    if Int32.compare min max > 0 then
+      raise (Invalid_argument "int32_in_range");
+    let ( + ), ( - ) = Int32.(add, sub) in
+    min + int32 state (max - min + 1l)
+
+  let nativeint_in_range state ~min ~max =
+    if Nativeint.compare min max > 0 then
+      raise (Invalid_argument "nativeint_in_range");
+    let ( + ), ( - ) = Nativeint.(add, sub) in
+    min + nativeint state (max - min + 1n)
+
+  let int64_in_range state ~min ~max =
+    if Int64.compare min max > 0 then
+      raise (Invalid_argument "int64_in_range");
+    let ( + ), ( - ) = Int64.(add, sub) in
+    min + int64 state (max - min + 1L)
+
+  @BEGIN_BEFORE_4_14_0@
   let bits32 state =
     let bits30 = Int32.of_int (bits state) in
     let add_bit bits i =
@@ -34,11 +58,25 @@ module State = struct
 
   let nativebits state =
     Int64.to_nativeint (bits64 state)
+  @END_BEFORE_4_14_0@
 
   @BEGIN_BEFORE_4_13_0@
   let full_int state n =
     Int64.to_int (bits64 state) mod n
   @END_BEFORE_4_13_0@
+
+  @BEGIN_BEFORE_5_1_0@
+  let max_int31 = 0x3FFF_FFFF
+
+  let split s =
+    make [| int s max_int31; int s max_int31; int s max_int31; int s max_int31 |]
+
+  let to_binary_string _ =
+    failwith "not implemented"
+
+  let of_binary_string _ =
+    failwith "not implemented"
+  @END_BEFORE_5_1_0@
 end
 
 let init = Random.init
@@ -65,6 +103,11 @@ let get_state = Random.get_state
 
 let set_state = Random.set_state
 
+let int_in_range ~min ~max = State.int_in_range (get_state ()) ~min ~max
+let int32_in_range ~min ~max = State.int32_in_range (get_state ()) ~min ~max
+let nativeint_in_range ~min ~max = State.nativeint_in_range (get_state ()) ~min ~max
+let int64_in_range ~min ~max = State.int64_in_range (get_state ()) ~min ~max
+
 let bits32 () = State.bits32 (get_state ())
 
 let bits64 () = State.bits64 (get_state ())
@@ -77,4 +120,12 @@ let full_int = Random.full_int
 @BEGIN_BEFORE_4_13_0@
 let full_int n = State.full_int (get_state ()) n
 @END_BEFORE_4_13_0@
-@END_BEFORE_4_14_0@
+
+@BEGIN_FROM_5_0_0@
+let split = Random.split
+@END_FROM_5_0_0@
+@BEGIN_BEFORE_5_0_0@
+let split () =
+  get_state ()
+@END_BEFORE_5_0_0@
+@END_BEFORE_5_2_0@

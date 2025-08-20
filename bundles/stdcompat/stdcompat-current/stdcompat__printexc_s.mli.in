@@ -37,9 +37,9 @@ type raw_backtrace_entry = Printexc.raw_backtrace_entry
 type raw_backtrace_entry = private int
 @END_FROM_3_11_0@
 @BEGIN_BEFORE_3_11_0@
-
 type raw_backtrace_entry = int
 @END_BEFORE_3_11_0@
+
 @END_BEFORE_4_12_0@
 (** @since 4.12.0: type raw_backtrace_entry = Printexc.raw_backtrace_entry
  *)
@@ -53,29 +53,35 @@ type backtrace_slot
 (** @since 4.02.0: type backtrace_slot
  *)
 
-@BEGIN_FROM_4_02_0@
+@BEGIN_FROM_5_2_0@
 type location = Printexc.location =
   {
   filename: string ;
   line_number: int ;
   start_char: int ;
-  end_char: int }
-@END_FROM_4_02_0@
-@BEGIN_BEFORE_4_02_0@
+  end_char: int ;
+  end_line: int ;
+  end_col: int }
+@END_FROM_5_2_0@
+@BEGIN_BEFORE_5_2_0@
 type location =
   {
   filename: string ;
   line_number: int ;
   start_char: int ;
-  end_char: int }
-@END_BEFORE_4_02_0@
-(** @since 4.02.0:
+  end_char: int ;
+  end_line: int ;
+  end_col: int }
+@END_BEFORE_5_2_0@
+(** @since 5.2.0:
     type location =
       {
       filename: string ;
       line_number: int ;
       start_char: int ;
-      end_char: int }
+      end_char: int ;
+      end_line: int ;
+      end_col: int }
  *)
 
 @BEGIN_FROM_4_11_0@
@@ -98,6 +104,9 @@ type raw_backtrace_slot
 @END_BEFORE_4_02_0@
 (** @since 4.02.0: type raw_backtrace_slot
  *)
+
+val string_of_extension_constructor : Obj.t -> string
+(** @since 5.0.0: val string_of_extension_constructor : Obj.t -> string *)
 
 val raw_backtrace_entries : raw_backtrace -> raw_backtrace_entry array
 (** @since 4.12.0:

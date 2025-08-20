@@ -8,53 +8,49 @@ module type S = sig
   @BEGIN_BEFORE_4_12_0@
     type +'a t
   @END_BEFORE_4_12_0@
-  val empty : 'a t
-  val is_empty : 'a t -> bool
-  val mem : key -> 'a t -> bool
-  val add : key -> 'a -> 'a t -> 'a t
-  val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
-  val singleton : key -> 'a -> 'a t
-  val remove : key -> 'a t -> 'a t
-  val merge :
-    (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-  val union : (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
-  val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
-  val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-  val iter : (key -> 'a -> unit) -> 'a t -> unit
-  val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-  val for_all : (key -> 'a -> bool) -> 'a t -> bool
-  val exists : (key -> 'a -> bool) -> 'a t -> bool
-  val filter : (key -> 'a -> bool) -> 'a t -> 'a t
-  val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
-  val partition : (key -> 'a -> bool) -> 'a t -> ('a t * 'a t)
-  val cardinal : 'a t -> int
-  val bindings : 'a t -> (key * 'a) list
-  val min_binding : 'a t -> (key * 'a)
-  val min_binding_opt : 'a t -> (key * 'a) option
-  val max_binding : 'a t -> (key * 'a)
-  val max_binding_opt : 'a t -> (key * 'a) option
-  val choose : 'a t -> (key * 'a)
-  val choose_opt : 'a t -> (key * 'a) option
-  val split : key -> 'a t -> ('a t * 'a option * 'a t)
-  val find : key -> 'a t -> 'a
-  val find_opt : key -> 'a t -> 'a option
-  val find_first : (key -> bool) -> 'a t -> (key * 'a)
-  val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
-  val find_last : (key -> bool) -> 'a t -> (key * 'a)
-  val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
-  val map : ('a -> 'b) -> 'a t -> 'b t
-  val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
-  val to_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-  val to_rev_seq : 'a t -> (key * 'a) Stdcompat__seq.t
-  val to_seq_from : key -> 'a t -> (key * 'a) Stdcompat__seq.t
-  val add_seq : (key * 'a) Stdcompat__seq.t -> 'a t -> 'a t
-  val of_seq : (key * 'a) Stdcompat__seq.t -> 'a t
+ val empty : 'a t val add : key -> 'a -> 'a t -> 'a t
+val add_to_list : key -> 'a -> 'a list t -> 'a list t
+val update : key -> ('a option -> 'a option) -> 'a t -> 'a t
+val singleton : key -> 'a -> 'a t val remove : key -> 'a t -> 'a t
+val merge :
+  (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+val union : (key -> 'a -> 'a -> 'a option) -> 'a t -> 'a t -> 'a t
+val cardinal : 'a t -> int val bindings : 'a t -> (key * 'a) list
+val min_binding : 'a t -> (key * 'a)
+val min_binding_opt : 'a t -> (key * 'a) option
+val max_binding : 'a t -> (key * 'a)
+val max_binding_opt : 'a t -> (key * 'a) option
+val choose : 'a t -> (key * 'a) val choose_opt : 'a t -> (key * 'a) option
+val find : key -> 'a t -> 'a val find_opt : key -> 'a t -> 'a option
+val find_first : (key -> bool) -> 'a t -> (key * 'a)
+val find_first_opt : (key -> bool) -> 'a t -> (key * 'a) option
+val find_last : (key -> bool) -> 'a t -> (key * 'a)
+val find_last_opt : (key -> bool) -> 'a t -> (key * 'a) option
+val iter : (key -> 'a -> unit) -> 'a t -> unit
+val fold : (key -> 'a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+val map : ('a -> 'b) -> 'a t -> 'b t
+val mapi : (key -> 'a -> 'b) -> 'a t -> 'b t
+val filter : (key -> 'a -> bool) -> 'a t -> 'a t
+val filter_map : (key -> 'a -> 'b option) -> 'a t -> 'b t
+val partition : (key -> 'a -> bool) -> 'a t -> ('a t * 'a t)
+val split : key -> 'a t -> ('a t * 'a option * 'a t)
+val is_empty : 'a t -> bool val mem : key -> 'a t -> bool
+val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+val compare : ('a -> 'a -> int) -> 'a t -> 'a t -> int
+val for_all : (key -> 'a -> bool) -> 'a t -> bool
+val exists : (key -> 'a -> bool) -> 'a t -> bool
+val to_list : 'a t -> (key * 'a) list val of_list : (key * 'a) list -> 'a t
+val to_seq : 'a t -> (key * 'a) Seq.t
+val to_rev_seq : 'a t -> (key * 'a) Seq.t
+val to_seq_from : key -> 'a t -> (key * 'a) Seq.t
+val add_seq : (key * 'a) Seq.t -> 'a t -> 'a t
+val of_seq : (key * 'a) Seq.t -> 'a t
 end
 
-@BEGIN_FROM_4_12_0@
+@BEGIN_FROM_5_1_0@
 module Make = Map.Make
-@END_FROM_4_12_0@
-@BEGIN_BEFORE_4_12_0@
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
 module Make (Ord : OrderedType) = struct
   include Map.Make (Ord)
 
@@ -66,18 +62,22 @@ module Make (Ord : OrderedType) = struct
   @END_BEFORE_4_07_0@
 
   @BEGIN_WITH_MAGIC@
+    @BEGIN_BEFORE_4_12_0@
     type 'a internal =
       | Empty
       | Node of 'a internal * key * 'a * 'a internal * int
+      @BEGIN_FROM_4_02_0@
+      [@@ocaml.warning "-37"]
+      @END_FROM_4_02_0@
+    @END_BEFORE_4_12_0@
 
+    @BEGIN_BEFORE_4_11_0@
     external t_of_internal : 'a internal -> 'a t = "%identity"
+    @END_BEFORE_4_11_0@
 
+    @BEGIN_BEFORE_4_12_0@
     external internal_of_t : 'a t -> 'a internal = "%identity"
-
-    let height map =
-      match map with
-      | Empty -> 0
-      | Node (_l, _v, _d, _r, h) -> h
+    @END_BEFORE_4_12_0@
 
     @BEGIN_BEFORE_4_05_0@
       let rec min_binding_aux l v d =
@@ -121,6 +121,35 @@ module Make (Ord : OrderedType) = struct
         max_binding (internal_of_t map)
     @END_BEFORE_3_12_0@
 
+    @BEGIN_BEFORE_3_08_0@
+      let rec iter f = function
+        | Empty -> ()
+        | Node (l, v, d, r, _) as t ->
+            iter f l;
+            f v d;
+            iter f r
+
+      let iter (f : key -> 'a -> unit) (s : 'a t) : unit =
+        iter f (internal_of_t s)
+
+      let rec fold f s a =
+        match s with
+        | Empty -> a
+        | Node (l, v, d, r, _) as t ->
+            let a = fold f l a in
+            let a = f v d a in
+            fold f r a
+
+      let fold (f : key -> 'a -> 'b -> 'b) (s : 'a t) (a : 'b) : 'b =
+        fold f (internal_of_t s) a
+    @END_BEFORE_3_08_0@
+
+    @BEGIN_BEFORE_4_11_0@
+    let height map =
+      match map with
+      | Empty -> 0
+      | Node (_l, _v, _d, _r, h) -> h
+
     let create l x d r =
       Node (l, x, d, r, (max (height l) (height r)) + 1)
 
@@ -152,6 +181,13 @@ module Make (Ord : OrderedType) = struct
       else
         Node (l, x, d, r, (max hl hr) + 1)
 
+    let rec remove_min_binding map =
+      match map with
+      | Empty -> assert false
+      | Node (Empty, _v, _d, r, _h) -> r
+      | Node (l, v, d, r, _h) ->
+          bal (remove_min_binding l) v d r
+
     let rec add_min_binding k x map =
       match map with
       | Empty -> internal_of_t (singleton k x)
@@ -162,13 +198,6 @@ module Make (Ord : OrderedType) = struct
       | Empty -> internal_of_t (singleton k x)
       | Node (l, v, d, r, _h) ->
           bal l v d (add_max_binding k x r)
-
-    let rec remove_min_binding map =
-      match map with
-      | Empty -> assert false
-      | Node (Empty, _v, _d, r, _h) -> r
-      | Node (l, v, d, r, _h) ->
-          bal (remove_min_binding l) v d r
 
     let rec join l v d r =
       match l, r with
@@ -190,30 +219,6 @@ module Make (Ord : OrderedType) = struct
           let x, d = min_binding (t_of_internal t2) in
           join t1 x d (remove_min_binding t2)
 
-    @BEGIN_BEFORE_3_08_0@
-      let rec iter f = function
-        | Empty -> ()
-        | Node (l, v, d, r, _) as t ->
-            iter f l;
-            f v d;
-            iter f r
-
-      let iter (f : key -> 'a -> unit) (s : 'a t) : unit =
-        iter f (internal_of_t s)
-
-      let rec fold f s a =
-        match s with
-        | Empty -> a
-        | Node (l, v, d, r, _) as t ->
-            let a = fold f l a in
-            let a = f v d a in
-            fold f r a
-
-      let fold (f : key -> 'a -> 'b -> 'b) (s : 'a t) (a : 'b) : 'b =
-        fold f (internal_of_t s) a
-    @END_BEFORE_3_08_0@
-
-    @BEGIN_BEFORE_4_11_0@
     let rec filter_map f = function
       | Empty -> Empty
       | Node (l, v, d, r, _) ->
@@ -862,5 +867,16 @@ module Make (Ord : OrderedType) = struct
   let cardinal map =
     fold (fun _ _ counter -> succ counter) map 0
 @END_BEFORE_3_12_0@
+
+@BEGIN_BEFORE_5_1_0@
+  let add_to_list key data m =
+    update key (fun opt -> match opt with None -> Some [data] | Some list -> Some (data :: list)) m
+
+  let to_list m =
+    bindings m
+
+  let of_list l =
+    List.fold_left (fun acc (key, value) -> add key value acc) empty l
+@END_BEFORE_5_1_0@
 end
-@END_BEFORE_4_12_0@
+@END_BEFORE_5_1_0@

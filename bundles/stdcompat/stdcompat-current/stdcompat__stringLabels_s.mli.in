@@ -8,6 +8,12 @@ type t = string
 (** @since 3.08.0: type t = string
  *)
 
+val hash : t -> int
+(** @since 5.0.0: val hash : t -> int *)
+
+val seeded_hash : int -> t -> int
+(** @since 5.0.0: val seeded_hash : int -> t -> int *)
+
 @BEGIN_FROM_4_14_0@
 val get_utf_8_uchar : t -> int -> Uchar.utf_decode
 @END_FROM_4_14_0@
@@ -74,13 +80,41 @@ val starts_with : prefix:string -> string -> bool
 val ends_with : suffix:string -> string -> bool
 (** @since 4.13.0: val ends_with : suffix:string -> string -> bool *)
 
+@BEGIN_FROM_5_1_0@
+val fold_left : f:('acc -> char -> 'acc) -> init:'acc -> string -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_13_0@
 val fold_left : f:('a -> char -> 'a) -> init:'a -> string -> 'a
-(** @since 4.13.0:
-    val fold_left : f:('a -> char -> 'a) -> init:'a -> string -> 'a *)
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val fold_left : f:('acc -> char -> 'acc) -> init:'acc -> string -> 'acc
+@END_BEFORE_4_13_0@
 
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_left : f:('acc -> char -> 'acc) -> init:'acc -> string -> 'acc
+@since 4.13.0:
+val fold_left : f:('a -> char -> 'a) -> init:'a -> string -> 'a
+ *)
+
+@BEGIN_FROM_5_1_0@
+val fold_right : f:(char -> 'acc -> 'acc) -> string -> init:'acc -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_13_0@
 val fold_right : f:(char -> 'a -> 'a) -> string -> init:'a -> 'a
-(** @since 4.13.0:
-    val fold_right : f:(char -> 'a -> 'a) -> string -> init:'a -> 'a *)
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val fold_right : f:(char -> 'acc -> 'acc) -> string -> init:'acc -> 'acc
+@END_BEFORE_4_13_0@
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_right : f:(char -> 'acc -> 'acc) -> string -> init:'acc -> 'acc
+@since 4.13.0:
+val fold_right : f:(char -> 'a -> 'a) -> string -> init:'a -> 'a
+ *)
 
 val for_all : f:(char -> bool) -> string -> bool
 (** @since 4.13.0: val for_all : f:(char -> bool) -> string -> bool *)
@@ -190,9 +224,6 @@ val rindex_opt : string -> char -> int option
 val init : int -> f:(int -> char) -> string
 (** @since 4.02.0: val init : int -> f:(int -> char) -> string *)
 
-val mapi : f:(int -> char -> char) -> string -> string
-(** @since 4.02.0: val mapi : f:(int -> char -> char) -> string -> string *)
-
 @BEGIN_FROM_4_02_0@
 val blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
@@ -208,6 +239,9 @@ val blit :
       src:string ->
         src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
  *)
+
+val mapi : f:(int -> char -> char) -> string -> string
+(** @since 4.02.0: val mapi : f:(int -> char -> char) -> string -> string *)
 
 @BEGIN_FROM_4_03_0@
 external unsafe_blit :

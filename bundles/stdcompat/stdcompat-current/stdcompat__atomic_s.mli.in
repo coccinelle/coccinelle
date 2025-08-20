@@ -4,15 +4,18 @@ module type S = sig
 type !'a t = 'a Atomic.t
 @END_FROM_4_12_0@
 @BEGIN_BEFORE_4_12_0@
-
 type 'a t = 'a Atomic.t
 @END_BEFORE_4_12_0@
+
 @END_FROM_4_12_0@
 @BEGIN_BEFORE_4_12_0@
 type 'a t
 @END_BEFORE_4_12_0@
 (** @since 4.12.0: type !'a t
  *)
+
+val make_contended : 'a -> 'a t
+(** @since 5.2.0: val make_contended : 'a -> 'a t *)
 
 val make : 'a -> 'a t
 (** @since 4.12.0: val make : 'a -> 'a t *)

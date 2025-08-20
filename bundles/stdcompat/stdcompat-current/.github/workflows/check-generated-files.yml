@@ -1,0 +1,57 @@
+name: check-generated-files
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  build-ubuntu:
+    strategy:
+      fail-fast: false
+      matrix:
+        ocaml-compiler:
+          - 4.11.x
+          - 4.12.x
+          - 4.13.x
+          - 4.14.x
+          - 5.0.x
+          - 5.1.x
+          - 5.2.x
+          - 5.3.x
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: Check generated files
+        run: |
+          opam exec -- sh -xc ".github/scripts/check-generated-files.sh"
+
+  build-macos-and-windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - windows-latest
+        ocaml-compiler:
+          - 4.14.x
+          - 5.0.x
+          - 5.1.x
+          - 5.2.x
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: Verify generated files
+        run: |
+          opam exec -- sh -xc ".github/scripts/check-generated-files.sh"

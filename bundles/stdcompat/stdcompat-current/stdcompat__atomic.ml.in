@@ -33,3 +33,6 @@ let incr = incr
 
 let decr = decr
 @END_BEFORE_4_12_0@
+@BEGIN_BEFORE_5_2_0@
+let make_contended = make
+@END_BEFORE_5_2_0@

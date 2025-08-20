@@ -16,7 +16,7 @@ let add_uint16_be b v =
   add_uint8 b v
 
 let add_uint16_ne b v =
-  if @BIG_ENDIAN@ then add_uint16_be b v
+  if Sys.big_endian then add_uint16_be b v
   else add_uint16_le b v
 
 let add_int16_le = add_uint16_le
@@ -38,7 +38,7 @@ let add_int32_be b v =
   add_uint8 b (Int32.to_int v)
 
 let add_int32_ne b v =
-  if @BIG_ENDIAN@ then add_int32_be b v
+  if Sys.big_endian then add_int32_be b v
   else add_int32_le b v
 
 let add_int64_le b v =
@@ -62,7 +62,7 @@ let add_int64_be b v =
   add_uint8 b (Int64.to_int v)
 
 let add_int64_ne b v =
-  if @BIG_ENDIAN@ then add_int64_be b v
+  if Sys.big_endian then add_int64_be b v
   else add_int64_le b v
 @END_BEFORE_4_08_0@
 

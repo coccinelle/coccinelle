@@ -1,6 +1,9 @@
 @BEGIN_FROM_4_08_0@
 include Fun
 @END_FROM_4_08_0@
+@BEGIN_BEFORE_5_2_0@
+let compose f g x = f (g x)
+@END_BEFORE_5_2_0@
 @BEGIN_BEFORE_4_08_0@
 external id : 'a -> 'a = "%identity"
 (** @since 4.08.0: external id : 'a -> 'a = "%identity" *)

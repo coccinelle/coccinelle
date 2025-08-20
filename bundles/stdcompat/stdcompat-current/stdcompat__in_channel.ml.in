@@ -1,6 +1,68 @@
 @BEGIN_FROM_4_14_0@
 include In_channel
 @END_FROM_4_14_0@
+@BEGIN_BEFORE_5_2_0@
+(*
+let max_buffer_size = 0x1000000
+
+let input_and_copy_to_bigarray channel buffer tgt pos len =
+  let read = input channel buffer 0 len in
+  for i = 0 to read - 1 do
+    Bigarray.Array1.unsafe_set tgt (pos + i) (int_of_char (Bytes.unsafe_get buffer i))
+  done;
+  read
+
+let rec input_and_copy_to_bigarray_loop channel buffer tgt pos len already_read =
+  let buffer_length = Bytes.length buffer in
+  if buffer_length < len then
+    begin
+      let read =
+        input_and_copy_to_bigarray channel buffer tgt pos buffer_length in
+      let already_read = already_read + read in
+      if read = buffer_length then
+        input_and_copy_to_bigarray_loop channel buffer tgt (pos + read)
+          (len - read) already_read
+      else
+        already_read
+    end
+  else
+    begin
+      let read = input_and_copy_to_bigarray channel buffer tgt pos len in
+      already_read + read
+    end
+
+let input_bigarray channel tgt pos len =
+  if len < 0 || pos + len >= Bigarray.Array1.dim tgt then
+    invalid_arg "input_bigarray";
+  let buffer_size = min max_buffer_size len in
+  let buffer = Bytes.create buffer_size in
+  input_and_copy_to_bigarray_loop channel buffer tgt pos len 0
+
+
+let really_input_bigarray channel tgt pos len =
+  if len < 0 || pos + len >= Bigarray.Array1.dim tgt then
+    invalid_arg "input_bigarray";
+  let buffer_size = min max_buffer_size len in
+  let buffer = Bytes.create buffer_size in
+  let rec loop len =
+    let read = input_and_copy_to_bigarray_loop channel buffer tgt pos len 0 in
+    if read = 0 then
+      None
+    else if read < len then
+      Some ()
+    else
+      loop (len - read) in
+  loop len
+*)
+let input_bigarray _channel _tgt _pos _len =
+  failwith "input_bigarray"
+
+let really_input_bigarray _channel _tgt _pos _len =
+  failwith "really_input_bigarray"
+
+let is_binary_mode _channel =
+  failwith "is_binary_mode"
+@END_BEFORE_5_2_0@
 @BEGIN_BEFORE_4_14_0@
 type t = in_channel
 
@@ -93,10 +155,27 @@ let rec add_channel_to_the_end ~chunk_size buffer channel =
     add_channel_to_the_end ~chunk_size buffer channel
 
 let input_all channel =
-  let buffer_size = in_channel_length channel - pos_in channel in
   let chunk_size = 65536 in
+  let buffer_size =
+    try
+      in_channel_length channel - pos_in channel
+    with Sys_error _ ->
+      -1 in
   let buffer = Buffer.create buffer_size in
   add_channel_to_the_end ~chunk_size buffer channel;
   Buffer.contents buffer
 
 @END_BEFORE_4_14_0@
+
+@BEGIN_BEFORE_5_1_0@
+let rec fold_lines f acc ic =
+  match input_line ic with
+  | None -> acc
+  | Some line -> fold_lines f (f acc line) ic
+
+let input_lines ic =
+  List.rev (fold_lines (fun acc line -> line :: acc) [] ic)
+
+let isatty _ic =
+  failwith "not implemented"
+@END_BEFORE_5_1_0@

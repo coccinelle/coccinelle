@@ -11,13 +11,13 @@ let set_filename lexbuf filename =
 @END_BEFORE_4_11_0@
 
 @BEGIN_BEFORE_4_08_0@
-let from_channel ?with_positions chan =
+let from_channel ?with_positions:_pos chan =
   from_channel chan
 
-let from_string ?with_positions s =
+let from_string ?with_positions:_pos s =
   from_string s
 
-let from_function ?with_positions f =
+let from_function ?with_positions:_pos f =
   from_function f
 
 let with_positions _lexbuf =

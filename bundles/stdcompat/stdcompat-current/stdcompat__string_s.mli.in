@@ -2,6 +2,12 @@ module type S = sig
 type t = string
 (** Alias for {!String.t} *)
 
+val hash : t -> int
+(** @since 5.0.0: val hash : t -> int *)
+
+val seeded_hash : int -> t -> int
+(** @since 5.0.0: val seeded_hash : int -> t -> int *)
+
 @BEGIN_FROM_4_14_0@
 val get_utf_8_uchar : t -> int -> Uchar.utf_decode
 @END_FROM_4_14_0@
@@ -68,11 +74,39 @@ val starts_with : prefix:string -> string -> bool
 val ends_with : suffix:string -> string -> bool
 (** @since 4.13.0: val ends_with : suffix:string -> string -> bool *)
 
+@BEGIN_FROM_5_1_0@
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> string -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_13_0@
 val fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
-(** @since 4.13.0: val fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a *)
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val fold_left : ('acc -> char -> 'acc) -> 'acc -> string -> 'acc
+@END_BEFORE_4_13_0@
 
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_left : ('acc -> char -> 'acc) -> 'acc -> string -> 'acc
+@since 4.13.0: val fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
+ *)
+
+@BEGIN_FROM_5_1_0@
+val fold_right : (char -> 'acc -> 'acc) -> string -> 'acc -> 'acc
+@END_FROM_5_1_0@
+@BEGIN_BEFORE_5_1_0@
+@BEGIN_FROM_4_13_0@
 val fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
-(** @since 4.13.0: val fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a *)
+@END_FROM_4_13_0@
+@BEGIN_BEFORE_4_13_0@
+val fold_right : (char -> 'acc -> 'acc) -> string -> 'acc -> 'acc
+@END_BEFORE_4_13_0@
+
+@END_BEFORE_5_1_0@
+(** @since 5.1.0:
+    val fold_right : (char -> 'acc -> 'acc) -> string -> 'acc -> 'acc
+@since 4.13.0: val fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
+ *)
 
 val for_all : (char -> bool) -> string -> bool
 (** @since 4.13.0: val for_all : (char -> bool) -> string -> bool *)
@@ -182,9 +216,6 @@ val uncapitalize_ascii : string -> string
 val init : int -> (int -> char) -> string
 (** @since 4.02.0: val init : int -> (int -> char) -> string *)
 
-val mapi : (int -> char -> char) -> string -> string
-(** @since 4.02.0: val mapi : (int -> char -> char) -> string -> string *)
-
 @BEGIN_FROM_4_02_0@
 val blit : string -> int -> bytes -> int -> int -> unit
 @END_FROM_4_02_0@
@@ -193,6 +224,9 @@ val blit : string -> int -> Stdcompat__init.bytes -> int -> int -> unit
 @END_BEFORE_4_02_0@
 (** @since 4.02.0: val blit : string -> int -> bytes -> int -> int -> unit
  *)
+
+val mapi : (int -> char -> char) -> string -> string
+(** @since 4.02.0: val mapi : (int -> char -> char) -> string -> string *)
 
 @BEGIN_FROM_4_03_0@
 external unsafe_blit :
@@ -284,11 +318,5 @@ val rindex : string -> char -> int
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 (** Alias for {!String.unsafe_get} *)
-
-val seeded_hash : int -> string -> int
-(** @since 5.0.0 *)
-
-val hash : string -> int
-(** @since 5.0.0 *)
 
 end

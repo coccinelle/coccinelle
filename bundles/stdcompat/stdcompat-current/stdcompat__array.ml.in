@@ -1,5 +1,18 @@
 include Array
 
+@BEGIN_BEFORE_5_2_0@
+let init_matrix m n f =
+  init m (fun i -> init n (fun j -> f i j))
+
+let shuffle ~rand array =
+  for i = length array - 1 downto 0 do
+    let j = rand (i + 1) in
+    let tmp = unsafe_get array i in
+    unsafe_set array i array.(j);
+    unsafe_set array j tmp
+  done
+@END_BEFORE_5_2_0@
+
 @BEGIN_BEFORE_4_08_0@
 type 'a t = 'a array
 @END_BEFORE_4_08_0@
@@ -181,3 +194,38 @@ let of_rev_list l =
 let of_seq g =
   of_rev_list (Stdcompat__seq.fold_left (fun accu x -> x :: accu) [] g)
 @END_BEFORE_4_07_1@
+
+@BEGIN_BEFORE_5_1_0@
+let map_inplace f array =
+  for i = 0 to length array - 1 do
+    unsafe_set array i (f (unsafe_get array i))
+  done
+
+let mapi_inplace f array =
+  for i = 0 to length array - 1 do
+    unsafe_set array i (f i (unsafe_get array i))
+  done
+
+let rec find_index_from index p array =
+  if index < length array then
+    if p (unsafe_get array index) then
+      Some index
+    else
+      find_index_from (succ index) p array
+  else
+    None
+
+let find_index p array =
+  find_index_from 0 p array
+
+let rec find_mapi_from index f array =
+  if index < length array then
+    match f index (unsafe_get array index) with
+    | None -> find_mapi_from (succ index) f array
+    | some -> some
+  else
+    None
+
+let find_mapi f array =
+  find_mapi_from 0 f array
+@END_BEFORE_5_1_0@

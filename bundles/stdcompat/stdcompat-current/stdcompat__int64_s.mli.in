@@ -2,6 +2,12 @@ module type S = sig
 type t = int64
 (** Alias for {!Int64.t} *)
 
+val seeded_hash : int -> t -> int
+(** @since 5.1.0: val seeded_hash : int -> t -> int *)
+
+val hash : t -> int
+(** @since 5.1.0: val hash : t -> int *)
+
 val min : t -> t -> t
 (** @since 4.13.0: val min : t -> t -> t *)
 

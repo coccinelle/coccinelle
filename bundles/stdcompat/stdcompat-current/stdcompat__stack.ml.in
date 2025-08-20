@@ -65,3 +65,8 @@ let to_seq s =
   Stdcompat__list.to_seq (List.rev (to_list s))
 @END_WITHOUT_MAGIC@
 @END_BEFORE_4_07_0@
+
+@BEGIN_BEFORE_5_1_0@
+let drop s =
+  ignore (pop s)
+@END_BEFORE_5_1_0@

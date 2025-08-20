@@ -1,83 +1,6 @@
 @BEGIN_FROM_4_07_0@
 include Seq
 @END_FROM_4_07_0@
-@BEGIN_BEFORE_4_07_0@
-@BEGIN_WITH_SEQ_PKG@
-include Seq
-@END_WITH_SEQ_PKG@
-@BEGIN_WITHOUT_SEQ_PKG@
-type 'a t = unit -> 'a node
-and 'a node =
-  'a Stdcompat__init.seq_node =
-  | Nil
-  | Cons of 'a * 'a t
-
-let empty () = Nil
-
-let return x () = Cons (x, empty)
-
-let rec map f seq () = match seq () with
-  | Nil -> Nil
-  | Cons (x, next) -> Cons (f x, map f next)
-
-let rec filter_map f seq () = match seq () with
-  | Nil -> Nil
-  | Cons (x, next) ->
-      match f x with
-        | None -> filter_map f next ()
-        | Some y -> Cons (y, filter_map f next)
-
-let rec filter f seq () = match seq () with
-  | Nil -> Nil
-  | Cons (x, next) ->
-      if f x
-      then Cons (x, filter f next)
-      else filter f next ()
-
-let rec flat_map f seq () = match seq () with
-  | Nil -> Nil
-  | Cons (x, next) ->
-    flat_map_app f (f x) next ()
-and flat_map_app f seq tail () = match seq () with
-  | Nil -> flat_map f tail ()
-  | Cons (x, next) ->
-    Cons (x, flat_map_app f next tail)
-
-let fold_left f acc seq =
-  let rec aux f acc seq = match seq () with
-    | Nil -> acc
-    | Cons (x, next) ->
-        let acc = f acc x in
-        aux f acc next
-  in
-  aux f acc seq
-
-let iter f seq =
-  let rec aux seq = match seq () with
-    | Nil -> ()
-    | Cons (x, next) ->
-        f x;
-        aux next
-  in
-  aux seq
-@END_WITHOUT_SEQ_PKG@
-@END_BEFORE_4_07_0@
-@BEGIN_BEFORE_4_11_0@
-let cons x seq () =
-  Cons (x, seq)
-
-let rec append a b () =
-  match a () with
-  | Nil -> b ()
-  | Cons (hd, tl) ->
-      Cons (hd, append tl b)
-
-let rec unfold f state () =
-  match f state with
-  | None -> Nil
-  | Some (value, state) ->
-      Cons (value, unfold f state)
-@END_BEFORE_4_11_0@
 @BEGIN_BEFORE_4_13_0@
 let concat_map = flat_map
 
@@ -467,3 +390,28 @@ let to_dispenser seq =
 let rec ints i () =
   Cons (i, ints (succ i))
 @END_BEFORE_4_14_0@
+
+@BEGIN_BEFORE_5_1_0@
+let rec find_index_from index p seq =
+  match seq () with
+  | Nil -> None
+  | Cons (hd, tl) ->
+    if p hd then
+      Some index
+    else
+      find_index_from (succ index) p tl
+
+let find_index p seq =
+  find_index_from 0 p seq
+
+let rec find_mapi_from index f seq =
+  match seq () with
+  | Nil -> None
+  | Cons (hd, tl) ->
+    match f index hd with
+    | None -> find_mapi_from (succ index) f tl
+    | some -> some
+
+let find_mapi f seq =
+  find_mapi_from 0 f seq
+@END_BEFORE_5_1_0@

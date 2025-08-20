@@ -69,13 +69,16 @@ definitions.
 Configure and install
 ---------------------
 
-Execute `make -f Makefile.bootstrap` first, to generate the files
-`configure`, `Makefile.in` and others.
+First, configure stdcompat by running its `./configure` script.
 
-Then execute `./configure` (or `./configure --disable-magic` to use
-the pure and less efficient implementation).
+Among the options you may want to pass to `./configure`, there is
+`--disable-magic` to build without using `Obj.magic` (that is, to use
+the pure but less efficient implementation).
 
-Then execute `make` and `make install`.
+Then run `make` and `make install`.
+
+Alternatively, the package can also be built with the
+`dune build --ignore-promoted-rules` command.
 
 Windows support
 ---------------

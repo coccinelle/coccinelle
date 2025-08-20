@@ -8,5 +8,3 @@ aclocal -I setup
 autoconf -Wall && automake
 ( cd bundles/parmap && \
   autoheader && aclocal && autoconf -Wall )
-( cd bundles/stdcompat/stdcompat-current && \
-  autoheader && aclocal && automake && autoconf -Wall )

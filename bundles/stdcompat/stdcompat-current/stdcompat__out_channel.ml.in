@@ -1,6 +1,13 @@
 @BEGIN_FROM_4_14_0@
 include Out_channel
 @END_FROM_4_14_0@
+@BEGIN_BEFORE_5_2_0@
+let output_bigarray _channel _src _pos _len =
+  failwith "output_bigarray"
+
+let is_binary_mode _channel =
+  failwith "is_binary_mode"
+@END_BEFORE_5_2_0@
 @BEGIN_BEFORE_4_14_0@
 type t = out_channel
 
@@ -68,7 +75,12 @@ let output_substring = Stdcompat__pervasives.output_substring
 let set_binary_mode = set_binary_mode_out
 
 let set_buffered _ _ =
-  failwith "Stdcompat.Out_channel.set_buffered is not implemented yet. Please fill an issue: https://github.com/thierry-martinez/stdcompat/issues ."
+  failwith "Stdcompat.Out_channel.set_buffered is not implemented yet. Please fill an issue: https://github.com/ocamllibs/stdcompat/issues ."
 
 let is_buffered _ = true
 @END_BEFORE_4_14_0@
+
+@BEGIN_BEFORE_5_1_0@
+let isatty _ic =
+  failwith "not implemented"
+@END_BEFORE_5_1_0@
