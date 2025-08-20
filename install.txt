@@ -5,7 +5,7 @@
 
  ** Dependencies **
 
-You must first install OCaml. Versions 4.08.0-5.1.1 are supported.
+You must first install OCaml. Versions 4.11.0 - 5.3.0 are supported.
 See http://caml.inria.fr/download.en.html
 
 If your OCaml compiler has been configurated with --enable-flambda,
@@ -50,9 +50,9 @@ On Fedora, install the following packages:
  - ocaml-ocamldoc
  - ocaml-menhir (optional, bundled)
  - ocaml-pcre-devel (optional, bundled)
-    Note: if you used opam to switch to a different version of OCaml, installing
-    ocaml-pcre-devel will make compilation impossible. Additionally, PCRE
-    support and OCaml scripting will be impossible.
+    Note: if you used opam to switch to a different version of OCaml,
+    installing ocaml-pcre-devel will make compilation impossible. Additionally,
+    PCRE support and OCaml scripting will be impossible.
 If you want Python scripting: Coccinelle is not compatible with Python 3.13,
 which is the default on Fedora as of 2024-12-19. Consider switching to Python
 3.12, for example.
@@ -116,7 +116,8 @@ $ sudo flatpak-builder --force-clean --install \
   --install-deps-from=flathub --ccache --repo=_flatpak-repo/ \
   _flatpak-build/ extra/flatpak/io.github.coccinelle.coccinelle.yaml
 
-It will install the `spatch` program as `io.github.coccinelle.coccinelle`. Use it with:
+It will install the `spatch` program as `io.github.coccinelle.coccinelle`.
+Use it with:
 
 $ flatpak run io.github.coccinelle.coccinelle --help
 
