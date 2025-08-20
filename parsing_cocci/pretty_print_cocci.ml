@@ -898,7 +898,7 @@ and rule_elem arity re =
       mcode print_string rp; print_string " "
   | Ast.ScopedGuardHeader(sg,lp,exps,rp) ->
       print_string arity;
-      mcode print_string sg; print_string " "; mcode print_string_box lp;
+      mcode print_string sg; mcode print_string_box lp;
       dots (function _ -> ()) expression exps; close_box(); mcode print_string rp;
       print_string " "
   | Ast.SwitchHeader(switch,lp,exp,rp) ->
