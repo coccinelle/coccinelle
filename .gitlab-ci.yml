@@ -1,19 +1,16 @@
 # In order to make "docker build" use cache as most as possible, there
 # are three "prepare" stages.
-# - prepare distribution images: build one container by distribution (for now,
-#   debian and opensuse/leap, both with OCaml 4.09)
-# - prepare environment images: build debian containers for 4.08, 4.09 with
-# parmap, # 4.09 with menhir, 4.09 with pyml, and others. It is worth noticing
-#   that all these buildings implicitly use the cached container built on the
-#   previous stage.
-# - prepare image with all dependencies: build debian container with parmap,
+# - prepare distribution images: build Debian and openSUSE containers
+#   with different OCaml versions
+# - prepare environment images: build Debian containers with parmap,
+#   with menhir, and with pyml - using OCaml 4.11.0. It is worth noticing that
+#   all these builds implicitly use the cached container built on the previous
+#   stage.
+# - prepare image with all dependencies: build Debian container with parmap,
 #   menhir and pyml. It is worth noticing that this building use implicitly
 #   the cached container with pyml built on the previous stage.
 
-# We begin by trace-cmd because the triggered pipeline will be run in parallel.
-
 stages:
-  - trace-cmd
   - prepare distribution images
   - prepare environment images
   - prepare image with all dependencies
@@ -37,98 +34,90 @@ stages:
         --build-arg stdcompat=$stdcompat --build-arg pyml=$pyml
         --build-arg menhir=$menhir --build-arg parmap=$parmap
 
-prepare debian docker image with 4.08.0:
+prepare Debian + OCaml 4.11.0:
   <<: *prepare_docker_image_def
   stage: prepare distribution images
   variables:
-    image_name: debian-4.08.0
+    image_name: debian-4.11.0
     distribution: debian
-    ocaml_version: 4.08.0
+    ocaml_version: 4.11.0
 
-prepare debian docker image with 4.09.0:
+prepare Debian + OCaml 5.0.0:
   <<: *prepare_docker_image_def
   stage: prepare distribution images
-  variables:
-    image_name: debian-4.09.0
-    distribution: debian
-    ocaml_version: 4.09.0
-
-prepare opensuse/leap docker image with 4.09.0:
-  <<: *prepare_docker_image_def
-  stage: prepare distribution images
-  variables:
-    image_name: opensuse-leap-4.09.0
-    distribution: opensuse-leap
-    ocaml_version: 4.09.0
-
-prepare opensuse/leap docker image with 4.14.1:
-  <<: *prepare_docker_image_def
-  stage: prepare distribution images
-  variables:
-    image_name: opensuse-leap-4.14.1
-    distribution: opensuse-leap
-    ocaml_version: 4.14.1
-
-prepare opensuse/leap docker image with 5.0.0:
-  <<: *prepare_docker_image_def
-  stage: prepare distribution images
-  variables:
-    image_name: opensuse-leap-5.0.0
-    distribution: opensuse-leap
-    ocaml_version: 5.0.0
-
-prepare debian docker image with 4.14.1:
-  <<: *prepare_docker_image_def
-  stage: prepare distribution images
-  variables:
-    image_name: debian-4.14.1
-    distribution: debian
-    ocaml_version: 4.14.1
-
-prepare debian docker image with 5.0.0:
-  <<: *prepare_docker_image_def
-  stage: prepare environment images
   variables:
     image_name: debian-5.0.0
     distribution: debian
     ocaml_version: 5.0.0
 
+prepare Debian + OCaml 5.2.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: debian-5.2.0
+    distribution: debian
+    ocaml_version: 5.2.0
+
+prepare Debian + OCaml 5.3.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: debian-5.3.0
+    distribution: debian
+    ocaml_version: 5.3.0
+
+prepare openSUSE + OCaml 4.11.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: opensuse-leap-4.11.0
+    distribution: opensuse-leap
+    ocaml_version: 4.11.0
+
+prepare openSUSE + OCaml 5.3.0:
+  <<: *prepare_docker_image_def
+  stage: prepare distribution images
+  variables:
+    image_name: opensuse-leap-5.3.0
+    distribution: opensuse-leap
+    ocaml_version: 5.3.0
+
 # Note: "yes" should be quoted in variable values (yes is parsed as a keyword)
 
-prepare debian docker image with 4.09.0 and menhir:
+prepare Debian + OCaml 4.11.0 + menhir:
   <<: *prepare_docker_image_def
   stage: prepare environment images
   variables:
-    image_name: debian-4.09.0-menhir
+    image_name: debian-4.11.0-menhir
     distribution: debian
-    ocaml_version: 4.09.0
+    ocaml_version: 4.11.0
     menhir: "yes"
 
-prepare debian docker image with 4.09.0 and parmap:
+prepare Debian + OCaml 4.11.0 + parmap:
   <<: *prepare_docker_image_def
   stage: prepare environment images
   variables:
-    image_name: debian-4.09.0-parmap
+    image_name: debian-4.11.0-parmap
     distribution: debian
-    ocaml_version: 4.09.0
+    ocaml_version: 4.11.0
     parmap: "yes"
 
-prepare debian docker image with 4.09.0 and pyml:
+prepare Debian + OCaml 4.11.0 + pyml:
   <<: *prepare_docker_image_def
   stage: prepare environment images
   variables:
-    image_name: debian-4.09.0-pyml
+    image_name: debian-4.11.0-pyml
     distribution: debian
-    ocaml_version: 4.09.0
+    ocaml_version: 4.11.0
     pyml: "yes"
 
-prepare debian docker image with 4.09.0 and all dependencies:
+prepare Debian + OCaml 4.11.0 + all dependencies:
   <<: *prepare_docker_image_def
   stage: prepare image with all dependencies
   variables:
-    image_name: debian-4.09.0-all-dependencies
+    image_name: debian-4.11.0-all-dependencies
     distribution: debian
-    ocaml_version: 4.09.0
+    ocaml_version: 4.11.0
     pyml: "yes"
     parmap: "yes"
     menhir: "yes"
@@ -139,60 +128,55 @@ prepare debian docker image with 4.09.0 and all dependencies:
     - docker build --tag coccinelle-with-$from . -f ci/Dockerfile.build
         --build-arg from=$from --build-arg configure_options=$configure_options
 
-build with debian 4.08:
+build Debian + OCaml 4.11.0:
   <<: *build_coccinelle_def
   variables:
-    from: debian-4.08.0
+    from: debian-4.11.0
 
-build with debian 4.09:
-  <<: *build_coccinelle_def
-  variables:
-    from: debian-4.09.0
-
-build with debian 4.14:
-  <<: *build_coccinelle_def
-  variables:
-    from: debian-4.14.1
-
-build with debian 5.0:
+build Debian + OCaml 5.0.0:
   <<: *build_coccinelle_def
   variables:
     from: debian-5.0.0
 
-build with debian 4.09 with menhir:
+build Debian + OCaml 5.2.0:
   <<: *build_coccinelle_def
   variables:
-    from: debian-4.09.0-menhir
+    from: debian-5.2.0
 
-build with debian 4.09 with parmap:
+build Debian + OCaml 5.3.0:
   <<: *build_coccinelle_def
   variables:
-    from: debian-4.09.0-parmap
+    from: debian-5.3.0
 
-build with debian 4.09 with pyml:
+build openSUSE + OCaml 4.11.0:
   <<: *build_coccinelle_def
   variables:
-    from: debian-4.09.0-pyml
+    from: opensuse-leap-4.11.0
 
-build with debian 4.09 with all dependencies:
+build openSUSE + OCaml 5.3.0:
   <<: *build_coccinelle_def
   variables:
-    from: debian-4.09.0-all-dependencies
+    from: opensuse-leap-5.3.0
 
-build with opensuse/leap 4.09:
+build Debian + OCaml 4.11.0 + menhir:
   <<: *build_coccinelle_def
   variables:
-    from: opensuse-leap-4.09.0
+    from: debian-4.11.0-menhir
 
-build with opensuse/leap 4.14:
+build Debian + OCaml 4.11.0 + parmap:
   <<: *build_coccinelle_def
   variables:
-    from: opensuse-leap-4.14.1
+    from: debian-4.11.0-parmap
 
-build with opensuse/leap 5.0:
+build Debian + OCaml 4.11.0 + pyml:
   <<: *build_coccinelle_def
   variables:
-    from: opensuse-leap-5.0.0
+    from: debian-4.11.0-pyml
+
+build Debian + OCaml 4.11.0 + all dependencies:
+  <<: *build_coccinelle_def
+  variables:
+    from: debian-4.11.0-all-dependencies
 
 # Note: use the shell command "test" instead of "[" since yaml wants to parse
 # lines starting with square brackets as lists
@@ -206,66 +190,61 @@ build with opensuse/leap 5.0:
     - docker start --interactive coccinelle-with-$from
     - docker rm coccinelle-with-$from
 
-test with debian 4.08:
+test Debian + OCaml 4.11.0:
   <<: *test_coccinelle_def
   variables:
-    from: debian-4.08.0
+    from: debian-4.11.0
 
-test with debian 4.09:
-  <<: *test_coccinelle_def
-  variables:
-    from: debian-4.09.0
-
-test with debian 4.14:
-  <<: *test_coccinelle_def
-  variables:
-    from: debian-4.14.1
-
-test with debian 5.0:
+test Debian + OCaml 5.0.0:
   <<: *test_coccinelle_def
   variables:
     from: debian-5.0.0
 
-test with debian 4.09 with menhir:
+test Debian + OCaml 5.2.0:
   <<: *test_coccinelle_def
   variables:
-    from: debian-4.09.0-menhir
+    from: debian-5.2.0
 
-test with debian 4.09 with parmap:
+test Debian + OCaml 5.3.0:
   <<: *test_coccinelle_def
   variables:
-    from: debian-4.09.0-parmap
+    from: debian-5.3.0
 
-test with debian 4.09 with pyml:
+test openSUSE + OCaml 4.11.0:
   <<: *test_coccinelle_def
   variables:
-    from: debian-4.09.0-pyml
+    from: opensuse-leap-4.11.0
 
-test with debian 4.09 with all dependencies:
+test openSUSE + OCaml 5.3.0:
   <<: *test_coccinelle_def
   variables:
-    from: debian-4.09.0-all-dependencies
+    from: opensuse-leap-5.3.0
 
-test with debian 4.09 without python:
+test Debian + OCaml 4.11.0 + menhir:
   <<: *test_coccinelle_def
   variables:
-    from: debian-4.09.0
+    from: debian-4.11.0-menhir
+
+test Debian + OCaml 4.11.0 + parmap:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.11.0-parmap
+
+test Debian + OCaml 4.11.0 + pyml:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.11.0-pyml
+
+test Debian + OCaml 4.11.0 + all dependencies:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.11.0-all-dependencies
+
+test Debian + OCaml 4.11.0 + no python:
+  <<: *test_coccinelle_def
+  variables:
+    from: debian-4.11.0
     configure_options: --disable-python
-
-test with opensuse/leap 4.09:
-  <<: *test_coccinelle_def
-  variables:
-    from: opensuse-leap-4.09.0
-
-test with opensuse/leap 4.14:
-  <<: *test_coccinelle_def
-  variables:
-    from: opensuse-leap-4.14.1
-
-test with opensuse/leap 5.0:
-  <<: *test_coccinelle_def
-  variables:
-    from: opensuse-leap-5.0.0
 
 #trace-cmd-check-changed:
 #  stage: trace-cmd
