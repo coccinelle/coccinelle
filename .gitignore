@@ -60,7 +60,7 @@ description-pak
 /bundles/stdcompat/*.ml
 /bundles/stdcompat/*.mli
 /bundles/stdcompat/doc/
-/bundles/menhirLib/menhir-20171013/
+/bundles/menhirLib/menhir-20181113/
 /bundles/parmap/parmap/src/parmap_compat.ml
 /bundles/parmap/setcore_stubs.h.in
 /bundles/parmap/configure
