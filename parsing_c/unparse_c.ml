@@ -1919,9 +1919,15 @@ let notelse op xs =
       [] -> false
     | t::_ -> (str_of_token2 t) = "else")
 
+let is_noncomment x =
+  is_space x ||
+  match x with
+    T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
+  | _ -> false
+
 let close_brace op xs =
-  let is_whitespace t = is_whitespace t || is_added_whitespace t in
-  match skip_unlike_me op xs is_whitespace with
+  let is_noncomment t = is_noncomment t || is_added_whitespace t in
+  match skip_unlike_me op xs is_noncomment with
     [] -> false
   | t::_ -> List.mem (str_of_token2 t) ["}";":>"]
 
@@ -2113,11 +2119,6 @@ let parse_indentation xs =
 	(* Drop unindent at the very beginning; no need for prior nl *)
 	xs
     | _ -> xs in
-  let is_noncomment x =
-    is_space x ||
-    (match x with
-      T2(Parser_c.TCommentNewline _,_b,_i,_h) -> true
-    | _ -> false) in
   let rec loop n state = function
       [] -> []
     | (x::xs) as l ->
