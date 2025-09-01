@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <stdcompat.h>
+#include <caml/alloc.h>
 #include <assert.h>
 #include "pyml_stubs.h"
 
