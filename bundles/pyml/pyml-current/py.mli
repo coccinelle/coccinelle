@@ -132,6 +132,10 @@ module Object: sig
   (** Equivalent to {!get_attr} but raises a [Not_found] exception in
       case of failure. *)
 
+  val find_attr_err: t -> t -> t
+  (** Equivalent to {!get_attr} but raises a Python exception in
+      case of failure. *)
+
   val find_attr_opt: t -> t -> t option
   (** Alias for {!get_attr}. *)
 
@@ -141,6 +145,10 @@ module Object: sig
 
   val find_attr_string: t -> string -> t
   (** Equivalent to {!get_attr_string} but raises a [Not_found] exception in
+      case of failure. *)
+
+  val find_attr_string_err: t -> string -> t
+  (** Equivalent to {!get_attr_string} but raises a Python exception in
       case of failure. *)
 
   val find_attr_string_opt: t -> string -> t option
@@ -154,6 +162,10 @@ module Object: sig
   (** Equivalent to {!get_item} but raises a [Not_found] exception in
       case of failure. *)
 
+  val find_err: t -> t -> t
+  (** Equivalent to {!get_item} but raises a Python exception in
+      case of failure. *)
+
   val find_opt: t -> t -> t option
   (** Alias for {!get_item}. *)
 
@@ -163,6 +175,10 @@ module Object: sig
 
   val find_string: t -> string -> t
   (** Equivalent to {!get_item_string} but raises a [Not_found] exception in
+      case of failure. *)
+
+  val find_string_err: t -> string -> t
+  (** Equivalent to {!get_item_string} but raises a Python exception in
       case of failure. *)
 
   val find_string_opt: t -> string -> t option
@@ -1331,7 +1347,7 @@ module Module: sig
       {{:https://docs.python.org/3/c-api/module.html#c.PyModule_GetName} PyModule_GetName} *)
 
   val get: Object.t -> string -> Object.t
-  (** Equivalent to {!Object.find_attr_string}. *)
+  (** Equivalent to {!Object.find_attr_string_err}. *)
 
   val get_opt: Object.t -> string -> Object.t option
   (** Equivalent to {!Object.find_attr_string_opt}. *)

@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <caml/alloc.h>
+#include <stdcompat.h>
 #include <assert.h>
 #include "pyml_stubs.h"
 
@@ -135,8 +135,6 @@ file_of_file_descr(value file_descr, const char *mode)
     CAMLreturnT(FILE *, result);
 }
 #endif
-
-static void *Python27__PyObject_NextNotImplemented;
 
 /* Global variables for the library */
 
@@ -743,15 +741,18 @@ guess_debug_build()
     PyObject *debug_build_py;
     char *py_debug_str = "Py_DEBUG";
     if (version_major >= 3) {
-        py_debug = Python3_PyUnicode_FromStringAndSize(py_debug_str, 8);
+        py_debug = Python3_PyUnicode_FromStringAndSize(py_debug_str, strlen(py_debug_str));
     }
     else {
-        py_debug = Python2_PyString_FromStringAndSize(py_debug_str, 8);
+        py_debug = Python2_PyString_FromStringAndSize(py_debug_str, strlen(py_debug_str));
     }
     assert(py_debug);
     args = singleton(py_debug);
     debug_build_py = Python_PyObject_Call(get_config_var, args, NULL);
-    assert(debug_build_py);
+    if (!debug_build_py) {
+        Python_PyErr_Print();
+        caml_failwith("Cannot check for debug build");
+    }
     if (debug_build_py == Python__Py_NoneStruct) {
         debug_build = 0;
     }
@@ -797,8 +798,6 @@ py_load_library(value filename_ocaml, value debug_build_ocaml)
         Python27_PyCapsule_New = resolve("PyCapsule_New");
         Python27_PyCapsule_GetPointer = resolve("PyCapsule_GetPointer");
         Python27_PyCapsule_IsValid = resolve("PyCapsule_IsValid");
-        Python27__PyObject_NextNotImplemented =
-            resolve("_PyObject_NextNotImplemented");
     }
     Python_PyObject_CallFunctionObjArgs =
         resolve("PyObject_CallFunctionObjArgs");
@@ -970,6 +969,17 @@ enum pytype_labels {
     Set
 };
 
+static bool is_iterable(PyObject *obj) {
+    PyObject *iter = Python_PyObject_GetIter(obj);
+    if (iter) {
+        Py_DECREF(iter);
+        return true;
+    } else {
+        Python_PyErr_Clear();
+        return false;
+    }
+}
+
 CAMLprim value
 pytype(value object_ocaml)
 {
@@ -1035,8 +1045,7 @@ pytype(value object_ocaml)
     else if (ob_type == Python_PySet_Type) {
         result = Set;
     }
-    else if (typeobj->tp_iternext != NULL &&
-        typeobj->tp_iternext != &Python27__PyObject_NextNotImplemented) {
+    else if (is_iterable(object)) {
         result = Iter;
     }
     else {

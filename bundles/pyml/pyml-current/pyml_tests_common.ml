@@ -22,9 +22,10 @@ let launch_test (title, f) =
        failed := true
     | Disabled reason -> Printf.printf "disabled: %s\n%!" reason
   with
-    Py.E (_, value) ->
+    Py.E (ty, value) ->
     Printf.printf
-      "raised a Python exception: %s\n%!"
+      "raised a Python exception: [%s] %s\n%!"
+      (Py.Object.to_string ty)
       (Py.Object.to_string value);
     failed := true
   | e ->

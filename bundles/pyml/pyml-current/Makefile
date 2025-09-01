@@ -207,13 +207,13 @@ test : test.bytecode $(TESTOPT)
 
 .PHONY : test.bytecode
 test.bytecode : pyml_tests.bytecode numpy_tests.bytecode
-	./pyml_tests.bytecode
-	./numpy_tests.bytecode
+	./pyml_tests.bytecode $(TEST_OPTIONS)
+	./numpy_tests.bytecode $(TEST_OPTIONS)
 
 .PHONY : test.native
 test.native : pyml_tests.native numpy_tests.native
-	./pyml_tests.native
-	./numpy_tests.native
+	./pyml_tests.native $(TEST_OPTIONS)
+	./numpy_tests.native $(TEST_OPTIONS)
 
 .PHONY : install
 install : $(INSTALL_FILES)

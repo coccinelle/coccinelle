@@ -710,5 +710,86 @@ let () =
       Pyml_tests_common.Passed)
 
 let () =
+  Pyml_tests_common.add_test
+    ~title:"get_attr_string"
+    (fun () ->
+       let bool_ty = Py.Object.get_type Py.Bool.t in
+       assert (Py.Object.get_attr_string bool_ty "dtype" = None);
+       Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Dict.find fails with Not_found"
+    (fun () ->
+       let dict = Py.Dict.create() in
+       try
+         let _ = Py.Dict.find dict Py.Tuple.empty in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Not_found ->
+         Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Dict.find_string fails with Not_found"
+    (fun () ->
+       let dict = Py.Dict.create() in
+       try
+         let _ = Py.Dict.find_string dict "key" in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Not_found ->
+         Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Object.find_attr fails with Not_found if key is missing"
+    (fun () ->
+       try
+         let _ =
+           Py.Object.find_attr Py.Tuple.empty (Py.String.of_string "key") in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Not_found ->
+         Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Object.find_attr fails with Python exception if wrong key type"
+    (fun () ->
+       try
+         let _ = Py.Object.find_attr Py.Tuple.empty Py.Tuple.empty in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Py.E _ ->
+         Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Object.find_attr_string fails with Not_found if key is missing"
+    (fun () ->
+       try
+         let _ = Py.Object.find_attr_string Py.Tuple.empty "key" in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Not_found ->
+         Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Object.find fails with Not_found if key is missing"
+    (fun () ->
+       try
+         let _ = Py.Object.find (Py.Dict.create ()) (Py.String.of_string "key") in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Not_found ->
+         Pyml_tests_common.Passed)
+
+let () =
+  Pyml_tests_common.add_test
+    ~title:"Object.find fails with Not_found if wrong key type"
+    (fun () ->
+       try
+         let _ = Py.Object.find Py.Tuple.empty Py.Tuple.empty in
+         Pyml_tests_common.Failed "Unexpected found"
+       with Py.E _ ->
+         Pyml_tests_common.Passed)
+
+let () =
   if not !Sys.interactive then
     Pyml_tests_common.main ()

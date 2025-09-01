@@ -207,7 +207,10 @@ let uninit_pythonpath () =
       end
 
 let ldd executable =
-  let command = Printf.sprintf "ldd %s" executable in
+  let command =
+    match Pyml_arch.os with
+    | Pyml_arch.Mac -> Printf.sprintf "otool -L %s" executable
+    | _ -> Printf.sprintf "ldd %s" executable in
   match run_command_opt command false with
     None -> []
   | Some lines ->
@@ -420,6 +423,13 @@ let library_patterns : (int -> int -> string) list =
       [Printf.sprintf "libpython%d.%dm.so";
         Printf.sprintf "libpython%d.%d.so"]
 
+let library_filenames_from_paths version_major version_minor paths =
+  let library_filenames =
+    List.map
+      (fun format -> format version_major version_minor)
+      library_patterns in
+  concat_library_filenames paths library_filenames
+
 let libpython_from_python_config version_major version_minor =
   let command =
     Printf.sprintf "python%d.%d-config --ldflags" version_major version_minor in
@@ -437,31 +447,50 @@ let libpython_from_python_config version_major version_minor =
         else library_paths in
       let library_paths =
         List.fold_left parse_word [] word_list in
-      let library_filenames =
-        List.map
-          (fun format -> format version_major version_minor)
-          library_patterns in
-      Some (concat_library_filenames library_paths library_filenames)
+      Some (library_filenames_from_paths version_major version_minor library_paths)
   | _ -> None
+
+let libpython_from_python_config_prefix version_major version_minor =
+  let command =
+    Printf.sprintf "python%d.%d-config --prefix" version_major version_minor in
+  match run_command_opt command false with
+  | Some (prefix :: _) ->
+      let library_paths = [Filename.concat prefix "lib"] in
+      Some (library_filenames_from_paths version_major version_minor library_paths)
+  | _ -> None
+
+let getenv_opt var =
+  try Some (Sys.getenv var)
+  with Not_found -> None
 
 let libpython_from_pythonhome version_major version_minor python_full_path =
   let library_paths =
     match
-      try Some (Sys.getenv "PYTHONHOME")
-      with Not_found ->
+      match getenv_opt "PYTHONHOME" with
+      | Some python_home -> Some (Pyutils.split_left_on_char ':' python_home)
+      | None ->
         match python_full_path with
-          None -> None
         | Some python_full_path -> Some (parent_dir python_full_path)
+        | None -> None
     with
       None -> failwith "Unable to find libpython!"
-    | Some pythonhome ->
-        let prefix = Pyutils.split_left_on_char ':' pythonhome in
-        [Filename.concat prefix "lib"] in
-  let library_filenames =
-    List.map
-      (fun format -> format version_major version_minor)
-      library_patterns in
-  concat_library_filenames library_paths library_filenames
+    | Some dir ->
+        [Filename.concat dir "lib"] in
+  library_filenames_from_paths version_major version_minor library_paths
+
+let libpython_from_pythonpath version_major version_minor =
+  match getenv_opt "PYTHONPATH" with
+  | None -> None
+  | Some pythonpath ->
+    let paths = String.split_on_char ':' pythonpath in
+    let python_zip = Printf.sprintf "python%d%d.zip" version_major version_minor in
+    let is_python_zip filename =
+      Filename.basename filename = python_zip in
+    match List.find_opt is_python_zip paths with
+    | None -> None
+    | Some filename ->
+      let dir = Filename.dirname filename in
+      Some (library_filenames_from_paths version_major version_minor [dir])
 
 let find_library_path version_major version_minor python_full_path =
   let heuristics = [
@@ -478,16 +507,22 @@ let find_library_path version_major version_minor python_full_path =
     (fun () ->
       Option.bind version_major (fun version_major ->
         Option.bind version_minor (fun version_minor ->
+          libpython_from_python_config_prefix version_major version_minor)));
+    (fun () ->
+      Option.bind version_major (fun version_major ->
+        Option.bind version_minor (fun version_minor ->
           libpython_from_python_config version_major version_minor)));
     (fun () ->
       Option.bind version_major (fun version_major ->
         Option.bind version_minor (fun version_minor ->
           Some (libpython_from_pythonhome version_major version_minor
             python_full_path))));
+    (fun () ->
+      Option.bind version_major (fun version_major ->
+        Option.bind version_minor (fun version_minor ->
+          libpython_from_pythonpath version_major version_minor)));
   ] in
-  match List.find_map (fun f -> f ()) heuristics with
-  | None -> failwith "Cannot find Python library"
-  | Some paths -> paths
+  List.concat (List.map (fun f -> Option.value ~default:[] (f ())) heuristics)
 
 let python_version_from_interpreter interpreter =
   let version_line =
@@ -783,11 +818,16 @@ let is_none v =
 
 exception E of pyobject * pyobject
 
-let fetched_exception = ref None
+let create_ref_to_python_object () =
+  let result = ref None in
+  on_finalize (fun () -> result := None);
+  result
 
-let ocaml_exception_class = ref None
+let fetched_exception = create_ref_to_python_object ()
 
-let ocaml_exception_capsule = ref None
+let ocaml_exception_class = create_ref_to_python_object ()
+
+let ocaml_exception_capsule = create_ref_to_python_object ()
 
 let python_exception () =
   let ptype, pvalue, ptraceback = pyerr_fetch_internal () in
@@ -900,6 +940,24 @@ let option result =
   if result = null then
     begin
       check_error ();
+      None
+    end
+  else
+    Some result
+
+let check_found result =
+  if result = null then
+    begin
+      check_error ();
+      raise Not_found
+    end
+  else
+    result
+
+let option_of_error result =
+  if result = null then
+    begin
+      let _ = pyerr_fetch_internal () in
       None
     end
   else
@@ -1145,7 +1203,7 @@ module Mapping = struct
     option (Pywrappers.pymapping_getitemstring mapping key)
 
   let find_string mapping key =
-    Stdcompat.Option.get (get_item_string mapping key)
+    check_found (Pywrappers.pymapping_getitemstring mapping key)
 
   let find_string_opt = get_item_string
 
@@ -1506,6 +1564,16 @@ end
 
 exception Err of Err.t * string
 
+let attribute_error = "AttributeError"
+
+let check_found_catch error result =
+  try
+    check_found result
+  with E (ty, _)
+  when
+    String.to_string (check_found (Pywrappers.pyobject_getattrstring ty "__name__")) = error ->
+    raise Not_found
+
 module Object = struct
   include Object_
 
@@ -1524,29 +1592,48 @@ module Object = struct
     assert_not_null "get_attr(_, !)" attr;
     option (Pywrappers.pyobject_getattr obj attr)
 
-  let get_attr_string obj attr =
-    assert_not_null "get_attr_string" obj;
-    option (Pywrappers.pyobject_getattrstring obj attr)
+  let find_attr_string obj attr =
+    assert_not_null "find_attr_string" obj;
+    check_found_catch attribute_error (Pywrappers.pyobject_getattrstring obj attr)
 
-  let find_attr obj attr = Stdcompat.Option.get (get_attr obj attr)
+  let find_attr_string_err obj attr =
+    assert_not_null "find_attr_string" obj;
+    check_not_null (Pywrappers.pyobject_getattrstring obj attr)
+
+  let get_attr_string obj attr =
+    assert_not_null "find_attr_string" obj;
+    option_of_error (Pywrappers.pyobject_getattrstring obj attr)
+
+  let find_attr obj attr =
+    assert_not_null "find_attr(!, _)" obj;
+    assert_not_null "find_attr(_, !)" attr;
+    check_found_catch attribute_error (Pywrappers.pyobject_getattr obj attr)
+
+  let find_attr_err obj attr =
+    assert_not_null "find_attr(!, _)" obj;
+    assert_not_null "find_attr(_, !)" attr;
+    check_not_null (Pywrappers.pyobject_getattr obj attr)
 
   let find_attr_opt = get_attr
-
-  let find_attr_string obj attr =
-    Stdcompat.Option.get (get_attr_string obj attr)
 
   let find_attr_string_opt = get_attr_string
 
   let get_item obj key =
     option (Pywrappers.pyobject_getitem obj key)
 
-  let find obj attr = Stdcompat.Option.get (get_item obj attr)
+  let find obj attr =
+    check_found_catch "KeyError" (Pywrappers.pyobject_getitem obj attr)
+
+  let find_err obj attr =
+    check_not_null (Pywrappers.pyobject_getitem obj attr)
 
   let find_opt = get_item
 
   let get_item_string obj key = get_item obj (String.of_string key)
 
-  let find_string obj attr = Stdcompat.Option.get (get_item_string obj attr)
+  let find_string obj key = find obj (String.of_string key)
+
+  let find_string_err obj key = find_err obj (String.of_string key)
 
   let find_string_opt = get_item_string
 
@@ -2171,7 +2258,10 @@ module Dict = struct
     assert_not_null "get_item(_, !)" key;
     option (Pywrappers.pydict_getitem dict key)
 
-  let find dict key = Stdcompat.Option.get (get_item dict key)
+  let find dict key =
+    assert_not_null "get_item(!, _)" dict;
+    assert_not_null "get_item(_, !)" key;
+    check_found (Pywrappers.pydict_getitem dict key)
 
   let find_opt = get_item
 
@@ -2179,7 +2269,9 @@ module Dict = struct
     assert_not_null "get_item_string" dict;
     option (Pywrappers.pydict_getitemstring dict name)
 
-  let find_string dict key = Stdcompat.Option.get (get_item_string dict key)
+  let find_string dict key =
+    assert_not_null "get_item_string" dict;
+    check_found (Pywrappers.pydict_getitemstring dict key)
 
   let find_string_opt = get_item_string
 
@@ -2531,7 +2623,7 @@ module Module = struct
     assert_not_null "get_name" m;
     check_some (Pywrappers.pymodule_getname m)
 
-  let get = Object.find_attr_string
+  let get = Object.find_attr_string_err
 
   let get_opt = Object.find_attr_string_opt
 

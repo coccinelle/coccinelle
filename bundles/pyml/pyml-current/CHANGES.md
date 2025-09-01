@@ -1,5 +1,41 @@
 [*] marks changes that break compatibility with previous versions.
 
+# 2023-11-01
+
+- Compatibility with Python 3.13
+
+- Fix segmentation fault by forgetting objects on library unloading.
+  Observed on Fedora Rawhide with address randomization,
+  reported by Jerry James,
+  https://github.com/thierry-martinez/pyml/issues/85
+
+- #93, #94: Fix `Py.Object.get_attr_string`: this function now returns
+  `None` when attribute is missing (the former version raised an
+  exception, despite the `option` return type and contrary to what was
+  documented).
+  Reported by Lindsay Errington, @dlindsaye,
+  https://github.com/thierry-martinez/pyml/issues/93
+
+- #91, #92, #94: Better search heuristics for `python` library.
+  Suggested by camlspotter and Et7f3.
+  Use of `python-config`.
+  Use of `otool -L` instead of `ldd` on Mac OS X.
+  https://github.com/thierry-martinez/pyml/issues/91
+  https://github.com/thierry-martinez/pyml/issues/92
+
+- #96: `find` functions (`Py.Object.find`, `Py.Object.find_string`,
+  `Py.Dict.find`, `Py.Dict.find_string`, `Py.Object.find_attr_string`
+  and `Py.Object.find_attr`) now consistently fail with `Not_found`
+  exception, as it is said in the documentation.  Functions
+  `Py.Object.find_err`, `Py.Object.find_string_err`,
+  `Py.Object.find_attr_err`, `Py.Object.find_attr_string_err` have
+  been introduced for cases where keeping the underlying Python
+  exception is preferable.  For instance, `Py.Module.get` is now an
+  alias for `Py.Object.find_attr_string_err` to keep the current
+  behavior of failing with a Python exception.
+  Reported by Jonathan Laurent,
+  https://github.com/thierry-martinez/pyml/issues/96
+
 # 2022-09-05
 
 - Support for OCaml 5.0
