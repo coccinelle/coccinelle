@@ -430,87 +430,106 @@ let expand_mcode toks =
       push2 (T2 (tok', minus, optindex, None)) toks_out
   in
 
-  let expand_info t =
-    let (mcode,env) =
-      Ast_c.mcode_and_env_of_cocciref ((info_of_token1 t).Ast_c.cocci_tag) in
+  let comment_or_space = function
+    | T1(Parser_c.TCommentSpace _)
+    (* patch: cocci    *)
+    | T1(Parser_c.TCommentCpp _) -> true
+    | T1(Parser_c.TComment i) -> true
+    | Fake1 _ -> true
+    | _ -> false in
 
-    let pr_cocci s ln col rcol hint =
-      push2 (Cocci2 (s,ln,col,rcol,hint)) toks_out  in
-    let pr_c info =
-      (match Ast_c.pinfo_of_info info with
-      |	Ast_c.FakeTok (s,_,_) ->
-        push2 (C2 (s,None)) toks_out
-      |	_ ->
-        push2 (C2 (Ast_c.str_of_info info,None)) toks_out
-      );
-      (* why nothing for mbefore? *)
-      (Ast_c.get_comments_after info) +> comment2t2 +>
-      List.iter (fun x -> push2 x toks_out) in
+  let rec expand_info = function
+      [] -> ()
+    | t::toks ->
+	let (mcode,env) =
+	  Ast_c.mcode_and_env_of_cocciref ((info_of_token1 t).Ast_c.cocci_tag) in
 
-    let pr_barrier ln col = (* marks a position, used around C code *)
-      push2 (Cocci2 ("",ln,col,col,None)) toks_out in
-    let pr_nobarrier ln col = () in (* not needed for linux spacing *)
+	let pr_cocci s ln col rcol hint =
+	  push2 (Cocci2 (s,ln,col,rcol,hint)) toks_out  in
+	let pr_c info =
+	  (match Ast_c.pinfo_of_info info with
+	  |	Ast_c.FakeTok (s,_,_) ->
+              push2 (C2 (s,None)) toks_out
+	  |	_ ->
+              push2 (C2 (Ast_c.str_of_info info,None)) toks_out
+		);
+	  (* why nothing for mbefore? *)
+	  (Ast_c.get_comments_after info) +> comment2t2 +>
+	  List.iter (fun x -> push2 x toks_out) in
 
-    let pr_cspace _ = push2 (C2 (" ",None)) toks_out in
+	let pr_barrier ln col = (* marks a position, used around C code *)
+	  push2 (Cocci2 ("",ln,col,col,None)) toks_out in
+	let pr_nobarrier ln col = () in (* not needed for linux spacing *)
 
-    let pr_space _ = () (* rely on add_space in cocci code *) in
-    let pr_arity _ = () (* not interested *) in
+	let pr_cspace _ = push2 (C2 (" ",None)) toks_out in
 
-    let indent _ = push2 Indent_cocci2 toks_out in
-    let unindent x = push2 (Unindent_cocci2 x) toks_out in
-    let eat_space _ = push2 EatSpace2 toks_out in
+	let pr_space _ = () (* rely on add_space in cocci code *) in
+	let pr_arity _ = () (* not interested *) in
 
-    let args_pp =
-      (env, pr_cocci, pr_c, pr_cspace,
-        (match !Flag_parsing_c.spacing with
-        | Flag_parsing_c.SMPL -> pr_space | _ -> pr_cspace),
-        pr_arity,
-        (match !Flag_parsing_c.spacing with
-        | Flag_parsing_c.SMPL -> pr_barrier | _ -> pr_nobarrier),
-        indent, unindent, eat_space) in
+	let indent _ = push2 Indent_cocci2 toks_out in
+	let unindent x = push2 (Unindent_cocci2 x) toks_out in
+	let eat_space _ = push2 EatSpace2 toks_out in
+
+	let args_pp =
+	  (env, pr_cocci, pr_c, pr_cspace,
+           (match !Flag_parsing_c.spacing with
+           | Flag_parsing_c.SMPL -> pr_space | _ -> pr_cspace),
+           pr_arity,
+           (match !Flag_parsing_c.spacing with
+           | Flag_parsing_c.SMPL -> pr_barrier | _ -> pr_nobarrier),
+           indent, unindent, eat_space) in
 
 (* old: when for yacfe with partial cocci:
  *    add_elem t false;
  *)
 
 (* patch: when need full coccinelle transformation *)
-    let unparser = Unparse_cocci.pp_list_list_any args_pp false in
-    match mcode with
-    | Ast_cocci.MINUS (_,inst,adj,any_xxs) ->
-    (* Why adding ? because I want to have all the information, the whole
-     * set of tokens, so I can then process and remove the
-     * is_between_two_minus for instance *)
-      add_elem t (Min (inst,adj));
-      (match any_xxs with
-      | Ast_cocci.NOREPLACEMENT -> ()
-      | Ast_cocci.REPLACEMENT(any_xxs,_) ->
+	let unparser = Unparse_cocci.pp_list_list_any args_pp false in
+	match mcode with
+	| Ast_cocci.MINUS (_,inst,adj,any_xxs) ->
+        (* Why adding ? because I want to have all the information, the whole
+	 * set of tokens, so I can then process and remove the
+	 * is_between_two_minus for instance *)
+	    add_elem t (Min (inst,adj));
+	    (match any_xxs with
+	    | Ast_cocci.NOREPLACEMENT -> ()
+	    | Ast_cocci.REPLACEMENT(any_xxs,_) ->
 	  (* second argument indicates whether newline is added for statements
 	     if a fake token is being replaced, there should be a newline,
 	     hence use before *)
-	  (match t with
-	    Fake1(info,_) when !(info.Ast_c.danger) = Ast_c.DangerStart ->
-	      unparser any_xxs Unparse_cocci.Before
-          | _ -> unparser any_xxs Unparse_cocci.InPlace)
-      )
-    | Ast_cocci.CONTEXT (_,any_befaft) ->
-      (match any_befaft with
-      | Ast_cocci.NOTHING ->
-        add_elem t Ctx
-      | Ast_cocci.BEFORE (xxs,_) ->
-        unparser xxs Unparse_cocci.Before;
-        add_elem t Ctx
-      | Ast_cocci.AFTER (xxs,_) ->
-        add_elem t Ctx;
-        unparser xxs Unparse_cocci.After;
-      | Ast_cocci.BEFOREAFTER (xxs, yys, _) ->
-        unparser xxs Unparse_cocci.Before;
-        add_elem t Ctx;
-        unparser yys Unparse_cocci.After;
-      )
-    | Ast_cocci.PLUS _ -> raise (Impossible 136)
+		(match t with
+		  Fake1(info,_) when !(info.Ast_c.danger) = Ast_c.DangerStart ->
+		    unparser any_xxs Unparse_cocci.Before
+		| _ -> unparser any_xxs Unparse_cocci.InPlace)
+	    );
+	    toks +> expand_info
+	| Ast_cocci.CONTEXT (_,any_befaft) ->
+	    (match any_befaft with
+	    | Ast_cocci.NOTHING ->
+		add_elem t Ctx;
+		toks +> expand_info
+	    | Ast_cocci.BEFORE (xxs,_) ->
+		unparser xxs Unparse_cocci.Before;
+		add_elem t Ctx;
+		toks +> expand_info
+	    | Ast_cocci.AFTER (xxs,_) ->
+		add_elem t Ctx;
+		let (space,toks) = Common.span comment_or_space toks in
+		List.iter (fun t -> add_elem t Ctx) space;
+		unparser xxs Unparse_cocci.After;
+		toks +> expand_info
+	    | Ast_cocci.BEFOREAFTER (xxs, yys, _) ->
+		unparser xxs Unparse_cocci.Before;
+		add_elem t Ctx;
+		let (space,toks) = Common.span comment_or_space toks in
+		List.iter (fun t -> add_elem t Ctx) space;
+		unparser yys Unparse_cocci.After;
+		toks +> expand_info
+            )
+	| Ast_cocci.PLUS _ -> raise (Impossible 136)
   in
 
-  toks +> List.iter expand_info;
+  toks +> expand_info;
   List.rev !toks_out
 
 
@@ -2505,7 +2524,9 @@ let drop_line toks =
     match toks with
     | (T2(_, Min _, _, _) as x) :: tl
       when List.mem (str_of_token2 x) ["}";":>"] ->
+	simple_print_all_tokens2 "removing a brace followed by" toks;
 	let (drop, tl) = space_until_newline tl in
+	simple_print_all_tokens2 "dropping until" tl;
 	(drop, x :: tl)
     | hd :: tl when is_whitespace hd ->
 	let (drop, tl) = loop tl in
@@ -2690,7 +2711,7 @@ let pp_program2 xs outfile  =
 	      (* have to annotate droppable spaces early, so that can create
 		 the right minus and plus maps in adjust indentation.  For
 		 the same reason, cannot actually remove the minus tokens. *)
-	      let toks = drop_line toks in
+	      (*let toks = drop_line toks in*)
               let toks = remove_minus_and_between_and_expanded_and_fake1 toks in
               let (toks,tu) = adjust_indentation toks in
               let toks = adjust_eat_space toks in
