@@ -438,6 +438,14 @@ let expand_mcode toks =
     | Fake1 _ -> true
     | _ -> false in
 
+  let space1 = function
+    | T1(Parser_c.TCommentSpace _) -> true
+    | _ -> false in
+
+  let fake1 = function
+    | Fake1 _ -> true
+    | _ -> false in
+
   let rec expand_info = function
       [] -> ()
     | t::toks ->
@@ -515,16 +523,20 @@ let expand_mcode toks =
 	    | Ast_cocci.AFTER (xxs,_) ->
 		add_elem t Ctx;
 		let (space,toks) = Common.span comment_or_space toks in
-		List.iter (fun t -> add_elem t Ctx) space;
+		let (fakes,space) = List.partition fake1 space in
+		let (rtrailing,rcom) = Common.span space1 (List.rev space) in
+		List.iter (fun t -> add_elem t Ctx) (List.rev rcom);
 		unparser xxs Unparse_cocci.After;
-		toks +> expand_info
+		((List.rev rtrailing)@fakes@toks) +> expand_info
 	    | Ast_cocci.BEFOREAFTER (xxs, yys, _) ->
 		unparser xxs Unparse_cocci.Before;
 		add_elem t Ctx;
 		let (space,toks) = Common.span comment_or_space toks in
-		List.iter (fun t -> add_elem t Ctx) space;
+		let (fakes,space) = List.partition fake1 space in
+		let (rtrailing,rcom) = Common.span space1 (List.rev space) in
+		List.iter (fun t -> add_elem t Ctx) (List.rev rcom);
 		unparser yys Unparse_cocci.After;
-		toks +> expand_info
+		((List.rev rtrailing)@fakes@toks) +> expand_info
             )
 	| Ast_cocci.PLUS _ -> raise (Impossible 136)
   in
@@ -2524,9 +2536,7 @@ let drop_line toks =
     match toks with
     | (T2(_, Min _, _, _) as x) :: tl
       when List.mem (str_of_token2 x) ["}";":>"] ->
-	simple_print_all_tokens2 "removing a brace followed by" toks;
 	let (drop, tl) = space_until_newline tl in
-	simple_print_all_tokens2 "dropping until" tl;
 	(drop, x :: tl)
     | hd :: tl when is_whitespace hd ->
 	let (drop, tl) = loop tl in
