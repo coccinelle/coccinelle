@@ -1934,9 +1934,9 @@ let drop_empty_nest = drop_empty_thing
 let get_s_starts (_, (s,_,(starts, ends))) = (s, starts)
 
 let pop2 l =
-  let v = List.hd !l in
-  l := List.tl !l;
-  v
+  match !l with
+    [] -> failwith "pop2: no tokens"
+  | v::vs -> l := vs; v
 
 (*
 let reinit _ =
