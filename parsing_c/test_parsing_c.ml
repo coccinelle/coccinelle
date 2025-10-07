@@ -375,7 +375,7 @@ let test_comment_annotater infile =
 (* ---------------------------------------------------------------------- *)
 (* used by generic_makefile now *)
 let test_compare_c file1 file2 =
-  let (correct, diffxs) = Compare_c.compare_default file1 file2 in
+  let (correct, diffxs) = Compare_c.compare_default false file1 file2 in
   let res = Compare_c.compare_result_to_bool correct in
   if res
   then raise (Common.UnixExit 0)
@@ -384,6 +384,7 @@ let test_compare_c file1 file2 =
 
 let test_compare_c_hardcoded () =
   Compare_c.compare_default
+    false
     "tests/compare1.c"
     "tests/compare2.c"
     (*

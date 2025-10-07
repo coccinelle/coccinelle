@@ -316,7 +316,9 @@ is a concern, then do not use this option.
   run in the root coccinelle folder.}
 
 \rare{-{}-test-spacing}{Like -{}-ctestall, but ensures that the spacing is
-  the same as in the .res file.}
+  the same as in the .res file. Tests whose name ends in "\_spacingfailure"
+  are known to fail and will not affect the total score. Tests whose name ends
+  in "\_failure" will be skipped.}
 
 \developer{-{}-test-okfailed, -{}-test-regression-okfailed}{Other options for
 keeping track of tests that have succeeded and failed.}

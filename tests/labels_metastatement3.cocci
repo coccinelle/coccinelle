@@ -1,6 +1,0 @@
-@@
-statement S;
-@@
-
-+ foo();
-  S

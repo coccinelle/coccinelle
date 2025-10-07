@@ -131,13 +131,13 @@ let testone prefix x compare_with_expected =
     | Some extension ->
 	let expected_res =
 	  prefix ^ x ^ "." ^ (adjust_extension extension) in
-	Compare_c.compare_default generated expected_res
+	Compare_c.compare_default false generated expected_res
 	  +> Compare_c.compare_result_to_string
 	  +> pr2;
 	match current_out with
 	  None -> ()
 	| Some current_out' ->
-	    Compare_c.exact_compare current_out' expected_out
+	    Compare_c.exact_compare false current_out' expected_out
 	      +> Compare_c.compare_result_to_string
 	      +> pr2
   end;
@@ -286,8 +286,18 @@ let testall_bis_helper testdir setup extra_test =
 	    let expected = testdir ^ "/" ^ res in
 	    let out = base ^ out_suffix in
 	    let expected_out = testdir ^ "/" ^ out in
+
 	    let r = Str.regexp ".*_failure\\.c" in
 	    let is_known_failure = Str.string_match r cfile 0 in
+	    let r2 = Str.regexp ".*_spacingfailure\\.c" in
+	    let is_known_spacingfailure = Str.string_match r2 cfile 0 in
+	    let has_extra = match extra_test with
+	      None -> false
+	      | Some extra_test -> true in
+	    let should_skip = (has_extra && is_known_failure) in
+	    if should_skip then () else
+	    let should_not_pass =  (not has_extra && is_known_failure) || (has_extra && is_known_spacingfailure) in
+
 	    let timeout_testall = 60 in
 
 	    try (
@@ -305,14 +315,14 @@ let testall_bis_helper testdir setup extra_test =
 		in
 
 		let (correct, diffxs) =
-		  Compare_c.compare_default generated expected in
+		  Compare_c.compare_default should_not_pass generated expected in
 
 		let (correct, diffxs) =
 		  match extra_test with
 		    None -> (correct, diffxs)
 		  | Some extra_test ->
 		      (match correct with
-			Compare_c.Correct -> extra_test generated expected
+			Compare_c.Correct -> extra_test should_not_pass generated expected
 		      | _ ->
 		    (* if there is an extra test, we don't care about the
 		       things that fail on the first test *)
@@ -324,7 +334,7 @@ let testall_bis_helper testdir setup extra_test =
 		    Compare_c.Pb s
 		  | Compare_c.PbOnlyInNotParsedCorrectly s ->
 		      failed_tests := (cfile :: !failed_tests);
-      | Compare_c.Correct when is_known_failure ->
+      | Compare_c.Correct when should_not_pass ->
 		      unfailed_tests := (cfile :: !unfailed_tests);
 		  | _ -> ()
 		end;
@@ -336,7 +346,7 @@ let testall_bis_helper testdir setup extra_test =
 		    None -> ()
 		  | Some current_out' ->
 		      let (correct, diffxs) =
-			Compare_c.exact_compare current_out' expected_out in
+			Compare_c.exact_compare false current_out' expected_out in
         (* add .stdout failures to list *)
         begin
           match correct with
@@ -358,7 +368,7 @@ let testall_bis_helper testdir setup extra_test =
 	      Flag.defined_virtual_rules := [];
 	      Flag.defined_virtual_env := [];
 	      Iteration.clear_pending_instance();
-	      if (is_known_failure)
+	      if (should_not_pass)
 	      then Hashtbl.add score res (Common.PbKnown s)
 	      else
 	      (failed_tests := (cfile :: !failed_tests);
@@ -493,14 +503,14 @@ let test_okfailed cocci_file cfiles =
                 | None -> infile
               in
 
-              let diff = Compare_c.compare_default outfile expected_res in
+              let diff = Compare_c.compare_default false outfile expected_res in
               let s1 = (Compare_c.compare_result_to_string diff) in
               if fst diff = Compare_c.Correct
               then push2 (infile ^ (t_to_s Ok), [s1;time_str]) final_files
               else
                 if Common.lfile_exists expected_res2
                 then begin
-                  let diff = Compare_c.compare_default outfile expected_res2 in
+                  let diff = Compare_c.compare_default false outfile expected_res2 in
                   let s2 = Compare_c.compare_result_to_string diff in
                   if fst diff = Compare_c.Correct
                   then push2 (infile ^ (t_to_s SpatchOK),[s2;s1;time_str])
@@ -514,7 +524,7 @@ let test_okfailed cocci_file cfiles =
 	  match current_out with
 	    None -> ()
 	  | Some current_out' ->
-	      let diff = Compare_c.exact_compare current_out' expected_out in
+	      let diff = Compare_c.exact_compare false current_out' expected_out in
 	      let s = Compare_c.compare_result_to_string diff in
 	      push2 (cocci_file ^ (t_to_s Failed), [s;time_str]) final_files
 	end;
@@ -607,14 +617,14 @@ let compare_with_expected outfiles extension =
           | Some outfile -> outfile
           | None -> infile
         in
-        let diff = Compare_c.compare_default outfile expected_res in
+        let diff = Compare_c.compare_default false outfile expected_res in
         let s1 = (Compare_c.compare_result_to_string diff) in
         if fst diff = Compare_c.Correct
         then pr2_no_nl (infile ^ " " ^ s1)
         else
           if Common.lfile_exists expected_res2
           then begin
-            let diff = Compare_c.compare_default outfile expected_res2 in
+            let diff = Compare_c.compare_default false outfile expected_res2 in
             let s2 = Compare_c.compare_result_to_string diff in
             if fst diff = Compare_c.Correct
             then pr2 (infile ^ " is spatchOK " ^ s2)

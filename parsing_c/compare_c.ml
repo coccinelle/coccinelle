@@ -157,7 +157,7 @@ let get_diff filename1 filename2 bs =
  * because when there is a notparsablezone in generated_file, I
  * don't issue a PbOnlyInNotParsedCorrectly
  *)
-let do_compare_token adjust_cvs to_expected filename1 filename2 =
+let do_compare_token adjust_cvs to_expected is_known_failure filename1 filename2 =
 
   let rec loop xs ys =
     match xs, ys with
@@ -230,8 +230,6 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
   let c2 = do_parse filename2 filename1 in
 
   let res =
-    let r = Str.regexp ".*_failure\\.c" in
-    let is_known_failure = (Str.string_match r filename1 0) in
     if List.length c1 <> List.length c2 && not is_known_failure
     then Pb "not same number of entities (func, decl, ...)"
     else
@@ -241,7 +239,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
               (match final_loop (snd infoa) (snd infob) with
               | None -> k acc
               | Some s when not is_known_failure -> PbOnlyInNotParsedCorrectly s
-              | Some s -> PbKnown s
+              | Some s when is_known_failure -> PbKnown s
               )
 
           | NotParsedCorrectly a, _ when not is_known_failure ->
@@ -256,7 +254,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
               (match final_loop (snd infoa) (snd infob) with
               | None  -> k acc
               | Some s when not is_known_failure -> Pb s
-              | Some s -> PbKnown s
+              | Some s when is_known_failure -> PbKnown s
               )
         ) (fun acc -> acc)
           (Correct)
@@ -273,7 +271,7 @@ let do_compare_token adjust_cvs to_expected filename1 filename2 =
 
   res, xs
 
-let compare_token = do_compare_token true true
+let compare_token = do_compare_token true true false
 
 
 (*****************************************************************************)
@@ -282,12 +280,13 @@ let compare_token = do_compare_token true true
 let compare_default = do_compare_token true true
 
 (* compare to the source of the transformation *)
-let compare_to_original = do_compare_token false false
+let compare_to_original = do_compare_token false false false
 
-let exact_compare file1 file2 =
+let exact_compare is_known_to_fail file1 file2 =
   match get_diff file1 file2 "" with
     [] -> (Correct, [])
-  | res -> (Pb "files differ", res)
+  | res when is_known_to_fail -> (PbKnown "files differ", res)
+  | res when not is_known_to_fail -> (Pb "files differ", res)
 
 let compare_result_to_string (correct, diffxs) =
   match correct with
