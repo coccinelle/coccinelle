@@ -1258,6 +1258,22 @@ let fix_slash_slash toks =
     | [] -> List.rev acc in
   loop [] toks
 
+(* ) -{ +x causes a problem because x should be on the next line,
+not replacing the { *)
+
+let paren_space_brace toks =
+  let rec loop acc = function
+      ((T2(t,Ctx,_,_)) as x)::xs when TH.str_of_tok t = ")" ->
+	let rest = Common.drop_while is_space xs in
+	(match rest with
+	  ((T2(t,Min _,_,_)) as m)::((Cocci2 _) as p)::rest
+	  when TH.str_of_tok t = "{" ->
+	    loop (p::(C2("\n",None))::m::x::acc) rest
+	| _ -> loop (x::acc) xs)
+    | x::xs -> loop (x::acc) xs
+    | [] -> List.rev acc in
+  loop [] toks
+
 (* this is for the case where braces are added around an if branch
 because of a change inside the branch *)
 let minusify = function
@@ -2716,6 +2732,7 @@ let pp_program2 xs outfile  =
 	      let toks = cleanup_comment_trailers toks in
 	      let toks = check_danger toks in
 	      let toks = fix_slash_slash toks in
+	      let toks = paren_space_brace toks in
 	      let toks = paren_then_brace toks in
 	      let toks = newline_before_else toks in
 	      (* have to annotate droppable spaces early, so that can create
