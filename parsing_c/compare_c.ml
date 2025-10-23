@@ -239,7 +239,7 @@ let do_compare_token adjust_cvs to_expected is_known_failure filename1 filename2
               (match final_loop (snd infoa) (snd infob) with
               | None -> k acc
               | Some s when not is_known_failure -> PbOnlyInNotParsedCorrectly s
-              | Some s when is_known_failure -> PbKnown s
+              | Some s (* when is_known_failure *) -> PbKnown s
               )
 
           | NotParsedCorrectly a, _ when not is_known_failure ->
@@ -254,7 +254,7 @@ let do_compare_token adjust_cvs to_expected is_known_failure filename1 filename2
               (match final_loop (snd infoa) (snd infob) with
               | None  -> k acc
               | Some s when not is_known_failure -> Pb s
-              | Some s when is_known_failure -> PbKnown s
+              | Some s (* when is_known_failure *) -> PbKnown s
               )
         ) (fun acc -> acc)
           (Correct)
@@ -286,7 +286,7 @@ let exact_compare is_known_to_fail file1 file2 =
   match get_diff file1 file2 "" with
     [] -> (Correct, [])
   | res when is_known_to_fail -> (PbKnown "files differ", res)
-  | res when not is_known_to_fail -> (Pb "files differ", res)
+  | res (* when not is_known_to_fail *) -> (Pb "files differ", res)
 
 let compare_result_to_string (correct, diffxs) =
   match correct with
