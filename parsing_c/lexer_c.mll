@@ -489,13 +489,10 @@ rule token = parse
       { TCppDirectiveOther (eoltokinfo lexbuf) }
   | "#" spopt "error"   sp
   | "#" spopt "warning" sp
-      { let rest =
-	match tokens_to_ii lexbuf with
-	  (_,ii)::rest ->
-	    let rest_str = String.concat "" (List.map fst rest) in
-	    tok_add_s rest_str ii
-	| _ -> failwith "token sequence should not be empty" in
-      TCppDirectiveOther rest }
+      { let frontii = Ast_c.rewrap_str (tok lexbuf) (tokinfo lexbuf) in
+        let rest_str = String.concat "" (List.map fst (tokens_to_ii lexbuf)) in
+	let line = tok_add_s rest_str frontii in
+	TCppDirectiveOther line }
 
   | "#" [' ' '\t']* ('\n' | "\r\n")
       { TCppDirectiveOther (eoltokinfo lexbuf) }
