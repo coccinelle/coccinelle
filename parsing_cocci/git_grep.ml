@@ -17,11 +17,11 @@ let interpret dir query suffixes =
 	(List.fold_left
 	   (fun prev f ->
 	     let len = String.length f in
-	     if len < 4
+	     if len < 5
 	     then f :: prev
 	     else
-	       let trailing = String.sub f (len - 4) 4 in
-	       if List.mem trailing ["in.c";"in.h"]
+	       let trailing = String.sub f (len - 5) 5 in
+	       if List.mem trailing [".in.c";".in.h"]
 	       then prev
 	       else f :: prev)
 	   [] res)
