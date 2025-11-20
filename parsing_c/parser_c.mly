@@ -477,7 +477,7 @@ let fix_add_params_ident x =
       | params ->
           params +> List.iter (function
           | ({p_namei= Some name}, _) ->
-              LP.add_ident (Ast_c.str_of_name s)
+              LP.add_ident (Ast_c.str_of_name name)
 	  | _ ->
               ()
                 (* failwith "internal error: fixOldCDecl not good" *)
