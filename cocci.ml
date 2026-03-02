@@ -531,7 +531,7 @@ let worth_trying2 cfiles (tokens,_,query,_) =
 
       ) in
       let com =
-	Printf.sprintf "egrep -q '(%s)' %s"
+	Printf.sprintf "grep -E -q '(%s)' %s"
 	  (String.concat "|" tokens)
 	  (String.concat " " (List.map fst cfiles)) in
       (match Sys.command com with

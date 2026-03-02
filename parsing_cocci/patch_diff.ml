@@ -82,7 +82,7 @@ let rec mlines lines =
 let final_info dir =
   let git_root = get_root dir in
   let git_read_command =
-    "cd " ^ git_root ^ " && git diff " ^ dir ^ " | egrep '^+++|^@'" in
+    "cd " ^ git_root ^ " && git diff " ^ dir ^ " | grep -E '^+++|^@'" in
   let list_diff =
     reorg dir git_root (mlines (Common.cmd_to_list git_read_command)) in
   list_diff
@@ -103,7 +103,7 @@ let final_patch_info dir startid endid =
       if recent
       then "--merge-base"
       else "" in
-    Printf.sprintf " cd %s && git diff %s %s %s | egrep '^+++|^@'"
+    Printf.sprintf " cd %s && git diff %s %s %s | grep -E '^+++|^@'"
       git_root extra startid endid in
   let list_diff =
     reorg dir git_root (mlines (Common.cmd_to_list git_read_command)) in

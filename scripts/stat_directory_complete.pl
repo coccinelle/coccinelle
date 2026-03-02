@@ -164,7 +164,7 @@ if(-e "gitinfo") {
   my $nodateyet = 1;
 
   while(<TMP>) {
-    #can also do: egrep "^Author" gitinfo | sort | uniq | wc -l
+    #can also do: grep -E "^Author" gitinfo | sort | uniq | wc -l
     if (/^Author: (.*)/) {
       $h->{$1}++;
     }
