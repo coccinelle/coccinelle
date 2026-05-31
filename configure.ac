@@ -363,8 +363,8 @@ AS_IF([test "x$enable_python" != xno],
 
 dnl  pcre handling
 dnl  variables:
-dnl    enable_pcre: whether to enable the pcre feature
-dnl    OCAML_PKG_pcre: if "local" use str package
+dnl    enable_pcre_syntax: whether to enable the pcre regexp syntax feature
+dnl    enable_pcre2: 'yes' (global pkg), 'local' (bundle), or 'no'
 AC_ARG_ENABLE([pcre-syntax], AS_HELP_STRING([--enable-pcre-syntax], [enable pcre regular expression syntax (default: auto)]))
 AS_IF([test "x$enable_pcre_syntax" != "xno"],
 [dnl
@@ -374,11 +374,11 @@ AS_IF([test "x$enable_pcre_syntax" != "xno"],
     AC_SUBST([enable_pcre_syntax], [no])
   ],
   [dnl
-    AS_IF([test "x$enable_pcre" = "xno"], [AC_SUBST([enable_pcre], [local])])
-    AC_CHECK_COCCI_EXTPKG([pcre2])  dnl  will set $enable_pcre to 'yes', 'no', or 'local'
-    AS_IF([test "x$enable_pcre" = "xyes"],
+    AS_IF([test "x$enable_pcre2" = "xno"], [AC_SUBST([enable_pcre2], [local])])
+    AC_CHECK_COCCI_EXTPKG([pcre2])  dnl  will set $enable_pcre2 to 'yes', 'no', or 'local'
+    AS_IF([test "x$enable_pcre2" = "xyes"],
     [dnl
-      AC_MSG_CHECKING([if pcre depends on bytes])
+      AC_MSG_CHECKING([if pcre2 depends on bytes])
       AS_IF([test "x`$OCAMLFIND query -r -format '%p' pcre2 2>/dev/null | grep bytes`" = "xbytes"],
       [dnl
         AC_MSG_RESULT([yes])
@@ -631,7 +631,7 @@ ocaml scripting:  $enable_ocaml	(overridable with --enable-ocaml)
 python scripting: $enable_python	(overridable with --enable-python)
 
 pcre regexes:     $enable_pcre_syntax	(overridable with --enable-pcre-syntax)
-pcre module:      $enable_pcre	(for local package use --disable-pcre)
+pcre module:      $enable_pcre2	(for local package use --disable-pcre2)
 pcre library:     $HAVE_PCRE	(requires the libpcre2-ocaml-dev package)
 
 optimized spatch: $enable_opt	(overridable with --disable-opt)
