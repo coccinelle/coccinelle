@@ -1497,18 +1497,44 @@ let drop_required v required =
 let memo_label =
   (Hashtbl.create(101) : (P.t, (G.node * substitution) list) Hashtbl.t)
 
+(* The keys of memo_label are whole predicates, so both the hashing and the
+key equality test done by Hashtbl.find walk the predicate structure, which
+can descend into a rule_elem. The same predicate object is looked up once
+per occurrence of a Pred leaf per evaluation pass, which makes these walks
+a bottleneck when a subformula is evaluated many times, as happens when the
+first & breaks up the results of its left argument (see A.And in satloop).
+Physical identity gives a sound fast path: (==) implies (=). Entries are
+only added for keys that are (being) stored in memo_label, so the two
+tables always agree. *)
+module PhysPredHash =
+  Hashtbl.Make
+    (struct
+      type t = P.t
+      let equal = (==)
+      let hash = Hashtbl.hash
+    end)
+let memo_label_phys =
+  (PhysPredHash.create(101) : (G.node * substitution) list PhysPredHash.t)
+
 let satLabel label required p =
     let triples =
     if !pSATLABEL_MEMO_OPT
     then
       try
-	let states_subs = Hashtbl.find memo_label p in
+	let states_subs =
+	  try PhysPredHash.find memo_label_phys p
+	  with Not_found ->
+	    let states_subs = Hashtbl.find memo_label p in
+	    PhysPredHash.add memo_label_phys p states_subs;
+	    states_subs in
 	List.map (function (st,th) -> (st,th,[])) states_subs
       with
 	Not_found ->
 	  let triples = setify(label p) in
-	  Hashtbl.add memo_label p
-	    (List.map (function (st,th,_) -> (st,th)) triples);
+	  let states_subs =
+	    List.map (function (st,th,_) -> (st,th)) triples in
+	  Hashtbl.add memo_label p states_subs;
+	  PhysPredHash.add memo_label_phys p states_subs;
 	  triples
     else setify(label p) in
     (* normalize first; conj_subst relies on sorting *)
@@ -2364,6 +2390,7 @@ let rec iter fn = function
   | n -> let _ = fn() in
     (Hashtbl.clear reachable_table;
      Hashtbl.clear memo_label;
+     PhysPredHash.clear memo_label_phys;
      triples := 0;
      iter fn (n-1))
 
@@ -2379,6 +2406,7 @@ let bench_sat (_,_,states) fn =
 	  begin
 	    Hashtbl.clear reachable_table;
 	    Hashtbl.clear memo_label;
+	    PhysPredHash.clear memo_label_phys;
 	    List.iter (function (opt,_) -> opt := true) options;
 	    List.iter (function (calls,_,save_calls) -> save_calls := !calls)
 	      counters;
@@ -2500,6 +2528,7 @@ let sat m phi reqopt =
     | Some x -> step_count := x);
     Hashtbl.clear reachable_table;
     Hashtbl.clear memo_label;
+    PhysPredHash.clear memo_label_phys;
     let (x,label,preproc,states) = m in
     if (!Flag_ctl.bench > 0) || preprocess m reqopt
     then
