@@ -216,8 +216,19 @@ let interpret_cocci_git_grep strict x virt =
   | False when strict ->
       failwith (false_on_top_err virt)
   | _ ->
-      try
-	let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
+      let orify l = Str.regexp (String.concat "\\|" (List.map wordify l)) in
+      (* Every atom occurs positively, so a file containing none of them can
+	 never match.  When the CNF conversion gives up (TooMany), degrade to
+	 that one-clause query instead of dropping the filter altogether:
+	 returning None here makes the caller parse every file in the tree. *)
+      let all_atoms _ =
+	match atoms [] x with
+	  [] -> None
+	| all ->
+	    let re = orify all in
+	    Some (re, [re],
+		  ["\\( -e "^(String.concat " -e " all)^" \\)"]) in
+      (try
 	let res1 = orify (atoms [] x) in (* all atoms *)
 	let res = cnf x in
 	let res = optimize res in
@@ -227,7 +238,7 @@ let interpret_cocci_git_grep strict x virt =
 	  List.map (function x -> "\\( -e "^(String.concat " -e " x)^" \\)")
 	    res in
 	Some (res1,res2,res3)
-      with TooMany -> None
+      with TooMany -> all_atoms ())
 
 let interpret_idutils = function
     True -> None
