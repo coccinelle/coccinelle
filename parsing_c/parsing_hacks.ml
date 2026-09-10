@@ -2766,6 +2766,30 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 37; LP.add_typedef_root s i1;
       TypedefIdent (s, i1)
 
+  (* x ( *y )[n],  pointer to an array, where the context shows that it is
+   * a declaration: after const or volatile, at the start of a statement or
+   * declaration, or in a parameter list.  Otherwise, it could be an
+   * indexed function call. *)
+  | (TIdent (s, i1)::TOPar _::TMul _::TIdent _::TCPar _::TOCro _::_,  x::_)
+      when ok_typedef s
+      && (match x with
+	    Tconst _ | Tvolatile _ | TPtVirg _ | TOBrace _ | TCBrace _ -> true
+	  | TOPar _ | TComma _ -> LP.current_context () = LP.InParameter
+	  | _ -> false)
+        ->
+
+      msg_typedef s i1 380; LP.add_typedef_root s i1;
+      TypedefIdent (s, i1)
+
+  (* (x ( * )[n]) and (x ( * )(params)),  cast to a pointer to an array or
+   * to a function: ( * ) cannot be an expression *)
+  | (TIdent (s, i1)::TOPar _::TMul _::TCPar _::(TOCro _ | TOPar _)::_,  _)
+      when ok_typedef s
+        ->
+
+      msg_typedef s i1 381; LP.add_typedef_root s i1;
+      TypedefIdent (s, i1)
+
 
   (*-------------------------------------------------------------*)
   (* CPP *)
