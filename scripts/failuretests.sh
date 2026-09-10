@@ -81,6 +81,44 @@ done
 $exercised ||
 	skip "no timeout from 1s to 10s struck while inferring types in the header"
 
+# 3. A timeout while parsing a header must not stop the later files handled
+#    by the same process from parsing that header.  The second file matches
+#    only if the types in the header are known.  It may time out too while
+#    parsing the header, which is fine as long as it is reported.
+mkdir "$tmp/marked"
+awk 'BEGIN {
+	print "#ifndef BIG_H"
+	print "#define BIG_H"
+	print "struct item { int x; };"
+	print "struct holder { struct item *buf; };"
+	for (i = 0; i < 150000; i++)
+		printf "#define REG_FIELD_%d__SHIFT 0x%x\n", i, i % 32
+	print "#endif"
+}' > "$tmp/marked/big.h"
+cp marked/first.c marked/second.c "$tmp/marked/"
+printf '%s\n\n%s\n' "$tmp/marked/first.c" "$tmp/marked/second.c" \
+	> "$tmp/marked/groups"
+exercised=false
+for timeout in 1 2 3 4 5 6 7 8 9 10; do
+	"$spatch" --very-quiet --all-includes --include-headers-for-types \
+		-I "$tmp/marked" --timeout "$timeout" --jobs 1 \
+		--file-groups "$tmp/marked/groups" --cocci-file marked.cocci \
+		> "$tmp/out" 2> "$tmp/err"
+	grep -q "marked/first\.c: timed out after ${timeout}s (while parsing .*big\.h)" \
+		"$tmp/err" || continue
+	exercised=true
+	name="header parsed again after a timeout while parsing it (--timeout $timeout)"
+	if transformed "$tmp/out" second.c ||
+	   grep -q "^  .*/marked/second\.c: " "$tmp/err"; then
+		pass "$name"
+	else
+		fail "$name: second.c was neither transformed nor reported"
+	fi
+	break
+done
+$exercised ||
+	skip "no timeout from 1s to 10s struck while parsing the header"
+
 if [ "$failures" -ne 0 ]; then
 	echo "$failures test(s) failed"
 	exit 1
