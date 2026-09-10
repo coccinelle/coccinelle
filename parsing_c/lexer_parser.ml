@@ -82,7 +82,9 @@ let add_typedef_root s i =
     match i.Ast_c.pinfo with
       Ast_c.ExpandedTok _ -> true
     | _ -> false in
-  if not(expanded i)
+  (* A parameter of the #define being parsed is not a typedef name outside
+     the #define, however it is used in the body. *)
+  if not(expanded i) && not (Data.is_define_param s)
   then
     begin
       if !Flag_parsing_c.add_typedef_root

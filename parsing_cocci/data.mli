@@ -154,3 +154,4 @@ val remove_special_name : string -> unit
 val clear_special_names : unit -> unit
 val set_define_params : string list -> unit
 val clear_define_params : unit -> unit
+val is_define_param : string -> bool
