@@ -2031,6 +2031,31 @@ let complex_partner = function
     Tfloat _ | Tdouble _ | Tlong _ -> true
   | _ -> false
 
+(* before is the reversed list of the tokens already passed *)
+let statement_start = function
+    (TPtVirg _ | TOBrace _ | TCBrace _ | TCPar _ | TDotDot _
+    | Telse _ | Tdo _)::_ -> true
+  | _ -> false
+
+(* rest starts just after an opening '(': is the matching ')' directly
+ * followed by '{'?  Unlike is_really_foreach, this goes through the whole
+ * argument list, which can be long and contain braces, as in
+ * xe_validation_guard(..., (struct xe_val_flags) {.interruptible = true},
+ * err) {, but it gives up at a ';' outside nested parentheses and after
+ * a bounded number of tokens. *)
+let followed_by_block rest =
+  let rec aux depth n = function
+    | _ when n = 0 -> false
+    | [] -> false
+    | x::xs when TH.is_opar x -> aux (depth + 1) (n - 1) xs
+    | TCPar _::TOBrace _::_ when depth = 0 -> true
+    | x::_ when TH.is_cpar x && depth = 0 -> false
+    | x::xs when TH.is_cpar x -> aux (depth - 1) (n - 1) xs
+    | TPtVirg _::_ when depth = 0 -> false
+    | _::xs -> aux depth (n - 1) xs
+  in
+  aux 0 1000 rest
+
 let lookahead2 ~pass next before =
   match (next, before) with
   | t::_, (TOPar il)::TIdent(s,i2)::(Tstatic _|Tconst _|Textern _)::_
@@ -2864,7 +2889,7 @@ let lookahead2 ~pass next before =
     * to count the '('. Because this can be expensive, we do that only
     * when the token contains "for_each".
     *)
-  | (TIdent (s, i1)::TOPar _::rest, _)
+  | (TIdent (s, i1)::TOPar _::rest, before)
      when not (LP.current_context () = LP.InTopLevel)
       (* otherwise a function such as static void loopback_enable(int i) {
        * will be considered as a loop
@@ -2882,6 +2907,20 @@ let lookahead2 ~pass next before =
 		begin
 		  msg_foreach s;
 		  Data.add_special_name s Data.Iterator;
+		  TMacroIterator (s, i1)
+		end
+	      (* linuxext: at the start of a statement in a function body,
+	       * NAME(...) { can only be a loop macro, whatever the name, as
+	       * in drm_exec_until_all_locked(&exec) {.  The guess is not
+	       * recorded as a special name, so that the parse of other code
+	       * using the name does not depend on what was parsed before. *)
+	      else if res = None
+		  && LP.current_context () = LP.InFunction
+		  && statement_start before
+		  && followed_by_block rest
+	      then
+		begin
+		  msg_foreach s;
 		  TMacroIterator (s, i1)
 		end
 	      else TIdent (s, i1))
