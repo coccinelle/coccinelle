@@ -1679,7 +1679,11 @@ let find_define_init_brace_paren xs =
 let rec find_actions = function
   | [] -> ()
 
-  | TV.PToken ({TV.tok = TIdent (s,ii)})
+  (* A name that is already known to be an iterator, e.g. because an
+   * earlier file taught it, is lexed as a TMacroIterator.  A statement
+   * among its arguments, as in scoped_cond_guard(m, return -EINTR, l),
+   * must then be tagged as for an identifier, or it does not parse. *)
+  | TV.PToken ({TV.tok = (TIdent (s,_) | TMacroIterator (s,_))})
     ::TV.Parenthised (xxs,info_parens)
     ::xs ->
       find_actions xs;

@@ -134,6 +134,23 @@ else
 	pass "$name"
 fi
 
+# 5. A loop macro that an earlier file taught spatch must parse in a later
+#    file handled by the same process as it did in the earlier one, also
+#    when a statement is among its arguments.
+printf '%s\n\n%s\n' "$PWD/learned/first.c" "$PWD/learned/second.c" \
+	> "$tmp/learned.groups"
+"$spatch" --very-quiet --jobs 1 --file-groups "$tmp/learned.groups" \
+	--cocci-file learned.cocci > "$tmp/out" 2> "$tmp/err"
+status=$?
+name="loop macro learned from an earlier file"
+if [ "$status" -ne 0 ]; then
+	fail "$name: exit status $status, expected 0"
+elif ! transformed "$tmp/out" first.c || ! transformed "$tmp/out" second.c; then
+	fail "$name: both first.c and second.c must be transformed"
+else
+	pass "$name"
+fi
+
 if [ "$failures" -ne 0 ]; then
 	echo "$failures test(s) failed"
 	exit 1
