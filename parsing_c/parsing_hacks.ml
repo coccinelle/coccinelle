@@ -241,9 +241,12 @@ let regexp_annot = Str.regexp
 let regexp_declare = Str.regexp
   ".*DECLARE.*"
 
-(* linuxext: *)
+(* linuxext: names starting with with_ or scoped_ are also loops in Linux:
+ * guards and helpers such as with_intel_runtime_pm(rpm, wf) and
+ * scoped_cond_guard(...), used with a block or a single statement.
+ * scoped_guard itself is a keyword, and not concerned. *)
 let regexp_foreach = Str.regexp_case_fold
-  ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|scan\\|each\\|for\\)"
+  ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|scan\\|each\\|for\\)\\|with_\\|scoped_"
 
 let regexp_typedef = Str.regexp
   ".*_t$"
