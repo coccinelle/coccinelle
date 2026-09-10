@@ -2027,6 +2027,10 @@ let paren_before_comma l =
     | x::rest -> loop level rest in
   loop 0 l
 
+let complex_partner = function
+    Tfloat _ | Tdouble _ | Tlong _ -> true
+  | _ -> false
+
 let lookahead2 ~pass next before =
   match (next, before) with
   | t::_, (TOPar il)::TIdent(s,i2)::(Tstatic _|Tconst _|Textern _)::_
@@ -2034,6 +2038,14 @@ let lookahead2 ~pass next before =
       (* swap context, not really in a parameter list *)
       LP.pop_context(); LP.push_context (LP.current_context());
       t
+
+  (* complex from <complex.h> is a type specifier only next to float,
+   * double, or long; elsewhere it is an ordinary name *)
+  | Tcomplex i1::next::_, before
+    when !Flag.c_plus_plus = Flag.Off
+      && not (complex_partner next)
+      && not (match before with prev::_ -> complex_partner prev | [] -> false) ->
+      TIdent ("complex", i1)
 
   (* c++ hacks *)
   | TIdent(s,i1)::_,TEq _ :: _ :: Ttypename _ :: _
