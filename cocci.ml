@@ -1234,15 +1234,20 @@ let parse_info_of_files choose_includes parse_strings cache kind files
 
 let prepare_c files choose_includes parse_strings has_changes
     : file_info list =
-  Includes.set_parsing_style Includes.Parse_no_includes;
   let (extra_includes_parse_infos, current_typedefs) =
-    let (res,current_typedefs) =
-      parse_info_of_files choose_includes parse_strings true Header
-	(* keep entire include files *)
-        (List.map (fun x -> (x,None)) !Includes.extra_includes)
-	None has_changes in
-    (List.map fst res, current_typedefs) in
-  Includes.set_parsing_style choose_includes;
+    (* The parsing style is global, so restore it even when parsing is
+       abandoned, e.g. on a timeout, or it applies to every file that this
+       process handles afterwards. *)
+    Fun.protect
+      ~finally:(fun () -> Includes.set_parsing_style choose_includes)
+      (fun () ->
+	Includes.set_parsing_style Includes.Parse_no_includes;
+	let (res,current_typedefs) =
+	  parse_info_of_files choose_includes parse_strings true Header
+	    (* keep entire include files *)
+            (List.map (fun x -> (x,None)) !Includes.extra_includes)
+	    None has_changes in
+	(List.map fst res, current_typedefs)) in
   let (source_parse_infos,_) =
     parse_info_of_files choose_includes parse_strings false Source files
       current_typedefs false in
@@ -1282,10 +1287,16 @@ let prepare_c files choose_includes parse_strings has_changes
       fkind = kind
     } in
 
-  Flag_parsing_c.parsing_header_for_types :=
-    !Includes.include_headers_for_types;
-  let header_file_info = List.map (file_info_of_parse_info Header) headers in
-  Flag_parsing_c.parsing_header_for_types := false;
+  (* parsing_header_for_types makes the parser drop function bodies, so
+     leaving it set when this is abandoned, e.g. on a timeout, would make
+     the next file that this process handles silently match nothing. *)
+  let header_file_info =
+    Fun.protect
+      ~finally:(fun () -> Flag_parsing_c.parsing_header_for_types := false)
+      (fun () ->
+	Flag_parsing_c.parsing_header_for_types :=
+	  !Includes.include_headers_for_types;
+	List.map (file_info_of_parse_info Header) headers) in
   let source_file_info = List.map (file_info_of_parse_info Source) sources in
   if !Includes.include_headers_for_types
   then source_file_info

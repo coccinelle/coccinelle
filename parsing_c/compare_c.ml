@@ -215,15 +215,20 @@ let do_compare_token adjust_cvs to_expected is_known_failure filename1 filename2
       let pth = !Includes.include_path in
       let dir = Filename.dirname other in
       let ps = Includes.get_parsing_style() in
-      (match ps with
-	Includes.Parse_local_includes ->
-	  Includes.set_parsing_style Includes.Parse_all_includes;
-	  Includes.include_path := [dir]
-      | _ -> Includes.include_path := dir :: pth);
-      let (c2, _stat) = Parse_c.parse_c_and_cpp false false filename in
-      Includes.set_parsing_style ps;
-      Includes.include_path := pth;
-      c2
+      (* The parsing style and the include path are global, so restore them
+	 even when parsing is abandoned, e.g. on a timeout, or they apply to
+	 every file that this process handles afterwards. *)
+      Fun.protect
+	~finally:(fun () ->
+	  Includes.set_parsing_style ps;
+	  Includes.include_path := pth)
+	(fun () ->
+	  (match ps with
+	    Includes.Parse_local_includes ->
+	      Includes.set_parsing_style Includes.Parse_all_includes;
+	      Includes.include_path := [dir]
+	  | _ -> Includes.include_path := dir :: pth);
+	  fst (Parse_c.parse_c_and_cpp false false filename))
     else fst(Parse_c.parse_c_and_cpp false false filename) in
 
   let c1 = do_parse filename1 filename2 in
