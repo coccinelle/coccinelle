@@ -119,6 +119,21 @@ done
 $exercised ||
 	skip "no timeout from 1s to 10s struck while parsing the header"
 
+# 4. Once a file has been handled, its timeout must not fire.  The finalize
+#    rule of timer.cocci runs after the last file has been handled, and uses
+#    more CPU time than --timeout allows.
+"$spatch" --very-quiet --timeout 1 --cocci-file timer.cocci reported/works.c \
+	> "$tmp/out" 2> "$tmp/err"
+status=$?
+name="no timeout after the last file has been handled"
+if [ "$status" -ne 0 ]; then
+	fail "$name: exit status $status, expected 0"
+elif ! transformed "$tmp/out" works.c; then
+	fail "$name: works.c was not transformed"
+else
+	pass "$name"
+fi
+
 if [ "$failures" -ne 0 ]; then
 	echo "$failures test(s) failed"
 	exit 1
