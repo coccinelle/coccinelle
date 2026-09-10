@@ -229,6 +229,11 @@ let keep_comments = ref false (* unparsing *)
 
 let parsing_header_for_types = ref false
 
+(* What the parser or engine is currently doing, for error reports: when a
+   file has to be abandoned, for example on a timeout, this says where the
+   time went. *)
+let current_activity = ref ""
+
 let force_kr = ref false
 let prevent_kr = ref false
 let c_internals = ref false

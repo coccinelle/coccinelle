@@ -22,6 +22,10 @@
 - Support for co_return (matched by 'return' and 'co_return' in SmPL)
 
 ** Bugfix:
+- Files that could not be transformed, for example because of --timeout, are
+  listed at the end of the run, and spatch then exits with status 1.
+  Previously they were silently missing from the output, and spatch exited
+  with status 0.
 - Add more information in documentation, man pages and wiki
 - typedefs from C code should not be used before their point of inference
   (saved_typedefs in cprogram_of_file)

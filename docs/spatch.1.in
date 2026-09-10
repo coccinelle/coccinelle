@@ -564,6 +564,20 @@ It's for the other (internal) uses of the spatch program.
 \fB\-\-compare\-c\fR
 <file1> <file2>
 
+.SH EXIT STATUS
+.TP
+.B 0
+all of the files were processed
+.TP
+.B 1
+some of the files could not be processed, for example because processing
+one of them exceeded \fB\-\-timeout\fR; those files are listed on standard
+error at the end of the run, and \fB\-\-in\-place\fR, \fB\-\-out\-place\fR,
+and \fB\-o\fR then write no files at all
+.TP
+.B other
+a fatal error, such as an invalid semantic patch
+
 .SH CONFIGURATION MECHANISM
 
 Coccinelle uses a simple text format to store customizations into

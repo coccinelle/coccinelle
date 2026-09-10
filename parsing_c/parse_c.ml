@@ -984,6 +984,7 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   then None (* Inclusion loop, not re-parsing *)
   else begin
     seen_files := file :: !seen_files;
+    Flag_parsing_c.current_activity := "parsing " ^ file;
     let cached_result =
       if false && use_header_cache
       then

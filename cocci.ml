@@ -1258,6 +1258,8 @@ let prepare_c files choose_includes parse_strings has_changes
   let env = ref !TAC.initial_env in
   let file_info_of_parse_info kind parse_info =
     (* todo?: don't update env ? *)
+    Flag_parsing_c.current_activity :=
+      "inferring types in " ^ parse_info.Parse_c.filename;
     let annotated_parse_trees =
       build_info_program !env parse_info.Parse_c.ranges
 	parse_info.Parse_c.parse_trees in
@@ -2250,6 +2252,7 @@ let full_engine2
 	prepare_c cfiles choose_includes parse_strings has_changes in
 
       (* ! the big loop ! *)
+      Flag_parsing_c.current_activity := "applying the semantic patch";
       let c_infos' = bigloop cocci_infos c_infos parse_strings in
 
       if !Flag.show_misc
