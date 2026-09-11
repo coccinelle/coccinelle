@@ -189,9 +189,15 @@ type environment = nameenv list
 
 let includes_parse_fn file =
   let choose_includes = Includes.get_parsing_style () in
-  Includes.set_parsing_style Includes.Parse_no_includes;
-  let ret = Parse_c.parse_c_and_cpp false false file in
-  Includes.set_parsing_style choose_includes;
+  (* The parsing style is global, so restore it even when parsing is
+     abandoned, e.g. on a timeout, or it applies to every file that this
+     process handles afterwards. *)
+  let ret =
+    Fun.protect
+      ~finally:(fun () -> Includes.set_parsing_style choose_includes)
+      (fun () ->
+	Includes.set_parsing_style Includes.Parse_no_includes;
+	Parse_c.parse_c_and_cpp false false file) in
   List.map fst (fst ret)
 
 (* ------------------------------------------------------------ *)

@@ -45,3 +45,5 @@ val get_types_from_name_cache :
 val has_been_parsed : Common.filename -> bool
 
 val add_to_parsed_files : Common.filename -> unit
+
+val remove_from_parsed_files : Common.filename -> unit

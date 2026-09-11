@@ -241,9 +241,12 @@ let regexp_annot = Str.regexp
 let regexp_declare = Str.regexp
   ".*DECLARE.*"
 
-(* linuxext: *)
+(* linuxext: names starting with with_ or scoped_ are also loops in Linux:
+ * guards and helpers such as with_intel_runtime_pm(rpm, wf) and
+ * scoped_cond_guard(...), used with a block or a single statement.
+ * scoped_guard itself is a keyword, and not concerned. *)
 let regexp_foreach = Str.regexp_case_fold
-  ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|scan\\|each\\|for\\)"
+  ".*\\(for_?each\\|for_?all\\|iterate\\|loop\\|walk\\|scan\\|each\\|for\\)\\|with_\\|scoped_"
 
 let regexp_typedef = Str.regexp
   ".*_t$"
@@ -1676,7 +1679,11 @@ let find_define_init_brace_paren xs =
 let rec find_actions = function
   | [] -> ()
 
-  | TV.PToken ({TV.tok = TIdent (s,ii)})
+  (* A name that is already known to be an iterator, e.g. because an
+   * earlier file taught it, is lexed as a TMacroIterator.  A statement
+   * among its arguments, as in scoped_cond_guard(m, return -EINTR, l),
+   * must then be tagged as for an identifier, or it does not parse. *)
+  | TV.PToken ({TV.tok = (TIdent (s,_) | TMacroIterator (s,_))})
     ::TV.Parenthised (xxs,info_parens)
     ::xs ->
       find_actions xs;
@@ -2020,6 +2027,35 @@ let paren_before_comma l =
     | x::rest -> loop level rest in
   loop 0 l
 
+let complex_partner = function
+    Tfloat _ | Tdouble _ | Tlong _ -> true
+  | _ -> false
+
+(* before is the reversed list of the tokens already passed *)
+let statement_start = function
+    (TPtVirg _ | TOBrace _ | TCBrace _ | TCPar _ | TDotDot _
+    | Telse _ | Tdo _)::_ -> true
+  | _ -> false
+
+(* rest starts just after an opening '(': is the matching ')' directly
+ * followed by '{'?  Unlike is_really_foreach, this goes through the whole
+ * argument list, which can be long and contain braces, as in
+ * xe_validation_guard(..., (struct xe_val_flags) {.interruptible = true},
+ * err) {, but it gives up at a ';' outside nested parentheses and after
+ * a bounded number of tokens. *)
+let followed_by_block rest =
+  let rec aux depth n = function
+    | _ when n = 0 -> false
+    | [] -> false
+    | x::xs when TH.is_opar x -> aux (depth + 1) (n - 1) xs
+    | TCPar _::TOBrace _::_ when depth = 0 -> true
+    | x::_ when TH.is_cpar x && depth = 0 -> false
+    | x::xs when TH.is_cpar x -> aux (depth - 1) (n - 1) xs
+    | TPtVirg _::_ when depth = 0 -> false
+    | _::xs -> aux depth (n - 1) xs
+  in
+  aux 0 1000 rest
+
 let lookahead2 ~pass next before =
   match (next, before) with
   | t::_, (TOPar il)::TIdent(s,i2)::(Tstatic _|Tconst _|Textern _)::_
@@ -2027,6 +2063,14 @@ let lookahead2 ~pass next before =
       (* swap context, not really in a parameter list *)
       LP.pop_context(); LP.push_context (LP.current_context());
       t
+
+  (* complex from <complex.h> is a type specifier only next to float,
+   * double, or long; elsewhere it is an ordinary name *)
+  | Tcomplex i1::next::_, before
+    when !Flag.c_plus_plus = Flag.Off
+      && not (complex_partner next)
+      && not (match before with prev::_ -> complex_partner prev | [] -> false) ->
+      TIdent ("complex", i1)
 
   (* c++ hacks *)
   | TIdent(s,i1)::_,TEq _ :: _ :: Ttypename _ :: _
@@ -2759,6 +2803,30 @@ let lookahead2 ~pass next before =
       msg_typedef s i1 37; LP.add_typedef_root s i1;
       TypedefIdent (s, i1)
 
+  (* x ( *y )[n],  pointer to an array, where the context shows that it is
+   * a declaration: after const or volatile, at the start of a statement or
+   * declaration, or in a parameter list.  Otherwise, it could be an
+   * indexed function call. *)
+  | (TIdent (s, i1)::TOPar _::TMul _::TIdent _::TCPar _::TOCro _::_,  x::_)
+      when ok_typedef s
+      && (match x with
+	    Tconst _ | Tvolatile _ | TPtVirg _ | TOBrace _ | TCBrace _ -> true
+	  | TOPar _ | TComma _ -> LP.current_context () = LP.InParameter
+	  | _ -> false)
+        ->
+
+      msg_typedef s i1 380; LP.add_typedef_root s i1;
+      TypedefIdent (s, i1)
+
+  (* (x ( * )[n]) and (x ( * )(params)),  cast to a pointer to an array or
+   * to a function: ( * ) cannot be an expression *)
+  | (TIdent (s, i1)::TOPar _::TMul _::TCPar _::(TOCro _ | TOPar _)::_,  _)
+      when ok_typedef s
+        ->
+
+      msg_typedef s i1 381; LP.add_typedef_root s i1;
+      TypedefIdent (s, i1)
+
 
   (*-------------------------------------------------------------*)
   (* CPP *)
@@ -2821,7 +2889,7 @@ let lookahead2 ~pass next before =
     * to count the '('. Because this can be expensive, we do that only
     * when the token contains "for_each".
     *)
-  | (TIdent (s, i1)::TOPar _::rest, _)
+  | (TIdent (s, i1)::TOPar _::rest, before)
      when not (LP.current_context () = LP.InTopLevel)
       (* otherwise a function such as static void loopback_enable(int i) {
        * will be considered as a loop
@@ -2839,6 +2907,20 @@ let lookahead2 ~pass next before =
 		begin
 		  msg_foreach s;
 		  Data.add_special_name s Data.Iterator;
+		  TMacroIterator (s, i1)
+		end
+	      (* linuxext: at the start of a statement in a function body,
+	       * NAME(...) { can only be a loop macro, whatever the name, as
+	       * in drm_exec_until_all_locked(&exec) {.  The guess is not
+	       * recorded as a special name, so that the parse of other code
+	       * using the name does not depend on what was parsed before. *)
+	      else if res = None
+		  && LP.current_context () = LP.InFunction
+		  && statement_start before
+		  && followed_by_block rest
+	      then
+		begin
+		  msg_foreach s;
 		  TMacroIterator (s, i1)
 		end
 	      else TIdent (s, i1))

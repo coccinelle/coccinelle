@@ -273,7 +273,20 @@ let cpp_keyword_table = Common.hash_of_list [
   "typeof_unequal", (fun ii -> Ttypeof ii);
   "co_yield",  (fun ii -> TCoAwaitYield ii);
   "co_await",  (fun ii -> TCoAwaitYield ii);
-  "co_return", (fun ii -> Treturn ii)]
+  "co_return", (fun ii -> Treturn ii);
+  (* Alternative operator spellings.  In C these are ordinary names unless
+   * <iso646.h> is included. *)
+  "and",       (fun ii -> TAndLog ii);
+  "or",        (fun ii -> TOrLog ii);
+  "not",       (fun ii -> TBang ii);
+  "bitand",    (fun ii -> TAnd ii);
+  "bitor",     (fun ii -> TOr ii);
+  "xor",       (fun ii -> TXor ii);
+  "compl",     (fun ii -> TCompl ("compl", ii));
+  "not_eq",    (fun ii -> TNotEq ii);
+  "and_eq",    (fun ii -> TAssign (OpAssign And, [ii]));
+  "or_eq",     (fun ii -> TAssign (OpAssign Or, [ii]));
+  "xor_eq",    (fun ii -> TAssign (OpAssign Xor, [ii]))]
 
 let ibm_keyword_table = Common.hash_of_list [
   "decimal",   (fun ii -> Tdecimal ii);
@@ -838,25 +851,27 @@ rule token = parse
   | "*=" { TAssign (OpAssign Mul, [tokinfo lexbuf]) }
   | "/=" { TAssign (OpAssign Div, [tokinfo lexbuf]) }
   | "%=" { TAssign (OpAssign Mod, [tokinfo lexbuf]) }
-  | "&=" | "and_eq" { TAssign (OpAssign And, [tokinfo lexbuf]) }
-  | "|=" | "or_eq"  { TAssign (OpAssign Or,  [tokinfo lexbuf]) }
-  | "^=" | "xor_eq" { TAssign (OpAssign Xor, [tokinfo lexbuf]) }
+  (* The alternative spellings and_eq, or_eq, and so on are only keywords in
+   * C++; see cpp_keyword_table. *)
+  | "&=" { TAssign (OpAssign And, [tokinfo lexbuf]) }
+  | "|=" { TAssign (OpAssign Or,  [tokinfo lexbuf]) }
+  | "^=" { TAssign (OpAssign Xor, [tokinfo lexbuf]) }
   | "<<=" {TAssign (OpAssign DecLeft,[tokinfo lexbuf]) }
   | ">>=" {TAssign (OpAssign DecRight,[tokinfo lexbuf]) }
   | ">?=" { TAssign(OpAssign Max,[tokinfo lexbuf]) }
   | "<?=" { TAssign(OpAssign Min,[tokinfo lexbuf]) }
 
-  | "==" { TEqEq(tokinfo lexbuf) }  | "!=" | "not_eq" { TNotEq(tokinfo lexbuf) }
+  | "==" { TEqEq(tokinfo lexbuf) }  | "!=" { TNotEq(tokinfo lexbuf) }
   | ">=" { TSupEq(tokinfo lexbuf) } | "<=" { TInfEq(tokinfo lexbuf) }
   | "<"  { TInf(tokinfo lexbuf) }   | ">"  { TSup(tokinfo lexbuf) }
   | "<<<"{ TInf3(tokinfo lexbuf) }  | ">>>"{ TSup3(tokinfo lexbuf) }
 
-  | "&&" | "and" { TAndLog(tokinfo lexbuf) }
-  | "||" | "or" { TOrLog(tokinfo lexbuf) }
+  | "&&" { TAndLog(tokinfo lexbuf) }
+  | "||" { TOrLog(tokinfo lexbuf) }
   | ">>"  { TShr(tokinfo lexbuf) }    | "<<" { TShl(tokinfo lexbuf) }
-  | "&" | "bitand" { TAnd(tokinfo lexbuf) }
-  | "|" | "bitor" { TOr(tokinfo lexbuf) }
-  | "^" | "xor" { TXor(tokinfo lexbuf) }
+  | "&" { TAnd(tokinfo lexbuf) }
+  | "|" { TOr(tokinfo lexbuf) }
+  | "^" { TXor(tokinfo lexbuf) }
   | "..." { TEllipsis(tokinfo lexbuf) }
   | "->"   { TPtrOp(tokinfo lexbuf) }  | '.'  { TDot(tokinfo lexbuf) }
   | ','    { TComma(tokinfo lexbuf) }
@@ -864,9 +879,8 @@ rule token = parse
   | "?"    { TWhy(tokinfo lexbuf) }
   | ":"    { TDotDot(tokinfo lexbuf) }
   | "::"   { TColonColon(tokinfo lexbuf) }
-  | "!" | "not" { TBang(tokinfo lexbuf) }
+  | "!" { TBang(tokinfo lexbuf) }
   | "~"    { TTilde(tokinfo lexbuf) }
-  | "compl" { TCompl(tok lexbuf, tokinfo lexbuf) }
 
   | "<:" { TOCro(tokinfo lexbuf) }
   | "<:<:" { TOCroCro(tokinfo lexbuf) }

@@ -226,3 +226,4 @@ let clear_special_names _ = Hashtbl.clear special_names
 
 let set_define_params names = define_params := names
 let clear_define_params _ = define_params := []
+let is_define_param nm = List.mem nm !define_params

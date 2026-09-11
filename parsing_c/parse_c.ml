@@ -984,6 +984,7 @@ let rec _parse_print_error_heuristic2 saved_typedefs saved_macros
   then None (* Inclusion loop, not re-parsing *)
   else begin
     seen_files := file :: !seen_files;
+    Flag_parsing_c.current_activity := "parsing " ^ file;
     let cached_result =
       if false && use_header_cache
       then
@@ -1047,15 +1048,23 @@ and handle_include file wrapped_incl k =
               then pr2 ("including "^header_filename));
               let nonlocal =
                 match incl with Ast_c.NonLocal _ -> true | _ -> false in
-              let res = k nonlocal header_filename in
-              match res with
-                None -> ()
-              | Some x ->
-                  let pt = x.parse_trees in
-                  let (p, _, _) = pt in
-                  with_program2_unit
-                    (IC.extract_names header_filename)
-                    p
+              (* The header is marked as parsed before it is parsed, so that
+                 an include cycle does not parse it again.  If parsing it is
+                 abandoned, e.g. on a timeout, unmark it, or none of the
+                 later files will get the names that it defines. *)
+              try
+                let res = k nonlocal header_filename in
+                match res with
+                  None -> ()
+                | Some x ->
+                    let pt = x.parse_trees in
+                    let (p, _, _) = pt in
+                    with_program2_unit
+                      (IC.extract_names header_filename)
+                      p
+              with e ->
+                IC.remove_from_parsed_files header_filename;
+                raise e
             end;
           IC.add_to_dependency_graph file header_filename;
       | _ -> ()

@@ -2728,6 +2728,14 @@ let interval_timer = ref (
   with Unix.Unix_error(_, _, _) -> false)
 
 let timeout_function s timeoutval = fun f ->
+  (* Unix.alarm 0 does not stop the interval timer, which repeats. *)
+  let disarm () =
+    if !interval_timer
+    then
+      ignore
+	(Unix.setitimer Unix.ITIMER_VIRTUAL
+	   {Unix.it_interval=0.; Unix.it_value=0.})
+    else ignore(Unix.alarm 0) in
   try
     if !interval_timer
     then
@@ -2739,7 +2747,7 @@ let timeout_function s timeoutval = fun f ->
              {Unix.it_interval=float_of_int timeoutval;
                Unix.it_value =float_of_int timeoutval});
 	let x = f() in
-	ignore(Unix.alarm 0);
+	disarm ();
 	x
       end
     else
@@ -2748,11 +2756,12 @@ let timeout_function s timeoutval = fun f ->
 	  (Sys.Signal_handle (fun _ -> raise Timeout ));
 	ignore(Unix.alarm timeoutval);
 	let x = f() in
-	ignore(Unix.alarm 0);
+	disarm ();
 	x
       end
   with Timeout ->
     begin
+      disarm ();
       (if !print_to_stderr
       then log (Printf.sprintf "timeout (we abort)")
       else log (Printf.sprintf "timeout (we abort): %s" s));
@@ -2767,7 +2776,7 @@ let timeout_function s timeoutval = fun f ->
       * Maybe signals are disabled when process an exception handler ?
       *)
       begin
-        ignore(Unix.alarm 0);
+        disarm ();
         (* log ("exn while in transaction (we abort too, even if ...) = " ^
            Printexc.to_string e);
         *)

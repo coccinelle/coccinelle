@@ -36,6 +36,10 @@ let kbuild_info = ref ""
 
 let macro_file = ref ""
 
+(* Set to nonzero when some files could not be transformed.  main.ml exits
+   with it once cleanup and Python finalization have run. *)
+let exit_status = ref 0
+
 (* test mode *)
 let test_mode = ref false
 let c_test_all = ref false
@@ -1085,6 +1089,20 @@ let rec main_action xs =
   | _ -> failwith "only one .cocci file allowed");
   Iteration.base_file_list := xs;
   previous_merges := ([], []);
+  (* Failures travel back from parmap workers in the fold accumulator, as
+     (files, reason) pairs, because a worker process cannot update the
+     parent's state. *)
+  let failure_context () =
+    match !Flag_parsing_c.current_activity with
+      "" -> ""
+    | activity -> " (while " ^ activity ^ ")" in
+  let describe_failure e =
+    match e with
+      Common.Timeout ->
+	(match !FC.timeout with
+	  Some n -> Printf.sprintf "timed out after %ds" n
+	| None -> "timed out") ^ failure_context ()
+    | e -> Printexc.to_string e ^ failure_context () in
   let rec toploop patching_failed = function
       [] -> failwith "no C files provided"
     | x::xs ->
@@ -1311,7 +1329,7 @@ let rec main_action xs =
 		  [] ->
 		    (* parmap case does a lot of work that is not needed
 		       if there is nothing to do *)
-		    [], [], false
+		    [], [], patching_failed
 		| _ ->
 (* merge_vars associates one merge variable assignment to each core.
 The following code relies on the fact that parfold never
@@ -1323,7 +1341,7 @@ singleton lists are then just appended to each other during the merge. *)
 		      let all_outfiles = List.rev_append outfiles outfiles' in
 		      let all_merge_vars =
 			List.rev_append merge_vars merge_vars' in
-		      all_outfiles, all_merge_vars, fld || fld' in
+		      all_outfiles, all_merge_vars, List.rev_append fld fld' in
 		    infiles +> actual_fold merge
 		      (fun ((prev_files, prev_merges, fld) as prev) cfiles ->
 			if (not !Flag.worth_trying_opt) ||
@@ -1335,6 +1353,7 @@ singleton lists are then just appended to each other during the merge. *)
 			    pr2 ("HANDLING: " ^ all_cfiles);
 			    flush stderr;
 
+			    Flag_parsing_c.current_activity := "";
 			    Common.timeout_function_opt all_cfiles !FC.timeout
 			      (fun () ->
 				let res =
@@ -1366,9 +1385,10 @@ singleton lists are then just appended to each other during the merge. *)
 					  (* not hidden by --very-quiet *)
 					    Printf.eprintf "EXN: %s in %s\n"
 					      (Printexc.to_string e)
-					      all_cfiles;
+					      (all_cfiles ^ failure_context ());
 					    flush stderr;
-					    (prev_files, prev_merges, true)
+					    (prev_files, prev_merges,
+					     (List.map fst cfiles, describe_failure e) :: fld)
 					  end
 					  else raise e) in
 				(if !dir && !profile_per_file
@@ -1413,20 +1433,40 @@ singleton lists are then just appended to each other during the merge. *)
 		begin
 		  Printf.eprintf
 		    "Out of place transformation not compatible with iteration. Aborting.\n consider using --no-show-diff or --in-place";
-		  (x,xs,cocci_infos,outfiles,true)
+		  (x,xs,cocci_infos,outfiles,
+		   ([], "out of place transformation is not compatible with iteration")
+		   :: patching_failed)
 		end) in
-      let (x,xs,cocci_infos,outfiles,patching_failed) = toploop false xs in
+      let (x,xs,cocci_infos,outfiles,patching_failed) = toploop [] xs in
       Common.profile_code "Main.result analysis" (fun () ->
 	Ctlcocci_integration.print_bench();
-	(if not patching_failed
+	(if patching_failed = []
 	then generate_outfiles outfiles x xs);
         match !compare_with_expected with
 	  None -> ()
         | Some extension -> Testing.compare_with_expected outfiles extension);
-      if patching_failed
+      if patching_failed <> []
       then
-        Printf.eprintf
-	  "An error occurred when attempting to transform some files.\n";
+	begin
+	  let failures = List.sort compare patching_failed in
+	  let nfiles =
+	    List.fold_left (fun n (files, _) -> n + List.length files)
+	      0 failures in
+	  (if nfiles > 0
+	  then
+	    Printf.eprintf
+	      "\nERROR: the semantic patch was not applied to %d file%s:\n"
+	      nfiles (if nfiles = 1 then "" else "s"));
+	  List.iter
+	    (function
+		([], reason) -> Printf.eprintf "  %s\n" reason
+	      | (files, reason) ->
+		  Printf.eprintf "  %s: %s\n" (String.concat " " files) reason)
+	    failures;
+	  Printf.eprintf
+	    "An error occurred when attempting to transform some files.\n";
+	  exit_status := 1
+	end;
 
 and debug_restart virt_rules virt_ids =
   if !Flag_parsing_cocci.debug_parse_cocci

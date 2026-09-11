@@ -283,6 +283,10 @@ check-cpp:
 check-cpp-html:
 	cd cpptests && ../scripts/cpptests.sh -o cpptests.html
 
+.PHONY : check-failures
+check-failures : spatch$(TOOLS_SUFFIX)
+	cd failuretests && SPATCH=../spatch$(TOOLS_SUFFIX) ../scripts/failuretests.sh
+
 .PHONY : clean
 clean :
 	$(SHOW_CLEAN) ".depend"

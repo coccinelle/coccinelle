@@ -4975,7 +4975,7 @@ and compatible_type a (b,local) =
   match A.unwrap a, b with
     A.Type (false, [], a', []), _ ->
       compatible_typeC a' (b, local)
-  | A.Type (false, cvbefore, a', cvafter), (qub, [], b') ->
+  | A.Type (false, cvbefore, a', cvafter), (qub, attrb, b') ->
       let cvattrs = cvbefore @ cvafter in
       let hasconst =
         List.exists
@@ -4985,10 +4985,11 @@ and compatible_type a (b,local) =
         List.exists
 	  (function A.CV cv -> A.unwrap_mcode cv = A.Volatile | _ -> false)
 	  cvattrs in
+      (* The attributes of the C type, such as __iomem, are not checked,
+       * as for an unqualified pattern type above. *)
       if (not hasconst || (fst qub).B.const) &&
-	 (not hasvol || (fst qub).B.volatile) &&
-	 true (* should check for attributes also *)
-      then compatible_typeC a' ((Ast_c.nQ, [], b'), local)
+	 (not hasvol || (fst qub).B.volatile)
+      then compatible_typeC a' ((Ast_c.nQ, attrb, b'), local)
       else fail
   | _ ->
       failwith "Cocci_vs_c.compatible_type: unimplemented"

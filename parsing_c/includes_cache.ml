@@ -286,3 +286,6 @@ let has_been_parsed file =
 
 let add_to_parsed_files file =
   seen_files := StringSet.add file !seen_files
+
+let remove_from_parsed_files file =
+  seen_files := StringSet.remove file !seen_files

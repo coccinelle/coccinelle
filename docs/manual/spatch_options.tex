@@ -754,7 +754,12 @@ commands.}
 \subsection{Controlling the execution of Coccinelle}
 
 \normal{-{}-timeout $\langle$int$\rangle$}{ The maximum time in seconds for
-  processing a single file.  A timeout of 0 is no timeout.}
+  processing a single file, including parsing the header files that it
+  includes.  A timeout of 0 is no timeout.  A file that times out is not
+  transformed.  It is listed at the end of the run, along with what was
+  being done when the time ran out, and spatch then exits with status 1.
+  In that case, {\bf -{}-in-place}, {\bf -{}-out-place}, and {\bf -o} write
+  no files at all, including files that were transformed successfully.}
 
 \rare{-{}-max $\langle$int$\rangle$}{This option informs Coccinelle of the
   number of instances of Coccinelle that will be run concurrently.  This
